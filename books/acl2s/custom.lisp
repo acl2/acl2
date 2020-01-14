@@ -5,7 +5,7 @@
 
 
 (in-package "ACL2S")
-(defconst *acl2s-version* "ACL2s Version 1.3.0")
+(defconst *acl2s-version* "ACL2s Version 1.3.1")
 
 ; Common books to all modes.
 (include-book "cgen/top" :ttags :all)
@@ -233,15 +233,13 @@
   ;;CCG events
   (set-termination-method :ccg)
   (set-ccg-time-limit 300)
-
+  
   (dont-print-thanks-message-override-hint)
    
   ;;Cgen settings
   (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
   (acl2s::acl2s-defaults :set acl2s::num-trials 500)
-
   ))
-
 
 #!ACL2
 (defmacro acl2s-beginner-settings ()

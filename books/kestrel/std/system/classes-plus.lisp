@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,20 +10,22 @@
 
 (in-package "ACL2")
 
-(include-book "theorem-formula")
+(include-book "classes")
 (include-book "theorem-symbolp")
+
+(include-book "std/typed-alists/keyword-to-keyword-value-list-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define thm-formula+ ((thm symbolp) (wrld plist-worldp))
-  :returns (formula pseudo-termp)
+(define classes+ ((thm symbolp) (wrld plist-worldp))
+  :returns (classes keyword-to-keyword-value-list-alistp)
   :parents (std/system/theorem-queries)
   :short (xdoc::topstring
           (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @(tsee thm-formula).")
+          " variant of @(tsee classes).")
   :long
   (xdoc::topstring-p
-   "This returns the same result as @(tsee thm-formula),
+   "This returns the same result as @(tsee classes),
     but it includes a run-time check (which should always succeed) on the result
     that allows us to prove the return type theorem
     without strengthening the guard on @('wrld').
@@ -31,9 +33,10 @@
     a symbol that does not name a theorem.")
   (if (not (theorem-symbolp thm wrld))
       (raise "The symbol ~x0 does not name a theorem." thm)
-    (b* ((result (thm-formula thm wrld)))
-      (if (pseudo-termp result)
+    (b* ((result (classes thm wrld)))
+      (if (keyword-to-keyword-value-list-alistp result)
           result
         (raise "Internal error: ~
-                the FORMULA property ~x0 of ~x1 is not a pseudo-term."
+                the rule classes ~x0 of ~x1 are not an alist
+                from keywords to keyword-value lists."
                result thm)))))

@@ -21,7 +21,7 @@
 ;distributivity
 ;move
 (defthm mul-of-add-arg2
-  (Implies (and (integerp x)
+  (implies (and (integerp x)
                 (integerp y1)
                 (integerp y2)
                 (posp p))
@@ -33,7 +33,7 @@
            :in-theory (enable add mul))))
 
 (defthm mul-of-add-arg1
-  (Implies (and (integerp x)
+  (implies (and (integerp x)
                 (integerp y1)
                 (integerp y2)
                 (posp p))
@@ -80,7 +80,7 @@
            :in-theory (enable neg add sub mul))))
 
 (defthm fep-holds
-  (Implies (and (natp x)
+  (implies (and (natp x)
                 (< x p))
            (fep x p))
   :hints (("Goal" :in-theory (enable fep))))

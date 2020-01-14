@@ -520,8 +520,8 @@
      (cond ((endp args-exprs) (mv nil nil))
            (t (b* ((first-jvar (str::cat "argument" (str::natstr index)))
                    (first-type (car types))
-                   (first-jtype (atj-type-to-jtype first-type))
-                   (first-expr (jexpr-cast (atj-type-to-jtype first-type)
+                   (first-jtype (atj-type-to-jitype first-type))
+                   (first-expr (jexpr-cast (atj-type-to-jitype first-type)
                                            (car args-exprs)))
                    (first-block (jblock-locvar first-jtype
                                                first-jvar

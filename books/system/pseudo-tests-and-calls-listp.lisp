@@ -7,10 +7,12 @@
 
 (include-book "pseudo-tests-and-callsp")
 
-; Recognize true lists of pseudo-tests-and-callsp values.
+(defsection pseudo-tests-and-calls-listp
+  :parents (std/system)
+  :short "Recognize true lists of well-formed @('tests-and-calls') records."
 
-(defun pseudo-tests-and-calls-listp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (null x))
-        (t (and (pseudo-tests-and-callsp (car x))
-                (pseudo-tests-and-calls-listp (cdr x))))))
+  (defun pseudo-tests-and-calls-listp (x)
+    (declare (xargs :guard t))
+    (cond ((atom x) (null x))
+          (t (and (pseudo-tests-and-callsp (car x))
+                  (pseudo-tests-and-calls-listp (cdr x)))))))

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "len"))
 
 (in-theory (disable remove1-equal))
 

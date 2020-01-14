@@ -145,6 +145,11 @@
       This is used in the shallow embedding approach.
       See @(tsee atj-code-generation).")
     (xdoc::li
+     "@('mv-class-names') is a list of strings consisting of
+      the names of all the generated @(tsee mv) classes.
+      This is used in the shallow embedding approach.
+      See @(tsee atj-code-generation).")
+    (xdoc::li
      "@('curr-pkg') is the name of the ACL2 package of the ACL2 function
       for which Java code is being generated."))
    (xdoc::p

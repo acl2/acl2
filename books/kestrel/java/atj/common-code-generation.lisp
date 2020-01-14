@@ -834,7 +834,7 @@
                :volatile? nil
                :type (jtype-boolean)
                :name "failures"
-               :init (jexpr-literal-false)))
+               :init? (jexpr-literal-false)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

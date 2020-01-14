@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "arglistp-theorems")
 (include-book "defchoose-queries")
 (include-book "defun-sk-queries")
 (include-book "event-forms")

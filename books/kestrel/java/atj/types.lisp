@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,6 +18,7 @@
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/typed-lists/cons-listp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -50,9 +51,8 @@
      In other words,
      narrower types than the one for all ACL2 values (i.e. @('Acl2Value'))
      can be used for the argument and result of this Java method.
-     This narrowing can also lead to methods that operate
-     on Java primitive types and arrays,
-     the former of which ATJ already generates.")
+     This narrowing is also used to generate methods
+     that operate on Java primitive values and primitive arrays.")
    (xdoc::p
     "In general, establishing the narrower input and output types
      for a Java method generated from an ACL2 function
@@ -222,7 +222,7 @@
    (xdoc::p
     "Each ATJ type denotes
      (i) an ACL2 predicate (see @(tsee atj-type-to-pred)) and
-     (ii) a Java type (see @(tsee atj-type-to-jtype)).
+     (ii) a Java type (see @(tsee atj-type-to-jitype)).
      The initial @('a') and @('j') in their names
      does not mean that they denote either ACL2 types or Java types,
      but just that the ones starting with @('a') denote ACL2 built-in types
@@ -242,36 +242,12 @@
   :short "Recognize true lists of true lists of ATJ types."
   (atj-type-listp x)
   :true-listp t
-  :elementp-of-nil t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-maybe-typep (x)
-  :returns (yes/no booleanp)
-  :short "Recognize ATJ types and @('nil')."
-  (or (atj-typep x)
-      (null x))
-  ///
-
-  (defrule atj-maybe-typep-when-atj-typep
-    (implies (atj-typep x)
-             (atj-maybe-typep x)))
-
-  (defrule atj-type-iff-when-atj-maybe-typep
-    (implies (atj-maybe-typep x)
-             (iff (atj-typep x) x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist atj-maybe-type-listp (x)
-  :short "Recognize true lists of ATJ types and @('nil')s."
-  (atj-maybe-typep x)
-  :true-listp t
   :elementp-of-nil t
   ///
-  (defrule atj-maybe-type-listp-when-atj-type-listp
-    (implies (atj-type-listp x)
-             (atj-maybe-type-listp x))))
+
+  (defrule atj-type-list-listp-of-remove-duplicates-equal
+    (implies (atj-type-list-listp x)
+             (atj-type-list-listp (remove-duplicates-equal x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -498,7 +474,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-join ((x atj-typep) (y atj-typep))
-  :returns (lub atj-typep :hyp :guard)
+  :returns (lub atj-typep)
   :short "Least upper bound of two ATJ types."
   :long
   (xdoc::topstring
@@ -519,75 +495,77 @@
     "ATJ uses this least upper bound operation
      to calculate the type of an @(tsee if)
      from the types of the `then' and `else' branches."))
-  (case x
-    (:acharacter (case y
-                   (:acharacter :acharacter)
-                   (t :avalue)))
-    (:astring (case y
-                (:astring :astring)
-                (t :avalue)))
-    (:asymbol (case y
-                (:asymbol :asymbol)
-                (t :avalue)))
-    (:ainteger (case y
-                 (:ainteger :ainteger)
-                 (:arational :arational)
-                 (:anumber :anumber)
-                 (t :avalue)))
-    (:arational (case y
-                  ((:ainteger :arational) :arational)
-                  (:anumber :anumber)
+  (b* ((x (if (mbt (atj-typep x)) x :avalue))
+       (y (if (mbt (atj-typep y)) y :avalue)))
+    (case x
+      (:acharacter (case y
+                     (:acharacter :acharacter)
+                     (t :avalue)))
+      (:astring (case y
+                  (:astring :astring)
                   (t :avalue)))
-    (:anumber (case y
-                ((:ainteger :arational :anumber) :anumber)
+      (:asymbol (case y
+                  (:asymbol :asymbol)
+                  (t :avalue)))
+      (:ainteger (case y
+                   (:ainteger :ainteger)
+                   (:arational :arational)
+                   (:anumber :anumber)
+                   (t :avalue)))
+      (:arational (case y
+                    ((:ainteger :arational) :arational)
+                    (:anumber :anumber)
+                    (t :avalue)))
+      (:anumber (case y
+                  ((:ainteger :arational :anumber) :anumber)
+                  (t :avalue)))
+      (:acons (case y
+                ((:acons :jboolean :jchar :jbyte :jshort :jint :jlong) :acons)
                 (t :avalue)))
-    (:acons (case y
-              ((:acons :jboolean :jchar :jbyte :jshort :jint :jlong) :acons)
-              (t :avalue)))
-    (:avalue :avalue)
-    (:jboolean (case y
-                 (:jboolean :jboolean)
-                 ((:jchar :jbyte :jshort :jint :jlong :acons) :acons)
-                 (t :avalue)))
-    (:jchar (case y
-                 (:jchar :jchar)
-                 ((:jboolean :jbyte :jshort :jint :jlong :acons) :acons)
-                 (t :avalue)))
-    (:jbyte (case y
-                 (:jbyte :jbyte)
-                 ((:jboolean :jchar :jshort :jint :jlong :acons) :acons)
-                 (t :avalue)))
-    (:jshort (case y
+      (:avalue :avalue)
+      (:jboolean (case y
+                   (:jboolean :jboolean)
+                   ((:jchar :jbyte :jshort :jint :jlong :acons) :acons)
+                   (t :avalue)))
+      (:jchar (case y
+                (:jchar :jchar)
+                ((:jboolean :jbyte :jshort :jint :jlong :acons) :acons)
+                (t :avalue)))
+      (:jbyte (case y
+                (:jbyte :jbyte)
+                ((:jboolean :jchar :jshort :jint :jlong :acons) :acons)
+                (t :avalue)))
+      (:jshort (case y
                  (:jshort :jshort)
                  ((:jboolean :jchar :jbyte :jint :jlong :acons) :acons)
                  (t :avalue)))
-    (:jint (case y
-             (:jint :jint)
-             ((:jboolean :jchar :jbyte :jshort :jlong :acons) :acons)
-             (t :avalue)))
-    (:jlong (case y
-              (:jlong :jlong)
-              ((:jboolean :jchar :jbyte :jshort :jint :acons) :acons)
-              (t :avalue)))
-    (:jboolean[] (case y
-                   (:jboolean[] :jboolean[])
-                   (t :avalue)))
-    (:jchar[] (case y
-                (:jchar[] :jchar[])
-                (t :avalue)))
-    (:jbyte[] (case y
-                (:jbyte[] :jbyte[])
-                (t :avalue)))
-    (:jshort[] (case y
-                 (:jshort[] :jshort[])
-                 (t :avalue)))
-    (:jint[] (case y
-               (:jint[] :jint[])
+      (:jint (case y
+               (:jint :jint)
+               ((:jboolean :jchar :jbyte :jshort :jlong :acons) :acons)
                (t :avalue)))
-    (:jlong[] (case y
-                (:jlong[] :jlong[])
+      (:jlong (case y
+                (:jlong :jlong)
+                ((:jboolean :jchar :jbyte :jshort :jint :acons) :acons)
                 (t :avalue)))
-    (otherwise (impossible)))
+      (:jboolean[] (case y
+                     (:jboolean[] :jboolean[])
+                     (t :avalue)))
+      (:jchar[] (case y
+                  (:jchar[] :jchar[])
+                  (t :avalue)))
+      (:jbyte[] (case y
+                  (:jbyte[] :jbyte[])
+                  (t :avalue)))
+      (:jshort[] (case y
+                   (:jshort[] :jshort[])
+                   (t :avalue)))
+      (:jint[] (case y
+                 (:jint[] :jint[])
+                 (t :avalue)))
+      (:jlong[] (case y
+                  (:jlong[] :jlong[])
+                  (t :avalue)))
+      (otherwise (impossible))))
   ///
 
   (defrule atj-type-join-upper-bound
@@ -665,7 +643,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-list-join ((x atj-type-listp) (y atj-type-listp))
-  :returns (lub atj-type-listp :hyp :guard)
+  :returns (lub atj-type-listp)
   :short "Lift @(tsee atj-type-join) to lists."
   :long
   (xdoc::topstring
@@ -676,8 +654,12 @@
    (xdoc::p
     "We show that this indeed returns the least upper bound
      of the order relation lifted to lists."))
-  (cond ((endp x) y)
-        ((endp y) x)
+  (cond ((endp x) (if (mbt (atj-type-listp y))
+                      y
+                    (repeat (len y) :avalue)))
+        ((endp y) (if (mbt (atj-type-listp x))
+                      x
+                    (repeat (len x) :avalue)))
         (t (cons (atj-type-join (car x) (car y))
                  (atj-type-list-join (cdr x) (cdr y)))))
   ///
@@ -696,13 +678,18 @@
                   (atj-type-list-<= x z)
                   (atj-type-list-<= y z))
              (atj-type-list-<= (atj-type-list-join x y) z))
-    :enable atj-type-list-<=))
+    :enable atj-type-list-<=)
+
+  (defret consp-of-atj-type-list-join
+    (equal (consp lub)
+           (or (consp x)
+               (consp y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-to-jtype ((type atj-typep))
-  :returns (jtype atj-jtypep :hyp :guard)
-  :short "Java type denoted by an ATJ type."
+(define atj-type-to-jitype ((type atj-typep))
+  :returns (jtype atj-jitypep)
+  :short "Java input type denoted by an ATJ type."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -732,33 +719,33 @@
     (:jshort[] (jtype-array (jtype-short)))
     (:jint[] (jtype-array (jtype-int)))
     (:jlong[] (jtype-array (jtype-long)))
-    (otherwise (impossible))))
+    (otherwise (prog2$ (impossible) *aij-type-value*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-to-jtype-list ((types atj-type-listp))
-  :returns (jtypes atj-jtype-listp :hyp :guard)
-  :short "Lift @(tsee atj-type-to-jtype) to lists."
+(define atj-type-list-to-jitype-list ((types atj-type-listp))
+  :returns (jtypes atj-jitype-listp)
+  :short "Lift @(tsee atj-type-to-jitype) to lists."
   (cond ((endp types) nil)
-        (t (cons (atj-type-to-jtype (car types))
-                 (atj-type-list-to-jtype-list (cdr types)))))
+        (t (cons (atj-type-to-jitype (car types))
+                 (atj-type-list-to-jitype-list (cdr types)))))
   ///
 
-  (defret len-of-atj-type-list-to-jtype-list
+  (defret len-of-atj-type-list-to-jitype-list
     (equal (len jtypes)
            (len types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-list-to-jtype-list-list ((typess atj-type-list-listp))
-  :returns (jtypess atj-jtype-list-listp :hyp :guard)
-  :short "Lift @(tsee atj-type-list-to-jtype-list) to lists."
+(define atj-type-list-list-to-jitype-list-list ((typess atj-type-list-listp))
+  :returns (jtypess atj-jitype-list-listp)
+  :short "Lift @(tsee atj-type-list-to-jitype-list) to lists."
   (cond ((endp typess) nil)
-        (t (cons (atj-type-list-to-jtype-list (car typess))
-                 (atj-type-list-list-to-jtype-list-list (cdr typess)))))
+        (t (cons (atj-type-list-to-jitype-list (car typess))
+                 (atj-type-list-list-to-jitype-list-list (cdr typess)))))
   ///
 
-  (defret len-of-atj-type-list-to-jtype-list-list
+  (defret len-of-atj-type-list-to-jitype-list-list
     (equal (len jtypess)
            (len typess))))
 
@@ -818,6 +805,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-function-type-list->outputs ((fn-types atj-function-type-listp))
+  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :short "Lift @(tsee atj-function-type->outputs) to lists."
+  (cond ((endp fn-types) nil)
+        (t (cons (atj-function-type->outputs (car fn-types))
+                 (atj-function-type-list->outputs (cdr fn-types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defaggregate atj-function-type-info
   :short "Recognize ATJ function type information."
   :long
@@ -829,6 +825,16 @@
      as mentioned in " (xdoc::seetopic "atj-types" "here") "."))
   ((main atj-function-type-p)
    (others atj-function-type-listp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-function-type-info->outputs ((info atj-function-type-info-p))
+  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :short "Return the list of all the output type lists
+          in a function's type information."
+  (cons
+   (atj-function-type->outputs (atj-function-type-info->main info))
+   (atj-function-type-list->outputs (atj-function-type-info->others info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1263,7 +1269,7 @@
 
 (define atj-check-other-function-type ((new-in-types atj-type-listp)
                                        (old-fn-types atj-function-type-listp)
-                                       (all-in-jtypess atj-jtype-list-listp))
+                                       (all-in-jtypess atj-jitype-list-listp))
   :returns (yes/no booleanp)
   :short "Check the new input types
           passed to @(tsee def-atj-other-function-type)
@@ -1305,7 +1311,7 @@
      it will also fit the method corresponding to the greatest lower bound;
      therefore, there will be always a ``minimum'' method
      that will be selected at compile time and called at run time.
-     However, recall that @(tsee atj-maybe-jtype-meet) may produce @('nil'):
+     However, recall that @(tsee atj-maybe-jitype-meet) may produce @('nil'):
      if the greatest lower bound contains a @('nil') component,
      the closure requirement does not apply,
      because it means that some types are incompatible
@@ -1352,9 +1358,9 @@
                 for the function, ~
                 but they are equal to some of these existing types."
                new-in-types))
-       (old-in-jtypes (atj-type-list-to-jtype-list old-in-types))
-       (new-in-jtypes (atj-type-list-to-jtype-list new-in-types))
-       (glb (atj-maybe-jtype-list-meet old-in-jtypes new-in-jtypes))
+       (old-in-jtypes (atj-type-list-to-jitype-list old-in-types))
+       (new-in-jtypes (atj-type-list-to-jitype-list new-in-types))
+       (glb (atj-maybe-jitype-list-meet old-in-jtypes new-in-jtypes))
        ((unless (or (member-eq nil glb)
                     (member-equal glb all-in-jtypess)))
         (raise "The Java counterparts ~x0 of the proposed input types ~x1 ~
@@ -1476,7 +1482,7 @@
        ((when (member-equal new-fn-type other-fn-types))
         `(value-triple :redundant))
        (other-in-types (atj-function-type-list->inputs other-fn-types))
-       (all-in-jtypess (atj-type-list-list-to-jtype-list-list
+       (all-in-jtypess (atj-type-list-list-to-jitype-list-list
                         (cons in-types other-in-types)))
        (- (atj-check-other-function-type in-types
                                          other-fn-types
@@ -1556,30 +1562,107 @@
      and @(tsee def-atj-other-function-type)),
      so it is appropriate to use @('nil') here to signal that
      no function types matching the criteria were found."))
-  (atj-output-type-of-min-input-types-aux (atj-type-list-to-jtype-list in-types)
+  (atj-output-type-of-min-input-types-aux (atj-type-list-to-jitype-list in-types)
                                           fn-types
                                           nil
                                           nil)
 
   :prepwork
   ((define atj-output-type-of-min-input-types-aux
-     ((in-jtypes atj-jtype-listp)
+     ((in-jtypes atj-jitype-listp)
       (fn-types atj-function-type-listp)
-      (current-min-in-jtypes atj-jtype-listp)
+      (current-min-in-jtypes atj-jitype-listp)
       (current-out-types? atj-type-listp))
      :returns (out-types? atj-type-listp :hyp :guard)
      (b* (((when (endp fn-types)) current-out-types?)
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
-          (fn-in-jtypes (atj-type-list-to-jtype-list fn-in-types))
+          (fn-in-jtypes (atj-type-list-to-jitype-list fn-in-types))
           ((mv current-min-in-jtypes current-out-types?)
-           (if (and (atj-maybe-jtype-list-<= in-jtypes fn-in-jtypes)
+           (if (and (atj-maybe-jitype-list-<= in-jtypes fn-in-jtypes)
                     (or (null current-out-types?) ; i.e. none found yet
-                        (atj-maybe-jtype-list-< fn-in-jtypes
-                                                current-min-in-jtypes)))
+                        (atj-maybe-jitype-list-< fn-in-jtypes
+                                                 current-min-in-jtypes)))
                (mv fn-in-jtypes (atj-function-type->outputs fn-type))
              (mv current-min-in-jtypes current-out-types?))))
        (atj-output-type-of-min-input-types-aux in-jtypes
                                                (cdr fn-types)
                                                current-min-in-jtypes
                                                current-out-types?)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-to-type-list ((type atj-typep))
+  :returns (types atj-type-listp :hyp :guard)
+  :short "Turn a single ATJ type into a singleton list of it."
+  :long
+  (xdoc::topstring-p
+   "This is just @(tsee list),
+    but we introduce an explicit function for greater clarity.")
+  (list type)
+  ///
+
+  (more-returns
+   (types consp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-to-type-list-list ((types atj-type-listp))
+  :returns (typess atj-type-list-listp :hyp :guard)
+  :short "Lift @(tsee atj-type-to-type-list) to lists."
+  (cond ((endp types) nil)
+        (t (cons (atj-type-to-type-list (car types))
+                 (atj-type-list-to-type-list-list (cdr types)))))
+  ///
+
+  (more-returns
+   (typess acl2::cons-listp))
+
+  (defret len-of-atj-type-list-to-type-list-list
+    (equal (len typess)
+           (len types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-to-type ((types atj-type-listp))
+  :guard (consp types)
+  :returns (type atj-typep :hyp :guard)
+  :short "Ensure that a non-empty list of types is a singleton,
+          and return its only element."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In some cases, a non-empty list of types is expected to be a singleton.
+     For instance, the type list may be the output types of a function
+     that is known to return a single result.
+     This utility can be used in these cases,
+     to check the expectation for robustness,
+     and to retrieve the single type from the singleton list."))
+  (if (= (len types) 1)
+      (car types)
+    (prog2$
+     (raise "Internal error: ~x0 is not a singleton list of types." types)
+     :avalue))) ; irrelevant
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-to-type/acons ((types atj-type-listp))
+  :guard (consp types)
+  :returns (type atj-typep :hyp :guard)
+  :short "Treat a non-empty list of ATJ types as a single type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is temporary code, useful while we are in the process of
+     building more direct support for @(tsee mv) in ATJ.
+     As we are generalizing things (e.g. type annotations)
+     from single types to (non-empty) lists of types,
+     it is sometimes necessary to treat lists of two or more types
+     as the single @(':acons') type,
+     which was the output type of @(tsee mv) functions
+     before we started to build more direct support for @(tsee mv).
+     If instead the list of types is a singleton,
+     we return the unique element."))
+  (if (= (len types) 1)
+      (car types)
+    :acons))

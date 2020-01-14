@@ -779,7 +779,8 @@
   (xdoc::topstring-p
    "This is disabled by default because its conclusion is fairly general,
     not specific to terminal sets.")
-  (implies (and (nat-match-sensitive-char-p nat char)
+  (implies (and (natp nat)
+                (nat-match-sensitive-char-p nat char)
                 (char-sensitive-in-termset-p char termset))
            (in nat termset))
   :enable (nat-match-sensitive-char-p
@@ -793,7 +794,8 @@
   (xdoc::topstring-p
    "This is disabled by default because its conclusion is fairly general,
     not specific to terminal sets.")
-  (implies (and (nats-match-sensitive-chars-p nats chars)
+  (implies (and (nat-listp nats)
+                (nats-match-sensitive-chars-p nats chars)
                 (chars-sensitive-in-termset-p chars termset))
            (list-in nats termset))
   :enable (nats-match-sensitive-chars-p
@@ -808,7 +810,8 @@
   (xdoc::topstring-p
    "This is disabled by default because its conclusion is fairly general,
     not specific to terminal sets.")
-  (implies (and (nat-match-insensitive-char-p nat char)
+  (implies (and (natp nat)
+                (nat-match-insensitive-char-p nat char)
                 (char-insensitive-in-termset-p char termset))
            (in nat termset))
   :enable (nat-match-insensitive-char-p
@@ -822,7 +825,8 @@
   (xdoc::topstring-p
    "This is disabled by default because its conclusion is fairly general,
     not specific to terminal sets.")
-  (implies (and (nats-match-insensitive-chars-p nats chars)
+  (implies (and (nat-listp nats)
+                (nats-match-insensitive-chars-p nats chars)
                 (chars-insensitive-in-termset-p chars termset))
            (list-in nats termset))
   :enable (nats-match-insensitive-chars-p

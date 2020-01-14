@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,6 +18,7 @@
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
+(include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
@@ -300,7 +301,7 @@
                  :volatile? nil
                  :type type
                  :name name
-                 :init init)))
+                 :init? init)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,7 +342,7 @@
                  :volatile? nil
                  :type type
                  :name name
-                 :init init)))
+                 :init? init)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -383,7 +384,7 @@
                  :volatile? nil
                  :type type
                  :name name
-                 :init init)))
+                 :init? init)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,7 +447,7 @@
                  :volatile? nil
                  :type type
                  :name name
-                 :init init)))
+                 :init? init)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,7 +508,7 @@
                  :volatile? nil
                  :type type
                  :name name
-                 :init init)))
+                 :init? init)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -657,6 +658,114 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-mv-class-name ((types atj-type-listp))
+  :guard (>= (len types) 2)
+  :returns (class-name stringp)
+  :short "Generate the name of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since Java does not allow methods to return multiple values directly,
+     we need to create, for ACL2 functions that return @(tsee mv) results,
+     Java classes that group these multiple values into single objects.
+     There is a different class for each tuple of types
+     of the multiple values.
+     Here we generate the names of these classes,
+     based on the ATJ types of the multiple values.")
+   (xdoc::p
+    "These classes have names of the form @('MV_A_B_C_...'),
+     where @('A'), @('B'), @('C'), etc. correspond to the ATJ types,
+     or more precisely to their Java types counterparts.
+     For AIJ classes, we use the class names themselves.
+     For Java primitive types, we use the primitive types themselves.
+     For Java primitive array types,
+     we use the element types followed by @('array').
+     For instance, for the ATJ types @('(:asymbol :jint :jbyte[])'),
+     the class name is @('MV_Acl2Symbol_int_bytearray').")
+   (xdoc::p
+    "The list of ATJ types must have at least two elements.
+     It does not make sense to have a multiple value
+     consisting of zero or one values."))
+  (str::cat "MV" (atj-gen-shallow-mv-class-name-aux types))
+
+  :prepwork
+  ((define atj-gen-shallow-mv-class-name-aux ((types atj-type-listp))
+     :returns (class-name-suffix stringp)
+     (b* (((when (endp types)) "")
+          (type (car types))
+          (jtype (atj-type-to-jitype type))
+          (first (cond
+                  ((equal jtype (jtype-boolean)) "_boolean")
+                  ((equal jtype (jtype-char)) "_char")
+                  ((equal jtype (jtype-byte)) "_byte")
+                  ((equal jtype (jtype-short)) "_short")
+                  ((equal jtype (jtype-int)) "_int")
+                  ((equal jtype (jtype-long)) "_long")
+                  ((equal jtype (jtype-array (jtype-boolean))) "_booleanarray")
+                  ((equal jtype (jtype-array (jtype-char))) "_chararray")
+                  ((equal jtype (jtype-array (jtype-byte))) "_bytearray")
+                  ((equal jtype (jtype-array (jtype-short))) "_shortarray")
+                  ((equal jtype (jtype-array (jtype-int))) "_intarray")
+                  ((equal jtype (jtype-array (jtype-long))) "_longarray")
+                  (t (str::cat "_" (jtype-class->name jtype)))))
+          (rest (atj-gen-shallow-mv-class-name-aux (cdr types))))
+       (str::cat first rest))
+     :verify-guards nil ; done below
+     ///
+     (verify-guards atj-gen-shallow-mv-class-name-aux
+       :hints (("Goal" :in-theory (enable atj-type-to-jitype)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-field-name ((index natp))
+  :returns (field-name stringp)
+  :short "Generate the name of the field with the given index
+          in an @(tsee mv) class."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     These classes have non-private fields named after the indices (0-based)
+     of the components of the @(tsee mv) values.")
+   (xdoc::p
+    "Currently we generate field names of the form @('$<i>'),
+     where @('<i>') is the base-10 representation of the index,
+     i.e. @('$0'), @('$1'), etc."))
+  (str::cat "$" (natstr index)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-mv-factory-method-name*
+  :short "Name of the package-private static factory method
+          of an @(tsee mv) class."
+  :long
+  (xdoc::topstring-p
+   "All the @(tsee mv) classes use the same name for this method.")
+  "make")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-jtype ((types atj-type-listp))
+  :guard (consp types)
+  :returns (jtype jtypep)
+  :short "Generate a Java type, in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We map a non-empty list of ATJ types to a Java type as follows.
+     If the list is a singleton,
+     we map the (only) type to the corresponding Java type,
+     according to @(tsee atj-type-to-jitype).
+     Otherwise, we map the list of two or more types
+     to the @(tsee mv) class for the types,
+     according to @(tsee atj-gen-shallow-mv-class-name)."))
+  (if (= (len types) 1)
+      (atj-type-to-jitype (car types))
+    (jtype-class (atj-gen-shallow-mv-class-name types))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-let-bindings ((vars symbol-listp)
                                       (blocks jblock-listp)
                                       (exprs jexpr-listp))
@@ -700,10 +809,11 @@
        (var (car vars))
        (expr (car exprs))
        ((mv var new?) (atj-unmark-var var))
-       ((mv var type) (atj-type-unannotate-var var))
+       ((mv var types) (atj-type-unannotate-var var))
        (jvar (symbol-name var))
+       (type (atj-type-list-to-type/acons types))
        (var-block (if new?
-                      (jblock-locvar (atj-type-to-jtype type) jvar expr)
+                      (jblock-locvar (atj-type-to-jitype type) jvar expr)
                     (jblock-asg (jexpr-name jvar) expr)))
        (first-block (append (car blocks) var-block))
        (rest-block (atj-gen-shallow-let-bindings (cdr vars)
@@ -925,7 +1035,7 @@
      it cannot be generated from the nonterminal @('field-acces');
      it can be generated from the nonterminal @('expression-name')."))
   (b* ((method-name (convert-from-primarray-method-name type))
-       (jtype (atj-type-to-jtype type))
+       (jtype (atj-type-to-jitype type))
        (array "array")
        (index "index")
        (result "result")
@@ -1037,7 +1147,7 @@
      generated by @(tsee atj-adapt-expr-from-value-to-jprim)
      for that primitive type."))
   (b* ((method-name (convert-to-primarray-method-name type))
-       (jtype (atj-type-to-jtype type))
+       (jtype (atj-type-to-jitype type))
        (array "array")
        (index "index")
        (length "length")
@@ -1234,7 +1344,7 @@
                           expr src-type dst-type)
                    expr)))
         ((atj-type-<= src-type dst-type) expr)
-        (t (jexpr-cast (atj-type-to-jtype dst-type) expr))))
+        (t (jexpr-cast (atj-type-to-jitype dst-type) expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1256,6 +1366,83 @@
                  (atj-adapt-exprs-to-types (cdr exprs)
                                            (cdr src-types)
                                            (cdr dst-types))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-adapt-expr-to-types ((expr jexprp)
+                                 (src-types atj-type-listp)
+                                 (dst-types atj-type-listp)
+                                 (jvar-result-base stringp)
+                                 (jvar-result-index posp))
+  :guard (and (consp src-types)
+              (consp dst-types)
+              (= (len src-types) (len dst-types)))
+  :returns (mv (block jblockp)
+               (new-expr jexprp :hyp (jexprp expr))
+               (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+  :short "Adapt a Java expression from source types to destination types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the two lists are singletons, we use @(tsee atj-adapt-expr-to-type).
+     Otherwise, we are converting a multi-valued expression
+     to another multi-valued expression with the same number of components;
+     here `multi-valued' is in the sense of ACL2's @(tsee mv).
+     We project the components of the expressions by reading the fields,
+     call @(tsee atj-adapt-expr-to-type) on each of them,
+     and then build a new multi-valued expression
+     with the resulting expressions as arguments.
+     That is, we adapt the expression component-wise.")
+   (xdoc::p
+    "Unless the starting expression is an expression name,
+     we use an intermediate variable to store the value of the expression
+     before projecting the components;
+     otherwise, we would be re-evaluating the starting expression
+     multiple times.
+     Thus, in general we return a block and an expression,
+     and the index for the temporary variable is threade though."))
+  (b* (((when (= (len src-types) 1))
+        (mv nil
+            (atj-adapt-expr-to-type expr (car src-types) (car dst-types))
+            jvar-result-index))
+       (src-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
+       (dst-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
+       ((when (equal src-jtype dst-jtype)) (mv nil expr jvar-result-index))
+       ((mv block
+            expr
+            jvar-result-index)
+        (if (jexpr-case expr :name)
+            (mv nil expr jvar-result-index)
+          (b* (((mv block var jvar-result-index)
+                (atj-gen-jlocvar-indexed src-jtype
+                                         jvar-result-base
+                                         jvar-result-index
+                                         expr)))
+            (mv block (jexpr-name var) jvar-result-index))))
+       (exprs (atj-adapt-expr-to-types-aux expr 0 (len src-types)))
+       (exprs (atj-adapt-exprs-to-types exprs src-types dst-types)))
+    (mv block
+        (jexpr-smethod dst-jtype
+                       *atj-mv-factory-method-name*
+                       exprs)
+        jvar-result-index))
+
+  :prepwork
+  ((define atj-adapt-expr-to-types-aux ((expr jexprp) (i natp) (n natp))
+     :returns (exprs jexpr-listp)
+     (if (or (not (mbt (natp i)))
+             (not (mbt (natp n)))
+             (>= i n))
+         nil
+       (cons (jexpr-get-field expr (atj-gen-shallow-mv-field-name i))
+             (atj-adapt-expr-to-types-aux expr (1+ i) n)))
+     :measure (nfix (- n i))
+     ///
+     (defret len-of-atj-adapt-expr-to-types-aux
+       (equal (len exprs)
+              (if (and (natp n) (natp i))
+                  (nfix (- n i))
+                0))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1303,7 +1490,7 @@
    (xdoc::p
     "This function is used to generate
      Java array creation expressions with initializers
-     from terms @('(<T>-array (list ...))'),
+     from terms @('(<T>-array-with-comps (list ...))'),
      where @('<T>') is a Java primitive type.
      In this case, we want to retrieve the elements of the list
      and use the corresponding Java expressions for the array initializer."))
@@ -1364,14 +1551,16 @@
      with a modified destination type."))
   (b* (((when (endp terms)) nil)
        (term (car terms))
-       ((mv term src-type dst-type) (atj-type-unwrap-term term))
+       ((mv term src-types dst-types) (atj-type-unwrap-term term))
        ((unless term) nil) ; to prove ACL2-COUNT theorem below
-       ((unless (eq dst-type :avalue))
+       ((unless (equal dst-types (list :avalue)))
         (raise "Internal error: ~
                 the term ~x0 is wrapped with a conversion function ~
-                from type ~x1 to type ~x2."
-               term src-type dst-type))
-       (new-term (atj-type-wrap-term term src-type new-dst-type))
+                from types ~x1 to types ~x2."
+               term src-types dst-types))
+       (new-term (atj-type-wrap-term term
+                                     src-types
+                                     (list new-dst-type)))
        (new-terms (atj-type-rewrap-array-initializer-elements (cdr terms)
                                                               new-dst-type)))
     (cons new-term new-terms))
@@ -1386,25 +1575,167 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-check-marked-annotated-mv-let-call ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (mv-var symbolp)
+               (mv-term pseudo-termp)
+               (vars symbol-listp)
+               (indices nat-listp)
+               (body-term pseudo-termp))
+  :short "Recognize translated @(tsee mv-let)s after pre-translation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type annotation pre-translation step recognizes @(tsee mv-let)s
+     and transforms them as explained in @(tsee atj-type-annotate-term).
+     the variable reuse pre-translation step additionally marks the variables,
+     and the variable renaming pre-translation step
+     may change their (unmarked, unannotated) names.
+     So the resulting term should have the form")
+   (xdoc::codeblock
+    "([reqinf>reqinf]"
+    " ((lambda ([m][types]mv)"
+    "          ([reqinf>reqinf]"
+    "           ((lambda ([m1][type1]var1 ... [mn][typen]varn)"
+    "                    ([...>reqinf] body-term))"
+    "            ([AV>type1] (mv-nth ([AI>AI] '0)"
+    "                                ([types>types] [m][types]mv)))"
+    "            ..."
+    "            ([AV>typen] (mv-nth ([AI>AI] 'n-1)"
+    "                                ([types>types] [m][types]mv))))))"
+    "  ([types>types] mv-term)))")
+   (xdoc::p
+    "where @('[m]'), @('[m1]'), ..., @('[mn]') are new/old markings,
+     and where @('mv') may not be the symbol `@('mv')' but some other symbol.
+     Because of the pre-translation steps that removes unused variables,
+     the formals and arguments of the inner lambda
+     may be fewer than the elements of @('types');
+     i.e. some @(tsee mv-nth) indices may be skipped.")
+   (xdoc::p
+    "This code recognizes terms of the form above,
+     returning some of the constituents if successful.
+     The @('mv-var') result is @('[m][types]mv'),
+     i.e. the marked and annotated multi-value variable.
+     The @('mv-term') result is @('([types>types] mv-term)'),
+     i.e. the wrapped multi-value term.
+     The @('vars') result is @('([m1][type1]var1 ... [mn][typen]varn)')
+     (possibly skipping some indices),
+     i.e. the list of formals of the inner lambda expression,
+     all marked and annotated.
+     The @('indices') result is the ordered list of @(tsee mv-nth) indices
+     actually present; these are 0-based.
+     The @('body-term') result is @('([...>reqinf] body-term)'),
+     i.e. the wrapped body of the inner lambda expression.
+     The term and variable results are marked/annotated/wrapped so that
+     they can be treated uniformly by the code generation functions."))
+  (b* (((mv outer-lambda-call reqinf reqinf2) (atj-type-unwrap-term term))
+       ((unless (equal reqinf reqinf2)) (mv nil nil nil nil nil nil))
+       ((mv okp mv-var wrapped-inner-lambda-call mv-term)
+        (check-unary-lambda-call outer-lambda-call))
+       ((unless okp) (mv nil nil nil nil nil nil))
+       ((mv mv-var-unmarked &) (atj-unmark-var mv-var))
+       ((mv & types) (atj-type-unannotate-var mv-var-unmarked))
+       ((unless (> (len types) 1)) (mv nil nil nil nil nil nil))
+       ((mv & src-types dst-types) (atj-type-unwrap-term mv-term))
+       ((unless (and (equal src-types types)
+                     (equal dst-types types)))
+        (raise "Internal error: malformed term ~x0." term)
+        (mv nil nil nil nil nil nil))
+       ((mv inner-lambda-call src-types dst-types)
+        (atj-type-unwrap-term wrapped-inner-lambda-call))
+       ((unless (and (equal src-types reqinf)
+                     (equal dst-types reqinf))) (mv nil nil nil nil nil nil))
+       ((mv okp vars body-term args) (check-lambda-call inner-lambda-call))
+       ((unless okp)
+        (raise "Internal error: malformed term ~x0." term)
+        (mv nil nil nil nil nil nil))
+       ((mv & & dst-types) (atj-type-unwrap-term body-term))
+       ((unless (equal dst-types reqinf))
+        (raise "Internal error: malformed term ~x0." term)
+        (mv nil nil nil nil nil nil))
+       (indices (atj-check-marked-annotated-mv-let-call-aux
+                 args vars types mv-var)))
+    (mv t mv-var mv-term vars indices body-term))
+  :guard-hints (("Goal"
+                 :in-theory
+                 (enable acl2::len-of-check-lambda-calls.formals-is-args)))
+
+  :prepwork
+
+  ((define atj-check-marked-annotated-mv-let-call-aux ((args pseudo-term-listp)
+                                                       (vars symbol-listp)
+                                                       (types atj-type-listp)
+                                                       (mv-var symbolp))
+     :guard (and (= (len vars) (len args))
+                 (consp types))
+     :returns (indices nat-listp)
+     (b* (((when (endp args)) nil)
+          ((mv arg arg-src arg-dst) (atj-type-unwrap-term (car args)))
+          ((unless (and (not (variablep arg))
+                        (not (fquotep arg))
+                        (eq (ffn-symb arg) 'mv-nth)
+                        (= (len (fargs arg)) 2)
+                        (equal (fargn arg 2)
+                               (atj-type-wrap-term mv-var types types))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          ((mv index index-src index-dst) (atj-type-unwrap-term (fargn arg 1)))
+          ((unless (and (quotep index)
+                        (equal index-src (list :ainteger))
+                        (equal index-dst (list :ainteger))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          (index (unquote-term index))
+          ((unless (integer-range-p 0 (len types) index))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          ((unless (and (equal arg-src (list :avalue))
+                        (equal arg-dst (list (nth index types)))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0))
+          ((mv var &) (atj-unmark-var (car vars)))
+          ((mv & var-types) (atj-type-unannotate-var var))
+          ((unless (equal var-types (list (nth index types))))
+           (raise "Internal error: malformed term ~x0." (car args))
+           (repeat (len args) 0)))
+       (cons index (atj-check-marked-annotated-mv-let-call-aux (cdr args)
+                                                               (cdr vars)
+                                                               types
+                                                               mv-var)))
+
+     :prepwork
+
+     ((local (include-book "std/typed-lists/nat-listp" :dir :system))
+
+      (defrulel verify-guards-lemma
+        (implies (and (pseudo-termp term)
+                      (not (variablep term))
+                      (not (fquotep term)))
+                 (pseudo-termp (fargn term 1)))
+        :expand ((pseudo-termp term))))
+
+     ///
+
+     (defret len-of-atj-check-marked-annotated-mv-let-call-aux
+       (equal (len indices) (len args)))))
+
+  ///
+
+  (defret len-of-atj-check-marked-annotated-mv-let.vars/indices
+    (equal (len indices)
+           (len vars))
+    :hints (("Goal"
+             :in-theory
+             (enable acl2::len-of-check-lambda-calls.formals-is-args))))
+
+  (in-theory (disable len-of-atj-check-marked-annotated-mv-let.vars/indices)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-gen-shallow-term-fns
   :short "Functions to generate shallowly embedded ACL2 terms."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "In the shallow embedding approach,
-     the actual arguments of an ACL2 function or lambda expression
-     are calculated by the generated Java code,
-     and then the (shallowly embedded) ACL2 function or lambda expression
-     is called on them.
-     However, for the non-strict function @(tsee if)
-     and the non-strict ``pseudo-function'' @('or')
-     (see the documentation of AIJ for details on the latter),
-     the generated Java code follows a different strategy,
-     in order to realize the required non-strictness.
-     This strategy involves generating Java local variables
-     to store results of arguments of non-strict ACL2 functions.
-     The base name to use for these variables
-     is an argument of these code generation functions.")
    (xdoc::p
     "These code generation functions assume that the ACL2 terms
      have been type-annotated via @(tsee atj-type-annotate-term).
@@ -1414,7 +1745,15 @@
      If the @(':guards') input is @('nil'),
      then all the type annotations consist of
      the type @(':avalue') of all ACL2 values,
-     i.e. it is as if there were no types."))
+     i.e. it is as if there were no types.")
+   (xdoc::p
+    "Our code generation strategy involves
+     generating Java local variables
+     to store results of arguments of ACL2's non-strict @(tsee if).
+     The base name to use for these variables
+     is an argument of these code generation functions;
+     the index to make these variables unique
+     is threaded through the code generation functions."))
 
   (define atj-gen-shallow-if-test ((test pseudo-termp)
                                    (jvar-result-base stringp)
@@ -1463,9 +1802,9 @@
        and return an expression that compares it with
        (the Java representation of) @('nil')."))
     (b* ((jbool? ; non-NIL iff TEST has the form explained above
-          (b* (((mv test src-type dst-type) (atj-type-unwrap-term test))
-               ((unless (and (eq src-type :asymbol)
-                             (eq dst-type :asymbol)))
+          (b* (((mv test src-types dst-types) (atj-type-unwrap-term test))
+               ((unless (and (equal src-types (list :asymbol))
+                             (equal dst-types (list :asymbol))))
                 nil)
                ((unless (and (consp test)
                              (eq (ffn-symb test)
@@ -1475,21 +1814,23 @@
                (test (fargn test 1))
                ((unless (and (consp test)
                              (eq (ffn-symb test)
-                                 (atj-type-conv :jboolean :jboolean))
+                                 (atj-type-conv (list :jboolean)
+                                                (list :jboolean)))
                              (int= (len (fargs test)) 1))) ; always true
                 nil))
             test))
          ((mv block
               expr
-              jvar-result-index) (atj-gen-shallow-term (or jbool? test)
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term (or jbool? test)
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          (expr (if jbool?
                    expr
                  (jexpr-binary (jbinop-ne)
@@ -1504,7 +1845,7 @@
   (define atj-gen-shallow-if-app ((test pseudo-termp)
                                   (then pseudo-termp)
                                   (else pseudo-termp)
-                                  (type atj-typep)
+                                  (types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -1513,7 +1854,8 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1568,37 +1910,40 @@
        see @(tsee atj-gen-shallow-if-test) for details."))
     (b* (((mv test-block
               test-expr
-              jvar-result-index) (atj-gen-shallow-if-test test
-                                                          jvar-result-base
-                                                          jvar-result-index
-                                                          pkg-class-names
-                                                          fn-method-names
-                                                          curr-pkg
-                                                          qpairs
-                                                          guards$
-                                                          wrld))
+              jvar-result-index)
+          (atj-gen-shallow-if-test test
+                                   jvar-result-base
+                                   jvar-result-index
+                                   pkg-class-names
+                                   fn-method-names
+                                   curr-pkg
+                                   qpairs
+                                   guards$
+                                   wrld))
          ((mv then-block
               then-expr
-              jvar-result-index) (atj-gen-shallow-term then
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term then
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          ((mv else-block
               else-expr
-              jvar-result-index) (atj-gen-shallow-term else
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term else
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          ((when (and *atj-gen-cond-exprs*
                      (null then-block)
                      (null else-block)))
@@ -1609,8 +1954,11 @@
             (mv block
                 expr
                 jvar-result-index)))
-         (jtype (atj-type-to-jtype type))
-         ((mv result-locvar-block jvar-result jvar-result-index)
+         (type (atj-type-list-to-type/acons types))
+         (jtype (atj-type-to-jitype type))
+         ((mv result-locvar-block
+              jvar-result
+              jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
                                    jvar-result-base
                                    jvar-result-index
@@ -1639,7 +1987,7 @@
 
   (define atj-gen-shallow-or-app ((first pseudo-termp)
                                   (second pseudo-termp)
-                                  (type atj-typep)
+                                  (types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -1648,7 +1996,8 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1674,27 +2023,30 @@
       "and the Java expression @('<result>')."))
     (b* (((mv first-block
               first-expr
-              jvar-result-index) (atj-gen-shallow-term first
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term first
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
          ((mv second-block
               second-expr
-              jvar-result-index) (atj-gen-shallow-term second
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       guards$
-                                                       wrld))
-         (jtype (atj-type-to-jtype type))
+              jvar-result-index)
+          (atj-gen-shallow-term second
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
+         (type (atj-type-list-to-type/acons types))
+         (jtype (atj-type-to-jitype type))
          ((mv result-locvar-block jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
                                    jvar-result-base
@@ -1724,8 +2076,8 @@
   (define atj-gen-shallow-jprim-constr-app
     ((fn (member-eq fn *atj-java-primitive-constructors*))
      (arg pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -1733,7 +2085,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1766,7 +2120,9 @@
        to be examined."))
     (b* (((mv arg & &) (atj-type-unwrap-term arg))
          ((unless arg) ; for termination proof
-          (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+         (src-type (atj-type-list-to-type src-types))
+         (dst-type (atj-type-list-to-type dst-types)))
       (if (quotep arg)
           (cond ((eq fn 'boolean-value)
                  (b* ((boolean (unquote-term arg))
@@ -1864,8 +2220,8 @@
   (define atj-gen-shallow-jprim-unop-app
     ((fn (member-eq fn *atj-java-primitive-unops*))
      (operand pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -1873,7 +2229,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1899,15 +2257,16 @@
        we may revisit this decision in the future."))
     (b* (((mv operand-block
               operand-expr
-              jvar-result-index) (atj-gen-shallow-term operand
-              jvar-result-base
-              jvar-result-index
-              pkg-class-names
-              fn-method-names
-              curr-pkg
-              qpairs
-              t ; GUARDS$
-              wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term operand
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          (expr (if (member-eq fn '(boolean-not
                                    int-plus
                                    long-plus
@@ -1948,7 +2307,9 @@
                    (jexpr-cast jtype operand-expr))))
          (block operand-block))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -1959,8 +2320,8 @@
     ((fn (member-eq fn *atj-java-primitive-binops*))
      (left pseudo-termp)
      (right pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -1968,7 +2329,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -1989,26 +2352,28 @@
        whose operator corresponds to the function."))
     (b* (((mv left-block
               left-expr
-              jvar-result-index) (atj-gen-shallow-term left
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term left
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          ((mv right-block
               right-expr
-              jvar-result-index) (atj-gen-shallow-term right
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term right
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          (binop (case fn
                   (boolean-and (jbinop-and))
                   (boolean-xor (jbinop-xor))
@@ -2058,7 +2423,9 @@
          (expr (jexpr-binary binop left-expr right-expr))
          (block (append left-block right-block)))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -2070,8 +2437,8 @@
   (define atj-gen-shallow-jprimarr-read-app
     ((array pseudo-termp)
      (index pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2079,7 +2446,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2099,30 +2468,34 @@
        and generate a Java array access expression."))
     (b* (((mv array-block
               array-expr
-              jvar-result-index) (atj-gen-shallow-term array
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term array
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          ((mv index-block
               index-expr
-              jvar-result-index) (atj-gen-shallow-term index
-                                                       jvar-result-base
-                                                       jvar-result-index
-                                                       pkg-class-names
-                                                       fn-method-names
-                                                       curr-pkg
-                                                       qpairs
-                                                       t ; GUARDS$
-                                                       wrld))
+              jvar-result-index)
+          (atj-gen-shallow-term index
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
          (block (append array-block index-block))
          (expr (jexpr-array array-expr index-expr)))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -2133,8 +2506,8 @@
 
   (define atj-gen-shallow-jprimarr-length-app
     ((array pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2142,7 +2515,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2183,7 +2558,9 @@
                                          ".length"))
                  (jexpr-field array-expr "length"))))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -2193,8 +2570,8 @@
   (define atj-gen-shallow-jprimarr-constr-app
     ((fn (member-eq fn *atj-java-primarray-constructors*))
      (length pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2202,7 +2579,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2244,7 +2623,9 @@
                   (otherwise (impossible))))
          (expr (jexpr-newarray jtype length-expr)))
       (mv block
-          (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
           jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -2254,8 +2635,8 @@
   (define atj-gen-shallow-jprimarr-constr-init-app
     ((fn (member-eq fn *atj-java-primarray-constructors-init*))
      (arg pseudo-termp)
-     (src-type atj-typep)
-     (dst-type atj-typep)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
      (jvar-result-base stringp)
      (jvar-result-index posp)
      (pkg-class-names string-string-alistp)
@@ -2263,7 +2644,9 @@
      (curr-pkg stringp)
      (qpairs cons-pos-alistp)
      (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2333,7 +2716,9 @@
                         (otherwise (impossible))))
                (expr (jexpr-newarray-init jtype exprs)))
             (mv block
-                (atj-adapt-expr-to-type expr src-type dst-type)
+                (atj-adapt-expr-to-type expr
+                                        (atj-type-list-to-type src-types)
+                                        (atj-type-list-to-type dst-types))
                 jvar-result-index))
         (b* (((mv block
                   expr
@@ -2357,7 +2742,9 @@
                      (otherwise (impossible))))
              (expr (atj-adapt-expr-to-type expr :avalue type)))
           (mv block
-              (atj-adapt-expr-to-type expr src-type dst-type)
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
               jvar-result-index))))
     ;; 2nd component is non-0
     ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
@@ -2365,8 +2752,8 @@
                                1))
 
   (define atj-gen-shallow-mv-app ((args pseudo-term-listp)
-                                  (src-type atj-typep)
-                                  (dst-type atj-typep)
+                                  (src-types atj-type-listp)
+                                  (dst-types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -2375,7 +2762,9 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-result-index posp :hyp (posp jvar-result-index)))
@@ -2409,6 +2798,8 @@
          (block (flatten blocks))
          (expr (jexpr-smethod *aij-type-value* "makeList" exprs))
          (expr (jexpr-cast *aij-type-cons* expr))
+         (src-type (atj-type-list-to-type/acons src-types))
+         (dst-type (atj-type-list-to-type/acons dst-types))
          (expr (atj-adapt-expr-to-type expr src-type dst-type)))
       (mv block expr jvar-result-index))
     ;; 2nd component is non-0
@@ -2418,8 +2809,8 @@
 
   (define atj-gen-shallow-fn-app ((fn pseudo-termfnp)
                                   (args pseudo-term-listp)
-                                  (src-type atj-typep)
-                                  (dst-type atj-typep)
+                                  (src-types atj-type-listp)
+                                  (dst-types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -2428,7 +2819,9 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (and (not (equal curr-pkg ""))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg ""))
                 (or (not (pseudo-lambdap fn))
                     (equal (len (lambda-formals fn))
                            (len args))))
@@ -2473,11 +2866,11 @@
                      (int= (len args) 3))) ; should be always true
           (b* ((first (first args))
                (second (second args))
-               (athird (third args)))
+               (third (third args)))
             (if (equal first second)
                 (atj-gen-shallow-or-app first
-                                        athird
-                                        dst-type ; = SRC-TYPE
+                                        third
+                                        dst-types ; = SRC-TYPES
                                         jvar-result-base
                                         jvar-result-index
                                         pkg-class-names
@@ -2488,8 +2881,8 @@
                                         wrld)
               (atj-gen-shallow-if-app first
                                       second
-                                      athird
-                                      dst-type ; = SRC-TYPE
+                                      third
+                                      dst-types ; = SRC-TYPES
                                       jvar-result-base
                                       jvar-result-index
                                       pkg-class-names
@@ -2503,8 +2896,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-constr-app fn
                                             (car args)
-                                            src-type
-                                            dst-type
+                                            src-types
+                                            dst-types
                                             jvar-result-base
                                             jvar-result-index
                                             pkg-class-names
@@ -2517,8 +2910,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-unop-app fn
                                           (car args)
-                                          src-type
-                                          dst-type
+                                          src-types
+                                          dst-types
                                           jvar-result-base
                                           jvar-result-index
                                           pkg-class-names
@@ -2532,8 +2925,8 @@
           (atj-gen-shallow-jprim-binop-app fn
                                            (first args)
                                            (second args)
-                                           src-type
-                                           dst-type
+                                           src-types
+                                           dst-types
                                            jvar-result-base
                                            jvar-result-index
                                            pkg-class-names
@@ -2546,8 +2939,8 @@
                      (int= (len args) 2))) ; should be always true
           (atj-gen-shallow-jprimarr-read-app (first args)
                                              (second args)
-                                             src-type
-                                             dst-type
+                                             src-types
+                                             dst-types
                                              jvar-result-base
                                              jvar-result-index
                                              pkg-class-names
@@ -2559,8 +2952,8 @@
                      (member-eq fn *atj-java-primarray-lengths*)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-length-app (car args)
-                                               src-type
-                                               dst-type
+                                               src-types
+                                               dst-types
                                                jvar-result-base
                                                jvar-result-index
                                                pkg-class-names
@@ -2573,8 +2966,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-app fn
                                                (car args)
-                                               src-type
-                                               dst-type
+                                               src-types
+                                               dst-types
                                                jvar-result-base
                                                jvar-result-index
                                                pkg-class-names
@@ -2587,8 +2980,8 @@
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-init-app fn
                                                     (car args)
-                                                    src-type
-                                                    dst-type
+                                                    src-types
+                                                    dst-types
                                                     jvar-result-base
                                                     jvar-result-index
                                                     pkg-class-names
@@ -2598,8 +2991,8 @@
                                                     wrld))
          ((when (eq fn 'mv))
           (atj-gen-shallow-mv-app args
-                                  src-type
-                                  dst-type
+                                  src-types
+                                  dst-types
                                   jvar-result-base
                                   jvar-result-index
                                   pkg-class-names
@@ -2627,6 +3020,8 @@
                                               fn-method-names
                                               curr-pkg)
                       arg-exprs))
+               (src-type (atj-type-list-to-type/acons src-types))
+               (dst-type (atj-type-list-to-type/acons dst-types))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
             (mv (flatten arg-blocks)
                 expr
@@ -2638,8 +3033,8 @@
                                   (lambda-body fn)
                                   arg-blocks
                                   arg-exprs
-                                  src-type
-                                  dst-type
+                                  src-types
+                                  dst-types
                                   jvar-result-base
                                   jvar-result-index
                                   pkg-class-names
@@ -2665,8 +3060,8 @@
                                   (body pseudo-termp)
                                   (arg-blocks jblock-listp)
                                   (arg-exprs jexpr-listp)
-                                  (src-type atj-typep)
-                                  (dst-type atj-typep)
+                                  (src-types atj-type-listp)
+                                  (dst-types atj-type-listp)
                                   (jvar-result-base stringp)
                                   (jvar-result-index posp)
                                   (pkg-class-names string-string-alistp)
@@ -2675,7 +3070,9 @@
                                   (qpairs cons-pos-alistp)
                                   (guards$ booleanp)
                                   (wrld plist-worldp))
-    :guard (and (int= (len arg-blocks) (len formals))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (int= (len arg-blocks) (len formals))
                 (int= (len arg-exprs) (len formals))
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp :hyp (jblock-listp arg-blocks))
@@ -2694,15 +3091,18 @@
                                                   arg-exprs))
          ((mv body-block
               body-expr
-              jvar-result-index) (atj-gen-shallow-term body
-              jvar-result-base
-              jvar-result-index
-              pkg-class-names
-              fn-method-names
-              curr-pkg
-              qpairs
-              guards$
-              wrld)))
+              jvar-result-index)
+          (atj-gen-shallow-term body
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
+         (src-type (atj-type-list-to-type/acons src-types))
+         (dst-type (atj-type-list-to-type/acons dst-types)))
       (mv (append let-block body-block)
           (atj-adapt-expr-to-type body-expr src-type dst-type)
           jvar-result-index))
@@ -2743,14 +3143,18 @@
       "If the ACL2 term is a quoted constant,
        we represent it as its value.
        We wrap the resulting expression with a Java conversion, if needed."))
-    (b* (((mv term src-type dst-type) (atj-type-unwrap-term term))
+    (b* (((mv term src-types dst-types) (atj-type-unwrap-term term))
          ((unless term) ; for termination proof
           (mv nil (jexpr-name "dummy") jvar-result-index))
          ((when (variablep term))
           (b* (((mv var &) (atj-unmark-var term))
                ((mv var &) (atj-type-unannotate-var var))
                (expr (jexpr-name (symbol-name var)))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+               (expr (atj-adapt-expr-to-type expr
+                                             (atj-type-list-to-type/acons
+                                              src-types)
+                                             (atj-type-list-to-type/acons
+                                              dst-types))))
             (mv nil expr jvar-result-index)))
          ((when (fquotep term))
           (b* ((value (unquote-term term))
@@ -2758,12 +3162,15 @@
                                             qpairs
                                             pkg-class-names
                                             curr-pkg))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
+               (expr
+                (atj-adapt-expr-to-type expr
+                                        (atj-type-list-to-type src-types)
+                                        (atj-type-list-to-type dst-types))))
             (mv nil expr jvar-result-index))))
       (atj-gen-shallow-fn-app (ffn-symb term)
                               (fargs term)
-                              src-type
-                              dst-type
+                              src-types
+                              dst-types
                               jvar-result-base
                               jvar-result-index
                               pkg-class-names
@@ -2795,26 +3202,28 @@
         (mv nil nil jvar-result-index)
       (b* (((mv first-block
                 first-expr
-                jvar-result-index) (atj-gen-shallow-term (car terms)
-                jvar-result-base
-                jvar-result-index
-                pkg-class-names
-                fn-method-names
-                curr-pkg
-                qpairs
-                guards$
-                wrld))
+                jvar-result-index)
+            (atj-gen-shallow-term (car terms)
+                                  jvar-result-base
+                                  jvar-result-index
+                                  pkg-class-names
+                                  fn-method-names
+                                  curr-pkg
+                                  qpairs
+                                  guards$
+                                  wrld))
            ((mv rest-blocks
                 rest-exprs
-                jvar-result-index) (atj-gen-shallow-terms (cdr terms)
-                jvar-result-base
-                jvar-result-index
-                pkg-class-names
-                fn-method-names
-                curr-pkg
-                qpairs
-                guards$
-                wrld)))
+                jvar-result-index)
+            (atj-gen-shallow-terms (cdr terms)
+                                   jvar-result-base
+                                   jvar-result-index
+                                   pkg-class-names
+                                   fn-method-names
+                                   curr-pkg
+                                   qpairs
+                                   guards$
+                                   wrld)))
         (mv (cons first-block rest-blocks)
             (cons first-expr rest-exprs)
             jvar-result-index)))
@@ -2895,18 +3304,14 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type (atj-type-to-jtype out-type))
+                  :result (jresult-type (atj-type-to-jitype out-type))
                   :name method-name
                   :params (atj-gen-paramlist
                            method-param-names
-                           (atj-type-list-to-jtype-list in-types))
+                           (atj-type-list-to-jitype-list in-types))
                   :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body))
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
-  :guard-hints (("Goal"
-                 :in-theory (disable
-                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
-                             atj-maybe-typep-when-atj-typep))))
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3095,14 +3500,17 @@
                 does not match the number ~x2 of input types of ~x1."
                (len formals) fn (len in-types))
         (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
+       ((unless (consp out-types))
+        (raise "Internal error: no output types ~x0 for ~x1." out-types fn)
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
        ((mv formals body)
         (atj-pre-translate fn formals body in-types out-types nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
-       ((mv formals &) (atj-type-unannotate-vars formals))
+       (formals (atj-type-unannotate-vars formals))
        (method-params (atj-gen-paramlist
                        (symbol-name-lst formals)
-                       (atj-type-list-to-jtype-list in-types)))
+                       (atj-type-list-to-jitype-list in-types)))
        ((mv body-block body-expr &)
         (atj-gen-shallow-term body
                               "$result" 1
@@ -3131,17 +3539,13 @@
                              :synchronized? nil
                              :native? nil
                              :strictfp? nil
-                             :result (jresult-type (atj-type-to-jtype out-type))
+                             :result (jresult-type (atj-type-to-jitype out-type))
                              :name method-name
                              :params method-params
                              :throws (list *aij-class-undef-pkg-exc*)
                              :body method-body)))
     (mv method qconsts))
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
-  :guard-hints (("Goal"
-                 :in-theory (disable
-                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
-                             atj-maybe-typep-when-atj-typep))))
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3413,7 +3817,7 @@
         (ec-call (jmethod-fix :this-is-irrelevant)))
        (method-params (atj-gen-paramlist
                        method-param-names
-                       (atj-type-list-to-jtype-list in-types)))
+                       (atj-type-list-to-jitype-list in-types)))
        (class (atj-get-pkg-class-name fn-pkg pkg-class-names))
        (method-body (jblock-return
                      (jexpr-smethod (jtype-class class)
@@ -3426,16 +3830,12 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type (atj-type-to-jtype out-type))
+                  :result (jresult-type (atj-type-to-jitype out-type))
                   :name method-name
                   :params method-params
                   :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body))
-  :prepwork ((local (include-book "std/lists/len" :dir :system)))
-  :guard-hints (("Goal"
-                 :in-theory (disable
-                             atj-maybe-typep-of-car-when-atj-maybe-type-listp
-                             atj-maybe-typep-when-atj-typep))))
+  :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3791,6 +4191,260 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-mv-fields ((types atj-type-listp))
+  :returns (fields jfield-listp)
+  :short "Generate the fields of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     Each of these classes has a public instance field
+     for each component type.
+     The field is not private so that it can be quickly accessed
+     when we translate calls of @(tsee mv-nth) to Java;
+     this translation is not supported yet,
+     but we are in the process of building
+     more direct support for @(tsee mv) values
+     in the Java code generated by ATJ.
+     The field is public
+     for the reason explained in @(tsee atj-gen-shallow-mv-class)."))
+  (atj-gen-shallow-mv-fields-aux types 0)
+
+  :prepwork
+  ((define atj-gen-shallow-mv-fields-aux ((types atj-type-listp) (index natp))
+     :returns (fields jfield-listp)
+     (b* (((when (endp types)) nil)
+          (field (make-jfield :access (jaccess-public)
+                              :static? nil
+                              :final? nil
+                              :transient? nil
+                              :volatile? nil
+                              :type (atj-type-to-jitype (car types))
+                              :name (atj-gen-shallow-mv-field-name index)
+                              :init? nil))
+          (fields (atj-gen-shallow-mv-fields-aux (cdr types) (1+ index))))
+       (cons field fields)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-params ((types atj-type-listp))
+  :returns (params jparam-listp)
+  :short "Generate the parameters of the factory method
+          of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     Each such class has a static factory method
+     that re-uses a singleton instance of the class.
+     The names of this method's parameter are the same as
+     the corresponding fields."))
+  (atj-gen-shallow-mv-params-aux types 0)
+
+  :prepwork
+  ((define atj-gen-shallow-mv-params-aux ((types atj-type-listp) (index natp))
+     :returns (params jparam-listp)
+     (b* (((when (endp types)) nil)
+          (type (car types))
+          (param (make-jparam :final? nil
+                              :type (atj-type-to-jitype type)
+                              :name (atj-gen-shallow-mv-field-name index)))
+          (params (atj-gen-shallow-mv-params-aux (cdr types) (1+ index))))
+       (cons param params)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-mv-singleton-field-name*
+  :short "Name of the private static field that stores
+          the singleton instance of an @(tsee mv) class."
+  :long
+  (xdoc::topstring-p
+   "All the @(tsee mv) classes use the same name for this field.")
+  "singleton")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-asgs ((types atj-type-listp))
+  :returns (block jblockp)
+  :short "Generate the assignments in the factory method
+          of the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     Each such class has a static factory method
+     that re-uses a singleton instance of the class.
+     The body of this method assigns the parameters
+     to the corresponding fields of the singleton instance,
+     which is stored in a private static field."))
+  (atj-gen-shallow-mv-asgs-aux types 0)
+
+  :prepwork
+  ((define atj-gen-shallow-mv-asgs-aux ((types atj-type-listp) (index natp))
+     :returns (block jblockp)
+     (b* (((when (endp types)) nil)
+          (param-name (atj-gen-shallow-mv-field-name index))
+          (field-var (jexpr-name (str::cat *atj-mv-singleton-field-name*
+                                           "."
+                                           param-name)))
+          (asg (jstatem-expr (jexpr-binary (jbinop-asg)
+                                           field-var
+                                           (jexpr-name param-name))))
+          (asgs (atj-gen-shallow-mv-asgs-aux (cdr types) (1+ index))))
+       (cons asg asgs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-class ((types atj-type-listp))
+  :guard (>= (len types) 2)
+  :returns (mv (class-name stringp)
+               (class jclassp))
+  :short "Generate the @(tsee mv) class for the given types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values,
+     a different class for each tuple of types of interest.
+     This is a public static final class, nested in the main class.
+     It has a public instance field for each component type,
+     and a private static final field that stores a singleton instance
+     created in this field's initializer.
+     It also has a package-private static factory method
+     that reuses the singleton instance
+     by assigning the arguments to the fields
+     and then returning the singleton instance.
+     This way, we can build an @(tsee mv) value
+     without creating a new Java object.")
+   (xdoc::p
+    "The class and its instance fields are public because
+     external Java code that calls the generated Java code
+     must be able to access the results of @(tsee mv) functions.
+     The factory method is not meant to be called by external Java code,
+     but only internally by the generated Java code;
+     it cannot be private though, only package-private
+     (ideally, it would be accessible only within the generated main class,
+     but Java does not provide that access control option).")
+   (xdoc::p
+    "Ideally, we would like to generate
+     one generic Java class with 2 type parameters for 2-tuples of MV values,
+     one generic Java class with 3 type parameters for 3-tuples of MV values,
+     and so on.
+     However, Java's restriction on generic types prevent us from doing that:
+     the factory method, being static, cannot reference type parameters."))
+  (b* ((name (atj-gen-shallow-mv-class-name types))
+       (instance-fields (atj-gen-shallow-mv-fields types))
+       (static-field (make-jfield :access (jaccess-private)
+                                  :static? t
+                                  :final? t
+                                  :transient? nil
+                                  :volatile? nil
+                                  :type (jtype-class name)
+                                  :name *atj-mv-singleton-field-name*
+                                  :init? (jexpr-newclass (jtype-class name)
+                                                         nil)))
+       (method-body (append (atj-gen-shallow-mv-asgs types)
+                            (jblock-return
+                             (jexpr-name *atj-mv-singleton-field-name*))))
+       (method (make-jmethod :access (jaccess-default)
+                             :abstract? nil
+                             :static? t
+                             :final? nil
+                             :synchronized? nil
+                             :native? nil
+                             :strictfp? nil
+                             :result (jresult-type (jtype-class name))
+                             :name *atj-mv-factory-method-name*
+                             :params (atj-gen-shallow-mv-params types)
+                             :throws nil
+                             :body method-body))
+       (class (make-jclass :access (jaccess-public)
+                           :abstract? nil
+                           :static? t
+                           :final? t
+                           :strictfp? nil
+                           :name name
+                           :superclass? nil
+                           :superinterfaces nil
+                           :body (append (jfields-to-jcbody-elements
+                                          (append instance-fields
+                                                  (list static-field)))
+                                         (jmethods-to-jcbody-elements
+                                          (list method))))))
+    (mv name class)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-mv-classes ((typess atj-type-list-listp))
+  :guard (atj-gen-shallow-mv-classes-guard typess)
+  :returns (mv (class-names (and (string-listp class-names)
+                                 (equal (len class-names) (len typess))))
+               (classes (and (jclass-listp classes)
+                             (equal (len classes) (len typess)))))
+  :short "Lift @(tsee atj-gen-shallow-mv-class) to lists."
+  (b* (((when (endp typess)) (mv nil nil))
+       ((mv name class) (atj-gen-shallow-mv-class (car typess)))
+       ((mv names classes) (atj-gen-shallow-mv-classes (cdr typess))))
+    (mv (cons name names)
+        (cons class classes)))
+  :guard-hints (("Goal" :in-theory (enable atj-gen-shallow-mv-classes-guard)))
+  :prepwork
+  ((define atj-gen-shallow-mv-classes-guard ((typess atj-type-list-listp))
+     :returns (yes/no booleanp)
+     (or (endp typess)
+         (and (>= (len (car typess)) 2)
+              (atj-gen-shallow-mv-classes-guard (cdr typess)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-all-mv-classes ((fns-to-translate symbol-listp)
+                                        (guards$ booleanp)
+                                        (wrld plist-worldp))
+  :returns (mv (mv-class-names string-listp)
+               (classes jclass-listp))
+  :short "Generate all the @(tsee mv) classes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee atj-gen-shallow-mv-class-name),
+     we generate Java classes that represent @(tsee mv) values.
+     We generate one such class for each distinct function output type list
+     of length two or more.
+     We go through all the ACL2 functions to translate to Java,
+     and consider the output types of the function types
+     associated to each such function that returns two or more results.
+     For each such list of two or more output types,
+     we generate a distinct class.
+     We also return a list of the nmes of all these classes."))
+  (b* (((when (endp fns-to-translate)) (mv nil nil))
+       (fn (car fns-to-translate))
+       ((unless (and (not (member-eq fn *stobjs-out-invalid*))
+                     (>= (number-of-results+ fn wrld) 2)))
+        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld))
+       (fn-info (atj-get-function-type-info fn guards$ wrld))
+       (out-typess (atj-function-type-info->outputs fn-info))
+       (out-typess (remove-duplicates-equal out-typess))
+       ((unless (atj-gen-shallow-mv-classes-guard out-typess))
+        (raise "Internal error: ~
+                not all the output types ~x0 of ~x1, ~
+                which returns ~x2 results, ~
+                are lists of two or more types."
+               out-typess fn (number-of-results+ fn wrld))
+        (mv nil nil))
+       ((mv class-names classes) (atj-gen-shallow-mv-classes out-typess))
+       ((mv more-class-names more-classes)
+        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld)))
+    (mv (union-equal class-names more-class-names)
+        (union-equal classes more-classes)))
+  :verify-guards :after-returns
+  :prepwork ((local
+              (include-book "std/typed-lists/string-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-main-class ((pkgs string-listp)
                                     (fns-to-translate symbol-listp)
                                     (guards$ booleanp)
@@ -3815,14 +4469,14 @@
     "The class contains the initialization method,
      the methods to build the ACL2 packages,
      the classes that contain methods for the ACL2 functions,
+     the @(tsee mv) classes,
      the fields for quoted constants (only numbers and characters for now),
      and the static initializer.")
    (xdoc::p
     "It is critical that the static initializer
      comes before the fields for the quoted constants,
      so that the ACL2 environment is initialized
-     before the field initializers, which construct ACL2 values,
-     are executed;
+     before the field initializers, which construct ACL2 values, are executed;
      [JLS:12.4.1] says that the class initialization code
      is executed in textual order.")
    (xdoc::p
@@ -3854,7 +4508,9 @@
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates." fns+natives)
         (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
-       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
+       ((mv mv-class-names mv-classes)
+        (atj-gen-shallow-all-mv-classes fns-to-translate guards$ wrld))
+       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$ mv-class-names))
        (fn-method-names (atj-fns-to-methods fns+natives))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
        (qconsts (make-atj-qconstants :integers nil
@@ -3883,11 +4539,11 @@
                                                       qsymbols-by-pkg))
        ((run-when verbose$)
         (cw "~%Generate the Java classes for the ACL2 packages:~%"))
-       (classes (atj-gen-shallow-pkg-classes pkgs
-                                             fields-by-pkg
-                                             methods-by-pkg
-                                             pkg-class-names
-                                             verbose$))
+       (pkg-classes (atj-gen-shallow-pkg-classes pkgs
+                                                 fields-by-pkg
+                                                 methods-by-pkg
+                                                 pkg-class-names
+                                                 verbose$))
        ((run-when verbose$)
         (cw "~%Generate the main Java class.~%"))
        (qinteger-fields (atj-gen-shallow-number-fields qconsts.integers))
@@ -3909,7 +4565,8 @@
        (body-class (append (list (jcbody-element-init static-init))
                            (jmethods-to-jcbody-elements pkg-methods)
                            (jfields-to-jcbody-elements all-qconst-fields)
-                           (jclasses-to-jcbody-elements classes)
+                           (jclasses-to-jcbody-elements mv-classes)
+                           (jclasses-to-jcbody-elements pkg-classes)
                            (list (jcbody-element-member
                                   (jcmember-method init-method))))))
     (mv (make-jclass :access (jaccess-public)

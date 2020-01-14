@@ -417,6 +417,12 @@
                   (mod (expt a b) (prime))))
   :hints (("Goal" :in-theory (enable pow mul expt))))
 
+(defthmd pow-opener
+  (implies (posp n)
+           (equal (pow x n)
+                  (mul x (pow x (+ -1 n)))))
+  :hints (("Goal" :in-theory (enable pow))))
+
 ;;;
 ;;; inv
 ;;;
