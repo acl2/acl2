@@ -1224,8 +1224,8 @@ What you can enter at the SVTV-CHASE prompt:
 (define svtv-chase-repl (&key
                          (debugdata 'debugdata)
                          ((moddb moddb-ok) 'moddb)
-                         (svtv-chase-data 'svtv-chase-data)
                          (aliases 'aliases)
+                         (svtv-chase-data 'svtv-chase-data)
                          (state 'state))
   :guard (and (open-input-channel-p *standard-oi* :object state)
               ;; (svarlist-addr-p (svexlist-collect-vars (svex-alist-vals (debugdata->override-assigns debugdata))))
@@ -1242,7 +1242,9 @@ What you can enter at the SVTV-CHASE prompt:
   :measure (file-measure *standard-oi* state)
   (b* (((mv exitp svtv-chase-data state) (svtv-chase-rep))
        ((when exitp)
-        (cw! "~%Exiting SVTV-CHASE.  You may execute ~x0 to re-enter.~%" '(svtv-chase-repl))
+        (cw! "~%Exiting SVTV-CHASE.  You may execute ~x0 to re-enter or ~x1 ~
+              to change the simulation inputs.~%"
+             '(svtv-chase-repl) '(svtv-chase-update env))
         (mv svtv-chase-data state)))
     (svtv-chase-repl)))
 
@@ -1323,6 +1325,43 @@ What you can enter at the SVTV-CHASE prompt:
 ;;   :hints(("Goal" :in-theory (enable svex-design-flatten-and-normalize)))
 ;;   :fn svex-design-flatten-and-normalize)
 
+(define svtv-chase-update ((env svex-env-p)
+                           &key
+                           (debugdata 'debugdata)
+                           ((moddb moddb-ok) 'moddb)
+                           (aliases 'aliases)
+                           (svtv-chase-data 'svtv-chase-data)
+                           (state 'state))
+
+  :guard (and (open-input-channel-p *standard-oi* :object state)
+              ;; (svarlist-addr-p (svexlist-collect-vars (svex-alist-vals (debugdata->override-assigns debugdata))))
+              ;; (svarlist-addr-p (svar-map-vars (debugdata->delays debugdata)))
+              (< (debugdata->modidx debugdata) (moddb->nmods moddb))
+              (<= (moddb-mod-totalwires (debugdata->modidx debugdata) moddb)
+                  (aliass-length aliases))
+              ;; (svarlist-addr-p (aliases-vars aliases))
+              )
+  :guard-hints (("goal" :in-theory (enable debugdatap)
+                 :do-not-induct t)
+                ;; (and stable-under-simplificationp
+                ;;      '(:in-theory (enable chase-position-addr-p)))
+                )
+  :returns (mv new-debugdata new-svtv-chase-data new-state)
+  (b* ((evaldata (svtv-chase-inalist-to-evaldata env))
+       (svtv-chase-data (update-chase-stack nil svtv-chase-data))
+       (svtv-chase-data (update-chase-evaldata evaldata svtv-chase-data))
+       (svtv-chase-data (update-chase-smartp t svtv-chase-data))
+       (debugdata (set-debugdata->updates (make-fast-alist (debugdata->updates debugdata)) debugdata))
+       (debugdata (set-debugdata->override-assigns
+                   (make-fast-alist (debugdata->override-assigns debugdata)) debugdata))
+       (debugdata (set-debugdata->delays (make-fast-alist (debugdata->delays debugdata)) debugdata))
+       (debugdata (set-debugdata->nextstates (make-fast-alist (debugdata->nextstates debugdata)) debugdata))
+       (- 
+        (cw! "Entering SVTV-CHASE Read-Eval-Print Loop~%")
+        (cw! "Enter X to exit~%")
+        (cw! "Enter ? for command list~%"))
+       ((mv svtv-chase-data state) (svtv-chase-repl)))
+    (mv debugdata svtv-chase-data state)))
 
 (define svtv-chase ((x svtv-p)
                     (env svex-env-p)
@@ -1358,20 +1397,8 @@ What you can enter at the SVTV-CHASE prompt:
        ((when err)
         (mv debugdata moddb aliases svtv-chase-data state))
        (debugdata (svtv-debug-set-svtv x :rewrite rewrite))
-       (evaldata (svtv-chase-inalist-to-evaldata env))
-       (svtv-chase-data (update-chase-stack nil svtv-chase-data))
-       (svtv-chase-data (update-chase-evaldata evaldata svtv-chase-data))
-       (svtv-chase-data (update-chase-smartp t svtv-chase-data))
-       (debugdata (set-debugdata->updates (make-fast-alist (debugdata->updates debugdata)) debugdata))
-       (debugdata (set-debugdata->override-assigns
-                   (make-fast-alist (debugdata->override-assigns debugdata)) debugdata))
-       (debugdata (set-debugdata->delays (make-fast-alist (debugdata->delays debugdata)) debugdata))
-       (debugdata (set-debugdata->nextstates (make-fast-alist (debugdata->nextstates debugdata)) debugdata))
-       (- 
-        (cw! "Entering SVTV-CHASE Read-Eval-Print Loop~%")
-        (cw! "Enter X to exit~%")
-        (cw! "Enter ? for command list~%"))
-       ((mv svtv-chase-data state) (svtv-chase-repl)))
+       ((mv debugdata svtv-chase-data state)
+        (svtv-chase-update env)))
     (mv debugdata moddb aliases svtv-chase-data state)))
 
 
