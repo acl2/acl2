@@ -700,7 +700,8 @@
                                svl-module-alist-p
                                sv::svarlist-p
                                wire-list-p
-                               wire-list-fix) ())))))
+                               wire-list-fix)
+                              ())))))
 
   (local
    (defthm svl-run-guard-lemma2
@@ -712,7 +713,8 @@
                                svl-module-alist-p
                                sv::svarlist-p
                                wire-list-p
-                               wire-list-fix) ())))))
+                               wire-list-fix)
+                              ())))))
 
   (local
    (defthm wire-listp-implies-alistp

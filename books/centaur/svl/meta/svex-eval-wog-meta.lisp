@@ -26,7 +26,7 @@
 (in-package "SVL")
 
 (include-book "../svex-eval-wog-openers")
-(include-book "../svexl")
+(include-book "../svexl/svexl")
 
 (local
  (include-book "projects/rp-rewriter/proofs/aux-function-lemmas" :dir :system))

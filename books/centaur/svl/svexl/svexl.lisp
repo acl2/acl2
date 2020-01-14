@@ -26,7 +26,7 @@
 
 (in-package "SVL")
 
-(include-book "svex-eval-wog")
+(include-book "../svex-eval-wog")
 
 (fty::deftypes
  svexl-node
