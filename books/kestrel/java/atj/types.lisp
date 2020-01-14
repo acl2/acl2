@@ -1616,7 +1616,7 @@
   ///
 
   (more-returns
-   (typess acl2::cons-listp))
+   (typess cons-listp))
 
   (defret len-of-atj-type-list-to-type-list-list
     (equal (len typess)

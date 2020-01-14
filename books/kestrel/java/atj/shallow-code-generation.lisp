@@ -3634,12 +3634,16 @@
                                       (pkg-class-names string-string-alistp)
                                       (fn-method-names symbol-string-alistp)
                                       (curr-pkg stringp)
+                                      (mv-typess atj-type-list-listp)
                                       (guards$ booleanp)
                                       (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
-              (not (equal curr-pkg "")))
+              (not (equal curr-pkg ""))
+              (cons-listp mv-typess))
   :returns (mv (method jmethodp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))))
   :short "Generate a Java method with the given types
           for an ACL2 function definition."
   :long
@@ -3680,7 +3684,10 @@
      The pre-translation steps before the type annotation step
      could be actually factored out and done once,
      but for greater implementation simplicity here we repeat them
-     for every overloaded method."))
+     for every overloaded method.")
+   (xdoc::p
+    "We collect all the @(tsee mv) types in the body
+     for which we will need to generate @(tsee mv) classes."))
   (b* ((in-types (atj-function-type->inputs fn-type))
        (out-types (atj-function-type->outputs fn-type))
        ((unless (= (len in-types) (len formals)))
@@ -3688,12 +3695,13 @@
                 the number ~x0 of parameters of ~x1 ~
                 does not match the number ~x2 of input types of ~x1."
                (len formals) fn (len in-types))
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
        ((unless (consp out-types))
         (raise "Internal error: no output types ~x0 for ~x1." out-types fn)
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
-       ((mv formals body)
-        (atj-pre-translate fn formals body in-types out-types nil guards$ wrld))
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
+       ((mv formals body mv-typess)
+        (atj-pre-translate
+         fn formals body in-types out-types mv-typess nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
        (formals (atj-type-unannotate-vars formals))
@@ -3722,7 +3730,7 @@
         (raise "Internal error: ~
                 the function ~x0 has no output types ~x1."
                fn out-types)
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
        (out-jtype (atj-gen-shallow-jtype out-types))
        (method (make-jmethod :access (jaccess-public)
                              :abstract? nil
@@ -3736,7 +3744,7 @@
                              :params method-params
                              :throws (list *aij-class-undef-pkg-exc*)
                              :body method-body)))
-    (mv method qconsts))
+    (mv method qconsts mv-typess))
   :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3750,39 +3758,51 @@
                                        (pkg-class-names string-string-alistp)
                                        (fn-method-names symbol-string-alistp)
                                        (curr-pkg stringp)
+                                       (mv-typess atj-type-list-listp)
                                        (guards$ booleanp)
                                        (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
-              (not (equal curr-pkg "")))
+              (not (equal curr-pkg ""))
+              (cons-listp mv-typess))
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Lift @(tsee atj-gen-shallow-fndef-method) to lists of function types."
-  (b* (((when (endp fn-types)) (mv nil qconsts))
+  (b* (((when (endp fn-types)) (mv nil qconsts mv-typess))
        ((mv first-methods
-            qconsts) (atj-gen-shallow-fndef-method fn
-            (car fn-types)
-            formals
-            body
-            method-name
             qconsts
-            pkg-class-names
-            fn-method-names
-            curr-pkg
-            guards$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-fndef-method fn
+                                      (car fn-types)
+                                      formals
+                                      body
+                                      method-name
+                                      qconsts
+                                      pkg-class-names
+                                      fn-method-names
+                                      curr-pkg
+                                      mv-typess
+                                      guards$
+                                      wrld))
        ((mv rest-methods
-            qconsts) (atj-gen-shallow-fndef-methods fn
-            (cdr fn-types)
-            formals
-            body
-            method-name
             qconsts
-            pkg-class-names
-            fn-method-names
-            curr-pkg
-            guards$
-            wrld)))
-    (mv (cons first-methods rest-methods) qconsts)))
+            mv-typess)
+        (atj-gen-shallow-fndef-methods fn
+                                       (cdr fn-types)
+                                       formals
+                                       body
+                                       method-name
+                                       qconsts
+                                       pkg-class-names
+                                       fn-method-names
+                                       curr-pkg
+                                       mv-typess
+                                       guards$
+                                       wrld)))
+    (mv (cons first-methods rest-methods) qconsts mv-typess)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3791,12 +3811,18 @@
    (qconsts atj-qconstants-p)
    (pkg-class-names string-string-alistp)
    (fn-method-names symbol-string-alistp)
+   (mv-typess atj-type-list-listp)
    (guards$ booleanp)
    (verbose$ booleanp)
    (wrld plist-worldp))
-  :guard (not (aij-nativep fn))
+  :guard (and (not (aij-nativep fn))
+              (cons-listp mv-typess))
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Generate all the overloaded Java methods
           for an ACL2 function definition."
   :long
@@ -3837,6 +3863,7 @@
                                    pkg-class-names
                                    fn-method-names
                                    curr-pkg
+                                   mv-typess
                                    guards$
                                    wrld)))
 
@@ -3846,11 +3873,17 @@
                                     (qconsts atj-qconstants-p)
                                     (pkg-class-names string-string-alistp)
                                     (fn-method-names symbol-string-alistp)
+                                    (mv-typess atj-type-list-listp)
                                     (guards$ booleanp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Generate all the overloaded Java methods
           for an ACL2 function natively implemented in AIJ
           or for an ACL2 function definition."
@@ -3865,11 +3898,13 @@
                                                 guards$
                                                 verbose$
                                                 wrld)
-          qconsts)
+          qconsts
+          mv-typess)
     (atj-gen-shallow-fndef-all-methods fn
                                        qconsts
                                        pkg-class-names
                                        fn-method-names
+                                       mv-typess
                                        guards$
                                        verbose$
                                        wrld)))
@@ -3880,30 +3915,42 @@
                                         (qconsts atj-qconstants-p)
                                         (pkg-class-names string-string-alistp)
                                         (fn-method-names symbol-string-alistp)
+                                        (mv-typess atj-type-list-listp)
                                         (guards$ booleanp)
                                         (verbose$ booleanp)
                                         (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Lift @(tsee atj-gen-shallow-fn-methods) to lists of functions."
-  (b* (((when (endp fns)) (mv nil qconsts))
+  (b* (((when (endp fns)) (mv nil qconsts mv-typess))
        ((mv first-methods
-            qconsts) (atj-gen-shallow-fn-methods (car fns)
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-fn-methods (car fns)
+                                    qconsts
+                                    pkg-class-names
+                                    fn-method-names
+                                    mv-typess
+                                    guards$
+                                    verbose$
+                                    wrld))
        ((mv rest-methods
-            qconsts) (atj-gen-shallow-all-fn-methods (cdr fns)
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld)))
-    (mv (append first-methods rest-methods) qconsts)))
+            mv-typess)
+        (atj-gen-shallow-all-fn-methods (cdr fns)
+                                        qconsts
+                                        pkg-class-names
+                                        fn-method-names
+                                        mv-typess
+                                        guards$
+                                        verbose$
+                                        wrld)))
+    (mv (append first-methods rest-methods) qconsts mv-typess)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4116,11 +4163,17 @@
                                      (qconsts atj-qconstants-p)
                                      (pkg-class-names string-string-alistp)
                                      (fn-method-names symbol-string-alistp)
+                                     (mv-typess atj-type-list-listp)
                                      (guards$ booleanp)
                                      (verbose$ booleanp)
                                      (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Generate all the methods of the class for an ACL2 package."
   :long
   (xdoc::topstring
@@ -4149,13 +4202,16 @@
         (cw "~%Generate the Java methods ~
                for the ACL2 functions in package ~s0:~%" pkg))
        ((mv fn-methods
-            qconsts) (atj-gen-shallow-all-fn-methods fns
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-all-fn-methods fns
+                                        qconsts
+                                        pkg-class-names
+                                        fn-method-names
+                                        mv-typess
+                                        guards$
+                                        verbose$
+                                        wrld))
        (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
        (imported-fns (sort-symbol-listp imported-fns))
        (synonym-methods (atj-gen-shallow-all-synonym-methods imported-fns
@@ -4165,7 +4221,8 @@
                                                              wrld))
        (all-methods (append synonym-methods fn-methods)))
     (mv (mergesort-jmethods all-methods)
-        qconsts))
+        qconsts
+        mv-typess))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
 
@@ -4187,12 +4244,18 @@
                                          (qconsts atj-qconstants-p)
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
+                                         (mv-typess atj-type-list-listp)
                                          (guards$ booleanp)
                                          (verbose$ booleanp)
                                          (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods-by-pkg string-jmethodlist-alistp
                                :hyp (string-listp pkgs))
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :verify-guards :after-returns
   :short "Generate all the methods of the classes for all the ACL2 packages."
   :long
@@ -4204,32 +4267,39 @@
      (i.e. the methods of the class that corresponds to the package).
      If there are no methods for a package,
      we do not add an entry for the package in the alist."))
-  (b* (((when (endp pkgs)) (mv nil qconsts))
+  (b* (((when (endp pkgs)) (mv nil qconsts mv-typess))
        (pkg (car pkgs))
        ((mv first-methods
-            qconsts) (atj-gen-shallow-pkg-methods pkg
-            fns-by-pkg
-            fns+natives
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-pkg-methods pkg
+                                     fns-by-pkg
+                                     fns+natives
+                                     qconsts
+                                     pkg-class-names
+                                     fn-method-names
+                                     mv-typess
+                                     guards$
+                                     verbose$
+                                     wrld))
        ((mv rest-methods
-            qconsts) (atj-gen-shallow-all-pkg-methods (cdr pkgs)
-            fns-by-pkg
-            fns+natives
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld)))
+            mv-typess)
+        (atj-gen-shallow-all-pkg-methods (cdr pkgs)
+                                         fns-by-pkg
+                                         fns+natives
+                                         qconsts
+                                         pkg-class-names
+                                         fn-method-names
+                                         mv-typess
+                                         guards$
+                                         verbose$
+                                         wrld)))
     (if (null first-methods)
-        (mv rest-methods qconsts)
+        (mv rest-methods qconsts mv-typess)
       (mv (acons pkg first-methods rest-methods)
-          qconsts))))
+          qconsts
+          mv-typess))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4495,8 +4565,7 @@
 
 (define atj-gen-shallow-mv-class ((types atj-type-listp))
   :guard (>= (len types) 2)
-  :returns (mv (class-name stringp)
-               (class jclassp))
+  :returns (class jclassp)
   :short "Generate the @(tsee mv) class for the given types."
   :long
   (xdoc::topstring
@@ -4555,36 +4624,31 @@
                              :name *atj-mv-factory-method-name*
                              :params (atj-gen-shallow-mv-params types)
                              :throws nil
-                             :body method-body))
-       (class (make-jclass :access (jaccess-public)
-                           :abstract? nil
-                           :static? t
-                           :final? t
-                           :strictfp? nil
-                           :name name
-                           :superclass? nil
-                           :superinterfaces nil
-                           :body (append (jfields-to-jcbody-elements
-                                          (append instance-fields
-                                                  (list static-field)))
-                                         (jmethods-to-jcbody-elements
-                                          (list method))))))
-    (mv name class)))
+                             :body method-body)))
+    (make-jclass :access (jaccess-public)
+                 :abstract? nil
+                 :static? t
+                 :final? t
+                 :strictfp? nil
+                 :name name
+                 :superclass? nil
+                 :superinterfaces nil
+                 :body (append (jfields-to-jcbody-elements
+                                (append instance-fields
+                                        (list static-field)))
+                               (jmethods-to-jcbody-elements
+                                (list method))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-mv-classes ((typess atj-type-list-listp))
   :guard (atj-gen-shallow-mv-classes-guard typess)
-  :returns (mv (class-names (and (string-listp class-names)
-                                 (equal (len class-names) (len typess))))
-               (classes (and (jclass-listp classes)
-                             (equal (len classes) (len typess)))))
+  :returns (classes (and (jclass-listp classes)
+                         (equal (len classes) (len typess))))
   :short "Lift @(tsee atj-gen-shallow-mv-class) to lists."
-  (b* (((when (endp typess)) (mv nil nil))
-       ((mv name class) (atj-gen-shallow-mv-class (car typess)))
-       ((mv names classes) (atj-gen-shallow-mv-classes (cdr typess))))
-    (mv (cons name names)
-        (cons class classes)))
+  (cond ((endp typess) nil)
+        (t (cons (atj-gen-shallow-mv-class (car typess))
+                 (atj-gen-shallow-mv-classes (cdr typess)))))
   :guard-hints (("Goal" :in-theory (enable atj-gen-shallow-mv-classes-guard)))
   :prepwork
   ((define atj-gen-shallow-mv-classes-guard ((typess atj-type-list-listp))
@@ -4595,12 +4659,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-all-mv-classes ((fns-to-translate symbol-listp)
-                                        (guards$ booleanp)
-                                        (wrld plist-worldp))
-  :returns (mv (mv-class-names string-listp)
-               (classes jclass-listp))
-  :short "Generate all the @(tsee mv) classes."
+(define atj-all-mv-output-types ((fns-to-translate symbol-listp)
+                                 (guards$ booleanp)
+                                 (wrld plist-worldp))
+  :returns (mv-typess (and (atj-type-list-listp mv-typess)
+                           (cons-listp mv-typess)))
+  :short "Collect the output types of functions that return multiple values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4613,30 +4677,26 @@
      associated to each such function that returns two or more results.
      For each such list of two or more output types,
      we generate a distinct class.
-     We also return a list of the nmes of all these classes."))
-  (b* (((when (endp fns-to-translate)) (mv nil nil))
+     Here we just return the types,
+     which are then passed to @(tsee atj-pre-translate)
+     where they are augmented with any additional @(tsee mv) type
+     that is not any function's output type."))
+  (b* (((when (endp fns-to-translate)) nil)
        (fn (car fns-to-translate))
        ((unless (and (not (member-eq fn *stobjs-out-invalid*))
                      (>= (number-of-results+ fn wrld) 2)))
-        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld))
+        (atj-all-mv-output-types (cdr fns-to-translate) guards$ wrld))
        (fn-info (atj-get-function-type-info fn guards$ wrld))
        (out-typess (atj-function-type-info->outputs fn-info))
        (out-typess (remove-duplicates-equal out-typess))
-       ((unless (atj-gen-shallow-mv-classes-guard out-typess))
+       ((unless (cons-listp out-typess))
         (raise "Internal error: ~
-                not all the output types ~x0 of ~x1, ~
-                which returns ~x2 results, ~
-                are lists of two or more types."
-               out-typess fn (number-of-results+ fn wrld))
-        (mv nil nil))
-       ((mv class-names classes) (atj-gen-shallow-mv-classes out-typess))
-       ((mv more-class-names more-classes)
-        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld)))
-    (mv (union-equal class-names more-class-names)
-        (union-equal classes more-classes)))
-  :verify-guards :after-returns
-  :prepwork ((local
-              (include-book "std/typed-lists/string-listp" :dir :system))))
+                output types ~x0 include an empty list."
+               out-typess)))
+    (union-equal out-typess
+                 (atj-all-mv-output-types (cdr fns-to-translate) guards$
+                                          wrld)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4703,9 +4763,8 @@
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates." fns+natives)
         (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
-       ((mv mv-class-names mv-classes)
-        (atj-gen-shallow-all-mv-classes fns-to-translate guards$ wrld))
-       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$ mv-class-names))
+       (mv-typess (atj-all-mv-output-types fns-to-translate guards$ wrld))
+       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods fns+natives))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
        (qconsts (make-atj-qconstants :integers nil
@@ -4716,16 +4775,23 @@
                                      :symbols (list t nil)
                                      :pairs nil
                                      :next-index 1))
-       ((mv methods-by-pkg qconsts)
+       ((mv methods-by-pkg qconsts mv-typess)
         (atj-gen-shallow-all-pkg-methods pkgs
                                          fns-by-pkg
                                          fns+natives
                                          qconsts
                                          pkg-class-names
                                          fn-method-names
+                                         mv-typess
                                          guards$
                                          verbose$
                                          wrld))
+       ((unless (atj-gen-shallow-mv-classes-guard mv-typess))
+        (raise "Internal error: ~
+                not all lists of types in ~x0 have length 2 or more."
+               mv-typess)
+        (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
+       (mv-classes (atj-gen-shallow-mv-classes mv-typess))
        ((atj-qconstants qconsts) qconsts)
        (qsymbols qconsts.symbols)
        (qsymbols-by-pkg (organize-symbols-by-pkg qsymbols))

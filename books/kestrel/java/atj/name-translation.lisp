@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -382,9 +382,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-pkg-to-class ((pkg stringp)
-                          (java-class$ stringp)
-                          (mv-class-names string-listp))
+(define atj-pkg-to-class ((pkg stringp) (java-class$ stringp))
   :returns (class stringp)
   :short "Turn an ACL2 package name into a Java class name."
   :long
@@ -406,24 +404,25 @@
      we also ensure that the name is distinct from the containing class,
      whose name is passed to this function.
      We also ensure that the Java class name is distinct from
-     all the @(tsee mv) class names, which we also pass as argument.
-     If the result of @(tsee atj-chars-to-jchars-id) is disallowed,
-     we add a @('$') at the end,
-     which makes it allowed."))
+     all the @(tsee mv) class names:
+     we do so by checking that the class name does not start with @('MV_'),
+     which is a little stronger than necessary
+     but simpler and in practice should not be too restrictive."))
   (b* ((jchars (atj-chars-to-jchars-id (explode pkg) t :dash nil))
        (jstring (implode jchars))
        (jstring (if (or (member-equal jstring *atj-disallowed-class-names*)
                         (equal jstring java-class$)
-                        (member-equal jstring mv-class-names))
+                        (and (>= (length jstring) 3)
+                             (eql (char jstring 0) #\M)
+                             (eql (char jstring 1) #\V)
+                             (eql (char jstring 2) #\_)))
                     (str::cat jstring "$")
                   jstring)))
     jstring))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-pkgs-to-classes ((pkgs string-listp)
-                             (java-class$ stringp)
-                             (mv-class-names string-listp))
+(define atj-pkgs-to-classes ((pkgs string-listp) (java-class$ stringp))
   :guard (no-duplicatesp-equal pkgs)
   :returns (pkg-class-names string-string-alistp :hyp (string-listp pkgs))
   :short "Generate the mapping from ACL2 package names to Java class names."
@@ -444,8 +443,8 @@
      corresponding to the ACL2 package names."))
   (b* (((when (endp pkgs)) nil)
        (pkg (car pkgs))
-       (class (atj-pkg-to-class pkg java-class$ mv-class-names))
-       (rest-alist (atj-pkgs-to-classes (cdr pkgs) java-class$ mv-class-names)))
+       (class (atj-pkg-to-class pkg java-class$))
+       (rest-alist (atj-pkgs-to-classes (cdr pkgs) java-class$)))
     (acons pkg class rest-alist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
