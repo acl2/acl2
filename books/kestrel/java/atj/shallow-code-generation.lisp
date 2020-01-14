@@ -797,7 +797,7 @@
     "Prior to calling this function,
      the variables of all the lambda expressions have been annotated
      via @(tsee atj-type-annotate-term).
-     Thus, each ACL2 variable name carries its own type,
+     Thus, each ACL2 variable name carries its own non-empty list of types,
      which we use to determine the Java type of the Java variable.")
    (xdoc::p
     "Prior to calling this function,
@@ -811,9 +811,8 @@
        ((mv var new?) (atj-unmark-var var))
        ((mv var types) (atj-type-unannotate-var var))
        (jvar (symbol-name var))
-       (type (atj-type-list-to-type/acons types))
        (var-block (if new?
-                      (jblock-locvar (atj-type-to-jitype type) jvar expr)
+                      (jblock-locvar (atj-gen-shallow-jtype types) jvar expr)
                     (jblock-asg (jexpr-name jvar) expr)))
        (first-block (append (car blocks) var-block))
        (rest-block (atj-gen-shallow-let-bindings (cdr vars)
@@ -1728,7 +1727,43 @@
              :in-theory
              (enable acl2::len-of-check-lambda-calls.formals-is-args))))
 
-  (in-theory (disable len-of-atj-check-marked-annotated-mv-let.vars/indices)))
+  (in-theory (disable len-of-atj-check-marked-annotated-mv-let.vars/indices))
+
+  (defret atj-check-marked-annotated-mv-let-mv-term-smaller
+    (implies yes/no
+             (< (acl2-count mv-term)
+                (acl2-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (acl2-count-of-atj-type-unwrap-term-linear
+                   (:instance acl2::acl2-count-of-check-unary-lambda-call.arg
+                    (term (mv-nth 0 (atj-type-unwrap-term term)))))
+             :in-theory (disable
+                         acl2-count-of-atj-type-unwrap-term-linear
+                         acl2::acl2-count-of-check-unary-lambda-call.arg))))
+
+  (defret atj-check-marked-annotated-mv-let-body-term-smaller
+    (implies yes/no
+             (< (acl2-count body-term)
+                (acl2-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (acl2-count-of-atj-type-unwrap-term-linear
+                   (:instance acl2::acl2-count-of-check-unary-lambda-call.arg
+                    (term (mv-nth 0 (atj-type-unwrap-term term))))
+                   (:instance acl2-count-of-atj-type-unwrap-term-linear
+                    (term (mv-nth 2 (check-unary-lambda-call
+                                     (mv-nth 0 (atj-type-unwrap-term term))))))
+                   (:instance acl2::acl2-count-of-check-lambda-call.body
+                    (term
+                     (mv-nth 0 (atj-type-unwrap-term
+                                (mv-nth 2 (check-unary-lambda-call
+                                           (mv-nth 0 (atj-type-unwrap-term
+                                                      term)))))))))
+             :in-theory (disable
+                         acl2-count-of-atj-type-unwrap-term-linear
+                         acl2::acl2-count-of-check-unary-lambda-call.arg
+                         acl2::acl2-count-of-check-lambda-call.body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1838,9 +1873,9 @@
                                (atj-gen-shallow-symbol
                                 nil pkg-class-names curr-pkg)))))
       (mv block expr jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count test) 1))
+    :measure (two-nats-measure (acl2-count test) 2))
 
   (define atj-gen-shallow-if-app ((test pseudo-termp)
                                   (then pseudo-termp)
@@ -1954,8 +1989,7 @@
             (mv block
                 expr
                 jvar-result-index)))
-         (type (atj-type-list-to-type/acons types))
-         (jtype (atj-type-to-jitype type))
+         (jtype (atj-gen-shallow-jtype types))
          ((mv result-locvar-block
               jvar-result
               jvar-result-index)
@@ -1976,14 +2010,14 @@
       (mv block
           expr
           jvar-result-index))
-    ;; 2nd component is greater than 0 and 1
+    ;; 2nd component is greater than 1 and 2
     ;; so that the call of ATJ-GEN-SHALLOW-IF-TEST decreases
     ;; and each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNTs of the other two addends are 0:
     :measure (two-nats-measure (+ (acl2-count test)
                                   (acl2-count then)
                                   (acl2-count else))
-                               2))
+                               3))
 
   (define atj-gen-shallow-or-app ((first pseudo-termp)
                                   (second pseudo-termp)
@@ -2045,8 +2079,7 @@
                                 qpairs
                                 guards$
                                 wrld))
-         (type (atj-type-list-to-type/acons types))
-         (jtype (atj-type-to-jitype type))
+         (jtype (atj-gen-shallow-jtype types))
          ((mv result-locvar-block jvar-result jvar-result-index)
           (atj-gen-jlocvar-indexed jtype
                                    jvar-result-base
@@ -2066,12 +2099,12 @@
       (mv block
           expr
           jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNT of the other addend is 0:
     :measure (two-nats-measure (+ (acl2-count first)
                                   (acl2-count second))
-                               1))
+                               2))
 
   (define atj-gen-shallow-jprim-constr-app
     ((fn (member-eq fn *atj-java-primitive-constructors*))
@@ -2213,9 +2246,9 @@
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
               jvar-result-index))))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg) 1))
+    :measure (two-nats-measure (acl2-count arg) 2))
 
   (define atj-gen-shallow-jprim-unop-app
     ((fn (member-eq fn *atj-java-primitive-unops*))
@@ -2311,10 +2344,9 @@
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
           jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count operand)
-                               1))
+    :measure (two-nats-measure (acl2-count operand) 2))
 
   (define atj-gen-shallow-jprim-binop-app
     ((fn (member-eq fn *atj-java-primitive-binops*))
@@ -2427,12 +2459,12 @@
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
           jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNT of the other addend is 0:
     :measure (two-nats-measure (+ (acl2-count left)
                                   (acl2-count right))
-                               1))
+                               2))
 
   (define atj-gen-shallow-jprimarr-read-app
     ((array pseudo-termp)
@@ -2497,12 +2529,12 @@
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
           jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNT of the other addend is 0:
     :measure (two-nats-measure (+ (acl2-count array)
                                   (acl2-count index))
-                               1))
+                               2))
 
   (define atj-gen-shallow-jprimarr-length-app
     ((array pseudo-termp)
@@ -2562,10 +2594,9 @@
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
           jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count array)
-                               1))
+    :measure (two-nats-measure (acl2-count array) 2))
 
   (define atj-gen-shallow-jprimarr-constr-app
     ((fn (member-eq fn *atj-java-primarray-constructors*))
@@ -2627,10 +2658,9 @@
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
           jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count length)
-                               1))
+    :measure (two-nats-measure (acl2-count length) 2))
 
   (define atj-gen-shallow-jprimarr-constr-init-app
     ((fn (member-eq fn *atj-java-primarray-constructors-init*))
@@ -2746,10 +2776,9 @@
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
               jvar-result-index))))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg)
-                               1))
+    :measure (two-nats-measure (acl2-count arg) 2))
 
   (define atj-gen-shallow-mv-app ((args pseudo-term-listp)
                                   (src-types atj-type-listp)
@@ -2778,11 +2807,10 @@
       "for details.")
      (xdoc::p
       "These calls are treated specially for code generation.
-       For now, we generate code for the arguments
-       and then a call of @('Acl2Value.makeList()') to create the list,
-       and a cast of the call to @('Acl2ConsValue').
-       This will be improve and generalized,
-       as more direct support for multiple-result functions is added."))
+       We generate a call of the factory method
+       of the @(tsee mv) class corresponding to
+       the destination types of the arguments,
+       converting each argument from the source types as needed."))
     (b* (((mv blocks
               exprs
               jvar-result-index)
@@ -2796,16 +2824,35 @@
                                  guards$
                                  wrld))
          (block (flatten blocks))
-         (expr (jexpr-smethod *aij-type-value* "makeList" exprs))
-         (expr (jexpr-cast *aij-type-cons* expr))
-         (src-type (atj-type-list-to-type/acons src-types))
-         (dst-type (atj-type-list-to-type/acons dst-types))
-         (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-      (mv block expr jvar-result-index))
+         ((unless (>= (len src-types) 2))
+          (raise "Internal error: ~
+                  MV has arguments ~x0, which are fewer than two."
+                 args)
+          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+         ((unless (= (len src-types) (len dst-types)))
+          (raise "Internal error: ~
+                  the source types ~x0 and destination types ~x1 ~
+                  differ in number."
+                 src-types dst-types)
+          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+         ((unless (= (len args) (len dst-types)))
+          (raise "Internal error: ~
+                  the arguments ~x0 and ~
+                  source and destination types ~x1 and ~x2 ~
+                  differ in number."
+                 args src-types dst-types)
+          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+         (exprs (atj-adapt-exprs-to-types exprs src-types dst-types))
+         (expr
+          (jexpr-smethod (jtype-class (atj-gen-shallow-mv-class-name dst-types))
+                         *atj-mv-factory-method-name*
+                         exprs)))
+      (mv block
+          expr
+          jvar-result-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases:
-    :measure (two-nats-measure (acl2-count args)
-                               1))
+    :measure (two-nats-measure (acl2-count args) 1))
 
   (define atj-gen-shallow-fn-app ((fn pseudo-termfnp)
                                   (args pseudo-term-listp)
@@ -3020,10 +3067,18 @@
                                               fn-method-names
                                               curr-pkg)
                       arg-exprs))
-               (src-type (atj-type-list-to-type/acons src-types))
-               (dst-type (atj-type-list-to-type/acons dst-types))
-               (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-            (mv (flatten arg-blocks)
+               ((unless (= (len src-types) (len dst-types)))
+                (raise "Internal error: ~
+                        the source types ~x0 and destination types ~x1 ~
+                        differ in number."
+                       src-types dst-types)
+                (mv nil (jexpr-name "irrelevant") jvar-result-index))
+               ((mv adapt-block
+                    expr
+                    jvar-result-index)
+                (atj-adapt-expr-to-types expr src-types dst-types
+                                         jvar-result-base jvar-result-index)))
+            (mv (append (flatten arg-blocks) adapt-block)
                 expr
                 jvar-result-index)))
          ((mv lambda-block
@@ -3046,7 +3101,7 @@
       (mv lambda-block
           lambda-expr
           jvar-result-index))
-    ;; 2nd component is greater than the one of ATJ-GEN-SHALLOW-LAMBDA
+    ;; 2nd component is greater than 2
     ;; so that the call of ATJ-GEN-SHALLOW-LAMBDA decreases
     ;; even when FN is a non-symbol atom (impossible under the guard),
     ;; and it is non-0
@@ -3054,7 +3109,7 @@
     ;; even when the ACL2-COUNT of FN is 0:
     :measure (two-nats-measure (+ (acl2-count fn)
                                   (acl2-count args))
-                               2))
+                               3))
 
   (define atj-gen-shallow-lambda ((formals symbol-listp)
                                   (body pseudo-termp)
@@ -3101,14 +3156,119 @@
                                 qpairs
                                 guards$
                                 wrld))
-         (src-type (atj-type-list-to-type/acons src-types))
-         (dst-type (atj-type-list-to-type/acons dst-types)))
-      (mv (append let-block body-block)
-          (atj-adapt-expr-to-type body-expr src-type dst-type)
+         ((unless (= (len src-types) (len dst-types)))
+          (raise "Internal error: ~
+                  the source types ~x0 and destination types ~x1 ~
+                  differ in number."
+                 src-types dst-types)
+          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+         ((mv adapt-block
+              expr
+              jvar-result-index)
+          (atj-adapt-expr-to-types body-expr src-types dst-types
+                                   jvar-result-base jvar-result-index)))
+      (mv (append let-block body-block adapt-block)
+          expr
           jvar-result-index))
-    ;; 2nd component is non-0
+    ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count body) 1))
+    :measure (two-nats-measure (acl2-count body) 2))
+
+  (define atj-gen-shallow-mv-let ((term pseudo-termp)
+                                  (jvar-result-base stringp)
+                                  (jvar-result-index posp)
+                                  (pkg-class-names string-string-alistp)
+                                  (fn-method-names symbol-string-alistp)
+                                  (curr-pkg stringp)
+                                  (qpairs cons-pos-alistp)
+                                  (guards$ booleanp)
+                                  (wrld plist-worldp))
+    :guard (not (equal curr-pkg ""))
+    :returns (mv (successp booleanp)
+                 (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+    :short "Generate a shallowly embedded ACL2 @(tsee mv-let)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is the first thing we try on every term
+       (see @(tsee atj-gen-shallow-term)):
+       if the term is an @(tsee mv-let),
+       we translate it to Java here and return a success value as first result,
+       so that the caller can propagate the results;
+       otherwise, the first result is @('nil'),
+       the other results are irrelevant,
+       and the caller will handle the term
+       knowing that it is not an @(tsee mv-let).")
+     (xdoc::p
+      "First, we check whether the term
+       is a marked and annotated @(tsee mv-let);
+       see @(tsee atj-check-marked-annotated-mv-let-call).
+       If it is, we proceed as follows.
+       We recursive translate to Java the term assigned to the @('mv') variable;
+       this must have multiple types.
+       Then we translate the @(tsee let) binding itself to Java,
+       obtaining a local variable declaration or assignment
+       (depending on the new/old marking of the @('mv') variable)
+       for the multiple value.
+       Then we translate the @(tsee let) bindings for the components,
+       and finally the body term."))
+    (b* (((mv yes/no mv-var mv-term vars indices body-term)
+          (atj-check-marked-annotated-mv-let-call term))
+         ((unless yes/no) (mv nil nil (jexpr-name "dummy") jvar-result-index))
+         ((mv mv-block
+              mv-expr
+              jvar-result-index)
+          (atj-gen-shallow-term mv-term
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld))
+         (mv-block (atj-gen-shallow-let-bindings (list mv-var)
+                                                 (list mv-block)
+                                                 (list mv-expr)))
+         (mv-expr (b* (((mv mv-var &) (atj-unmark-var mv-var))
+                       ((mv mv-var &) (atj-type-unannotate-var mv-var)))
+                    (jexpr-name (symbol-name mv-var))))
+         (exprs (atj-gen-shallow-mv-let-aux mv-expr indices))
+         (vars-block (atj-gen-shallow-let-bindings vars
+                                                   (repeat (len vars) nil)
+                                                   exprs))
+         ((mv body-block
+              body-expr
+              jvar-result-index)
+          (atj-gen-shallow-term body-term
+                                jvar-result-base
+                                jvar-result-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                guards$
+                                wrld)))
+      (mv t
+          (append mv-block vars-block body-block)
+          body-expr
+          jvar-result-index))
+    :measure (two-nats-measure (acl2-count term) 0)
+
+    :prepwork
+    ((define atj-gen-shallow-mv-let-aux ((expr jexprp) (indices nat-listp))
+       :returns (exprs jexpr-listp)
+       (cond ((endp indices) nil)
+             (t (cons (jexpr-get-field expr
+                                       (atj-gen-shallow-mv-field-name
+                                        (car indices)))
+                      (atj-gen-shallow-mv-let-aux expr (cdr indices)))))
+       ///
+       (defret len-of-atj-gen-shallow-mv-let-aux
+         (equal (len exprs)
+                (len indices))))))
 
   (define atj-gen-shallow-term ((term pseudo-termp)
                                 (jvar-result-base stringp)
@@ -3140,21 +3300,40 @@
        and generate a Java variable with the same name.
        Then we wrap it with a Java conversion, if needed.")
      (xdoc::p
+      "First we try to process the term as an @(tsee mv-let).
+       If this succeeds, we just return.
+       Otherwise,
+       we process the term by cases (variable, quoted constants, etc.),
+       knowing that it is not an @(tsee mv-let).")
+     (xdoc::p
       "If the ACL2 term is a quoted constant,
        we represent it as its value.
        We wrap the resulting expression with a Java conversion, if needed."))
-    (b* (((mv term src-types dst-types) (atj-type-unwrap-term term))
+    (b* (((mv mv-let-p
+              block
+              expr
+              jvar-result-index)
+          (atj-gen-shallow-mv-let term
+                                  jvar-result-base
+                                  jvar-result-index
+                                  pkg-class-names
+                                  fn-method-names
+                                  curr-pkg
+                                  qpairs
+                                  guards$
+                                  wrld))
+         ((when mv-let-p) (mv block expr jvar-result-index))
+         ((mv term src-types dst-types) (atj-type-unwrap-term term))
          ((unless term) ; for termination proof
           (mv nil (jexpr-name "dummy") jvar-result-index))
          ((when (variablep term))
           (b* (((mv var &) (atj-unmark-var term))
                ((mv var &) (atj-type-unannotate-var var))
                (expr (jexpr-name (symbol-name var)))
-               (expr (atj-adapt-expr-to-type expr
-                                             (atj-type-list-to-type/acons
-                                              src-types)
-                                             (atj-type-list-to-type/acons
-                                              dst-types))))
+               (expr
+                (atj-adapt-expr-to-type expr
+                                        (atj-type-list-to-type src-types)
+                                        (atj-type-list-to-type dst-types))))
             (mv nil expr jvar-result-index)))
          ((when (fquotep term))
           (b* ((value (unquote-term term))
@@ -3179,7 +3358,9 @@
                               qpairs
                               guards$
                               wrld))
-    :measure (two-nats-measure (acl2-count term) 0))
+    ;; 2nd component is non-0 so that
+    ;; the call of ATJ-GEN-SHALLOW-MV-LET decreases:
+    :measure (two-nats-measure (acl2-count term) 1))
 
   (define atj-gen-shallow-terms ((terms pseudo-term-listp)
                                  (jvar-result-base stringp)
@@ -3232,10 +3413,15 @@
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-shallow-term
-    :hints (("Goal" :in-theory (enable atj-type-unwrap-term
-                                       unquote-term
-                                       pseudo-termfnp
-                                       pseudo-lambdap)))))
+    :hints
+    (("Goal"
+      :do-not-induct t
+      :in-theory
+      (enable atj-type-unwrap-term
+              unquote-term
+              pseudo-termfnp
+              pseudo-lambdap
+              len-of-atj-check-marked-annotated-mv-let.vars/indices)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3288,9 +3474,12 @@
      the called methods are resolved by the Java compiler."))
   (b* ((in-types (atj-function-type->inputs fn-type))
        (out-types (atj-function-type->outputs fn-type))
-       (out-type (if (= (len out-types) 1)
-                     (car out-types)
-                   :acons))
+       ((unless (consp out-types))
+        (raise "Internal error: ~
+                the function ~x0 has no output types ~x1."
+               fn out-types)
+        (ec-call (jmethod-fix :this-is-irrelevant)))
+       (out-jtype (atj-gen-shallow-jtype out-types))
        ((unless (= (len in-types) (len method-param-names)))
         (raise "Internal error: ~
                 the number ~x0 of input types for ~x1 ~
@@ -3304,7 +3493,7 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type (atj-type-to-jitype out-type))
+                  :result (jresult-type out-jtype)
                   :name method-name
                   :params (atj-gen-paramlist
                            method-param-names
@@ -3445,12 +3634,16 @@
                                       (pkg-class-names string-string-alistp)
                                       (fn-method-names symbol-string-alistp)
                                       (curr-pkg stringp)
+                                      (mv-typess atj-type-list-listp)
                                       (guards$ booleanp)
                                       (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
-              (not (equal curr-pkg "")))
+              (not (equal curr-pkg ""))
+              (cons-listp mv-typess))
   :returns (mv (method jmethodp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))))
   :short "Generate a Java method with the given types
           for an ACL2 function definition."
   :long
@@ -3491,7 +3684,10 @@
      The pre-translation steps before the type annotation step
      could be actually factored out and done once,
      but for greater implementation simplicity here we repeat them
-     for every overloaded method."))
+     for every overloaded method.")
+   (xdoc::p
+    "We collect all the @(tsee mv) types in the body
+     for which we will need to generate @(tsee mv) classes."))
   (b* ((in-types (atj-function-type->inputs fn-type))
        (out-types (atj-function-type->outputs fn-type))
        ((unless (= (len in-types) (len formals)))
@@ -3499,12 +3695,13 @@
                 the number ~x0 of parameters of ~x1 ~
                 does not match the number ~x2 of input types of ~x1."
                (len formals) fn (len in-types))
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
        ((unless (consp out-types))
         (raise "Internal error: no output types ~x0 for ~x1." out-types fn)
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts))
-       ((mv formals body)
-        (atj-pre-translate fn formals body in-types out-types nil guards$ wrld))
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
+       ((mv formals body mv-typess)
+        (atj-pre-translate
+         fn formals body in-types out-types mv-typess nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
        (formals (atj-type-unannotate-vars formals))
@@ -3529,9 +3726,12 @@
                                         method-params
                                         method-body
                                         tailrecp))
-       (out-type (if (= (len out-types) 1)
-                     (car out-types)
-                   :acons))
+       ((unless (consp out-types))
+        (raise "Internal error: ~
+                the function ~x0 has no output types ~x1."
+               fn out-types)
+        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
+       (out-jtype (atj-gen-shallow-jtype out-types))
        (method (make-jmethod :access (jaccess-public)
                              :abstract? nil
                              :static? t
@@ -3539,12 +3739,12 @@
                              :synchronized? nil
                              :native? nil
                              :strictfp? nil
-                             :result (jresult-type (atj-type-to-jitype out-type))
+                             :result (jresult-type out-jtype)
                              :name method-name
                              :params method-params
                              :throws (list *aij-class-undef-pkg-exc*)
                              :body method-body)))
-    (mv method qconsts))
+    (mv method qconsts mv-typess))
   :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3558,39 +3758,51 @@
                                        (pkg-class-names string-string-alistp)
                                        (fn-method-names symbol-string-alistp)
                                        (curr-pkg stringp)
+                                       (mv-typess atj-type-list-listp)
                                        (guards$ booleanp)
                                        (wrld plist-worldp))
   :guard (and (not (aij-nativep fn))
-              (not (equal curr-pkg "")))
+              (not (equal curr-pkg ""))
+              (cons-listp mv-typess))
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Lift @(tsee atj-gen-shallow-fndef-method) to lists of function types."
-  (b* (((when (endp fn-types)) (mv nil qconsts))
+  (b* (((when (endp fn-types)) (mv nil qconsts mv-typess))
        ((mv first-methods
-            qconsts) (atj-gen-shallow-fndef-method fn
-            (car fn-types)
-            formals
-            body
-            method-name
             qconsts
-            pkg-class-names
-            fn-method-names
-            curr-pkg
-            guards$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-fndef-method fn
+                                      (car fn-types)
+                                      formals
+                                      body
+                                      method-name
+                                      qconsts
+                                      pkg-class-names
+                                      fn-method-names
+                                      curr-pkg
+                                      mv-typess
+                                      guards$
+                                      wrld))
        ((mv rest-methods
-            qconsts) (atj-gen-shallow-fndef-methods fn
-            (cdr fn-types)
-            formals
-            body
-            method-name
             qconsts
-            pkg-class-names
-            fn-method-names
-            curr-pkg
-            guards$
-            wrld)))
-    (mv (cons first-methods rest-methods) qconsts)))
+            mv-typess)
+        (atj-gen-shallow-fndef-methods fn
+                                       (cdr fn-types)
+                                       formals
+                                       body
+                                       method-name
+                                       qconsts
+                                       pkg-class-names
+                                       fn-method-names
+                                       curr-pkg
+                                       mv-typess
+                                       guards$
+                                       wrld)))
+    (mv (cons first-methods rest-methods) qconsts mv-typess)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3599,12 +3811,18 @@
    (qconsts atj-qconstants-p)
    (pkg-class-names string-string-alistp)
    (fn-method-names symbol-string-alistp)
+   (mv-typess atj-type-list-listp)
    (guards$ booleanp)
    (verbose$ booleanp)
    (wrld plist-worldp))
-  :guard (not (aij-nativep fn))
+  :guard (and (not (aij-nativep fn))
+              (cons-listp mv-typess))
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Generate all the overloaded Java methods
           for an ACL2 function definition."
   :long
@@ -3645,6 +3863,7 @@
                                    pkg-class-names
                                    fn-method-names
                                    curr-pkg
+                                   mv-typess
                                    guards$
                                    wrld)))
 
@@ -3654,11 +3873,17 @@
                                     (qconsts atj-qconstants-p)
                                     (pkg-class-names string-string-alistp)
                                     (fn-method-names symbol-string-alistp)
+                                    (mv-typess atj-type-list-listp)
                                     (guards$ booleanp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Generate all the overloaded Java methods
           for an ACL2 function natively implemented in AIJ
           or for an ACL2 function definition."
@@ -3673,11 +3898,13 @@
                                                 guards$
                                                 verbose$
                                                 wrld)
-          qconsts)
+          qconsts
+          mv-typess)
     (atj-gen-shallow-fndef-all-methods fn
                                        qconsts
                                        pkg-class-names
                                        fn-method-names
+                                       mv-typess
                                        guards$
                                        verbose$
                                        wrld)))
@@ -3688,30 +3915,42 @@
                                         (qconsts atj-qconstants-p)
                                         (pkg-class-names string-string-alistp)
                                         (fn-method-names symbol-string-alistp)
+                                        (mv-typess atj-type-list-listp)
                                         (guards$ booleanp)
                                         (verbose$ booleanp)
                                         (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Lift @(tsee atj-gen-shallow-fn-methods) to lists of functions."
-  (b* (((when (endp fns)) (mv nil qconsts))
+  (b* (((when (endp fns)) (mv nil qconsts mv-typess))
        ((mv first-methods
-            qconsts) (atj-gen-shallow-fn-methods (car fns)
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-fn-methods (car fns)
+                                    qconsts
+                                    pkg-class-names
+                                    fn-method-names
+                                    mv-typess
+                                    guards$
+                                    verbose$
+                                    wrld))
        ((mv rest-methods
-            qconsts) (atj-gen-shallow-all-fn-methods (cdr fns)
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld)))
-    (mv (append first-methods rest-methods) qconsts)))
+            mv-typess)
+        (atj-gen-shallow-all-fn-methods (cdr fns)
+                                        qconsts
+                                        pkg-class-names
+                                        fn-method-names
+                                        mv-typess
+                                        guards$
+                                        verbose$
+                                        wrld)))
+    (mv (append first-methods rest-methods) qconsts mv-typess)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3799,9 +4038,12 @@
      for the function type passed as argument."))
   (b* ((in-types (atj-function-type->inputs fn-type))
        (out-types (atj-function-type->outputs fn-type))
-       (out-type (if (= (len out-types) 1)
-                     (car out-types)
-                   :acons))
+       ((unless (consp out-types))
+        (raise "Internal error: ~
+                the function ~x0 has no output types ~x1."
+               fn out-types)
+        (ec-call (jmethod-fix :this-is-irrelevant)))
+       (out-jtype (atj-gen-shallow-jtype out-types))
        (fn-pkg (symbol-package-name fn))
        (method-name (atj-gen-shallow-fnname fn
                                             pkg-class-names
@@ -3830,7 +4072,7 @@
                   :synchronized? nil
                   :native? nil
                   :strictfp? nil
-                  :result (jresult-type (atj-type-to-jitype out-type))
+                  :result (jresult-type out-jtype)
                   :name method-name
                   :params method-params
                   :throws (list *aij-class-undef-pkg-exc*)
@@ -3921,11 +4163,17 @@
                                      (qconsts atj-qconstants-p)
                                      (pkg-class-names string-string-alistp)
                                      (fn-method-names symbol-string-alistp)
+                                     (mv-typess atj-type-list-listp)
                                      (guards$ booleanp)
                                      (verbose$ booleanp)
                                      (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods jmethod-listp)
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :short "Generate all the methods of the class for an ACL2 package."
   :long
   (xdoc::topstring
@@ -3954,13 +4202,16 @@
         (cw "~%Generate the Java methods ~
                for the ACL2 functions in package ~s0:~%" pkg))
        ((mv fn-methods
-            qconsts) (atj-gen-shallow-all-fn-methods fns
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-all-fn-methods fns
+                                        qconsts
+                                        pkg-class-names
+                                        fn-method-names
+                                        mv-typess
+                                        guards$
+                                        verbose$
+                                        wrld))
        (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
        (imported-fns (sort-symbol-listp imported-fns))
        (synonym-methods (atj-gen-shallow-all-synonym-methods imported-fns
@@ -3970,7 +4221,8 @@
                                                              wrld))
        (all-methods (append synonym-methods fn-methods)))
     (mv (mergesort-jmethods all-methods)
-        qconsts))
+        qconsts
+        mv-typess))
   :prepwork
   ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
 
@@ -3992,12 +4244,18 @@
                                          (qconsts atj-qconstants-p)
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
+                                         (mv-typess atj-type-list-listp)
                                          (guards$ booleanp)
                                          (verbose$ booleanp)
                                          (wrld plist-worldp))
+  :guard (cons-listp mv-typess)
   :returns (mv (methods-by-pkg string-jmethodlist-alistp
                                :hyp (string-listp pkgs))
-               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts)))
+               (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
+               (new-mv-typess (and (atj-type-list-listp new-mv-typess)
+                                   (cons-listp new-mv-typess))
+                              :hyp (and (atj-type-list-listp mv-typess)
+                                        (cons-listp mv-typess))))
   :verify-guards :after-returns
   :short "Generate all the methods of the classes for all the ACL2 packages."
   :long
@@ -4009,32 +4267,39 @@
      (i.e. the methods of the class that corresponds to the package).
      If there are no methods for a package,
      we do not add an entry for the package in the alist."))
-  (b* (((when (endp pkgs)) (mv nil qconsts))
+  (b* (((when (endp pkgs)) (mv nil qconsts mv-typess))
        (pkg (car pkgs))
        ((mv first-methods
-            qconsts) (atj-gen-shallow-pkg-methods pkg
-            fns-by-pkg
-            fns+natives
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld))
+            mv-typess)
+        (atj-gen-shallow-pkg-methods pkg
+                                     fns-by-pkg
+                                     fns+natives
+                                     qconsts
+                                     pkg-class-names
+                                     fn-method-names
+                                     mv-typess
+                                     guards$
+                                     verbose$
+                                     wrld))
        ((mv rest-methods
-            qconsts) (atj-gen-shallow-all-pkg-methods (cdr pkgs)
-            fns-by-pkg
-            fns+natives
             qconsts
-            pkg-class-names
-            fn-method-names
-            guards$
-            verbose$
-            wrld)))
+            mv-typess)
+        (atj-gen-shallow-all-pkg-methods (cdr pkgs)
+                                         fns-by-pkg
+                                         fns+natives
+                                         qconsts
+                                         pkg-class-names
+                                         fn-method-names
+                                         mv-typess
+                                         guards$
+                                         verbose$
+                                         wrld)))
     (if (null first-methods)
-        (mv rest-methods qconsts)
+        (mv rest-methods qconsts mv-typess)
       (mv (acons pkg first-methods rest-methods)
-          qconsts))))
+          qconsts
+          mv-typess))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4300,8 +4565,7 @@
 
 (define atj-gen-shallow-mv-class ((types atj-type-listp))
   :guard (>= (len types) 2)
-  :returns (mv (class-name stringp)
-               (class jclassp))
+  :returns (class jclassp)
   :short "Generate the @(tsee mv) class for the given types."
   :long
   (xdoc::topstring
@@ -4360,36 +4624,31 @@
                              :name *atj-mv-factory-method-name*
                              :params (atj-gen-shallow-mv-params types)
                              :throws nil
-                             :body method-body))
-       (class (make-jclass :access (jaccess-public)
-                           :abstract? nil
-                           :static? t
-                           :final? t
-                           :strictfp? nil
-                           :name name
-                           :superclass? nil
-                           :superinterfaces nil
-                           :body (append (jfields-to-jcbody-elements
-                                          (append instance-fields
-                                                  (list static-field)))
-                                         (jmethods-to-jcbody-elements
-                                          (list method))))))
-    (mv name class)))
+                             :body method-body)))
+    (make-jclass :access (jaccess-public)
+                 :abstract? nil
+                 :static? t
+                 :final? t
+                 :strictfp? nil
+                 :name name
+                 :superclass? nil
+                 :superinterfaces nil
+                 :body (append (jfields-to-jcbody-elements
+                                (append instance-fields
+                                        (list static-field)))
+                               (jmethods-to-jcbody-elements
+                                (list method))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-mv-classes ((typess atj-type-list-listp))
   :guard (atj-gen-shallow-mv-classes-guard typess)
-  :returns (mv (class-names (and (string-listp class-names)
-                                 (equal (len class-names) (len typess))))
-               (classes (and (jclass-listp classes)
-                             (equal (len classes) (len typess)))))
+  :returns (classes (and (jclass-listp classes)
+                         (equal (len classes) (len typess))))
   :short "Lift @(tsee atj-gen-shallow-mv-class) to lists."
-  (b* (((when (endp typess)) (mv nil nil))
-       ((mv name class) (atj-gen-shallow-mv-class (car typess)))
-       ((mv names classes) (atj-gen-shallow-mv-classes (cdr typess))))
-    (mv (cons name names)
-        (cons class classes)))
+  (cond ((endp typess) nil)
+        (t (cons (atj-gen-shallow-mv-class (car typess))
+                 (atj-gen-shallow-mv-classes (cdr typess)))))
   :guard-hints (("Goal" :in-theory (enable atj-gen-shallow-mv-classes-guard)))
   :prepwork
   ((define atj-gen-shallow-mv-classes-guard ((typess atj-type-list-listp))
@@ -4400,12 +4659,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-all-mv-classes ((fns-to-translate symbol-listp)
-                                        (guards$ booleanp)
-                                        (wrld plist-worldp))
-  :returns (mv (mv-class-names string-listp)
-               (classes jclass-listp))
-  :short "Generate all the @(tsee mv) classes."
+(define atj-all-mv-output-types ((fns-to-translate symbol-listp)
+                                 (guards$ booleanp)
+                                 (wrld plist-worldp))
+  :returns (mv-typess (and (atj-type-list-listp mv-typess)
+                           (cons-listp mv-typess)))
+  :short "Collect the output types of functions that return multiple values."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4418,30 +4677,26 @@
      associated to each such function that returns two or more results.
      For each such list of two or more output types,
      we generate a distinct class.
-     We also return a list of the nmes of all these classes."))
-  (b* (((when (endp fns-to-translate)) (mv nil nil))
+     Here we just return the types,
+     which are then passed to @(tsee atj-pre-translate)
+     where they are augmented with any additional @(tsee mv) type
+     that is not any function's output type."))
+  (b* (((when (endp fns-to-translate)) nil)
        (fn (car fns-to-translate))
        ((unless (and (not (member-eq fn *stobjs-out-invalid*))
                      (>= (number-of-results+ fn wrld) 2)))
-        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld))
+        (atj-all-mv-output-types (cdr fns-to-translate) guards$ wrld))
        (fn-info (atj-get-function-type-info fn guards$ wrld))
        (out-typess (atj-function-type-info->outputs fn-info))
        (out-typess (remove-duplicates-equal out-typess))
-       ((unless (atj-gen-shallow-mv-classes-guard out-typess))
+       ((unless (cons-listp out-typess))
         (raise "Internal error: ~
-                not all the output types ~x0 of ~x1, ~
-                which returns ~x2 results, ~
-                are lists of two or more types."
-               out-typess fn (number-of-results+ fn wrld))
-        (mv nil nil))
-       ((mv class-names classes) (atj-gen-shallow-mv-classes out-typess))
-       ((mv more-class-names more-classes)
-        (atj-gen-shallow-all-mv-classes (cdr fns-to-translate) guards$ wrld)))
-    (mv (union-equal class-names more-class-names)
-        (union-equal classes more-classes)))
-  :verify-guards :after-returns
-  :prepwork ((local
-              (include-book "std/typed-lists/string-listp" :dir :system))))
+                output types ~x0 include an empty list."
+               out-typess)))
+    (union-equal out-typess
+                 (atj-all-mv-output-types (cdr fns-to-translate) guards$
+                                          wrld)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4508,9 +4763,8 @@
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates." fns+natives)
         (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
-       ((mv mv-class-names mv-classes)
-        (atj-gen-shallow-all-mv-classes fns-to-translate guards$ wrld))
-       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$ mv-class-names))
+       (mv-typess (atj-all-mv-output-types fns-to-translate guards$ wrld))
+       (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods fns+natives))
        (fns-by-pkg (organize-symbols-by-pkg fns+natives))
        (qconsts (make-atj-qconstants :integers nil
@@ -4521,16 +4775,23 @@
                                      :symbols (list t nil)
                                      :pairs nil
                                      :next-index 1))
-       ((mv methods-by-pkg qconsts)
+       ((mv methods-by-pkg qconsts mv-typess)
         (atj-gen-shallow-all-pkg-methods pkgs
                                          fns-by-pkg
                                          fns+natives
                                          qconsts
                                          pkg-class-names
                                          fn-method-names
+                                         mv-typess
                                          guards$
                                          verbose$
                                          wrld))
+       ((unless (atj-gen-shallow-mv-classes-guard mv-typess))
+        (raise "Internal error: ~
+                not all lists of types in ~x0 have length 2 or more."
+               mv-typess)
+        (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
+       (mv-classes (atj-gen-shallow-mv-classes mv-typess))
        ((atj-qconstants qconsts) qconsts)
        (qsymbols qconsts.symbols)
        (qsymbols-by-pkg (organize-symbols-by-pkg qsymbols))

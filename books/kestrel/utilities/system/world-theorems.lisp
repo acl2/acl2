@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
+(include-book "kestrel/std/system/arity" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,12 +24,6 @@
   "@(def arity-iff)
    @(def plist-worldp-when-plist-worldp-with-formals-cheap)
    @(def alistp-of-getprops)")
-
-(defthm arity-iff
-  (iff (arity fn wrld)
-       (or (consp fn)
-           (function-symbolp fn wrld)))
-  :hints (("Goal" :in-theory (enable arity))))
 
 (defthm plist-worldp-when-plist-worldp-with-formals-cheap
   (implies (not (plist-worldp wrld))

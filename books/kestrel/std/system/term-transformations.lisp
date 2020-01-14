@@ -22,6 +22,7 @@
 (include-book "fsublis-fn")
 (include-book "fsublis-var")
 (include-book "make-mv-let-call")
+(include-book "make-mv-nth-calls")
 (include-book "mvify")
 (include-book "remove-dead-if-branches")
 (include-book "remove-mbe")
