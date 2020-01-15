@@ -897,7 +897,7 @@ tags.  Additionally, "ipasir-tools.lisp" builds on that to create some useful
 shortcuts, also without any trust tags.</p>
 
 <p>To load the backend, include "ipasir-backend.lisp".  This book first loads
-the shared library specified by the environmnent variable
+the shared library specified by the environment variable
 IPASIR_SHARED_LIBRARY, which should contain the path to a SAT solver shared
 library. It then overrides the executable definitions of the ipasir interface
 functions so that they instead call the appropriate functions from the shared

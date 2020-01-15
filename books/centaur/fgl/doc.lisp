@@ -37,7 +37,7 @@
   :short "A prover framework that supports bit-blasting."
   :long "
 
-<p>FGL is the successor to <see topic='@(url fgl::fgl)'>GL</see>.  It mainly
+<p>FGL is the successor to <see topic='@(url acl2::gl)'>GL</see>.  It mainly
 consists of a clause processor that calls on a custom rewriter/term interpreter
 which features support for efficient representations of Boolean functions.
 Compared to GL, FGL offers the following new features:</p>
@@ -67,7 +67,7 @@ point.</li>
 
 <p>FGL is currently missing some important features of GL.  In particular, BDD
 and hons-AIG modes are not complete.  Shape specifiers don't exist yet.  Many
-of the usual ways of doing things in FGL are done differently in FGL.</p>
+of the usual ways of doing things in GL are done differently in FGL.</p>
 
 <p>To get started with FGL in the default configuration:</p>
 @({

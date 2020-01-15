@@ -36,6 +36,18 @@
 (include-book "misc/eval" :dir :system)
 (value-triple (acl2::tshell-ensure))
 
+(local
+ (progn
+   (defun my-glucose-config ()
+     (declare (xargs :guard t))
+     (satlink::make-config :cmdline "glucose"
+                           :verbose t
+                           :mintime 1/2
+                           :remove-temps t))
+
+   (defattach fgl-satlink-config my-glucose-config)))
+
+
 
 (acl2::must-fail
  (fgl-thm
