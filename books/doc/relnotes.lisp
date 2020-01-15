@@ -755,6 +755,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/typed-lists" "Standard Typed Lists Library"))
+
+   (xdoc::p
+    "A file for lists of strings and symbols has been added.
+     The recognizer has been factored out of
+     @('[books]/system/pseudo-good-worldp.lisp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
