@@ -14,19 +14,4 @@
 
 (include-book "kestrel/std/system/arity" :dir :system)
 (include-book "kestrel/std/system/getprops" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc theorems-about-world-related-functions
-  :parents (theorems-about-non-kestrel-books system-utilities-non-built-in)
-  :short "Theorems about world-related functions defined outside the
-          <see topic='@(url kestrel-books)'>Kestrel Books</see>."
-  :long
-  "@(def arity-iff)
-   @(def plist-worldp-when-plist-worldp-with-formals-cheap)
-   @(def alistp-of-getprops)")
-
-(defthm plist-worldp-when-plist-worldp-with-formals-cheap
-  (implies (not (plist-worldp wrld))
-           (not (plist-worldp-with-formals wrld)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+(include-book "kestrel/std/system/plist-worldp-with-formals" :dir :system)
