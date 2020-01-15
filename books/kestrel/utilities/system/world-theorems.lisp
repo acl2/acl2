@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/std/system/arity" :dir :system)
+(include-book "kestrel/std/system/getprops" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,7 +30,3 @@
   (implies (not (plist-worldp wrld))
            (not (plist-worldp-with-formals wrld)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defthm alistp-of-getprops
-  (alistp (getprops key world-name w))
-  :hints (("Goal" :in-theory (enable symbol-<))))
