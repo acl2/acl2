@@ -1906,7 +1906,7 @@
        we generate the Java block")
      (xdoc::codeblock
       "<a-block>"
-      "<type> <tmp> = null;"
+      "<type> <tmp>;"
       "if (<a-expr> != NIL) {"
       "    <b-blocks>"
       "    <tmp> = <b-expr>;"
@@ -1996,7 +1996,7 @@
           (atj-gen-jlocvar-indexed jtype
                                    jvar-tmp-base
                                    jvar-tmp-index
-                                   (jexpr-literal-null)))
+                                   nil))
          (if-block (jblock-ifelse
                     test-expr
                     (append then-block

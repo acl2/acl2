@@ -182,7 +182,7 @@
        ((unless (and (equal (jlocvar->name locvar)
                             result-var)
                      (equal (jlocvar->init? locvar)
-                            (jexpr-literal-null)))) (fail)))
+                            nil))) (fail)))
     (mv t pre-block test-expr then-block then-expr else-block else-expr))
 
   ///
