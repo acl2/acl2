@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,13 +10,8 @@
 
 (in-package "JAVA")
 
-;TODO:
-;; (include-book "hexadecimal-digits")
-(include-book "kestrel/java/language/hexadecimal-digits" :dir :system)
-
-;TODO:
-;; (include-book "grammar")
-(include-book "kestrel/java/language/grammar" :dir :system)
+(include-book "hexadecimal-digits")
+(include-book "grammar")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

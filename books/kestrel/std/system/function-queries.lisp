@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "arity")
 (include-book "arity-plus")
 (include-book "definedp")
 (include-book "definedp-plus")

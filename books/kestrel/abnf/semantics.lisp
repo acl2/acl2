@@ -949,6 +949,50 @@
                (parse-treep tree2 string rulename rules)))
   ///
 
+  ;; boilerplate:
+  (fty::deffixequiv string-ambiguousp
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
+    :hints (("Goal"
+             :in-theory (disable string-ambiguousp-suff)
+             :use (;; for STRING:
+                   (:instance string-ambiguousp-suff
+                    (string (string-fix string))
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string rulename rules))))
+                   (:instance string-ambiguousp-suff
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      (string-fix string) rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      (string-fix string) rulename rules))))
+                   ;; for RULENAME:
+                   (:instance string-ambiguousp-suff
+                    (rulename (rulename-fix rulename))
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string rulename rules))))
+                   (:instance string-ambiguousp-suff
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string (rulename-fix rulename) rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string (rulename-fix rulename) rules))))
+                   ;; for RULES:
+                   (:instance string-ambiguousp-suff
+                    (rules (rulelist-fix rules))
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string rulename rules))))
+                   (:instance string-ambiguousp-suff
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename (rulelist-fix rules))))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string
+                                      rulename
+                                      (rulelist-fix rules)))))))))
+
   (defruled string-parsablep-when-string-ambiguousp
     (implies (string-ambiguousp string rulename rules)
              (string-parsablep string rulename rules))
@@ -971,6 +1015,7 @@
   (and (string-parsablep string rulename rules)
        (not (string-ambiguousp string rulename rules)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule parse-treep-when-string-unambiguousp

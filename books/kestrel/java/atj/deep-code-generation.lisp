@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -402,8 +402,9 @@
        (body (ubody+ fn wrld))
        (in-types (repeat (len formals) :avalue)) ; actually irrelevant
        (out-types (list :avalue)) ; actually irrelevant
-       ((mv formals body)
-        (atj-pre-translate fn formals body in-types out-types t guards$ wrld))
+       ((mv formals body &)
+        (atj-pre-translate
+         fn formals body in-types out-types nil t guards$ wrld))
        (fn-block (jblock-locvar *aij-type-named-fn*
                                 jvar-function
                                 (jexpr-smethod *aij-type-named-fn*

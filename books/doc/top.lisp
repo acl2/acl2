@@ -256,6 +256,7 @@
 (include-book "centaur/gl/top-doc" :dir :system)
 (include-book "centaur/vl/top-doc" :dir :system)
 (include-book "centaur/sv/top-doc" :dir :system)
+(include-book "centaur/fgl/top-doc" :dir :system)
 (include-book "centaur/vl2014/top-doc" :dir :system)
 (include-book "projects/top-doc" :dir :system)
 (include-book "kestrel/top-doc" :dir :system)

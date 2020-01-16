@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/top" :dir :system)
+(include-book "kestrel/std/system/arity" :dir :system)
+(include-book "kestrel/std/system/getprops" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,17 +26,7 @@
    @(def plist-worldp-when-plist-worldp-with-formals-cheap)
    @(def alistp-of-getprops)")
 
-(defthm arity-iff
-  (iff (arity fn wrld)
-       (or (consp fn)
-           (function-symbolp fn wrld)))
-  :hints (("Goal" :in-theory (enable arity))))
-
 (defthm plist-worldp-when-plist-worldp-with-formals-cheap
   (implies (not (plist-worldp wrld))
            (not (plist-worldp-with-formals wrld)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defthm alistp-of-getprops
-  (alistp (getprops key world-name w))
-  :hints (("Goal" :in-theory (enable symbol-<))))

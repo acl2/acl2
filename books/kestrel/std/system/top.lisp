@@ -13,6 +13,7 @@
 (include-book "arglistp")
 (include-book "event-name-queries")
 (include-book "function-queries")
+(include-book "getprops")
 (include-book "included-books")
 (include-book "known-packages")
 (include-book "known-packages-plus")

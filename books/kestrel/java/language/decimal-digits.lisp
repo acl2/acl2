@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,51 +24,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection digit
+(defsection dec-digit
   :short "Fixtype of Java decimal digits [JLS:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A Java decimal digit is a Java ASCII character between `0' and `9'.
-     See the grammar rule @('digit'),
-     after which this type and these functions are named.")
+     See the grammar rule @('digit').")
    (xdoc::p
     "This is a type introduced by @(tsee fty::deffixtype)."))
 
-  (define digitp (x)
+  (define dec-digitp (x)
     :returns (yes/no booleanp)
-    :parents (digit)
-    :short "Recognizer for @(tsee digit)."
+    :parents (dec-digit)
+    :short "Recognizer for @(tsee dec-digit)."
     (and (integerp x)
          (<= (char-code #\0) x)
          (<= x (char-code #\9))))
 
-  (std::deffixer digit-fix
-    :pred digitp
+  (std::deffixer dec-digit-fix
+    :pred dec-digitp
     :body-fix (char-code #\0)
-    :parents (digit)
-    :short "Fixer for @(tsee digit).")
+    :parents (dec-digit)
+    :short "Fixer for @(tsee dec-digit).")
 
-  (fty::deffixtype digit
-    :pred digitp
-    :fix digit-fix
-    :equiv digit-equiv
+  (fty::deffixtype dec-digit
+    :pred dec-digitp
+    :fix dec-digit-fix
+    :equiv dec-digit-equiv
     :define t
     :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define digit-value ((x digitp))
+(define dec-digit-value ((x dec-digitp))
   :returns (val natp
                 :rule-classes (:rewrite :type-prescription)
-                :hints (("Goal" :in-theory (enable digitp digit-fix))))
+                :hints (("Goal" :in-theory (enable dec-digitp dec-digit-fix))))
   :short "Numeric value of a Java decimal digit."
-  (b* ((x (mbe :logic (digit-fix x) :exec x)))
+  (b* ((x (mbe :logic (dec-digit-fix x) :exec x)))
     (- x (char-code #\0)))
-  :guard-hints (("Goal" :in-theory (enable digitp)))
+  :guard-hints (("Goal" :in-theory (enable dec-digitp)))
   ///
 
-  (defret digit-value-upper-bound
+  (defret dec-digit-value-upper-bound
     (<= val 9)
     :rule-classes :linear
-    :hints (("Goal" :in-theory (enable digit-fix digitp)))))
+    :hints (("Goal" :in-theory (enable dec-digit-fix dec-digitp)))))
