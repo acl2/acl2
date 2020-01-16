@@ -623,15 +623,27 @@
      (the latter are just wrappers of the native implementations).
      Each method has the same number of parameters as the ACL2 function.
      If @(':guards') is @('nil'),
-     there is exactly one method for each ACL2 function,
-     and that method has @('Acl2Value') as argument and return types.
+     there is exactly one method for each ACL2 function;
+     that method's arguments all have types @('Acl2Value'),
+     while the return type is
+     either @('Acl2Value') if the function returns a single result
+     or @('MV_Acl2Value_..._Acl2Value') if the function returns "
+    (xdoc::seetopic "mv" "multiple results")
+    " where @('_Acl2Value') is repeated for the number of results.
      If @(':guards') is @('t'),
      for each ACL2 function there are as many overloaded methods
      as the number of function types associated to the function
      via @(tsee def-atj-main-function-type)
      and @(tsee def-atj-other-function-type):
      each of these function types determines the argument and return types
-     of the corresponding overloaded method.
+     of the corresponding overloaded method,
+     with each argument having the corresponding function input type
+     and the return type being
+     either the single output type if the function returns a single result
+     or @('MV_<type1>_..._<typen>') if the function returns "
+    (xdoc::seetopic "mv" "multiple results")
+    " where each @('<typei>') is determined from
+     the corresponding function output type.
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.
