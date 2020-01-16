@@ -1371,14 +1371,14 @@
 (define atj-adapt-expr-to-types ((expr jexprp)
                                  (src-types atj-type-listp)
                                  (dst-types atj-type-listp)
-                                 (jvar-result-base stringp)
-                                 (jvar-result-index posp))
+                                 (jvar-tmp-base stringp)
+                                 (jvar-tmp-index posp))
   :guard (and (consp src-types)
               (consp dst-types)
               (= (len src-types) (len dst-types)))
   :returns (mv (block jblockp)
                (new-expr jexprp :hyp (jexprp expr))
-               (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+               (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
   :short "Adapt a Java expression from source types to destination types."
   :long
   (xdoc::topstring
@@ -1399,32 +1399,32 @@
      otherwise, we would be re-evaluating the starting expression
      multiple times.
      Thus, in general we return a block and an expression,
-     and the index for the temporary variable is threade though."))
+     and the index for the temporary variable is threaded though."))
   (b* (((when (= (len src-types) 1))
         (mv nil
             (atj-adapt-expr-to-type expr (car src-types) (car dst-types))
-            jvar-result-index))
+            jvar-tmp-index))
        (src-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
        (dst-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
-       ((when (equal src-jtype dst-jtype)) (mv nil expr jvar-result-index))
+       ((when (equal src-jtype dst-jtype)) (mv nil expr jvar-tmp-index))
        ((mv block
             expr
-            jvar-result-index)
+            jvar-tmp-index)
         (if (jexpr-case expr :name)
-            (mv nil expr jvar-result-index)
-          (b* (((mv block var jvar-result-index)
+            (mv nil expr jvar-tmp-index)
+          (b* (((mv block var jvar-tmp-index)
                 (atj-gen-jlocvar-indexed src-jtype
-                                         jvar-result-base
-                                         jvar-result-index
+                                         jvar-tmp-base
+                                         jvar-tmp-index
                                          expr)))
-            (mv block (jexpr-name var) jvar-result-index))))
+            (mv block (jexpr-name var) jvar-tmp-index))))
        (exprs (atj-adapt-expr-to-types-aux expr 0 (len src-types)))
        (exprs (atj-adapt-exprs-to-types exprs src-types dst-types)))
     (mv block
         (jexpr-smethod dst-jtype
                        *atj-mv-factory-method-name*
                        exprs)
-        jvar-result-index))
+        jvar-tmp-index))
 
   :prepwork
   ((define atj-adapt-expr-to-types-aux ((expr jexprp) (i natp) (n natp))
@@ -1783,7 +1783,7 @@
      i.e. it is as if there were no types.")
    (xdoc::p
     "Our code generation strategy involves
-     generating Java local variables
+     generating temporary Java local variables
      to store results of arguments of ACL2's non-strict @(tsee if).
      The base name to use for these variables
      is an argument of these code generation functions;
@@ -1791,8 +1791,8 @@
      is threaded through the code generation functions."))
 
   (define atj-gen-shallow-if-test ((test pseudo-termp)
-                                   (jvar-result-base stringp)
-                                   (jvar-result-index posp)
+                                   (jvar-tmp-base stringp)
+                                   (jvar-tmp-index posp)
                                    (pkg-class-names string-string-alistp)
                                    (fn-method-names symbol-string-alistp)
                                    (curr-pkg stringp)
@@ -1802,7 +1802,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) test."
     :long
@@ -1856,10 +1856,10 @@
             test))
          ((mv block
               expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term (or jbool? test)
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -1872,7 +1872,7 @@
                                expr
                                (atj-gen-shallow-symbol
                                 nil pkg-class-names curr-pkg)))))
-      (mv block expr jvar-result-index))
+      (mv block expr jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count test) 2))
@@ -1881,8 +1881,8 @@
                                   (then pseudo-termp)
                                   (else pseudo-termp)
                                   (types atj-type-listp)
-                                  (jvar-result-base stringp)
-                                  (jvar-result-index posp)
+                                  (jvar-tmp-base stringp)
+                                  (jvar-tmp-index posp)
                                   (pkg-class-names string-string-alistp)
                                   (fn-method-names symbol-string-alistp)
                                   (curr-pkg stringp)
@@ -1893,7 +1893,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) application."
     :long
@@ -1906,18 +1906,18 @@
        we generate the Java block")
      (xdoc::codeblock
       "<a-block>"
-      "<type> <result> = null;"
+      "<type> <tmp> = null;"
       "if (<a-expr> != NIL) {"
       "    <b-blocks>"
-      "    <result> = <b-expr>;"
+      "    <tmp> = <b-expr>;"
       "} else {"
       "    <c-blocks>"
-      "    <result> = <c-expr>;"
+      "    <tmp> = <c-expr>;"
       "}")
      (xdoc::p
-      "and the Java expression @('<result>'),
-       where @('<result>') consists of
-       the base name in the parameter @('jvar-result-base')
+      "and the Java expression @('<tmp>'),
+       where @('<tmp>') consists of
+       the base name in the parameter @('jvar-tmp-base')
        followed by a numeric index.")
      (xdoc::p
       "In other words, we first compute the test
@@ -1945,10 +1945,10 @@
        see @(tsee atj-gen-shallow-if-test) for details."))
     (b* (((mv test-block
               test-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-if-test test
-                                   jvar-result-base
-                                   jvar-result-index
+                                   jvar-tmp-base
+                                   jvar-tmp-index
                                    pkg-class-names
                                    fn-method-names
                                    curr-pkg
@@ -1957,10 +1957,10 @@
                                    wrld))
          ((mv then-block
               then-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term then
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -1969,10 +1969,10 @@
                                 wrld))
          ((mv else-block
               else-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term else
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -1988,28 +1988,28 @@
                                  else-expr)))
             (mv block
                 expr
-                jvar-result-index)))
+                jvar-tmp-index)))
          (jtype (atj-gen-shallow-jtype types))
          ((mv result-locvar-block
-              jvar-result
-              jvar-result-index)
+              jvar-tmp
+              jvar-tmp-index)
           (atj-gen-jlocvar-indexed jtype
-                                   jvar-result-base
-                                   jvar-result-index
+                                   jvar-tmp-base
+                                   jvar-tmp-index
                                    (jexpr-literal-null)))
          (if-block (jblock-ifelse
                     test-expr
                     (append then-block
-                            (jblock-asg-name jvar-result then-expr))
+                            (jblock-asg-name jvar-tmp then-expr))
                     (append else-block
-                            (jblock-asg-name jvar-result else-expr))))
+                            (jblock-asg-name jvar-tmp else-expr))))
          (block (append test-block
                         result-locvar-block
                         if-block))
-         (expr (jexpr-name jvar-result)))
+         (expr (jexpr-name jvar-tmp)))
       (mv block
           expr
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1 and 2
     ;; so that the call of ATJ-GEN-SHALLOW-IF-TEST decreases
     ;; and each call of ATJ-GEN-SHALLOW-TERM decreases
@@ -2022,8 +2022,8 @@
   (define atj-gen-shallow-or-app ((first pseudo-termp)
                                   (second pseudo-termp)
                                   (types atj-type-listp)
-                                  (jvar-result-base stringp)
-                                  (jvar-result-index posp)
+                                  (jvar-tmp-base stringp)
+                                  (jvar-tmp-index posp)
                                   (pkg-class-names string-string-alistp)
                                   (fn-method-names symbol-string-alistp)
                                   (curr-pkg stringp)
@@ -2034,7 +2034,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @('or') application."
     :long
@@ -2048,19 +2048,19 @@
        we generate the Java block")
      (xdoc::codeblock
       "<a-block>"
-      "<type> <result> = <a-expr>;"
-      "if (<result> == NIL) {"
+      "<type> <tmp> = <a-expr>;"
+      "if (<tmp> == NIL) {"
       "    <b-blocks>"
-      "    <result> = <b-expr>;"
+      "    <tmp> = <b-expr>;"
       "}")
      (xdoc::p
-      "and the Java expression @('<result>')."))
+      "and the Java expression @('<tmp>')."))
     (b* (((mv first-block
               first-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term first
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2069,10 +2069,10 @@
                                 wrld))
          ((mv second-block
               second-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term second
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2080,25 +2080,25 @@
                                 guards$
                                 wrld))
          (jtype (atj-gen-shallow-jtype types))
-         ((mv result-locvar-block jvar-result jvar-result-index)
+         ((mv result-locvar-block jvar-tmp jvar-tmp-index)
           (atj-gen-jlocvar-indexed jtype
-                                   jvar-result-base
-                                   jvar-result-index
+                                   jvar-tmp-base
+                                   jvar-tmp-index
                                    first-expr))
          (if-block (jblock-if
                     (jexpr-binary (jbinop-eq)
-                                  (jexpr-name jvar-result)
+                                  (jexpr-name jvar-tmp)
                                   (atj-gen-shallow-symbol
                                    nil pkg-class-names curr-pkg))
                     (append second-block
-                            (jblock-asg-name jvar-result second-expr))))
+                            (jblock-asg-name jvar-tmp second-expr))))
          (block (append first-block
                         result-locvar-block
                         if-block))
-         (expr (jexpr-name jvar-result)))
+         (expr (jexpr-name jvar-tmp)))
       (mv block
           expr
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNT of the other addend is 0:
@@ -2111,8 +2111,8 @@
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
-     (jvar-result-base stringp)
-     (jvar-result-index posp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
      (pkg-class-names string-string-alistp)
      (fn-method-names symbol-string-alistp)
      (curr-pkg stringp)
@@ -2123,7 +2123,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 application of a Java primitive constructor."
@@ -2153,7 +2153,7 @@
        to be examined."))
     (b* (((mv arg & &) (atj-type-unwrap-term arg))
          ((unless arg) ; for termination proof
-          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+          (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
          (src-type (atj-type-list-to-type src-types))
          (dst-type (atj-type-list-to-type dst-types)))
       (if (quotep arg)
@@ -2163,69 +2163,69 @@
                        (prog2$
                         (raise "Internal error: BOOLEAN-VALUE applied to ~x0."
                                boolean)
-                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                        (mv nil (jexpr-name "irrelevant") jvar-tmp-index)))
                       (expr (atj-gen-jboolean boolean))
                       (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-                   (mv nil expr jvar-result-index)))
+                   (mv nil expr jvar-tmp-index)))
                 ((eq fn 'char-value)
                  (b* ((char (unquote-term arg))
                       ((unless (ubyte16p char))
                        (prog2$
                         (raise "Internal error: CHAR-VALUE applied to ~x0."
                                char)
-                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                        (mv nil (jexpr-name "irrelevant") jvar-tmp-index)))
                       (expr (atj-gen-jchar char))
                       (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-                   (mv nil expr jvar-result-index)))
+                   (mv nil expr jvar-tmp-index)))
                 ((eq fn 'byte-value)
                  (b* ((byte (unquote-term arg))
                       ((unless (sbyte8p byte))
                        (prog2$
                         (raise "Internal error: BYTE-VALUE applied to ~x0."
                                byte)
-                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                        (mv nil (jexpr-name "irrelevant") jvar-tmp-index)))
                       (expr (atj-gen-jbyte byte))
                       (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-                   (mv nil expr jvar-result-index)))
+                   (mv nil expr jvar-tmp-index)))
                 ((eq fn 'short-value)
                  (b* ((short (unquote-term arg))
                       ((unless (sbyte16p short))
                        (prog2$
                         (raise "Internal error: SHORT-VALUE applied to ~x0."
                                short)
-                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                        (mv nil (jexpr-name "irrelevant") jvar-tmp-index)))
                       (expr (atj-gen-jshort short))
                       (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-                   (mv nil expr jvar-result-index)))
+                   (mv nil expr jvar-tmp-index)))
                 ((eq fn 'int-value)
                  (b* ((int (unquote-term arg))
                       ((unless (sbyte32p int))
                        (prog2$
                         (raise "Internal error: INT-VALUE applied to ~x0."
                                int)
-                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                        (mv nil (jexpr-name "irrelevant") jvar-tmp-index)))
                       (expr (atj-gen-jint int))
                       (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-                   (mv nil expr jvar-result-index)))
+                   (mv nil expr jvar-tmp-index)))
                 ((eq fn 'long-value)
                  (b* ((long (unquote-term arg))
                       ((unless (sbyte64p long))
                        (prog2$
                         (raise "Internal error: LONG-VALUE applied to ~x0."
                                long)
-                        (mv nil (jexpr-name "irrelevant") jvar-result-index)))
+                        (mv nil (jexpr-name "irrelevant") jvar-tmp-index)))
                       (expr (atj-gen-jlong long))
                       (expr (atj-adapt-expr-to-type expr src-type dst-type)))
-                   (mv nil expr jvar-result-index)))
+                   (mv nil expr jvar-tmp-index)))
                 (t (mv (impossible)
                        (jexpr-name "irrelevant")
-                       jvar-result-index)))
+                       jvar-tmp-index)))
         (b* (((mv arg-block
                   arg-expr
-                  jvar-result-index)
+                  jvar-tmp-index)
               (atj-gen-shallow-term arg
-                                    jvar-result-base
-                                    jvar-result-index
+                                    jvar-tmp-base
+                                    jvar-tmp-index
                                     pkg-class-names
                                     fn-method-names
                                     curr-pkg
@@ -2245,7 +2245,7 @@
                                (jexpr-name "irrelevant"))))))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
-              jvar-result-index))))
+              jvar-tmp-index))))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 2))
@@ -2255,8 +2255,8 @@
      (operand pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
-     (jvar-result-base stringp)
-     (jvar-result-index posp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
      (pkg-class-names string-string-alistp)
      (fn-method-names symbol-string-alistp)
      (curr-pkg stringp)
@@ -2267,7 +2267,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 application of a Java primitive unary operation."
@@ -2290,10 +2290,10 @@
        we may revisit this decision in the future."))
     (b* (((mv operand-block
               operand-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term operand
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2343,7 +2343,7 @@
           (atj-adapt-expr-to-type expr
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count operand) 2))
@@ -2354,8 +2354,8 @@
      (right pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
-     (jvar-result-base stringp)
-     (jvar-result-index posp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
      (pkg-class-names string-string-alistp)
      (fn-method-names symbol-string-alistp)
      (curr-pkg stringp)
@@ -2366,7 +2366,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 application of a Java primitive binary operation."
@@ -2384,10 +2384,10 @@
        whose operator corresponds to the function."))
     (b* (((mv left-block
               left-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term left
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2396,10 +2396,10 @@
                                 wrld))
          ((mv right-block
               right-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term right
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2458,7 +2458,7 @@
           (atj-adapt-expr-to-type expr
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNT of the other addend is 0:
@@ -2471,8 +2471,8 @@
      (index pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
-     (jvar-result-base stringp)
-     (jvar-result-index posp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
      (pkg-class-names string-string-alistp)
      (fn-method-names symbol-string-alistp)
      (curr-pkg stringp)
@@ -2483,7 +2483,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 application of a Java primitive array read operation."
@@ -2500,10 +2500,10 @@
        and generate a Java array access expression."))
     (b* (((mv array-block
               array-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term array
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2512,10 +2512,10 @@
                                 wrld))
          ((mv index-block
               index-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term index
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2528,7 +2528,7 @@
           (atj-adapt-expr-to-type expr
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
     ;; even when the ACL2-COUNT of the other addend is 0:
@@ -2540,8 +2540,8 @@
     ((array pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
-     (jvar-result-base stringp)
-     (jvar-result-index posp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
      (pkg-class-names string-string-alistp)
      (fn-method-names symbol-string-alistp)
      (curr-pkg stringp)
@@ -2552,7 +2552,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 application of a Java primitive array length operation."
@@ -2575,9 +2575,10 @@
        it can be generated from the nonterminal @('expression-name')."))
     (b* (((mv array-block
               array-expr
-              jvar-result-index)
-          (atj-gen-shallow-term array jvar-result-base
-                                jvar-result-index
+              jvar-tmp-index)
+          (atj-gen-shallow-term array
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2593,7 +2594,7 @@
           (atj-adapt-expr-to-type expr
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count array) 2))
@@ -2603,8 +2604,8 @@
      (length pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
-     (jvar-result-base stringp)
-     (jvar-result-index posp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
      (pkg-class-names string-string-alistp)
      (fn-method-names symbol-string-alistp)
      (curr-pkg stringp)
@@ -2615,7 +2616,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 application of a Java primitive array constructor
@@ -2633,10 +2634,10 @@
        and generate a Java array creation expression without initializer."))
     (b* (((mv length-block
               length-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term length
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -2657,7 +2658,7 @@
           (atj-adapt-expr-to-type expr
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count length) 2))
@@ -2667,8 +2668,8 @@
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
-     (jvar-result-base stringp)
-     (jvar-result-index posp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
      (pkg-class-names string-string-alistp)
      (fn-method-names symbol-string-alistp)
      (curr-pkg stringp)
@@ -2679,7 +2680,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 application of a Java primitive array constructor
@@ -2725,10 +2726,10 @@
                 (atj-type-rewrap-array-initializer-elements elements type))
                ((mv blocks
                     exprs
-                    jvar-result-index)
+                    jvar-tmp-index)
                 (atj-gen-shallow-terms elements
-                                       jvar-result-base
-                                       jvar-result-index
+                                       jvar-tmp-base
+                                       jvar-tmp-index
                                        pkg-class-names
                                        fn-method-names
                                        curr-pkg
@@ -2749,13 +2750,13 @@
                 (atj-adapt-expr-to-type expr
                                         (atj-type-list-to-type src-types)
                                         (atj-type-list-to-type dst-types))
-                jvar-result-index))
+                jvar-tmp-index))
         (b* (((mv block
                   expr
-                  jvar-result-index)
+                  jvar-tmp-index)
               (atj-gen-shallow-term arg
-                                    jvar-result-base
-                                    jvar-result-index
+                                    jvar-tmp-base
+                                    jvar-tmp-index
                                     pkg-class-names
                                     fn-method-names
                                     curr-pkg
@@ -2775,7 +2776,7 @@
           (atj-adapt-expr-to-type expr
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
-              jvar-result-index))))
+              jvar-tmp-index))))
     ;; 2nd component is greater than 1
     ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 2))
@@ -2783,8 +2784,8 @@
   (define atj-gen-shallow-mv-app ((args pseudo-term-listp)
                                   (src-types atj-type-listp)
                                   (dst-types atj-type-listp)
-                                  (jvar-result-base stringp)
-                                  (jvar-result-index posp)
+                                  (jvar-tmp-base stringp)
+                                  (jvar-tmp-index posp)
                                   (pkg-class-names string-string-alistp)
                                   (fn-method-names symbol-string-alistp)
                                   (curr-pkg stringp)
@@ -2796,7 +2797,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 application of @(tsee mv)."
     :long
@@ -2813,10 +2814,10 @@
        converting each argument from the source types as needed."))
     (b* (((mv blocks
               exprs
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-terms args
-                                 jvar-result-base
-                                 jvar-result-index
+                                 jvar-tmp-base
+                                 jvar-tmp-index
                                  pkg-class-names
                                  fn-method-names
                                  curr-pkg
@@ -2828,20 +2829,20 @@
           (raise "Internal error: ~
                   MV has arguments ~x0, which are fewer than two."
                  args)
-          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+          (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
          ((unless (= (len src-types) (len dst-types)))
           (raise "Internal error: ~
                   the source types ~x0 and destination types ~x1 ~
                   differ in number."
                  src-types dst-types)
-          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+          (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
          ((unless (= (len args) (len dst-types)))
           (raise "Internal error: ~
                   the arguments ~x0 and ~
                   source and destination types ~x1 and ~x2 ~
                   differ in number."
                  args src-types dst-types)
-          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+          (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
          (exprs (atj-adapt-exprs-to-types exprs src-types dst-types))
          (expr
           (jexpr-smethod (jtype-class (atj-gen-shallow-mv-class-name dst-types))
@@ -2849,7 +2850,7 @@
                          exprs)))
       (mv block
           expr
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases:
     :measure (two-nats-measure (acl2-count args) 1))
@@ -2858,8 +2859,8 @@
                                   (args pseudo-term-listp)
                                   (src-types atj-type-listp)
                                   (dst-types atj-type-listp)
-                                  (jvar-result-base stringp)
-                                  (jvar-result-index posp)
+                                  (jvar-tmp-base stringp)
+                                  (jvar-tmp-index posp)
                                   (pkg-class-names string-string-alistp)
                                   (fn-method-names symbol-string-alistp)
                                   (curr-pkg stringp)
@@ -2874,7 +2875,7 @@
                            (len args))))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 function application."
     :long
@@ -2918,8 +2919,8 @@
                 (atj-gen-shallow-or-app first
                                         third
                                         dst-types ; = SRC-TYPES
-                                        jvar-result-base
-                                        jvar-result-index
+                                        jvar-tmp-base
+                                        jvar-tmp-index
                                         pkg-class-names
                                         fn-method-names
                                         curr-pkg
@@ -2930,8 +2931,8 @@
                                       second
                                       third
                                       dst-types ; = SRC-TYPES
-                                      jvar-result-base
-                                      jvar-result-index
+                                      jvar-tmp-base
+                                      jvar-tmp-index
                                       pkg-class-names
                                       fn-method-names
                                       curr-pkg
@@ -2945,8 +2946,8 @@
                                             (car args)
                                             src-types
                                             dst-types
-                                            jvar-result-base
-                                            jvar-result-index
+                                            jvar-tmp-base
+                                            jvar-tmp-index
                                             pkg-class-names
                                             fn-method-names
                                             curr-pkg
@@ -2959,8 +2960,8 @@
                                           (car args)
                                           src-types
                                           dst-types
-                                          jvar-result-base
-                                          jvar-result-index
+                                          jvar-tmp-base
+                                          jvar-tmp-index
                                           pkg-class-names
                                           fn-method-names
                                           curr-pkg
@@ -2974,8 +2975,8 @@
                                            (second args)
                                            src-types
                                            dst-types
-                                           jvar-result-base
-                                           jvar-result-index
+                                           jvar-tmp-base
+                                           jvar-tmp-index
                                            pkg-class-names
                                            fn-method-names
                                            curr-pkg
@@ -2988,8 +2989,8 @@
                                              (second args)
                                              src-types
                                              dst-types
-                                             jvar-result-base
-                                             jvar-result-index
+                                             jvar-tmp-base
+                                             jvar-tmp-index
                                              pkg-class-names
                                              fn-method-names
                                              curr-pkg
@@ -3001,8 +3002,8 @@
           (atj-gen-shallow-jprimarr-length-app (car args)
                                                src-types
                                                dst-types
-                                               jvar-result-base
-                                               jvar-result-index
+                                               jvar-tmp-base
+                                               jvar-tmp-index
                                                pkg-class-names
                                                fn-method-names
                                                curr-pkg
@@ -3015,8 +3016,8 @@
                                                (car args)
                                                src-types
                                                dst-types
-                                               jvar-result-base
-                                               jvar-result-index
+                                               jvar-tmp-base
+                                               jvar-tmp-index
                                                pkg-class-names
                                                fn-method-names
                                                curr-pkg
@@ -3029,8 +3030,8 @@
                                                     (car args)
                                                     src-types
                                                     dst-types
-                                                    jvar-result-base
-                                                    jvar-result-index
+                                                    jvar-tmp-base
+                                                    jvar-tmp-index
                                                     pkg-class-names
                                                     fn-method-names
                                                     curr-pkg
@@ -3040,8 +3041,8 @@
           (atj-gen-shallow-mv-app args
                                   src-types
                                   dst-types
-                                  jvar-result-base
-                                  jvar-result-index
+                                  jvar-tmp-base
+                                  jvar-tmp-index
                                   pkg-class-names
                                   fn-method-names
                                   curr-pkg
@@ -3050,10 +3051,10 @@
                                   wrld))
          ((mv arg-blocks
               arg-exprs
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-terms args
-                                 jvar-result-base
-                                 jvar-result-index
+                                 jvar-tmp-base
+                                 jvar-tmp-index
                                  pkg-class-names
                                  fn-method-names
                                  curr-pkg
@@ -3072,26 +3073,26 @@
                         the source types ~x0 and destination types ~x1 ~
                         differ in number."
                        src-types dst-types)
-                (mv nil (jexpr-name "irrelevant") jvar-result-index))
+                (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
                ((mv adapt-block
                     expr
-                    jvar-result-index)
+                    jvar-tmp-index)
                 (atj-adapt-expr-to-types expr src-types dst-types
-                                         jvar-result-base jvar-result-index)))
+                                         jvar-tmp-base jvar-tmp-index)))
             (mv (append (flatten arg-blocks) adapt-block)
                 expr
-                jvar-result-index)))
+                jvar-tmp-index)))
          ((mv lambda-block
               lambda-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-lambda (lambda-formals fn)
                                   (lambda-body fn)
                                   arg-blocks
                                   arg-exprs
                                   src-types
                                   dst-types
-                                  jvar-result-base
-                                  jvar-result-index
+                                  jvar-tmp-base
+                                  jvar-tmp-index
                                   pkg-class-names
                                   fn-method-names
                                   curr-pkg
@@ -3100,7 +3101,7 @@
                                   wrld)))
       (mv lambda-block
           lambda-expr
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 2
     ;; so that the call of ATJ-GEN-SHALLOW-LAMBDA decreases
     ;; even when FN is a non-symbol atom (impossible under the guard),
@@ -3117,8 +3118,8 @@
                                   (arg-exprs jexpr-listp)
                                   (src-types atj-type-listp)
                                   (dst-types atj-type-listp)
-                                  (jvar-result-base stringp)
-                                  (jvar-result-index posp)
+                                  (jvar-tmp-base stringp)
+                                  (jvar-tmp-index posp)
                                   (pkg-class-names string-string-alistp)
                                   (fn-method-names symbol-string-alistp)
                                   (curr-pkg stringp)
@@ -3132,7 +3133,7 @@
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp :hyp (jblock-listp arg-blocks))
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 lambda expression,
             applied to given Java expressions as arguments."
@@ -3146,10 +3147,10 @@
                                                   arg-exprs))
          ((mv body-block
               body-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term body
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -3161,22 +3162,22 @@
                   the source types ~x0 and destination types ~x1 ~
                   differ in number."
                  src-types dst-types)
-          (mv nil (jexpr-name "irrelevant") jvar-result-index))
+          (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
          ((mv adapt-block
               expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-adapt-expr-to-types body-expr src-types dst-types
-                                   jvar-result-base jvar-result-index)))
+                                   jvar-tmp-base jvar-tmp-index)))
       (mv (append let-block body-block adapt-block)
           expr
-          jvar-result-index))
+          jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count body) 2))
 
   (define atj-gen-shallow-mv-let ((term pseudo-termp)
-                                  (jvar-result-base stringp)
-                                  (jvar-result-index posp)
+                                  (jvar-tmp-base stringp)
+                                  (jvar-tmp-index posp)
                                   (pkg-class-names string-string-alistp)
                                   (fn-method-names symbol-string-alistp)
                                   (curr-pkg stringp)
@@ -3187,7 +3188,7 @@
     :returns (mv (successp booleanp)
                  (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :short "Generate a shallowly embedded ACL2 @(tsee mv-let)."
     :long
     (xdoc::topstring
@@ -3216,13 +3217,13 @@
        and finally the body term."))
     (b* (((mv yes/no mv-var mv-term vars indices body-term)
           (atj-check-marked-annotated-mv-let-call term))
-         ((unless yes/no) (mv nil nil (jexpr-name "dummy") jvar-result-index))
+         ((unless yes/no) (mv nil nil (jexpr-name "dummy") jvar-tmp-index))
          ((mv mv-block
               mv-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term mv-term
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -3241,10 +3242,10 @@
                                                    exprs))
          ((mv body-block
               body-expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-term body-term
-                                jvar-result-base
-                                jvar-result-index
+                                jvar-tmp-base
+                                jvar-tmp-index
                                 pkg-class-names
                                 fn-method-names
                                 curr-pkg
@@ -3254,7 +3255,7 @@
       (mv t
           (append mv-block vars-block body-block)
           body-expr
-          jvar-result-index))
+          jvar-tmp-index))
     :measure (two-nats-measure (acl2-count term) 0)
 
     :prepwork
@@ -3271,8 +3272,8 @@
                 (len indices))))))
 
   (define atj-gen-shallow-term ((term pseudo-termp)
-                                (jvar-result-base stringp)
-                                (jvar-result-index posp)
+                                (jvar-tmp-base stringp)
+                                (jvar-tmp-index posp)
                                 (pkg-class-names string-string-alistp)
                                 (fn-method-names symbol-string-alistp)
                                 (curr-pkg stringp)
@@ -3282,7 +3283,7 @@
     :guard (not (equal curr-pkg ""))
     :returns (mv (block jblockp)
                  (expr jexprp)
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 term."
     :long
@@ -3312,20 +3313,20 @@
     (b* (((mv mv-let-p
               block
               expr
-              jvar-result-index)
+              jvar-tmp-index)
           (atj-gen-shallow-mv-let term
-                                  jvar-result-base
-                                  jvar-result-index
+                                  jvar-tmp-base
+                                  jvar-tmp-index
                                   pkg-class-names
                                   fn-method-names
                                   curr-pkg
                                   qpairs
                                   guards$
                                   wrld))
-         ((when mv-let-p) (mv block expr jvar-result-index))
+         ((when mv-let-p) (mv block expr jvar-tmp-index))
          ((mv term src-types dst-types) (atj-type-unwrap-term term))
          ((unless term) ; for termination proof
-          (mv nil (jexpr-name "dummy") jvar-result-index))
+          (mv nil (jexpr-name "dummy") jvar-tmp-index))
          ((when (variablep term))
           (b* (((mv var &) (atj-unmark-var term))
                ((mv var &) (atj-type-unannotate-var var))
@@ -3334,7 +3335,7 @@
                 (atj-adapt-expr-to-type expr
                                         (atj-type-list-to-type src-types)
                                         (atj-type-list-to-type dst-types))))
-            (mv nil expr jvar-result-index)))
+            (mv nil expr jvar-tmp-index)))
          ((when (fquotep term))
           (b* ((value (unquote-term term))
                (expr (atj-gen-shallow-value value
@@ -3345,13 +3346,13 @@
                 (atj-adapt-expr-to-type expr
                                         (atj-type-list-to-type src-types)
                                         (atj-type-list-to-type dst-types))))
-            (mv nil expr jvar-result-index))))
+            (mv nil expr jvar-tmp-index))))
       (atj-gen-shallow-fn-app (ffn-symb term)
                               (fargs term)
                               src-types
                               dst-types
-                              jvar-result-base
-                              jvar-result-index
+                              jvar-tmp-base
+                              jvar-tmp-index
                               pkg-class-names
                               fn-method-names
                               curr-pkg
@@ -3363,8 +3364,8 @@
     :measure (two-nats-measure (acl2-count term) 1))
 
   (define atj-gen-shallow-terms ((terms pseudo-term-listp)
-                                 (jvar-result-base stringp)
-                                 (jvar-result-index posp)
+                                 (jvar-tmp-base stringp)
+                                 (jvar-tmp-index posp)
                                  (pkg-class-names string-string-alistp)
                                  (fn-method-names symbol-string-alistp)
                                  (curr-pkg stringp)
@@ -3376,17 +3377,17 @@
                               (equal (len blocks) (len terms))))
                  (exprs (and (jexpr-listp exprs)
                              (equal (len exprs) (len terms))))
-                 (new-jvar-result-index posp :hyp (posp jvar-result-index)))
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Lift @(tsee atj-gen-shallow-term) to lists."
     (if (endp terms)
-        (mv nil nil jvar-result-index)
+        (mv nil nil jvar-tmp-index)
       (b* (((mv first-block
                 first-expr
-                jvar-result-index)
+                jvar-tmp-index)
             (atj-gen-shallow-term (car terms)
-                                  jvar-result-base
-                                  jvar-result-index
+                                  jvar-tmp-base
+                                  jvar-tmp-index
                                   pkg-class-names
                                   fn-method-names
                                   curr-pkg
@@ -3395,10 +3396,10 @@
                                   wrld))
            ((mv rest-blocks
                 rest-exprs
-                jvar-result-index)
+                jvar-tmp-index)
             (atj-gen-shallow-terms (cdr terms)
-                                   jvar-result-base
-                                   jvar-result-index
+                                   jvar-tmp-base
+                                   jvar-tmp-index
                                    pkg-class-names
                                    fn-method-names
                                    curr-pkg
@@ -3407,7 +3408,7 @@
                                    wrld)))
         (mv (cons first-block rest-blocks)
             (cons first-expr rest-exprs)
-            jvar-result-index)))
+            jvar-tmp-index)))
     :measure (two-nats-measure (acl2-count terms) 0))
 
   :verify-guards nil ; done below
@@ -3710,7 +3711,7 @@
                        (atj-type-list-to-jitype-list in-types)))
        ((mv body-block body-expr &)
         (atj-gen-shallow-term body
-                              "$result" 1
+                              "$tmp" 1
                               pkg-class-names
                               fn-method-names
                               curr-pkg
