@@ -18,6 +18,8 @@
 
 (local (in-theory (disable acl2::mod-sum-cases))) ;for speed
 
+(in-theory (disable mod)) ;since mod is introduced by some rules below
+
 ;distributivity
 ;move
 (defthm mul-of-add-arg2
@@ -377,7 +379,7 @@
                 (< 2 p)
                 (rtl::primep p))
            (not (equal (add x1 x1 p) 0)))
-  :hints (("Goal" :in-theory (enable pfield::add-same fep))))
+  :hints (("Goal" :in-theory (enable add-same fep))))
 
 (defthm not-equal-of-inv-and-0
   (implies (and (fep a p)
@@ -429,3 +431,42 @@
   :hints (("Goal" :use ((:instance mul-of-inv-mul-of-inv (a x) (x y))
                         (:instance mul-of-inv-mul-of-inv (a x) (x z)))
            :in-theory (disable mul-of-inv-mul-of-inv))))
+
+;; Similar to turining (- (* 3 x)) into (* -3 x).
+(defthm neg-of-mul-when-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep p)))
+                (integerp y)
+                (integerp k)
+                (posp p))
+           (equal (neg (mul k y p) p)
+                  (mul (neg k p) y p)))
+  :hints (("Goal" :in-theory (e/d (mul neg sub)
+                                  (sub-rewrite)))))
+
+;; Solve for z in something like x=yz when x and y are constants.
+(defthm equal-of-mul-constants
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep y)))
+                (fep y p)
+                (fep z p)
+                (rtl::primep p))
+           (equal (equal x (mul y z p))
+                  (and (fep x p)
+                       (if (equal 0 y)
+                           (equal x 0)
+                         (equal (div x y p) z)))))
+  :hints (("Goal" :in-theory (enable div))))
+
+(defthm div-of-0-arg1
+  (implies (and (integerp p)
+                (integerp y))
+           (equal (div 0 y p)
+                  0))
+  :hints (("Goal" :in-theory (enable div))))
+
+(defthm neg-of-0
+  (implies (integerp p)
+           (equal (neg 0 p)
+                  0))
+  :hints (("Goal" :in-theory (enable neg sub))))
