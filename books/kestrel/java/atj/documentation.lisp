@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -418,6 +418,10 @@
       and each @('termj') is an untranslated ground term
       whose translation is @('(fn in1 in2 ...)'),
       where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
+      @('fn') returns single results (i.e. not "
+     (xdoc::seetopic "mv" "multiple results")
+     "(support for generating tests for functions that return multiple results
+      will be added in the future),
       and each @('in') among @('in1'), @('in2')
       satisfies the following conditions:")
     (xdoc::ul
