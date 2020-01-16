@@ -267,7 +267,7 @@
   ((var-type jtypep "Type of the local variable.")
    (var-base stringp "Base name of the local variable.")
    (var-index natp "Index of the local variable.")
-   (var-init jexprp "Initializer of the local variable."))
+   (var-init? maybe-jexprp "Initializer of the local variable."))
   :returns (mv (locvar-block jblockp)
                (var-name stringp "The name of the local variable.")
                (new-var-index natp "The updated variable index."
@@ -285,7 +285,7 @@
      the local variable declaration is returned in a singleton block."))
   (b* ((var-name (str::cat var-base (natstr var-index)))
        (var-index (1+ var-index))
-       (locvar-block (jblock-locvar var-type var-name var-init)))
+       (locvar-block (jblock-locvar var-type var-name var-init?)))
     (mv locvar-block var-name var-index))
   ///
 
