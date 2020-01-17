@@ -315,7 +315,8 @@
   (defthm fat32-entry-p-of-nth
     (implies (fat32-entry-list-p l)
              (equal (fat32-entry-p (nth n l))
-                    (< (nfix n) (len l))))))
+                    (< (nfix n) (len l))))
+    :hints (("Goal" :in-theory (disable nth-when->=-n-len-l)))))
 
 (defund
   fat32-update-lower-28

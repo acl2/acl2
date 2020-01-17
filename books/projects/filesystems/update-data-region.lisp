@@ -155,7 +155,7 @@
   :hints
   (("goal"
     :in-theory (e/d (data-regioni data-region-length
-                                  nth nthcdr-when->=-n-len-l)
+                                  nth)
                     ;; Try disabling rules until the proof works again...
                     ((:rewrite a1)
                      (:rewrite a2)
@@ -787,7 +787,7 @@
   (("goal"
     :induct (update-data-region-from-disk-image fat32-in-memory
                                                 len state tmp_init image-path)
-    :in-theory (enable take-of-nthcdr nthcdr-when->=-n-len-l)
+    :in-theory (enable take-of-nthcdr)
     :expand (:free (fat32-in-memory str)
                    (update-data-region fat32-in-memory str len)))))
 

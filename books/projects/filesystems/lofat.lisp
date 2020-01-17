@@ -888,27 +888,22 @@ Some (rather awful) testing forms are
 
 (defthm
   lofat-find-file-correctness-3
-  (and
-   (lofat-file-p
-    (mv-nth
-     0
-     (lofat-find-file fat32-in-memory dir-ent-list pathname)))
-   (integerp (mv-nth 1
+  (and (lofat-file-p
+        (mv-nth 0
+                (lofat-find-file fat32-in-memory dir-ent-list pathname)))
+       (natp (mv-nth 1
                      (lofat-find-file fat32-in-memory
                                       dir-ent-list pathname))))
-  :hints (("goal" :induct t))
   :rule-classes
   ((:type-prescription
-    :corollary
-    (integerp (mv-nth 1
-                      (lofat-find-file fat32-in-memory
-                                       dir-ent-list pathname))))
+    :corollary (natp (mv-nth 1
+                             (lofat-find-file fat32-in-memory
+                                              dir-ent-list pathname))))
    (:rewrite
     :corollary
-    (lofat-file-p
-     (mv-nth 0
-             (lofat-find-file fat32-in-memory
-                              dir-ent-list pathname))))))
+    (lofat-file-p (mv-nth 0
+                          (lofat-find-file fat32-in-memory
+                                           dir-ent-list pathname))))))
 
 (defun
     place-dir-ent (dir-ent-list dir-ent)
@@ -14046,7 +14041,7 @@ Some (rather awful) testing forms are
   (("goal"
     :in-theory (enable make-dir-ent-list
                        insert-dir-ent string=>nats
-                       nats=>string nthcdr-when->=-n-len-l
+                       nats=>string
                        len-when-dir-ent-p)
     :do-not-induct t
     :expand

@@ -14,10 +14,6 @@
                               (file-table-p file-table))))
   (hifat-open pathname fd-table file-table))
 
-;; This proof makes me wonder whether I should restructure
-;; lofat-find-file-correctness-1 and
-;; lofat-find-file-correctness-2 to avoid free variables... it's
-;; not ideal to have to instantiate them here.
 (defthmd
   lofat-open-refinement
   (implies
@@ -296,6 +292,14 @@
     (stringp x)
     (unsigned-byte-p 32 (length x)))
    (equal (lofat-file-contents-fix x) x)))
+
+(defthm
+  struct-stat-p-of-lofat-lstat
+  (struct-stat-p
+   (mv-nth 0
+           (lofat-lstat fat32-in-memory
+                        (pathname-to-fat32-pathname (explode pathname)))))
+  :hints (("goal" :in-theory (enable lofat-lstat))))
 
 (defthm
   lofat-lstat-refinement
@@ -1180,3 +1184,40 @@
    (lofat-fs-p fat32-in-memory)
    (lofat-fs-p (mv-nth 0 (lofat-mkdir fat32-in-memory pathname))))
   :hints (("Goal" :in-theory (enable lofat-mkdir)) ))
+
+;; Semantics under consideration: each directory stream is a list of directory
+;; entries, and each readdir operation removes a directory entry from the front
+;; of the list, never to be seen again until a new directory stream should be
+;; opened.
+(fty::defalist
+ dirstream-table
+ :key-type nat
+ :val-type dir-ent-list
+ :true-listp t)
+
+(defthm dirstream-table-p-correctness-1
+  (implies (dirstream-table-p dirstream-table)
+           (nat-listp (strip-cars dirstream-table))))
+
+;; The dirstream-table has to be returned, since it is potentially changed.
+(defund lofat-opendir (fat32-in-memory dirstream-table pathname)
+  (declare (xargs :stobjs fat32-in-memory
+                  :guard (and (lofat-fs-p fat32-in-memory)
+                              (dirstream-table-p dirstream-table)
+                              (fat32-filename-list-p pathname))
+                  :guard-debug t))
+  (b*
+      ((dirstream-table (mbe :exec dirstream-table
+                             :logic (dirstream-table-fix dirstream-table)))
+       ((mv root-dir-ent-list &) (root-dir-ent-list fat32-in-memory))
+       ((mv file error-code)
+        (lofat-find-file fat32-in-memory root-dir-ent-list pathname))
+       ((unless (zp error-code)) (mv dirstream-table -1 error-code))
+       ((unless (lofat-directory-file-p file)) (mv dirstream-table -1 *ENOTDIR*))
+       (dirstream-table-index
+        (find-new-index (strip-cars dirstream-table))))
+    (mv
+     (cons (cons dirstream-table-index (lofat-file->contents file))
+      dirstream-table-index)
+     dirstream-table-index
+     0)))
