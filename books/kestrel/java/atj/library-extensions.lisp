@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,9 +23,11 @@
 
 (xdoc::evmac-topic-library-extensions atj)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Std/system:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-check-mv-let-call ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
@@ -118,7 +120,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-make-mv-let-call ((indices nat-listp)
+                              (vars symbol-listp)
+                              (mv-term pseudo-termp)
+                              (body-term pseudo-termp))
+  :guard (= (len indices) (len vars))
+  :returns (term pseudo-termp :hyp :guard)
+  :short "Build a translated call of @(tsee mv-let)
+          with some possibly missing @(tsee mv-nth) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is somewhat the opposite of @(tsee atj-check-mv-let-call).
+     It is similar to @(tsee make-mv-let-call),
+     which we cannot quite use here because in ATJ
+     the unused variable removal pre-translation step
+     may remove some @(tsee mv-nth) calls from a translated @(tsee mv-let).
+     Thus, this function takes the list of indices present as argument."))
+  `((lambda (mv)
+      ((lambda ,vars ,body-term)
+       ,@(atj-make-mv-let-call-aux indices)))
+    ,mv-term)
+
+  :prepwork
+  ((define atj-make-mv-let-call-aux ((indices nat-listp))
+     :returns (terms pseudo-term-listp)
+     (cond ((endp indices) nil)
+           (t (cons `(mv-nth ',(car indices) mv)
+                    (atj-make-mv-let-call-aux (cdr indices)))))
+     ///
+     (defret len-of-atj-make-mv-let-call-aux
+       (equal (len terms) (len indices))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Java:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-string-ascii-java-identifier-p ((string stringp))
   :returns (yes/no booleanp)
@@ -148,12 +186,16 @@
               (alpha/uscore/dollar-char-p (car chars))
               (alpha/digit/uscore/dollar-charlist-p (cdr chars))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::deflist atj-string-ascii-java-identifier-listp (x)
   (atj-string-ascii-java-identifier-p x)
   :guard (string-listp x)
   :short "Check if a list of ACL2 strings includes only ASCII Java identifiers."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-string-ascii-java-package-name-p ((string stringp))
   :returns (yes/no booleanp)
@@ -165,6 +207,8 @@
   (b* ((identifiers (str::strtok! string (list #\.))))
     (and (consp identifiers)
          (atj-string-ascii-java-identifier-listp identifiers))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-java-lang-class-names*
   :short "Class names in the Java @('java.lang') package."
