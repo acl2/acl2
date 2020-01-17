@@ -132,7 +132,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is somewhat the opposite of @(tsee atj-check-mv-let-call).
-     It is similar to @(tsee make-mv-let-call),
+     It is similar to @(tsee acl2::make-mv-let-call),
      which we cannot quite use here because in ATJ
      the unused variable removal pre-translation step
      may remove some @(tsee mv-nth) calls from a translated @(tsee mv-let).

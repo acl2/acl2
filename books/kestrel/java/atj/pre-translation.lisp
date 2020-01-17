@@ -281,7 +281,7 @@
      the term may be a translated @(tsee mv-let).
      If the term has that form, it is possible, but unlikely,
      that it is not actually a translated @(tsee mv-let).
-     In order to properly restore @(tsee mv) calls in the @(tsee mv-term),
+     In order to properly restore @(tsee mv) calls in the @('mv-term'),
      we need to determine how many results it is expected to return.
      Because of the pre-translation step that removes unused variables,
      this cannot be determined, in general, from the term,
@@ -1876,7 +1876,7 @@
      because of the special treatment of @('(if a a b)') terms,
      which are treated as @('(or a b)'):
      the Java code generated for this case is a little different
-     (see @(tsee atj-gen-shallow-or-app)),
+     (see @(tsee atj-gen-shallow-or-call)),
      but the treatment of @('vars-in-scope')
      is essentially the same as just explained
      (there is no `then' branch to mark, because it is the same as the test,
