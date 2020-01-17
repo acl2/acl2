@@ -568,7 +568,7 @@
         (er-soft+ ctx t nil
                   "The test term ~x0 in the :TESTS input ~
                    must translate to ~
-                   the application of a named function." call))
+                   the call of a named function." call))
        (fn (ffn-symb term$))
        ((er &) (ensure-member-of-list$
                 fn

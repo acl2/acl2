@@ -1843,13 +1843,13 @@
     "When the term to be marked is a quoted constant,
      it is obviously left unchanged.")
    (xdoc::p
-    "When the term to be marked is a function application,
+    "When the term to be marked is a function call,
      we first treat the @(tsee if) (and @(tsee or)) case separately.
      We mark the test, and after that the two branches.
      The handling of @('vars-in-scope') and @('vars-used-after') for this case
      has been explained above.")
    (xdoc::p
-    "For all other function applications, which are strict,
+    "For all other function calls, which are strict,
      we first mark the actual arguments,
      treating @('vars-in-scope') and @('vars-used-after')
      as explained above.
@@ -1867,7 +1867,7 @@
      (i.e. we could not reuse a Java variable of type @('Acl2Symbol')
      to store a value of type @('Acl2String')).
      The second condition is that the variable is not used
-     after the lambda application term, i.e. it is not in @('vars-used-after'):
+     after the lambda call term, i.e. it is not in @('vars-used-after'):
      otherwise, we would overwrite something that was supposed to be used later,
      with incorrect results in general.
      The third condition is that the variable is not free
@@ -2403,7 +2403,7 @@
    (xdoc::p
     "If the term is a quoted constant, it is obviously left unchanged.")
    (xdoc::p
-    "If the term is a function application,
+    "If the term is a function call,
      its actual arguments are recursively processed,
      renaming all their variables.
      If the function is a named one, it is of course left unchanged.

@@ -1895,7 +1895,7 @@
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 @(tsee if) application."
+    :short "Generate a shallowly embedded ACL2 @(tsee if) call."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2036,7 +2036,7 @@
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 @('or') application."
+    :short "Generate a shallowly embedded ACL2 @('or') call."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2126,7 +2126,7 @@
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
-            ACL2 application of a Java primitive constructor."
+            ACL2 call of a Java primitive constructor."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2138,7 +2138,7 @@
        (i.e. @(tsee boolean-value) etc.)
        are treated specially.
        If the argument is a quoted constant,
-       the function application is translated
+       the function call is translated
        to the constant Java primitive expression
        whose value is the quoted constant.
        If the argument is not a quoted constant,
@@ -2270,7 +2270,7 @@
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
-            ACL2 application of a Java primitive unary operation."
+            ACL2 call of a Java primitive unary operation."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2369,7 +2369,7 @@
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
-            ACL2 application of a Java primitive binary operation."
+            ACL2 call of a Java primitive binary operation."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2486,7 +2486,7 @@
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
-            ACL2 application of a Java primitive array read operation."
+            ACL2 call of a Java primitive array read operation."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2555,7 +2555,7 @@
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
-            ACL2 application of a Java primitive array length operation."
+            ACL2 call of a Java primitive array length operation."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2619,7 +2619,7 @@
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
-            ACL2 application of a Java primitive array constructor
+            ACL2 call of a Java primitive array constructor
             from a length."
     :long
     (xdoc::topstring
@@ -2683,7 +2683,7 @@
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
-            ACL2 application of a Java primitive array constructor
+            ACL2 call of a Java primitive array constructor
             from a list of components."
     :long
     (xdoc::topstring
@@ -2799,7 +2799,7 @@
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 application of @(tsee mv)."
+    :short "Generate a shallowly embedded ACL2 call of @(tsee mv)."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2877,7 +2877,7 @@
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 function application."
+    :short "Generate a shallowly embedded ACL2 function call."
     :long
     (xdoc::topstring
      (xdoc::p
