@@ -11,3 +11,4 @@
 (in-package "ACL2")
 
 (include-book "acons")
+(include-book "assoc-equal")
