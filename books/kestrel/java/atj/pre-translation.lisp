@@ -49,7 +49,7 @@
     (xdoc::li
      "We remove @(tsee return-last).
       See "
-     (xdoc::seetopic "atj-pre-translation-remove-last" "here")
+     (xdoc::seetopic "atj-pre-translation-remove-return-last" "here")
      ".")
     (xdoc::li
      "We remove dead @(tsee if) branches.
@@ -95,7 +95,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-pre-translation-remove-last
+(defxdoc+ atj-pre-translation-remove-return-last
   :parents (atj-pre-translation)
   :short "Pre-translation step performed by ATJ:
           removal of @(tsee return-last)."

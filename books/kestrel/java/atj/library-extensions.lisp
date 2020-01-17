@@ -15,12 +15,106 @@
 (include-book "../language/keywords")
 
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
+(include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-library-extensions atj)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Std/system:
+
+(define atj-check-mv-let-call ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (indices nat-listp)
+               (vars symbol-listp)
+               (mv-term pseudo-termp)
+               (body-term pseudo-termp))
+  :short "Check if a term is a (translated) call of @(tsee mv-let)
+          with some possibly missing @(tsee mv-nth) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee acl2::check-mv-let-call),
+     except that it allows some of the @(tsee mv-nth) calls to be missing.
+     Initially a translated @(tsee mv-let) has all those calls,
+     but ATJ's pre-translation step that removes unused variables
+     may remove some of them.
+     Thus, we cannot use @(tsee acl2::check-mv-let-call) here,
+     and instead create a custom version here
+     (which may be moved to a more general library at some point,
+     since it is not really ATJ-specific).
+     This version also returns the indices of the @(tsee mv-nth) calls
+     that are present, in increasing order
+     (if they appear in a different order,
+     this function returns @('nil') as first result)."))
+  (b* ((term (if (mbt (pseudo-termp term)) term nil))
+       ((when (variablep term)) (mv nil nil nil nil nil))
+       ((when (fquotep term)) (mv nil nil nil nil nil))
+       (lambda-mv (ffn-symb term))
+       ((unless (flambdap lambda-mv)) (mv nil nil nil nil nil))
+       (list-mv (lambda-formals lambda-mv))
+       ((unless (equal list-mv (list 'mv))) (mv nil nil nil nil nil))
+       (mv-term (fargn term 1))
+       (lambda-vars-of-mv-nths (lambda-body lambda-mv))
+       ((when (variablep lambda-vars-of-mv-nths)) (mv nil nil nil nil nil))
+       ((when (fquotep lambda-vars-of-mv-nths)) (mv nil nil nil nil nil))
+       (lambda-vars (ffn-symb lambda-vars-of-mv-nths))
+       ((unless (flambdap lambda-vars)) (mv nil nil nil nil nil))
+       (vars (lambda-formals lambda-vars))
+       (body-term (lambda-body lambda-vars))
+       ((when (dumb-occur-var-open 'mv body-term)) (mv nil nil nil nil nil))
+       (mv-nths (fargs lambda-vars-of-mv-nths))
+       ((mv mv-nths-okp indices) (atj-check-mv-let-call-aux mv-nths 0))
+       ((unless mv-nths-okp) (mv nil nil nil nil nil)))
+    (mv t indices vars mv-term body-term))
+
+  :prepwork
+  ((define atj-check-mv-let-call-aux ((terms pseudo-term-listp)
+                                      (min-next-index natp))
+     :returns (mv (yes/no booleanp)
+                  (indices nat-listp))
+     (b* (((when (endp terms)) (mv t nil))
+          (term (car terms))
+          ((unless (and (ffn-symb-p term 'mv-nth)
+                        (= (len (fargs term)) 2))) (mv nil nil))
+          ((unless (quotep (fargn term 1))) (mv nil nil))
+          (index (cadr (fargn term 1)))
+          ((unless (and (natp index)
+                        (>= index min-next-index))) (mv nil nil))
+          ((unless (eq (fargn term 2) 'mv)) (mv nil nil))
+          ((mv rest-okp rest-indices)
+           (atj-check-mv-let-call-aux (cdr terms) (1+ index)))
+          ((unless rest-okp) (mv nil nil)))
+       (mv t (cons index rest-indices)))
+     ///
+     (defret len-of-atj-check-mv-let-call-aux.indices
+       (implies yes/no
+                (equal (len indices)
+                       (len terms))))))
+
+  ///
+
+  (defret len-of-atj-check-mv-let-call.indices/vars
+    (implies yes/no
+             (equal (len indices)
+                    (len vars)))
+    :hyp :guard)
+
+  (defret atj-check-mv-let-call-mv-term-smaller
+    (implies yes/no
+             (< (acl2-count mv-term)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret atj-check-mv-let-call-body-term-smaller
+    (implies yes/no
+             (< (acl2-count body-term)
+                (acl2-count term)))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
