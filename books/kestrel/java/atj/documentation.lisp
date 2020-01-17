@@ -40,6 +40,12 @@
     (xdoc::seetopic "apt::apt" "APT")
     " program synthesis derivation.")
 
+   (xdoc::p
+    "This manual page provides reference documentation for ATJ.
+     A separate tutorial may be written in the future.
+     See the files under @('[books]/kestrel/java/atj/tests/')
+     for examples of use of ATJ.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Scope")
