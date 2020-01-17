@@ -13,8 +13,9 @@
 (include-book "std/typed-alists/keyword-to-keyword-value-list-alistp" :dir :system)
 (include-book "std/typed-lists/string-or-symbol-listp" :dir :system)
 (include-book "pseudo-event-form-listp")
-(include-book "pseudo-tests-and-calls-listp")
+(include-book "pseudo-command-formp")
 (include-book "pseudo-event-landmarkp")
+(include-book "pseudo-tests-and-calls-listp")
 
 ; -----------------------------------------------------------------
 
@@ -270,13 +271,6 @@
 ; -----------------------------------------------------------------
 
 ; COMMAND-LANDMARK [GLOBAL-VALUE]
-
-(defun pseudo-command-formp (x)
-
-; We see no reasonable way to restrict the form of a command, other than to
-; insist that it is a true list.
-
-  (true-listp x))
 
 (defun pseudo-command-landmarkp (val)
 
