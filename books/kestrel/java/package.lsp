@@ -149,6 +149,7 @@
                          symbol-package-name-lst
                          table-alist+
                          tail-recursive-p
+                         term-possible-numbers-of-results
                          trans-eval
                          tuplep
                          typed-tuplep
