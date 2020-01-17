@@ -1808,7 +1808,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "See @(tsee atj-gen-shallow-if-app) for a general description
+      "See @(tsee atj-gen-shallow-if-call) for a general description
        of how ACL2 @(tsee if)s are translated to Java @('if')s.")
      (xdoc::p
       "Here we handle the test of the @(tsee if).
@@ -1877,18 +1877,18 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count test) 2))
 
-  (define atj-gen-shallow-if-app ((test pseudo-termp)
-                                  (then pseudo-termp)
-                                  (else pseudo-termp)
-                                  (types atj-type-listp)
-                                  (jvar-tmp-base stringp)
-                                  (jvar-tmp-index posp)
-                                  (pkg-class-names string-string-alistp)
-                                  (fn-method-names symbol-string-alistp)
-                                  (curr-pkg stringp)
-                                  (qpairs cons-pos-alistp)
-                                  (guards$ booleanp)
-                                  (wrld plist-worldp))
+  (define atj-gen-shallow-if-call ((test pseudo-termp)
+                                   (then pseudo-termp)
+                                   (else pseudo-termp)
+                                   (types atj-type-listp)
+                                   (jvar-tmp-base stringp)
+                                   (jvar-tmp-index posp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (curr-pkg stringp)
+                                   (qpairs cons-pos-alistp)
+                                   (guards$ booleanp)
+                                   (wrld plist-worldp))
     :guard (and (consp types)
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
@@ -1927,7 +1927,7 @@
      (xdoc::p
       "The type @('<type>') of the result variable is
        derived from the ATJ type passed to this code generation function.
-       See @(tsee atj-gen-shallow-fn-app) for details.")
+       See @(tsee atj-gen-shallow-fn-call) for details.")
      (xdoc::p
       "If the flag @(tsee *atj-gen-cond-exprs*) is set,
        and if both @('<b-block>') and @('<c-block>') are empty,
@@ -2019,17 +2019,17 @@
                                   (acl2-count else))
                                3))
 
-  (define atj-gen-shallow-or-app ((first pseudo-termp)
-                                  (second pseudo-termp)
-                                  (types atj-type-listp)
-                                  (jvar-tmp-base stringp)
-                                  (jvar-tmp-index posp)
-                                  (pkg-class-names string-string-alistp)
-                                  (fn-method-names symbol-string-alistp)
-                                  (curr-pkg stringp)
-                                  (qpairs cons-pos-alistp)
-                                  (guards$ booleanp)
-                                  (wrld plist-worldp))
+  (define atj-gen-shallow-or-call ((first pseudo-termp)
+                                   (second pseudo-termp)
+                                   (types atj-type-listp)
+                                   (jvar-tmp-base stringp)
+                                   (jvar-tmp-index posp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (curr-pkg stringp)
+                                   (qpairs cons-pos-alistp)
+                                   (guards$ booleanp)
+                                   (wrld plist-worldp))
     :guard (and (consp types)
                 (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
@@ -2106,7 +2106,7 @@
                                   (acl2-count second))
                                2))
 
-  (define atj-gen-shallow-jprim-constr-app
+  (define atj-gen-shallow-jprim-constr-call
     ((fn (member-eq fn *atj-java-primitive-constructors*))
      (arg pseudo-termp)
      (src-types atj-type-listp)
@@ -2250,7 +2250,7 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 2))
 
-  (define atj-gen-shallow-jprim-unop-app
+  (define atj-gen-shallow-jprim-unop-call
     ((fn (member-eq fn *atj-java-primitive-unops*))
      (operand pseudo-termp)
      (src-types atj-type-listp)
@@ -2348,7 +2348,7 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count operand) 2))
 
-  (define atj-gen-shallow-jprim-binop-app
+  (define atj-gen-shallow-jprim-binop-call
     ((fn (member-eq fn *atj-java-primitive-binops*))
      (left pseudo-termp)
      (right pseudo-termp)
@@ -2466,7 +2466,7 @@
                                   (acl2-count right))
                                2))
 
-  (define atj-gen-shallow-jprimarr-read-app
+  (define atj-gen-shallow-jprimarr-read-call
     ((array pseudo-termp)
      (index pseudo-termp)
      (src-types atj-type-listp)
@@ -2536,7 +2536,7 @@
                                   (acl2-count index))
                                2))
 
-  (define atj-gen-shallow-jprimarr-length-app
+  (define atj-gen-shallow-jprimarr-length-call
     ((array pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2599,7 +2599,7 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count array) 2))
 
-  (define atj-gen-shallow-jprimarr-constr-app
+  (define atj-gen-shallow-jprimarr-constr-call
     ((fn (member-eq fn *atj-java-primarray-constructors*))
      (length pseudo-termp)
      (src-types atj-type-listp)
@@ -2663,7 +2663,7 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count length) 2))
 
-  (define atj-gen-shallow-jprimarr-constr-init-app
+  (define atj-gen-shallow-jprimarr-constr-init-call
     ((fn (member-eq fn *atj-java-primarray-constructors-init*))
      (arg pseudo-termp)
      (src-types atj-type-listp)
@@ -2773,25 +2773,25 @@
                      (otherwise (impossible))))
              (expr (atj-adapt-expr-to-type expr :avalue type)))
           (mv block
-          (atj-adapt-expr-to-type expr
-                                  (atj-type-list-to-type src-types)
-                                  (atj-type-list-to-type dst-types))
+              (atj-adapt-expr-to-type expr
+                                      (atj-type-list-to-type src-types)
+                                      (atj-type-list-to-type dst-types))
               jvar-tmp-index))))
     ;; 2nd component is greater than 1
     ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 2))
 
-  (define atj-gen-shallow-mv-app ((args pseudo-term-listp)
-                                  (src-types atj-type-listp)
-                                  (dst-types atj-type-listp)
-                                  (jvar-tmp-base stringp)
-                                  (jvar-tmp-index posp)
-                                  (pkg-class-names string-string-alistp)
-                                  (fn-method-names symbol-string-alistp)
-                                  (curr-pkg stringp)
-                                  (qpairs cons-pos-alistp)
-                                  (guards$ booleanp)
-                                  (wrld plist-worldp))
+  (define atj-gen-shallow-mv-call ((args pseudo-term-listp)
+                                   (src-types atj-type-listp)
+                                   (dst-types atj-type-listp)
+                                   (jvar-tmp-base stringp)
+                                   (jvar-tmp-index posp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (curr-pkg stringp)
+                                   (qpairs cons-pos-alistp)
+                                   (guards$ booleanp)
+                                   (wrld plist-worldp))
     :guard (and (consp src-types)
                 (consp dst-types)
                 (not (equal curr-pkg "")))
@@ -2855,18 +2855,18 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases:
     :measure (two-nats-measure (acl2-count args) 1))
 
-  (define atj-gen-shallow-fn-app ((fn pseudo-termfnp)
-                                  (args pseudo-term-listp)
-                                  (src-types atj-type-listp)
-                                  (dst-types atj-type-listp)
-                                  (jvar-tmp-base stringp)
-                                  (jvar-tmp-index posp)
-                                  (pkg-class-names string-string-alistp)
-                                  (fn-method-names symbol-string-alistp)
-                                  (curr-pkg stringp)
-                                  (qpairs cons-pos-alistp)
-                                  (guards$ booleanp)
-                                  (wrld plist-worldp))
+  (define atj-gen-shallow-fn-call ((fn pseudo-termfnp)
+                                   (args pseudo-term-listp)
+                                   (src-types atj-type-listp)
+                                   (dst-types atj-type-listp)
+                                   (jvar-tmp-base stringp)
+                                   (jvar-tmp-index posp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (curr-pkg stringp)
+                                   (qpairs cons-pos-alistp)
+                                   (guards$ booleanp)
+                                   (wrld plist-worldp))
     :guard (and (consp src-types)
                 (consp dst-types)
                 (not (equal curr-pkg ""))
@@ -2916,77 +2916,34 @@
                (second (second args))
                (third (third args)))
             (if (equal first second)
-                (atj-gen-shallow-or-app first
-                                        third
-                                        dst-types ; = SRC-TYPES
-                                        jvar-tmp-base
-                                        jvar-tmp-index
-                                        pkg-class-names
-                                        fn-method-names
-                                        curr-pkg
-                                        qpairs
-                                        guards$
-                                        wrld)
-              (atj-gen-shallow-if-app first
-                                      second
-                                      third
-                                      dst-types ; = SRC-TYPES
-                                      jvar-tmp-base
-                                      jvar-tmp-index
-                                      pkg-class-names
-                                      fn-method-names
-                                      curr-pkg
-                                      qpairs
-                                      guards$
-                                      wrld))))
+                (atj-gen-shallow-or-call first
+                                         third
+                                         dst-types ; = SRC-TYPES
+                                         jvar-tmp-base
+                                         jvar-tmp-index
+                                         pkg-class-names
+                                         fn-method-names
+                                         curr-pkg
+                                         qpairs
+                                         guards$
+                                         wrld)
+              (atj-gen-shallow-if-call first
+                                       second
+                                       third
+                                       dst-types ; = SRC-TYPES
+                                       jvar-tmp-base
+                                       jvar-tmp-index
+                                       pkg-class-names
+                                       fn-method-names
+                                       curr-pkg
+                                       qpairs
+                                       guards$
+                                       wrld))))
          ((when (and guards$
                      (member-eq fn *atj-java-primitive-constructors*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprim-constr-app fn
-                                            (car args)
-                                            src-types
-                                            dst-types
-                                            jvar-tmp-base
-                                            jvar-tmp-index
-                                            pkg-class-names
-                                            fn-method-names
-                                            curr-pkg
-                                            qpairs
-                                            wrld))
-         ((when (and guards$
-                     (member-eq fn *atj-java-primitive-unops*)
-                     (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprim-unop-app fn
-                                          (car args)
-                                          src-types
-                                          dst-types
-                                          jvar-tmp-base
-                                          jvar-tmp-index
-                                          pkg-class-names
-                                          fn-method-names
-                                          curr-pkg
-                                          qpairs
-                                          wrld))
-         ((when (and guards$
-                     (member-eq fn *atj-java-primitive-binops*)
-                     (int= (len args) 2))) ; should be always true
-          (atj-gen-shallow-jprim-binop-app fn
-                                           (first args)
-                                           (second args)
-                                           src-types
-                                           dst-types
-                                           jvar-tmp-base
-                                           jvar-tmp-index
-                                           pkg-class-names
-                                           fn-method-names
-                                           curr-pkg
-                                           qpairs
-                                           wrld))
-         ((when (and guards$
-                     (member-eq fn *atj-java-primarray-reads*)
-                     (int= (len args) 2))) ; should be always true
-          (atj-gen-shallow-jprimarr-read-app (first args)
-                                             (second args)
+          (atj-gen-shallow-jprim-constr-call fn
+                                             (car args)
                                              src-types
                                              dst-types
                                              jvar-tmp-base
@@ -2997,58 +2954,101 @@
                                              qpairs
                                              wrld))
          ((when (and guards$
+                     (member-eq fn *atj-java-primitive-unops*)
+                     (int= (len args) 1))) ; should be always true
+          (atj-gen-shallow-jprim-unop-call fn
+                                           (car args)
+                                           src-types
+                                           dst-types
+                                           jvar-tmp-base
+                                           jvar-tmp-index
+                                           pkg-class-names
+                                           fn-method-names
+                                           curr-pkg
+                                           qpairs
+                                           wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-java-primitive-binops*)
+                     (int= (len args) 2))) ; should be always true
+          (atj-gen-shallow-jprim-binop-call fn
+                                            (first args)
+                                            (second args)
+                                            src-types
+                                            dst-types
+                                            jvar-tmp-base
+                                            jvar-tmp-index
+                                            pkg-class-names
+                                            fn-method-names
+                                            curr-pkg
+                                            qpairs
+                                            wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-java-primarray-reads*)
+                     (int= (len args) 2))) ; should be always true
+          (atj-gen-shallow-jprimarr-read-call (first args)
+                                              (second args)
+                                              src-types
+                                              dst-types
+                                              jvar-tmp-base
+                                              jvar-tmp-index
+                                              pkg-class-names
+                                              fn-method-names
+                                              curr-pkg
+                                              qpairs
+                                              wrld))
+         ((when (and guards$
                      (member-eq fn *atj-java-primarray-lengths*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-length-app (car args)
-                                               src-types
-                                               dst-types
-                                               jvar-tmp-base
-                                               jvar-tmp-index
-                                               pkg-class-names
-                                               fn-method-names
-                                               curr-pkg
-                                               qpairs
-                                               wrld))
+          (atj-gen-shallow-jprimarr-length-call (car args)
+                                                src-types
+                                                dst-types
+                                                jvar-tmp-base
+                                                jvar-tmp-index
+                                                pkg-class-names
+                                                fn-method-names
+                                                curr-pkg
+                                                qpairs
+                                                wrld))
          ((when (and guards$
                      (member-eq fn *atj-java-primarray-constructors*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-constr-app fn
-                                               (car args)
-                                               src-types
-                                               dst-types
-                                               jvar-tmp-base
-                                               jvar-tmp-index
-                                               pkg-class-names
-                                               fn-method-names
-                                               curr-pkg
-                                               qpairs
-                                               wrld))
+          (atj-gen-shallow-jprimarr-constr-call fn
+                                                (car args)
+                                                src-types
+                                                dst-types
+                                                jvar-tmp-base
+                                                jvar-tmp-index
+                                                pkg-class-names
+                                                fn-method-names
+                                                curr-pkg
+                                                qpairs
+                                                wrld))
          ((when (and guards$
                      (member-eq fn *atj-java-primarray-constructors-init*)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-constr-init-app fn
-                                                    (car args)
-                                                    src-types
-                                                    dst-types
-                                                    jvar-tmp-base
-                                                    jvar-tmp-index
-                                                    pkg-class-names
-                                                    fn-method-names
-                                                    curr-pkg
-                                                    qpairs
-                                                    wrld))
+          (atj-gen-shallow-jprimarr-constr-init-call fn
+                                                     (car args)
+                                                     src-types
+                                                     dst-types
+                                                     jvar-tmp-base
+                                                     jvar-tmp-index
+                                                     pkg-class-names
+                                                     fn-method-names
+                                                     curr-pkg
+                                                     qpairs
+                                                     wrld))
          ((when (eq fn 'mv))
-          (atj-gen-shallow-mv-app args
-                                  src-types
-                                  dst-types
-                                  jvar-tmp-base
-                                  jvar-tmp-index
-                                  pkg-class-names
-                                  fn-method-names
-                                  curr-pkg
-                                  qpairs
-                                  guards$
-                                  wrld))
+          (atj-gen-shallow-mv-call args
+                                   src-types
+                                   dst-types
+                                   jvar-tmp-base
+                                   jvar-tmp-index
+                                   pkg-class-names
+                                   fn-method-names
+                                   curr-pkg
+                                   qpairs
+                                   guards$
+                                   wrld))
          ((mv arg-blocks
               arg-exprs
               jvar-tmp-index)
@@ -3347,18 +3347,18 @@
                                         (atj-type-list-to-type src-types)
                                         (atj-type-list-to-type dst-types))))
             (mv nil expr jvar-tmp-index))))
-      (atj-gen-shallow-fn-app (ffn-symb term)
-                              (fargs term)
-                              src-types
-                              dst-types
-                              jvar-tmp-base
-                              jvar-tmp-index
-                              pkg-class-names
-                              fn-method-names
-                              curr-pkg
-                              qpairs
-                              guards$
-                              wrld))
+      (atj-gen-shallow-fn-call (ffn-symb term)
+                               (fargs term)
+                               src-types
+                               dst-types
+                               jvar-tmp-base
+                               jvar-tmp-index
+                               pkg-class-names
+                               fn-method-names
+                               curr-pkg
+                               qpairs
+                               guards$
+                               wrld))
     ;; 2nd component is non-0 so that
     ;; the call of ATJ-GEN-SHALLOW-MV-LET decreases:
     :measure (two-nats-measure (acl2-count term) 1))
