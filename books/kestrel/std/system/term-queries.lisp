@@ -35,6 +35,7 @@
 (include-book "lambda-guard-verified-fnsp")
 (include-book "lambda-logic-fnsp")
 (include-book "term-guard-obligation")
+(include-book "term-possible-numbers-of-results")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
