@@ -15,13 +15,13 @@
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
-(include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/system/remove-dead-if-branches" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
 (include-book "kestrel/std/system/remove-progn" :dir :system)
 (include-book "kestrel/std/system/remove-trivial-vars" :dir :system)
 (include-book "kestrel/std/system/remove-unused-vars" :dir :system)
+(include-book "kestrel/std/system/term-possible-numbers-of-results" :dir :system)
 (include-book "kestrel/std/system/unquote-term" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
 (include-book "std/strings/symbols" :dir :system)
@@ -49,7 +49,7 @@
     (xdoc::li
      "We remove @(tsee return-last).
       See "
-     (xdoc::seetopic "atj-pre-translation-remove-last" "here")
+     (xdoc::seetopic "atj-pre-translation-remove-return-last" "here")
      ".")
     (xdoc::li
      "We remove dead @(tsee if) branches.
@@ -95,7 +95,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atj-pre-translation-remove-last
+(defxdoc+ atj-pre-translation-remove-return-last
   :parents (atj-pre-translation)
   :short "Pre-translation step performed by ATJ:
           removal of @(tsee return-last)."
@@ -207,50 +207,237 @@
 (defxdoc+ atj-pre-translation-multiple-values
   :parents (atj-pre-translation)
   :short "Pre-translation step performed by ATJ:
-          replacement of @(tsee list) calls with @(tsee mv) calls
-          in functions that return multiple results."
+          replacement of @(tsee list) calls with @(tsee mv) calls."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is done only in the shallow embedding.")
    (xdoc::p
-    "As explained in @(tsee mvify),
-     when terms that return multiple values,
-     such as the bodies of functions that return multiple results,
-     are "
-    (xdoc::seetopic "acl2::term" "translated")
-    " by ACL2 in internal form,
-     the fact that they return multiple values is ``lost'':
-     the macro @(tsee mv) expands to @(tsee list).
-     The @(tsee mvify) utility can be used to ``recover'' this information,
-     by replacing calls of @(tsee list)
-     (which in internal form are
-     nests of @(tsee cons)es ending with quoted @('nil')s)
-     with calls of @(tsee mv).")
+    "In untranslated terms,
+     calls of @(tsee mv) determine when multiple results are produced.
+     In translated terms,
+     @(tsee mv) is expanded in the same way as @(tsee list),
+     and thus the information is somewhat.
+     However, it can be almost completely recovered with a bit of effort;
+     the `almost' means that in some very unlikely and contrived situations
+     we may regard a translated term
+     that originally (i.e. before being translated)
+     returned a single list value
+     as a term that returns a multiple value instead,
+     but this does not compromise correctness of the generated Java code.")
    (xdoc::p
-    "This is what this ATJ pre-translation step does.
-     This is only done in the bodies of functions that return multiple results;
-     the bodies of the other functions are left unchanged."))
+    "In this pre-translation step,
+     we replace certain nests of two or more @(tsee cons)es
+     ending in a quoted @('nil'),
+     which could be translated @(tsee list) calls if taken in isolation,
+     with calls of @(tsee mv).
+     Technically this is no longer a valid translated term,
+     because @(tsee mv) is a macro,
+     but it is a pseudo-term.
+     The presence of these @(tsee mv) calls is then recognized,
+     and handled appropriately,
+     by successive pre-translation steps,
+     as well as by the translation step."))
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-restore-mv-terms ((body pseudo-termp) (out-types atj-type-listp))
-  :returns (new-body pseudo-termp :hyp (pseudo-termp body))
-  :short "Replace @(tsee list) calls with @(tsee mv) calls
-          in the body of a function that returns multiple results."
+(defines atj-restore-mv-calls-in-term
+  :short "Restore @(tsee mv) calls in a translated term."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Whether the function in question returns multiple results
-     is determined by the length of the list of output types.")
+    "We restore not only @(tsee mv) calls
+     returned by multi-result functions,
+     but also @(tsee mv) calls that may happen in an @(tsee mv-let)
+     in a function that may or may not return multiple results.")
    (xdoc::p
-    "The replacement is done only at the ``leaves'' of the body,
-     where `leaf' is defined in the documentation of @(tsee mvify)."))
-  (if (>= (len out-types) 2)
-      (mvify body)
-    body))
+    "At the top level,
+     this code is called on the body of a function
+     that must be translated to Java.
+     In this top-level call,
+     we pass as second argument the number of result of the function,
+     which is known: see @(tsee atj-restore-mv-calls-in-body).
+     As we descend into the term, this number may change.
+     When we try to restore @(tsee mv) calls in a term,
+     we always know the number of results that the term should return,
+     as the @('numres') parameter.")
+   (xdoc::p
+    "When we encounter a variable,
+     we must be expecting one result,
+     and in that case we leave the variable unchanged.
+     This would not be true for the @('mv') variable
+     that results from a translated @(tsee mv-let)
+     (see @(tsee atj-check-mv-let-call)),
+     but as explained below we process translated @(tsee mv-let)s specially:
+     when we reach a variable, it is never that @('mv') variable,
+     and so it is always single-valued.")
+   (xdoc::p
+    "When we encounter a quoted constant,
+     we must be expecting one result,
+     and in that case we leave the quoted constant unchanged.")
+   (xdoc::p
+    "Before processing a call,
+     we use @(tsee atj-check-mv-let-call) to see if
+     the term may be a translated @(tsee mv-let).
+     If the term has that form, it is possible, but unlikely,
+     that it is not actually a translated @(tsee mv-let).
+     In order to properly restore @(tsee mv) calls in the @('mv-term'),
+     we need to determine how many results it is expected to return.
+     Because of the pre-translation step that removes unused variables,
+     this cannot be determined, in general, from the term,
+     because some @(tsee mv-nth) calls may have been removed.
+     Even if they were all present, it is still possible (though unlikely)
+     that the term does not involve multiple values,
+     and that it just looks like a translated @(tsee mv-let).
+     Thus, we use the @(tsee term-possible-numbers-of-results) utility
+     to calculate the number of results of the @('mv-term').
+     Recall that this may return two possibilities,
+     namely 1 and a number greater than 1:
+     in this case, we pick the number greater than 1
+     (but it would be also correct to pick 1).
+     If instead there is just one possibility, then we obviously use that.
+     This value is used as @('numres') to recursively process the @('mv-term'),
+     which in general may restore not only @(tsee mv) calls
+     at the top level of that term, but also in subterms.
+     We also recursively process the @('body-term'),
+     this time with the same @('numres') as for the @(tsee mv-let) term.")
+   (xdoc::p
+    "If the term does not have the form of a translated @(tsee mv-let),
+     we check whether it is a translated @(tsee list),
+     i.e. a nest of @(tsee cons)es ending with a quoted @('nil').
+     If the expected number of results is 1, we leave this term as is,
+     i.e. as a single list.
+     Otherwise, we replace the term with an @(tsee mv) call.")
+   (xdoc::p
+    "If the term does not have any of the previous forms,
+     we check whether it is a call of @(tsee if).
+     In that case, we recursively process the arguments:
+     the test must be single-valued,
+     while the branches have the same @('numres') as the @(tsee if) call.")
+   (xdoc::p
+    "We check for @(tsee return-last) for robustness,
+     but those have been all removed by a previous pre-translation step.")
+   (xdoc::p
+    "We treat all other calls as follows.
+     We recursively process the arguments,
+     each of which must return a single value.
+     If the function is a lambda expression,
+     we recursively process its body,
+     with the same @('numres') as the lambda call."))
+
+  (define atj-restore-mv-calls-in-term ((term pseudo-termp)
+                                        (numres posp)
+                                        (wrld plist-worldp))
+    :returns (new-term pseudo-termp :hyp (pseudo-termp term))
+    (b* (((when (variablep term))
+          (if (= numres 1)
+              term
+            (raise "Internal error: ~
+                    the variable ~x0 cannot return ~x1 results."
+                   term numres)))
+         ((when (fquotep term))
+          (if (= numres 1)
+              term
+            (raise "Internal error: ~
+                    the quoted constant ~x0 cannot return ~x1 results")))
+         ((mv mv-let-callp indices vars mv-term body-term)
+          (atj-check-mv-let-call term))
+         ((when mv-let-callp)
+          (b* ((mv-term-numres-list
+                (term-possible-numbers-of-results mv-term wrld))
+               ((when (null mv-term-numres-list))
+                (raise "Internal error: ~
+                        the term ~x0 returns no results."
+                       mv-term))
+               (mv-term-numres (if (= (len mv-term-numres-list) 1)
+                                   (car mv-term-numres-list)
+                                 (max (first mv-term-numres-list)
+                                      (second mv-term-numres-list))))
+               (new-mv-term
+                (atj-restore-mv-calls-in-term mv-term mv-term-numres wrld))
+               (new-body-term
+                (atj-restore-mv-calls-in-term body-term numres wrld)))
+            (atj-make-mv-let-call indices vars new-mv-term new-body-term)))
+         ((mv list-callp elements) (check-list-call term))
+         ((when list-callp)
+          (b* (((when (= numres 1)) term)
+               ((unless (= (len elements) numres))
+                (raise "Internal error: ~
+                        the term ~x0 cannot return ~x1 results."
+                       term numres)))
+            `(mv ,@elements)))
+         (fn (ffn-symb term))
+         ((when (eq fn 'if))
+          (b* ((test (fargn term 1))
+               (then (fargn term 2))
+               (else (fargn term 3))
+               (new-test (atj-restore-mv-calls-in-term test 1 wrld))
+               (new-then (atj-restore-mv-calls-in-term then numres wrld))
+               (new-else (atj-restore-mv-calls-in-term else numres wrld)))
+            `(if ,new-test ,new-then ,new-else)))
+         ((when (eq fn 'return-last))
+          (raise "Internal error: ~
+                  found unexpected call of RETURN-LAST ~x0."
+                 term))
+         (new-args (atj-restore-mv-calls-in-args (fargs term) wrld))
+         ((when (symbolp fn)) (fcons-term fn new-args))
+         (new-body (atj-restore-mv-calls-in-term (lambda-body fn) numres wrld))
+         (new-fn (make-lambda (lambda-formals fn) new-body)))
+      (fcons-term new-fn new-args)))
+
+  (define atj-restore-mv-calls-in-args ((args pseudo-term-listp)
+                                        (wrld plist-worldp))
+    :returns (new-args (and (pseudo-term-listp new-args)
+                            (equal (len new-args) (len args)))
+                       :hyp (pseudo-term-listp args))
+    (cond ((endp args) nil)
+          (t (cons (atj-restore-mv-calls-in-term (car args) 1 wrld)
+                   (atj-restore-mv-calls-in-args (cdr args) wrld)))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (local
+   (std::deflist pos-listp (acl2::x)
+     (posp acl2::x)
+     :true-listp t
+     :elementp-of-nil nil))
+
+  (defrulel verify-guards-lemma-1
+    (implies (> (len (term-possible-numbers-of-results term wrld)) 0)
+             (posp (car (term-possible-numbers-of-results term wrld))))
+    :disable posp)
+
+  (defrulel verify-guards-lemma-2
+    (implies (> (len (term-possible-numbers-of-results term wrld)) 1)
+             (posp (cadr (term-possible-numbers-of-results term wrld))))
+    :disable posp)
+
+  (defrulel verify-guards-lemma-3
+    (implies (posp x)
+             (rationalp x)))
+
+  (verify-guards atj-restore-mv-calls-in-term
+    :hints (("Goal" :in-theory (disable posp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-restore-mv-calls-in-body ((body pseudo-termp)
+                                      (out-types atj-type-listp)
+                                      (wrld plist-worldp))
+  :returns (new-body pseudo-termp :hyp (pseudo-termp body))
+  :short "Restore @(tsee mv) calls in a translated function body."
+  :long
+  (xdoc::topstring-p
+   "This is the top-level call of @(tsee atj-restore-mv-calls-in-term):
+    see that function for details.
+    We initialize @('numres') with the number of output types
+    of the function whose body we are processing.")
+  (b* ((numres (len out-types))
+       ((unless (> numres 0))
+        (raise "Internal error: no output types.")))
+    (atj-restore-mv-calls-in-term body (len out-types) wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -690,95 +877,6 @@
            (len vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-check-mv-let-call ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (indices nat-listp)
-               (vars symbol-listp)
-               (mv-term pseudo-termp)
-               (body-term pseudo-termp))
-  :short "Check if a term is a (translated) call of @(tsee mv-let)
-          with some possibly missing @(tsee mv-nth) calls."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is similar to @(tsee acl2::check-mv-let-call),
-     except that it allows some of the @(tsee mv-nth) calls to be missing.
-     Initially a translated @(tsee mv-let) has all those calls,
-     but ATJ's pre-translation step that removes unused variables
-     may remove some of them.
-     Thus, we cannot use @(tsee acl2::check-mv-let-call) here,
-     and instead create a custom version here
-     (which may be moved to a more general library at some point,
-     since it is not really ATJ-specific).
-     This version also returns the indices of the @(tsee mv-nth) calls
-     that are present, in increasing order
-     (if they appear in a different order,
-     this function returns @('nil') as first result)."))
-  (b* ((term (if (mbt (pseudo-termp term)) term nil))
-       ((when (variablep term)) (mv nil nil nil nil nil))
-       ((when (fquotep term)) (mv nil nil nil nil nil))
-       (lambda-mv (ffn-symb term))
-       ((unless (flambdap lambda-mv)) (mv nil nil nil nil nil))
-       (list-mv (lambda-formals lambda-mv))
-       ((unless (equal list-mv (list 'mv))) (mv nil nil nil nil nil))
-       (mv-term (fargn term 1))
-       (lambda-vars-of-mv-nths (lambda-body lambda-mv))
-       ((when (variablep lambda-vars-of-mv-nths)) (mv nil nil nil nil nil))
-       ((when (fquotep lambda-vars-of-mv-nths)) (mv nil nil nil nil nil))
-       (lambda-vars (ffn-symb lambda-vars-of-mv-nths))
-       ((unless (flambdap lambda-vars)) (mv nil nil nil nil nil))
-       (vars (lambda-formals lambda-vars))
-       (body-term (lambda-body lambda-vars))
-       ((when (dumb-occur-var-open 'mv body-term)) (mv nil nil nil nil nil))
-       (mv-nths (fargs lambda-vars-of-mv-nths))
-       ((mv mv-nths-okp indices) (atj-check-mv-let-call-aux mv-nths 0))
-       ((unless mv-nths-okp) (mv nil nil nil nil nil)))
-    (mv t indices vars mv-term body-term))
-
-  :prepwork
-  ((define atj-check-mv-let-call-aux ((terms pseudo-term-listp)
-                                      (min-next-index natp))
-     :returns (mv (yes/no booleanp)
-                  (indices nat-listp))
-     (b* (((when (endp terms)) (mv t nil))
-          (term (car terms))
-          ((unless (and (ffn-symb-p term 'mv-nth)
-                        (= (len (fargs term)) 2))) (mv nil nil))
-          ((unless (quotep (fargn term 1))) (mv nil nil))
-          (index (cadr (fargn term 1)))
-          ((unless (and (natp index)
-                        (>= index min-next-index))) (mv nil nil))
-          ((unless (eq (fargn term 2) 'mv)) (mv nil nil))
-          ((mv rest-okp rest-indices)
-           (atj-check-mv-let-call-aux (cdr terms) (1+ index)))
-          ((unless rest-okp) (mv nil nil)))
-       (mv t (cons index rest-indices)))
-     ///
-     (defret len-of-atj-check-mv-let-call-aux.indices
-       (implies yes/no
-                (equal (len indices)
-                       (len terms))))))
-
-  ///
-
-  (defret len-of-atj-check-mv-let-call.indices/vars
-    (implies yes/no
-             (equal (len indices)
-                    (len vars)))
-    :hyp :guard)
-
-  (defret atj-check-mv-let-call-mv-term-smaller
-    (implies yes/no
-             (< (acl2-count mv-term)
-                (acl2-count term)))
-    :rule-classes :linear)
-
-  (defret atj-check-mv-let-call-body-term-smaller
-    (implies yes/no
-             (< (acl2-count body-term)
-                (acl2-count term)))
-    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1778,7 +1876,7 @@
      because of the special treatment of @('(if a a b)') terms,
      which are treated as @('(or a b)'):
      the Java code generated for this case is a little different
-     (see @(tsee atj-gen-shallow-or-app)),
+     (see @(tsee atj-gen-shallow-or-call)),
      but the treatment of @('vars-in-scope')
      is essentially the same as just explained
      (there is no `then' branch to mark, because it is the same as the test,
@@ -1843,13 +1941,13 @@
     "When the term to be marked is a quoted constant,
      it is obviously left unchanged.")
    (xdoc::p
-    "When the term to be marked is a function application,
+    "When the term to be marked is a function call,
      we first treat the @(tsee if) (and @(tsee or)) case separately.
      We mark the test, and after that the two branches.
      The handling of @('vars-in-scope') and @('vars-used-after') for this case
      has been explained above.")
    (xdoc::p
-    "For all other function applications, which are strict,
+    "For all other function calls, which are strict,
      we first mark the actual arguments,
      treating @('vars-in-scope') and @('vars-used-after')
      as explained above.
@@ -1867,7 +1965,7 @@
      (i.e. we could not reuse a Java variable of type @('Acl2Symbol')
      to store a value of type @('Acl2String')).
      The second condition is that the variable is not used
-     after the lambda application term, i.e. it is not in @('vars-used-after'):
+     after the lambda call term, i.e. it is not in @('vars-used-after'):
      otherwise, we would overwrite something that was supposed to be used later,
      with incorrect results in general.
      The third condition is that the variable is not free
@@ -2403,7 +2501,7 @@
    (xdoc::p
     "If the term is a quoted constant, it is obviously left unchanged.")
    (xdoc::p
-    "If the term is a function application,
+    "If the term is a function call,
      its actual arguments are recursively processed,
      renaming all their variables.
      If the function is a named one, it is of course left unchanged.
@@ -2639,7 +2737,7 @@
        (body (remove-unused-vars body))
        ((when deep$) (mv formals body nil))
        (body (remove-trivial-vars body))
-       (body (atj-restore-mv-terms body out-types))
+       (body (atj-restore-mv-calls-in-body body out-types wrld))
        ((mv formals body mv-typess)
         (atj-type-annotate-formals+body
          formals body in-types out-types mv-typess guards$ wrld))

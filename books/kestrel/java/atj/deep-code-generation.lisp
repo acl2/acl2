@@ -88,7 +88,7 @@
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
     :parents (atj-code-generation atj-gen-deep-term-fns)
     :short "Generate Java code to build
-            a deeply embedded ACL2 function application."
+            a deeply embedded ACL2 function call."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -96,7 +96,7 @@
        builds the named function or lambda expression,
        builds the argument terms,
        puts them into an array,
-       builds the application,
+       builds the call,
        puts it to a local variable,
        and returns the local variable.")
      (xdoc::p

@@ -40,6 +40,12 @@
     (xdoc::seetopic "apt::apt" "APT")
     " program synthesis derivation.")
 
+   (xdoc::p
+    "This manual page provides reference documentation for ATJ.
+     A separate tutorial may be written in the future.
+     See the files under @('[books]/kestrel/java/atj/tests/')
+     for examples of use of ATJ.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Scope")
@@ -692,4 +698,19 @@
      If all the tests passed, the method exits the JVM with return code 0;
      otherwise, it exits the JVM with return code 1,
      which is an error code when the test class
-     is invoked as a Java application in a shell script.")))
+     is invoked as a Java application in a shell script.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Compiling and Running the Java Code")
+
+   (xdoc::p
+    "The generated Java code can be compiled and run as any other Java code.
+     The @('.jar') file for "
+    (xdoc::seetopic "aij" "AIJ")
+    " must be in the classpath:
+     this file is at
+     @('[books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar').
+     The files @('compile.sh') and @('run.sh')
+     under @('[books]/kestrel/java/atj/tests/')
+     contains examples of command to compile and run the code.")))

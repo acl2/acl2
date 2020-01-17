@@ -99,6 +99,9 @@
      "The Java class @('Acl2Cons')
       has been renamed to @('Acl2ConsPair').")
     (xdoc::li
+     "The Java class @('Acl2FunctionApplication')
+      has been renamed to @('Acl2FunctionCall').")
+    (xdoc::li
      "AIJ's evaluator has been extended
       to recognize a ``pseudo-function'' @('or')
       and to execute it non-strictly,
