@@ -109,6 +109,7 @@
                          patbind-fun
                          patbind-run-unless
                          patbind-run-when
+                         pos-listp
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
