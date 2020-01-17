@@ -232,7 +232,7 @@
      which could be translated @(tsee list) calls if taken in isolation,
      with calls of @(tsee mv).
      Technically this is no longer a valid translated term,
-     because @(tee mv) is a macro,
+     because @(tsee mv) is a macro,
      but it is a pseudo-term.
      The presence of these @(tsee mv) calls is then recognized,
      and handled appropriately,
@@ -280,7 +280,7 @@
      we use @(tsee atj-check-mv-let-call) to see if
      the term may be a translated @(tsee mv-let).
      If the term has that form, it is possible, but unlikely,
-     that it is not actually a translated @(tee mv-let).
+     that it is not actually a translated @(tsee mv-let).
      In order to properly restore @(tsee mv) calls in the @(tsee mv-term),
      we need to determine how many results it is expected to return.
      Because of the pre-translation step that removes unused variables,
