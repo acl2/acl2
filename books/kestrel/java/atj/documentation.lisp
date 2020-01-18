@@ -713,4 +713,7 @@
      @('[books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar').
      The files @('compile.sh') and @('run.sh')
      under @('[books]/kestrel/java/atj/tests/')
-     contains examples of command to compile and run the code.")))
+     contains examples of command to compile and run the code.
+     See "
+    (xdoc::seetopic "aij" "the AIJ documentation")
+    " for instructions on how to generate the @('.jar') file.")))
