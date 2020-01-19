@@ -2040,8 +2040,7 @@
  and character utilities (@('[books]/kestrel/utilities/characters.lisp')) have
  undergone several improvements and extensions.</p>
 
- <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
- about world-related functions</see> and theorems about lists (in
+ <p>A few theorems about world-related functions and theorems about lists (in
  @('kestrel/utilities/list-theorems.lisp')) have been added.</p>
 
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs

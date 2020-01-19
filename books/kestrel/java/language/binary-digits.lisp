@@ -62,3 +62,12 @@
   (if (eql x (char-code #\0))
       0
     1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist bin-digit-list
+  :short "Fixtype of true lists of Java binary digits."
+  :elt-type bin-digit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred bin-digit-listp)

@@ -758,12 +758,18 @@
   :returns (line msgp)
   :short "Pretty-print a local variable declaration."
   (b* (((jlocvar locvar) locvar))
-    (print-jline (msg "~@0~@1 ~@2 = ~@3;"
-                      (if locvar.final? "final " "")
-                      (print-jtype locvar.type)
-                      locvar.name
-                      (print-jexpr locvar.init (jexpr-rank-expression)))
-                 indent-level)))
+    (if locvar.init?
+        (print-jline (msg "~@0~@1 ~@2 = ~@3;"
+                          (if locvar.final? "final " "")
+                          (print-jtype locvar.type)
+                          locvar.name
+                          (print-jexpr locvar.init? (jexpr-rank-expression)))
+                     indent-level)
+      (print-jline (msg "~@0~@1 ~@2;"
+                        (if locvar.final? "final " "")
+                        (print-jtype locvar.type)
+                        locvar.name)
+                   indent-level))))
 
 (defines print-jstatems+jblocks
   :short "Pretty-print a statement or block."

@@ -83,3 +83,12 @@
   (defret hex-digit-value-upper-bound
     (<= val 15)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist hex-digit-list
+  :short "Fixtype of true lists of Java hexadecimal digits."
+  :elt-type hex-digit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred hex-digit-listp)

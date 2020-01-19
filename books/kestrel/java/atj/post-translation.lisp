@@ -181,8 +181,8 @@
        (locvar (jstatem-locvar->get 3rd-to-last-statem))
        ((unless (and (equal (jlocvar->name locvar)
                             result-var)
-                     (equal (jlocvar->init locvar)
-                            (jexpr-literal-null)))) (fail)))
+                     (equal (jlocvar->init? locvar)
+                            nil))) (fail)))
     (mv t pre-block test-expr then-block then-expr else-block else-expr))
 
   ///

@@ -13,7 +13,7 @@ import java.util.Map;
  * They consist of
  * quoted constants (subclass {@link Acl2QuotedConstant},
  * variables (subclass {@link Acl2Variable},
- * and function applications {@link Acl2FunctionApplication}.
+ * and function calls {@link Acl2FunctionCall}.
  * No other subclasses can be defined outside this package
  * because this class provides no public or protected constructors.
  */
@@ -87,7 +87,7 @@ public abstract class Acl2Term implements Comparable<Acl2Term> {
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
      * then quoted constants, ordered according to their underlying symbols;
-     * finally applications, ordered lexicographically according to
+     * finally function calls, ordered lexicographically according to
      * the function followed by the arguments.
      *
      * @param o The term to compare this term with.

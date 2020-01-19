@@ -2,7 +2,6 @@
 
 (include-book "test-stuff")
 
-
 (defun
     truncate-list-extra-hypothesis
     (fat32-in-memory name-list size)

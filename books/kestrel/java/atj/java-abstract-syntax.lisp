@@ -442,16 +442,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only capture declarations of single local variables,
-     with an initializer,
-     and without array square brackets after the name
-     (i.e. all the array square brackets are in the type).")
+    "We only capture declarations of single local variables
+     without array square brackets after the name
+     (i.e. all the array square brackets are in the type).
+     The declarations have an optional initializer.")
    (xdoc::p
     "We do not capture @('var')."))
   ((final? bool)
    (type jtype)
    (name string)
-   (init jexpr))
+   (init? maybe-jexpr))
   :pred jlocvarp)
 
 (fty::deftypes jstatems+jblocks
@@ -521,19 +521,19 @@
               -1))
     :enable (jblock-count append)))
 
-(define jblock-locvar ((type jtypep) (name stringp) (init jexprp))
+(define jblock-locvar ((type jtypep) (name stringp) (init? maybe-jexprp))
   :returns (block jblockp)
   :short "Build a block consisting of
           a single (non-final) local variable declaration statement."
   (list (jstatem-locvar
-         (make-jlocvar :final? nil :type type :name name :init init))))
+         (make-jlocvar :final? nil :type type :name name :init? init?))))
 
-(define jblock-locvar-final ((type jtypep) (name stringp) (init jexprp))
+(define jblock-locvar-final ((type jtypep) (name stringp) (init? maybe-jexprp))
   :returns (block jblockp)
   :short "Build a block consisting of
           a single final local variable declaration statement."
   (list (jstatem-locvar
-         (make-jlocvar :final? t :type type :name name :init init))))
+         (make-jlocvar :final? t :type type :name name :init? init?))))
 
 (define jblock-expr ((expr jexprp))
   :returns (block jblockp)

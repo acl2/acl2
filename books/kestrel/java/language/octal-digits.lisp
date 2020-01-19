@@ -72,3 +72,12 @@
     (<= val 7)
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable oct-digit-fix oct-digitp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist oct-digit-list
+  :short "Fixtype of true lists of Java octal digits."
+  :elt-type oct-digit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred oct-digit-listp)
