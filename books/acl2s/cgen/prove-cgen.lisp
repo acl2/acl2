@@ -640,7 +640,7 @@ history s-hist.")
   (declare (xargs :mode :program :stobjs (state)))
   (acl2::state-global-let*
    ((acl2::inhibit-output-lst acl2::*valid-output-names*))
-   (acl2::translate form T logicp T "test? check" (w state) state)))
+   (acl2::translate-ignore-ok form T logicp T "test? check" (w state) state)))
 
 ;; TODO: remove code duplication between this function and prove/cgen
 (defun test/cgen (form hints cgen-state state)
