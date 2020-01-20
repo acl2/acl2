@@ -15,6 +15,7 @@
 (include-book "pseudo-event-form-listp")
 (include-book "pseudo-command-formp")
 (include-book "pseudo-event-landmarkp")
+(include-book "pseudo-command-landmarkp")
 (include-book "pseudo-tests-and-calls-listp")
 
 ; -----------------------------------------------------------------
@@ -272,24 +273,8 @@
 
 ; COMMAND-LANDMARK [GLOBAL-VALUE]
 
-(defun pseudo-command-landmarkp (val)
-
-; Warning: Keep this in sync with (defrec command-tuple ...) in the ACL2
-; sources.
-
-  (and (consp val)
-       (or (eql (car val) -1) (natp (car val)))
-       (consp (cdr val))
-       (consp (cadr val))
-       (if (keywordp (car (cadr val)))
-           (and (eq (car (cadr val)) :logic)
-                (pseudo-command-formp (cdr (cadr val))))
-           (pseudo-command-formp (cadr val)))
-       (consp (cddr val))
-       (or (null (caddr val))
-           (stringp (caddr val)))
-       (or (null (cdddr val))
-           (pseudo-command-formp (cdddr val)))))
+; See pseudo-command-landmarkp in pseudo-command-landmarkp.lisp.
+; That function was originally here in this file.
 
 ; -----------------------------------------------------------------
 ; KNOWN-PACKAGE-ALIST [GLOBAL-VALUE]
