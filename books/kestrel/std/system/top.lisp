@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "arglistp")
+(include-book "event-landmark-names")
 (include-book "event-name-queries")
 (include-book "function-queries")
 (include-book "getprops")

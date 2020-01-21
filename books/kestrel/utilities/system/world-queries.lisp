@@ -25,6 +25,7 @@
 (include-book "kestrel/std/system/classes-plus" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/definedp-plus" :dir :system)
+(include-book "kestrel/std/system/event-landmark-names" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-namep" :dir :system)
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
@@ -137,22 +138,3 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define event-landmark-names ((event pseudo-event-landmarkp))
-  :returns (names "A @('string-or-symbol-listp').")
-  :verify-guards nil
-  :parents (world-queries)
-  :short "Names introduced by an event landmark."
-  :long
-  "<p>
-   Each event landmark introduces zero or more names into the @(see world).
-   See @('pseudo-event-landmarkp')
-   in @('[books]/system/pseudo-good-worldp.lisp'),
-   and the description of event tuples in the ACL2 source code.
-   </p>"
-  (let ((namex (access-event-tuple-namex event)))
-    (cond ((equal namex 0) nil) ; no names
-          ((consp namex) namex) ; list of names
-          (t (list namex))))) ; single name

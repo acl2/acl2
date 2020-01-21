@@ -12,30 +12,3 @@
 
 (include-book "world-queries")
 (include-book "kestrel/utilities/testing" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (defun f (x) x)
- (assert-equal (event-landmark-names (cddr (nth 0 (w state)))) '(f)))
-
-(must-succeed*
- (defun f (x) x)
- (verify-guards f)
- (assert-equal (event-landmark-names (cddr (nth 0 (w state)))) nil))
-
-(must-succeed*
- (mutual-recursion
-  (defun f (term)
-    (if (variablep term)
-        0
-      (if (fquotep term)
-          0
-        (1+ (f-lst (fargs term))))))
-  (defun f-lst (terms)
-    (if (endp terms)
-        0
-      (+ (f (car terms))
-         (f-lst (cdr terms))))))
- (assert-equal (event-landmark-names (cddr (nth 0 (w state))))
-               '(f f-lst)))
