@@ -16,20 +16,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
- (defun latest-event-landmark (wrld)
-   (declare (xargs :guard (plist-worldp wrld)))
-   (if (endp wrld)
-       nil
-     (let ((triple (car wrld)))
-       (if (eq (car triple) 'event-landmark)
-           (cddr triple)
-         (latest-event-landmark (cdr wrld))))))
- (assert!
-  (pseudo-event-landmark-listp (list (latest-event-landmark (w state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
  (defun latest-command-landmark (wrld)
    (declare (xargs :guard (plist-worldp wrld)))
    (if (endp wrld)
