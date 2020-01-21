@@ -716,4 +716,25 @@
      contains examples of command to compile and run the code.
      See "
     (xdoc::seetopic "aij" "the AIJ documentation")
-    " for instructions on how to generate the @('.jar') file.")))
+    " for instructions on how to generate the @('.jar') file.")
+
+   (xdoc::p
+    "When the @(':deep') input is @('t'),
+     (the Java representations of) the ACL2 functions
+     are evaluated via AIJ's recursive interpreter:
+     evaluating recursive ACL2 functions on sufficiently large inputs
+     may cause a stack overflow error in Java.
+     When the @(':deep') input is @('nil'),
+     recursive ACL2 functions are translated to recursive Java methods,
+     except for tail-recursive functions, which are translated to loops:
+     calling these recursive methods on sufficiently large inputs
+     may cause a stack overflow error in Java.
+     These stack overflow issues may be mitigated
+     by passing a larger stack size to the Java Virtual Machine
+     (via the @('-Xss') option to the @('java') command;
+     see the comments in the file @('[books]/kestrel/atj/tests/run.sh')),
+     or, when @(':deep') is @('nil'),
+     by making all the recursive ACL2 functions tail-recursive
+     (e.g. via "
+    (xdoc::seetopic "apt::tailrec" "APT's tail recursion transformation")
+    ") prior to generating Java code.")))
