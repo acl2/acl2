@@ -62,6 +62,7 @@
 (include-book "kestrel/std/system/non-executablep-plus" :dir :system)
 (include-book "kestrel/std/system/number-of-results" :dir :system)
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
+(include-book "kestrel/std/system/pseudo-command-landmark-listp" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-landmark-listp" :dir :system)
 (include-book "kestrel/std/system/pseudo-tests-and-callp" :dir :system)
 (include-book "kestrel/std/system/pseudo-tests-and-call-listp" :dir :system)
@@ -136,20 +137,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist pseudo-command-landmark-listp (x)
-  (pseudo-command-landmarkp x)
-  :parents (world-queries)
-  :short "Recognize true lists of command landmarks."
-  :long
-  "<p>
-   See @('pseudo-command-landmarkp')
-   in @('[books]/system/pseudo-good-worldp.lisp').
-   </p>"
-  :true-listp t
-  :elementp-of-nil nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

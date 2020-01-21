@@ -16,21 +16,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
- (defun latest-command-landmark (wrld)
-   (declare (xargs :guard (plist-worldp wrld)))
-   (if (endp wrld)
-       nil
-     (let ((triple (car wrld)))
-       (if (eq (car triple) 'command-landmark)
-           (cddr triple)
-         (latest-command-landmark (cdr wrld))))))
- (comp t) ; seems to be needed for Allegro CL (but isn't for LispWorks; hmm...)
- (assert!
-  (pseudo-command-landmark-listp (list (latest-command-landmark (w state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
  (defun f (x) x)
  (assert-equal (event-landmark-names (cddr (nth 0 (w state)))) '(f)))
 
