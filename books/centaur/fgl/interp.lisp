@@ -2588,6 +2588,14 @@
              (booleanp (fgl-object-eval x env)))
     :hints(("Goal" :in-theory (enable fgl-apply)))))
 
+(define fgl-binder-args-p ((args pseudo-term-listp)
+                           interp-st)
+  (b* (((unless (and (consp args)
+                     (pseudo-term-case (car args) :var)))
+        nil)
+       (varname (pseudo-term-var->name (car args))))
+    (not (or (assoc-eq varname (interp-st-bindings interp-st))
+             (assoc-eq varname (interp-st-minor-bindings interp-st))))))
 
 (progn
   (with-output
@@ -2716,6 +2724,8 @@
                   (fgl-interp-fncall-special x.fn x.args interp-st state))
                  ((when successp)
                   (fgl-interp-value ans))
+                 ((when (fgl-binder-args-p x.args interp-st))
+                  (fgl-interp-binder x interp-st state))
 
                  (argcontexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st)
                                                                  x.fn (len x.args) (w state)))
@@ -3292,7 +3302,7 @@
                                  state)
         :measure (list (nfix (interp-st->reclimit interp-st))
                        2020 (pseudo-term-binding-count form)
-                       70)
+                       18)
         :returns (mv (xobj fgl-object-p)
                      new-interp-st new-state)
         (b* (((unless (pseudo-term-case form :fncall))
