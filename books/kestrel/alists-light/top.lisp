@@ -14,3 +14,11 @@
 (include-book "assoc-equal")
 (include-book "strip-cars")
 (include-book "strip-cdrs")
+
+(include-book "lookup-eq")
+(include-book "lookup-equal")
+(include-book "lookup")
+(include-book "lookup-eq-safe")
+(include-book "lookup-equal-safe")
+(include-book "lookup-safe")
+(include-book "lookup-eq-lst")
