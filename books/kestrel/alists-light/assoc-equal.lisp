@@ -25,11 +25,24 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defthm assoc-equal-of-cons
+;; Disabled because this can fire on a call to ASSOC-EQUAL where the second
+;; argument is a (non-empty) constant list.  See assoc-equal-of-cons-safe
+;; below.
+(defthmd assoc-equal-of-cons
   (equal (assoc-equal x (cons pair alist))
          (if (equal x (car pair))
              pair
            (assoc-equal x alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; Avoids cases splits if the second argument to ASSOC-EQUAL is constant.
+(defthm assoc-equal-of-cons-safe
+  (implies (syntaxp (not (and (quotep pair)
+                              (quotep alist))))
+           (equal (assoc-equal x (cons pair alist))
+                  (if (equal x (car pair))
+                      pair
+                    (assoc-equal x alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 (defthm assoc-equal-of-acons
