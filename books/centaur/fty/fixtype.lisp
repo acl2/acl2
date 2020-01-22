@@ -205,6 +205,7 @@
 (defconst *deffixequiv-basic-keywords*
   '(:hints
     :skip-const-thm
+    :skip-cong-thm
     :skip-ok
     :verbosep
     :out-equiv
@@ -253,6 +254,7 @@
        (hints (getarg :hints nil kwd-alist))
        (skip-const-thm (or (getarg :skip-const-thm nil kwd-alist)
                            (not (fixtype->executablep fixtype))))
+       (skip-cong-thm (getarg :skip-cong-thm nil kwd-alist))
        ((unless (and (consp form) (symbolp (car form))))
         (raise "Form should be a function call term, but it's ~x0" form))
        (basename (getarg :basename (car form) kwd-alist))
@@ -313,17 +315,18 @@
                                                ,(subst `(,fix ,arg) arg form)))
                           :hints (("Goal" :in-theory
                                    '(,out-equiv-equiv-rune ,fix-thmname))))))
-       (cong-thm `(defthm ,congruence-thmname
-                    (implies (,equiv ,arg ,argequiv)
-                             (,out-equiv ,form
-                                         ,(subst argequiv arg form)))
-                    :hints (("Goal" :in-theory nil
-                             :do-not '(preprocess)
-                             :use ((:instance ,fix-thmname)
-                                   (:instance ,fix-thmname (,arg ,argequiv))
-                                   (:instance ,(fixtype->equiv-means-fixes-equal fixtype)
-                                    (x ,arg) (y ,argequiv)))))
-                    :rule-classes :congruence)))
+       (cong-thm (and (not skip-cong-thm)
+                      `(defthm ,congruence-thmname
+                         (implies (,equiv ,arg ,argequiv)
+                                  (,out-equiv ,form
+                                              ,(subst argequiv arg form)))
+                         :hints (("Goal" :in-theory nil
+                                  :do-not '(preprocess)
+                                  :use ((:instance ,fix-thmname)
+                                        (:instance ,fix-thmname (,arg ,argequiv))
+                                        (:instance ,(fixtype->equiv-means-fixes-equal fixtype)
+                                         (x ,arg) (y ,argequiv)))))
+                         :rule-classes :congruence))))
     (make-fixequiv
      :form form
      :arg arg
@@ -346,14 +349,15 @@
               `((with-output :on (error)
                   ,x.const-thm)))
 
-       (make-event
-        '(:or (with-output :on (error) ,x.cong-thm)
-          (with-output :on (error)
-            (value-triple
-             (er hard? 'fixequiv
-                 "The congruence theorem failed: this is unexpected because ~
+       ,@(and x.cong-thm
+              `((make-event
+                 '(:or (with-output :on (error) ,x.cong-thm)
+                   (with-output :on (error)
+                     (value-triple
+                      (er hard? 'fixequiv
+                          "The congruence theorem failed: this is unexpected because ~
                   this should be automatic once the fixing theorem succeeds.  ~
-                  Please try again with :verbosep t to diagnose the problem."))))))))
+                  Please try again with :verbosep t to diagnose the problem."))))))))))
 
 (defmacro deffixequiv-basic (fn arg type &rest keys)
   (b* ((verbosep (let ((lst (member :verbosep keys)))

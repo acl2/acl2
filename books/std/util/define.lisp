@@ -528,7 +528,8 @@ form is usually an adequate work-around.</p>")
             :progn
             :hooks
             :t-proof
-            :no-function)
+            :no-function
+            :local-def)
           acl2::*xargs-keywords*))
 
 
@@ -1414,11 +1415,14 @@ examples.</p>")
          ;; e.g., to take advantage of nicer optional/keyword args.
          ,@(and guts.macro `((with-output :stack :pop ,guts.macro)))
 
-         ,@(if set-ignores
-               `((encapsulate ()
-                   ,@set-ignores
-                   (with-output :stack :pop ,guts.main-def)))
-             `((with-output :stack :pop ,guts.main-def)))
+         ,(let ((def (if set-ignores
+                         `(encapsulate ()
+                            ,@set-ignores
+                            (with-output :stack :pop ,guts.main-def))
+                       `(with-output :stack :pop ,guts.main-def))))
+            (if (cdr (assoc :local-def guts.kwd-alist))
+                `(local ,def)
+              def))
 
          ,@(add-macro-aliases-from-guts guts)
 
@@ -1472,7 +1476,10 @@ examples.</p>")
          ;; our nice output and then says, "oh but this is really a macro" and
          ;; then shows us the ugly macro.  But targeting name-fn instead seems
          ;; to do the right thing.
-         (acl2::extend-pe-table ,guts.name-fn ,guts.pe-entry)
+         ,(let ((pe-table `(acl2::extend-pe-table ,guts.name-fn ,guts.pe-entry)))
+            (if (cdr (assoc :local-def guts.kwd-alist))
+                `(local ,pe-table)
+              pe-table))
 
          ,@(and guts.rest-events
                 `((with-output :stack :pop
@@ -1490,10 +1497,14 @@ examples.</p>")
 
          ,@(if enabled-p
                nil
-             `((make-event
-                (if (logic-mode-p ',guts.name-fn (w state))
-                    '(in-theory (disable ,guts.name))
-                  '(value-triple :invisible))))))
+             (let ((disable
+                    `(make-event
+                      (if (logic-mode-p ',guts.name-fn (w state))
+                          '(in-theory (disable ,guts.name))
+                        '(value-triple :invisible)))))
+               (if (cdr (assoc :local-def guts.kwd-alist))
+                   `((local ,disable))
+                 `(,disable)))))
 
 
        ;; Now that the section has been submitted, its xdoc exists, so we can
