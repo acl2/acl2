@@ -83,3 +83,19 @@
                       (assoc-equal x alist1)
                     (assoc-equal x alist2))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; matches std
+;; Can help when assoc-equal-type cannot fire due to the hyps needing rewriting to be relieved.
+(defthm consp-of-assoc-equal
+  (implies (alistp alist)
+           (iff (consp (assoc-equal key alist))
+                (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable alistp assoc-equal))))
+
+(defthm assoc-equal-type
+  (implies (or x ;if X is nil, and ALIST contains an atom, ASSOC-EQUAL might return that atom
+               (alistp alist))
+           (or (consp (assoc-equal x alist))
+               (null (assoc-equal x alist))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable alistp assoc-equal))))
