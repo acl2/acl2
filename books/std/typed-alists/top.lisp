@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "cons-pos-alistp")
+(include-book "keyword-to-keyword-value-list-alistp")
 (include-book "string-string-alistp")
 (include-book "string-symbollist-alistp")
 (include-book "symbol-nat-alistp")
@@ -31,4 +32,5 @@
   (xdoc::topstring
    (xdoc::p
     "A library of alists with keys and values of specific types.
-     These are built-in types, or ``general'' types in Std.")))
+     The key and value types are built-in types,
+     or ``general'' types in Std.")))

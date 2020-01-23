@@ -9,8 +9,10 @@
 (include-book "kestrel/utilities/symbols" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "centaur/misc/outer-local" :dir :system)
 (include-book "std/lists/top" :dir :system)
+(include-book "coi/util/pseudo-translate" :dir :system)
 
 #|
 Here is the top-level defunc control flow:
@@ -165,12 +167,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             )
         nil))))
 
-(include-book "coi/util/pseudo-translate" :dir :system)
-
 (defun c-is-t (c)
   (or (equal c 't) (equal c ''t)))
 
 (defun type-of-pred-aux (pred tbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl))))
   (cond ((endp tbl) nil)
         ((equal pred (get-alist :predicate (cdar tbl)))
          (caar tbl))
@@ -185,6 +186,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 |#
 
 (defun type-of-pred (pred tbl ptbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl) (sym-aalistp ptbl))))
   (let ((apred (assoc-equal :type (get-alist pred ptbl))))
     (if apred
         (cdr apred) 
@@ -215,22 +217,30 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 |#
 
 (defun enum-of-type (type tbl)
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
   (get-alist :enumerator (get-alist type tbl)))
 
 ; (enum-of-type 'integer (type-metadata-table (w state)))
 
 (defun base-val-of-type (type tbl)
+  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
   (get-alist :default-base-value (get-alist type tbl)))
 
 ; (base-val-of-type 'integer (type-metadata-table (w state)))
 
 (defun unalias-pred (pred ptbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalistp ptbl))))
   (let ((apred (assoc-equal :predicate (get-alist pred ptbl))))
     (if apred
         (cdr apred)
       pred)))
 
 (defun pred-of-oc (name formals oc ptbl)
+  (declare (xargs :guard (and (symbolp name)
+                              (symbol-listp formals)
+                              (or (atom oc)
+                                  (symbolp (car oc)))
+                              (sym-aalistp ptbl))))
   (and (consp oc) 
        (equal (cdr oc) `((,name ,@formals)))
        (unalias-pred (car oc) ptbl)))
@@ -774,10 +784,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (local (defun acl2s-d-undefined () nil)))
 
 (defconst *input-contract-alias*
-  '(:input-contract :require :assume :pre :pre-condition))
+  '(:input-contract :ic :pre-condition :pre :require :assume))
 
 (defconst *output-contract-alias*
-  '(:output-contract :ensure :guarantee :post :post-condition))
+  '(:output-contract :oc :post-condition :post :ensure :guarantee))
 
 (defun gather-alias1 (alias alist)
   (declare (xargs :guard (and (symbol-listp alias) (alistp alist))))
@@ -816,10 +826,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ; Decided to take care of error printing on my own, but kept previous
 ; versions above.
 
-(defun type-of-type (type tbl atbl ctx)
+(defun type-of-type (type tbl atbl)
   (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
                               (sym-aalistp atbl))))
-  (declare (ignore ctx))
   (let ((atype (assoc-equal :type (get-alist type atbl))))
     (if atype
         (cdr atype)
@@ -828,10 +837,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             type
           nil)))))
 
-(defun pred-of-type (type tbl atbl ctx)
+(defun pred-of-type (type tbl atbl)
   (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
                               (sym-aalistp atbl))))
-  (declare (ignore ctx))
   (let ((atype (assoc-equal :predicate (get-alist type atbl))))
     (if atype
         (cdr atype)
@@ -872,7 +880,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      (cdr l) acc name formals tbl atbl pkg))
    ((keywordp (car l))
     (b* ((type (fix-intern$ (symbol-name (car l)) pkg))
-         (pred (pred-of-type type tbl atbl 'defunc))
+         (pred (pred-of-type type tbl atbl))
          ((unless pred)
           (er hard 'defunc
               "~%The given type, ~x0, is not a known type." type))
@@ -1305,7 +1313,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                          (eq nil (get1 :testing-enabled kwd-alist))))
        (testing-timeout (get1 :cgen-timeout kwd-alist))
        ((when skip-tests-p) (value nil))
+       (wrld (w state))
        (mode (if (get1 :program-mode-p kwd-alist) :program :logic))
+       ((mv ?erp tbody)
+        (acl2::pseudo-translate body (list (cons name formals)) wrld))
+       (mode
+        (if (and (eql mode :logic)
+                 (acl2::all-program-ffn-symbs tbody nil wrld))
+            :program
+          mode))
        (defun (list* 'acl2::defun name formals
                      (append (update-xargs-decls decls :guard ic :mode mode)
                              (list body))))
@@ -1706,7 +1722,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun make-undefined (parsed d? pkg w)
   (declare (xargs :mode :program))
   (make-undefined-aux parsed w d? nil pkg))
-
 
 (defun defunc-events (parsed d? state)
   (declare (xargs :mode :program :stobjs (state)))

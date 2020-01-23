@@ -184,6 +184,7 @@
 (include-book "system/event-names" :dir :system)
 (include-book "system/acl2-system-exports" :dir :system)
 (include-book "system/doc/developers-guide" :dir :system)
+(include-book "system/pseudo-tests-and-calls-listp" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
 ;; BOZO should we put them back in?
@@ -255,6 +256,7 @@
 (include-book "centaur/gl/top-doc" :dir :system)
 (include-book "centaur/vl/top-doc" :dir :system)
 (include-book "centaur/sv/top-doc" :dir :system)
+(include-book "centaur/fgl/top-doc" :dir :system)
 (include-book "centaur/vl2014/top-doc" :dir :system)
 (include-book "projects/top-doc" :dir :system)
 (include-book "kestrel/top-doc" :dir :system)

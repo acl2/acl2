@@ -5,6 +5,7 @@
 
 (in-package "ACL2S")
 
+(include-book "acl2s/acl2s-size" :dir :system :ttags :all)
 (include-book "acl2s/ccg/ccg" :uncertified-okp nil :dir :system :ttags
               ((:ccg)) :load-compiled-file nil)
 (include-book "acl2s/base-theory" :dir :system :ttags :all)

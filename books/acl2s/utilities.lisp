@@ -455,7 +455,7 @@ functions over natural numbers.
 ; Document this
 (mutual-recursion
  (defun subst-var (new old form)
-   (declare (xargs :guard (and (atom old) (all-tlps form))))
+   (declare (xargs :guard (atom old)))
    (cond ((atom form)
           (cond ((equal form old) new)
                 (t form)))
@@ -464,16 +464,18 @@ functions over natural numbers.
                   (subst-var-lst new old (cdr form))))))
 
  (defun subst-var-lst (new old l)
-   (declare (xargs :guard (and (atom old) (true-listp l) (all-tlps l))))
-   (cond ((endp l) nil)
+   (declare (xargs :guard (atom old)))
+   (cond ((atom l) nil)
          (t (cons (subst-var new old (car l))
                   (subst-var-lst new old (cdr l)))))))
 
+; Used to have a guard for old, new in nest below of legal-variable,
+; but now use symbol because * is not a legal variable and needed this
+; in bare-bones mode.
 (mutual-recursion
  (defun subst-fun-sym (new old form)
-   (declare (xargs :guard (and (legal-variablep old)
-                               (legal-variablep new)
-                               (all-tlps form))))
+   (declare (xargs :guard (and (symbolp old)
+                               (symbolp new))))
    (cond ((atom form)
           form)
          ((acl2::fquotep form) form)
@@ -483,17 +485,15 @@ functions over natural numbers.
                   (subst-fun-lst new old (cdr form))))))
 
  (defun subst-fun-lst (new old l)
-   (declare (xargs :guard (and (legal-variablep old)
-                               (legal-variablep new)
-                               (true-listp l)
-                               (all-tlps l))))
-   (cond ((endp l) nil)
+   (declare (xargs :guard (and (symbolp old)
+                               (symbolp new))))
+   (cond ((atom l) nil)
          (t (cons (subst-fun-sym new old (car l))
                   (subst-fun-lst new old (cdr l)))))))
 
 (mutual-recursion
  (defun subst-expr1 (new old term)
-   (declare (xargs :guard (all-tlps term) :guard-debug t))
+   (declare (xargs :guard t :guard-debug t))
    (cond
     ((equal term old) new)
     ((atom term) term)
@@ -502,14 +502,14 @@ functions over natural numbers.
              (subst-expr1-lst new old (cdr term))))))
 
  (defun subst-expr1-lst (new old args)
-   (declare (xargs :guard (and (true-listp args) (all-tlps args))))
-   (if (endp args)
+   (declare (xargs :guard t))
+   (if (atom args)
        nil
      (cons (subst-expr1 new old (car args))
            (subst-expr1-lst new old (cdr args))))))
 
 (defun subst-expr (new old term)
-  (declare (xargs :guard (and (not (quotep old)) (all-tlps term))))
+  (declare (xargs :guard (not (quotep old))))
   (if (atom old)
       (subst-var new old term)
     (subst-expr1 new old term)))

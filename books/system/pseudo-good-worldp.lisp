@@ -10,7 +10,12 @@
 ; factored out so that they can be used by other files in the community books
 ; in a more modular way.
 
+(include-book "std/typed-alists/keyword-to-keyword-value-list-alistp" :dir :system)
+(include-book "std/typed-lists/string-or-symbol-listp" :dir :system)
 (include-book "pseudo-event-form-listp")
+(include-book "pseudo-command-formp")
+(include-book "pseudo-event-landmarkp")
+(include-book "pseudo-tests-and-calls-listp")
 
 ; -----------------------------------------------------------------
 
@@ -260,70 +265,12 @@
       (and (pseudo-function-symbolp (car lst) n)
            (pseudo-function-symbol-listp (cdr lst) n))))
 
-(defun string-or-symbol-listp (x)
-  (if (atom x)
-      (null x)
-      (and (or (stringp (car x))
-               (symbolp (car x)))
-           (string-or-symbol-listp (cdr x)))))
-
-
-(defun pseudo-event-landmarkp (val)
-
-; If this function has to be changed, see whether there is more to say in the
-; comment, labeled Event Tuples, just above make-event-tuple, or the comment in
-; make-event-tuple.
-
-; xxx change the commment in make-event-tuple:
-
-; An event tuple is always a cons.  Except in the initial case created by
-; primordial-world-globals, the car is always either a natural (denoting n and
-; implying d=0) or a cons of two naturals, n and d.    Its cadr is
-; either a symbol, denoting its type and signalling that the cdr is the form,
-; the symbol-class is :program and that the namex can be recovered from the
-; form, or else the cadr is the pair (ev-type namex . symbol-class) signalling
-; that the form is the cddr.
-
-; Generally, the val encodes:
-;  n - absolute event number
-;  d - embedded event depth
-;  form - form that created the event
-;  ev-type - name of the primitive event macro we use, e.g., defun, defthm, defuns
-;  namex - name or names introduced (0 is none)
-;  symbol-class - of names (or nil)
-
-  (or (equal val '(-1 ((NIL) 0)))   ; bogus tuple by primordial-world-globals
-      (and (consp val)
-           (or (natp (car val))       ; n = (car val), d = 0
-               (and (consp (car val))
-                    (natp (car (car val)))  ; = n
-                    (natp (cdr (car val))))) ; = d
-           (consp (cdr val))
-           (if (symbolp (cadr val))    ; ev-type is recoverable from form
-               (pseudo-event-formp (cdr val))  ; (cdr val) here is the event form
-               (and (consp (cadr val))
-                    (consp (car (cadr val))) ; (ev-type . skipped-proofs-p)
-                    (symbolp (car (car (cadr val)))) ; ev-type
-                    (booleanp (cdr (car (cadr val)))) ; skipped-proofs-p
-                    (consp (cdr (cadr val)))
-                    (or (symbolp (cadr (cadr val))) ; name introduced
-                        (stringp (cadr (cadr val))) ; name introduced
-                        (equal 0 (cadr (cadr val))) ; no names introduced
-                        (string-or-symbol-listp (cadr (cadr val)))) ; list of names introduced
-                    (member-eq (cddr (cadr val)) ; symbol-class
-                               '(nil :program :ideal :common-lisp-compliant))
-                    (pseudo-event-formp (cddr val))))))) ; (cddr val) here is the event form
+; See pseudo-event-landmarkp in pseudo-event-landmarkp.lisp.
+; That function was originally here in this file.
 
 ; -----------------------------------------------------------------
 
 ; COMMAND-LANDMARK [GLOBAL-VALUE]
-
-(defun pseudo-command-formp (x)
-
-; We see no reasonable way to restrict the form of a command, other than to
-; insist that it is a true list.
-
-  (true-listp x))
 
 (defun pseudo-command-landmarkp (val)
 
@@ -1433,13 +1380,6 @@
 ; This is a list of fully elaborated rule classes as returned by translate-rule-classes.
 ; For the present purposes we just check that it is an alist mapping keywords to keyword alists.
 
-(defun keyword-to-keyword-value-list-alistp (x)
-  (cond ((atom x) (null x))
-        (t (and (consp (car x))
-                (keywordp (car (car x)))
-                (keyword-value-listp (cdr (car x)))
-                (keyword-to-keyword-value-list-alistp (cdr x))))))
-
 (defun classesp (sym val)
   (declare (ignore sym))
   (keyword-to-keyword-value-list-alistp val))
@@ -1851,18 +1791,6 @@
 ; An induction machine is a list of tests-and-calls records:
 ; (defrec tests-and-calls (tests . calls) nil), where each of the two
 ; fields is a list of terms.
-
-(defun pseudo-tests-and-callsp (x)
-  (case-match x
-    (('TESTS-AND-CALLS tests . calls)
-     (and (pseudo-term-listp tests)
-          (pseudo-term-listp calls)))
-    (& nil)))
-
-(defun pseudo-tests-and-calls-listp (x)
-  (cond ((atom x) (null x))
-        (t (and (pseudo-tests-and-callsp (car x))
-                (pseudo-tests-and-calls-listp (cdr x))))))
 
 (defun pseudo-induction-machinep (sym val)
   (declare (ignore sym))

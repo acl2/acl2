@@ -285,7 +285,7 @@
      class literals, and
      method references.")
    (xdoc::p
-    "For name expressions [JLS:6.5], we use ACL2 strings,
+    "For expression names [JLS:6.5], we use ACL2 strings,
      which allow dot-separated identifiers,
      as well as @('this') and @('super').")
    (xdoc::p
@@ -422,21 +422,36 @@
   :short "Build a Java expression consisting of the null literal."
   (jexpr-literal (jliteral-null)))
 
+(define jexpr-get-field ((expr jexprp) (name stringp))
+  :returns (get-field-expr jexprp)
+  :short "Build a Java expression to access a field."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the Java grammar,
+     not all expressions that access fields
+     can be derived from @('field-access').
+     When the target object is an expression name,
+     the field access expression is also an expression name."))
+  (if (jexpr-case expr :name)
+      (jexpr-name (str::cat (jexpr-name->get expr) "." name))
+    (jexpr-field expr name)))
+
 (fty::defprod jlocvar
   :short "Local variable declarations [JLS:14.4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We only capture declarations of single local variables,
-     with an initializer,
-     and without array square brackets after the name
-     (i.e. all the array square brackets are in the type).")
+    "We only capture declarations of single local variables
+     without array square brackets after the name
+     (i.e. all the array square brackets are in the type).
+     The declarations have an optional initializer.")
    (xdoc::p
     "We do not capture @('var')."))
   ((final? bool)
    (type jtype)
    (name string)
-   (init jexpr))
+   (init? maybe-jexpr))
   :pred jlocvarp)
 
 (fty::deftypes jstatems+jblocks
@@ -506,19 +521,19 @@
               -1))
     :enable (jblock-count append)))
 
-(define jblock-locvar ((type jtypep) (name stringp) (init jexprp))
+(define jblock-locvar ((type jtypep) (name stringp) (init? maybe-jexprp))
   :returns (block jblockp)
   :short "Build a block consisting of
           a single (non-final) local variable declaration statement."
   (list (jstatem-locvar
-         (make-jlocvar :final? nil :type type :name name :init init))))
+         (make-jlocvar :final? nil :type type :name name :init? init?))))
 
-(define jblock-locvar-final ((type jtypep) (name stringp) (init jexprp))
+(define jblock-locvar-final ((type jtypep) (name stringp) (init? maybe-jexprp))
   :returns (block jblockp)
   :short "Build a block consisting of
           a single final local variable declaration statement."
   (list (jstatem-locvar
-         (make-jlocvar :final? t :type type :name name :init init))))
+         (make-jlocvar :final? t :type type :name name :init? init?))))
 
 (define jblock-expr ((expr jexprp))
   :returns (block jblockp)
@@ -624,7 +639,7 @@
   (xdoc::topstring
    (xdoc::p
     "We only capture declarations of single fields,
-     with a literal as initializer,
+     with or without an initializer,
      and without array square brackets after the name
      (i.e. all the array square brackets are in the type)."))
   ((access jaccess)
@@ -634,7 +649,7 @@
    (volatile? bool)
    (type jtype)
    (name string)
-   (init jexpr))
+   (init? maybe-jexpr))
   :pred jfieldp)
 
 (fty::deflist jfield-list

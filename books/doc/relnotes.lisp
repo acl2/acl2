@@ -244,6 +244,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "Some functions have been tweaked to fix their arguments.")
+
+   (xdoc::p
+    "Some theorems have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "aignet" "Aignet Library"))
 
    (xdoc::p
@@ -549,6 +559,12 @@
 
    (xdoc::p
     "ATJ has been extended with the ability to generate Java code
+     that uses Java primitive arrays and operations.
+     This ability is available in the shallow embedding approach,
+     when guards are assumed satisfied.")
+
+   (xdoc::p
+    "ATJ has been extended with the ability to generate Java code
      that operates on narrower types than the one for all ACL2 values.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
@@ -651,6 +667,21 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "set::theorems-about-osets" "Kestrel Oset Theorems"))
+
+   (xdoc::p
+    "A theorem has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Pseudo-good-world")
+
+   (xdoc::p
+    "Some functions have been factored ouf of the file
+     @('[book]/system/pseudo-good-worldp.lisp'),
+     and put into new individual files,
+     for greater modularity.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "remove-hyps" "Remove-hyps utility"))
@@ -658,13 +689,6 @@
    (xdoc::p
     "Now, @(tsee remove-hyps) succeeds when applied to a call of @(tsee thm)
     whose formula is not in the form of a valid rewrite rule.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "set::theorems-about-osets" "Kestrel Oset Theorems"))
-
-   (xdoc::p
-    "A theorem has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -728,6 +752,15 @@
     "A variant @(tsee str::strtok!) of @(tsee str::strtok) has been added,
      which does not treat contiguous delimiters as one.
      This is under the Std extensions in the Kestrel Books.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/typed-lists" "Standard Typed Lists Library"))
+
+   (xdoc::p
+    "A file for lists of strings and symbols has been added.
+     The recognizer has been factored out of
+     @('[books]/system/pseudo-good-worldp.lisp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1619,8 +1652,7 @@
  <p>Added some <see topic='@(url nat-list-fix-theorems)'>theorems about lists
  of natural numbers</see>.</p>
 
- <p>Added a <see topic='@(url string-listp-theorems)'>theorem about lists of
- strings</see>.</p>
+ <p>Added a theorem about lists of strings.</p>
 
  <p>Merged the utilities in @('[books]/kestrel/utilities/characters.lisp') into
  the <see topic='@(url string-utilities)'>string utilities</see>.  Extended the
@@ -2008,8 +2040,7 @@
  and character utilities (@('[books]/kestrel/utilities/characters.lisp')) have
  undergone several improvements and extensions.</p>
 
- <p>A few <see topic='@(url theorems-about-world-related-functions)'>theorems
- about world-related functions</see> and theorems about lists (in
+ <p>A few theorems about world-related functions and theorems about lists (in
  @('kestrel/utilities/list-theorems.lisp')) have been added.</p>
 
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs

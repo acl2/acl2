@@ -1,6 +1,6 @@
 ; System Utilities -- World Queries
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2018 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -21,6 +21,8 @@
 (include-book "system/pseudo-good-worldp" :dir :system)
 
 (include-book "kestrel/std/system/arity-plus" :dir :system)
+(include-book "kestrel/std/system/classes" :dir :system)
+(include-book "kestrel/std/system/classes-plus" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/definedp-plus" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -33,6 +35,8 @@
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p-plus" :dir :system)
 (include-book "kestrel/std/system/included-books" :dir :system)
+(include-book "kestrel/std/system/induction-machine" :dir :system)
+(include-book "kestrel/std/system/induction-machine-plus" :dir :system)
 (include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 (include-book "kestrel/std/system/known-packages" :dir :system)
@@ -58,8 +62,11 @@
 (include-book "kestrel/std/system/non-executablep-plus" :dir :system)
 (include-book "kestrel/std/system/number-of-results" :dir :system)
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
+(include-book "kestrel/std/system/pseudo-tests-and-callp" :dir :system)
+(include-book "kestrel/std/system/pseudo-tests-and-call-listp" :dir :system)
 (include-book "kestrel/std/system/primitivep" :dir :system)
 (include-book "kestrel/std/system/primitivep-plus" :dir :system)
+(include-book "kestrel/std/system/recursive-calls" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders" :dir :system)
 (include-book "kestrel/std/system/ruler-extenders-plus" :dir :system)
 (include-book "kestrel/std/system/rune-disabledp" :dir :system)
@@ -67,8 +74,8 @@
 (include-book "kestrel/std/system/stobjs-in-plus" :dir :system)
 (include-book "kestrel/std/system/stobjs-out-plus" :dir :system)
 (include-book "kestrel/std/system/term-function-recognizers" :dir :system)
-(include-book "kestrel/std/system/theorem-formula" :dir :system)
-(include-book "kestrel/std/system/theorem-formula-plus" :dir :system)
+(include-book "kestrel/std/system/thm-formula" :dir :system)
+(include-book "kestrel/std/system/thm-formula-plus" :dir :system)
 (include-book "kestrel/std/system/theorem-name-listp" :dir :system)
 (include-book "kestrel/std/system/theorem-namep" :dir :system)
 (include-book "kestrel/std/system/theorem-symbol-listp" :dir :system)
@@ -83,7 +90,6 @@
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
-(local (include-book "arglistp-theorems"))
 (local (include-book "world-theorems"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,173 +135,6 @@
    <p>
    These utilities are being moved to @(csee std/system).
    </p>")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define classes ((thm symbolp) (wrld plist-worldp))
-  :returns (classes "An @(tsee alistp)
-                     from @(tsee keywordp) to @(tsee keyword-value-listp).")
-  :parents (world-queries)
-  :short "Rule classes of a theorem."
-  :long
-  "<p>
-   These form a value of type @('keyword-to-keyword-value-list-alistp'),
-   which is defined in @('[books]/system/pseudo-good-worldp.lisp').
-   </p>
-   <p>
-   See @(tsee classes+) for a logic-friendly variant of this utility.
-   </p>"
-  (getpropc thm 'classes nil wrld))
-
-(define classes+ ((thm (theorem-namep thm wrld))
-                  (wrld plist-worldp))
-  :returns (classes keyword-to-keyword-value-list-alistp)
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee classes)."
-  :long
-  "<p>
-   This returns the same result as @(tsee classes),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (classes thm wrld)))
-    (if (keyword-to-keyword-value-list-alistp result)
-        result
-      (raise "Internal error: ~
-              the rule classes ~x0 of ~x1 are not an alist
-              from keywords to keyword-value lists."
-             result thm))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define induction-machine ((fn symbolp) (wrld plist-worldp))
-  :returns (result "A @('pseudo-induction-machinep').")
-  :parents (world-queries)
-  :short "Induction machine of a named logic-mode (singly) recursive function."
-  :long
-  "<p>
-   This is a list of @('tests-and-calls') records
-   (see the ACL2 source code for information on these records),
-   each of which contains zero or more recursive calls
-   along with the tests that lead to them.
-   The induction machine is a value of type @('pseudo-induction-machinep'),
-   which is defined in @('[books]/system/pseudo-good-worldp.lisp').
-   </p>
-   <p>
-   Note that
-   induction is not directly supported for mutually recursive functions.
-   </p>
-   <p>
-   See @(tsee induction-machine+) for a logic-friendly variant of this utility.
-   </p>"
-  (getpropc fn 'induction-machine nil wrld))
-
-(define induction-machine+ ((fn (and (logic-function-namep fn wrld)
-                                     (= 1 (len (irecursivep+ fn wrld)))))
-                            (wrld plist-worldp))
-  :returns (result (pseudo-induction-machinep fn result))
-  :parents (world-queries)
-  :short "Logic-friendly variant of @(tsee induction-machine)."
-  :long
-  "<p>
-   This returns the same result as @(tsee induction-machine),
-   but it has a stronger guard
-   and includes a run-time check (which should always succeed) on the result
-   that allows us to prove the return type theorem
-   without strengthening the guard on @('wrld').
-   </p>"
-  (b* ((result (induction-machine fn wrld)))
-    (if (pseudo-induction-machinep fn result)
-        result
-      (raise "Internal error: ~
-              the INDUCTION-MACHINE property ~x0 of ~x1 ~
-              does not have the expected form."
-             result fn))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define pseudo-tests-and-callp (x)
-  :returns (yes/no booleanp)
-  :parents (world-queries)
-  :short "Recognize well-formed @('tests-and-call') records."
-  :long
-  "<p>
-   A @('tests-and-call') record is defined as
-   </p>
-   @({
-     (defrec tests-and-call (tests call) nil)
-   })
-   <p>
-   (see the ACL2 source code).
-   </p>
-   <p>
-   In a well-formed @('tests-and-call') record,
-   @('tests') must be a list of terms and
-   @('call') must be a term.
-   </p>
-   <p>
-   This recognizer is analogous to @('pseudo-tests-and-callsp')
-   in @('[books]/system/pseudo-good-worldp.lisp')
-   for @('tests-and-calls') records.
-   </p>"
-  (case-match x
-    (('tests-and-call tests call)
-     (and (pseudo-term-listp tests)
-          (pseudo-termp call)))
-    (& nil))
-  ///
-
-  (defrule weak-tests-and-call-p-when-pseudo-tests-and-callp
-    (implies (pseudo-tests-and-callp x)
-             (weak-tests-and-call-p x))))
-
-(std::deflist pseudo-tests-and-call-listp (x)
-  (pseudo-tests-and-callp x)
-  :parents (world-queries)
-  :short "Recognize true lists of well-formed @('tests-and-call') records."
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define recursive-calls ((fn symbolp) (wrld plist-worldp))
-  :returns (calls-with-tests "A @(tsee pseudo-tests-and-call-listp).")
-  :mode :program
-  :parents (world-queries)
-  :short "Recursive calls of a named non-mutually-recursive function,
-          along with the controlling tests."
-  :long
-  "<p>
-   For singly recursive logic-mode functions,
-   this is similar to the result of @(tsee induction-machine),
-   but each record has one recursive call (instead of zero or more),
-   and there is exactly one record for each recursive call.
-   </p>
-   <p>
-   This utility works on both logic-mode and program-mode functions
-   (if the program-mode functions have an @('unnormalized-body') property).
-   This utility should not be called on a function that is
-   mutually recursive with other functions;
-   it must be called only on singly recursive functions,
-   or on non-recursive functions (the result is @('nil') in this case).
-   </p>
-   <p>
-   This utility may be extended to handle also mutually recursive functions.
-   </p>
-   <p>
-   If the function is in logic mode and recursive,
-   we obtain its ruler extenders and pass them to
-   the built-in function @('termination-machine').
-   Otherwise, we pass the default ruler extenders.
-   </p>"
-  (b* ((ruler-extenders (if (and (logicp fn wrld)
-                                 (irecursivep fn wrld))
-                            (ruler-extenders fn wrld)
-                          (default-ruler-extenders wrld))))
-    (termination-machine
-     (list fn) (ubody fn wrld) nil nil ruler-extenders)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

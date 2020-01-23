@@ -14,8 +14,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection conjoin-theorems
-  :parents (std/system)
+(defsection std/system/conjoin
+  :parents (std/system/term-transformations)
   :short "Theorems about @(tsee conjoin) and @(tsee conjoin2)."
 
   (defthm pseudo-termp-of-conjoin

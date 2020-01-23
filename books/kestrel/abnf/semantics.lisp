@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -208,36 +208,13 @@
   :short "Union of trees and @('nil')."
   :pred maybe-treep)
 
-(define set-all-treep ((set setp))
-  :returns (yes/no booleanp)
-  :short "Check if all the elements of a set are trees."
-  (or (empty set)
-      (and (treep (head set))
-           (set-all-treep (tail set))))
-  :no-function t
-  ///
-
-  (defrule set-all-treep-of-insert
-    (equal (set-all-treep (insert tree trees))
-           (and (treep tree)
-                (set-all-treep (sfix trees))))))
-
-(define tree-setp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize finite sets of trees."
-  (and (setp x)
-       (set-all-treep x))
-  :no-function t
-  ///
-
-  (defrule setp-when-tree-setp
-    (implies (tree-setp trees)
-             (setp trees)))
-
-  (defrule tree-setp-of-insert
-    (equal (tree-setp (insert tree trees))
-           (and (treep tree)
-                (tree-setp (sfix trees))))))
+(fty::defset tree-set
+  :elt-type tree
+  :elementp-of-nil nil
+  :pred tree-setp
+  :fix tree-set-fix
+  :equiv tree-set-equiv
+  :short "Finite sets of trees.")
 
 (defines tree->string
   :short "String at the leaves of trees."
@@ -276,6 +253,8 @@
     :no-function t)
 
   ///
+
+  (fty::deffixequiv-mutual tree->string)
 
   (defrule tree-list->string-when-atom
     (implies (atom trees)
@@ -345,6 +324,8 @@
 
   ///
 
+  (fty::deffixequiv-mutual tree-terminatedp)
+
   (std::deflist tree-list-terminatedp (x)
     (tree-terminatedp x)
     :guard (tree-listp x)
@@ -413,7 +394,8 @@
                  ((natp (car (tree-leafterm->get tree))))
                  ;; Matt K. mod to get proof to work in ACL2(r):
                  :in-theory (enable tree-leafterm->get)))
-  :no-function t)
+  :no-function t
+  :hooks (:fix))
 
 (define nat-match-sensitive-char-p ((nat natp) (char characterp))
   :returns (yes/no booleanp)
@@ -423,8 +405,10 @@
    "A natural number matches
     a character in a case-sensitive character value notation iff
     the natural number is the character's code.")
-  (equal nat (char-code char))
+  (b* ((nat (mbe :logic (nfix nat) :exec nat)))
+    (equal nat (char-code char)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nat-match-sensitive-char-p-of-char-fix
@@ -442,10 +426,12 @@
     the natural number is the code
     of the character or
     of the uppercase or lowercase counterpart of the character.")
-  (or (equal nat (char-code char))
-      (equal nat (char-code (upcase-char char)))
-      (equal nat (char-code (downcase-char char))))
+  (b* ((nat (mbe :logic (nfix nat) :exec nat)))
+    (or (equal nat (char-code char))
+        (equal nat (char-code (upcase-char char)))
+        (equal nat (char-code (downcase-char char)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nat-match-insensitive-char-p-of-char-fix
@@ -461,6 +447,7 @@
                 (nat-match-sensitive-char-p (car nats) (car chars))
                 (nats-match-sensitive-chars-p (cdr nats) (cdr chars)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nats-match-sensitive-chars-p-when-atom-chars
@@ -483,6 +470,7 @@
                 (nat-match-insensitive-char-p (car nats) (car chars))
                 (nats-match-insensitive-chars-p (cdr nats) (cdr chars)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule nats-match-insensitive-chars-p-when-atom-chars
@@ -514,7 +502,8 @@
                                 nats (explode char-val.get))
                     :insensitive (nats-match-insensitive-chars-p
                                   nats (explode char-val.get)))))
-  :no-function t)
+  :no-function t
+  :hooks (:fix))
 
 (define tree-match-prose-val-p ((tree treep) (prose-val prose-val-p))
   :returns (yes/no booleanp)
@@ -527,7 +516,8 @@
     its meaning can be formalized via external predicates on trees.=")
   t
   :ignore-ok t
-  :no-function t)
+  :no-function t
+  :hooks (:fix))
 
 (define numrep-match-repeat-range-p ((numrep natp) (range repeat-rangep))
   :returns (yes/no booleanp)
@@ -536,19 +526,21 @@
   (xdoc::topstring-p
    "A number of repetitions (a natural number) matches a repetition range iff
     it is between the range's minimum and the range's maximum.")
-  (let ((min (repeat-range->min range))
-        (max (repeat-range->max range)))
+  (b* ((numrep (mbe :logic (nfix numrep) :exec numrep))
+       (min (repeat-range->min range))
+       (max (repeat-range->max range)))
     (and (<= min numrep)
          (or (nati-case max :infinity)
              (<= numrep (nati-finite->get max)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule 0-when-match-repeat-range-0
     (implies (and (equal range (repeat-range 0 (nati-finite 0)))
                   (acl2-numberp n)) ; added by Matt K after tau bug fix 8/16/18
              (equal (numrep-match-repeat-range-p n range)
-                    (equal n 0)))
+                    (equal (nfix n) 0)))
     :enable numrep-match-repeat-range-p))
 
 (define lookup-rulename ((rulename rulenamep) (rules rulelistp))
@@ -563,13 +555,16 @@
     appears (on the left side of) some rule in @('rules').
     The reason is that well-formed rules
     must have non-empty alternations as definientia.")
-  (cond ((endp rules) nil)
-        (t (let ((rule (car rules)))
-             (if (equal (rule->name rule) rulename)
-                 (append (rule->definiens rule)
-                         (lookup-rulename rulename (cdr rules)))
-               (lookup-rulename rulename (cdr rules))))))
-  :no-function t)
+  (b* ((rulename (mbe :logic (rulename-fix rulename) :exec rulename)))
+    (cond ((endp rules) nil)
+          (t (let ((rule (car rules)))
+               (if (equal (rule->name rule) rulename)
+                   (append (rule->definiens rule)
+                           (lookup-rulename rulename (cdr rules)))
+                 (lookup-rulename rulename (cdr rules)))))))
+  :no-function t
+  :measure (len rules)
+  :hooks (:fix))
 
 (defines tree-match-alt/conc/rep/elem-p
   :flag-local nil
@@ -858,7 +853,9 @@
              (nat-listp (tree->string tree)))
     :enable (tree-match-num-val-p
              tree-match-char-val-p
-             tree->string)))
+             tree->string))
+
+  (fty::deffixequiv-mutual tree-match-alt/conc/rep/elem-p))
 
 (define parse-treep
   (tree (string stringp) (rulename rulenamep) (rules rulelistp))
@@ -877,8 +874,9 @@
   (and (treep tree)
        (tree-match-element-p tree (element-rulename rulename) rules)
        (equal (tree->string tree)
-              string))
+              (string-fix string)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule treep-when-parse-treep
@@ -895,6 +893,33 @@
   (exists (tree)
           (parse-treep tree string rulename rules))
   ///
+
+  ;; boilerplate:
+  (fty::deffixequiv string-parsablep
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
+    :hints (("Goal"
+             :in-theory (disable string-parsablep-suff)
+             :use (;; for STRING:
+                   (:instance string-parsablep-suff
+                    (string (string-fix string))
+                    (tree (string-parsablep-witness string rulename rules)))
+                   (:instance string-parsablep-suff
+                    (tree (string-parsablep-witness
+                           (string-fix string) rulename rules)))
+                   ;; for RULENAME:
+                   (:instance string-parsablep-suff
+                    (rulename (rulename-fix rulename))
+                    (tree (string-parsablep-witness string rulename rules)))
+                   (:instance string-parsablep-suff
+                    (tree (string-parsablep-witness
+                           string (rulename-fix rulename) rules)))
+                   ;; for RULES:
+                   (:instance string-parsablep-suff
+                    (rules (rulelist-fix rules))
+                    (tree (string-parsablep-witness string rulename rules)))
+                   (:instance string-parsablep-suff
+                    (tree (string-parsablep-witness
+                           string rulename (rulelist-fix rules))))))))
 
   (defrule treep-of-string-parsablep-witness-when-string-parsablep
     (implies (string-parsablep string rulename rules)
@@ -924,6 +949,50 @@
                (parse-treep tree2 string rulename rules)))
   ///
 
+  ;; boilerplate:
+  (fty::deffixequiv string-ambiguousp
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
+    :hints (("Goal"
+             :in-theory (disable string-ambiguousp-suff)
+             :use (;; for STRING:
+                   (:instance string-ambiguousp-suff
+                    (string (string-fix string))
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string rulename rules))))
+                   (:instance string-ambiguousp-suff
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      (string-fix string) rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      (string-fix string) rulename rules))))
+                   ;; for RULENAME:
+                   (:instance string-ambiguousp-suff
+                    (rulename (rulename-fix rulename))
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string rulename rules))))
+                   (:instance string-ambiguousp-suff
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string (rulename-fix rulename) rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string (rulename-fix rulename) rules))))
+                   ;; for RULES:
+                   (:instance string-ambiguousp-suff
+                    (rules (rulelist-fix rules))
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename rules)))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string rulename rules))))
+                   (:instance string-ambiguousp-suff
+                    (tree1 (mv-nth 0 (string-ambiguousp-witness
+                                      string rulename (rulelist-fix rules))))
+                    (tree2 (mv-nth 1 (string-ambiguousp-witness
+                                      string
+                                      rulename
+                                      (rulelist-fix rules)))))))))
+
   (defruled string-parsablep-when-string-ambiguousp
     (implies (string-ambiguousp string rulename rules)
              (string-parsablep string rulename rules))
@@ -946,6 +1015,7 @@
   (and (string-parsablep string rulename rules)
        (not (string-ambiguousp string rulename rules)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (defrule parse-treep-when-string-unambiguousp

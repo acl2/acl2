@@ -201,6 +201,7 @@
       *nil*
       *t*
       variablep
+      fn-symb
       fcons-term*
       fquotep
       ffn-symb
@@ -212,6 +213,8 @@
       hints
       lemmas
       flatten
+      impliez
+      v
       
       => ;sig
       _  ;range
@@ -231,6 +234,9 @@
       must-not-prove
       symbol-package-name-safe
 
+      cons-size
+      acl2s-size
+      
       error warning warning! observation prove
       proof-builder event history summary proof-tree
       stage
@@ -246,6 +252,7 @@
       defdata::deffilter
       defdata::remove1-assoc-eq-lst
       defdata::sym-aalistp
+      defdata::sym-aalist
       
       read-run-time
       trans-eval
@@ -260,7 +267,7 @@
       gen-sym-sym-fn
       gen-sym-sym
       packn1
-
+      
       flg
       sort
       guard-checking-on
@@ -359,12 +366,15 @@
               error warning warning! observation prove
               proof-builder event history summary proof-tree
               )
-            (union-eq
-             #!ACL2S
-             '(nat string pos rational integer boolean all neg
-                   acl2-number true-list char symbol)
-             acl2s::*acl2s-exports*)
-             ))
+            (set-difference-eq
+             (union-eq
+              #!ACL2S
+              '(nat string pos rational integer boolean all neg
+                    acl2-number true-list char symbol)
+              acl2s::*acl2s-exports*)
+             #!ACL2'(if first rest second third fourth unary-- unary-/
+              < + * len append app rev in remove-dups nth nthrest listp)
+             )))
 
 
 (defpkg "ACL2S BB" ; bare bones
@@ -454,9 +464,13 @@
               defthm thm defconst in-package defun table
               
               )
-            (union-eq
-             #!ACL2S
-             '(nat string pos rational integer boolean all neg
-                   acl2-number true-list char symbol)
-             acl2s::*acl2s-exports*)
-            ))
+            (set-difference-eq
+             (union-eq
+              #!ACL2S
+              '(nat string pos rational integer boolean all neg
+                    acl2-number true-list char symbol)
+              acl2s::*acl2s-exports*)
+             #!ACL2'(if first rest second third fourth fifth unary-- unary-/
+              < + * len append app rev in remove-dups nth nthcdr
+              string-len)
+             )))

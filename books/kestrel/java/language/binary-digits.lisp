@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,42 +24,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection binary-digit
+(defsection bin-digit
   :short "Fixtype of Java binary digits [JLS:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A Java binary digit is one of the Java ASCII characters `0' and `1'.
-     See the grammar rule @('binary-digit'),
-     after which this type and these functions are named.")
+     See the grammar rule @('binary-digit').")
    (xdoc::p
     "This is a type introduced by @(tsee fty::deffixtype)."))
 
-  (define binary-digitp (x)
+  (define bin-digitp (x)
     :returns (yes/no booleanp)
-    :parents (binary-digit)
-    :short "Recognizer for @(tsee binary-digit)."
+    :parents (bin-digit)
+    :short "Recognizer for @(tsee bin-digit)."
     (or (eql x (char-code #\0))
         (eql x (char-code #\1))))
 
-  (std::deffixer binary-digit-fix
-    :pred binary-digitp
+  (std::deffixer bin-digit-fix
+    :pred bin-digitp
     :body-fix (char-code #\0)
-    :parents (binary-digit)
-    :short "Fixer for @(tsee binary-digit).")
+    :parents (bin-digit)
+    :short "Fixer for @(tsee bin-digit).")
 
-  (fty::deffixtype binary-digit
-    :pred binary-digitp
-    :fix binary-digit-fix
-    :equiv binary-digit-equiv
+  (fty::deffixtype bin-digit
+    :pred bin-digitp
+    :fix bin-digit-fix
+    :equiv bin-digit-equiv
     :define t
     :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define binary-digit-value ((x binary-digitp))
+(define bin-digit-value ((x bin-digitp))
   :returns (val bitp :rule-classes (:rewrite :type-prescription))
   :short "Numeric value of a Java binary digit."
   (if (eql x (char-code #\0))
       0
     1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist bin-digit-list
+  :short "Fixtype of true lists of Java binary digits."
+  :elt-type bin-digit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred bin-digit-listp)

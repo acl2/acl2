@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "ACL2")
 (include-book "std/util/deflist" :dir :system)
@@ -58,4 +59,8 @@ std::deflist).</p>"
   (defthm string-listp-of-remove-equal
     ;; BOZO probably add to deflist
     (implies (string-listp x)
-             (string-listp (remove-equal a x)))))
+             (string-listp (remove-equal a x))))
+
+  (defthm string-listp-of-remove-duplicates-equal
+    (equal (string-listp (remove-duplicates-equal x))
+           (string-listp (true-list-fix x)))))

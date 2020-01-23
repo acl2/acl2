@@ -61,8 +61,20 @@
   :hints (("Goal" :cases ((< y 0)))))
 
 ;rename
+(defthm <-+-cancel-1-alt
+  (equal (< (+ y x) x)
+         (< y 0))
+  :hints (("Goal" :cases ((< y 0)))))
+
+;rename
 (defthm <-+-cancel-2
   (equal (< x (+ x y))
+         (< 0 y))
+  :hints (("Goal" :cases ((< 0 y)))))
+
+;rename
+(defthm <-+-cancel-2-alt
+  (equal (< x (+ y x))
          (< 0 y))
   :hints (("Goal" :cases ((< 0 y)))))
 

@@ -15,6 +15,7 @@
 
 ;; Make an untranslated term representing the conjunction of the ITEMS.  Makes
 ;; an AND unless there are 0 or 1 items.  The items need not be translated.
+;; See also built-in function conjoin-untranslated-terms.
 (defund make-and-nice (items)
   (declare (xargs :guard (true-listp items)))
   (let* ((items (remove-equal t items))   ;remove t

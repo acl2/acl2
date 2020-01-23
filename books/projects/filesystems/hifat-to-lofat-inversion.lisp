@@ -2554,7 +2554,7 @@
         (fat32-in-memory length)
         (get-contents-from-clusterchain fat32-in-memory index-list length))
        (make-clusters text (cluster-size fat32-in-memory)))
-      :in-theory (e/d (make-clusters nthcdr-when->=-n-len-l)
+      :in-theory (e/d (make-clusters)
                       ((:rewrite associativity-of-append))))
      ("subgoal *1/2"
       :use ((:instance (:rewrite associativity-of-append)
@@ -9340,8 +9340,7 @@
     1))
   :hints
   (("goal"
-    :in-theory (e/d (nthcdr-when->=-n-len-l)
-                    (make-list-ac))
+    :in-theory (disable make-list-ac)
     :expand
     ((make-clusters
       (implode$inline (make-list-ac cluster-size val 'nil))

@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,11 +14,15 @@
 (include-book "apply-terms-same-args")
 (include-book "apply-unary-to-terms")
 (include-book "close-lambdas")
+(include-book "conjoin")
+(include-book "conjoin-equalities")
 (include-book "fapply-term")
 (include-book "fapply-terms-same-args")
 (include-book "fapply-unary-to-terms")
 (include-book "fsublis-fn")
 (include-book "fsublis-var")
+(include-book "make-mv-let-call")
+(include-book "make-mv-nth-calls")
 (include-book "mvify")
 (include-book "remove-dead-if-branches")
 (include-book "remove-mbe")

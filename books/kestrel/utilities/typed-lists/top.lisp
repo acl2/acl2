@@ -12,7 +12,6 @@
 
 (include-book "bit-listp")
 (include-book "nat-list-fix-theorems")
-(include-book "string-listp-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

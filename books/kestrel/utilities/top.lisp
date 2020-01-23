@@ -24,6 +24,7 @@
 (include-book "define-sk")
 (include-book "defmacroq")
 (include-book "defmax-nat/top")
+(include-book "deftest")
 (include-book "defthmr")
 (include-book "digits-any-base/top")
 (include-book "directed-untranslate")

@@ -11764,6 +11764,164 @@
           (declare (ignore changedp))
           val))
 
+; The following is a complete list of the macros that are considered
+; "primitive event macros".  This list includes every macro that calls
+; install-event except for defpkg, which is omitted as
+; explained below.  In addition, the list includes defun (which is
+; just a special call of defuns).  Every name on this list has the
+; property that while it takes state as an argument and possibly
+; changes it, the world it produces is a function only of the world in
+; the incoming state and the other arguments.  The function does not
+; change the world as a function of, say, some global variable in the
+; state.
+
+; The claim above, about changing the world, is inaccurate for include-book!
+; It changes the world as a function of the contents of some arbitrarily
+; named input object file.  How this can be explained, I'm not sure.
+
+; All event functions have the property that they install into state
+; the world they produce, when they return non-erroneously.  More
+; subtly they have the property that when the cause an error, they do
+; not change the installed world.  For simple events, such as DEFUN
+; and DEFTHM, this is ensured by not installing any world until the
+; final STOP-EVENT.  But for compound events, such as ENCAPSULATE and
+; INCLUDE-BOOK, it is ensured by the more expensive use of
+; REVERT-WORLD-ON-ERROR.
+
+(defun primitive-event-macros ()
+  (declare (xargs :guard t :mode :logic))
+
+; Warning: If you add to this list, consider adding to
+; find-first-non-local-name and to the list in translate11 associated with a
+; comment about primitive-event-macros.
+
+; Warning: Keep this in sync with oneify-cltl-code (see comment there about
+; primitive-event-macros).
+
+; Note: This zero-ary function used to be a constant, *primitive-event-macros*.
+; But Peter Dillinger wanted to be able to change this value with ttags, so
+; this function has replaced that constant.  We keep the lines sorted below,
+; but only for convenience.
+
+; Warning: If a symbol is on this list then it is allowed into books.
+; If it is allowed into books, it will be compiled.  Thus, if you add a
+; symbol to this list you must consider how compile will behave on it
+; and what will happen when the .o file is loaded.  Most of the symbols
+; on this list have #-acl2-loop-only definitions that make them
+; no-ops.  At least one, defstub, expands into a perfectly suitable
+; form involving the others and hence inherits its expansion's
+; semantics for the compiler.
+
+; Warning: If this list is changed, inspect the following definitions,
+; down through CHK-EMBEDDED-EVENT-FORM.  Also consider modifying the
+; list *fmt-ctx-spacers* as well.
+
+; We define later the notion of an embedded event.  Only such events
+; can be included in the body of an ENCAPSULATE or a file named by
+; INCLUDE-BOOK.
+
+; We do not allow defpkg as an embedded event.  In fact, we do not allow
+; defpkg anywhere in a blessed set of files except in files that contain
+; nothing but top-level defpkg forms (and those files must not be compiled).
+; The reason is explained in deflabel embedded-event-form below.
+
+; Once upon a time we allowed in-package expressions inside of
+; encapsulates, in a "second class" way.  That is, they were not
+; allowed to be hidden in LOCAL forms.  But the whole idea of putting
+; in-package expressions in encapsulated event lists is silly:
+; In-package is meant to change the package into which subsequent
+; forms are read.  But no reading is being done by encapsulate and the
+; entire encapsulate event list is read into whatever was the current
+; package when the encapsulate was read.
+
+; Here is an example of why in-package should never be hidden (i.e.,
+; in LOCAL), even in a top-level list of events in a file.
+
+; Consider the following list of events:
+
+; (DEFPKG ACL2-MY-PACKAGE '(DEFTHM SYMBOL-PACKAGE-NAME EQUAL))
+
+; (LOCAL (IN-PACKAGE "ACL2-MY-PACKAGE"))
+
+; (DEFTHM GOTCHA (EQUAL (SYMBOL-PACKAGE-NAME 'IF) "ACL2-MY-PACKAGE"))
+
+; When processed in pass 1, the IN-PACKAGE is executed and thus
+; the subsequent form (and hence the symbol 'IF) is read into package
+; ACL2-MY-PACKAGE.  Thus, the equality evaluates to T and GOTCHA is a
+; theorem.  But when processed in pass 2, the IN-PACKAGE is not
+; executed and the subsequent form is read into the "ACL2" package.  The
+; equality evaluates to NIL and GOTCHA is not a theorem.
+
+; One can imagine adding new event forms.  The requirement is that
+; either they not take state as an argument or else they not be
+; sensitive to any part of state except the current ACL2 world.
+
+  '(
+     #+:non-standard-analysis defthm-std
+     #+:non-standard-analysis defun-std
+     add-custom-keyword-hint
+     add-include-book-dir add-include-book-dir!
+     add-match-free-override
+     comp
+     defabsstobj
+     defattach
+     defaxiom
+     defchoose
+     defconst
+     deflabel
+     defmacro
+;    defpkg ; We prohibit defpkgs except in very special places.  See below.
+     defstobj
+     deftheory
+     defthm
+     defun
+     defuns
+     delete-include-book-dir delete-include-book-dir!
+     encapsulate
+     in-arithmetic-theory
+     in-theory
+     include-book
+     logic
+     mutual-recursion
+     progn
+     progn!
+     program
+     push-untouchable
+     regenerate-tau-database
+     remove-untouchable
+     reset-prehistory
+     set-body
+     set-override-hints-macro
+     set-prover-step-limit
+     set-ruler-extenders
+     table
+     theory-invariant
+     value-triple
+     verify-guards
+     verify-termination-boot-strap
+     ))
+
+(defconst *syms-not-callable-in-code-fal*
+
+; At one time, the check in translate11 that uses hons-get on this fast-alist
+; was implemented using member-eq, which probably explains why we excluded logic,
+; program, set-prover-step-limit, and set-ruler-extenders from this check:
+; doing so shortened the list without compromising the check, since expanding
+; these macros generates a call of table, which is in (primitive-event-macros).
+; We no longer have a need to make such a restriction.
+
+  (make-fast-alist
+   (pairlis$ (union-eq '(certify-book
+                         defpkg
+                         in-package
+                         local
+                         make-event
+                         with-guard-checking-event
+                         with-output
+                         with-prover-step-limit)
+                       (primitive-event-macros))
+             nil)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -14147,8 +14305,7 @@
                                flet-alist ctx wrld state-vars)))))
    ((and bindings
          (not (eq (caar bindings) :stobjs-out))
-         (member-eq (car x) '(defun defmacro in-package progn defpkg
-                               with-guard-checking-event)))
+         (hons-get (car x) *syms-not-callable-in-code-fal*))
     (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
                 by Common Lisp because its Common Lisp meaning differs from ~
@@ -14157,66 +14314,7 @@
                (cond ((eq (car x) 'with-guard-checking-event)
                       (msg "  Consider using ~x0 instead."
                            'with-guard-checking-error-triple))
-                     (t ""))))
-   ((and bindings
-         (not (eq (caar bindings) :stobjs-out))
-         (member-eq (car x)
-
-; The following list should contain every symbol listed in
-; primitive-event-macros for which the error message below applies.  We keep
-; both lists alphabetical to make it convenient to compare them.  For
-; efficiency, we may omit those that will ultimately expand to calls of table
-; (or any other symbol in the list below).  We also omit those handled in the
-; previous case, above, such as defun.
-
-                    '(
-                      #+:non-standard-analysis defthm-std
-                      #+:non-standard-analysis defun-std
-                      add-custom-keyword-hint
-                      add-include-book-dir ; definition explains inclusion
-                      add-include-book-dir! ; definition explains inclusion
-                      add-match-free-override
-                      certify-book
-                      comp
-                      defattach
-                      defaxiom
-                      defchoose
-                      defconst
-                      deflabel
-                      defstobj defabsstobj
-                      deftheory
-                      defthm
-                      defuns
-                      delete-include-book-dir ; definition explains inclusion
-                      delete-include-book-dir! ; definition explains inclusion
-                      encapsulate
-                      in-arithmetic-theory
-                      in-theory
-                      include-book
-                      local ; note: not in (primitive-event-macros)
-                      make-event ; note: not in (primitive-event-macros)
-                      mutual-recursion
-                      progn!
-                      push-untouchable
-                      regenerate-tau-database
-                      remove-untouchable
-                      reset-prehistory
-                      set-body
-                      set-override-hints-macro
-                      table
-                      theory-invariant
-                      value-triple
-                      verify-guards
-                      with-output ; note: not in (primitive-event-macros)
-                      with-prover-step-limit ; not in (primitive-event-macros)
-                      verify-termination-boot-strap
-                      )))
-    (trans-er+ x ctx
-               "We do not permit the use of ~x0 inside of code to be executed ~
-                by Common Lisp because its Common Lisp runtime value and ~
-                effect differs from its ACL2 meaning.~@1"
-               (car x)
-               (cond ((eq (car x) 'with-output)
+                     ((eq (car x) 'with-output)
                       (msg "  Consider using ~x0 instead."
                            'with-output!))
                      (t ""))))

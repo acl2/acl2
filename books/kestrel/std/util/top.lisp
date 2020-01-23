@@ -10,6 +10,7 @@
 
 (in-package "STD")
 
+(include-book "defconstrained-recognizer")
 (include-book "deffixer")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

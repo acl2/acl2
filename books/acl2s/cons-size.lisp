@@ -1,8 +1,8 @@
-(in-package "ACL2S")
-(include-book "defdata/top" :ttags :all)
+(in-package "ACL2")
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
 (include-book "std/strings/top" :dir :system)
+(include-book "defexec/other-apps/records/records" :dir :system)
 
 (defun cons-size (x)
   (declare (xargs :guard t))
@@ -37,14 +37,14 @@
   (implies (not (set::empty x))
            (< (cons-size (set::head x))
               (cons-size x)))
-  :hints (("Goal" :in-theory (enable set::head)))
+  :hints (("Goal" :in-theory (enable set::empty set::head)))
   :rule-classes :linear)
 
 (defthm tail-cons-size
   (implies (not (set::empty x))
            (< (cons-size (set::tail x))
               (cons-size x)))
-  :hints (("Goal" :in-theory (enable set::tail)))
+  :hints (("Goal" :in-theory (enable set::empty set::tail)))
   :rule-classes :linear)
 
 (defthm cons-size-append

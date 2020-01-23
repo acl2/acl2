@@ -39,8 +39,11 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         check-lambda-call
                          check-list-call
+                         check-unary-lambda-call
                          conjoin
+                         cons-listp
                          cons-pos-alistp
                          define-sk
                          defxdoc+
@@ -106,6 +109,7 @@
                          patbind-fun
                          patbind-run-unless
                          patbind-run-when
+                         pos-listp
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
@@ -145,6 +149,7 @@
                          symbol-package-name-lst
                          table-alist+
                          tail-recursive-p
+                         term-possible-numbers-of-results
                          trans-eval
                          tuplep
                          typed-tuplep

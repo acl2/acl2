@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -568,7 +568,7 @@
         (er-soft+ ctx t nil
                   "The test term ~x0 in the :TESTS input ~
                    must translate to ~
-                   the application of a named function." call))
+                   the call of a named function." call))
        (fn (ffn-symb term$))
        ((er &) (ensure-member-of-list$
                 fn
@@ -578,6 +578,15 @@
                       the test term ~x1 in the :TESTS input"
                      fn call)
                 t nil))
+       ((unless (or (member-eq fn *stobjs-out-invalid*)
+                    (= (number-of-results+ fn (w state)) 1)))
+        (er-soft+ ctx t nil
+                  "The function ~x0 called by ~
+                   the test term ~x1 in the :TESTS input ~
+                   must return a single result. ~
+                   (Support for functions returning multiple results ~
+                   will be added in the future.)"
+                  fn call))
        (inputs (fargs term$))
        (fn-info (atj-get-function-type-info fn guards$ (w state)))
        (main-fn-type (atj-function-type-info->main fn-info))
@@ -617,9 +626,7 @@
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
                   call))
-       (out-type (if (= (len out-types?) 1)
-                     (car out-types?)
-                   :acons))
+       (out-type (atj-type-list-to-type/acons out-types?))
        (test-output
         (case out-type
           (:jboolean (atj-test-value-jvalue-boolean output))
