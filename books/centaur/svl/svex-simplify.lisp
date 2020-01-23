@@ -34,11 +34,8 @@
 
 (include-book "svex-simplify-rule-list")
 
-(in-theory (disable bitp natp))
-
-(in-theory (disable acl2::natp-when-gte-0
-                    acl2::natp-when-integerp))
-
+(local
+ (in-theory (disable bitp natp)))
 
 (local
  (in-theory (disable (:definition rp::rp-rw))))
@@ -236,8 +233,7 @@
                     (:definition member-equal)
                     (:rewrite
                      sv::svexlist-p-of-cdr-when-svexlist-p)
-                    (:rewrite
-                     acl2::symbolp-of-car-when-symbol-listp)
+                    
                     (:definition rp::rp-termp)))))
 
   (local
@@ -362,20 +358,16 @@
                  (:rewrite natp-implies-integerp)
                  (:rewrite acl2::o-p-o-infp-car)
                  (:rewrite rp::rp-termp-extract-from-rp)
-                 (:rewrite
-                  acl2::booleanp-of-car-when-boolean-listp)
-                 (:rewrite
-                  acl2::boolean-listp-of-cdr-when-boolean-listp)
+                 
                  (:rewrite sv::4vec-p-of-car-when-4veclist-p)
                  (:rewrite
                   svexl-nodelist-p-of-cdr-when-svexl-nodelist-p)
                  (:rewrite
                   sv::4veclist-p-of-cdr-when-4veclist-p)
-                 (:rewrite acl2::natp-of-car-when-nat-listp)
+                 
                  (:definition rp::ex-from-rp)
                  (:rewrite sv::svex-p-when-maybe-svex-p)
-                 (:rewrite
-                  acl2::nat-listp-of-cdr-when-nat-listp)
+                 
                  (:rewrite default-car)))))))
 
 (progn

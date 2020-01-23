@@ -60,7 +60,7 @@
    (integerp (ifix x)))
 
 
-  (rp::def-rp-rule
+  (rp::def-rp-rule$ t nil
    ifix-opener
    (implies (integerp x)
             (equal (ifix x)
@@ -865,10 +865,11 @@
             (natp (ash x shift)))
    :rule-classes :type-prescription))
 
-(defthm nfix-opener
+(local
+ (defthm nfix-opener
   (implies (natp x)
            (equal (nfix x)
-                  x)))
+                  x))))
 (local
  (encapsulate
    nil
