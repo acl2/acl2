@@ -1,6 +1,6 @@
-; System Utilities -- DEFCHOOSE Queries -- Tests
+; Standard System Library
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,9 @@
 (in-package "ACL2")
 
 (include-book "defchoose-queries")
-(include-book "kestrel/utilities/testing" :dir :system)
+
+(include-book "misc/assert" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
