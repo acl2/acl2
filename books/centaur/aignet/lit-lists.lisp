@@ -59,9 +59,6 @@
     :rule-classes :linear))
 
 
-(defstobj-clone mark bitarr :suffix "-MARK")
-(defstobj-clone copy litarr :prefix "COPY")
-(defstobj-clone vals bitarr :prefix "VALS")
 
 
 (define lit-copy ((lit litp) copy)
