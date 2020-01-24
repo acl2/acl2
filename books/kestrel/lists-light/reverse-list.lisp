@@ -16,6 +16,10 @@
 
 (local (include-book "append"))
 (local (include-book "nth"))
+(local (include-book "take"))
+(local (include-book "nthcdr"))
+(local (include-book "true-list-fix"))
+(local (include-book "no-duplicatesp-equal"))
 
 ;; TODO: Consider replacing REVERSE-LIST with REV from books/std.  But note
 ;; that REVERSE-LIST has a stricter guard that prevents errors, such as calling
@@ -85,13 +89,11 @@
 (defthm reverse-list-of-append
   (equal (reverse-list (append x y))
          (append (reverse-list y) (reverse-list x)))
-  :hints (("Goal" :expand ()
-           :in-theory (enable reverse-list append))))
+  :hints (("Goal" :in-theory (enable reverse-list append))))
 
 (defthm reverse-list-of-reverse-list
-  (implies (true-listp y) ;add fix to conc?
-           (equal (reverse-list (reverse-list y))
-                  y))
+  (equal (reverse-list (reverse-list x))
+         (true-list-fix x))
   :hints (("Goal" :in-theory (enable reverse-list append))))
 
 (defthm reverse-list-of-cons
@@ -146,11 +148,57 @@
 (defthm cdr-of-reverse-list
   (equal (cdr (reverse-list lst))
          (reverse-list (take (+ -1 (len lst)) lst)))
-  :hints (("Goal" :in-theory (e/d (reverse-list take) ()))))
+  :hints (("Goal" :in-theory (enable reverse-list take))))
 
 (defthm last-of-reverse-list
   (equal (last (reverse-list x))
          (if (consp x)
              (list (car x))
            nil))
+  :hints (("Goal" :in-theory (enable reverse-list))))
+
+(defthm take-of-reverse-list
+  (implies (and (<= n (len x))
+                (natp n))
+           (equal (take n (reverse-list x))
+                  (reverse-list (nthcdr (- (len x) n) x))))
+  :hints (("Goal" :in-theory (enable reverse-list nthcdr))))
+
+(defthm butlast-of-reverse-list
+  (equal (butlast (reverse-list x) n)
+         (reverse-list (nthcdr n x)))
+  :hints (("Goal" :in-theory (enable butlast reverse-list nthcdr))))
+
+(defthm nthcdr-of-reverse-list
+  (implies (and (<= n (len x))
+                (natp n))
+           (equal (nthcdr n (reverse-list x))
+                  (reverse-list (take (- (len x) n) x))))
+  :hints (("Goal" :in-theory (enable nthcdr reverse-list))))
+
+(defthmd equal-of-reverse-list
+  (equal (equal x (reverse-list y))
+         (and (true-listp x)
+              (equal (true-list-fix y) (reverse-list x))))
+  :hints (("Goal" :use (:instance reverse-list-of-true-list-fix (x y))
+           :in-theory (disable reverse-list-of-true-list-fix))))
+
+(defthm equal-of-reverse-list-and-reverse-list
+  (equal (equal (reverse-list x)
+                (reverse-list y))
+         (equal (true-list-fix x)
+                (true-list-fix y)))
+  :hints (("Goal" :use (:instance equal-of-reverse-list (x (reverse-list x))))))
+
+(defthm intersection-equal-of-reverse-list-arg1-iff
+  (iff (intersection-equal (reverse-list x) y)
+       (intersection-equal x y)))
+
+(defthm intersection-equal-of-reverse-list-arg2
+  (equal (intersection-equal x (reverse-list y))
+         (intersection-equal x y)))
+
+(defthm no-duplicatesp-equal-of-reverse-list
+  (equal (no-duplicatesp-equal (reverse-list x))
+         (no-duplicatesp-equal x))
   :hints (("Goal" :in-theory (enable reverse-list))))

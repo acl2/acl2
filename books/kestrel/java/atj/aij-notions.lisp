@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -51,7 +51,7 @@
   (defconst *aij-class-def-fn*         "Acl2DefinedFunction")
   (defconst *aij-class-undef-pkg-exc*  "Acl2UndefinedPackageException")
   (defconst *aij-class-fn*             "Acl2Function")
-  (defconst *aij-class-fn-app*         "Acl2FunctionApplication")
+  (defconst *aij-class-fn-app*         "Acl2FunctionCall")
   (defconst *aij-class-int*            "Acl2Integer")
   (defconst *aij-class-lambda*         "Acl2LambdaExpression")
   (defconst *aij-class-named-fn*       "Acl2NamedFunction")

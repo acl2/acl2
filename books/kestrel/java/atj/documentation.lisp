@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,6 +39,12 @@
      to generate Java code at the end of an "
     (xdoc::seetopic "apt::apt" "APT")
     " program synthesis derivation.")
+
+   (xdoc::p
+    "This manual page provides reference documentation for ATJ.
+     A separate tutorial may be written in the future.
+     See the files under @('[books]/kestrel/java/atj/tests/')
+     for examples of use of ATJ.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -418,6 +424,10 @@
       and each @('termj') is an untranslated ground term
       whose translation is @('(fn in1 in2 ...)'),
       where @('fn') is among the target functions @('fn1'), ..., @('fnp'),
+      @('fn') returns single results (i.e. not "
+     (xdoc::seetopic "mv" "multiple results")
+     "(support for generating tests for functions that return multiple results
+      will be added in the future),
       and each @('in') among @('in1'), @('in2')
       satisfies the following conditions:")
     (xdoc::ul
@@ -623,15 +633,27 @@
      (the latter are just wrappers of the native implementations).
      Each method has the same number of parameters as the ACL2 function.
      If @(':guards') is @('nil'),
-     there is exactly one method for each ACL2 function,
-     and that method has @('Acl2Value') as argument and return types.
+     there is exactly one method for each ACL2 function;
+     that method's arguments all have types @('Acl2Value'),
+     while the return type is
+     either @('Acl2Value') if the function returns a single result
+     or @('MV_Acl2Value_..._Acl2Value') if the function returns "
+    (xdoc::seetopic "mv" "multiple results")
+    " where @('_Acl2Value') is repeated for the number of results.
      If @(':guards') is @('t'),
      for each ACL2 function there are as many overloaded methods
      as the number of function types associated to the function
      via @(tsee def-atj-main-function-type)
      and @(tsee def-atj-other-function-type):
      each of these function types determines the argument and return types
-     of the corresponding overloaded method.
+     of the corresponding overloaded method,
+     with each argument having the corresponding function input type
+     and the return type being
+     either the single output type if the function returns a single result
+     or @('MV_<type1>_..._<typen>') if the function returns "
+    (xdoc::seetopic "mv" "multiple results")
+    " where each @('<typei>') is determined from
+     the corresponding function output type.
      These methods are declared in nested public classes,
      one class for each ACL2 package:
      each function's method is in the corresponding package's class.
@@ -676,4 +698,22 @@
      If all the tests passed, the method exits the JVM with return code 0;
      otherwise, it exits the JVM with return code 1,
      which is an error code when the test class
-     is invoked as a Java application in a shell script.")))
+     is invoked as a Java application in a shell script.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Compiling and Running the Java Code")
+
+   (xdoc::p
+    "The generated Java code can be compiled and run as any other Java code.
+     The @('.jar') file for "
+    (xdoc::seetopic "aij" "AIJ")
+    " must be in the classpath:
+     this file is at
+     @('[books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar').
+     The files @('compile.sh') and @('run.sh')
+     under @('[books]/kestrel/java/atj/tests/')
+     contains examples of command to compile and run the code.
+     See "
+    (xdoc::seetopic "aij" "the AIJ documentation")
+    " for instructions on how to generate the @('.jar') file.")))

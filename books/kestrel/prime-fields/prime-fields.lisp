@@ -871,6 +871,8 @@
                   0))
   :hints (("Goal" :in-theory (enable add sub neg))))
 
+;; If the resulting constant (* x y) is too large, the next rule below will
+;; reduce it.
 (defthm mul-combine-constants
   (implies (and (syntaxp (and (quotep x)
                               (quotep y)))
@@ -882,6 +884,24 @@
                   (mul
                    (* x y) ;we don't call mul here in case the p argument is not known (todo: do something similar for the add rule)
                    z p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-constant-reduce-arg1
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep p)))
+                (<= p x) ;x is too big
+                (integerp x)
+                (integerp y)
+                (natp p))
+           (equal (mul x y p)
+                  (mul (mod x p) y p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-same-arg1
+  (implies (and (integerp y)
+                (posp p))
+           (equal (mul p y p)
+                  0))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm rationalp-of-mul

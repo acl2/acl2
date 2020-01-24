@@ -128,7 +128,7 @@ public final class Acl2Variable extends Acl2Term {
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
      * then quoted constants, ordered according to their underlying symbols;
-     * finally applications, ordered lexicographically according to
+     * finally function calls, ordered lexicographically according to
      * the function followed by the arguments.
      *
      * @param o The term to compare this variable with.
@@ -144,7 +144,7 @@ public final class Acl2Variable extends Acl2Term {
             Acl2Variable that = (Acl2Variable) o;
             return this.name.compareTo(that.name);
         }
-        // variables are less than quoted constants and applications:
+        // variables are less than quoted constants and function calls:
         return -1;
     }
 

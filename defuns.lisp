@@ -3355,11 +3355,12 @@
 ; If state global 'cert-data has value nil, then we just do the usual iterative
 ; calculation.  Otherwise we are to use that cert-data; but how do we know that
 ; we should do the "intersection" operation because we are in the pass 2 case,
-; described in (2) above?  We bind key :pass1 to t in the value of state global
-; 'cert-data during the second pass (meaning, cert-data is from pass 1).  If
-; necessary we could have non-nil values that provide more information than t,
-; for example, 'acl2::certify-book or 'acl2::encapsulate.  We don't bother to
-; bind :pass1 to nil for other than pass 2; we simply don't bind :pass1.
+; described in (2) above?  We bind key :pass1-saved to t in the value of state
+; global 'cert-data during the second pass (meaning, cert-data is from pass 1).
+; If necessary we could have non-nil values that provide more information than
+; t, for example, 'acl2::certify-book or 'acl2::encapsulate.  We don't bother
+; to bind :pass1-saved to nil for other than pass 2; we simply don't bind
+; :pass1-saved.
 
 ; In (2) above we describe the saving of runic type-prescriptions to use during
 ; the second pass.  In the case of certify-book, however, we do this only for
@@ -3510,7 +3511,8 @@
 
 (defun cert-data-val (fn cert-data-entry)
 
-; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key.
+; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key, e.g., for the
+; key, :type-prescription.
 
   (let ((pair (and cert-data-entry ; optimization
                    (hons-get fn cert-data-entry))))
@@ -3518,7 +3520,7 @@
 
 (defun cleanse-type-prescriptions (names type-prescriptions-lst def-nume
                                          rmp-cnt ens wrld installed-wrld
-                                         cert-data-tp ttree)
+                                         cert-data-tp-entry ttree)
 
 ; Names is a clique of function symbols.  Type-prescriptions-lst is in
 ; 1:1 correspondence with names and gives the value in wrld of the
@@ -3539,6 +3541,8 @@
 ; same number of mapping pairs).  We increment our def-nume by rmp-cnt on each
 ; iteration.
 
+; cert-data-tp-entry is a cert-data-entry for the key, :type-prescription.
+
 ; This function knows that the defun runes for each name are laid out
 ; as follows, where i is def-nume:
 
@@ -3556,7 +3560,7 @@
    (t
     (let* ((fn (car names))
            (lst (car type-prescriptions-lst))
-           (tp1 (cert-data-val fn cert-data-tp))
+           (tp1 (cert-data-val fn cert-data-tp-entry))
            (tp2 ; still can have unset :corollary field
             (cond
              ((ts= *ts-unknown* (access type-prescription (car lst)
@@ -3586,10 +3590,10 @@
                                         (cdr type-prescriptions-lst)
                                         (+ rmp-cnt def-nume)
                                         rmp-cnt ens wrld installed-wrld
-                                        cert-data-tp ttree3))))))))
+                                        cert-data-tp-entry ttree3))))))))
 
 (defun guess-and-putprop-type-prescription-lst-for-clique
-  (names bodies def-nume ens wrld ttree big-mutrec cert-data-tp state)
+  (names bodies def-nume ens wrld ttree big-mutrec cert-data-tp-entry state)
 
 ; We assume that in wrld we find 'type-prescriptions for every fn in
 ; names.  We compute new guesses at the type-prescriptions for each fn
@@ -3621,7 +3625,7 @@
                       ens
                       wrld
                       wrld1
-                      cert-data-tp
+                      cert-data-tp-entry
                       ttree)
                      (er-progn
 
@@ -3638,7 +3642,7 @@
                     (guess-and-putprop-type-prescription-lst-for-clique
                      names
                      bodies
-                     def-nume ens wrld1 ttree big-mutrec cert-data-tp
+                     def-nume ens wrld1 ttree big-mutrec cert-data-tp-entry
                      state)))))))
 
 (defun get-normalized-bodies (names wrld)
@@ -3659,7 +3663,8 @@
 
 (defun cert-data-pair (fn cert-data-entry)
 
-; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key.
+; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key, e.g., for the
+; key, :type-prescription.
 
   (and cert-data-entry ; optimization
        (hons-get fn cert-data-entry)))
@@ -3667,15 +3672,15 @@
 (defun cert-data-entry-pair (key state)
 
 ; Key is :type-prescription or any other keyword that can be associated in a
-; cert-data structure with a fast-alist.
+; cert-data structure with an entry.
 
   (let ((cert-data (f-get-global 'cert-data state)))
     (and cert-data ; optimization
          (assoc-eq key cert-data))))
 
 (defun cert-data-putprop-type-prescription-lst-for-clique
-    (cert-data-entry names def-nume rmp-cnt ttree ens wrld installed-wrld
-                     changedp)
+    (cert-data-tp-entry names def-nume rmp-cnt ttree ens wrld installed-wrld
+                        changedp)
 
 ; Rmp-cnt (which stands for "runic-mapping-pairs count") is the length of the
 ; 'runic-mapping-pairs entry for the functions in names (all of which have the
@@ -3691,11 +3696,11 @@
             (push-lemma *fake-rune-for-cert-data* ttree)
           ttree)))
    (t (let* ((fn (car names))
-             (cert-data-pair (cert-data-pair fn cert-data-entry)))
+             (cert-data-pair (cert-data-pair fn cert-data-tp-entry)))
         (cond
          ((null cert-data-pair)
           (cert-data-putprop-type-prescription-lst-for-clique
-           cert-data-entry
+           cert-data-tp-entry
            (cdr names)
            (+ rmp-cnt def-nume)
            rmp-cnt
@@ -3719,7 +3724,7 @@
 
                                                    installed-wrld))
               (cert-data-putprop-type-prescription-lst-for-clique
-               cert-data-entry
+               cert-data-tp-entry
                (cdr names)
                (+ rmp-cnt def-nume)
                rmp-cnt
@@ -3864,24 +3869,33 @@
 
     (mv wrld ttree state))
    (t
-    (let ((cert-data-entry-pair
-           (cert-data-entry-pair :type-prescription state))
-          (cert-data-pass1
-           (cert-data-entry-pair :pass1 state)))
+    (let* ((cert-data-tp-entry-pair
+            (cert-data-entry-pair :type-prescription state))
+           (cert-data-tp-entry
+            (cdr cert-data-tp-entry-pair))
+           (cert-data-pass1-saved
+            (cert-data-entry-pair :pass1-saved state)))
 
-; A non-nil value for cert-data-entry-pair is a fast-alist.  If cert-data-pass1
-; is true then we are in pass 2 of encapsulate or certify-book; otherwise we
-; are including a certified book.  Since redefinition is possible, we avoid the
-; temptation to check that no name in names has a non-nil 'type-prescriptions
-; property.
+; If cert-data-tp-entry-pair is non-nil then its cdr is a cert-data-entry for
+; :type-prescription, i.e., a fast-alist that associates each (function symbol)
+; key with a type-prescription record.  If moreover cert-data-pass1-saved is
+; true, then we are in pass 2 of either encapsulate or certify-book; otherwise
+; (still assuming that cert-data-tp-entry-pair is non-nil) we are including a
+; certified book.  Since redefinition is possible, we avoid the temptation to
+; check that no name in names has a non-nil 'type-prescriptions property.
 
       (cond
-       ((and cert-data-entry-pair
-             (not cert-data-pass1)) ; including a certified book
+       ((and cert-data-tp-entry-pair
+
+; As noted above, the next conjunct says that the cert-data-tp-entry-pair did
+; not come from the first pass of either a non-trivial encapsulate or
+; certify-book.  Thus, we must be including an already-certified book.
+
+             (not cert-data-pass1-saved))
         (mv-let
           (wrld ttree)
           (cert-data-putprop-type-prescription-lst-for-clique
-           (cdr cert-data-entry-pair)
+           cert-data-tp-entry
            names
            def-nume
            (length (getpropc (car names) 'runic-mapping-pairs nil wrld))
@@ -3900,7 +3914,7 @@
                wrld1
                ttree
                big-mutrec
-               (cdr cert-data-entry-pair)
+               cert-data-tp-entry
                state)))))))))
 
 ; So that finishes the type-prescription business.  Now to level-no...

@@ -142,9 +142,11 @@ the list @('y')."
                     (list-equiv x y)))
     :hints(("Goal" :in-theory (enable prefixp list-equiv))))
 
-  ;; Mihir M. mod: Three lemmas, prefixp-transitive, prefixp-append-append, and
-  ;; prefixp-nthcdr-nthcdr, are added. prefixp-transitive generates two rewrite
-  ;; rules which are identical except in how they bind the free variable y.
+  ;; Mihir M. mod: Five lemmas are added below. prefixp-transitive generates
+  ;; two rewrite rules which are identical except in how they bind the free
+  ;; variable y; it is similar with prefixp-one-way-or-another and the free
+  ;; variable z. In nth-when-prefixp, the rewrite rule is a little less general
+  ;; than the theorem in order to avoid endless rewriting.
   (defthm
     prefixp-transitive
     (implies (and (prefixp x y) (prefixp y z))
@@ -164,4 +166,26 @@ the list @('y')."
                   (equal (take n l1) (take n l2)))
              (equal (prefixp (nthcdr n l1) (nthcdr n l2))
                     (prefixp l1 l2)))
-    :hints (("goal" :in-theory (enable prefixp)))))
+    :hints (("goal" :in-theory (enable prefixp))))
+
+  (defthm prefixp-one-way-or-another
+    (implies (and (prefixp x z)
+                  (prefixp y z)
+                  (not (prefixp x y)))
+             (prefixp y x))
+    :hints (("goal" :in-theory (enable prefixp)))
+    :rule-classes
+    (:rewrite (:rewrite :corollary (implies (and (prefixp y z)
+                                                 (prefixp x z)
+                                                 (not (prefixp x y)))
+                                            (prefixp y x)))))
+
+  (defthm
+    nth-when-prefixp
+    (implies (and (prefixp x y) (< (nfix n) (len x)))
+             (equal (nth n y) (nth n x)))
+    :hints (("goal" :in-theory (enable prefixp)))
+    :rule-classes ((:rewrite :corollary (implies (and (prefixp x y)
+                                                      (not (list-equiv x y))
+                                                      (< (nfix n) (len x)))
+                                                 (equal (nth n y) (nth n x)))))))

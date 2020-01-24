@@ -31,3 +31,10 @@
   (equal (true-listp (add-to-set-equal a x))
          (true-listp x))
   :hints (("Goal" :in-theory (enable add-to-set-equal))))
+
+(defthm member-equal-of-add-to-set-equal-iff
+  (iff (member-equal x1 (add-to-set-equal x2 l))
+       (if (equal x1 x2)
+           t
+         (member-equal x1 l)))
+  :hints (("Goal" :in-theory (enable add-to-set-equal))))

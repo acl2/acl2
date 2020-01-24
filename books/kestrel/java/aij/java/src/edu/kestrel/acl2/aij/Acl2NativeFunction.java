@@ -25,7 +25,7 @@ import java.util.Map;
  * (see {@link Acl2DefinedFunction}).
  * <p>
  * These native functions also include the ACL2 "pseudo-function" {@code or},
- * described in {@link Acl2FunctionApplication#eval(Acl2Value[])}.
+ * described in {@link Acl2FunctionCall#eval(Acl2Value[])}.
  * <p>
  * More native functions could be added here in the future,
  * e.g. as optimized implementations of ACL2 built-in functions.
@@ -966,7 +966,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given ACL2 values.
          * This is normally not used during execution,
          * because {@code if} is evaluated non-strictly
-         * (see {@link Acl2FunctionApplication#eval(Acl2Value[])}.
+         * (see {@link Acl2FunctionCall#eval(Acl2Value[])}.
          * However, if code external to AIJ calls
          * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code if} on some argument values,
@@ -1011,7 +1011,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
          * Applies this native function to the given ACL2 values.
          * This is normally not used during execution,
          * because {@code or} is evaluated non-strictly
-         * (see {@link Acl2FunctionApplication#eval(Acl2Value[])}.
+         * (see {@link Acl2FunctionCall#eval(Acl2Value[])}.
          * However, if code external to AIJ calls
          * {@link Acl2NamedFunction#call(Acl2Value[])}
          * to evaluate a call of {@code or} on some argument values,

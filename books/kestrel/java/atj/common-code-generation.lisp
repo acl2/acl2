@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -267,7 +267,7 @@
   ((var-type jtypep "Type of the local variable.")
    (var-base stringp "Base name of the local variable.")
    (var-index natp "Index of the local variable.")
-   (var-init jexprp "Initializer of the local variable."))
+   (var-init? maybe-jexprp "Initializer of the local variable."))
   :returns (mv (locvar-block jblockp)
                (var-name stringp "The name of the local variable.")
                (new-var-index natp "The updated variable index."
@@ -285,7 +285,7 @@
      the local variable declaration is returned in a singleton block."))
   (b* ((var-name (str::cat var-base (natstr var-index)))
        (var-index (1+ var-index))
-       (locvar-block (jblock-locvar var-type var-name var-init)))
+       (locvar-block (jblock-locvar var-type var-name var-init?)))
     (mv locvar-block var-name var-index))
   ///
 
@@ -702,35 +702,36 @@
   :returns (method jmethodp)
   :short "Generate a Java method that adds an ACL2 package definition."
   :long
-  (xdoc::topstring-p
-   "This is a private static method
-    that contains a sequence of statements
-    to incrementally construct
-    the Java list of symbols imported by the package.
-    The sequence starts with a declaration of a local variable
-    initialized with an empty Java list
-    whose capacity is the length of the import list.
-    After all the assignments, we generate a method call
-    to add the ACL2 package definition with the calculated import list.")
+  (xdoc::topstring
+   (xdoc::p
+    "This is a private static method
+     that contains a sequence of statements
+     to incrementally construct
+     the Java list of symbols imported by the package.
+     The sequence starts with a declaration of a local variable
+     initialized with an empty Java list
+     whose capacity is the length of the import list.
+     After all the assignments, we generate a method call
+     to add the ACL2 package definition with the calculated import list."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" pkg))
-       (jvar-aimports "imports")
+       (jvar-imports "imports")
        (method-name (atj-gen-pkg-method-name pkg))
-       (aimports (pkg-imports pkg))
-       (len-expr (jexpr-literal-integer-decimal (len aimports)))
+       (imports (pkg-imports pkg))
+       (len-expr (jexpr-literal-integer-decimal (len imports)))
        (newlist-expr (jexpr-newclass (jtype-class "ArrayList<>")
                                      (list len-expr)))
        (imports-block (jblock-locvar (jtype-class "List<Acl2Symbol>")
-                                     jvar-aimports
+                                     jvar-imports
                                      newlist-expr))
        (imports-block (append imports-block
-                              (atj-gen-pkg-method-aux aimports
-                                                      jvar-aimports)))
+                              (atj-gen-pkg-method-aux imports
+                                                      jvar-imports)))
        (pkg-name-expr (atj-gen-pkg-name pkg))
        (defpkg-block (jblock-smethod *aij-type-pkg*
                                      "define"
                                      (list pkg-name-expr
-                                           (jexpr-name jvar-aimports))))
+                                           (jexpr-name jvar-imports))))
        (method-body (append imports-block
                             defpkg-block)))
     (make-jmethod :access (jaccess-private)
@@ -748,16 +749,15 @@
 
   :prepwork
   ((define atj-gen-pkg-method-aux ((imports symbol-listp)
-                                   (jvar-aimports stringp))
+                                   (jvar-imports stringp))
      :returns (block jblockp)
      :parents nil
      (cond ((endp imports) nil)
            (t (b* ((import-expr (atj-gen-symbol (car imports)))
-                   (first-block (jblock-imethod (jexpr-name jvar-aimports)
-                                                "add"
-                                                (list import-expr)))
+                   (first-block (jblock-method (str::cat jvar-imports ".add")
+                                               (list import-expr)))
                    (rest-block (atj-gen-pkg-method-aux (cdr imports)
-                                                       jvar-aimports)))
+                                                       jvar-imports)))
                 (append first-block rest-block)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

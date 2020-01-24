@@ -10,36 +10,36 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Representation of ACL2 function applications, in translated form.
+ * Representation of ACL2 function calls, in translated form.
  * These are translated terms of the form {@code (f arg1 ... argn)},
  * where {@code f} is a named function or lambda expression and {@code n >= 0}.
  */
-public final class Acl2FunctionApplication extends Acl2Term {
+public final class Acl2FunctionCall extends Acl2Term {
 
     //////////////////////////////////////// private members:
 
     /**
-     * Function of this function application.
+     * Function called in this function call.
      * Invariant: not null.
      */
     private final Acl2Function function;
 
     /**
-     * Arguments of this function application.
+     * Arguments of this function call.
      * Invariant: not null, no null elements.
      */
     private final Acl2Term[] arguments;
 
     /**
-     * Constructs a function application with the given function and arguments.
+     * Constructs a function call with the given function and arguments.
      *
-     * @param function  The function of the function application.
+     * @param function  The function called in the function call.
      *                  Invariant: not null.
-     * @param arguments The arguments of the function application.
+     * @param arguments The arguments of the function call.
      *                  Invariant: not null, no null elements.
      */
-    private Acl2FunctionApplication(Acl2Function function,
-                                    Acl2Term[] arguments) {
+    private Acl2FunctionCall(Acl2Function function,
+                             Acl2Term[] arguments) {
         this.function = function;
         this.arguments = arguments;
     }
@@ -47,13 +47,13 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// package-private members:
 
     /**
-     * Validates all the function calls in this function application.
+     * Validates all the function calls in this function call.
      * We check that the called function is defined
      * and that the number of arguments matches the arity;
      * this implicitly also checks that,
      * if the function is a defined function,
      * it has an actual definition.
-     * We check not only this function application/call,
+     * We check not only this function call,
      * but also the function calls in the argument terms
      * and in the function itself (if the function is a lambda expression).
      *
@@ -76,7 +76,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Sets the indices of all the variables in this function application,
+     * Sets the indices of all the variables in this function call
      * starting with the supplied map from variable symbols to indices.
      * The supplied map is used for the argument terms.
      * The function is processed separately:
@@ -90,12 +90,12 @@ public final class Acl2FunctionApplication extends Acl2Term {
      *                no null values,
      *                no negative values.
      * @throws IllegalArgumentException If some index is already set,
-     *                                  or this function application
+     *                                  or this function call
      *                                  contains some variable
      *                                  that is not in the body
      *                                  of any lambda expression
      *                                  and that is not a key of the map,
-     *                                  or this function application
+     *                                  or this function call
      *                                  contains some variable
      *                                  that is in the body
      *                                  of some lambda expression
@@ -112,7 +112,7 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Evaluates this function application to a value,
+     * Evaluates this function call to a value,
      * with respect to the given binding of variable indices to values.
      * Unless the function is the function {@code if},
      * first the argument terms are evaluated,
@@ -178,25 +178,25 @@ public final class Acl2FunctionApplication extends Acl2Term {
     //////////////////////////////////////// public members:
 
     /**
-     * Compares this function application with the argument object for equality.
+     * Compares this function call with the argument object for equality.
      *
-     * @param o The object to compare this function application with.
-     * @return {@code true} if the object is equal to this function application,
+     * @param o The object to compare this function call with.
+     * @return {@code true} if the object is equal to this function call,
      * otherwise {@code false}.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Acl2FunctionApplication)) return false;
-        Acl2FunctionApplication that = (Acl2FunctionApplication) o;
+        if (!(o instanceof Acl2FunctionCall)) return false;
+        Acl2FunctionCall that = (Acl2FunctionCall) o;
         if (!function.equals(that.function)) return false;
         return Arrays.equals(arguments, that.arguments);
     }
 
     /**
-     * Returns a hash code for this function application.
+     * Returns a hash code for this function call.
      *
-     * @return The hash code for this function application.
+     * @return The hash code for this function call.
      */
     @Override
     public int hashCode() {
@@ -206,15 +206,15 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Compares this function application with the argument term for order.
+     * Compares this function call with the argument term for order.
      * This is not the order on terms documented in the ACL2 manual.
      * Instead, this order consists of:
      * first variables, ordered according to their underlying symbols;
      * then quoted constants, ordered according to their underlying values;
-     * finally applications, ordered lexicographically according to
+     * finally function calls, ordered lexicographically according to
      * the function followed by the arguments.
      *
-     * @param o The term to compare this function application with.
+     * @param o The term to compare this function call with.
      * @return A negative integer, zero, or a positive integer as
      * this term is less than, equal to, or greater than the argument.
      * @throws NullPointerException If the argument is null.
@@ -223,8 +223,8 @@ public final class Acl2FunctionApplication extends Acl2Term {
     public int compareTo(Acl2Term o) {
         if (o == null)
             throw new NullPointerException();
-        if (o instanceof Acl2FunctionApplication) {
-            Acl2FunctionApplication that = (Acl2FunctionApplication) o;
+        if (o instanceof Acl2FunctionCall) {
+            Acl2FunctionCall that = (Acl2FunctionCall) o;
             int funCmp = this.function.compareTo(that.function);
             if (funCmp != 0)
                 return funCmp;
@@ -243,14 +243,14 @@ public final class Acl2FunctionApplication extends Acl2Term {
             else
                 return 0;
         }
-        // applications are greater than variables and quoted constants:
+        // function calls are greater than variables and quoted constants:
         return 1;
     }
 
     /**
-     * Returns a printable representation of this function application.
+     * Returns a printable representation of this function call.
      *
-     * @return A printable representation of this function application.
+     * @return A printable representation of this function call.
      */
     @Override
     public String toString() {
@@ -264,20 +264,20 @@ public final class Acl2FunctionApplication extends Acl2Term {
     }
 
     /**
-     * Returns a function application with the given function and arguments.
+     * Returns a function call with the given function and arguments.
      *
-     * @param function  The function of this function application.
-     * @param arguments The arguments of this function application.
-     * @return The function application.
+     * @param function  The function called in this function call.
+     * @param arguments The arguments of this function call.
+     * @return The function call.
      * @throws IllegalArgumentException If any arguments is null.
      */
-    public static Acl2FunctionApplication make(Acl2Function function,
-                                               Acl2Term[] arguments) {
+    public static Acl2FunctionCall make(Acl2Function function,
+                                        Acl2Term[] arguments) {
         if (function == null)
             throw new IllegalArgumentException("Null function.");
         if (arguments == null)
             throw new IllegalArgumentException("Null arguments.");
-        return new Acl2FunctionApplication(function, arguments);
+        return new Acl2FunctionCall(function, arguments);
     }
 
 }

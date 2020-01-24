@@ -71,3 +71,12 @@
     (<= val 9)
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable dec-digit-fix dec-digitp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist dec-digit-list
+  :short "Fixtype of true lists of Java decimal digits."
+  :elt-type dec-digit
+  :true-listp t
+  :elementp-of-nil nil
+  :pred dec-digit-listp)

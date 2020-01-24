@@ -852,9 +852,8 @@ form is usually an adequate work-around.</p>")
 
 (defun extend-define-guts-alist (guts)
   `(table define 'guts-alist
-          (cons (cons ',(defguts->name guts) ',guts)
+          (cons '(,(defguts->name guts) . ,guts) ; minor Matt K. mod
                 (get-define-guts-alist world))))
-
 
 (defun get-define-current-function (world)
   (cdr (assoc 'current-function (table-alist 'define world))))
