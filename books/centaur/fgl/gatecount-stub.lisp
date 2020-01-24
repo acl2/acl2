@@ -1,5 +1,5 @@
 ; FGL - A Symbolic Simulation Framework for ACL2
-; Copyright (C) 2019 Centaur Technology
+; Copyright (C) 2008-2013 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -30,31 +30,12 @@
 
 (in-package "FGL")
 
-(include-book "top-bare")
-(include-book "bitops-primitives")
-(include-book "check-primitives")
-(include-book "svex")
-(include-book "member-equal")
-(include-book "enums")
-(include-book "transform")
-(include-book "gatecount")
-(include-book "sat-binder")
+(include-book "std/util/define" :dir :system)
 
-(local (in-theory (disable w)))
+(define gatecount (var x)
+  (declare (ignore x))
+  (nfix var))
 
-(install-fgl-metafns top)
-
-#||
-(include-book
- "xdoc/save" :dir :system)
-(include-book
- "std/util/defval-tests" :dir :system)
-(include-book
- "centaur/fty/top" :dir :system)
-(xdoc::change-parents fgl (acl2::top))
-(xdoc::save "./manual"
-            :redef-okp t
-            :error t) 
-
-
-||#
+(define support-vars (var x)
+  (declare (ignore x))
+  var)

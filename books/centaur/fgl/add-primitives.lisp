@@ -215,21 +215,22 @@
   :rule-classes :forward-chaining)
 
 (defmacro def-formula-checks (name fns)
-  `(progn (local (in-theory (disable w)))
-          (cmr::def-formula-checks ,name ,fns :evl fgl-ev :evl-base-fns *fgl-ev-base-fns*
-            :switch-hyps t)
-          (table fgl-formula-checks ',name
-                 (cdr (assoc ',name (table-alist 'cmr::formula-checkers world))))
-          (defcong world-equiv equal (,name st) 1
-            :hints(("Goal" :in-theory (enable ,name))))
-          (def-updater-independence-thm
-            ,(intern-in-package-of-symbol
-              (concatenate 'string (symbol-name name)
-                           "-SIMPLIFY-STATE")
-              name)
-            (implies (equal (w new) (w old))
-                     (equal (,name new) (,name old)))
-            :hints(("Goal" :in-theory (enable w-state-equal-forward))))))
+  `(encapsulate nil
+     (local (in-theory (disable w)))
+     (cmr::def-formula-checks ,name ,fns :evl fgl-ev :evl-base-fns *fgl-ev-base-fns*
+       :switch-hyps t)
+     (table fgl-formula-checks ',name
+            (cdr (assoc ',name (table-alist 'cmr::formula-checkers world))))
+     (defcong world-equiv equal (,name st) 1
+       :hints(("Goal" :in-theory (enable ,name))))
+     (def-updater-independence-thm
+       ,(intern-in-package-of-symbol
+         (concatenate 'string (symbol-name name)
+                      "-SIMPLIFY-STATE")
+         name)
+       (implies (equal (w new) (w old))
+                (equal (,name new) (,name old)))
+       :hints(("Goal" :in-theory (enable w-state-equal-forward))))))
 
 
 ;; (defcong world-equiv equal (meta-extract-global-fact+ obj st sta) 3
@@ -661,10 +662,15 @@
        (formula-check-thms (formula-check-thms name-formula-checks formula-checks-table))
        )
     (acl2::template-subst
-     '(progn
+     '(encapsulate nil
         ;; (def-fgl-object-eval <prefix> nil :union-previous t)
-        (def-formula-checks <prefix>-formula-checks <formula-check-fns>)
-        (progn . <formula-check-thms>)
+        ;; BOZO we don't need to prove all the usual ev-of-fn theorems about this...
+        ;; (def-formula-checks <prefix>-formula-checks <formula-check-fns>)
+        (cmr::def-formula-checker <prefix>-formula-checks <formula-check-fns>)
+        (defcong world-equiv equal (<prefix>-formula-checks st) 1
+          :hints(("Goal" :in-theory (enable <prefix>-formula-checks))))
+        (local (cmr::def-formula-checker-lemmas <prefix>-formula-checks <formula-check-fns>))
+        (local (progn . <formula-check-thms>))
 
         (local (in-theory (disable fgl-primitive-constraint
                                    fgl-primitive-constraint-necc
