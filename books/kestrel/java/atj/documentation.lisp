@@ -27,6 +27,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::p
+    "This manual page contains user-level reference documentation for ATJ.
+     If you are new to ATJ, you should start with the "
+    (xdoc::seetopic "atj-tutorial" "tutorial")
+    ", which provides user-level information
+     on how ATJ works and how to use ATJ effectively.
+     Some of the material in this manual page
+     will likely be moved to the tutorial,
+     which is in progress.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h3 "Introduction")
 
    (xdoc::p
@@ -42,7 +54,7 @@
 
    (xdoc::p
     "This manual page provides reference documentation for ATJ.
-     A separate tutorial may be written in the future.
+     A separate tutorial in being written, as noted above.
      See the files under @('[books]/kestrel/java/atj/tests/')
      for examples of use of ATJ.")
 
