@@ -22,6 +22,7 @@
 (include-book "macro-queries")
 (include-book "plist-worldp-with-formals")
 (include-book "pseudo-command-landmark-listp")
+(include-book "pseudo-event-form-listp")
 (include-book "pseudo-event-formp")
 (include-book "pseudo-event-landmark-listp")
 (include-book "pseudo-tests-and-callp")
