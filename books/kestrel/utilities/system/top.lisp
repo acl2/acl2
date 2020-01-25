@@ -20,7 +20,6 @@
 (include-book "paired-names")
 (include-book "terms")
 (include-book "world-queries")
-(include-book "world-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
