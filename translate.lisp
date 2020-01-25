@@ -236,12 +236,10 @@
                  (car stobjs-out)
                  (strip-cars latches)
                  (if latches 0 1)))
-            ((equal (cdr temp) (car vals))
+            ((eq (cdr temp) (car vals))
 
-; Two live stobjs are the same iff they are eq, so we can use equal instead of
-; equalp.  Indeed, we could perhaps use eq above when #-acl2-loop-only, but we
-; use equal rather than think hard about the possibility of non-live stobjs
-; here.
+; Two live stobjs are the same iff they are eq.  This is kind of a cheat; see
+; the comment about the use of rassoc-eq in actual-stobjs-out1.
 
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
@@ -283,7 +281,23 @@
              (cond ((or (null (car stobjs-in))
                         (eq (car stobjs-in) 'state))
                     rest)
-                   (t (let ((pair (rassoc-equal (car args) user-stobj-alist)))
+                   (t (let ((pair
+
+; We use rassoc-eq instead of rassoc-equal here because of the case of stobjs
+; with a single field that is an array of bits.  Two distinct such stobjs can
+; satisfy an EQUAL test, because such a stobj is exactly that array of bits and
+; two such arrays satisfy EQUAL if they have the same elements (as per the CL
+; HyperSpec's documentation of EQUAL).
+
+; The use of rassoc-eq here instead of rassoc-equal is, logically, a guard
+; violation since stobjs are lists in the ACL2 logic.  Someday we may rethink
+; this, for example by adding the stobj name as an extra but inaccessible field
+; in the logical representation only (so that eq and equal agree when comparing
+; two stobjs, and hence we could in principle have #+acl2-loop-only
+; rassoc-equal and #-acl2-loop-only rassoc-eq).  A similar issue arises in the
+; definition of latch-stobjs1.
+
+                             (rassoc-eq (car args) user-stobj-alist)))
                         (assert$ pair
                                  (cond ((eq (car stobjs-in) (car pair))
                                         rest)
