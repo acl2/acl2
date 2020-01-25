@@ -778,6 +778,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::evmac-appcond
+  :short "Construct an applicability condition description
+          in the reference documentation of an event macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This generates an @(tsee xdoc::desc).")
+   (xdoc::p
+    "The @('name') input must be a string
+     that names the applicability condition.")
+   (xdoc::p
+    "The @('main') input must be an XDOC tree
+     that contains the main description of the applicability condition,
+     consisting of explanatory natural language
+     and formal code for the formula(s).")
+   (xdoc::p
+    "The @('design-notes') and @('design-notes-appcond') inputs
+     must be either both present or both absent.
+     If present, they must be both XDOC trees:
+     the first one references the design notes of the event macro
+     (which usually includes a link to the design notes);
+     the second one provides the name of the applicability condition
+     (usually some mathematical notation) used in the design notes.
+     If these two inputs are present,
+     the generated XDOC includes text
+     relating the applicability condition to the design notes.")
+   (xdoc::p
+    "If the @('presence') input is present,
+     it must be an XDOC tree.
+     In this case,
+     the generated XDOC includes text
+     explaining that the applicability condition is present
+     under the condition described by the @('presence') input."))
+
+  (defmacro xdoc::evmac-appcond (name
+                                 main
+                                 &key
+                                 design-notes
+                                 design-notes-appcond
+                                 presence)
+    (declare (xargs :guard (stringp name)))
+    `(xdoc::desc
+      ,(concatenate 'string "@('" name ")")
+      ,main
+      ,@(and design-notes
+             design-notes-appcond
+             `((xdoc::p
+                "This corresponds to " ,design-notes-appcond
+                " in the " ,design-notes ".")))
+      ,@(and presence
+             `((xdoc::p
+                "This applicability condition if present if and only if "
+                ,presence "."))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::evmac-topic-design-notes
   :short "Generate an XDOC topic for the design notes of an event macro."
   :long
