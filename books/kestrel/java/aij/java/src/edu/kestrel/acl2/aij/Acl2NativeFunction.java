@@ -23,12 +23,15 @@ import java.util.Map;
  * These functions do not have an {@code unnormalized-body} property,
  * and thus they are not part of the defined functions
  * (see {@link Acl2DefinedFunction}).
- * <p>
  * These native functions also include the ACL2 "pseudo-function" {@code or},
  * described in {@link Acl2FunctionCall#eval(Acl2Value[])}.
- * <p>
+ * These native functions also include the ACL2 built-in function
+ * {@code nonnegative-integer-quotient};
+ * this function has an {@code unnormalized-body} property,
+ * but is implemented natively in Java for efficiency;
+ * note that it is actually implemented by raw Lisp code in ACL2.
  * More native functions could be added here in the future,
- * e.g. as optimized implementations of ACL2 built-in functions.
+ * e.g. as optimized implementations of other ACL2 built-in functions.
  * <p>
  * These native functions are implemented in the {@code exec...} static methods,
  * which are public so that these implementations
@@ -54,7 +57,7 @@ import java.util.Map;
  * but may be more efficient.
  * Some of these overloaded variants have stated preconditions that,
  * together with the narrower types, correspond exactly to the guards:
- * thus, these methods can be called when the guards are satisifed.
+ * thus, these methods can be called when the guards are satisfied.
  * Some of these overloaded variants have argument types
  * that are strictly narrower than the types corresponding to the guards;
  * these are used when the arguments are statically known to have those types.
@@ -62,8 +65,7 @@ import java.util.Map;
  * Each native function is represented by
  * a singleton instance of a direct subclass of this class.
  * Each such singleton instance calls the appropriate {@code exec...} method
- * in its {@link Acl2Function#apply(Acl2Value[])} method;
- * the {@code exec...} method is always without {@code UnderGuard} in its name.
+ * in its {@link Acl2Function#apply(Acl2Value[])} method.
  * <p>
  * The direct subclasses that represent the native functions
  * are private nested classes of this class.
@@ -142,6 +144,8 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
                 new BadAtomLessThanOrEqualTo());
         functions.put(Acl2Symbol.IF, new If());
         functions.put(Acl2Symbol.OR, new Or());
+        functions.put(Acl2Symbol.NONNEGATIVE_INTEGER_QUOTIENT,
+                new NonnegativeIntegerQuotient());
     }
 
     /**
@@ -1042,6 +1046,33 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         @Override
         boolean isOr() {
             return true;
+        }
+    }
+
+    /**
+     * Representation of the {@code nonnegative-integer-quotient}
+     * ACL2 primitive function.
+     */
+    private static final class NonnegativeIntegerQuotient
+            extends Acl2NativeFunction {
+
+        /**
+         * Constructs this native function.
+         */
+        private NonnegativeIntegerQuotient() {
+            super(Acl2Symbol.NONNEGATIVE_INTEGER_QUOTIENT, 2);
+        }
+
+        /**
+         * Applies this native function to the given ACL2 values.
+         *
+         * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
+         * @return The result of the function on the given arguments.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
+            return execNonnegativeIntegerQuotient(values[0], values[1]);
         }
     }
 
@@ -2002,6 +2033,46 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
             return y;
         else
             return x;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code nonnegative-integer-quotient} ACL2 built-in function,
+     * on any values.
+     *
+     * @param i The first actual argument to pass to the function.
+     *          Precondition: not null.
+     * @param j The second actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Integer execNonnegativeIntegerQuotient(Acl2Value i,
+                                                             Acl2Value j) {
+        if (i instanceof Acl2Integer && j instanceof Acl2Integer)
+            return execNonnegativeIntegerQuotient
+                    ((Acl2Integer) i, (Acl2Integer) j);
+        else
+            return Acl2Integer.ZERO;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code nonnegative-integer-quotient} ACL2 built-in function,
+     * on integers.
+     *
+     * @param i The first actual argument to pass to the function.
+     *          Precondition: not null.
+     * @param j The second actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Integer execNonnegativeIntegerQuotient(Acl2Integer i,
+                                                             Acl2Integer j) {
+        if (i.compareToInteger(Acl2Integer.ZERO) >= 0 &&
+                j.compareToInteger(Acl2Integer.ZERO) > 0)
+            return (i.divide(j));
+        else
+            return Acl2Integer.ZERO;
     }
 
 }

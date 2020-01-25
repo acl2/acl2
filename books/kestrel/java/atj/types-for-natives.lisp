@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,8 +19,7 @@
 
 ; This file proves and records ATJ types (see the file types.lisp)
 ; for the ACL2 functions that are implemented natively in AIJ.
-; Currently these are all the ACL2 primitive functions (see :DOC PRIMITIVE),
-; except for BAD-ATOM<= because its guard is not satisfied by any ATJ type
+; We exclude BAD-ATOM<= because its guard is not satisfied by any ATJ type
 ; (or by any constructible ACL2 value).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,6 +88,9 @@
 (def-atj-main-function-type symbol-package-name (:asymbol) :astring)
 
 (def-atj-main-function-type symbolp (:avalue) :asymbol)
+
+(def-atj-main-function-type nonnegative-integer-quotient
+  (:ainteger :ainteger) :ainteger)
 
 ; secondary types:
 

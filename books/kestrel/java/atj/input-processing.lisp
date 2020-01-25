@@ -1263,9 +1263,7 @@
      The list is in no particular order."))
   (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
-       (worklist-gen (set-difference-eq
-                      targets$
-                      (strip-cars *primitive-formals-and-guards*)))
+       (worklist-gen (set-difference-eq targets$ *aij-natives*))
        ((er fns) (atj-worklist-iterate worklist-gen
                                        nil
                                        nil
