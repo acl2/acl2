@@ -436,6 +436,15 @@ rewrite rune is stored as @('(:brewrite name)').</p>")
 (defmacro add-fgl-brewrite (name)
   `(add-fgl-brewrites ,name))
 
+(defsection def-fgl-brewrite
+  :parents (fgl-rewrite-rules)
+  :short "Define a binder rewrite rule for FGL to use on term-level objects"
+  :long "<p>Just expands to a DEFTHMD followed by an @(see add-fgl-brewrite) event.</p>"
+
+  (defmacro def-fgl-brewrite (name &rest args)
+    `(progn (defthmd ,name . ,args)
+            (add-fgl-brewrite ,name))))
+
 (defxdoc remove-fgl-brewrites
   :short "Disable some binder rewrite rules' use in FGL."
   :long "<p>Removes the given binder rewrite rule runes from the @('fgl-binder-rules')

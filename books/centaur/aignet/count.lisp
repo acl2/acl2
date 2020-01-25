@@ -31,8 +31,10 @@
 (in-package "AIGNET")
 
 (include-book "centaur/aignet/semantics" :dir :system)
+(include-book "arrays")
 (local (include-book "std/lists/resize-list" :dir :system ))
 (local (in-theory (disable acl2::resize-list-when-atom)))
+(local (std::add-default-post-define-hook :fix))
 
 (define count-gates-rec ((id natp)
                          (traversal-num natp)
@@ -44,6 +46,7 @@
                new-u32arr)
   :measure (nfix id)
   :verify-guards nil
+  :hooks ((:fix :args (id aignet)))
   (b* (((when (eql traversal-num (get-u32 id u32arr)))
         (mv 0 u32arr))
        (u32arr (set-u32 id traversal-num u32arr))
@@ -90,3 +93,51 @@
   (b* (((acl2::local-stobjs u32arr) (mv sizes u32arr))
        (u32arr (resize-u32 (num-fanins aignet) u32arr)))
     (count-gates-list-rec lits 0 u32arr aignet)))
+
+
+
+(define count-gates-mark-rec ((id natp)
+                              (mark)
+                              (aignet))
+  :guard (and (< id (num-fanins aignet))
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (mv (num-subnodes natp :rule-classes :type-prescription)
+               new-mark)
+  :measure (nfix id)
+  :verify-guards nil
+  (b* (((when (eql 1 (get-bit id mark)))
+        (mv 0 mark))
+       (mark (set-bit id 1 mark))
+       (slot0 (id->slot id 0 aignet))
+       (type (snode->type slot0)))
+    (aignet-case type
+      :in (mv 0 mark)
+      :gate (b* (((mv subs0 mark) (count-gates-mark-rec (lit-id (snode->fanin slot0)) mark aignet))
+                 ((mv subs1 mark) (count-gates-mark-rec (lit-id (gate-id->fanin1 id aignet)) mark aignet)))
+              (mv (+ 1 subs0 subs1) mark))
+      :const (mv 0 mark)
+      :out (count-gates-mark-rec (lit-id (snode->fanin slot0)) mark aignet)))
+  ///
+  (local (in-theory (disable (:d count-gates-mark-rec) nth update-nth)))
+
+  (local (defthm len-update-nth-when-less
+           (implies (< (nfix n) (len x))
+                    (equal (len (update-nth n val x)) (len x)))))
+
+  (defret len-mark-of-count-gates-mark-rec
+    (implies (and (< (nfix id) (num-fanins aignet))
+                  (<= (num-fanins aignet) (len mark)))
+             (equal (len new-mark) (len mark)))
+    :hints (("goal" :induct <call>
+             :expand ((:free () <call>)))))
+
+  (Verify-guards count-gates-mark-rec :hints(("goal" :in-theory(enable aignet-idp)))))
+
+(define count-gates-mark ((id natp) aignet)
+  :guard (< id (num-fanins aignet))
+  :returns (num-subnodes natp :rule-classes :type-prescription)
+  (b* (((acl2::local-stobjs mark)
+        (mv ans mark))
+       (mark (resize-bits (num-fanins aignet) mark)))
+    (count-gates-mark-rec id mark aignet)))
+       

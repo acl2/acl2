@@ -65,7 +65,7 @@
       (find-formal-by-name varname (cdr formals)))))
 
 (defconst *deffixequiv-keywords*
-  '(:args :omit :hints :verbosep))
+  '(:args :omit :hints :verbosep :skip-const-thm :skip-cong-thm))
 
 (defun fixequiv-type-from-guard (guard wrld)
   (and (std::tuplep 2 guard)
@@ -73,7 +73,7 @@
          (or (cdr (assoc type1 (table-alist 'fixequiv-guard-type-overrides wrld)))
              type1))))
 
-(defun fixequiv-from-define-formal (fn formal hints state)
+(defun fixequiv-from-define-formal (fn formal hints opts state)
   (b* (((std::formal fm) formal)
        (type (fixequiv-type-from-guard fm.guard (w state)))
        (stobjname (and (fgetprop fm.name 'acl2::stobj nil (w state))
@@ -82,15 +82,15 @@
        ((unless type) nil)
        (formals (fgetprop fn 'acl2::formals :none (w state)))
        (event (deffixequiv-basic-parse (cons fn formals) fm.name type
-                `(:skip-ok t :hints ,hints) state)))
+                `(:skip-ok t :hints ,hints . ,opts) state)))
     (and event (list event))))
 
-(defun fixequivs-from-define-formals (fn omit formals hints state)
+(defun fixequivs-from-define-formals (fn omit formals hints opts state)
   (if (atom formals)
       nil
     (append (and (not (member (std::formal->name (car formals)) omit))
-                 (fixequiv-from-define-formal fn (car formals) hints state))
-            (fixequivs-from-define-formals fn omit (cdr formals) hints state))))
+                 (fixequiv-from-define-formal fn (car formals) hints opts state))
+            (fixequivs-from-define-formals fn omit (cdr formals) hints opts state))))
 
 (defun remove-key (key kwlist)
   (b* ((look (member key kwlist))
@@ -98,7 +98,7 @@
        (pre (take (- (len kwlist) (len look)) kwlist)))
     (append pre (cddr look))))
 
-(defun fixequiv-from-explicit-arg (fn arg gutsformals formals hints state)
+(defun fixequiv-from-explicit-arg (fn arg gutsformals formals hints global-opts state)
   (b* ((__function__ 'deffixequiv)
        ((mv var type/opts) (if (atom arg) (mv arg nil) (mv (car arg) (cdr arg))))
        ((mv type opts) (if (keywordp (car type/opts))
@@ -121,21 +121,21 @@
                    type)))
        (arg-hints (cadr (member :hints opts)))
        (opts-without-hints (remove-key :hints opts))
-       (opts (append `(:hints ,(append arg-hints hints)) opts-without-hints)))
+       (opts (append `(:hints ,(append arg-hints hints)) opts-without-hints global-opts)))
     (deffixequiv-basic-parse (cons fn formals)
       var type opts state)))
 
 (defmacro set-fixequiv-guard-override (guard-fn type)
   `(table fixequiv-guard-type-overrides ',guard-fn ',type))
 
-(defun fixequivs-from-explicit-args (fn args gutsformals formals hints state)
+(defun fixequivs-from-explicit-args (fn args gutsformals formals hints global-opts state)
   (if (atom args)
       nil
-    (let ((event (fixequiv-from-explicit-arg fn (car args) gutsformals formals hints state)))
+    (let ((event (fixequiv-from-explicit-arg fn (car args) gutsformals formals hints global-opts  state)))
       (if event
           (cons event
-                (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state))
-        (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints state)))))
+                (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints global-opts state))
+        (fixequivs-from-explicit-args fn (cdr args) gutsformals formals hints global-opts state)))))
 
 (defun deffixequiv-expand-hint-fn (fn stable-under-simplificationp id clause world)
   (b* ((forcing-roundp (not (eql 0 (acl2::access acl2::clause-id id :forcing-round))))
@@ -214,13 +214,15 @@
                 which ~x0 does not." fn))
        (fn (if guts (std::defguts->name-fn guts) fn))
        (omit (cdr (assoc :omit kwd-alist)))
+       (global-opts `(:skip-const-thm  ,(cdr (assoc :skip-const-thm kwd-alist))
+                      :skip-cong-thm ,(cdr (assoc :skip-cong-thm kwd-alist))))
        ((when (and args omit))
         (raise "Why would you provide both :args and :omit?")))
     (if args
         (fixequivs-from-explicit-args
          fn args gutsformals
-         (fgetprop fn 'acl2::formals :none (w state)) hints state)
-      (fixequivs-from-define-formals fn omit gutsformals hints state))))
+         (fgetprop fn 'acl2::formals :none (w state)) hints global-opts state)
+      (fixequivs-from-define-formals fn omit gutsformals hints global-opts state))))
 
 (defmacro deffixequiv (fn &rest keys)
   (b* ((verbosep (let ((lst (member :verbosep keys)))
@@ -279,7 +281,7 @@
                                                    (args->varnames fn-fn-args))))
        (args (append fn-fn-args fn-univ-args))
        (fixequivs (fixequivs-from-explicit-args
-                   guts.name-fn args guts.formals formal-names nil state)))
+                   guts.name-fn args guts.formals formal-names nil nil state)))
     (cons (cons guts.name fixequivs)
           (mutual-fixequivs-from-explicit-args fn-args univ-args (cdr gutslist) state))))
 
@@ -292,7 +294,7 @@
                       (assoc (cdr (assoc :flag guts.kwd-alist)) fn-omit)))
        (fixequivs (fixequivs-from-define-formals
                    guts.name-fn (append univ-omit (cdr omit-look))
-                   guts.formals nil state)))
+                   guts.formals nil nil state)))
     (cons (cons guts.name fixequivs)
           (mutual-fixequivs-from-defines fn-omit univ-omit (cdr gutslist) state))))
 

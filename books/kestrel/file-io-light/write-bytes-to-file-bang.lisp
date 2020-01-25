@@ -16,8 +16,7 @@
 (defttag file-io!)
 
 ;returns (mv erp state)
-;; TODO: Rename to have ! in the name
-(defun write-bytes-to-file-bang (bytes filename ctx state)
+(defun write-bytes-to-file! (bytes filename ctx state)
   (declare (xargs :stobjs state
                   :guard (and (all-bytep bytes)
                               (stringp filename))))

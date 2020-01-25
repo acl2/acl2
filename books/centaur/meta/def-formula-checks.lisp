@@ -115,7 +115,7 @@
           (formals-subsubsts (cdr formals)))))
 
 (defun def-formula-check-definition-thm-fn-aux (name-lst evl flags
-                                                         formula-check wrld)
+                                                         formula-check switch-hyps wrld)
   (declare (xargs :mode :program))
   (cond
    ((atom name-lst)
@@ -125,14 +125,17 @@
          (formals (acl2::formals name wrld))
          ((mv rest-lemma rest-hint rest-defthm)
           (def-formula-check-definition-thm-fn-aux
-            (cdr name-lst) evl flags formula-check wrld))
+            (cdr name-lst) evl flags formula-check switch-hyps wrld))
          (flag (if flags `(:flag ,(cdr (assoc-equal name flags))) nil))
          
          ((list lemma hint defthm)
           (acl2::template-subst
            `((defthmd <evl>-of-<name>-lemma
-               (implies (and (<formula-check> state)
-                             (<evl>-meta-extract-global-facts))
+               (implies ,(if switch-hyps
+                             '(and (<evl>-meta-extract-global-facts)
+                                   (<formula-check> state))
+                           '(and (<formula-check> state)
+                                 (<evl>-meta-extract-global-facts)))
                         (equal (<evl> '(<name> . <formals>)
                                       (list (:@proj <formals> (cons '<formal> <formal>))))
                                (<name> . <formals>)))
@@ -166,7 +169,7 @@
           (cons hint rest-hint)
           (cons defthm rest-defthm))))))
 
-(defun def-formula-check-definition-thm-fn (name evl formula-check wrld)
+(defun def-formula-check-definition-thm-fn (name evl formula-check switch-hyps wrld)
   (declare (xargs :mode :program))
   (b* ((recursivep (fgetprop name 'acl2::recursivep nil wrld))
        (formals (acl2::formals name wrld)))
@@ -174,8 +177,12 @@
      (cond
       ((equal recursivep nil)
        '(defthm <evl>-of-<name>-when-<formula-check>
-          (implies (and (<formula-check> state)
-                        (<evl>-meta-extract-global-facts))
+          (implies (:@ :switch-hyps
+                    (and (<evl>-meta-extract-global-facts)
+                        (<formula-check> state)))
+                   (:@ (not :switch-hyps)
+                    (and (<formula-check> state)
+                         (<evl>-meta-extract-global-facts)))
                    (equal (<evl> (list '<name> . <formals>) env)
                           (<name> (:@proj <formals>
                                           (<evl> <formal> env)))))
@@ -206,8 +213,12 @@
                                                  (<evl>-meta-extract-formula))))))
 
           (defthm <evl>-of-<name>-when-<formula-check>
-            (implies (and (<formula-check> state)
-                          (<evl>-meta-extract-global-facts))
+            (implies (:@ :switch-hyps
+                      (and (<evl>-meta-extract-global-facts)
+                           (<formula-check> state)))
+                     (:@ (not :switch-hyps)
+                      (and (<formula-check> state)
+                          (<evl>-meta-extract-global-facts)))
                      (equal (<evl> (list '<name> . <formals>) env)
                             (<name> (:@proj <formals>
                                             (<evl> <formal> env)))))
@@ -227,7 +238,7 @@
             (macro-name (nth 3 entry))
             ((mv lemmas lemma-hints defthms)
              (def-formula-check-definition-thm-fn-aux
-               recursivep evl flags formula-check wrld)))
+               recursivep evl flags formula-check switch-hyps wrld)))
          `(encapsulate
             nil
             (local
@@ -249,21 +260,22 @@
                    (<formula-check> . ,formula-check)
                    (<formals> . ,formals))
      :subsubsts `((<formals> . ,(formals-subsubsts formals)))
+     :features (and switch-hyps '(:switch-hyps))
      :pkg-sym formula-check)))
 
-(defmacro def-formula-check-definition-thm (name evl formula-check)
+(defmacro def-formula-check-definition-thm (name evl formula-check &optional switch-hyps)
   `(make-event
-    (def-formula-check-definition-thm-fn ',name ',evl ',formula-check (w state))))
+    (def-formula-check-definition-thm-fn ',name ',evl ',formula-check ',switch-hyps (w state))))
 
-(defun def-formula-checks-definition-thm-list-fn (x evl name)
+(defun def-formula-checks-definition-thm-list-fn (x evl name switch-hyps)
   (if (atom x)
       nil
-    (cons `(def-formula-check-definition-thm ,(car x) ,evl ,name)
-          (def-formula-checks-definition-thm-list-fn (cdr x) evl name))))
+    (cons `(def-formula-check-definition-thm ,(car x) ,evl ,name ,switch-hyps)
+          (def-formula-checks-definition-thm-list-fn (cdr x) evl name switch-hyps))))
 
-(defmacro def-formula-checks-definition-thm-list (x evl name)
+(defmacro def-formula-checks-definition-thm-list (x evl name &optional switch-hyps)
   `(make-event
-    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',evl ',name))))
+    (cons 'progn (def-formula-checks-definition-thm-list-fn ,x ',evl ',name ',switch-hyps))))
 
 (defun filter-defined-functions (fns wrld)
   (if (atom fns)
@@ -272,7 +284,7 @@
         (cons (car fns) (filter-defined-functions (cdr fns) wrld))
       (filter-defined-functions (cdr fns) wrld))))
 
-(defun def-formula-checks-fn (name fns evl evl-base-fns wrld)
+(defun def-formula-checks-fn (name fns evl evl-base-fns switch-hyps wrld)
   (declare (xargs :mode :program))
   (b* ((evl-base-fns (if evl-base-fns evl-base-fns
                        (cdr (assoc-equal 'evl-base-fns
@@ -292,11 +304,11 @@
         (in-theory (enable assoc-equal)))
        (def-formula-checker ,name ,defined-deps)
        (local (def-formula-checker-lemmas ,name ,defined-deps))
-       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name))))
+       (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps))))
 
-(defmacro def-formula-checks (name fns &key (evl 'nil) (evl-base-fns 'nil))
+(defmacro def-formula-checks (name fns &key (evl 'nil) (evl-base-fns 'nil) (switch-hyps 'nil))
   `(make-event
-    (def-formula-checks-fn ',name ',fns ',evl ,evl-base-fns (w state))))
+    (def-formula-checks-fn ',name ',fns ',evl ,evl-base-fns ,switch-hyps (w state))))
 
 (defmacro def-formula-checks-default-evl (evl evl-base-fns)
   `(progn

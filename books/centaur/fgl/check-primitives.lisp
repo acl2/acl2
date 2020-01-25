@@ -89,6 +89,9 @@
                   (equal (fgl-object-eval x env) x))
          :hints(("Goal" :in-theory (enable fgl-object-eval fgl-object-kind g-concrete->val)))))
 
+(local (in-theory (disable member-equal
+                           equal-of-booleans-rewrite)))
+
 (def-fgl-binder-meta check-integerp-binder
   (b* ((ans
         (fgl-object-case arg
@@ -361,6 +364,9 @@
 
 
 
+(local (defthm cdr-of-fgl-objectlist-fix
+         (equal (cdr (fgl-objectlist-fix x))
+                (fgl-objectlist-fix (cdr x)))))
 
 (def-fgl-binder-meta check-equal-binder
   (mv t  (if (equal (fgl-object-fix x)
