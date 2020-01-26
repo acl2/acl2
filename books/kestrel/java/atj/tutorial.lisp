@@ -14,6 +14,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Subtitle of each tutorial page (except the top one).
+
+(defconst *atj-tutorial-motivation* "Motivation")
+
+(defconst *atj-tutorial-background* "Background")
+
+(defconst *atj-tutorial-aij* "AIJ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc atj-tutorial
 
   :parents (atj)
@@ -51,7 +61,7 @@
 
    (xdoc::p
     "Start: "
-    (xdoc::seetopic "atj-tutorial-motivation" "Motivation"))))
+    (xdoc::seetopic "atj-tutorial-motivation" *atj-tutorial-motivation*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,7 +69,7 @@
 
   :parents (atj-tutorial)
 
-  :short "ATJ tutorial: Motivation."
+  :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-motivation* ".")
 
   :long
 
@@ -129,7 +139,7 @@
 
    (xdoc::p
     "Next: "
-    (xdoc::seetopic "atj-tutorial-background" "Background"))))
+    (xdoc::seetopic "atj-tutorial-background" *atj-tutorial-background*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,7 +147,7 @@
 
   :parents (atj-tutorial)
 
-  :short "ATJ tutorial: Background."
+  :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-background* ".")
 
   :long
 
@@ -289,11 +299,11 @@
 
    (xdoc::p
     "Previous: "
-    (xdoc::seetopic "atj-tutorial-motivation" "Motivation"))
+    (xdoc::seetopic "atj-tutorial-motivation" *atj-tutorial-motivation*))
 
    (xdoc::p
     "Next: "
-    (xdoc::seetopic "atj-tutorial-aij" "AIJ"))))
+    (xdoc::seetopic "atj-tutorial-aij" *atj-tutorial-aij*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -301,7 +311,7 @@
 
   :parents (atj-tutorial)
 
-  :short "ATJ tutorial: AIJ."
+  :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-aij* ".")
 
   :long
 
@@ -327,4 +337,4 @@
 
    (xdoc::p
     "Previous: "
-    (xdoc::seetopic "atj-tutorial-background" "Background"))))
+    (xdoc::seetopic "atj-tutorial-background" *atj-tutorial-background*))))
