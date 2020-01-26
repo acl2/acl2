@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "arglistp")
+(include-book "event-landmark-names")
 (include-book "event-name-queries")
 (include-book "function-queries")
 (include-book "getprops")
@@ -20,7 +21,10 @@
 (include-book "logic-friendly")
 (include-book "macro-queries")
 (include-book "plist-worldp-with-formals")
+(include-book "pseudo-command-landmark-listp")
+(include-book "pseudo-event-form-listp")
 (include-book "pseudo-event-formp")
+(include-book "pseudo-event-landmark-listp")
 (include-book "pseudo-tests-and-callp")
 (include-book "pseudo-tests-and-call-listp")
 (include-book "rune-disabledp")

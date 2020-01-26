@@ -1626,9 +1626,9 @@
  <p>Extended the <see topic='@(url error-checking)'>error-checking
  utilities</see> with several error-checking functions.</p>
 
- <p>Extended the <see topic='@(url world-queries)'>world query utilities</see>
- with functions to collect the names of all the known packages in the ACL2
- @(see world) and to check if a function is primitive.</p>
+ <p>Extended the Kestrel world query utilities with functions to collect the
+ names of all the known packages in the ACL2 @(see world) and to check if a
+ function is primitive.</p>
 
  <p>Extended the <see topic='@(url std/system/term-function-recognizers)'>term
  function recognizers</see> with recognizers for true lists of
@@ -2035,10 +2035,10 @@
  easier to reason about than its tail-recursive definition for execution (which
  has not changed).</p>
 
- <p>The Kestrel <see topic='@(url world-queries)'>world query utilities</see>,
- term utilities, <see topic='@(url string-utilities)'>string utilities</see>,
- and character utilities (@('[books]/kestrel/utilities/characters.lisp')) have
- undergone several improvements and extensions.</p>
+ <p>The Kestrel world query utilities, term utilities, <see topic='@(url
+ string-utilities)'>string utilities</see>, and character utilities
+ (@('[books]/kestrel/utilities/characters.lisp')) have undergone several
+ improvements and extensions.</p>
 
  <p>A few theorems about world-related functions and theorems about lists (in
  @('kestrel/utilities/list-theorems.lisp')) have been added.</p>

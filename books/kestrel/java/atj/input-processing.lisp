@@ -540,7 +540,7 @@
      We evaluate the call @('(fn in1 in2 ...)'), obtaining a result value.
      If @(':deep') is @('nil') and @(':guards') is @('t'),
      we ensure that the inputs will select an overloaded methods,
-     and we will obtain the corresponding output type
+     and we obtain the corresponding output type
      to contruct the appropriate kind of output test value.
      We create and return an @(tsee atj-test) record.")
    (xdoc::p
@@ -578,8 +578,7 @@
                       the test term ~x1 in the :TESTS input"
                      fn call)
                 t nil))
-       ((unless (or (member-eq fn *stobjs-out-invalid*)
-                    (= (number-of-results+ fn (w state)) 1)))
+       ((unless (= (atj-number-of-results fn (w state)) 1))
         (er-soft+ ctx t nil
                   "The function ~x0 called by ~
                    the test term ~x1 in the :TESTS input ~
@@ -1264,9 +1263,7 @@
      The list is in no particular order."))
   (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
-       (worklist-gen (set-difference-eq
-                      targets$
-                      (strip-cars *primitive-formals-and-guards*)))
+       (worklist-gen (set-difference-eq targets$ *aij-natives*))
        ((er fns) (atj-worklist-iterate worklist-gen
                                        nil
                                        nil

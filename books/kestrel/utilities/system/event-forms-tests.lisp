@@ -15,20 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (pseudo-event-formp '(defun f (x) x)))
-
-(assert! (pseudo-event-formp '(encapsulate () (defun f (x) x))))
-
-(assert! (not (pseudo-event-formp 33)))
-
-(assert! (not (pseudo-event-formp '("a" 1))))
-
-(assert! (not (pseudo-event-formp nil)))
-
-(assert! (not (pseudo-event-formp '((f x) y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert! (maybe-pseudo-event-formp nil))
 
 (assert! (maybe-pseudo-event-formp '(defun f (x) x)))
