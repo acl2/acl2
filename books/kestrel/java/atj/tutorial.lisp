@@ -40,6 +40,16 @@
      using the `Start', `Next', and `Previous' links.")
 
    (xdoc::p
+    (xdoc::a :href "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1"
+      "This ACL2-2018 Workshop paper")
+    " provides an overview of ATJ,
+     but ATJ has been significantly extended since then.
+     Some of the contents of the paper are being copied to this tutorial,
+     and updated as appropriate;
+     it is possible that the paper will be completely subsumed by this tutorial
+     once the latter is completed.")
+
+   (xdoc::p
     "Start: "
     (xdoc::seetopic "atj-tutorial-motivation" "Motivation"))))
 
@@ -279,4 +289,42 @@
 
    (xdoc::p
     "Previous: "
-    (xdoc::seetopic "atj-tutorial-motivation" "Motivation"))))
+    (xdoc::seetopic "atj-tutorial-motivation" "Motivation"))
+
+   (xdoc::p
+    "Next: "
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-aij
+
+  :parents (atj-tutorial)
+
+  :short "ATJ tutorial: AIJ."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    (xdoc::seetopic "aij" "AIJ")
+    " is related to, but independent from, ATJ.
+     ATJ generates Java code that needs at least part of AIJ to run:
+     in this sense, ATJ depends on AIJ.
+     Although the development of AIJ has been motivated by ATJ,
+     AIJ does not need or depend on ATJ:
+     it can be used independently.
+     However, AIJ's main use is as support for ATJ.")
+
+   (xdoc::p
+    "See "
+    (xdoc::seetopic "aij" "this manual page")
+    " for information about AIJ as a stand-alone entity,
+     independent from ATJ.
+     However, this ATJ tutorial will describe many aspects of AIJ
+     that are necessary or useful to understand and use ATJ.")
+
+   (xdoc::p
+    "Previous: "
+    (xdoc::seetopic "atj-tutorial-background" "Background"))))
