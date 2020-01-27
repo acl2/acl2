@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -49,7 +49,8 @@
     "Thus, when generating tests for the generated Java methods,
      the input and output values of the tests may be
      of these three different kinds.
-     So we introduce a type for these three kinds of values.
+     So we introduce a type for these three kinds of values,
+     with each of the last two kinds having six sub-kinds each.
      The @('a') values may be anything,
      while the @('j') values are restricted to (our model of)
      Java primitive values and Java primitive arrays."))
@@ -98,6 +99,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-test-value-list-to-test-value ((tvalues atj-test-value-listp))
+  :returns (tvalue atj-test-value-p :hyp :guard)
+  :short "Turn a singleton list of ATJ test values
+          into a single ATJ test value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An error occurs unless the input list is a singleton.
+     This function is used when the list is expected to be a singleton."))
+  (if (= (len tvalues) 1)
+      (car tvalues)
+    (prog2$ (raise "Internal error: ~x0 is not a singleton list." tvalues)
+            (atj-test-value-avalue nil)))) ; irrelevant
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-test-values-to-types ((test-values atj-test-value-listp))
   :returns (types atj-type-listp)
   :short "Lift @(tsee atj-test-value-to-type) to lists."
@@ -127,11 +144,13 @@
      @('namej'),
      @('fn'),
      the list of inputs derived from @('in1'), @('in2'), etc.,
-     and the result of the ground call @('(fn in1 in2 ...)')."))
+     and results of the ground call @('(fn in1 in2 ...)').
+     The latter list is a singleton for single-valued functions,
+     while it consists of two or more values for multi-valued functions."))
   ((name string)
    (function symbol)
    (inputs atj-test-value-list)
-   (output atj-test-value))
+   (outputs atj-test-value-list))
   :pred atj-testp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

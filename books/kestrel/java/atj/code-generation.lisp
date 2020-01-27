@@ -294,6 +294,7 @@
             args-types
             jvar-value-index)
         (atj-gen-test-values test.inputs "value" 1))
+       (test.output (atj-test-value-list-to-test-value test.outputs))
        ((mv ares-block
             ares-expr
             ares-type

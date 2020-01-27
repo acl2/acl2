@@ -613,7 +613,7 @@
        ((er (cons & output)) (trans-eval term$ ctx state nil))
        ((when (or deep$ (not guards$)))
         (b* ((test-output (atj-test-value-avalue output)))
-          (value (atj-test name fn test-inputs test-output))))
+          (value (atj-test name fn test-inputs (list test-output)))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
        (out-types? (atj-output-types-of-min-input-types in-types all-fn-types))
@@ -638,7 +638,7 @@
           (:jint[] (atj-test-value-jvalue-int-array output))
           (:jlong[] (atj-test-value-jvalue-long-array output))
           (t (atj-test-value-avalue output)))))
-    (value (atj-test name fn test-inputs test-output))))
+    (value (atj-test name fn test-inputs (list test-output)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
