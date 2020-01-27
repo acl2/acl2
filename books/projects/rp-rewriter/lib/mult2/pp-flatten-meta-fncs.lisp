@@ -53,8 +53,6 @@
   use-arith-5
   :disabled t))
 
-
-
 (define pp-list-order-aux ((x)
                            (y))
   :returns (mv (order)
@@ -73,7 +71,7 @@
           nil))))
 
 (define pp-list-order (x y)
-   :returns (mv (order)
+  :returns (mv (order)
                (equals booleanp))
   (b* ((len-x (len x))
        (len-y (len y)))
@@ -113,8 +111,6 @@
                  ''bitp)
           (pp-has-bitp-rp (caddr term)))
     nil))
-
-
 
 (define pp-term-p (term)
   :enabled t
@@ -731,8 +727,14 @@
       (('binary-sum x rest)
        (case-match x
          (('binary-and a b)
-          (b* (((unless (and (case-match a (('bit-of & &) t) (('rp ''bitp &) t))
-                             (case-match b (('bit-of & &) t) (('rp ''bitp &) t))))
+          (b* ((a-orig a)
+               (b-orig b)
+               (a (ex-from-rp a))
+               (b (ex-from-rp b))
+               ((unless (and (or (case-match a (('bit-of & &) t))
+                                 (case-match a-orig (('rp ''bitp &) t)))
+                             (or (case-match b (('bit-of & &) t) )
+                                 (case-match b-orig (('rp ''bitp &) t)))))
                 (mv nil nil))
                ((mv rest-valid rest)
                 (sort-sum-meta-aux rest))
@@ -745,8 +747,14 @@
           (sort-sum-meta-aux rest))
          (& (mv nil nil))))
       (('binary-and a b)
-       (b* (((unless (and (case-match a (('bit-of & &) t) (('rp ''bitp &) t))
-                          (case-match b (('bit-of & &) t) (('rp ''bitp &) t))))
+       (b* ((a-orig a)
+            (b-orig b)
+            (a (ex-from-rp a))
+            (b (ex-from-rp b))
+            ((unless (and (or (case-match a (('bit-of & &) t))
+                              (case-match a-orig (('rp ''bitp &) t)))
+                          (or (case-match b (('bit-of & &) t) )
+                              (case-match b-orig (('rp ''bitp &) t)))))
              (mv nil nil)))
          (mv t
              (cons (cons nil (sort-and$-list (cdr term) 2))
@@ -781,8 +789,6 @@
                    term)
                (hard-error 'sort-sum-meta "" nil)
                (mv term t))))))
-
-
 
 (local
  (in-theory (disable floor len)))
@@ -1068,7 +1074,6 @@
    :hints (("Goal"
             :in-theory (e/d (pp-term-to-pp-lists) ())))))
 
-
 (local
  (defthm valid-sc-pp-lists-to-term-p+
    (implies (valid-sc-subterms-lst (strip-cdrs lst) a)
@@ -1103,7 +1108,6 @@
                              (:rewrite rp-termp-implies-subterms)
                              (:definition quotep)))))))
 
-
 (defthm sort-sum-meta-returns-valid-sc
   (implies (valid-sc term a)
            (valid-sc (mv-nth 0 (sort-sum-meta term)) a))
@@ -1111,4 +1115,3 @@
            :in-theory (e/d (sort-sum-meta
                             is-rp
                             is-if) ()))))
-  
