@@ -635,7 +635,7 @@
 
    (xdoc::p
     "Models have been added
-     of the decimal, hexadecimal, octal, and binary digits.")
+     of the decimal, hexadecimal, octal, and binary integer literals.")
 
    (xdoc::p
     "A model of the processing of Unicode escapes has been added.
