@@ -820,7 +820,7 @@
                                  presence)
     (declare (xargs :guard (stringp name)))
     `(xdoc::desc
-      ,(concatenate 'string "@('" name ")")
+      ,(concatenate 'string "@('" name "')")
       ,main
       ,@(and design-notes
              design-notes-appcond
