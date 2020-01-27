@@ -11,20 +11,24 @@
 (in-package "JAVA")
 
 (include-book "xdoc/constructors" :dir :system)
+(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Subtitle of each tutorial page (except the top one).
 
-(defconst *atj-tutorial-motivation* "Motivation")
+(defconst *atj-tutorial-motivation*
+  "Motivation for Generating Java Code from ACL2")
 
-(defconst *atj-tutorial-background* "Background")
+(defconst *atj-tutorial-background*
+  "Background on the Evaluation Semantics of ACL2")
 
-(defconst *atj-tutorial-aij* "AIJ")
+(defconst *atj-tutorial-aij*
+  "Relationship with AIJ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc atj-tutorial
+(defxdoc+ atj-tutorial
 
   :parents (atj)
 
@@ -61,13 +65,15 @@
 
    (xdoc::p
     "Start: "
-    (xdoc::seetopic "atj-tutorial-motivation" *atj-tutorial-motivation*))))
+    (xdoc::seetopic "atj-tutorial-motivation" *atj-tutorial-motivation*)))
+
+  :order-subtopics t
+
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-motivation
-
-  :parents (atj-tutorial)
 
   :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-motivation* ".")
 
@@ -144,8 +150,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-background
-
-  :parents (atj-tutorial)
 
   :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-background* ".")
 
@@ -267,7 +271,7 @@
      than constructing a new record value with a changed field.
      The built-in @(tsee state) stobj
      is ``linked'' to external entities,
-     e.g.\ the file system of the underlying machine.
+     e.g. the file system of the underlying machine.
      Thus, functions that manipulate @(tsee state)
      may have side effects on these external entities.
      For example, @(tsee princ$) (a member of @('logic-fns-with-raw-code'))
@@ -309,8 +313,6 @@
 
 (defxdoc atj-tutorial-aij
 
-  :parents (atj-tutorial)
-
   :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-aij* ".")
 
   :long
@@ -337,4 +339,7 @@
 
    (xdoc::p
     "Previous: "
-    (xdoc::seetopic "atj-tutorial-background" *atj-tutorial-background*))))
+    (xdoc::seetopic "atj-tutorial-background" *atj-tutorial-background*))
+
+   (xdoc::p
+    "Next: <i>IN PROGRESS</i>")))
