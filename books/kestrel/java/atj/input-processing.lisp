@@ -525,7 +525,7 @@
    (xdoc::p
     "The first two arguments of this function are the two components
      of a pair in the alist computed from @(':tests').
-     These two components are the name of the tests and the call of the tests.")
+     These two components are the name of the test and the call of the test.")
    (xdoc::p
     "We first ensure that the name is a non-empty string
      consisting only of letters and digits.
@@ -544,10 +544,7 @@
      to contruct the appropriate kind of output test value.
      We create and return an @(tsee atj-test) record.")
    (xdoc::p
-    "For now functions that return @(tsee mv) values
-     are regarded as returning a single non-empty list value.
-     Thus, if the result of @(tsee atj-output-types-of-min-input-types)
-     is not a singleton list, we treat it as a single @(':acons') type."))
+    "For now functions that return @(tsee mv) values are not supported."))
   (b* (((er &) (ensure-string$ name
                                (msg "The test name ~x0 in the :TESTS input"
                                     name)
@@ -625,7 +622,7 @@
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
                   call))
-       (out-type (atj-type-list-to-type/acons out-types?))
+       (out-type (atj-type-list-to-type out-types?))
        (test-output
         (case out-type
           (:jboolean (atj-test-value-jvalue-boolean output))
