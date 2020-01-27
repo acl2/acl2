@@ -8,7 +8,7 @@
 (include-book "xdoc/top" :dir :system)
 
 (defsection pseudo-tests-and-callsp
-  :parents (std/system)
+  :parents (system-utilities-non-built-in)
   :short "Recognize well-formed @('tests-and-calls') records."
   :long
   "<p>A @('tests-and-call') record is defined as</p>
