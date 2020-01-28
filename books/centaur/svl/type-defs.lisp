@@ -292,3 +292,214 @@
 
 (add-rp-rule svl-env->wires-of-svl-env)
 (add-rp-rule svl::svl-env-p-of-svl-env)
+
+
+
+(fty::deftagsum
+ tmp-occ
+ (:assign ((inputs wire-list)
+           (delayed-inputs sv::svarlist-p)
+           (outputs wire-list)
+           (svex sv::svex-p)))
+ (:module ((inputs module-occ-wire-list)
+           (outputs module-occ-wire-list)
+           (name sv::modname))))
+
+(fty::defalist tmp-occ-alist
+               :key-type occ-name
+               :true-listp t
+               :val-type tmp-occ)
+
+(define wire-list-listp (list)
+  :enabled t
+  (if (atom list)
+      (equal list nil)
+    (and (wire-list-p (car list))
+         (wire-list-listp (cdr list)))))
+
+(define wire-list-list-fix (list)
+  :returns (res wire-list-listp)
+  :enabled t
+  (if (wire-list-listp list)
+      list
+    nil))
+
+(fty::deffixtype wire-list-list
+                 :pred  wire-list-listp
+                 :fix   wire-list-list-fix
+                 :equiv equal)
+
+(fty::deftagsum
+ svl-occ
+ (:assign ((output sv::svar-p)
+           (svex sv::svex-p)))
+ (:module ((inputs sv::svexlist-p)
+           (outputs wire-list-list)
+           (name sv::modname-p))))
+
+(fty::defalist svl-occ-alist
+               :true-listp t
+               :val-type svl-occ)
+
+
+(define vl-insouts-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (string-listp ins)
+                   (string-listp outs)
+                   (vl-insouts-p rest)))))))
+
+  (define vl-insouts-sized-p (vl-insouts)
+    (if (atom vl-insouts)
+        (eq vl-insouts nil)
+      (and (case-match  vl-insouts
+             (((name ins . outs) . rest)
+              (and (stringp name)
+                   (wire-list-p ins)
+                   (wire-list-p outs)
+                   (vl-insouts-sized-p rest)))))))
+
+
+(define alistp$ (x)
+  :enabled t
+  (if (atom x)
+      t
+    (and (consp (car x))
+         (alistp$ (cdr x)))))
+
+
+
+(encapsulate
+  nil
+  (local
+   (in-theory (enable rp::measure-lemmas)))
+
+  (local
+   (defthm m-lemma1
+     (implies (and (< a x)
+                   (natp z)
+                   (natp y))
+              (< a
+                 (+ x y z)))))
+
+  (local
+   (defthm m-lemma2
+     (implies (and t)
+              (equal (< a
+                        (+ x y a))
+                     (< 0 (+ x y))))))
+
+  (local
+   (defthm lemma1
+     (implies
+      (and (consp x) (consp (car x)))
+      (< (cons-countw (cdr (car x)) 2)
+         (cons-countw x 2)))
+     :hints (("goal"
+	      :in-theory (e/d (cons-countw)
+                              (ACL2::FOLD-CONSTS-IN-+))))))
+
+  (local
+   (defthm lemma2-lemma
+     (implies (and (natp a)
+                   (natp b)
+                   (natp x))
+              (< x
+                 (+ 1 a x b)))))
+
+  (local
+   (defthm lemma2-lemma2
+     (implies (and (natp a))
+              (< 2
+                 (+ 3 a)))))
+
+  (local
+   (defthm lemma2
+     (< (cons-countw (cadr x) 2)
+        (+ 1 (cons-countw x 2)))
+     :otf-flg t
+     :hints (("goal"
+              :expand ((cons-countw x 2)
+                       (cons-countw (cdr x) 2))
+              :in-theory (e/d () ())))))
+
+  (local
+   (defthm lemma3-lemma1
+     (implies (natp w)
+              (<= w (cons-countw x w)))
+     :hints (("Goal"
+              :induct (cons-countw x w)
+              :in-theory (e/d (cons-countw) ())))))
+
+  (local
+   (defthm lemma3-lemma2
+     (implies
+      (and (<= 2 a)
+           (<= 2 b))
+      (< (1+ x)
+         (+ a b x)))))
+
+  (local
+   (defthm lemma3
+     (implies (and (consp x) (consp (car x)))
+              (< (+ 1 (cons-countw (cdr (car x)) 2))
+                 (cons-countw x 2)))
+     :hints (("Goal"
+              :expand ((cons-countw x 2)
+                       (CONS-COUNTW (CAR X) 2))
+              :in-theory (e/d () ())))))
+
+  (fty::defprod
+   alias
+   ((name sv::svar-p :default "")
+    (val sv::svex-p :default 0)))
+
+  (fty::deflist
+   alias-lst
+   :elt-type alias-p)
+
+  (fty::defalist
+   alias-alist
+   :true-listp t
+   :key-type sv::svar-p
+   :val-type sv::svex-p)
+
+  (fty::deftypes
+   svl-aliasdb
+   (fty::defprod svl-aliasdb
+                 ((this alias-alist)
+                  (sub svl-aliasdb-alist-p))
+                 :tag nil
+                 :count nil
+                 :measure (+ 1 (cons-countw x 2))
+                 :layout :list)
+
+   (fty::defalist svl-aliasdb-alist
+                  :count nil
+                  :true-listp t
+                  :measure (cons-countw x 2)
+                  :val-type svl-aliasdb)))
+
+
+(define trace-p (trace)
+  (declare (ignorable trace))
+  (true-listp trace))
+
+
+
+(fty::defprod
+ svl-module
+ ((rank natp :default '0)
+  (inputs wire-list-p)
+  (delayed-inputs sv::svarlist-p)
+  (outputs wire-list-p)
+  (occs svl-occ-alist))
+ :layout :alist)
+
+(fty::defalist svl-module-alist
+               :val-type svl-module
+               :true-listp t
+               :key-type sv::modname-p)

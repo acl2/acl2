@@ -60,7 +60,7 @@
    (integerp (ifix x)))
 
 
-  (rp::def-rp-rule
+  (rp::def-rp-rule$ t nil
    ifix-opener
    (implies (integerp x)
             (equal (ifix x)
@@ -865,10 +865,11 @@
             (natp (ash x shift)))
    :rule-classes :type-prescription))
 
-(defthm nfix-opener
+(local
+ (defthm nfix-opener
   (implies (natp x)
            (equal (nfix x)
-                  x)))
+                  x))))
 (local
  (encapsulate
    nil
@@ -4483,3 +4484,31 @@
 
 
 
+ (progn
+   (def-rp-rule$ t nil
+     logapp-to-4vec-concat
+     (implies (and (integerp x)
+                   (natp size)
+                   (integerp y))
+              (and (equal (logapp size x y)
+                          (sv::4vec-concat size x y))))
+     :hints (("Goal"
+              :in-theory (e/d (sv::4vec-concat)
+                              ()))))
+   (defthm logapp-to-4vec-concat-side-cond
+     (implies (and (integerp x)
+                   (natp size)
+                   (integerp y))
+              (integerp (sv::4vec-concat size x y)))
+     :rule-classes nil
+     :hints (("Goal"
+              :in-theory (e/d (sv::4vec-concat)
+                              ()))))
+
+   (rp-attach-sc logapp-to-4vec-concat
+                 logapp-to-4vec-concat-side-cond))
+
+(def-rp-rule$ t nil
+  integerp-of--
+  (implies (integerp x)
+           (integerp (- x))))

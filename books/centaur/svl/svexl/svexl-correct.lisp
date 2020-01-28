@@ -28,6 +28,7 @@
 
 (include-book "svexl")
 
+;; a function to help with induction and be a bridge between functions.
 (local
  (mutual-recursion
   (defun svex-induct1 (svex reuse-stats nodesdb node-env svexl-node-alist env)
@@ -80,6 +81,8 @@
 (local
  (make-flag svex-induct1 :defthm-macro-name defthm-svex-induct1))
 
+
+;; an invariant; nodesdb and node-env is consistent.
 (local
  (defun node-env-nodesdb-inv (nodesdb node-env env)
    (if (or (atom nodesdb)
