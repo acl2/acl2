@@ -42,6 +42,8 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
+(include-book "centaur/svl/bits-sbits" :dir :system)
+
 (progn
   (define binary-sum (x y)
     (+ (ifix x)
@@ -394,8 +396,6 @@
  sort-sum-opener-error
  (sort-sum x))
 
-
-
 ;; for proofs:
 (define m2 (x)
   (mod (ifix x) 2))
@@ -415,3 +415,30 @@
       (equal term 1)
       (equal term 2)
       (equal term 3)))
+
+(define ba2 (n1 i1 n2 i2)
+  :verify-guards nil
+  (and$ (bit-of n1 i1)
+        (bit-of n2 i2))
+  ///
+  (def-rp-rule bitp-ba2
+    (bitp (ba2 n1 i1 n2 i2))))
+
+(define ba3 (n1 i1 n2 i2 n3 i3)
+  :verify-guards nil
+  (and$ (bit-of n1 i1)
+        (bit-of n2 i2)
+        (bit-of n3 i3))
+  ///
+  (def-rp-rule bitp-ba3
+    (bitp (ba3 n1 i1 n2 i2 n3 i3))))
+
+(define ba4 (n1 i1 n2 i2 n3 i3 n4 i4)
+  :verify-guards nil
+  (and$ (bit-of n1 i1)
+        (bit-of n2 i2)
+        (bit-of n3 i3)
+        (bit-of n4 i4))
+  ///
+  (def-rp-rule bitp-ba4
+    (bitp (ba4 n1 i1 n2 i2 n3 i3 n4 i4))))

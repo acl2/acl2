@@ -37,8 +37,8 @@
 (in-package "SVL")
 
 
-(include-book "svexl")
-(include-book "svexl-correct")
+(include-book "svexl/svexl")
+(include-book "svexl/svexl-correct")
 
 (include-book "svex-eval-wog-openers")
 
@@ -50,4 +50,4 @@
 
 (include-book "svl-openers")
 
-
+(include-book "svl-flatten")
