@@ -1,6 +1,6 @@
-; XDOC Utilities -- An Extension of DEFXDOC
+; XDOC Documentation System for ACL2
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection defxdoc+
-  :parents (xdoc-utilities)
+  :parents (xdoc defxdoc)
   :short "@('defxdoc+') extends @(tsee defxdoc) with some conveniences."
   :long
   (xdoc::topstring

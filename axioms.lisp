@@ -4511,6 +4511,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       t
     nil))
 
+(defun standard-char-p+ (x)
+
+; The following guard is required by p. 234 of CLtL.
+
+  (declare (xargs :guard t))
+  (and (characterp x)
+       (standard-char-p x)))
+
 (defun standard-char-listp (l)
   (declare (xargs :guard t))
   (cond ((consp l)
@@ -10911,7 +10919,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                  (list
                                   (list 'rationalp var)
                                   (list 'not (list 'integerp var)))))
-        ((eq x 'standard-char) (list 'standard-charp var))
+        ((eq x 'standard-char) (list 'standard-char-p+ var))
         ((eq x 'string) (list 'stringp var))
         ((and (consp x)
               (eq (car x) 'string)

@@ -27,6 +27,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::p
+    "This manual page contains user-level reference documentation for ATJ.
+     If you are new to ATJ, you should start with the "
+    (xdoc::seetopic "atj-tutorial" "tutorial")
+    ", which provides user-level information
+     on how ATJ works and how to use ATJ effectively.
+     Some of the material in this manual page
+     will likely be moved to the tutorial,
+     which is in progress.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h3 "Introduction")
 
    (xdoc::p
@@ -42,7 +54,7 @@
 
    (xdoc::p
     "This manual page provides reference documentation for ATJ.
-     A separate tutorial may be written in the future.
+     A separate tutorial in being written, as noted above.
      See the files under @('[books]/kestrel/java/atj/tests/')
      for examples of use of ATJ.")
 
@@ -716,4 +728,25 @@
      contains examples of command to compile and run the code.
      See "
     (xdoc::seetopic "aij" "the AIJ documentation")
-    " for instructions on how to generate the @('.jar') file.")))
+    " for instructions on how to generate the @('.jar') file.")
+
+   (xdoc::p
+    "When the @(':deep') input is @('t'),
+     (the Java representations of) the ACL2 functions
+     are evaluated via AIJ's recursive interpreter:
+     evaluating recursive ACL2 functions on sufficiently large inputs
+     may cause a stack overflow error in Java.
+     When the @(':deep') input is @('nil'),
+     recursive ACL2 functions are translated to recursive Java methods,
+     except for tail-recursive functions, which are translated to loops:
+     calling these recursive methods on sufficiently large inputs
+     may cause a stack overflow error in Java.
+     These stack overflow issues may be mitigated
+     by passing a larger stack size to the Java Virtual Machine
+     (via the @('-Xss') option to the @('java') command;
+     see the comments in the file @('[books]/kestrel/atj/tests/run.sh')),
+     or, when @(':deep') is @('nil'),
+     by making all the recursive ACL2 functions tail-recursive
+     (e.g. via "
+    (xdoc::seetopic "apt::tailrec" "APT's tail recursion transformation")
+    ") prior to generating Java code.")))

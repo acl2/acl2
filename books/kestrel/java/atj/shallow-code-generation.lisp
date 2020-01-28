@@ -3572,6 +3572,7 @@
             cons
             equal
             bad-atom<=) (list "x" "y"))
+          (nonnegative-integer-quotient (list "i" "j"))
           (t (list "x"))))
        (fn-info (atj-get-function-type-info fn guards$ wrld))
        (main-fn-type (atj-function-type-info->main fn-info))
@@ -3611,6 +3612,7 @@
           (equal "execEqual")
           (bad-atom<= "execBadAtomLessThanOrEqualTo")
           (if "execIf")
+          (nonnegative-integer-quotient "execNonnegativeIntegerQuotient")
           (t (impossible))))
        (jcall-arg-exprs (jexpr-name-list method-param-names))
        (jcall (jexpr-smethod *aij-type-native-fn*
@@ -3622,7 +3624,7 @@
                                       method-name
                                       method-param-names
                                       method-body))
-  :guard-hints (("Goal" :in-theory (enable aij-nativep primitivep))))
+  :guard-hints (("Goal" :in-theory (enable aij-nativep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4684,8 +4686,7 @@
      that is not any function's output type."))
   (b* (((when (endp fns-to-translate)) nil)
        (fn (car fns-to-translate))
-       ((unless (and (not (member-eq fn *stobjs-out-invalid*))
-                     (>= (number-of-results+ fn wrld) 2)))
+       ((unless (>= (atj-number-of-results fn wrld) 2))
         (atj-all-mv-output-types (cdr fns-to-translate) guards$ wrld))
        (fn-info (atj-get-function-type-info fn guards$ wrld))
        (out-typess (atj-function-type-info->outputs fn-info))
@@ -4736,9 +4737,7 @@
      [JLS:12.4.1] says that the class initialization code
      is executed in textual order.")
    (xdoc::p
-    "We ensure that the ACL2 functions natively implemented in AIJ
-     (currently the ACL2 primitive functions)
-     are included,
+    "We ensure that the ACL2 functions natively implemented in AIJ are included,
      we organize the resulting functions by packages,
      and we proceed to generate the Java nested classes,
      after the methods to build the packages.")
@@ -4758,8 +4757,7 @@
         (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        (pkg-methods (mergesort-jmethods pkg-methods))
-       (fns+natives (append fns-to-translate
-                            (strip-cars *primitive-formals-and-guards*)))
+       (fns+natives (append fns-to-translate *aij-natives*))
        ((unless (no-duplicatesp-eq fns+natives))
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates." fns+natives)

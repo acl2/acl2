@@ -318,6 +318,9 @@ Now in defthm.lisp
 
 |#
 
+(defun gen-keyword (symbol)
+  (intern (symbol-name symbol) "KEYWORD"))
+
 (defun fix-sym (sym)
   (declare (xargs :guard (symbolp sym)))
   (if (equal (symbol-package-name sym) *main-lisp-package-name*)
@@ -362,6 +365,9 @@ Now in defthm.lisp
                               (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l)
                (if pkg pkg (best-package-symbl-list l "ACL2"))))
+
+(defun mk-acl2s-sym (lsym)
+  (make-symbl lsym "ACL2S"))
 
 (defmacro make-sym (s suf &optional pkg)
 ; Returns the symbol s-suf.

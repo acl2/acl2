@@ -525,7 +525,7 @@
    (xdoc::p
     "The first two arguments of this function are the two components
      of a pair in the alist computed from @(':tests').
-     These two components are the name of the tests and the call of the tests.")
+     These two components are the name of the test and the call of the test.")
    (xdoc::p
     "We first ensure that the name is a non-empty string
      consisting only of letters and digits.
@@ -540,14 +540,11 @@
      We evaluate the call @('(fn in1 in2 ...)'), obtaining a result value.
      If @(':deep') is @('nil') and @(':guards') is @('t'),
      we ensure that the inputs will select an overloaded methods,
-     and we will obtain the corresponding output type
+     and we obtain the corresponding output type
      to contruct the appropriate kind of output test value.
      We create and return an @(tsee atj-test) record.")
    (xdoc::p
-    "For now functions that return @(tsee mv) values
-     are regarded as returning a single non-empty list value.
-     Thus, if the result of @(tsee atj-output-types-of-min-input-types)
-     is not a singleton list, we treat it as a single @(':acons') type."))
+    "For now functions that return @(tsee mv) values are not supported."))
   (b* (((er &) (ensure-string$ name
                                (msg "The test name ~x0 in the :TESTS input"
                                     name)
@@ -578,8 +575,7 @@
                       the test term ~x1 in the :TESTS input"
                      fn call)
                 t nil))
-       ((unless (or (member-eq fn *stobjs-out-invalid*)
-                    (= (number-of-results+ fn (w state)) 1)))
+       ((unless (= (atj-number-of-results fn (w state)) 1))
         (er-soft+ ctx t nil
                   "The function ~x0 called by ~
                    the test term ~x1 in the :TESTS input ~
@@ -617,7 +613,7 @@
        ((er (cons & output)) (trans-eval term$ ctx state nil))
        ((when (or deep$ (not guards$)))
         (b* ((test-output (atj-test-value-avalue output)))
-          (value (atj-test name fn test-inputs test-output))))
+          (value (atj-test name fn test-inputs (list test-output)))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
        (out-types? (atj-output-types-of-min-input-types in-types all-fn-types))
@@ -626,7 +622,7 @@
                   "The test term ~x0 in the :TESTS input ~
                    does not have a corresponding Java overloaded method."
                   call))
-       (out-type (atj-type-list-to-type/acons out-types?))
+       (out-type (atj-type-list-to-type out-types?))
        (test-output
         (case out-type
           (:jboolean (atj-test-value-jvalue-boolean output))
@@ -642,7 +638,7 @@
           (:jint[] (atj-test-value-jvalue-int-array output))
           (:jlong[] (atj-test-value-jvalue-long-array output))
           (t (atj-test-value-avalue output)))))
-    (value (atj-test name fn test-inputs test-output))))
+    (value (atj-test name fn test-inputs (list test-output)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1264,9 +1260,7 @@
      The list is in no particular order."))
   (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
-       (worklist-gen (set-difference-eq
-                      targets$
-                      (strip-cars *primitive-formals-and-guards*)))
+       (worklist-gen (set-difference-eq targets$ *aij-natives*))
        ((er fns) (atj-worklist-iterate worklist-gen
                                        nil
                                        nil

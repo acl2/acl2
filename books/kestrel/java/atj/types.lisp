@@ -851,6 +851,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-number-of-results ((fn symbolp) (wrld plist-worldp))
+  :returns (numres posp)
+  :short "Number of results returned by a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee number-of-results+),
+     but that function has a guard disallowing the function symbol
+     to be a member of the built-in constant @('*stobjs-out-invalid*'),
+     i.e. to be @(tsee if) or @(tsee return-last).
+     For ATJ's purpose, we totalize @(tsee number-of-results+)
+     by having it return 1 on these two functions.
+     The actual result is irrelevant,
+     because @(tsee return-last) is removed
+     by one of ATJ's pre-translation steps,
+     and @(tsee if) is treated specially by ATJ."))
+  (cond ((member-eq fn *stobjs-out-invalid*) 1)
+        (t (number-of-results+ fn wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-function-type-info-table-name*
   :short "Name of the table that associates ATJ types to ACL2 functions."
   'atj-function-type-info-table)
@@ -910,15 +931,9 @@
      and no secondary function types.")
    (xdoc::p
     "To calculate the output types,
-     we need the number of results returned by @('fn'),
-     which cannot be determined if @('fn') is
-     one of the functions whose output stobjs are invalid,
-     i.e. @(tsee if) or @(tsee return-last).
-     We regard these two functions as returning a single result."))
+     we need the number of results returned by @('fn')."))
   (b* ((number-of-inputs (arity+ fn wrld))
-       (number-of-outputs (if (member-eq fn *stobjs-out-invalid*)
-                              1
-                            (number-of-results+ fn wrld))))
+       (number-of-outputs (atj-number-of-results fn wrld)))
     (make-atj-function-type-info
      :main (make-atj-function-type
             :inputs (repeat number-of-inputs :avalue)
@@ -1100,9 +1115,7 @@
         (raise "The number of input types ~x0 must match ~
                 the arity ~x1 of the function ~x2."
                in-types (len formals) fn))
-       (nresults (if (member-eq fn *stobjs-out-invalid*)
-                     1
-                   (number-of-results+ fn wrld)))
+       (nresults (atj-number-of-results fn wrld))
        (out-types (if (= nresults 1)
                       (if (atj-typep out-type/types)
                           (list out-type/types)
@@ -1442,9 +1455,7 @@
         (raise "The number of input types ~x0 must match ~
                 the arity ~x1 of the function ~x2."
                in-types (len formals) fn))
-       (nresults (if (member-eq fn *stobjs-out-invalid*)
-                     1
-                   (number-of-results+ fn wrld)))
+       (nresults (atj-number-of-results fn wrld))
        (out-types (if (= nresults 1)
                       (if (atj-typep out-type/types)
                           (list out-type/types)

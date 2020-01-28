@@ -294,6 +294,7 @@
             args-types
             jvar-value-index)
         (atj-gen-test-values test.inputs "value" 1))
+       (test.output (atj-test-value-list-to-test-value test.outputs))
        ((mv ares-block
             ares-expr
             ares-type
@@ -751,8 +752,8 @@
      from one file generation function to the other.
      This is @('nil') in the deep embedding approach."))
   (state-global-let*
-   ((fmt-soft-right-margin 100000 set-fmt-soft-right-margin)
-    (fmt-hard-right-margin 100000 set-fmt-hard-right-margin))
+   ((fmt-soft-right-margin 1000000 set-fmt-soft-right-margin)
+    (fmt-hard-right-margin 1000000 set-fmt-hard-right-margin))
    (b* (((mv pkg-class-names
              fn-method-names
              state) (atj-gen-main-file deep$

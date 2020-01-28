@@ -12,6 +12,7 @@
 
 (include-book "arity")
 (include-book "arity-plus")
+(include-book "defchoose-queries")
 (include-book "definedp")
 (include-book "definedp-plus")
 (include-book "formals-plus")

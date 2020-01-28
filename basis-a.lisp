@@ -6524,6 +6524,74 @@
   #-gcl
   `(the ,elt-type ',init))
 
+(mutual-recursion
+
+(defun maybe-contained-in-character (type)
+  (cond ((atom type)
+         (or (eq type 'character)
+             (eq type 'standard-char)
+
+; We probably don't need to consider 'nil, since no element can have that
+; type.  But we have decided to be conservative here.
+
+             (eq type 'nil)))
+        ((eq (car type) 'and)
+         (some-maybe-contained-in-character (cdr type)))
+        ((eq (car type) 'member)
+
+; In GCL, an array type whose elements are, for example, of type (member #\a
+; #\b #\c) can be a string.
+
+         (character-listp (cdr type)))
+        ((eq (car type) 'not)
+
+; Probably every type-spec of the form (not ...) fails to be contained in
+; character.  But we are conservative here and only make that conclusion for
+; (not x) where x is an atom.
+
+         (consp (cadr type)))
+        ((eq (car type) 'satisfies)
+
+; In GCL, an array type whose elements are of type (satisfies character) can be
+; a string.  Since the predicate could be an alias for character, or a subtype
+; of character, we are conservative here.
+
+         t)
+        ((eq (car type) 'or)
+         (all-maybe-contained-in-character (cdr type)))
+        (t nil)))
+
+(defun some-maybe-contained-in-character (lst)
+  (cond ((endp lst) nil)
+        (t (or (maybe-contained-in-character (car lst))
+               (some-maybe-contained-in-character (cdr lst))))))
+
+(defun all-maybe-contained-in-character (lst)
+  (cond ((endp lst) t)
+        (t (and (maybe-contained-in-character (car lst))
+                (all-maybe-contained-in-character (cdr lst))))))
+)
+
+(defun single-field-type-p (type)
+
+; Normally, when a stobj has a single field which is either an array or a hash
+; table, the "backbone" of the stobj is omitted, avoiding one level of
+; indirection: in other words, the stobj *is* its field.  However, in the case
+; of an array whose type specifies elements that are characters, that array may
+; be a string (depending on the host Lisp and exactly how the type is
+; specified), which is problematic since the utility live-stobjp depends on
+; live stobjs not being strings.  See community book
+; books/system/tests/stobj-issues.lisp.  Here, we check whether we can safely
+; give the special "single-field" treatment of avoiding the "backbone", based
+; on the type of the single field, returning t only if that is indeed safe.
+
+  (and (consp type)
+       (cond ((eq (car type) 'array)
+              (not (maybe-contained-in-character (cadr type))))
+             ((eq (car type) 'hash-table)
+              t)
+             (t nil))))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning: Keep the formals in the definitions below in sync with corresponding
@@ -6554,9 +6622,9 @@
 ; changes, for example to keep indirection for hash-tables, then consider
 ; changing the definition of live-stobjp.
 
-             (and (or arrayp hashp)
-                  (= n 0)
-                  (null (cdr field-templates))))
+             (and (= n 0)
+                  (null (cdr field-templates))
+                  (single-field-type-p type)))
             (fld (if single-fieldp
                      var
                    `(svref ,var ,n)))
@@ -6912,11 +6980,9 @@
 ; defstobj-field-fns-raw-defs.
 
           (and (= len 1)
-               (let ((type (access defstobj-field-template
-                                   (car field-templates)
-                                   :type)))
-                 (and (consp type)
-                      (member-eq (car type) '(array hash-table)))))))
+               (single-field-type-p (access defstobj-field-template
+                                            (car field-templates)
+                                            :type)))))
     (cond
      (single-fieldp `,(car raw-init-fields))
      (t `(cond
