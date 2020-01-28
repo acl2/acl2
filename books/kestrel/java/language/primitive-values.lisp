@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -538,6 +538,72 @@
   (defrule integral-value-p-when-long-value-p
     (implies (long-value-p x)
              (integral-value-p x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defflexsum floating-point-value
+  :short "Fixtype of Java floating-point values [JLS:4.2.3],
+          excluding extended-exponent values [JLS:4.2.3]."
+  (:float
+   :fields ((get :type float-value :acc-body x))
+   :ctor-body get
+   :cond (float-value-p x))
+  (:double
+   :fields ((get :type double-value :acc-body x))
+   :ctor-body get)
+  :prepwork ((local (in-theory (enable float-value-p
+                                       double-value-p
+                                       float-value-fix
+                                       double-value-fix))))
+  ///
+
+  (local (in-theory (enable floating-point-value-p)))
+
+  (defrule floating-point-value-p-when-float-value-p
+    (implies (float-value-p x)
+             (floating-point-value-p x)))
+
+  (defrule floating-point-value-p-when-double-value-p
+    (implies (double-value-p x)
+             (floating-point-value-p x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection floating-pointx-value
+  :short "Fixtype of Java floating-point values [JLS:4.2.3],
+          including extended-exponent values [JLS:4.2.3]."
+
+  (define floating-pointx-value-p (x)
+    :returns (yes/no booleanp)
+    :parents (floating-pointx-value)
+    :short "Recognizer for @(tsee floating-pointx-value)."
+    (or (floating-point-value-p x)
+        (floatx-value-p x)
+        (doublex-value-p x))
+    ///
+
+    (defrule floating-pointx-value-p-when-floating-point-value-p
+      (implies (floating-point-value-p x)
+               (floating-pointx-value-p x)))
+
+    (defrule floating-pointx-value-p-when-floatx-value-p
+      (implies (floatx-value-p x)
+               (floating-pointx-value-p x)))
+
+    (defrule floating-pointx-value-p-when-doublex-value-p
+      (implies (doublex-value-p x)
+               (floating-pointx-value-p x))))
+
+  (std::deffixer floating-pointx-value-fix
+    :pred floating-pointx-value-p
+    :body-fix (list :float (float-value-witness)))
+
+  (fty::deffixtype floating-pointx-value
+    :pred floating-pointx-value-p
+    :fix floating-pointx-value-fix
+    :equiv floating-pointx-value-equiv
+    :define t
+    :forward t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
