@@ -281,6 +281,8 @@
       (and (natp k)
            (>= k 11))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection floatx-param
   :short "Parameter that describes the support of
           the float-extended-exponent value set."
@@ -329,6 +331,8 @@
   (or (null k)
       (and (natp k)
            (>= k 15))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection doublex-param
   :short "Parameter that describes the support of
