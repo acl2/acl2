@@ -71,7 +71,15 @@
                       :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
               (?ign (fast-alist-free env))
               (aig-env (make-fast-alist aig-env))
-              (ans (a4veclist-eval a4vecs aig-env)))
+              (ans ;; (fgl::fgl-progn (fgl::syntax-interp
+                   ;;                  (cw "Aig-env: ~x0~%" aig-env))
+                   ;;                 (fgl::syntax-interp
+                   ;;                  (fgl::interp-st-put-user-scratch
+                   ;;                   :aig-envs
+                   ;;                   (cons aig-env (cdr (hons-get :aig-envs
+                   ;;                                                (fgl::interp-st->user-scratch 'interp-st))))
+                   ;;                   'interp-st))
+                                   (a4veclist-eval a4vecs aig-env)))
            (fast-alist-free aig-env)
            ans))
   :hints (("Goal" :use svexlist-eval-for-symbolic-redef

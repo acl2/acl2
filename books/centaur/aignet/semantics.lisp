@@ -2454,7 +2454,6 @@ same outputs when run starting at that initial state.</p>"
                  (if (eql 1 (id->regp n aignet)) "XOR" "AND")
                  (aignet-print-lit f1 aignet))))
 
-
   (local (set-default-hints nil))
 
   (defund aignet-print-gates (n aignet)
@@ -2509,6 +2508,20 @@ same outputs when run starting at that initial state.</p>"
     (declare (xargs :stobjs aignet))
     (progn$ (aignet-print-gates 0 aignet)
             (aignet-print-outs 0 aignet)
-            (aignet-print-regs 0 aignet))))
+            (aignet-print-regs 0 aignet)))
+
+
+  (define aignet-print-dfs ((id natp) bitarr aignet)
+    :guard (and (id-existsp id aignet)
+                (< id (bits-length bitarr)))
+    :verify-guards nil
+    :returns (new-bitarr)
+    (b* ((type (id->type id aignet))
+         ((unless (int= type (gate-type))) bitarr)
+         ((when (int= (get-bit id bitarr) 1)) bitarr)
+         (bitarr (set-bit id 1 bitarr))
+         (- (cw "~@0~%" (aignet-print-gate id aignet)))
+         (bitarr (aignet-print-dfs (lit-id (gate-id->fanin0 id aignet)) bitarr aignet)))
+      (aignet-print-dfs (lit-id (gate-id->fanin1 id aignet)) bitarr aignet))))
 
 

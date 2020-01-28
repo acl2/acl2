@@ -257,7 +257,8 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
 (fty::defbitstruct simpcode
   ((neg bitp)
    (xor bitp)
-   (identity bitp)))
+   (identity bitp)
+   (choice bitp)))
 
 (defmacro simpcode! (key)
   (case key
@@ -267,7 +268,11 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
     (:xor 2)
     (:xnor 3)
     (:existing 4)
-    (:nexisting 5)))
+    (:nexisting 5)
+    (:andchoice 8)
+    (:nandchoice 9)
+    (:xorchoice 10)
+    (:xnorchoice 11)))
 
 (define simpcode-negate ((x simpcode-p))
   :enabled t
@@ -278,7 +283,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                 (and stable-under-simplificationp
                      '(:expand ((loghead 1 x) (logbitp 0 x)))))
   (mbe :logic (!simpcode->neg (b-not (simpcode->neg x)) x)
-       :exec (logxor 1 (the (unsigned-byte 3) (simpcode-fix x)))))
+       :exec (logxor 1 (the (unsigned-byte 4) (simpcode-fix x)))))
 
 (define simpcode-negate-cond ((x simpcode-p) (neg bitp))
   :enabled t
@@ -289,7 +294,7 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                 (and stable-under-simplificationp
                      '(:expand ((loghead 1 x) (logbitp 0 x)))))
   (mbe :logic (!simpcode->neg (b-xor neg (simpcode->neg x)) x)
-       :exec (logxor neg (the (unsigned-byte 3) (simpcode-fix x)))))
+       :exec (logxor neg (the (unsigned-byte 4) (simpcode-fix x)))))
 
 (local (defthm b-xor-of-b-not
          (and (equal (b-xor (b-not x) y) (b-not (b-xor x y)))
@@ -336,12 +341,14 @@ satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
                           (b-xor code.neg (eval-xor-of-lits x0 x1 invals regvals aignet))))
                       (b-xor code.neg (eval-and-of-lits x0 x1 invals regvals aignet))))))
 
-  
-
   (defthm simpcode-eval-of-!simpcode->neg
     (equal (simpcode-eval (!simpcode->neg neg code) x0 x1 invals regvals aignet)
            (b-xor neg (b-xor (simpcode->neg code)
-                             (simpcode-eval code x0 x1 invals regvals aignet))))))
+                             (simpcode-eval code x0 x1 invals regvals aignet)))))
+
+  (defthm simpcode-eval-of-!simpcode->choice
+    (equal (simpcode-eval (!simpcode->choice choice code) x0 x1 invals regvals aignet)
+           (simpcode-eval code x0 x1 invals regvals aignet))))
 
 (fty::defoption maybe-simpcode simpcode)
 
@@ -643,21 +650,33 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                   (eval-hyp 't)
                                   (syntax-hyp 't)
                                   (measure-hyp 't)
+                                  (choice 'nil)
+                                  (choice-hyp 't)
+                                  (width-hyp 't)
+                                  (no-bound 'nil)
                                   eval-spec
                                   use-aignet)
   `(progn
      (defret width-of-<fn>
-       (implies (and ,@(apply-template-to-lits lits '(unsigned-byte-p 30 (lit-fix x))))
+       (implies (and ,width-hyp
+                     ,@(apply-template-to-lits lits '(unsigned-byte-p 30 (lit-fix x))))
                 (and (unsigned-byte-p 30 new0)
-                     (unsigned-byte-p 30 new1))))
+                     (unsigned-byte-p 30 new1)
+                     ,@(and choice
+                            `((unsigned-byte-p 30 new2)
+                              (unsigned-byte-p 30 new3))))))
 
-     (defret bound-of-<fn>
-       (implies (and ,@(apply-template-to-lits lits '(< (lit-id x) gate))
-                     ,@(and use-aignet
-                            (apply-template-to-lits lits '(aignet-litp x aignet)))
-                     (natp gate))
-                (and (< (lit-id new0) gate)
-                     (< (lit-id new1) gate))))
+     ,@(and (not no-bound)
+            `((defret bound-of-<fn>
+                (implies (and ,@(apply-template-to-lits lits '(< (lit-id x) gate))
+                              ,@(and use-aignet
+                                     (apply-template-to-lits lits '(aignet-litp x aignet)))
+                              (natp gate))
+                         (and (< (lit-id new0) gate)
+                              (< (lit-id new1) gate)
+                              ,@(and choice
+                                     `((< (lit-id new2) gate)
+                                       (< (lit-id new3) gate))))))))
 
      ,@(and (not no-measure)
             `((defret two-id-measure-of-<fn>
@@ -675,7 +694,12 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                          (and (o< (two-id-measure (lit-id new0) (lit-id new1))
                                   (two-id-measure id0 id1))
                               (o< (two-id-measure (lit-id new0) (lit-id new1))
-                                  (two-id-measure id1 id0))))
+                                  (two-id-measure id1 id0))
+                              ,@(and choice
+                                     `((o< (two-id-measure (lit-id new2) (lit-id new3))
+                                           (two-id-measure id0 id1))
+                                       (o< (two-id-measure (lit-id new2) (lit-id new3))
+                                           (two-id-measure id1 id0))))))
                 :hints ,(or measure-hints
                             '((and stable-under-simplificationp
                                    '(:in-theory (enable two-id-measure))))))))
@@ -683,7 +707,10 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
      (defret aignet-litp-of-<fn>
        (implies (and ,@(apply-template-to-lits lits '(aignet-litp x aignet)))
                 (and (aignet-litp new0 aignet)
-                     (aignet-litp new1 aignet))))
+                     (aignet-litp new1 aignet)
+                     ,@(and choice
+                            `((aignet-litp new2 aignet)
+                              (aignet-litp new3 aignet))))))
 
      (defret deps-of-<fn>
        (implies (and ,@(apply-template-to-lits lits '(not (depends-on (lit->var x) ci-id aignet)))
@@ -691,14 +718,29 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                      ;; ,@(and maybe-simpcode '(code))
                      )
                 (and (not (depends-on (lit->var new0) ci-id aignet))
-                     (not (depends-on (lit->var new1) ci-id aignet)))))
+                     (not (depends-on (lit->var new1) ci-id aignet))
+                     ,@(and choice
+                            `((not (depends-on (lit->var new2) ci-id aignet))
+                              (not (depends-on (lit->var new3) ci-id aignet)))))))
+
+     
+
+     ,@(and (not choice)
+            `((defret choice-of-<fn>
+                (implies (and ,choice-hyp)
+                         (equal (simpcode->choice code) 0)))))
 
      (defret eval-of-<fn>
        (implies (and ,eval-hyp
                      ,syntax-hyp
                      ,@(and maybe-simpcode '(code)))
-                (equal (simpcode-eval code new0 new1 invals regvals aignet)
-                       ,eval-spec))
+                (let ((spec ,eval-spec))
+                  (and (equal (simpcode-eval code new0 new1 invals regvals aignet)
+                              spec)
+                       ,@(and choice
+                              `((implies (equal (simpcode->choice code) 1)
+                                         (equal (simpcode-eval code new2 new3 invals regvals aignet)
+                                                spec)))))))
        :hints ,eval-hints)))
 
 (defmacro def-gatesimp-thms-existing (lits &key eval-hints
@@ -743,7 +785,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
        :hints ,eval-hints)))
 
 
-(define def-gate-reduce-fn (template body extra-lits extra-formals prepwork eval-hints level)
+(define def-gate-reduce-fn (template body extra-lits extra-formals choice prepwork eval-hints level)
   :mode :program :hooks nil
   (b* ((err (gate-reduce-check-template template))
        ((when err) (raise "~s0: ~x1" err template))
@@ -767,7 +809,10 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                        (t
                         `(mv (code maybe-simpcode-p)
                              (new0 litp :rule-classes :type-prescription)
-                             (new1 litp :rule-classes :type-prescription))))
+                             (new1 litp :rule-classes :type-prescription)
+                             ,@(and choice
+                                    `((new2 litp :rule-classes :type-prescription)
+                                      (new3 litp :rule-classes :type-prescription))))))
        (b* (,@(apply-template-to-lits lits '(x (lit-fix x))))
          ,body)
        ///
@@ -781,13 +826,14 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
         ,lits
         :eval-hints ,eval-hints
         :eval-hyp (and ,@(axi-template-aignet-reqs template lits))
-        :eval-spec ,(axi-template-correctness-term template lits))
+        :eval-spec ,(axi-template-correctness-term template lits)
+        ,@(and choice `(:choice ,choice)))
 
        (table gate-reduce-table '(,template ,level)
               '(,name ,@lits ,@(strip-cars extra-formals))))))
 
-(defmacro def-gate-reduce (template body &key extra-lits extra-formals prepwork eval-hints level)
-  (def-gate-reduce-fn template body extra-lits extra-formals prepwork eval-hints level))
+(defmacro def-gate-reduce (template body &key extra-lits extra-formals choice prepwork eval-hints level)
+  (def-gate-reduce-fn template body extra-lits extra-formals choice prepwork eval-hints level))
 
 
 
@@ -954,15 +1000,18 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 
 (def-gate-reduce (and (and y0 y1) (and y2 y3))
 ;; (AND (AND 0 1) (AND 0 2))                              (AND 1 (AND 0 2))               4
-  (b* (((when (or (=30 y0 y2)
-                  (=30 y0 y3)))
-        (mv (simpcode! :and) y1 x1))
-       ((when (or (=30 y1 y2)
-                  (=30 y1 y3)))
-        (mv (simpcode! :and) y0 x1)))
-    (mv nil 0 0))
+  (b* (((when (=30 y0 y2))
+        (mv (simpcode! :andchoice) y1 x1 x0 y3))
+       ((when (=30 y0 y3))
+        (mv (simpcode! :andchoice) y1 x1 x0 y2))
+       ((when (=30 y1 y2))
+        (mv (simpcode! :andchoice) y0 x1 x0 y3))
+       ((when (=30 y1 y3))
+        (mv (simpcode! :andchoice) y0 x1 x0 y2)))
+    (mv nil 0 0 0 0))
   :level 4
-  :extra-lits (x1)
+  :choice t
+  :extra-lits (x0 x1)
   :eval-hints ((and stable-under-simplificationp
                     '(:expand (;; (lit-eval x0 invals regvals aignet)
                                ;; (lit-eval x1 invals regvals aignet)
@@ -1421,23 +1470,34 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
         (gate-reduce-collect (cdr alist) level)))
     (cons call (gate-reduce-collect (cdr alist) level))))
 
-(define gate-reduce-level2-bindings (calls)
+(define gate-reduce-level2-bindings (calls choicep)
   :mode :program
   (b* (((when (atom calls)) nil))
     `((ans ,(car calls))
-      ((when ans) (mv (simpcode! :existing) ans 0))
-      . ,(gate-reduce-level2-bindings (cdr calls)))))
+      ((when ans) (mv (simpcode! :existing) ans 0 ,@(and choicep '(0 0))))
+      . ,(gate-reduce-level2-bindings (cdr calls) choicep))))
 
-(define gate-reduce-level3+-bindings (calls)
+(define gate-reduce-level3-bindings (calls choicep)
   :mode :program
   (b* (((when (atom calls)) nil))
     `(((mv flag new0 new1) ,(car calls))
-      ((when flag) (mv flag new0 new1))
-      . ,(gate-reduce-level3+-bindings (cdr calls)))))
+      ((when flag) (mv flag new0 new1 ,@(and choicep '(0 0))))
+      . ,(gate-reduce-level3-bindings (cdr calls) choicep))))
+
+(define gate-reduce-level4-bindings (calls)
+  :mode :program
+  (b* (((when (atom calls)) nil))
+    `(((mv flag new0 new1 new2 new3) ,(car calls))
+      ((when flag) (mv flag new0 new1 new2 new3))
+      . ,(gate-reduce-level4-bindings (cdr calls)))))
 
 
 
-(define gate-reduce-2level-fn (x)
+;; This makes a nesting of reducers for a given gate layout and a given setting
+;; of choicep, which corresponds to whether the function as a whole may return
+;; a choice of implementations or just one.  Choicep must be t if there are any
+;; level4 calls.
+(define gate-reduce-2level-fn (x choicep)
   :mode :program
   (b* (((axi-gate x))
        ((axi-lit x.left))
@@ -1469,28 +1529,31 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
        (l2-calls (gate-reduce-collect alist 2))
        (l3-calls (gate-reduce-collect alist 3))
        (l4-calls (gate-reduce-collect alist 4))
-       (l2-bindings (gate-reduce-level2-bindings l2-calls))
+       (l2-bindings (gate-reduce-level2-bindings l2-calls choicep))
        ((unless (or l3-calls l4-calls))
         `(b* ,l2-bindings
-           (mv nil 0 0)))
+           (mv nil 0 0 ,@(and choicep '(0 0)))))
        ((when l4-calls)
         `(b* (,@l2-bindings
               ,@(and l3-calls
                      `(((unless (< 2 (the (unsigned-byte 3) (lnfix level))))
-                        (mv nil 0 0))
-                       . ,(gate-reduce-level3+-bindings l3-calls)))
+                        (mv nil 0 0 0 0))
+                       ,@(gate-reduce-level3-bindings l3-calls choicep)))
               ((unless (< 3 (the (unsigned-byte 3) (lnfix level))))
-               (mv nil 0 0))
-              . ,(gate-reduce-level3+-bindings (butlast l4-calls 1)))
+               (mv nil 0 0 0 0))
+              . ,(gate-reduce-level4-bindings (butlast l4-calls 1)))
            ,(car (last l4-calls)))))
     `(b* (,@l2-bindings
           ((unless (< 2 (the (unsigned-byte 3) (lnfix level))))
-           (mv nil 0 0))
-          . ,(gate-reduce-level3+-bindings (butlast l3-calls 1)))
-       ,(car (last l3-calls)))))
+           (mv nil 0 0 ,@(and choicep '(0 0))))
+          . ,(gate-reduce-level3-bindings l3-calls choicep))
+       (mv nil 0 0 ,@(and choicep '(0 0))))))
 
 (defmacro gate-reduce-2level (x)
-  (gate-reduce-2level-fn x))
+  (gate-reduce-2level-fn x nil))
+
+(defmacro gate-reduce-2level+ (x)
+  (gate-reduce-2level-fn x t))
 
 (encapsulate nil
   (local (defthm unsigned-byte-p-when-litp-and-lit-var
@@ -1590,7 +1653,9 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
               (eql (id->type (lit-id x1) aignet) (gate-type)))
   :returns (mv (code maybe-simpcode-p)
                (new0 litp :rule-classes :type-prescription)
-               (new1 litp :rule-classes :type-prescription))
+               (new1 litp :rule-classes :type-prescription)
+               (new2 litp :rule-classes :type-prescription)
+               (new3 litp :rule-classes :type-prescription))
   (b* ((x0-id (lit->var^ x0))
        (x0-neg (lit->neg^ x0))
        (x0-regp (id->regp x0-id aignet))
@@ -1607,28 +1672,28 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
             ;; (and (and ...) ?)
             (if (=b 0 x1-regp)
                 (if (=b 0 x1-neg)
-                    (gate-reduce-2level (and (and y0 y1) (and y2 y3)))
-                  (gate-reduce-2level (and (and y0 y1) (not (and y2 y3)))))
+                    (gate-reduce-2level+ (and (and y0 y1) (and y2 y3)))
+                  (gate-reduce-2level+ (and (and y0 y1) (not (and y2 y3)))))
               ;; (and (and ...) (xor ...))
               (b* ((y2 (if (=b 0 x1-neg) y2 (lit-negate^ y2))))
-                (gate-reduce-2level (and (and y0 y1) (xor y2 y3)))))
+                (gate-reduce-2level+ (and (and y0 y1) (xor y2 y3)))))
           ;; (and (not (and ...)) ?)
           (if (=b 0 x1-regp)
               (if (=b 0 x1-neg)
-                  (gate-reduce-2level (and (not (and y0 y1)) (and y2 y3)))
-                (gate-reduce-2level (and (not (and y0 y1)) (not (and y2 y3)))))
+                  (gate-reduce-2level+ (and (not (and y0 y1)) (and y2 y3)))
+                (gate-reduce-2level+ (and (not (and y0 y1)) (not (and y2 y3)))))
             ;; (and (and ...) (xor ...))
             (b* ((y2 (if (=b 0 x1-neg) y2 (lit-negate^ y2))))
-              (gate-reduce-2level (and (not (and y0 y1)) (xor y2 y3))))))
+              (gate-reduce-2level+ (and (not (and y0 y1)) (xor y2 y3))))))
       ;; (and (xor ...) ?)
       (b* ((y0 (if (=b 0 x0-neg) y0 (lit-negate^ y0))))
         (if (=b 0 x1-regp)
             (if (=b 0 x1-neg)
-                (gate-reduce-2level (and (xor y0 y1) (and y2 y3)))
-              (gate-reduce-2level (and (xor y0 y1) (not (and y2 y3)))))
+                (gate-reduce-2level+ (and (xor y0 y1) (and y2 y3)))
+              (gate-reduce-2level+ (and (xor y0 y1) (not (and y2 y3)))))
           ;; (and (and ...) (xor ...))
           (b* ((y2 (if (=b 0 x1-neg) y2 (lit-negate^ y2))))
-            (gate-reduce-2level (and (xor y0 y1) (xor y2 y3))))))))
+            (gate-reduce-2level+ (and (xor y0 y1) (xor y2 y3))))))))
   ///
   (local (in-theory (disable acl2::inequality-with-nfix-hyp-1
                              acl2::inequality-with-nfix-hyp-2
@@ -1638,9 +1703,18 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                              lookup-id-out-of-bounds
                              not
                              default-<-2
+                             o<
+                             (two-id-measure)
                              ;; fanin-if-co-when-output
                              satlink::equal-of-lit-negate-cond-component-rewrites
                              satlink::equal-of-lit-negate-component-rewrites)))
+  (local (defthm two-id-measure-of-0-0
+           (implies (and (bind-free '((aignet . aignet)) (aignet))
+                         (not (equal (stype (car (lookup-id id1 aignet))) :const)))
+                    (o< (two-id-measure 0 0)
+                        (two-id-measure id1 id2)))
+           :hints(("Goal" :in-theory (enable two-id-measure)))))
+
   (def-gatesimp-thms (x0 x1)
     :eval-spec (b-and (lit-eval x0 invals regvals aignet)
                       (lit-eval x1 invals regvals aignet))
@@ -1655,7 +1729,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                  (id-eval (lit-id x1) invals regvals aignet)
                                  (:free (x y) (eval-and-of-lits x y invals regvals aignet))
                                  (:free (x y) (eval-xor-of-lits x y invals regvals aignet))))))
-    :use-aignet t))
+    :use-aignet t :choice t))
 
 (define reduce-and-gate ((x0 litp :type (unsigned-byte 30))
                          (x1 litp :type (unsigned-byte 30))
@@ -1665,25 +1739,31 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
               (fanin-litp x1 aignet))
   :returns (mv (code maybe-simpcode-p)
                (new0 litp :rule-classes :type-prescription)
-               (new1 litp :rule-classes :type-prescription))
+               (new1 litp :rule-classes :type-prescription)
+               (new2 litp :rule-classes :type-prescription)
+               (new3 litp :rule-classes :type-prescription))
   (b* ((ans (gate-reduce (and x0 x1) :level 1))
-       ((when ans) (mv (simpcode! :existing) ans 0))
+       ((when ans) (mv (simpcode! :existing) ans 0 0 0))
        ((when (<= (gatesimp->level gatesimp) 1))
-        (mv nil 0 0))
+        (mv nil 0 0 0 0))
        (x0-type (id->type (lit->var^ x0) aignet))
        (x1-type (id->type (lit->var^ x1) aignet))
        ((when (=2 x0-type (gate-type)))
         (if (=2 x1-type (gate-type))
             (reduce-and-gate-when-both-gates x0 x1 gatesimp aignet)
-          (reduce-and-gate-when-one-gate x0 x1 gatesimp aignet))))
+          (b* (((mv code new0 new1) (reduce-and-gate-when-one-gate x0 x1 gatesimp aignet)))
+          (mv code new0 new1 0 0)))))
     (if (=2 x1-type (gate-type))
-        (reduce-and-gate-when-one-gate x1 x0 gatesimp aignet)
-      (mv nil 0 0)))
+        (b* (((mv code new0 new1) (reduce-and-gate-when-one-gate x1 x0 gatesimp aignet)))
+          (mv code new0 new1 0 0))
+      (mv nil 0 0 0 0)))
   ///
+  (local (in-theory (disable o< two-id-measure (two-id-measure))))
+
   (def-gatesimp-thms (x0 x1)
     :eval-spec (b-and (lit-eval x0 invals regvals aignet)
                       (lit-eval x1 invals regvals aignet))
-    :use-aignet t))
+    :use-aignet t :choice t))
 
 
 
@@ -1846,15 +1926,40 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                       (lit-eval x1 invals regvals aignet))
     :use-aignet t))
 
+
+
+(local (defthm !simpcode->neg-of-simpcode->neg
+         (implies (equal neg (simpcode->neg x))
+                  (equal (!simpcode->neg neg x)
+                         (simpcode-fix x)))
+         :hints(("Goal" :in-theory (enable !simpcode->neg-is-simpcode
+                                           simpcode-fix-in-terms-of-simpcode)))))
+
+(local (defthm !simpcode->identity-of-simpcode->identity
+         (implies (equal identity (simpcode->identity x))
+                  (equal (!simpcode->identity identity x)
+                         (simpcode-fix x)))
+         :hints(("Goal" :in-theory (enable !simpcode->identity-is-simpcode
+                                           simpcode-fix-in-terms-of-simpcode)))))
+
+(local (defthm !simpcode->choice-of-simpcode->choice
+         (implies (equal choice (simpcode->choice x))
+                  (equal (!simpcode->choice choice x)
+                         (simpcode-fix x)))
+         :hints(("Goal" :in-theory (enable !simpcode->choice-is-simpcode
+                                           simpcode-fix-in-terms-of-simpcode)))))
+
 (define normalize-xor-gate ((code-in simpcode-p)
                             (x0 litp :type (unsigned-byte 30))
                             (x1 litp :type (unsigned-byte 30)))
   :returns (mv (code simpcode-p)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  :guard (=b 0 (simpcode->identity code-in))
+  :guard (and (=b 0 (simpcode->identity code-in))
+              (=b 0 (simpcode->choice code-in)))
   :prepwork ((local (in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
-  (b* (((simpcode code-in)))
+  (b* (((simpcode code-in) (mbe :logic (!simpcode->choice 0 (!simpcode->identity 0 code-in))
+                                :exec code-in)))
     (if (=b 1 code-in.xor)
         (mv (simpcode-negate-cond code-in (b-xor (lit->neg^ x0) (lit->neg^ x1)))
             (lit-abs^ x0) (lit-abs^ x1))
@@ -1872,90 +1977,6 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
     (equal (two-id-measure (lit-id new0) (lit-id new1))
            (two-id-measure (lit-id x0) (lit-id x1)))
     :hints(("Goal" :in-theory (enable two-id-measure)))))
-
-
-(define reduce-gate-rec ((code-in simpcode-p)
-                         (x0 litp :type (unsigned-byte 30))
-                         (x1 litp :type (unsigned-byte 30))
-                         (gatesimp gatesimp-p :type (unsigned-byte 6))
-                         (aignet))
-  :guard (and (fanin-litp x0 aignet)
-              (fanin-litp x1 aignet))
-  :returns (mv (code simpcode-p)
-               (new0 litp :rule-classes :type-prescription)
-               (new1 litp :rule-classes :type-prescription))
-  :measure (if (eql 1 (simpcode->identity code-in))
-               0
-             (two-id-measure (lit-id x0) (lit-id x1)))
-  (b* (((simpcode code-in) (the (unsigned-byte 3) (simpcode-fix code-in)))
-       ((unless (mbt (and (fanin-litp x0 aignet)
-                          (fanin-litp x1 aignet))))
-        (mv code-in (lit-fix x0) (lit-fix x1)))
-       ((when (=b 1 code-in.identity))
-        (mv code-in (lit-fix x0) (lit-fix x1)))
-       ((mv new-code new-x0 new-x1)
-        (if (=b 1 code-in.xor)
-            (reduce-xor-gate x0 x1 gatesimp aignet)
-          (reduce-and-gate x0 x1 gatesimp aignet)))
-       ((unless new-code)
-        (normalize-xor-gate code-in x0 x1))
-       (new-code (simpcode-negate-cond new-code code-in.neg)))
-    (reduce-gate-rec new-code new-x0 new-x1 gatesimp aignet))
-  ///
-    
-  (def-gatesimp-thms (x0 x1)
-    :eval-spec (simpcode-eval code-in x0 x1 invals regvals aignet)
-    :no-measure t
-    :use-aignet t
-    :maybe-simpcode nil
-    :eval-hints (("goal" :induct <call> :expand (<call>)
-                  ;; :in-theory (enable eval-xor-of-lits
-                  ;;                    eval-and-of-lits)
-                  )
-                 (and stable-under-simplificationp
-                      '(:expand ((simpcode-eval code-in x0 x1 invals regvals aignet))))
-                 (and stable-under-simplificationp
-                      '(:in-theory (enable eval-xor-of-lits
-                                           eval-and-of-lits)))
-                 )))
-
-(local (defthm !simpcode->neg-of-simpcode->neg
-         (equal (!simpcode->neg (simpcode->neg x) x)
-                (simpcode-fix x))
-         :hints(("Goal" :in-theory (enable !simpcode->neg-is-simpcode
-                                           simpcode-fix-in-terms-of-simpcode)))))
-
-(define reduce-xor-gate-rec ((x0 litp :type (unsigned-byte 30))
-                             (x1 litp :type (unsigned-byte 30))
-                             (gatesimp gatesimp-p :type (unsigned-byte 6))
-                             (aignet))
-  :guard (and (fanin-litp x0 aignet)
-              (fanin-litp x1 aignet))
-  :guard-hints (("goal" :expand ((reduce-gate-rec (simpcode! :xor) x0 x1 gatesimp aignet)))
-                (and stable-under-simplificationp
-                     '(:in-theory (enable normalize-xor-gate))))
-  :enabled t
-  (mbe :logic (reduce-gate-rec (simpcode! :xor) x0 x1 gatesimp aignet)
-       :exec (b* (((mv code new0 new1) (reduce-xor-gate x0 x1 gatesimp aignet))
-                  ((unless code)
-                   (mv (simpcode-negate-cond (simpcode! :xor) (b-xor (lit->neg^ x0) (lit->neg^ x1)))
-                       (lit-abs^ x0) (lit-abs^ x1))))
-               (reduce-gate-rec code new0 new1 gatesimp aignet))))
-
-(define reduce-and-gate-rec ((x0 litp :type (unsigned-byte 30))
-                             (x1 litp :type (unsigned-byte 30))
-                             (gatesimp gatesimp-p :type (unsigned-byte 6))
-                             (aignet))
-  :guard (and (fanin-litp x0 aignet)
-              (fanin-litp x1 aignet))
-  :guard-hints (("goal" :expand ((reduce-gate-rec (simpcode! :and) x0 x1 gatesimp aignet)))
-                (and stable-under-simplificationp
-                     '(:in-theory (enable normalize-xor-gate))))
-  :enabled t
-  (mbe :logic (reduce-gate-rec (simpcode! :and) x0 x1 gatesimp aignet)
-       :exec (b* (((mv code new0 new1) (reduce-and-gate x0 x1 gatesimp aignet))
-                  ((unless code) (mv (simpcode! :and) (lit-fix x0) (lit-fix x1))))
-               (reduce-gate-rec code new0 new1 gatesimp aignet))))
 
 
 
@@ -2101,12 +2122,14 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                             (strash)
                             (aignet))
   :guard (and (fanin-litp x0 aignet)
-              (fanin-litp x1 aignet))
+              (fanin-litp x1 aignet)
+              (=b 0 (simpcode->choice code-in)))
   :returns (mv (code simpcode-p)
                (key integerp :rule-classes :type-prescription)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* (((simpcode code) (the (unsigned-byte 3) (simpcode-fix code-in)))
+  (b* (((simpcode code) (the (unsigned-byte 4) (mbe :logic (!simpcode->choice 0 code-in)
+                                                    :exec code-in)))
        ((when (=b code.identity 1))
         ;; BOZO if code-in is identity then there's no need to call this fn --
         ;; maybe just have an assumption that it's not?
@@ -2157,7 +2180,106 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                   (unsigned-byte-p 30 (lit-fix x1)))
              (and (unsigned-byte-p n new0)
                   (unsigned-byte-p n new1)))
-    :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var)))))
+    :hints(("Goal" :in-theory (enable unsigned-byte-p-of-lit-when-lit->var))))
+
+  (defret choice-of-<fn>
+    (equal (simpcode->choice code) 0)))
+
+
+
+(define reduce-gate-rec ((code-in simpcode-p)
+                         (x0 litp :type (unsigned-byte 30))
+                         (x1 litp :type (unsigned-byte 30))
+                         (gatesimp gatesimp-p :type (unsigned-byte 6))
+                         (strash)
+                         (aignet))
+  :guard (and (fanin-litp x0 aignet)
+              (fanin-litp x1 aignet)
+              (=b 0 (simpcode->choice code-in)))
+  :returns (mv (code simpcode-p)
+               (key integerp :rule-classes :type-prescription)
+               (new0 litp :rule-classes :type-prescription)
+               (new1 litp :rule-classes :type-prescription))
+  :measure (if (eql 1 (simpcode->identity code-in))
+               0
+             (two-id-measure (lit-id x0) (lit-id x1)))
+  :verify-guards nil
+  (b* (((simpcode code-in) (the (unsigned-byte 4)
+                                (mbe :logic (!simpcode->choice 0 code-in)
+                                     :exec code-in)))
+       ((unless (mbt (and (fanin-litp x0 aignet)
+                          (fanin-litp x1 aignet))))
+        (mv code-in 0 (lit-fix x0) (lit-fix x1)))
+       ((when (=b 1 code-in.identity))
+        (mv code-in 0 (lit-fix x0) (lit-fix x1)))
+       ((when (=b 1 code-in.xor))
+        (b* (((mv new-code new-x0 new-x1)
+              (reduce-xor-gate x0 x1 gatesimp aignet))
+             ((unless new-code)
+              (b* (((mv new-code new-x0 new-x1)
+                    (normalize-xor-gate code-in x0 x1)))
+                (aignet-strash-gate new-code new-x0 new-x1 (gatesimp->hashp gatesimp) strash aignet)))
+             (new-code (simpcode-negate-cond new-code code-in.neg)))
+          (reduce-gate-rec new-code new-x0 new-x1 gatesimp strash aignet)))
+       ((mv new-code new-x0 new-x1 new-x2 new-x3)
+        (reduce-and-gate x0 x1 gatesimp aignet))
+       ((unless new-code)
+        (aignet-strash-gate code-in x0 x1 (gatesimp->hashp gatesimp) strash aignet))
+       (new-code (simpcode-negate-cond new-code code-in.neg))
+       ((when (=b 0 (simpcode->choice new-code)))
+        (reduce-gate-rec new-code new-x0 new-x1 gatesimp strash aignet))
+       (new-code (!simpcode->choice 0 new-code))
+       ((mv new-code1 new-key1 new-x0-1 new-x1-1)
+        (reduce-gate-rec new-code new-x0 new-x1 gatesimp strash aignet))
+       ((when (=b 1 (simpcode->identity new-code1)))
+        (mv new-code1 new-key1 new-x0-1 new-x1-1)))
+    (reduce-gate-rec new-code new-x2 new-x3 gatesimp strash aignet))
+  ///
+  (verify-guards reduce-gate-rec)
+
+  (def-gatesimp-thms (x0 x1)
+    :eval-spec (simpcode-eval code-in x0 x1 invals regvals aignet)
+    :no-measure t
+    :no-bound t
+    :use-aignet t
+    :maybe-simpcode nil
+    :width-hyp (< (FANIN-COUNT AIGNET) 536870911)
+    ;; :choice-hyp (equal (simpcode->choice code-in) 0)
+    ;; :eval-hyp (equal (simpcode->choice code-in) 0)
+    :eval-hints (("goal" :induct <call> :expand (<call>)
+                  ;; :in-theory (enable eval-xor-of-lits
+                  ;;                    eval-and-of-lits)
+                  )
+                 (and stable-under-simplificationp
+                      '(:expand ((simpcode-eval code-in x0 x1 invals regvals aignet))))
+                 (and stable-under-simplificationp
+                      '(:in-theory (enable eval-xor-of-lits
+                                           eval-and-of-lits)))
+                 )))
+
+;; (define reduce-xor-gate-rec ((x0 litp :type (unsigned-byte 30))
+;;                              (x1 litp :type (unsigned-byte 30))
+;;                              (gatesimp gatesimp-p :type (unsigned-byte 6))
+;;                              (strash)
+;;                              (aignet))
+;;   :guard (and (fanin-litp x0 aignet)
+;;               (fanin-litp x1 aignet))
+;;   :enabled t
+;;   (reduce-gate-rec (simpcode! :xor) x0 x1 gatesimp strash aignet))
+
+;; (define reduce-and-gate-rec ((x0 litp :type (unsigned-byte 30))
+;;                              (x1 litp :type (unsigned-byte 30))
+;;                              (gatesimp gatesimp-p :type (unsigned-byte 6))
+;;                              strash
+;;                              (aignet))
+;;   :guard (and (fanin-litp x0 aignet)
+;;               (fanin-litp x1 aignet))
+;;   :enabled t
+;;   (reduce-gate-rec (simpcode! :and) x0 x1 gatesimp strash aignet))
+
+
+
+
 
 
 (define aignet-xor-gate-simp/strash ((x0 litp :type (unsigned-byte 30))
@@ -2172,9 +2294,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                (key integerp :rule-classes :type-prescription)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* (((gatesimp gatesimp))
-       ((mv code new0 new1) (reduce-xor-gate-rec x0 x1 gatesimp aignet)))
-    (aignet-strash-gate code new0 new1 gatesimp.hashp strash aignet))
+  (reduce-gate-rec (simpcode! :xor) x0 x1 gatesimp strash aignet)
   ///
   
   (defret aignet-litp-of-<fn>
@@ -2199,7 +2319,10 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                   (unsigned-byte-p 30 (lit-fix x1))
                   (< (fanin-count aignet) #x1fffffff))
              (and (unsigned-byte-p 30 new0)
-                  (unsigned-byte-p 30 new1)))))
+                  (unsigned-byte-p 30 new1))))
+
+  (defret choice-of-<fn>
+    (equal (simpcode->choice code) 0)))
 
 
 (define aignet-and-gate-simp/strash ((x0 litp :type (unsigned-byte 30))
@@ -2214,9 +2337,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                (key integerp :rule-classes :type-prescription)
                (new0 litp :rule-classes :type-prescription)
                (new1 litp :rule-classes :type-prescription))
-  (b* (((gatesimp gatesimp))
-       ((mv code new0 new1) (reduce-and-gate-rec x0 x1 gatesimp aignet)))
-    (aignet-strash-gate code new0 new1 gatesimp.hashp strash aignet))
+  (reduce-gate-rec (simpcode! :and) x0 x1 gatesimp strash aignet)
   ///
   
   (defret aignet-litp-of-<fn>
@@ -2241,7 +2362,10 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                   (unsigned-byte-p 30 (lit-fix x1))
                   (< (fanin-count aignet) #x1fffffff))
              (and (unsigned-byte-p 30 new0)
-                  (unsigned-byte-p 30 new1)))))
+                  (unsigned-byte-p 30 new1))))
+
+  (defret choice-of-<fn>
+    (equal (simpcode->choice code) 0)))
 
 
 ;; (defthm aignet-litp-of-new-node
@@ -2265,7 +2389,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   :returns (mv (lit litp :rule-classes :type-prescription)
                (new-strash)
                (new-aignet))
-  (b* (((simpcode code) (the (unsigned-byte 3) (simpcode-fix code-in)))
+  (b* (((simpcode code) (the (unsigned-byte 4) (simpcode-fix code-in)))
        ((when (=b 1 code.identity))
         (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet)) :exec aignet)))
           (mv (lit-negate-cond^ x0 code.neg) strash aignet)))
@@ -2508,6 +2632,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                 (+ 1 next-var)))))
       (mv var (cons `((mv ,var . ,(cdr rest-vars)) ,expr) bindings-acc) next-var))))
 
+
 (defmacro aignet-build (pattern gatesimp strash aignet)
   (b* (((mv retval bindings ?next-var) (aignet-build-rec pattern 0 nil (list gatesimp strash aignet) nil 'lit-negate)))
     `(b* ,(reverse bindings)
@@ -2517,10 +2642,6 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
   (b* (((mv retval bindings ?next-var) (aignet-build-rec pattern 0 nil (list gatesimp strash aignet) nil 'lit-negate^)))
     `(b* ,(reverse bindings)
        (mv ,retval ,strash ,aignet))))
-
-
-
-
 
 (define aignet-hash-xor ((lit1 litp :type (unsigned-byte 30) "Literal to XOR with lit2")
                          (lit2 litp :type (unsigned-byte 30))
@@ -2600,6 +2721,11 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
              (unsigned-byte-p n xor-lit))
     :hints (("goal" :use unsigned-byte-p-of-aignet-hash-xor-1
              :in-theory (disable unsigned-byte-p-of-aignet-hash-xor-1 aignet-hash-xor)))))
+
+
+
+
+
 
 
 (define aignet-populate-strash ((n natp)

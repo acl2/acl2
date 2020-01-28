@@ -72,7 +72,7 @@ of the usual ways of doing things in GL are done differently in FGL.</p>
 <p>To get started with FGL in the default configuration:</p>
 @({
  ;; include FGL
- (include-book \"path/to/fgl/top-plus\")
+ (include-book \"centaur/fgl/top\" :dir :system)
  ;; attach to an incremental SAT backend library.
  ;; Note: must have environment variable IPASIR_SHARED_LIBRARY set to the path to 
  ;; an IPASIR-compliant shared library
@@ -769,8 +769,12 @@ default attachment of @('interp-st-sat-check')) is @(see fgl-sat-config).</p>
 (defxdoc fgl-rewrite-rules
   :parents (fgl)
   :short "Differences between FGL and ACL2 rewrite rules"
-  :long "<p>FGL rewrite rules are really just ACL2 rewrite rules.  But this
-doesn't mean that any good ACL2 rewrite rule is a good FGL rewrite rule, or
+  :long "<p>FGL rewrite rules are essentially just ACL2 rewrite rules.  More
+specifically, they are derived from formulas that have basically the same form
+as ACL2 rewrite rules; they need not be stored with
+@(':rule-classes :rewrite').  FGL uses a different set of rules than the ones
+that are enabled for use in ACL2, because not all good ACL2 rewrite rules are
+good FGL rewrite rules, and
 vice versa.  A particularly important difference is that @(see syntaxp) and
 @(see bind-free) forms receive <see topic='@(url fgl-object)'>FGL symbolic
 objects</see> as their inputs, rather than ACL2 terms.  FGL rewrite rules also
@@ -782,7 +786,7 @@ when encountered in the RHS, similarly to if a hypothesis was not relieved.</p>
 
 <h3>Creating and Removing FGL Rewrite Rules</h3>
 <p>An FGL rewrite rule is an ACL2 rewrite rule.  You can register an existing
-ACL2 rewrite rule for use in FGL using:</p>
+ACL2 theorem for use as an FGL rewrite rule using:</p>
 @({
  (fgl::add-fgl-rewrite my-rule)
  })
@@ -929,8 +933,8 @@ return either 3 or 5, then instead of considering the two cases separately we
 can encode both cases into a symbolic integer value.  But for some case splits
 the cases aren't so easily merged into a single symbolic value, except by
 directly encoding the case split.  For example, if we have @('((a . b) . c)')
-in one case but @('(d . (e . f))') in the other case, it isn't clear that
-there's a good way to represent that.</p>
+in one case but @('(d . (e . f))') in the other case, it isn't clear how best
+to represent that.</p>
 
 <p>Such cases can cause dilemmas and problems for FGL's symbolic
 interpretation.  For example, suppose we have the following rewrite rules:</p>
