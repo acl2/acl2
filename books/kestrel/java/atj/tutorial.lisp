@@ -12,6 +12,7 @@
 
 (include-book "xdoc/constructors" :dir :system)
 (include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,6 +26,41 @@
 
 (defconst *atj-tutorial-aij*
   "Relationship with AIJ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Create the :SHORT string for a tutorial page with the given subtitle.
+
+(define atj-tutorial-short ((subtitle stringp))
+  :returns (short stringp :hyp :guard)
+  (xdoc::topstring "ATJ Tutorial: " subtitle "."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Create the 'start' link for a tutorial page,
+; with the given topic and and subtitle.
+
+(define atj-tutorial-start ((topic stringp) (subtitle stringp))
+  :returns (start xdoc::treep :hyp :guard)
+  (xdoc::p "<b>Start:</b> " (xdoc::seetopic topic subtitle)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Create the 'previous' link for a tutorial page,
+; with the given topic and and subtitle.
+
+(define atj-tutorial-previous ((topic stringp) (subtitle stringp))
+  :returns (start xdoc::treep :hyp :guard)
+  (xdoc::p "<b>Previous:</b> " (xdoc::seetopic topic subtitle)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Create the 'next' link for a tutorial page,
+; with the given topic and and subtitle.
+
+(define atj-tutorial-next ((topic stringp) (subtitle stringp))
+  :returns (start xdoc::treep :hyp :guard)
+  (xdoc::p "<b>Next:</b> " (xdoc::seetopic topic subtitle)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,9 +99,7 @@
      it is possible that the paper will be completely subsumed by this tutorial
      once the latter is completed.")
 
-   (xdoc::p
-    "Start: "
-    (xdoc::seetopic "atj-tutorial-motivation" *atj-tutorial-motivation*)))
+   (atj-tutorial-start "atj-tutorial-motivation" *atj-tutorial-motivation*))
 
   :order-subtopics t
 
@@ -75,7 +109,7 @@
 
 (defxdoc atj-tutorial-motivation
 
-  :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-motivation* ".")
+  :short (atj-tutorial-short *atj-tutorial-motivation*)
 
   :long
 
@@ -143,15 +177,13 @@
     "Generators for ACL2 of code in other programming languages (than Java)
      may be developed similarly to ATJ.")
 
-   (xdoc::p
-    "Next: "
-    (xdoc::seetopic "atj-tutorial-background" *atj-tutorial-background*))))
+   (atj-tutorial-next "atj-tutorial-background" *atj-tutorial-background*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-background
 
-  :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-background* ".")
+  :short (atj-tutorial-short *atj-tutorial-background*)
 
   :long
 
@@ -301,19 +333,15 @@
      while logically correct and within @('simplify')'s stipulations,
      may be undesired or unexpected.")
 
-   (xdoc::p
-    "Previous: "
-    (xdoc::seetopic "atj-tutorial-motivation" *atj-tutorial-motivation*))
+   (atj-tutorial-previous "atj-tutorial-motivation" *atj-tutorial-motivation*)
 
-   (xdoc::p
-    "Next: "
-    (xdoc::seetopic "atj-tutorial-aij" *atj-tutorial-aij*))))
+   (atj-tutorial-next "atj-tutorial-motivation" *atj-tutorial-motivation*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-aij
 
-  :short (xdoc::topstring "ATJ tutorial: " *atj-tutorial-aij* ".")
+  :short (atj-tutorial-short *atj-tutorial-aij*)
 
   :long
 
@@ -337,9 +365,4 @@
      However, this ATJ tutorial will describe many aspects of AIJ
      that are necessary or useful to understand and use ATJ.")
 
-   (xdoc::p
-    "Previous: "
-    (xdoc::seetopic "atj-tutorial-background" *atj-tutorial-background*))
-
-   (xdoc::p
-    "Next: <i>IN PROGRESS</i>")))
+   (atj-tutorial-previous "atj-tutorial-background" *atj-tutorial-background*)))
