@@ -537,14 +537,23 @@
      obtaining the corresponding input test values.
      If the @(':guards') input is @('t'),
      we ensure that the inputs satisfy the guard of the function.
-     We evaluate the call @('(fn in1 in2 ...)'), obtaining a result value.
+     We evaluate the call @('(fn in1 in2 ...)'),
+     obtaining either a single result value (if @('fn') is single-valued)
+     or a list of result values (if @('fn') is multi-values).
      If @(':deep') is @('nil') and @(':guards') is @('t'),
      we ensure that the inputs will select an overloaded methods,
-     and we obtain the corresponding output type
-     to contruct the appropriate kind of output test value.
+     and we obtain the corresponding output types
+     to contruct the appropriate kind of output test values.
      We create and return an @(tsee atj-test) record.")
    (xdoc::p
-    "For now functions that return @(tsee mv) values are not supported."))
+    "Note that a single-valued function may return a list.
+     So we need to look at the number of results returned by the function
+     to recognize the result of the function call from @(tsee trans-eval)
+     as either a single list result or a list of multiple results.")
+   (xdoc::p
+    "For now functions that return @(tsee mv) values are not supported,
+     but some of the code here has already been extended
+     towards supporting them."))
   (b* (((er &) (ensure-string$ name
                                (msg "The test name ~x0 in the :TESTS input"
                                     name)
@@ -575,7 +584,8 @@
                       the test term ~x1 in the :TESTS input"
                      fn call)
                 t nil))
-       ((unless (= (atj-number-of-results fn (w state)) 1))
+       (nresults (atj-number-of-results fn (w state)))
+       ((unless (=  nresults 1))
         (er-soft+ ctx t nil
                   "The function ~x0 called by ~
                    the test term ~x1 in the :TESTS input ~
@@ -610,35 +620,37 @@
                                     because the :GUARDS input is T." call)
                        (value nil)))
                  (value nil)))
-       ((er (cons & output)) (trans-eval term$ ctx state nil))
+       ((er (cons & output/outputs)) (trans-eval term$ ctx state nil))
+       ((when (and (>= nresults 2)
+                   (or (not (true-listp output/outputs))
+                       (not (equal (len output/outputs)
+                                   nresults)))))
+        (value (raise "Internal error: ~
+                       the function ~x0 returns ~x1 results, ~
+                       but evaluating its call returns ~x2, ~
+                       which is not a true list of length ~x1."
+                      fn nresults output/outputs)))
+       (outputs (if (= nresults 1)
+                    (list output/outputs)
+                  output/outputs))
        ((when (or deep$ (not guards$)))
-        (b* ((test-output (atj-test-value-avalue output)))
-          (value (atj-test name fn test-inputs (list test-output)))))
+        (b* ((test-outputs (atj-test-value-avalue-list outputs)))
+          (value (atj-test name fn test-inputs test-outputs))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
        (out-types? (atj-output-types-of-min-input-types in-types all-fn-types))
        ((when (null out-types?))
-        (er-soft+ ctx t nil
-                  "The test term ~x0 in the :TESTS input ~
-                   does not have a corresponding Java overloaded method."
-                  call))
-       (out-type (atj-type-list-to-type out-types?))
-       (test-output
-        (case out-type
-          (:jboolean (atj-test-value-jvalue-boolean output))
-          (:jchar (atj-test-value-jvalue-char output))
-          (:jbyte (atj-test-value-jvalue-byte output))
-          (:jshort (atj-test-value-jvalue-short output))
-          (:jint (atj-test-value-jvalue-int output))
-          (:jlong (atj-test-value-jvalue-long output))
-          (:jboolean[] (atj-test-value-jvalue-boolean-array output))
-          (:jchar[] (atj-test-value-jvalue-char-array output))
-          (:jbyte[] (atj-test-value-jvalue-byte-array output))
-          (:jshort[] (atj-test-value-jvalue-short-array output))
-          (:jint[] (atj-test-value-jvalue-int-array output))
-          (:jlong[] (atj-test-value-jvalue-long-array output))
-          (t (atj-test-value-avalue output)))))
-    (value (atj-test name fn test-inputs (list test-output)))))
+        (value (raise "Internal error: ~
+                       the test term ~x0 in the :TESTS input ~
+                       does not have a corresponding Java overloaded method."
+                      call)))
+       ((unless (= (len outputs) (len out-types?)))
+        (value (raise "Internal error: ~
+                       the number of results ~x0 of ~x1 ~
+                       does not match the number ~x2 of its output types."
+                      (len outputs) fn (len out-types?))))
+       (test-outputs (atj-test-values-of-types outputs out-types?)))
+    (value (atj-test name fn test-inputs test-outputs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

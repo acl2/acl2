@@ -128,6 +128,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-test-value-avalue-list ((values true-listp))
+  :returns (test-values atj-test-value-listp)
+  :short "Lift @(tsee atj-test-value-avalue) to lists."
+  (cond ((endp values) nil)
+        (t (cons (atj-test-value-avalue (car values))
+                 (atj-test-value-avalue-list (cdr values))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-test-value-of-type (value (type atj-typep))
+  :returns (test-value atj-test-value-p)
+  :short "Construct a test value with a given ATJ type."
+  (case type
+    (:jboolean (atj-test-value-jvalue-boolean
+                (if (boolean-value-p value)
+                    value
+                  (prog2$ (raise "Internal error: ~
+                                  value ~x0 does not match type ~x1."
+                                 value type)
+                          (ec-call (boolean-value :irrelevant))))))
+    (:jchar (atj-test-value-jvalue-char
+             (if (char-value-p value)
+                 value
+               (prog2$ (raise "Internal error: ~
+                               value ~x0 does not match type ~x1."
+                              value type)
+                       (ec-call (char-value :irrelevant))))))
+    (:jbyte (atj-test-value-jvalue-byte
+             (if (byte-value-p value)
+                 value
+               (prog2$ (raise "Internal error: ~
+                               value ~x0 does not match type ~x1."
+                              value type)
+                       (ec-call (byte-value :irrelevant))))))
+    (:jshort (atj-test-value-jvalue-short
+              (if (short-value-p value)
+                  value
+                (prog2$ (raise "Internal error: ~
+                                value ~x0 does not match type ~x1."
+                               value type)
+                        (ec-call (short-value :irrelevant))))))
+    (:jint (atj-test-value-jvalue-int
+            (if (int-value-p value)
+                value
+              (prog2$ (raise "Internal error: ~
+                              value ~x0 does not match type ~x1."
+                             value type)
+                      (ec-call (int-value :irrelevant))))))
+    (:jlong (atj-test-value-jvalue-long
+             (if (long-value-p value)
+                 value
+               (prog2$ (raise "Internal error: ~
+                               value ~x0 does not match type ~x1."
+                              value type)
+                       (ec-call (long-value :irrelevant))))))
+    (:jboolean[] (atj-test-value-jvalue-boolean-array
+                  (if (boolean-array-p value)
+                      value
+                    (prog2$ (raise "Internal error: ~
+                                    value ~x0 does not match type ~x1."
+                                   value type)
+                            nil))))
+    (:jchar[] (atj-test-value-jvalue-char-array
+               (if (char-array-p value)
+                   value
+                 (prog2$ (raise "Internal error: ~
+                                 value ~x0 does not match type ~x1."
+                                value type)
+                         nil))))
+    (:jbyte[] (atj-test-value-jvalue-byte-array
+               (if (byte-array-p value)
+                   value
+                 (prog2$ (raise "Internal error: ~
+                                 value ~x0 does not match type ~x1."
+                                value type)
+                         nil))))
+    (:jshort[] (atj-test-value-jvalue-short-array
+                (if (short-array-p value)
+                    value
+                  (prog2$ (raise "Internal error: ~
+                                  value ~x0 does not match type ~x1."
+                                 value type)
+                          nil))))
+    (:jint[] (atj-test-value-jvalue-int-array
+              (if (int-array-p value)
+                  value
+                (prog2$ (raise "Internal error: ~
+                                value ~x0 does not match type ~x1."
+                               value type)
+                        nil))))
+    (:jlong[] (atj-test-value-jvalue-long-array
+               (if (long-array-p value)
+                   value
+                 (prog2$ (raise "Internal error: ~
+                              value ~x0 does not match type ~x1."
+                                value type)
+                         nil))))
+    (t (atj-test-value-avalue value))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-test-values-of-types ((values true-listp)
+                                  (types atj-type-listp))
+  :guard (= (len values) (len types))
+  :returns (test-values atj-test-value-listp)
+  :short "Lift @(tsee atj-test-value-of-type) to lists."
+  (cond ((endp values) nil)
+        (t (cons (atj-test-value-of-type (car values) (car types))
+                 (atj-test-values-of-types (cdr values) (cdr types)))))
+  ///
+
+  (defret len-of-atj-test-values-of-types
+    (equal (len test-values)
+           (len values))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod atj-test
   :short "Processed user-specified ATJ tests."
   :long
