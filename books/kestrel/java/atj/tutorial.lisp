@@ -13,6 +13,13 @@
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+; (depends-on "images/values.png")
+; (depends-on "images/value-classes.png")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::add-resource-directory "kestrel-java-atj-images" "images")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Subtitle of each tutorial page (except the top one).
@@ -25,6 +32,12 @@
 
 (defconst *atj-tutorial-aij*
   "Relationship with AIJ")
+
+(defconst *atj-tutorial-acl2-values*
+  "Java Representation of the ACL2 Values")
+
+(defconst *atj-tutorial-uml*
+  "About the Simplified UML Class Diagrams")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,4 +379,211 @@
      However, this ATJ tutorial will describe many aspects of AIJ
      that are necessary or useful to understand and use ATJ.")
 
-   (atj-tutorial-previous "atj-tutorial-background" *atj-tutorial-background*)))
+   (atj-tutorial-previous "atj-tutorial-background" *atj-tutorial-background*)
+
+   (atj-tutorial-next "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-acl2-values
+
+  :short (atj-tutorial-short *atj-tutorial-acl2-values*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "In order to translate from ACL2 to Java,
+     there must be a Java representation of the ACL2 values. "
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
+    " provides a default representation,
+     described in this tutorial page.
+     More advanced representations are discussed later.")
+
+   (xdoc::p
+    "The set of values of the ACL2 evaluation semantics
+     is the union of the sets depicted below:
+     (i) integers, recognized by @(tsee integerp);
+     (ii) ratios, i.e. rationals that are not integers,
+     with no built-in recognizer
+     (the term `ratio' is used in "
+    (xdoc::ahref
+     "https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node18.html"
+     "Section 2.1.2 of the Common Lisp specification")
+    ");
+     (iii) complex rationals, recognized by @(tsee complex-rationalp);
+     (iv) characters, recognized by @(tsee characterp);
+     (v) strings, recognized by @(tsee stringp);
+     (vi) symbols, recognized by @(tsee symbolp); and
+     (vii) @(tsee cons) pairs, recognized by @(tsee consp).
+     Integers and ratios form the rationals, recognized by @(tsee rationalp).
+     Rationals and complex rationals form the Gaussian rationals,
+     which are all the numbers in ACL2,
+     recognized by @(tsee acl2-numberp)
+     (this discussion does not apply to "
+    (xdoc::seetopic "acl2::real" "ACL2(r)")
+    ").
+     The logical semantics of ACL2 allows additional values called `bad atoms',
+     and consequently @(tsee cons) pairs
+     that may contain them directly or indirectly;
+     however, such values cannot be constructed in evaluation.")
+
+   (xdoc::img :src "res/kestrel-java-atj-images/values.png")
+
+   (xdoc::p
+    "AIJ represents ACL2 values
+     as immutable objects of class @('Value') and its subclasses
+     in the "
+    (xdoc::seetopic "atj-tutorial-simplified-uml"
+                    "simplified UML class diagram")
+    " below.")
+
+   (xdoc::p
+    "In AIJ's actual code,
+     each class name is prefixed with `@('Acl2')' (e.g. @('Acl2Value')),
+     so that external code can reference these classes unambiguously
+     without AIJ's package name @('edu.kestrel.acl2.aij').
+     This tutorial omits the prefix for brevity,
+     and uses fully qualified names for the Java standard classes
+     to avoid ambiguities,
+     e.g. @('java.lang.String') is the Java standard string class,
+     as distinguished from @('String') in the UML diagram above.")
+
+   (xdoc::img :src "res/kestrel-java-atj-images/value-classes.png")
+
+   (xdoc::p
+    "Each class in the UML diagram above, except @('PackageName'),
+     corresponds to a set
+     in the earlier picture of ACL2 values (in blue).
+     The subset relationships in that picture
+     match the inheritance relationships in the UML diagram above.
+     The sets of values that are unions of other sets of values
+     correspond to abstract classes;
+     the other sets correspond to concrete classes.
+     All these classes are public,
+     except for the package-private ones for ratios and complex rationals:
+     ratios and complex rationals are built indirectly via AIJ's API,
+     by building
+     rationals that are not integers and numbers that are not rationals.")
+
+   (xdoc::p
+    "The information about the represented ACL2 values
+     is stored in fields of the non-abstract classes.
+     @('Integer') stores
+     the numeric value as a @('java.math.BigInteger').
+     @('Ratio') stores
+     the numerator and denominator as @('Integer')s,
+     in reduced form
+     (i.e. their greatest common divisor is 1
+     and the denominator is greater than 1).
+     @('ComplexRational') stores
+     the real and imaginary parts as @('Rational')s.
+     @('Character') stores
+     the 8-bit code of the character as a @('char') below 256.
+     @('String') stores
+     the codes and order of the characters as a @('java.lang.String')
+     whose @('char')s are all below 256.
+     @('Symbol') stores
+     the symbol's package name as a @('PackageName')
+     (a wrapper of @('java.lang.String')
+     that enforces the ACL2 constraints on package names)
+     and the symbol's name as a @('String').
+     @('Cons') stores the component @('Value')s.
+     All these fields are private,
+     thus encapsulating the internal representation choices
+     and enabling their localized modification.
+     ACL2 numbers, strings, and symbols have no preset limits,
+     but the underlying Lisp runtime may run out of memory.
+     Their Java representations (e.g. @('java.math.BigInteger'))
+     have very large limits,
+     whose exceedance could be regarded as running out of memory.
+     If needed, the Java representations could be changed
+     to overcome the current limits
+     (e.g. by using lists of @('java.math.BigInteger')s).")
+
+   (xdoc::p
+    "The public classes for ACL2 values and package names
+     in the UML diagram above
+     provide public static factory methods to build objects of these classes.
+     For example, @('Character.make(char)')
+     returns a @('Character') with the supplied argument as code,
+     throwing an exception if the argument is above 255.
+     As another example, @('Cons.make(Value,Value)')
+     returns a @('Cons') with the supplied arguments as components.
+     Some classes provide overloaded variants,
+     e.g. @('Integer.make(int)') and @('Integer.make(java.math.BigInteger)').
+     All these classes provide no public Java constructors,
+     thus encapsulating the details of object creation and re-use,
+     which is essentially transparent to external code
+     because these objects are immutable.")
+
+   (xdoc::p
+    "The public classes for ACL2 values in the UML diagram above
+     provide public instance getter methods
+     to unbuild (i.e. extract information from) instances of these classes.
+     For example, @('Character.getJavaChar()')
+     returns the code of the character
+     as a @('char') that is always below 256.
+     As another example, @('Cons.getCar()') and @('Cons.getCdr()')
+     return the component @('Value')s of the \acl{cons') pair.
+     Some classes provide variants,
+     e.g. @('Integer.getJavaInt()')
+     (which throws an exception if the integer does not fit in an @('int'))
+     and @('Integer.getJavaBigInteger()').")
+
+   (xdoc::p
+    "Thus, AIJ provides a public API to
+     build and unbuild Java representations of ACL2 values.
+     When talking about AIJ,
+     this tutorial calls `build' and `unbuild'
+     what is often called `construct' and `destruct' in functional programming,
+     because in object-oriented programming the latter terms
+     may imply object allocation and deallocation,
+     which is not necessarily what the AIJ API does.")
+
+   (xdoc::p
+    "For more details on AIJ's implementation and API of ACL2 values,
+     see the Javadoc in AIJ's Java code.")
+
+   (atj-tutorial-previous "atj-tutorial-aij" *atj-tutorial-aij*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-simplified-uml
+
+  :short (atj-tutorial-short *atj-tutorial-uml*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial uses simplified "
+    (xdoc::ahref "http://uml.org" "UML")
+    " class diagrams
+     to illustrate the "
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
+    " Java classes.")
+
+   (xdoc::p
+    "Each class is depicted as a box containing its name.
+     Abstract classes have italicized names.
+     Public classes have names preceded by @('+'),
+     while package-private classes have names preceded by @('~').
+     Inheritance (`is a') relationships
+     are indicated by lines with hollow triangular tips.
+     Composition (`part of') relationships
+     are indicated by lines with solid rhomboidal tips,
+     annotated with
+     the names of the containing class instances' fields
+     that store the contained class instances,
+     and with the multiplicity of the contained instances
+     for each containing instance
+     (@('0..*') means `zero or more').")
+
+   (xdoc::p
+    "The dashed boxes are just replicas to avoid clutter.
+     These UML class diagrams are simplified because
+     the class boxes do not contain fields and methods,
+     as they should in a full UML class diagram.")))
