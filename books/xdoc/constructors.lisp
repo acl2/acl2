@@ -1169,6 +1169,3 @@
 
   (defmacro seetopic (topic text)
     `(see_ :topic (@url ,topic) ,text)))
-
-; temporary synonym for compatibility with existing uses:
-(defmacro seeurl (&rest args) `(seetopic ,@args))

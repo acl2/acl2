@@ -80,7 +80,7 @@
      This tutorial's goal is to provide user-level information
      on how ATJ works and how to use ATJ effectively.
      The ATJ reference documentation is "
-    (xdoc::seeurl "atj" "here")
+    (xdoc::seetopic "atj" "here")
     ", along with some additional information
      that will likely be moved to this tutorial.")
 

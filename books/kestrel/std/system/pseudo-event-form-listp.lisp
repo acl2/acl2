@@ -22,8 +22,8 @@
   :parents (std/system)
   :short (xdoc::topstring
           "Recognize true lists whose elements all have the "
-          (xdoc::seeurl "pseudo-event-formp"
-                        "basic structure of an event form")
+          (xdoc::seetopic "pseudo-event-formp"
+                          "basic structure of an event form")
           ".")
   :long (xdoc::topstring-@def "pseudo-event-form-listp")
   :true-listp t

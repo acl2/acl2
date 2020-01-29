@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,7 +24,7 @@
    (xdoc::p
     "We formalize Java primitive types as syntactic entities.
      Primitive values are formalized "
-    (xdoc::seeurl "primitive-values" "here")
+    (xdoc::seetopic "primitive-values" "here")
     ".")
    (xdoc::p
     "According to the grammar rule for @('primitive-type') [JLS:4.2],
