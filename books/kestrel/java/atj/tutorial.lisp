@@ -84,9 +84,11 @@
      that will likely be moved to this tutorial.")
 
    (xdoc::p
-    "The subtopics of this manual page
+    "The main subtopics of this manual page
      may be navigated sequentially,
-     using the `Start', `Next', and `Previous' links.")
+     using the `Start', `Next', and `Previous' links.
+     The auxiliary subtopics of this manual page
+     are referenced from other subtopics when needed.")
 
    (xdoc::p
     (xdoc::a :href "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1"
@@ -358,7 +360,7 @@
 
    (xdoc::p
     "See "
-    (xdoc::seetopic "aij" "this manual page")
+    (xdoc::seetopic "aij" "the AIJ manual page")
     " for information about AIJ as a stand-alone entity,
      independent from ATJ.
      However, this ATJ tutorial will describe many aspects of AIJ
