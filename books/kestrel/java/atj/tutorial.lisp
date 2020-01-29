@@ -10,9 +10,8 @@
 
 (in-package "JAVA")
 
-(include-book "xdoc/constructors" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

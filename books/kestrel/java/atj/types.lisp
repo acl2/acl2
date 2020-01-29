@@ -17,11 +17,11 @@
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/typed-lists/cons-listp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (include-book "std/util/defval" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
