@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -29,19 +29,25 @@
      Java representations of all the ACL2 values,
      Java implementations of all the ACL2 primitive functions,
      and an interpreter that evaluates
-     ACL2 <see topic='@(url acl2::term)'>translated terms</see> to ACL2 values.
+     ACL2 "
+    (xdoc::seetopic "acl2::term" "translated terms")
+    " to ACL2 values.
      The interpreter evaluates terms ``in the logic'',
-     without <see topic='@(url acl2::guard-checking)'>checking guards</see>
-     and without side effects.
+     without "
+    (xdoc::seetopic "acl2::guard-checking " "checking guards")
+    " and without side effects.
      The interpreter evaluates @(tsee if) non-strictly.
      The interpreter can be invoked only on
      (Java representations of) concrete ACL2 values,
      not on global variables
-     like @(tsee state) and user-defined @(see acl2::stobj)s.")
+     like @(tsee state) and user-defined "
+    (xdoc::seetopic "acl2::stobj" "stobjs")
+    ".")
    (xdoc::p
     "AIJ is in the @('java') subdirectory of this directory,
-     which contains an
-     <a href=\"https://www.jetbrains.com/idea\">IntelliJ IDEA</a> project.
+     which contains an "
+    (xdoc::ahref "https://www.jetbrains.com/idea" "IntelliJ IDEA")
+    " project.
      The Java code is thoroughly documented with Javadoc.
      AIJ is in a Java package called @('edu.kestrel.acl2.aij').")
    (xdoc::p
@@ -49,7 +55,7 @@
      or in a text editor like Emacs.
      These source files can be compiled either in IntelliJ IDEA
      or via the @('Makefile') file in this directory,
-     which generates class and jar files in the same places
+     which generates class and jar files in the same place
      where IntelliJ IDEA does.
      This @('Makefile') also generates Javadoc HTML documentation.
      This @('Makefile') assumes that OpenJDK Java 13 is in the path,
