@@ -591,5 +591,4 @@ Mainly to be used for evaluating enum lists "
        (list-val (remove-duplicates list-val)))
     (if (consp (cdr list-val))
         (cons 'or (kwote-lst list-val))
-      (car list-val))))
-
+      (kwote (car list-val)))))
