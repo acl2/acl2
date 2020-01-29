@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -51,7 +51,7 @@
      We only consider @(tsee if), @(tsee return-last), and lambda applications
      as non-leaf tree nodes:
      @(tsee if) has two subtrees for the `then' and `else' arguments;
-     @(tsee return-last) has two subtree for the second and  third arguments;
+     @(tsee return-last) has two subtrees for the second and  third arguments;
      and a lambda application has one subtree for the body.
      In other words, we descend down (certain arguments of)
      @(tsee if)s and @(tsee return-last)s,
