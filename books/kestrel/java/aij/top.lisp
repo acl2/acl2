@@ -34,7 +34,7 @@
     " to ACL2 values.
      The interpreter evaluates terms ``in the logic'',
      without "
-    (xdoc::seetopic "acl2::guard-checking " "checking guards")
+    (xdoc::seetopic "acl2::guard-checking" "checking guards")
     " and without side effects.
      The interpreter evaluates @(tsee if) non-strictly.
      The interpreter can be invoked only on
