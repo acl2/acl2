@@ -42,7 +42,7 @@
          ((smtlink-hint h) smtlink-hint)
          (G (disjoin cl))
          ((mv type-decl-list G/type)
-          (SMT-extract G h.fty-info))
+          (SMT-extract G h.fty-info h.abs))
          ((mv err type-decl-list-translated)
           (acl2::translate-cmp `(list ,@type-decl-list) t t nil
                                'type-extract-cp->type-extract-helper

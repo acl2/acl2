@@ -1,4 +1,4 @@
-;; Copyright (C) 2015, University of British Columbia
+; Copyright (C) 2015, University of British Columbia
 ;; Written by Yan Peng (August 2nd 2016)
 ;;
 ;; License: A 3-clause BSD license.
@@ -725,6 +725,7 @@
     '((:functions . function-lst-syntax-p)
       (:hypotheses . hypothesis-lst-syntax-p)
       (:main-hint . hints-syntax-p)
+      (:abstract . symbol-listp)
       (:fty . symbol-listp)
       (:int-to-rat . booleanp)
       (:smt-fname . stringp)
@@ -1291,6 +1292,15 @@
          (new-hint (change-smtlink-hint hint :main-hint content)))
       new-hint))
 
+  (define set-abstract-types ((content symbol-listp)
+                              (hint smtlink-hint-p))
+    :parents (process-smtlink-hints)
+    :returns (new-hint smtlink-hint-p)
+    :short "set fty types"
+    (b* ((hint (smtlink-hint-fix hint))
+         (new-hint (change-smtlink-hint hint :abs content)))
+      new-hint))
+
   (define set-fty-types ((content symbol-listp)
                          (hint smtlink-hint-p))
     :parents (process-smtlink-hints)
@@ -1393,6 +1403,7 @@
                                                      :fast-functions fast-funcs))))
                      (:hypotheses (merge-hypothesis second hint))
                      (:main-hint (merge-main-hint second hint))
+                     (:abstract (set-abstract-types second hint))
                      (:fty (set-fty-types second hint))
                      (:int-to-rat (set-int-to-rat second hint))
                      (:smt-fname (set-fname second hint))

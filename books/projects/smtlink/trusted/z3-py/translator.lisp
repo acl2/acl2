@@ -14,7 +14,7 @@
 (include-book "centaur/misc/hons-extra" :dir :system)
 
 (include-book "../../verified/extractor")
-(include-book "translate-fty")
+(include-book "translate-type")
 (include-book "recover-type-hyp")
 (include-book "pretty-printer")
 
@@ -1091,9 +1091,9 @@
          ((smtlink-hint h) smtlink-hint)
          ;; Make an alist version of fn-lst
          (fn-alst (make-alist-fn-lst h.functions))
-         ((mv decl-list theorem) (smt-extract term h.fty-info))
+         ((mv decl-list theorem) (smt-extract term h.fty-info h.abs))
          ((mv fn-decl-list type-decl-list)
-          (recover-type-hyp decl-list fn-alst h.fty-info nil state))
+          (recover-type-hyp decl-list fn-alst h.fty-info h.abs nil state))
          ((unless (and (func-alistp fn-decl-list)
                        (decl-listp type-decl-list)))
           (mv (er hard? 'translator=>SMT-translation "returned values from ~
@@ -1118,9 +1118,11 @@
                                     h.fty-info
                                     translated-uninterpreted-decls
                                     h.int-to-rat))
+         (translated-abs-types (translate-abstract-types h.abs))
          (translated-fty-types (translate-fty-types h.fty-types h.int-to-rat))
          (translated-theorem-with-fty-type-decls
-          `(,@translated-fty-types
+          `(,@translated-abs-types
+            ,@translated-fty-types
             ,@translated-theorem-with-type-decls))
          (translated-symbol (translate-symbol-enumeration symbols))
          )
