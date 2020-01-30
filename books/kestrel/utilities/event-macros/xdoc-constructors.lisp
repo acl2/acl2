@@ -299,7 +299,7 @@
            using the hints optionally supplied as the @(':hints') input
            described in the "
           ,inputs-ref
-          ")."))
+          "."))
         ,@content))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
