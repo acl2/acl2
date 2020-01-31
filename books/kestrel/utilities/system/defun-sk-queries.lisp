@@ -12,12 +12,11 @@
 
 (include-book "std/util/defenum" :dir :system)
 (include-book "world-queries")
-
-(local (set-default-parents defun-sk-queries))
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc defun-sk-queries
+(defxdoc+ defun-sk-queries
   :parents (system-utilities-non-built-in defun-sk)
   :short "Utilities to query @(tsee defun-sk) functions."
   :long
@@ -58,7 +57,9 @@
    (These utilities could be extended to defensively check
    that the form and its expansion have the right structure,
    if needed.)
-   </p>")
+   </p>"
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
