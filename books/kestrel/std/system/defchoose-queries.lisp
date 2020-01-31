@@ -27,7 +27,7 @@
     Besides the non-@(tsee defchoose)-specific constituents
     (e.g. formal arguments),
     which can be queried with "
-   (xdoc::seeurl "std/system/function-queries" "more general utilities")
+   (xdoc::seetopic "std/system/function-queries" "more general utilities")
    ", these functions have @(tsee defchoose)-specific constituent,
     which can be queried with these @(tsee defchoose) query utilities."))
 

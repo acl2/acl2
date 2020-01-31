@@ -1,6 +1,6 @@
-; XDOC Utilities
+; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,11 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "defxdoc-plus")
+(include-book "quote-term")
+
+(include-book "misc/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc xdoc-utilities
-  :parents (kestrel-utilities)
-  :short "Utilities for building
-          <see topic='@(url xdoc)'>XDOC</see> documentation.")
+(assert-equal (quote-term 3) ''3)
+
+(assert-equal (quote-term 'x) ''x)
+
+(assert-equal (quote-term '(1 2 3)) ''(1 2 3))

@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "check-list-call")
+(include-book "quote-term-list")
+(include-book "unquote-term")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,12 +48,19 @@
      (i.e. that they always return
      lists of two or more terms of the same length).")
    (xdoc::p
-    "This utility replaces occurrences of translated @('(list ...)') subterms
+    "Certain term transformations may turn
+     a translated @('(list ...)') term whose arguments are all quoted constants
+     into a single quoted list constant with the unquoted elements.
+     For this reason, this utility also turns quoted list constants
+     into @(tsee mv) calls on the quoted elements.")
+   (xdoc::p
+    "This utility replaces occurrences of translated @('(list ...)') subterms,
+     or of quoted list constants,
      at the ``leaves'' of the term.
      We only consider @(tsee if), @(tsee return-last), and lambda applications
      as non-leaf tree nodes:
      @(tsee if) has two subtrees for the `then' and `else' arguments;
-     @(tsee return-last) has two subtree for the second and  third arguments;
+     @(tsee return-last) has two subtrees for the second and  third arguments;
      and a lambda application has one subtree for the body.
      In other words, we descend down (certain arguments of)
      @(tsee if)s and @(tsee return-last)s,
@@ -63,13 +72,20 @@
     "All the other function calls are left unchanged
      (i.e. they are considered tree leaves),
      because presumably such functions already return multi-value results.
-     If a variable or quoted constant is encountered, it is an error:
-     a variable or quoted constant can never return a multiple value;
-     this utility must be applied to a term that is a function/lambda call,
-     and the recursion will stop before reaching any variable or quoted constant
+     If a variable or non-list quoted constant is encountered, it is an error:
+     a variable or non-list quoted constant can never return a multiple value;
+     this utility must be applied to a term that returns multiple values,
+     which excludes variables and non-list quoted constants,
+     and the recursion will stop before reaching
+     any variable or non-list quoted constant
      if the term satisfies the assumptions stated earlier."))
-  (b* (((when (or (variablep term) (fquotep term)))
+  (b* (((when (variablep term))
         (raise "Unexpected term: ~x0." term))
+       ((when (fquotep term))
+        (b* ((const (unquote-term term)))
+          (if (true-listp const)
+              (fcons-term 'mv (quote-term-list const))
+            (raise "Unexpected term: ~x0." term))))
        (fn (ffn-symb term))
        ((when (flambdap fn))
         (fcons-term (make-lambda (lambda-formals fn)
