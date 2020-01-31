@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Digits in Arbitrary Bases -- Core
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,11 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "xdoc/constructors" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "kestrel/utilities/zp-lists" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))

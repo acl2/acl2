@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -42,7 +42,7 @@
      Floating-point operations [JLS:4.2.4]
      will be formalized eventually.
      Primitive conversions [JLS:5.1.2-4] are formalized "
-    (xdoc::seeurl "primitive-conversions" "here")
+    (xdoc::seetopic "primitive-conversions" "here")
     ".")
    (xdoc::p
     "We formalize the primitive operations

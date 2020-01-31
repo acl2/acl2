@@ -197,6 +197,7 @@
                          msg-downcase-first
                          must-eval-to-t
                          must-succeed*
+                         mvify
                          named-formulas-to-thm-events
                          next-numbered-name
                          non-executablep

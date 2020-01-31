@@ -1,6 +1,6 @@
 ; Kestrel Utilities
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -75,7 +75,6 @@
 (include-book "untranslate-preprocessing")
 (include-book "user-interface")
 (include-book "verify-guards-program")
-(include-book "xdoc/top")
 (include-book "zp-lists")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

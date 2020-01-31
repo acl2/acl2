@@ -1,6 +1,6 @@
 ; Bitcoin Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,9 +16,9 @@
 (include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/bits-and-bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/bits-and-ubyte11s-as-digits" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defenum" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "bip39-english-words")
 
