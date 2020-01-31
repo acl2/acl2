@@ -277,7 +277,7 @@ REBUILD_MAKEFILE_BOOKS := $(shell \
 ifdef ACL2_PCERT
 	PCERT_OPT := "--pcert-all"	
 else
-	PCERT_OPT := ""
+	PCERT_OPT := 
 endif
 
 $(info Scanning for dependencies...)
