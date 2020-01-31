@@ -12,11 +12,11 @@
 
 (include-book "function-namep")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc defchoose-queries
+(defxdoc+ defchoose-queries
   :parents (std/system/function-queries defchoose)
   :short "Utilities to query @(tsee defchoose) functions."
   :long
@@ -29,9 +29,9 @@
     which can be queried with "
    (xdoc::seetopic "std/system/function-queries" "more general utilities")
    ", these functions have @(tsee defchoose)-specific constituent,
-    which can be queried with these @(tsee defchoose) query utilities."))
-
-(local (xdoc::set-default-parents defchoose-queries))
+    which can be queried with these @(tsee defchoose) query utilities.")
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
