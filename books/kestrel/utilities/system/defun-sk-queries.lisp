@@ -1,6 +1,6 @@
 ; System Utilities -- DEFUN-SK Queries
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -60,6 +60,8 @@
    if needed.)
    </p>")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defenum defun-sk-quantifier-p (exists forall)
   :short "<see topic='@(url exists)'>Existential</see>
           and <see topic='@(url forall)'>universal</see>
@@ -68,6 +70,8 @@
   "<p>
    Note that these are in the \"ACL2\" package.
    </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum defun-sk-rewrite-kind-p (:default :direct :custom)
   :short "Kinds of rewrite rules associated to
@@ -79,6 +83,8 @@
    of the @(':rewrite') option of @(tsee defun-sk),
    with @(':custom') standing for anything but @(':default') or @(':direct').
    </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-p ((fn (function-namep fn wrld))
                     (wrld plist-worldp))
@@ -111,6 +117,8 @@
         last-form
       nil)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defun-sk-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
   :verify-guards nil
@@ -125,6 +133,8 @@
        (defun-sk-p x wrld)
        t)
   :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-body ((fn (defun-sk-namep fn wrld))
                        (wrld plist-worldp))
@@ -158,6 +168,8 @@
                           form fn)))
     (car (last form-without-keyed-options))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defun-sk-quantifier ((fn (defun-sk-namep fn wrld))
                              (wrld plist-worldp))
   :returns (quantifier "A @(tsee defun-sk-quantifier-p).")
@@ -165,6 +177,8 @@
   :short "Retrieve the quantifier of
           a function introduced via @(tsee defun-sk)."
   (first (defun-sk-body fn wrld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-bound-vars ((fn (defun-sk-namep fn wrld))
                              (wrld plist-worldp))
@@ -177,6 +191,8 @@
     (if (atom var/vars)
         (list var/vars)
       var/vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-imatrix ((fn (defun-sk-namep fn wrld))
                           (wrld plist-worldp))
@@ -195,6 +211,8 @@
    </p>"
   (third (defun-sk-body fn wrld)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defun-sk-witness ((fn (defun-sk-namep fn wrld))
                           (wrld plist-worldp))
   :returns (witness "A @(tsee symbolp).")
@@ -209,6 +227,8 @@
    calculating it from @('fn') and the options of the @(tsee defun-sk).
    </p>"
   (getpropc fn 'constraint-lst nil wrld))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-options ((fn (defun-sk-namep fn wrld))
                           (wrld plist-worldp))
@@ -225,6 +245,8 @@
                           form fn)))
     options))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defun-sk-strengthen ((fn (defun-sk-namep fn wrld))
                              (wrld plist-worldp))
   :returns (strengthen "A @(tsee booleanp).")
@@ -232,6 +254,8 @@
   :short "Retrieve the value of the @(':strengthen') option of
           a function introduced via @(tsee defun-sk)."
   (cdr (assoc-eq :strengthen (defun-sk-options fn wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-classicalp ((fn (defun-sk-namep fn wrld))
                              (wrld plist-worldp))
@@ -250,6 +274,8 @@
         t
       (cdr pair))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defun-sk-rewrite-kind ((fn (defun-sk-namep fn wrld))
                                (wrld plist-worldp))
   :returns (kind "A @(tsee defun-sk-rewrite-kind-p).")
@@ -263,6 +289,8 @@
     (cond ((eq option :default) :default)
           ((eq option :direct) :direct)
           (t :custom))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-rewrite-name ((fn (defun-sk-namep fn wrld))
                                (wrld plist-worldp))
@@ -278,6 +306,8 @@
       (forall (add-suffix fn "-NECC"))
       (exists (add-suffix fn "-SUFF"))
       (t (impossible)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-definition-name ((fn (defun-sk-namep fn wrld))
                                   (wrld plist-worldp))
@@ -299,6 +329,8 @@
     (if (eq option t)
         (add-suffix fn "-DEFINITION")
       option)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defun-sk-matrix ((fn (defun-sk-namep fn wrld))
                          (wrld plist-worldp))
