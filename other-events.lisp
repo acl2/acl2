@@ -1545,6 +1545,7 @@
                     (cert-replay nil)
                     (free-var-runes-all nil)
                     (free-var-runes-once nil)
+                    (translate-cert-data nil)
                     (chk-new-name-lst
                      (if iff implies not
                          in-package
@@ -5774,22 +5775,6 @@
                  `(table acl2-defaults-table nil ',acl2-defaults-table
                          :clear))))))
 
-(defun in-encapsulatep (embedded-event-lst non-trivp)
-
-; This function determines if we are in the scope of an encapsulate.
-; If non-trivp is t, we restrict the interpretation to mean ``in the
-; scope of a non-trivial encapsulate'', i.e., in an encapsulate that
-; introduces a constrained function symbol.
-
-  (cond
-   ((endp embedded-event-lst) nil)
-   ((and (eq (car (car embedded-event-lst)) 'encapsulate)
-         (if non-trivp
-             (cadr (car embedded-event-lst))
-           t))
-    t)
-   (t (in-encapsulatep (cdr embedded-event-lst) non-trivp))))
-
 (defun update-for-redo-flat (n ev-lst state)
 
 ; Here we update the state globals 'redo-flat-succ and 'redo-flat-fail on
@@ -6425,6 +6410,9 @@
         (t (bogus-exported-compliants
             (cdr names) exports-with-sig-ancestors sig-fns wrld))))
 
+(defun remove-type-prescription-cert-data (cert-data)
+  (remove1-assoc-eq :type-prescription cert-data))
+
 (defun encapsulate-pass-2 (insigs kwd-value-list-lst ev-lst
                                   saved-acl2-defaults-table only-pass-p ctx
                                   state)
@@ -6510,18 +6498,20 @@
 ; that call were made with make-event-chk = t.
 
                  (not only-pass-p) ; make-event-chk
-                 (and (null insigs)
+                 (if (null insigs)
+                     (f-get-global 'cert-data state)
 
-; By restricting the use of cert-data (from the first pass of the encapsulate,
-; or in the case of including a book, from the book's certificate), we avoid
-; potential risk of introducing a bug in the determination of constraints.
-; Perhaps we are being too conservative; for example, we are already careful
-; (in putprop-type-prescription-lst) not to store a runic type-prescription
-; rule for a subversive function.  But the potential downside of this extra
-; care seems very small, and the upside is that we don't have to think about
-; the issue!
+; By restricting the use of :type-prescription cert-data (from the first pass
+; of the encapsulate, or in the case of including a book, from the book's
+; certificate), we avoid potential risk of introducing a bug in the
+; determination of constraints.  Perhaps we are being too conservative; for
+; example, we are already careful (in putprop-type-prescription-lst) not to
+; store a runic type-prescription rule for a subversive function.  But the
+; potential downside of this extra care seems very small, and the upside is
+; that we don't have to think about the issue!
 
-                      (f-get-global 'cert-data state))
+                   (remove-type-prescription-cert-data
+                    (f-get-global 'cert-data state)))
                  ctx state))))
       (let* ((expansion-alist (car expansion-alist-and-proto-wrld3))
              (proto-wrld3 (cdr expansion-alist-and-proto-wrld3))
@@ -8145,10 +8135,35 @@
                     (hons-acons fn tp acc)
                   acc))))))))
 
-(defun cert-data-entry-from-fns (fns wrld)
+(defun cert-data-for-certificate (fns translate-cert-data wrld)
+
+; Warning: Consider all cert-data keys here and in all other functions with
+; this warning.  There is no need to consider the key :pass1-saved here.
+
   (acons :type-prescription
          (cert-data-tps-from-fns fns wrld nil)
-         nil))
+         (acons :translate
+
+; We avoid saving translate-cert-data if there has been redefinition (which
+; would require a trust tag used during certification).  That may be overly
+; conservative, especially since all bets are officially off when there is
+; redefinition.  Moreover, we already avoid using a translate-cert-data-record
+; during include-book if there is another record of the same type; see
+; get-translate-cert-data-record, comment (a).  So we are simply using an
+; abundance of caution here in a very rare case (redefinition during
+; certify-book) using a very inexpensive check.
+
+                (and (not (global-val 'redef-seen wrld))
+
+; We could replace translate-cert-data below by (fast-alist-fork
+; translate-cert-data nil), to accommodate the possibility that a function
+; symbol might be associated initially with one record and then later with two
+; records, thus shadowing the initial association.  Such shadowing cannot
+; happen currently unless there is redefinition, and at any rate the
+; elimination of shadowed pairs is optional, so we don't bother at this point.
+
+                     translate-cert-data)
+                nil)))
 
 (defun newly-defined-top-level-fns-rec (trips collect-p full-book-name acc)
 
@@ -8270,12 +8285,20 @@
 
 (defun cert-data-pass1-saved (old-wrld new-wrld)
 
+; Warning: Consider all cert-data keys here and in all other functions with
+; this warning.
+
 ; New-wrld is the currently-installed world (otherwise this function could be
 ; very slow).  Old-wrld is a tail of new-wrld.  We return an alist mapping
 ; :pass1-saved to t and :type-prescription to a cert-data entry.  That entry is
 ; a fast-alist whose keys are function symbols in :logic mode (with respect to
 ; new-wrld) defined after old-wrld in new-wrld, and whose value for key fn is
 ; the runic type-prescription for fn in new-wrld, if any, else nil.
+
+; This structure is read only during the include-book phase of certify-book and
+; the second pass of encapsulate, neither of which allows the use of saved
+; translate information from the first pass.  So we do not consider the
+; :translate key here.
 
   (acons :type-prescription
          (cert-data-tps old-wrld new-wrld new-wrld nil)
@@ -8340,11 +8363,23 @@
              (t acc)))))))
 
 (defmacro fast-alist-free-cert-data-on-exit (cert-data form)
-  `(let ((cert-data-entry-tp-to-free
-          (cdr (assoc-eq :type-prescription ,cert-data))))
-     (fast-alist-free-on-exit cert-data-entry-tp-to-free
-                              (check-vars-not-free (cert-data-entry-tp-to-free)
-                                                   ,form))))
+
+; Warning: Consider all cert-data keys here and in all other functions with
+; this warning.  There is no need to consider the key :pass1-saved here.
+
+  `(let* ((cert-data-to-free ,cert-data)
+          (cert-data-entry-tp-to-free
+           (cdr (assoc-eq :type-prescription cert-data-to-free))))
+     (fast-alist-free-on-exit
+      cert-data-entry-tp-to-free
+      (let ((cert-data-entry-tr-to-free
+             (cdr (assoc-eq :translate cert-data-to-free))))
+        (fast-alist-free-on-exit
+         cert-data-entry-tr-to-free
+         (check-vars-not-free (cert-data-to-free
+                               cert-data-entry-tp-to-free
+                               cert-data-entry-tr-to-free)
+                              ,form))))))
 
 (defun encapsulate-fn (signatures ev-lst state event-form)
 
@@ -11305,18 +11340,28 @@
 
 (defun fast-cert-data (cert-data)
 
+; Warning: Consider all cert-data keys here and in all other functions with
+; this warning.  There is no need to consider the key :pass1-saved here.
+
 ; Cert-data is the value of :cert-data from a certificate file.  In general,
 ; this function is equivalent to the identity function on alists: we expect the
 ; serialize reader and writer to preserve the fast-alist nature of the
 ; :type-prescription field of cert-data.  However, this function is nontrivial
 ; if the certificate file is written without the serialize writer.
 
-  (let ((pair (assoc-eq :type-prescription cert-data)))
-    (cond (pair
-           (acons :type-prescription
-                  (make-fast-alist (cdr pair))
-                  (remove1-assoc-eq :type-prescription cert-data)))
-          (t cert-data))))
+  (let* ((pair1 (assoc-eq :type-prescription cert-data))
+         (a1 (if pair1
+                 (acons :type-prescription
+                        (make-fast-alist (cdr pair1))
+                        nil)
+               nil))
+         (pair2 (assoc-eq :translate cert-data))
+         (a2 (if pair2
+                 (acons :translate
+                        (make-fast-alist (cdr pair2))
+                        a1)
+               a1)))
+    a2))
 
 (defun chk-raise-portcullis (file1 file2 ch light-chkp caller
                                    ctx state
@@ -16321,7 +16366,10 @@
 ; process-embedded-events) never found an extension of the known-package-alist.
 ; There is thus no part of expansion-alist that needs checking!
 
-                                                       nil)))))))))))))
+                                                       nil)))
+                                                   (global-val
+                                                    'translate-cert-data
+                                                    (w state))))))))))))
                            (cond
                             (write-acl2x ; early exit
                              (value acl2x-file))
@@ -16339,6 +16387,8 @@
                                     (expansion-alist (nth 5 pass1-result))
                                     (expansion-alist-to-check
                                      (nth 6 pass1-result))
+                                    (translate-cert-data
+                                     (nth 7 pass1-result))
                                     (cert-annotations
                                      (list
 
@@ -16525,8 +16575,10 @@
                                                    (newly-defined-top-level-fns
                                                     wrld1 wrld2 full-book-name))
                                                   (cert-data-pass2
-                                                   (cert-data-entry-from-fns
-                                                    new-fns wrld2))
+                                                   (cert-data-for-certificate
+                                                    new-fns
+                                                    translate-cert-data
+                                                    wrld2))
                                                   (pkg-names
 
 ; Warning: If the following comment is modified or deleted, visit its reference
