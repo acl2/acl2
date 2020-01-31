@@ -596,9 +596,10 @@ sub add_command {
     	  });
 }
 
-GetOptions ("help|h"               => sub { print $STDERR $summary_str;
-                                            print $STDERR $helpstr;
-                                            exit 0 ; },
+GetOptions ("help|h"               => sub {
+    STDERR->print($summary_str);
+    STDERR->print($helpstr);
+    exit 0 ; },
             "jobs|j=i"             => \$jobs,
             "clean-certs|cc"       => \$certlib_opts{"clean_certs"},
             "no-build|n"           => \$no_makefile,
@@ -609,7 +610,7 @@ GetOptions ("help|h"               => sub { print $STDERR $summary_str;
             "no-boilerplate"       => \$no_boilerplate,
             "var-prefix=s"         => \$var_prefix,
             "o=s"                  => \$mf_name,
-            "all-deps|d"           => sub { print $STDERR "The --all-deps/-d option no longer does anything."; },
+            "all-deps|d"           => sub { print STDERR "The --all-deps/-d option no longer does anything."; },
             "static-makefile|s=s"  => sub {shift;
                                            $mf_name = shift;
                                            $certlib_opts{"all_deps"} = 1;
