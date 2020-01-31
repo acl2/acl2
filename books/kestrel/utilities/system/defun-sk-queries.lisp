@@ -20,70 +20,72 @@
   :parents (system-utilities-non-built-in defun-sk)
   :short "Utilities to query @(tsee defun-sk) functions."
   :long
-  "<p>
-   @(tsee defun-sk) mimics functions with (top-level) quantifiers
-   in the quantifier-free logic of ACL2,
-   by <see topic='@(url defchoose)'>conservatively axiomatizing</see>
-   an associated witness function
-   and by defining the @(tsee defun-sk) function
-   in terms of the witness function
-   (either via an actual definition,
-   or via a definition rule if @(':constrain') is not @('nil')).
-   It also generates a rewrite rule to support reasoning
-   about the function with the quantifier.
-   </p>
-   <p>
-   These @(tsee defun-sk) query utilities provide facilities
-   to check whether a function has been introduced via @(tsee defun-sk),
-   and, if so, to retrieve its @(tsee defun-sk)-specific constituents.
-   Constituents of the function that are not @(tsee defun-sk)-specific
-   (formal arguments, guard, etc.)
-   can be retrieved
-   with <see topic='@(url system-utilities)'>more general utilities</see>.
-   Since @(tsee defun-sk) extends the @(tsee pe-table)
-   with the @(tsee defun-sk) form,
-   these utilities consult the @(tsee pe-table) to determine whether
-   a function has been introduced by @(tsee defun-sk),
-   and if that is the case the @(tsee defun-sk)-specific components
-   are retrieved based on the expected structure of
-   the @(tsee defun-sk) form and of the forms it generates
-   (@(tsee encapsulate), @(tsee defchoose), etc.).
-   Thus, if the @(tsee pe-table) is extended
-   with a form starting with @(tsee defun-sk)
-   without using @(tsee defun-sk)
-   (by directly calling @(tsee extend-pe-table)),
-   these utilities, as currently implemented,
-   can be fooled and return meaningless results.
-   (These utilities could be extended to defensively check
-   that the form and its expansion have the right structure,
-   if needed.)
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "@(tsee defun-sk) mimics functions with (top-level) quantifiers
+     in the quantifier-free logic of ACL2, by "
+    (xdoc::seetopic "defchoose" "conservatively axiomatizing")
+    " an associated witness function
+     and by defining the @(tsee defun-sk) function
+     in terms of the witness function
+     (either via an actual definition,
+     or via a definition rule if @(':constrain') is not @('nil')).
+     It also generates a rewrite rule to support reasoning
+     about the function with the quantifier.")
+   (xdoc::p
+    "These @(tsee defun-sk) query utilities provide facilities
+     to check whether a function has been introduced via @(tsee defun-sk),
+     and, if so, to retrieve its @(tsee defun-sk)-specific constituents.
+     Constituents of the function that are not @(tsee defun-sk)-specific
+     (formal arguments, guard, etc.)
+     can be retrieved with "
+    (xdoc::seetopic "system-utilities" "more general utilities")
+    ". Since @(tsee defun-sk) extends the @(tsee pe-table)
+     with the @(tsee defun-sk) form,
+     these utilities consult the @(tsee pe-table) to determine whether
+     a function has been introduced by @(tsee defun-sk),
+     and if that is the case, the @(tsee defun-sk)-specific components
+     are retrieved based on the expected structure of
+     the @(tsee defun-sk) form and of the forms it generates
+     (@(tsee encapsulate), @(tsee defchoose), etc.).
+     Thus, if the @(tsee pe-table) is extended
+     with a form starting with @(tsee defun-sk)
+     without using @(tsee defun-sk)
+     (by directly calling @(tsee extend-pe-table)),
+     these utilities, as currently implemented,
+     can be fooled and return meaningless results.
+     (These utilities could be extended to defensively check
+     that the form and its expansion have the right structure,
+     if needed.)"))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum defun-sk-quantifier-p (exists forall)
-  :short "<see topic='@(url exists)'>Existential</see>
-          and <see topic='@(url forall)'>universal</see>
-          quantifiers."
+  :short (xdoc::topstring
+          (xdoc::seetopic "exists" "Existential")
+          " and "
+          (xdoc::seetopic "forall" "universal")
+          " quantifiers.")
   :long
-  "<p>
-   Note that these are in the \"ACL2\" package.
-   </p>")
+  (xdoc::topstring-p
+   "Note that these are in the \"ACL2\" package."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum defun-sk-rewrite-kind-p (:default :direct :custom)
-  :short "Kinds of rewrite rules associated to
-          @(tsee defun-sk) functions with the
-          <see topic='@(url forall)'>universal quantifier</see>."
+  :short (xdoc::topstring
+          "Kinds of rewrite rules associated to
+           @(tsee defun-sk) functions with the "
+          (xdoc::seetopic "forall" "universal quantifier")
+          ".")
   :long
-  "<p>
-   These correspond to the values
-   of the @(':rewrite') option of @(tsee defun-sk),
-   with @(':custom') standing for anything but @(':default') or @(':direct').
-   </p>")
+  (xdoc::topstring-p
+   "These correspond to the values
+    of the @(':rewrite') option of @(tsee defun-sk),
+    with @(':custom') standing for
+    anything but @(':default') or @(':direct')."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -93,23 +95,24 @@
   :verify-guards nil
   :short "Check if a named function has been introduced via @(tsee defun-sk)."
   :long
-  "<p>
-   If successful, return the @(tsee defun-sk) form that introduced the function.
-   If unsuccessful, return @('nil').
-   </p>
-   <p>
-   As explained <see topic='@(url defun-sk-queries)'>here</see>,
-   we consult the @(tsee pe-table).
-   If the @(tsee defun-sk) is generated by some other macros
-   that also extends the table,
-   the @(tsee defun-sk) form is not be the only one
-   associated to @('fn') in the table.
-   But it is always the last one in the table entry for @('fn')
-   (which is an alist from absolute event numbers to forms),
-   because none of the forms generated by @(tsee defun-sk) extends the table,
-   and newer forms (generated by the hypothesized other macro
-   that generates the @(tsee defun-sk)) are @(tsee cons)ed onto the entry.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "If successful, return the @(tsee defun-sk) form
+     that introduced the function.
+     If unsuccessful, return @('nil').")
+   (xdoc::p
+    "As explained "
+    (xdoc::seetopic "defun-sk-queries" "here")
+    ", we consult the @(tsee pe-table).
+     If the @(tsee defun-sk) is generated by some other macros
+     that also extends the table,
+     the @(tsee defun-sk) form is not the only one
+     associated to @('fn') in the table.
+     But it is always the last one in the table entry for @('fn')
+     (which is an alist from absolute event numbers to forms),
+     because none of the forms generated by @(tsee defun-sk) extends the table,
+     and newer forms (generated by the hypothesized other macro
+     that generates the @(tsee defun-sk)) are @(tsee cons)ed onto the entry."))
   (b* ((table (table-alist 'pe-table wrld))
        (entry (cdr (assoc-eq fn table)))
        (last-number+form (car (last entry)))
@@ -126,10 +129,9 @@
   :short "Recognize symbols
           that name functions introduced via @(tsee defun-sk)."
   :long
-  "<p>
-   This function is enabled because it is meant as an abbreviation.
-   Thus, theorems triggered by this function should be avoided.
-   </p>"
+  (xdoc::topstring-p
+   "This function is enabled because it is meant as an abbreviation.
+    Thus, theorems triggered by this function should be avoided.")
   (and (function-namep x wrld)
        (defun-sk-p x wrld)
        t)
@@ -143,23 +145,21 @@
   :mode :program
   :short "Retrieve the body of a function introduced via @(tsee defun-sk)."
   :long
-  "<p>
-   This is the sub-form @('(forall ...)') or @('(exists ...)')
-   of the @(tsee defun-sk) form.
-   Thus, the terms in this sub-from are untranslated.
-   </p>
-   <p>
-   In the @(tsee defun-sk) form, the body sub-form is obtained
-   by first removing the keyed options (if any)
-   and then taking the last element of the resulting list.
-   </p>
-   <p>
-   To retrieve the quantifier, bound variable, and matrix of this body, use
-   @(tsee defun-sk-quantifier),
-   @(tsee defun-sk-bound-vars),
-   @(tsee defun-sk-matrix), and
-   @(tsee defun-sk-imatrix).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is the sub-form @('(forall ...)') or @('(exists ...)')
+     of the @(tsee defun-sk) form.
+     Thus, the terms in this sub-from are untranslated.")
+   (xdoc::p
+    "In the @(tsee defun-sk) form, the body sub-form is obtained
+     by first removing the keyed options (if any)
+     and then taking the last element of the resulting list.")
+   (xdoc::p
+    "To retrieve the quantifier, bound variable, and matrix of this body, use
+     @(tsee defun-sk-quantifier),
+     @(tsee defun-sk-bound-vars),
+     @(tsee defun-sk-matrix), and
+     @(tsee defun-sk-imatrix)."))
   (b* ((form (defun-sk-p fn wrld))
        ((mv erp form-without-keyed-options &) (partition-rest-and-keyword-args
                                                form
@@ -202,14 +202,13 @@
   :short "Retrieve the matrix of a function introduced via @(tsee defun-sk),
           in untranslated form."
   :long
-  "<p>
-   The @('i') that starts @('imatrix') in the name of this function
-   conveys that the result is based on the @(tsee defun-sk) form
-   that <i>introduced</i> @('fn').
-   </p>
-   <p>
-   Use @(tsee defun-sk-matrix) to retrieve the matrix in translated form.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The @('i') that starts @('imatrix') in the name of this function
+     conveys that the result is based on the @(tsee defun-sk) form
+     that <i>introduced</i> @('fn').")
+   (xdoc::p
+    "Use @(tsee defun-sk-matrix) to retrieve the matrix in translated form."))
   (third (defun-sk-body fn wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,12 +220,11 @@
   :short "Retrieve the name of the witness of
           a function introduced via @(tsee defun-sk)."
   :long
-  "<p>
-   For a function introduced via @(tsee defun-sk),
-   the name of the witness is the @('constraint-lst') property.
-   Retrieving it from there is faster than
-   calculating it from @('fn') and the options of the @(tsee defun-sk).
-   </p>"
+  (xdoc::topstring-p
+   "For a function introduced via @(tsee defun-sk),
+    the name of the witness is the @('constraint-lst') property.
+    Retrieving it from there is faster than
+    calculating it from @('fn') and the options of the @(tsee defun-sk).")
   (getpropc fn 'constraint-lst nil wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,10 +263,9 @@
   :short "Retrieve the value of the @(':classicalp') option of
           a function introduced via @(tsee defun-sk)."
   :long
-  "<p>
-   This is only relevant for <see topic='@(url real)'>ACL2(r)</see>.
-   This function returns @('t') when not running ACL2(r).
-   </p>"
+  (xdoc::topstring-p
+   "This is only relevant for <see topic='@(url real)'>ACL2(r)</see>.
+    This function returns @('t') when not running ACL2(r).")
   (b* ((options (defun-sk-options fn wrld))
        (pair (assoc-eq :classicalp options)))
     (if (null pair)
@@ -317,12 +314,11 @@
   :short "Retrieve the name of the definition rule of
           a function introduced via @(tsee defun-sk)."
   :long
-  "<p>
-   This is relevant when @(':constrain') is not @('nil'):
-   the result is the name of the theorem that essentially defines @('fn'),
-   but leaving @('fn') technically just constrained, not defined.
-   Otherwise, @('nil') is returned.
-   </p>"
+  (xdoc::topstring-p
+   "This is relevant when @(':constrain') is not @('nil'):
+    the result is the name of the theorem that essentially defines @('fn'),
+    but leaving @('fn') technically just constrained, not defined.
+    Otherwise, @('nil') is returned.")
   (b* ((options (defun-sk-options fn wrld))
        (pair (assoc-eq :constrain options))
        ((when (null pair)) nil)
@@ -340,53 +336,46 @@
   :short "Retrieve the matrix of a function introduced via @(tsee defun-sk),
           in untranslated form."
   :long
-  "<p>
-   If @('fn') is defined (i.e. @(':constrain') is @('nil') or absent),
-   then after <see topic='@(url term)'>translation</see>,
-   the (unnormalized) body of @('fn') should have the form
-   @('(return-last 'progn (throw-nonexec-error ...) core)')
-   if @('fn') is non-executable
-   (i.e. it @('fn') is introduced via @(tsee defun-nx)
-   in the @(tsee encapsulate)),
-   or just @('core') otherwise.
-   @('core') should have one of the following forms,
-   where @('arg1'), ..., @('argN') are the formal arguments of @('fn;),
-   and @('matrix') is the <see topic='@(url term)'>translated</see> matrix:
-   </p>
-   <ul>
-     <li>
-       @({
-         ((lambda (bvar) matrix) (witness arg1 ... argN))
-       })
-       <p>
-       if there is just one bound variable @('bvar'),
+  (xdoc::topstring
+   (xdoc::p
+    "If @('fn') is defined (i.e. @(':constrain') is @('nil') or absent),
+     then after <see topic='@(url term)'>translation</see>,
+     the (unnormalized) body of @('fn') should have the form
+     @('(return-last 'progn (throw-nonexec-error ...) core)')
+     if @('fn') is non-executable
+     (i.e. it @('fn') is introduced via @(tsee defun-nx)
+     in the @(tsee encapsulate)),
+     or just @('core') otherwise.
+     @('core') should have one of the following forms,
+     where @('arg1'), ..., @('argN') are the formal arguments of @('fn;),
+     and @('matrix') is the <see topic='@(url term)'>translated</see> matrix:")
+   (xdoc::ul
+    (xdoc::li
+     (xdoc::codeblock
+      "((lambda (bvar) matrix) (witness arg1 ... argN))")
+     (xdoc::p
+      "if there is just one bound variable @('bvar'),
        as resulting from the <see topic='@(url term)'>translation</see>
-       of the @(tsee let).
-       </p>
-     </li>
-     <li>
-       @({
-         ((lambda (mv argN ... arg1)
-                  ((lambda (bvar1 ... bvarM argN ... arg1) matrix)
-                   (mv-nth '0 mv) ... (mv-nth 'M-1 mv) argN ... arg1))
-          (witness arg1 ... argN) arg1 ... argN)
-       })
-       <p>
-       if there are @('M') &gt; 1 bound variables,
-       as resulting from the <see topic='@(url term)'>translation</see>
-       of the @(tsee mv-let).
-       </p>
-     </li>
-   </ul>
-   <p>
-   If instead @('fn') is constrained (i.e. @(':constrain') is not @('nil')),
-   the generated definition theorem for @('fn') should have the form
-   @('(equal (fn arg1 ... argN) core)'),
-   with @('arg1'), ..., @('argN') and @('core') as above.
-   </p>
-   <p>
-   Use @(tsee defun-sk-imatrix) to retrieve the matrix in untranslated form.
-   </p>"
+       of the @(tsee let)."))
+    (xdoc::li
+     (xdoc::codeblock
+      "((lambda (mv argN ... arg1)"
+      "        ((lambda (bvar1 ... bvarM argN ... arg1) matrix)"
+      "         (mv-nth '0 mv) ... (mv-nth 'M-1 mv) argN ... arg1))"
+      "(witness arg1 ... argN) arg1 ... argN)")
+     (xdoc::p
+      "if there are @('M') &gt; 1 bound variables,
+       as resulting from the "
+      (xdoc::seetopic "term" "translation")
+      " of the @(tsee mv-let).")))
+   (xdoc::p
+    "If instead @('fn') is constrained (i.e. @(':constrain') is not @('nil')),
+     the generated definition theorem for @('fn') should have the form
+     @('(equal (fn arg1 ... argN) core)'),
+     with @('arg1'), ..., @('argN') and @('core') as above.")
+   (xdoc::p
+    "Use @(tsee defun-sk-imatrix)
+     to retrieve the matrix in untranslated form."))
   (b* ((core (if (definedp fn wrld)
                  (b* ((body (ubody fn wrld)))
                    (if (non-executablep fn wrld)
