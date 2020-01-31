@@ -1795,7 +1795,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (me-assign defunc-failure-reason :none)
          (make-event ,(print-summary-ev name oc kwd-alist pkg))))))))
 
-
 (defmacro defunc-core (name d? &rest args)
   (b* ((verbosep (let ((lst (member :verbose args)))
                    (and lst (cadr lst))))
