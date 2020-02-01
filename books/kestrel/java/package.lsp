@@ -14,7 +14,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "JAVA" (append *std-pkg-symbols*
+(defpkg "JAVA" (append (set-difference-eq *std-pkg-symbols*
+                                          '(pointers))
                        '(*nil*
                          *pkg-witness-name*
                          *primitive-formals-and-guards*
