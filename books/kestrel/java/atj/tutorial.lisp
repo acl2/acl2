@@ -349,7 +349,7 @@
 
    (atj-tutorial-previous "atj-tutorial-motivation" *atj-tutorial-motivation*)
 
-   (atj-tutorial-next "atj-tutorial-motivation" *atj-tutorial-motivation*)))
+   (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
