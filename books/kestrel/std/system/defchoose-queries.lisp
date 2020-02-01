@@ -42,6 +42,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "If the check fails, @('nil') is returned.")
+   (xdoc::p
     "A function introduced via @(tsee defchoose) is recognizable
      by the presence of the @('defchoose-axiom') property,
      which is the axiom that constrains the function.")
@@ -56,7 +58,6 @@
 
 (define defchoose-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
-  ;; :verify-guards nil
   :short "Recognize symbols
           that name functions introduced via @(tsee defchoose)."
   :long
