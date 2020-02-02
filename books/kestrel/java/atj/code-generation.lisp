@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -47,14 +47,16 @@
     "To illustrate this concept,
      consider the generation of a Java expression to build
      the Java representation of an ACL2 @(tsee cons) pair.
-     The pair may be a large binary tree,
-     so we prefer not to generate a large Java expression.
+     In some circumstances,
+     since the pair may be a large binary tree,
+     we prefer not to generate a large Java expression.
      Instead, we generate
      a Java block that sets a local variable to the @(tsee car),
      a Java block that sets another local variable to the @(tsee cdr),
      and then a Java expression that builds the pair
      from those two variables.
-     The two blocks are concatenated to result in a block and an expression
+     The two blocks are concatenated,
+     resulting in a block and an expression
      for the @(tsee cons) pair in question.
      But the expressions assigned to the two local variables
      may in turn need to be built that way, recursively.
@@ -65,7 +67,7 @@
    (xdoc::p
     "As special cases, some of these code generation functions
      may return just Java expressions and no blocks,
-     since they would return always empty blocks.")
+     since they would always return empty blocks.")
    (xdoc::p
     "These code generation functions keep track
      of the next local variables to use
@@ -80,7 +82,8 @@
      The other functions are generally used for both approaches.")
    (xdoc::p
     "The code generation process consists of "
-    (xdoc::seetopic "atj-pre-translation" "a pre-translation from ACL2 to ACL2")
+    (xdoc::seetopic "atj-pre-translation"
+                    "a pre-translation from ACL2 to ACL2")
     ", followed by a translation from ACL2 to Java,
      followed by "
     (xdoc::seetopic "atj-post-translation"
@@ -115,7 +118,7 @@
      @(tsee atj-gen-jboolean) and similar functions.")
    (xdoc::p
     "In both cases, we also return the ATJ type of the expression.
-     In the shallow embedding, this will determined the Java type
+     In the shallow embedding, this will determine the Java type
      of the local variable that stores the value."))
   (atj-test-value-case
    tvalue
