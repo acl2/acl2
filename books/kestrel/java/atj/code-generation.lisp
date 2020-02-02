@@ -535,6 +535,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-test-file ((deep$ booleanp)
+                           (java-package$ maybe-stringp)
+                           (java-class$ stringp)
+                           (output-file-test$ stringp)
+                           (tests$ atj-test-listp)
+                           (verbose$ booleanp)
+                           (pkg-class-names string-string-alistp)
+                           (fn-method-names symbol-string-alistp)
+                           state)
+  :returns state
+  :mode :program ; because of PRINT-TO-JFILE
+  :short "Generate the test Java file."
+  (b* ((cunit (atj-gen-test-cunit deep$
+                                  java-package$
+                                  java-class$
+                                  tests$
+                                  verbose$
+                                  pkg-class-names
+                                  fn-method-names))
+       ((unless (jcunitp cunit))
+        (raise "Internal error: generated an invalid compilation unit.")
+        state)
+       ((run-when verbose$)
+        (cw "~%Generate the test Java file.~%")))
+    (print-to-jfile (print-jcunit cunit)
+                    output-file-test$
+                    state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-main-file ((deep$ booleanp)
                            (guards$ booleanp)
                            (java-package$ maybe-stringp)
@@ -587,36 +617,6 @@
                               output-file$
                               state)))
     (mv pkg-class-names fn-method-names state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-test-file ((deep$ booleanp)
-                           (java-package$ maybe-stringp)
-                           (java-class$ stringp)
-                           (output-file-test$ stringp)
-                           (tests$ atj-test-listp)
-                           (verbose$ booleanp)
-                           (pkg-class-names string-string-alistp)
-                           (fn-method-names symbol-string-alistp)
-                           state)
-  :returns state
-  :mode :program ; because of PRINT-TO-JFILE
-  :short "Generate the test Java file."
-  (b* ((cunit (atj-gen-test-cunit deep$
-                                  java-package$
-                                  java-class$
-                                  tests$
-                                  verbose$
-                                  pkg-class-names
-                                  fn-method-names))
-       ((unless (jcunitp cunit))
-        (raise "Internal error: generated an invalid compilation unit.")
-        state)
-       ((run-when verbose$)
-        (cw "~%Generate the test Java file.~%")))
-    (print-to-jfile (print-jcunit cunit)
-                    output-file-test$
-                    state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
