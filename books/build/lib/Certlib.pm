@@ -1020,10 +1020,10 @@ sub expand_dirname_cmd {
 
 sub print_event {
     my ($stream, $event) = @_;
-    print($stream, $event->[0]);
+    $stream->print($event->[0]);
     my $i = 1;
     while ($i < @$event) {
-	$event->[$i] && print " $event->[$i]";
+	$event->[$i] && $stream->print(" $event->[$i]");
 	$i = $i+1;
     }
 }
@@ -1031,7 +1031,7 @@ sub print_event {
 sub print_events {
     my $events = shift;
     foreach my $event (@$events) {
-	print "\n"; print_event($STDOUT, $event);
+	print "\n"; print_event(*STDOUT, $event);
     }
     print "\n";
 }
@@ -1230,7 +1230,7 @@ sub src_deps {
 		}
 		if (! $ldp) {
 		    print STDERR "Warning: LD event in book context in $fname:\n";
-		    print_event($STDERR, $event);
+		    print_event(*STDERR, $event);
 		    print STDERR "\n";
 		}
 	    } elsif ($type eq ifdef_define_event) {
