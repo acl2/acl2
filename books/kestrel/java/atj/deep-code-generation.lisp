@@ -693,7 +693,7 @@
        (ares-expr (if (and (consp ares-exprs)
                            (not (consp (cdr ares-exprs))))
                       (car ares-exprs)
-                    (jexpr-smethod *aij-type-value* "makeList" arg-exprs)))
+                    (jexpr-smethod *aij-type-value* "makeList" ares-exprs)))
        (ares-block (append ares-block
                            (jblock-locvar *aij-type-value*
                                           "acl2Result"
