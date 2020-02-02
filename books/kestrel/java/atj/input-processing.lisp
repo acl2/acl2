@@ -539,7 +539,7 @@
      we ensure that the inputs satisfy the guard of the function.
      We evaluate the call @('(fn in1 in2 ...)'),
      obtaining either a single result value (if @('fn') is single-valued)
-     or a list of result values (if @('fn') is multi-values).
+     or a list of result values (if @('fn') is multi-valued).
      If @(':deep') is @('nil') and @(':guards') is @('t'),
      we ensure that the inputs will select an overloaded methods,
      and we obtain the corresponding output types
@@ -549,11 +549,7 @@
     "Note that a single-valued function may return a list.
      So we need to look at the number of results returned by the function
      to recognize the result of the function call from @(tsee trans-eval)
-     as either a single list result or a list of multiple results.")
-   (xdoc::p
-    "For now functions that return @(tsee mv) values are not supported,
-     but some of the code here has already been extended
-     towards supporting them."))
+     as either a single list result or a list of multiple results."))
   (b* (((er &) (ensure-string$ name
                                (msg "The test name ~x0 in the :TESTS input"
                                     name)
@@ -584,15 +580,6 @@
                       the test term ~x1 in the :TESTS input"
                      fn call)
                 t nil))
-       (nresults (atj-number-of-results fn (w state)))
-       ((unless (=  nresults 1))
-        (er-soft+ ctx t nil
-                  "The function ~x0 called by ~
-                   the test term ~x1 in the :TESTS input ~
-                   must return a single result. ~
-                   (Support for functions returning multiple results ~
-                   will be added in the future.)"
-                  fn call))
        (inputs (fargs term$))
        (fn-info (atj-get-function-type-info fn guards$ (w state)))
        (main-fn-type (atj-function-type-info->main fn-info))
@@ -621,6 +608,7 @@
                        (value nil)))
                  (value nil)))
        ((er (cons & output/outputs)) (trans-eval term$ ctx state nil))
+       (nresults (atj-number-of-results fn (w state)))
        ((when (and (>= nresults 2)
                    (or (not (true-listp output/outputs))
                        (not (equal (len output/outputs)
