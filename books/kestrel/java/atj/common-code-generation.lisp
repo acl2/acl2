@@ -966,3 +966,110 @@
                   :params (list method-param)
                   :throws (list *aij-class-undef-pkg-exc*)
                   :body method-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-test-value ((tvalue atj-test-value-p)
+                            (jvar-value-base stringp)
+                            (jvar-value-index posp))
+  :returns (mv (block jblockp)
+               (expr jexprp)
+               (type atj-typep)
+               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+  :short "Generate the Java code for a test value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use @(tsee atj-gen-value) for @('a') test values;
+     this is why this function has the @('jvar-value-...') arguments
+     and returns the @('new-jvar-value-index') result.")
+   (xdoc::p
+    "For @('j') test values, we use
+     @(tsee atj-gen-jboolean) and similar functions.")
+   (xdoc::p
+    "In both cases, we also return the ATJ type of the expression.
+     In the shallow embedding, this will determine the Java type
+     of the local variable that stores the value."))
+  (atj-test-value-case
+   tvalue
+   :avalue (b* (((mv block expr jvar-value-index)
+                 (atj-gen-value tvalue.get jvar-value-base jvar-value-index)))
+             (mv block
+                 expr
+                 (atj-type-of-value tvalue.get)
+                 jvar-value-index))
+   :jvalue-boolean (mv nil
+                       (atj-gen-jboolean (boolean-value->bool tvalue.get))
+                       :jboolean
+                       jvar-value-index)
+   :jvalue-char (mv nil
+                    (atj-gen-jchar (char-value->nat tvalue.get))
+                    :jchar
+                    jvar-value-index)
+   :jvalue-byte (mv nil
+                    (atj-gen-jbyte (byte-value->int tvalue.get))
+                    :jbyte
+                    jvar-value-index)
+   :jvalue-short (mv nil
+                     (atj-gen-jshort (short-value->int tvalue.get))
+                     :jshort
+                     jvar-value-index)
+   :jvalue-int (mv nil
+                   (atj-gen-jint (int-value->int tvalue.get))
+                   :jint
+                   jvar-value-index)
+   :jvalue-long (mv nil
+                    (atj-gen-jlong (long-value->int tvalue.get))
+                    :jlong
+                    jvar-value-index)
+   :jvalue-boolean-array (mv nil
+                             (atj-gen-jboolean-array tvalue.get)
+                             :jboolean[]
+                             jvar-value-index)
+   :jvalue-char-array (mv nil
+                          (atj-gen-jchar-array tvalue.get)
+                          :jchar[]
+                          jvar-value-index)
+   :jvalue-byte-array (mv nil
+                          (atj-gen-jbyte-array tvalue.get)
+                          :jbyte[]
+                          jvar-value-index)
+   :jvalue-short-array (mv nil
+                           (atj-gen-jshort-array tvalue.get)
+                           :jshort[]
+                           jvar-value-index)
+   :jvalue-int-array (mv nil
+                         (atj-gen-jint-array tvalue.get)
+                         :jint[]
+                         jvar-value-index)
+   :jvalue-long-array (mv nil
+                          (atj-gen-jlong-array tvalue.get)
+                          :jlong[]
+                          jvar-value-index)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-test-values ((tvalues atj-test-value-listp)
+                             (jvar-value-base stringp)
+                             (jvar-value-index posp))
+  :returns (mv (block jblockp)
+               (exprs jexpr-listp)
+               (types atj-type-listp)
+               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
+  :short "Lift @(tsee atj-gen-test-value) to lists."
+  (b* (((when (endp tvalues)) (mv nil nil nil jvar-value-index))
+       ((mv first-block first-expr first-type jvar-value-index)
+        (atj-gen-test-value (car tvalues) jvar-value-base jvar-value-index))
+       ((mv rest-block rest-exprs rest-types jvar-value-index)
+        (atj-gen-test-values (cdr tvalues) jvar-value-base jvar-value-index)))
+    (mv (append first-block rest-block)
+        (cons first-expr rest-exprs)
+        (cons first-type rest-types)
+        jvar-value-index))
+  ///
+
+  (defret len-of-atj-gen-test-values.exprs
+    (equal (len exprs) (len tvalues)))
+
+  (defret len-of-atj-gen-test-values.types
+    (equal (len types) (len tvalues))))
