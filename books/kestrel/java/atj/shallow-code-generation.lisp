@@ -4900,9 +4900,11 @@
                                    (test-inputs atj-test-value-listp)
                                    (test-outputs atj-test-value-listp)
                                    (comp-var stringp)
+                                   (guards$ booleanp)
                                    (java-class$ stringp)
                                    (pkg-class-names string-string-alistp)
-                                   (fn-method-names symbol-string-alistp))
+                                   (fn-method-names symbol-string-alistp)
+                                   (wrld plist-worldp))
   :guard (consp test-outputs)
   :returns (mv (arg-block jblockp)
                (ares-block jblockp)
@@ -4948,11 +4950,11 @@
      thus, we use @('\"KEYWORD\"') as current package name,
      which never contains any functions.
      The method's result is stored into a variable @('javaResult').
-     The type of the variable is determined from the output types,
-     but if the resulting type is an AIJ class,
-     we use @('Acl2Value') because otherwise the type
-     may be too narrow for the method call,
-     being the type of the actual output.")
+     The type of the variable is determined from
+     the output types of the function that correspond to the arguments,
+     but if it is an @(tsee mv) class we need to qualify its name
+     with the name of the main Java class generated
+     (the code to do this is not very elegant and should be improved).")
    (xdoc::p
     "The fourth block is empty
      if the ACL2 function corresponding to the method being tested
@@ -4981,18 +4983,29 @@
        (singletonp (= (len test-outputs) 1))
        ((mv ares-val-block
             ares-exprs
-            ares-types
+            &
             &)
         (atj-gen-test-values test-outputs "value" jvar-value-index))
+       (fn-info (atj-get-function-type-info test-function guards$ wrld))
+       (main-fn-type (atj-function-type-info->main fn-info))
+       (other-fn-types (atj-function-type-info->others fn-info))
+       (all-fn-types (cons main-fn-type other-fn-types))
+       (out-types (atj-output-types-of-min-input-types arg-types all-fn-types))
+       ((unless (= (len out-types) (len test-outputs)))
+        (raise "Internal error: ~
+                the number of output types ~x0 of function ~x1 ~
+                does not match the number of test outputs ~x2."
+               out-types test-function test-outputs)
+        (mv nil nil nil nil nil))
        ((mv ares-asg-block
             ares-vars)
         (if singletonp
-            (mv (jblock-locvar (atj-type-to-jitype (car ares-types))
+            (mv (jblock-locvar (atj-type-to-jitype (car out-types))
                                "acl2Result"
                                (car ares-exprs))
                 (list "acl2Result"))
           (atj-gen-shallow-test-code-asgs ares-exprs
-                                          ares-types
+                                          out-types
                                           "acl2Result" 0)))
        (ares-block (append ares-val-block ares-asg-block))
        (call-expr (jexpr-smethod (jtype-class java-class$)
@@ -5001,11 +5014,15 @@
                                                          fn-method-names
                                                          "KEYWORD")
                                  (jexpr-name-list arg-vars)))
-       (call-jtype (atj-gen-shallow-jtype ares-types))
-       (call-jtype (if (and (jtype-case call-jtype :class)
-                            (member-equal (jtype-class->name call-jtype)
-                                          *aij-class-names*))
-                       *aij-type-value*
+       (call-jtype (atj-gen-shallow-jtype out-types))
+       (call-jtype (if (jtype-case call-jtype :class)
+                       (b* ((name (jtype-class->name call-jtype)))
+                         (if (and (>= (length name) 3)
+                                  (eql (char name 0) #\M)
+                                  (eql (char name 1) #\V)
+                                  (eql (char name 2) #\_))
+                             (jtype-class (str::cat java-class$ "." name))
+                           call-jtype))
                      call-jtype))
        (call-block (jblock-locvar call-jtype "javaResult" call-expr))
        ((mv jres-block
@@ -5013,14 +5030,14 @@
         (if singletonp
             (mv nil (list "javaResult"))
           (atj-gen-shallow-test-code-mv-asgs (jexpr-name "javaResult")
-                                             ares-types
+                                             out-types
                                              "javaResult" 0)))
        (comp-block (append (jblock-locvar (jtype-boolean)
                                           comp-var
                                           (jexpr-literal-true))
                            (atj-gen-shallow-test-code-comps ares-vars
                                                             jres-vars
-                                                            ares-types
+                                                            out-types
                                                             comp-var))))
     (mv arg-block
         ares-block
@@ -5130,5 +5147,6 @@
                 (append comp-block rest-block)))))
 
    (defrulel verify-guards-lemma
-     (implies (= (len x) 1)
-              (consp x)))))
+     (implies (and (equal (len x) (len y))
+                   (consp x))
+              (consp y)))))

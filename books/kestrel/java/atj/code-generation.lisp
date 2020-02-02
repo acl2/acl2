@@ -101,10 +101,12 @@
 
 (define atj-gen-test-method ((test$ atj-testp)
                              (deep$ booleanp)
+                             (guards$ booleanp)
                              (java-class$ stringp)
                              (verbose$ booleanp)
                              (pkg-class-names string-string-alistp)
-                             (fn-method-names symbol-string-alistp))
+                             (fn-method-names symbol-string-alistp)
+                             (wrld plist-worldp))
   :returns (method jmethodp)
   :short "Generate a Java method to run one of the specified tests."
   :long
@@ -183,9 +185,11 @@
                                      test.inputs
                                      test.outputs
                                      comp-var
+                                     guards$
                                      java-class$
                                      pkg-class-names
-                                     fn-method-names)))
+                                     fn-method-names
+                                     wrld)))
        (current-time-expr (jexpr-smethod (jtype-class "System")
                                          "currentTimeMillis"
                                          nil))
@@ -335,10 +339,12 @@
 
 (define atj-gen-test-methods ((tests$ atj-test-listp)
                               (deep$ booleanp)
+                              (guards$ booleanp)
                               (java-class$ stringp)
                               (verbose$ booleanp)
                               (pkg-class-names string-string-alistp)
-                              (fn-method-names symbol-string-alistp))
+                              (fn-method-names symbol-string-alistp)
+                              (wrld plist-worldp))
   :returns (methods jmethod-listp)
   :short "Generate all the Java methods to run the specified tests."
   :long
@@ -350,27 +356,33 @@
     (b* ((first-method
           (atj-gen-test-method (car tests$)
                                deep$
+                               guards$
                                java-class$
                                verbose$
                                pkg-class-names
-                               fn-method-names))
+                               fn-method-names
+                               wrld))
          (rest-methods
           (atj-gen-test-methods (cdr tests$)
                                 deep$
+                                guards$
                                 java-class$
                                 verbose$
                                 pkg-class-names
-                                fn-method-names)))
+                                fn-method-names
+                                wrld)))
       (cons first-method rest-methods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-class ((tests$ atj-test-listp)
                             (deep$ booleanp)
+                            (guards$ booleanp)
                             (java-class$ stringp)
                             (verbose$ booleanp)
                             (pkg-class-names string-string-alistp)
-                            (fn-method-names symbol-string-alistp))
+                            (fn-method-names symbol-string-alistp)
+                            (wrld plist-worldp))
   :returns (class jclassp)
   :short "Generate the test Java class declaration."
   :long
@@ -386,10 +398,12 @@
         (cw "~%Generate the Java methods to run the tests:~%"))
        (test-methods (atj-gen-test-methods tests$
                                            deep$
+                                           guards$
                                            java-class$
                                            verbose$
                                            pkg-class-names
-                                           fn-method-names))
+                                           fn-method-names
+                                           wrld))
        ((run-when verbose$)
         (cw "~%Generate the test Java class.~%"))
        (failures-field (atj-gen-test-failures-field))
@@ -412,20 +426,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-cunit ((deep$ booleanp)
+                            (guards$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (tests$ atj-test-listp)
                             (verbose$ booleanp)
                             (pkg-class-names string-string-alistp)
-                            (fn-method-names symbol-string-alistp))
+                            (fn-method-names symbol-string-alistp)
+                            (wrld plist-worldp))
   :returns (cunit jcunitp)
   :short "Generate the test Java compilation unit."
   (b* ((class (atj-gen-test-class tests$
                                   deep$
+                                  guards$
                                   java-class$
                                   verbose$
                                   pkg-class-names
-                                  fn-method-names))
+                                  fn-method-names
+                                  wrld))
        ((run-when verbose$)
         (cw "~%Generate the test Java compilation unit.~%")))
     (make-jcunit :package? java-package$
@@ -437,6 +455,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-file ((deep$ booleanp)
+                           (guards$ booleanp)
                            (java-package$ maybe-stringp)
                            (java-class$ stringp)
                            (output-file-test$ stringp)
@@ -449,12 +468,14 @@
   :mode :program ; because of PRINT-TO-JFILE
   :short "Generate the test Java file."
   (b* ((cunit (atj-gen-test-cunit deep$
+                                  guards$
                                   java-package$
                                   java-class$
                                   tests$
                                   verbose$
                                   pkg-class-names
-                                  fn-method-names))
+                                  fn-method-names
+                                  (w state)))
        ((unless (jcunitp cunit))
         (raise "Internal error: generated an invalid compilation unit.")
         state)
@@ -564,6 +585,7 @@
                                        state))
         (state (if tests$
                    (atj-gen-test-file deep$
+                                      guards$
                                       java-package$
                                       java-class$
                                       output-file-test$
