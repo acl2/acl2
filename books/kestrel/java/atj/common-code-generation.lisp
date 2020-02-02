@@ -1072,4 +1072,14 @@
     (equal (len exprs) (len tvalues)))
 
   (defret len-of-atj-gen-test-values.types
-    (equal (len types) (len tvalues))))
+    (equal (len types) (len tvalues)))
+
+  (defret consp-of-atj-gen-test-values.exprs
+    (implies (consp tvalues)
+             (consp exprs))
+    :rule-classes :type-prescription)
+
+  (defret consp-of-atj-gen-test-values.types
+    (implies (consp tvalues)
+             (consp types))
+    :rule-classes :type-prescription))
