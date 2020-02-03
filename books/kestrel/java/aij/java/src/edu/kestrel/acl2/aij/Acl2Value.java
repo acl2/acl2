@@ -556,6 +556,36 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * String-appends the argument value to the right of this value,
+     * consistently with the {@code string-append} ACL2 function.
+     * It returns the result of coercing the argument to a string by default;
+     * it is overridden in {@link Acl2String}.
+     *
+     * @param other The value to string-append to the right of this value.
+     *              Invariant: not null.
+     * @return The resulting of string-appending
+     * the argument value to the right of this value.
+     */
+    Acl2String stringAppendValueRight(Acl2Value other) {
+        return other.stringFix();
+    }
+
+    /**
+     * String-appends the argument string to the left of this value,
+     * consistently with the {@code string-append} ACL2 function.
+     * It returns the argument by default;
+     * it is overridden in {@link Acl2String}.
+     *
+     * @param other The string to string-append to the left of this value.
+     *              Invariant: not null.
+     * @return The result of string-appending
+     * the argument string to the left of this value.
+     */
+    Acl2String stringAppendStringLeft(Acl2String other) {
+        return other;
+    }
+
+    /**
      * Compares this value with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
