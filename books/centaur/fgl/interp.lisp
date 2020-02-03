@@ -2666,12 +2666,12 @@
         (b* ((contexts (interp-st->equiv-contexts interp-st))
              ((when (member-eq 'iff contexts))
               (b* (((fgl-interp-value xbfr) (fgl-interp-test x interp-st state)))
-                (fgl-interp-value (g-boolean xbfr))))
+                (fgl-interp-value (mk-g-boolean xbfr))))
              ((fgl-interp-recursive-call xobj)
               (fgl-interp-term-equivs x interp-st state))
              ((when (interp-st-boolean-fncall-p xobj interp-st (w state)))
               (b* (((fgl-interp-value xbfr) (fgl-interp-simplify-if-test nil xobj interp-st state)))
-                (fgl-interp-value (g-boolean xbfr)))))
+                (fgl-interp-value (mk-g-boolean xbfr)))))
           (fgl-interp-value xobj)))
              
 
@@ -4152,7 +4152,7 @@
              (interp-st (interp-st-push-scratch-fgl-obj thenval interp-st))
              (interp-st (interp-st-push-scratch-bfr testbfr interp-st))
              (interp-st (interp-st-push-scratch-fgl-objlist
-                         (list (g-boolean testbfr) thenval elseval)
+                         (list (mk-g-boolean testbfr) thenval elseval)
                          interp-st))
              ((interp-st-bind
                (reclimit (1- reclimit) reclimit))

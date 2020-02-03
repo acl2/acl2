@@ -143,7 +143,7 @@
     :guard (and (bfrstate-mode-is :aignet)
                 (<= (satlink::lit->var x) (bfrstate->bound bfrstate)))
     :returns (obj fgl-object-p)
-    (g-boolean (aignet-lit->bfr x bfrstate))
+    (mk-g-boolean (aignet-lit->bfr x bfrstate))
     ///
     (defret bfr-listp-of-aignet-lit->bool
       (implies (and (bfrstate-mode-is :aignet)
