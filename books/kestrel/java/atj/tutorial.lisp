@@ -124,6 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Main pages of the ATJ turorial, which can be navigated sequentially.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc atj-tutorial-motivation
 
   :short (atj-tutorial-short *atj-tutorial-motivation*)
@@ -196,7 +200,7 @@
 
    (atj-tutorial-next "atj-tutorial-background" *atj-tutorial-background*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-background
 
@@ -354,7 +358,7 @@
 
    (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-aij
 
@@ -386,7 +390,7 @@
 
    (atj-tutorial-next "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-acl2-values
 
@@ -553,7 +557,7 @@
 
    (atj-tutorial-next "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-deep-shallow
 
@@ -617,6 +621,10 @@
                           *atj-tutorial-acl2-values*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Auxiliary pages of the ATJ tutorial, which are referenced from the main ones.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-simplified-uml
 
