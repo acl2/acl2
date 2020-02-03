@@ -36,6 +36,9 @@
 (defconst *atj-tutorial-acl2-values*
   "Java Representation of the ACL2 Values")
 
+(defconst *atj-tutorial-deep-shallow*
+  "Deep and Shallow Embedding")
+
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
@@ -349,7 +352,7 @@
 
    (atj-tutorial-previous "atj-tutorial-motivation" *atj-tutorial-motivation*)
 
-   (atj-tutorial-next "atj-tutorial-motivation" *atj-tutorial-motivation*)))
+   (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -546,7 +549,72 @@
     "For more details on AIJ's implementation and API of ACL2 values,
      see the Javadoc in AIJ's Java code.")
 
-   (atj-tutorial-previous "atj-tutorial-aij" *atj-tutorial-aij*)))
+   (atj-tutorial-previous "atj-tutorial-aij" *atj-tutorial-aij*)
+
+   (atj-tutorial-next "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-deep-shallow
+
+  :short (atj-tutorial-short *atj-tutorial-deep-shallow*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "Translating ACL2 to Java involves
+     not only "
+    (xdoc::seetopic "atj-tutorial-acl2-values"
+                    "representing the ACL2 values in Java")
+    "but also representing the ACL2 language constructs
+     (function definitions, conditionals, etc.)
+     in Java in some way so that they can be executed in Java.
+     There are generally two approaches
+     to representing a language in another language:
+     deep embedding and shallow embedding.
+     ATJ supports both.")
+
+   (xdoc::p
+    "In the deep embedding approach,
+     both the syntax and (evaluation) semantics of ACL2
+     are represented explicitly in Java.
+     There are Java data structures
+     that correspond to the ACL2 language constructs,
+     and there is Java code that executes these constructs
+     consistently with ACL2's semantics.
+     In other words,
+     there is an interpreter of the ACL2 language
+     written in the Java language.")
+
+   (xdoc::p
+    "In the shallow embedding approach,
+     there is no such explicit representation
+     of ACL2's syntax and (evaluation) semantics in Java.
+     Instead, the ACL2 constructs are mapped to Java constructs
+     in a way that Java's semantics corresponds to ACL2's semantics.")
+
+   (xdoc::p
+    "Compilers and code generators
+     normally follow the shallow embedding approach.
+     ATJ's initial version supported the deep embedding approach,
+     because of its simplicity and assurance.
+     ATJ's later versions added the shallow embedding approach,
+     which provides more readable and performant Java code.
+     The shallow embedding is the preferred approach,
+     but support for the deep embedding has been retained
+     and there are no plans to remove it.")
+
+   (xdoc::p
+    "In the following manual pages,
+     first we describe the deep embedding approach,
+     because it is simple
+     and because some of the concepts also apply
+     to the shallow embedding approach.")
+
+   (atj-tutorial-previous "atj-tutorial-acl2-values"
+                          *atj-tutorial-acl2-values*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

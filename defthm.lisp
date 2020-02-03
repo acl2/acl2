@@ -11370,6 +11370,21 @@
   (declare (ignore name))
   form)
 
+(defun translate-for-defthm (name term ctx wrld state)
+  (let ((rec (get-translate-cert-data-record
+              :defthm
+              (cert-data-val name (cert-data-entry :translate state))
+              state)))
+    (cond (rec (value (assert$ (equal (access translate-cert-data-record rec
+                                              :inputs)
+                                      name)
+                               (cons nil ; do not store
+                                     (access translate-cert-data-record rec
+                                             :value)))))
+          (t (er-let* ((tterm (translate term t t t ctx wrld state)))
+               (value (cons (store-cert-data tterm wrld state)
+                            tterm)))))))
+
 (defun defthm-fn1 (name term state
                         rule-classes
                         instructions
@@ -11413,8 +11428,10 @@
          (er-progn
           (chk-all-but-new-name name ctx nil wrld state)
           (er-let*
-              ((tterm0 (translate term t t t ctx wrld state))
-; known-stobjs = t (stobjs-out = t)
+              ((cert-data-flg/tterm0
+                (translate-for-defthm name term ctx wrld state))
+               (cert-data-flg (value (car cert-data-flg/tterm0)))
+               (tterm0 (value (cdr cert-data-flg/tterm0)))
                (tterm
                 #+:non-standard-analysis
                 (if std-p
@@ -11501,12 +11518,23 @@
                                                          :otf-flg otf-flg)
                                               hints ens wrld1 ctx state))))
                       (ttree3 (cond (ld-skip-proofsp (value nil))
-                                    (t (prove-corollaries name tterm0 classes ens wrld1
-                                                          ctx state)))))
-                   (let ((wrld2
-                          (add-rules name classes tterm0 term ens wrld1 state))
-                         (ttree4 (cons-tag-trees ttree1
-                                                 (cons-tag-trees ttree2 ttree3))))
+                                    (t (prove-corollaries name tterm0 classes
+                                                          ens wrld1 ctx
+                                                          state)))))
+                   (let* ((wrld2 (add-rules name classes tterm0 term ens wrld1
+                                            state))
+                          (wrld3 (if cert-data-flg
+                                     (update-translate-cert-data
+                                      name wrld wrld2
+                                      :type :defthm
+                                      :inputs name
+                                      :value tterm0
+                                      :fns (all-fnnames tterm0)
+                                      :vars (state-globals-set-by tterm0 nil))
+                                   wrld2))
+                          (ttree4 (cons-tag-trees ttree1
+                                                  (cons-tag-trees ttree2
+                                                                  ttree3))))
                      (er-progn
                       (chk-assumption-free-ttree ttree4 ctx state)
                       (print-rule-storage-dependencies name ttree1 state)
@@ -11515,7 +11543,7 @@
                                      'defthm
                                      name
                                      ttree4
-                                     nil :protect ctx wrld2
+                                     nil :protect ctx wrld3
                                      state))))))))))))))))
 
 (defun defthm-fn (name term state

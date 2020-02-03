@@ -4893,3 +4893,260 @@
                    (make-jimport :static? nil :target "java.util.List"))
          :types (list class))))
     (mv cunit pkg-class-names fn-method-names)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-test-code ((test-function symbolp)
+                                   (test-inputs atj-test-value-listp)
+                                   (test-outputs atj-test-value-listp)
+                                   (comp-var stringp)
+                                   (guards$ booleanp)
+                                   (java-class$ stringp)
+                                   (pkg-class-names string-string-alistp)
+                                   (fn-method-names symbol-string-alistp)
+                                   (wrld plist-worldp))
+  :guard (consp test-outputs)
+  :returns (mv (arg-block jblockp)
+               (ares-block jblockp)
+               (call-block jblockp)
+               (jres-block jblockp)
+               (comp-block jblockp))
+  :short "Generate the code of a test method
+          that is specific to the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee atj-gen-test-method),
+     which generates a Java method
+     to run one of the tests specified in the @(':tests') input to ATJ.
+     Most of that method's code is the same for deep and shallow embedding.
+     The only varying parts are the ones returned by this function,
+     and by @(tsee atj-gen-deep-test-code) for the deep embedding.")
+   (xdoc::p
+    "The first block returned by this function
+     builds the input values of the test,
+     and assigns them to separate variables.
+     We store them into variables,
+     instead of passing their expressions
+     directly to the method being tested,
+     is to accurately measure just the time of each call
+     (see @(tsee atj-gen-test-method) for details),
+     without the time needed to compute the expressions.
+     The variables' names are @('argument1'), @('argument2'), etc.")
+   (xdoc::p
+    "The second block returned by this function
+     builds the output values of the test and assigns them to variables.
+     If there is just one output value,
+     it is assigned to a variable @('acl2Result').
+     Otherwise, they are assigned to @('acl2Result0'), @('acl2Result1'), etc.,
+     consistently with the zero-based index passed to @(tsee mv-nth).")
+   (xdoc::p
+    "The third block returned by this function
+     calls the Java method that represents the ACL2 function being tested
+     on the local variables that store the arguments.
+     Since this code is in a class that is different from
+     any of the generated Java classes that correspond to ACL2 packages,
+     the Java method to call must be always preceded by the class name:
+     thus, we use @('\"KEYWORD\"') as current package name,
+     which never contains any functions.
+     The method's result is stored into a variable @('javaResult').
+     The type of the variable is determined from
+     the output types of the function that correspond to the arguments,
+     but if it is an @(tsee mv) class we need to qualify its name
+     with the name of the main Java class generated
+     (the code to do this is not very elegant and should be improved).")
+   (xdoc::p
+    "The fourth block is empty
+     if the ACL2 function corresponding to the method being tested
+     is single-valued.
+     If instead it is multi-valued,
+     this block assigns the field of @('javaResult'),
+     which is an instance of an @(tsee mv) class,
+     to @('javaResult0'), @('javaResult1'), etc.")
+   (xdoc::p
+    "The fourth block returned by this function
+     compares the test outputs with the call outputs for equality,
+     assigning the boolean result to a variable.
+     The name of this variable is passed as argument to this function,
+     since it is also used in @(tsee atj-gen-test-method),
+     thus preventing this and that function to go out of sync
+     in regard to this shared variable name."))
+  (b* (((mv arg-val-block
+            arg-exprs
+            arg-types
+            jvar-value-index)
+        (atj-gen-test-values test-inputs "value" 1))
+       ((mv arg-asg-block
+            arg-vars)
+        (atj-gen-shallow-test-code-asgs arg-exprs arg-types "argument" 1))
+       (arg-block (append arg-val-block arg-asg-block))
+       (singletonp (= (len test-outputs) 1))
+       ((mv ares-val-block
+            ares-exprs
+            &
+            &)
+        (atj-gen-test-values test-outputs "value" jvar-value-index))
+       (fn-info (atj-get-function-type-info test-function guards$ wrld))
+       (main-fn-type (atj-function-type-info->main fn-info))
+       (other-fn-types (atj-function-type-info->others fn-info))
+       (all-fn-types (cons main-fn-type other-fn-types))
+       (out-types (atj-output-types-of-min-input-types arg-types all-fn-types))
+       ((unless (= (len out-types) (len test-outputs)))
+        (raise "Internal error: ~
+                the number of output types ~x0 of function ~x1 ~
+                does not match the number of test outputs ~x2."
+               out-types test-function test-outputs)
+        (mv nil nil nil nil nil))
+       ((mv ares-asg-block
+            ares-vars)
+        (if singletonp
+            (mv (jblock-locvar (atj-type-to-jitype (car out-types))
+                               "acl2Result"
+                               (car ares-exprs))
+                (list "acl2Result"))
+          (atj-gen-shallow-test-code-asgs ares-exprs
+                                          out-types
+                                          "acl2Result" 0)))
+       (ares-block (append ares-val-block ares-asg-block))
+       (call-expr (jexpr-smethod (jtype-class java-class$)
+                                 (atj-gen-shallow-fnname test-function
+                                                         pkg-class-names
+                                                         fn-method-names
+                                                         "KEYWORD")
+                                 (jexpr-name-list arg-vars)))
+       (call-jtype (atj-gen-shallow-jtype out-types))
+       (call-jtype (if (jtype-case call-jtype :class)
+                       (b* ((name (jtype-class->name call-jtype)))
+                         (if (and (>= (length name) 3)
+                                  (eql (char name 0) #\M)
+                                  (eql (char name 1) #\V)
+                                  (eql (char name 2) #\_))
+                             (jtype-class (str::cat java-class$ "." name))
+                           call-jtype))
+                     call-jtype))
+       (call-block (jblock-locvar call-jtype "javaResult" call-expr))
+       ((mv jres-block
+            jres-vars)
+        (if singletonp
+            (mv nil (list "javaResult"))
+          (atj-gen-shallow-test-code-mv-asgs (jexpr-name "javaResult")
+                                             out-types
+                                             "javaResult" 0)))
+       (comp-block (append (jblock-locvar (jtype-boolean)
+                                          comp-var
+                                          (jexpr-literal-true))
+                           (atj-gen-shallow-test-code-comps ares-vars
+                                                            jres-vars
+                                                            out-types
+                                                            comp-var))))
+    (mv arg-block
+        ares-block
+        call-block
+        jres-block
+        comp-block))
+
+  :prepwork
+
+  ((define atj-gen-shallow-test-code-asgs ((exprs jexpr-listp)
+                                           (types atj-type-listp)
+                                           (var-base stringp)
+                                           (index natp))
+     :guard (= (len exprs) (len types))
+     :returns (mv (block jblockp)
+                  (vars string-listp))
+     (cond ((endp exprs) (mv nil nil))
+           (t (b* ((first-var (str::cat var-base (str::natstr index)))
+                   (first-type (car types))
+                   (first-jtype (atj-type-to-jitype first-type))
+                   (first-expr (jexpr-cast (atj-type-to-jitype first-type)
+                                           (car exprs)))
+                   (first-block (jblock-locvar first-jtype
+                                               first-var
+                                               first-expr))
+                   ((mv rest-block rest-vars)
+                    (atj-gen-shallow-test-code-asgs (cdr exprs)
+                                                    (cdr types)
+                                                    var-base
+                                                    (1+ index))))
+                (mv (append first-block rest-block)
+                    (cons first-var rest-vars)))))
+     ///
+     (defret len-of-atj-gen-shallow-test-code-asgs.vars
+       (equal (len vars) (len exprs))))
+
+   (define atj-gen-shallow-test-code-mv-asgs ((expr jexprp)
+                                              (types atj-type-listp)
+                                              (var-base stringp)
+                                              (index natp))
+     :returns (mv (block jblockp)
+                  (vars string-listp))
+     (cond ((endp types) (mv nil nil))
+           (t (b* ((first-var (str::cat var-base (str::natstr index)))
+                   (first-type (car types))
+                   (first-jtype (atj-type-to-jitype first-type))
+                   (first-expr (jexpr-get-field expr
+                                                (atj-gen-shallow-mv-field-name
+                                                 index)))
+                   (first-block (jblock-locvar first-jtype
+                                               first-var
+                                               first-expr))
+                   ((mv rest-block rest-vars)
+                    (atj-gen-shallow-test-code-mv-asgs expr
+                                                       (cdr types)
+                                                       var-base
+                                                       (1+ index))))
+                (mv (append first-block rest-block)
+                    (cons first-var rest-vars)))))
+     ///
+     (defret len-of-atj-gen-shallow-test-code-mv-asgs.vars
+       (equal (len vars)
+              (len types))))
+
+   (define atj-gen-shallow-test-code-comps ((ares-vars string-listp)
+                                            (jres-vars string-listp)
+                                            (types atj-type-listp)
+                                            (comp-var stringp))
+     :guard (and (= (len jres-vars) (len ares-vars))
+                 (= (len types) (len ares-vars)))
+     :returns (block jblockp)
+     (cond ((endp ares-vars) nil)
+           (t (b* ((ares-var (car ares-vars))
+                   (jres-var (car jres-vars))
+                   (type (car types))
+                   (comp-expr (case type
+                                ((:jboolean
+                                  :jchar
+                                  :jbyte
+                                  :jshort
+                                  :jint
+                                  :jlong)
+                                 (jexpr-binary (jbinop-eq)
+                                               (jexpr-name ares-var)
+                                               (jexpr-name jres-var)))
+                                ((:jboolean[]
+                                  :jchar[]
+                                  :jbyte[]
+                                  :jshort[]
+                                  :jint[]
+                                  :jlong[])
+                                 (jexpr-smethod (jtype-class "Arrays")
+                                                "equals"
+                                                (list (jexpr-name ares-var)
+                                                      (jexpr-name jres-var))))
+                                (otherwise
+                                 (jexpr-method (str::cat ares-var ".equals")
+                                               (list (jexpr-name jres-var))))))
+                   (comp-block (jblock-expr
+                                (jexpr-binary (jbinop-asg-and)
+                                              (jexpr-name comp-var)
+                                              comp-expr)))
+                   (rest-block (atj-gen-shallow-test-code-comps (cdr ares-vars)
+                                                                (cdr jres-vars)
+                                                                (cdr types)
+                                                                comp-var)))
+                (append comp-block rest-block)))))
+
+   (defrulel verify-guards-lemma
+     (implies (and (equal (len x) (len y))
+                   (consp x))
+              (consp y)))))

@@ -1028,7 +1028,8 @@
   (defvar *return-last-fn-gc-off*)
   (defvar *return-last-fn-latches*)
   (defvar *return-last-fn-hard-error-returns-nilp*)
-  (defvar *return-last-fn-aok*))
+  (defvar *return-last-fn-aok*)
+)
 
 (defun return-last-lookup (sym wrld)
 
@@ -3610,20 +3611,6 @@
                                   latches)))))))
   (ev-fncall-rec-logical fn args w user-stobj-alist big-n safe-mode gc-off
                          latches hard-error-returns-nilp aok nil))
-
-#-acl2-loop-only
-(progn
-  (defvar *return-last-arg2*)
-  (defvar *return-last-arg3*)
-  (defvar *return-last-alist*)
-  (defvar *return-last-fn-w*)
-  (defvar *return-last-fn-user-stobj-alist*)
-  (defvar *return-last-fn-big-n*)
-  (defvar *return-last-fn-safe-mode*)
-  (defvar *return-last-fn-gc-off*)
-  (defvar *return-last-fn-latches*)
-  (defvar *return-last-fn-hard-error-returns-nilp*)
-  (defvar *return-last-fn-aok*))
 
 (defun ev-rec-return-last (fn arg2 arg3 alist w user-stobj-alist big-n
                               safe-mode gc-off latches hard-error-returns-nilp
@@ -13874,6 +13861,13 @@
 ; Warning: Keep this in sync with macroexpand1*-cmp.  Also, for any new special
 ; operators (e.g., let and translate-and-test), consider extending
 ; *special-ops* in community book books/misc/check-acl2-exports.lisp.
+
+; Warning: If you change this function, consider whether a corresponding change
+; is needed in get-translate-cert-data-record.  In particular, some checks done
+; in translate11 need to be done in get-translate-cert-data-record.  But not
+; all such checks are necessary: for example, defined-constant will be true of
+; a given symbol at include-book time if it was true at the original translate
+; time, and similarly for a call (termp x wrld).
 
 ; Note: Ilk is the ilk of the slot in which x was found, and is always one of
 ; :FN, :EXPR, or NIL.  It is almost always NIL, e.g., when first entering from

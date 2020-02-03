@@ -99,22 +99,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-test-value-list-to-test-value ((tvalues atj-test-value-listp))
-  :returns (tvalue atj-test-value-p :hyp :guard)
-  :short "Turn a singleton list of ATJ test values
-          into a single ATJ test value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "An error occurs unless the input list is a singleton.
-     This function is used when the list is expected to be a singleton."))
-  (if (= (len tvalues) 1)
-      (car tvalues)
-    (prog2$ (raise "Internal error: ~x0 is not a singleton list." tvalues)
-            (atj-test-value-avalue nil)))) ; irrelevant
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-test-values-to-types ((test-values atj-test-value-listp))
   :returns (types atj-type-listp)
   :short "Lift @(tsee atj-test-value-to-type) to lists."

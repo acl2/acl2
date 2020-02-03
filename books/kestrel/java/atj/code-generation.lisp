@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -47,14 +47,16 @@
     "To illustrate this concept,
      consider the generation of a Java expression to build
      the Java representation of an ACL2 @(tsee cons) pair.
-     The pair may be a large binary tree,
-     so we prefer not to generate a large Java expression.
+     In some circumstances,
+     since the pair may be a large binary tree,
+     we prefer not to generate a large Java expression.
      Instead, we generate
      a Java block that sets a local variable to the @(tsee car),
      a Java block that sets another local variable to the @(tsee cdr),
      and then a Java expression that builds the pair
      from those two variables.
-     The two blocks are concatenated to result in a block and an expression
+     The two blocks are concatenated,
+     resulting in a block and an expression
      for the @(tsee cons) pair in question.
      But the expressions assigned to the two local variables
      may in turn need to be built that way, recursively.
@@ -65,7 +67,7 @@
    (xdoc::p
     "As special cases, some of these code generation functions
      may return just Java expressions and no blocks,
-     since they would return always empty blocks.")
+     since they would always return empty blocks.")
    (xdoc::p
     "These code generation functions keep track
      of the next local variables to use
@@ -80,7 +82,8 @@
      The other functions are generally used for both approaches.")
    (xdoc::p
     "The code generation process consists of "
-    (xdoc::seetopic "atj-pre-translation" "a pre-translation from ACL2 to ACL2")
+    (xdoc::seetopic "atj-pre-translation"
+                    "a pre-translation from ACL2 to ACL2")
     ", followed by a translation from ACL2 to Java,
      followed by "
     (xdoc::seetopic "atj-post-translation"
@@ -96,119 +99,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-value ((tvalue atj-test-value-p)
-                            (jvar-value-base stringp)
-                            (jvar-value-index posp))
-  :returns (mv (block jblockp)
-               (expr jexprp)
-               (type atj-typep)
-               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
-  :short "Generate the Java code for a test value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use @(tsee atj-gen-value) for @('a') test values;
-     this is why this function has the @('jvar-value-...') arguments
-     and returns the @('new-jvar-value-index') result.")
-   (xdoc::p
-    "For @('j') test values, we use
-     @(tsee atj-gen-jboolean) and similar functions.")
-   (xdoc::p
-    "In both cases, we also return the ATJ type of the expression.
-     In the shallow embedding, this will determined the Java type
-     of the local variable that stores the value."))
-  (atj-test-value-case
-   tvalue
-   :avalue (b* (((mv block expr jvar-value-index)
-                 (atj-gen-value tvalue.get jvar-value-base jvar-value-index)))
-             (mv block
-                 expr
-                 (atj-type-of-value tvalue.get)
-                 jvar-value-index))
-   :jvalue-boolean (mv nil
-                       (atj-gen-jboolean (boolean-value->bool tvalue.get))
-                       :jboolean
-                       jvar-value-index)
-   :jvalue-char (mv nil
-                    (atj-gen-jchar (char-value->nat tvalue.get))
-                    :jchar
-                    jvar-value-index)
-   :jvalue-byte (mv nil
-                    (atj-gen-jbyte (byte-value->int tvalue.get))
-                    :jbyte
-                    jvar-value-index)
-   :jvalue-short (mv nil
-                     (atj-gen-jshort (short-value->int tvalue.get))
-                     :jshort
-                     jvar-value-index)
-   :jvalue-int (mv nil
-                   (atj-gen-jint (int-value->int tvalue.get))
-                   :jint
-                   jvar-value-index)
-   :jvalue-long (mv nil
-                    (atj-gen-jlong (long-value->int tvalue.get))
-                    :jlong
-                    jvar-value-index)
-   :jvalue-boolean-array (mv nil
-                             (atj-gen-jboolean-array tvalue.get)
-                             :jboolean[]
-                             jvar-value-index)
-   :jvalue-char-array (mv nil
-                          (atj-gen-jchar-array tvalue.get)
-                          :jchar[]
-                          jvar-value-index)
-   :jvalue-byte-array (mv nil
-                          (atj-gen-jbyte-array tvalue.get)
-                          :jbyte[]
-                          jvar-value-index)
-   :jvalue-short-array (mv nil
-                           (atj-gen-jshort-array tvalue.get)
-                           :jshort[]
-                           jvar-value-index)
-   :jvalue-int-array (mv nil
-                         (atj-gen-jint-array tvalue.get)
-                         :jint[]
-                         jvar-value-index)
-   :jvalue-long-array (mv nil
-                          (atj-gen-jlong-array tvalue.get)
-                          :jlong[]
-                          jvar-value-index)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-test-values ((tvalues atj-test-value-listp)
-                             (jvar-value-base stringp)
-                             (jvar-value-index posp))
-  :returns (mv (block jblockp)
-               (exprs jexpr-listp)
-               (types atj-type-listp)
-               (new-jvar-value-index posp :hyp (posp jvar-value-index)))
-  :short "Lift @(tsee atj-gen-test-value) to lists."
-  (b* (((when (endp tvalues)) (mv nil nil nil jvar-value-index))
-       ((mv first-block first-expr first-type jvar-value-index)
-        (atj-gen-test-value (car tvalues) jvar-value-base jvar-value-index))
-       ((mv rest-block rest-exprs rest-types jvar-value-index)
-        (atj-gen-test-values (cdr tvalues) jvar-value-base jvar-value-index)))
-    (mv (append first-block rest-block)
-        (cons first-expr rest-exprs)
-        (cons first-type rest-types)
-        jvar-value-index))
-  ///
-
-  (defret len-of-atj-gen-test-values.exprs
-    (equal (len exprs) (len tvalues)))
-
-  (defret len-of-atj-gen-test-values.types
-    (equal (len types) (len tvalues))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-gen-test-method ((test$ atj-testp)
                              (deep$ booleanp)
+                             (guards$ booleanp)
                              (java-class$ stringp)
                              (verbose$ booleanp)
                              (pkg-class-names string-string-alistp)
-                             (fn-method-names symbol-string-alistp))
+                             (fn-method-names symbol-string-alistp)
+                             (wrld plist-worldp))
   :returns (method jmethodp)
   :short "Generate a Java method to run one of the specified tests."
   :long
@@ -218,10 +116,10 @@
    (xdoc::p
     "This is a private static method
      that prints the name of the test,
-     builds the input values of the test,
-     builds the output value of the test,
+     builds the input values (zero or more) of the test,
+     builds the output value(s) of the test,
      calls (the Java representation of) the function on the inupt values,
-     compares the obtained result value with the output value of the test,
+     compares the obtained result value(s) with the output value(s) of the test,
      and prints a message of success or failure.
      It also sets the failures field to true if the test fails.")
    (xdoc::p
@@ -240,16 +138,11 @@
      all the repeated calls succeed
      (in the sense of computing the same result as ACL2);
      since the code is deterministic,
-     we expect that either they will all succeed or they will all fail.
-     We note that
-     the reason for storing the argument values into local variables
-     in the shallow embedding approach,
-     as opposed to passing the expressions directly to the method call,
-     is to accurately measure just the time of each call,
-     without the time needed to compute the argument expressions.")
+     we expect that either they will all succeed or they will all fail.")
    (xdoc::p
     "As a special case, if the integer parameter of the method is 0,
-     times are not collected, and no minimum/maximum/sum is calculated,
+     times are not collected,
+     no minimum/maximum/sum is calculated,
      and no time information is printed.
      We use a @('do') loop to ensure that at least one call is made,
      even when the parameter is 0.
@@ -261,90 +154,45 @@
      without the time needed to compute the argument expressions.")
    (xdoc::p
     "The code is slightly different based on whether
-     we are using the deep or shallow embedding approach:")
-   (xdoc::ul
-    (xdoc::li
-     "For the deep embedding,
-      we build the name of the function to call,
-      we put the argument values into an array,
-      and we produce the Java result
-      via the @('call') method generated by ATJ
-      (which uses the AIJ interpreter).")
-    (xdoc::li
-     "For the shallow embedding,
-      we put the argument values into local variables,
-      and we just call the Java method that represents the ACL2 function
-      on those local variables.
-      Since this code is in a class that is different from
-      any of the generated Java classes that correspond to ACL2 packages,
-      the Java method to call must be always preceded by the class name:
-      thus, we use @('\"KEYWORD\"') as current package name,
-      which never contains any functions."))
+     we are using the deep or shallow embedding approach.
+     The differences are factored into the functions
+     @(tsee atj-gen-deep-test-code) and @(tsee atj-gen-shallow-test-code).")
    (xdoc::p
     "Examining any generated instance of this method
      should make the above documentation,
      and the implementation of this code generation function,
      much clearer."))
   (b* (((atj-test test) test$)
+       ((unless (consp test.outputs))
+        (prog2$ (raise "Internal error: the test ~x0 has no outputs." test$)
+                (ec-call (jmethod-fix :irrelevant))))
        ((run-when verbose$)
         (cw "  ~s0~%" test.name))
        (method-name (atj-gen-test-method-name test.name))
-       ((mv args-block
-            args-exprs
-            args-types
-            jvar-value-index)
-        (atj-gen-test-values test.inputs "value" 1))
-       (test.output (atj-test-value-list-to-test-value test.outputs))
-       ((mv ares-block
-            ares-expr
-            ares-type
-            &)
-        (atj-gen-test-value test.output "value" jvar-value-index))
-       (res-type (case ares-type
-                   (:jboolean (jtype-boolean))
-                   (:jchar (jtype-char))
-                   (:jbyte (jtype-byte))
-                   (:jshort (jtype-short))
-                   (:jint (jtype-int))
-                   (:jlong (jtype-long))
-                   (:jboolean[] (jtype-array (jtype-boolean)))
-                   (:jchar[] (jtype-array (jtype-char)))
-                   (:jbyte[] (jtype-array (jtype-byte)))
-                   (:jshort[] (jtype-array (jtype-short)))
-                   (:jint[] (jtype-array (jtype-int)))
-                   (:jlong[] (jtype-array (jtype-long)))
-                   (otherwise *aij-type-value*)))
-       (cmp-res-expr (case ares-type
-                       ((:jboolean
-                         :jchar
-                         :jbyte
-                         :jshort
-                         :jint
-                         :jlong)
-                        (jexpr-binary (jbinop-eq)
-                                      (jexpr-name "resultAcl2")
-                                      (jexpr-name "resultJava")))
-                       ((:jboolean[]
-                         :jchar[]
-                         :jbyte[]
-                         :jshort[]
-                         :jint[]
-                         :jlong[])
-                        (jexpr-smethod (jtype-class "Arrays")
-                                       "equals"
-                                       (list (jexpr-name "resultAcl2")
-                                             (jexpr-name "resultJava"))))
-                       (otherwise
-                        (jexpr-imethod (jexpr-name "resultAcl2")
-                                       "equals"
-                                       (list (jexpr-name "resultJava"))))))
+       (comp-var "resultsMatch")
+       ((mv arg-block
+            ares-block
+            call-block
+            jres-block
+            comp-block)
+        (if deep$
+            (atj-gen-deep-test-code test.function
+                                    test.inputs
+                                    test.outputs
+                                    comp-var
+                                    java-class$)
+          (atj-gen-shallow-test-code test.function
+                                     test.inputs
+                                     test.outputs
+                                     comp-var
+                                     guards$
+                                     java-class$
+                                     pkg-class-names
+                                     fn-method-names
+                                     wrld)))
        (current-time-expr (jexpr-smethod (jtype-class "System")
                                          "currentTimeMillis"
                                          nil))
-       ((mv shallow-arg-block shallow-arg-jvars)
-        (if deep$
-            (mv nil nil)
-          (atj-gen-test-method-aux args-exprs args-types 1)))
        (n!=0-expr (jexpr-binary (jbinop-ne)
                                 (jexpr-name "n")
                                 (jexpr-literal-0)))
@@ -354,19 +202,8 @@
                          "print"
                          (list (atj-gen-jstring
                                 (str::cat "Testing '" test.name "'..."))))
-         args-block ; build test.inputs
-         (if deep$
-             (jblock-locvar (jtype-array *aij-type-value*)
-                            "functionArguments"
-                            (jexpr-newarray-init *aij-type-value*
-                                                 args-exprs))
-           shallow-arg-block) ; assign to argument1, argument2, ...
-         ares-block ; build test.output
-         (jblock-locvar res-type "resultAcl2" ares-expr)
-         (and deep$
-              (jblock-locvar *aij-type-symbol*
-                             "functionName"
-                             (atj-gen-symbol test.function)))
+         arg-block
+         ares-block
          (jblock-locvar (jtype-boolean) "pass" (jexpr-literal-true))
          (jblock-locvar (jtype-array (jtype-long))
                         "times"
@@ -382,27 +219,14 @@
           ;; body of do loop:
           (append
            (jblock-locvar (jtype-long) "startTime" current-time-expr)
-           (jblock-locvar res-type
-                          "resultJava"
-                          (if deep$
-                              (jexpr-smethod (jtype-class java-class$)
-                                             "call"
-                                             (list
-                                              (jexpr-name "functionName")
-                                              (jexpr-name "functionArguments")))
-                            (jexpr-smethod (jtype-class java-class$)
-                                           (atj-gen-shallow-fnname
-                                            test.function
-                                            pkg-class-names
-                                            fn-method-names
-                                            "KEYWORD")
-                                           (jexpr-name-list
-                                            shallow-arg-jvars))))
+           call-block
            (jblock-locvar (jtype-long) "endTime" current-time-expr)
+           jres-block
+           comp-block
            (jblock-asg (jexpr-name "pass")
                        (jexpr-binary (jbinop-condand)
                                      (jexpr-name "pass")
-                                     cmp-res-expr))
+                                     (jexpr-name comp-var)))
            (jblock-if n!=0-expr
                       (append
                        (jblock-locvar (jtype-long)
@@ -509,39 +333,18 @@
                                              :type (jtype-int)
                                              :name "n"))
                   :throws (list *aij-class-undef-pkg-exc*)
-                  :body method-body))
-
-  :prepwork
-  ((define atj-gen-test-method-aux ((args-exprs jexpr-listp)
-                                    (types atj-type-listp)
-                                    (index posp))
-     :guard (= (len args-exprs) (len types))
-     :returns (mv (block jblockp)
-                  (jvars string-listp))
-     (cond ((endp args-exprs) (mv nil nil))
-           (t (b* ((first-jvar (str::cat "argument" (str::natstr index)))
-                   (first-type (car types))
-                   (first-jtype (atj-type-to-jitype first-type))
-                   (first-expr (jexpr-cast (atj-type-to-jitype first-type)
-                                           (car args-exprs)))
-                   (first-block (jblock-locvar first-jtype
-                                               first-jvar
-                                               first-expr))
-                   ((mv rest-block rest-jvars)
-                    (atj-gen-test-method-aux (cdr args-exprs)
-                                             (cdr types)
-                                             (1+ index))))
-                (mv (append first-block rest-block)
-                    (cons first-jvar rest-jvars))))))))
+                  :body method-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-methods ((tests$ atj-test-listp)
                               (deep$ booleanp)
+                              (guards$ booleanp)
                               (java-class$ stringp)
                               (verbose$ booleanp)
                               (pkg-class-names string-string-alistp)
-                              (fn-method-names symbol-string-alistp))
+                              (fn-method-names symbol-string-alistp)
+                              (wrld plist-worldp))
   :returns (methods jmethod-listp)
   :short "Generate all the Java methods to run the specified tests."
   :long
@@ -553,27 +356,33 @@
     (b* ((first-method
           (atj-gen-test-method (car tests$)
                                deep$
+                               guards$
                                java-class$
                                verbose$
                                pkg-class-names
-                               fn-method-names))
+                               fn-method-names
+                               wrld))
          (rest-methods
           (atj-gen-test-methods (cdr tests$)
                                 deep$
+                                guards$
                                 java-class$
                                 verbose$
                                 pkg-class-names
-                                fn-method-names)))
+                                fn-method-names
+                                wrld)))
       (cons first-method rest-methods))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-class ((tests$ atj-test-listp)
                             (deep$ booleanp)
+                            (guards$ booleanp)
                             (java-class$ stringp)
                             (verbose$ booleanp)
                             (pkg-class-names string-string-alistp)
-                            (fn-method-names symbol-string-alistp))
+                            (fn-method-names symbol-string-alistp)
+                            (wrld plist-worldp))
   :returns (class jclassp)
   :short "Generate the test Java class declaration."
   :long
@@ -589,10 +398,12 @@
         (cw "~%Generate the Java methods to run the tests:~%"))
        (test-methods (atj-gen-test-methods tests$
                                            deep$
+                                           guards$
                                            java-class$
                                            verbose$
                                            pkg-class-names
-                                           fn-method-names))
+                                           fn-method-names
+                                           wrld))
        ((run-when verbose$)
         (cw "~%Generate the test Java class.~%"))
        (failures-field (atj-gen-test-failures-field))
@@ -615,20 +426,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-test-cunit ((deep$ booleanp)
+                            (guards$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (tests$ atj-test-listp)
                             (verbose$ booleanp)
                             (pkg-class-names string-string-alistp)
-                            (fn-method-names symbol-string-alistp))
+                            (fn-method-names symbol-string-alistp)
+                            (wrld plist-worldp))
   :returns (cunit jcunitp)
   :short "Generate the test Java compilation unit."
   (b* ((class (atj-gen-test-class tests$
                                   deep$
+                                  guards$
                                   java-class$
                                   verbose$
                                   pkg-class-names
-                                  fn-method-names))
+                                  fn-method-names
+                                  wrld))
        ((run-when verbose$)
         (cw "~%Generate the test Java compilation unit.~%")))
     (make-jcunit :package? java-package$
@@ -636,6 +451,39 @@
                                 (jimport nil "java.math.BigInteger")
                                 (jimport nil "java.util.Arrays"))
                  :types (list class))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-test-file ((deep$ booleanp)
+                           (guards$ booleanp)
+                           (java-package$ maybe-stringp)
+                           (java-class$ stringp)
+                           (output-file-test$ stringp)
+                           (tests$ atj-test-listp)
+                           (verbose$ booleanp)
+                           (pkg-class-names string-string-alistp)
+                           (fn-method-names symbol-string-alistp)
+                           state)
+  :returns state
+  :mode :program ; because of PRINT-TO-JFILE
+  :short "Generate the test Java file."
+  (b* ((cunit (atj-gen-test-cunit deep$
+                                  guards$
+                                  java-package$
+                                  java-class$
+                                  tests$
+                                  verbose$
+                                  pkg-class-names
+                                  fn-method-names
+                                  (w state)))
+       ((unless (jcunitp cunit))
+        (raise "Internal error: generated an invalid compilation unit.")
+        state)
+       ((run-when verbose$)
+        (cw "~%Generate the test Java file.~%")))
+    (print-to-jfile (print-jcunit cunit)
+                    output-file-test$
+                    state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -694,36 +542,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-file ((deep$ booleanp)
-                           (java-package$ maybe-stringp)
-                           (java-class$ stringp)
-                           (output-file-test$ stringp)
-                           (tests$ atj-test-listp)
-                           (verbose$ booleanp)
-                           (pkg-class-names string-string-alistp)
-                           (fn-method-names symbol-string-alistp)
-                           state)
-  :returns state
-  :mode :program ; because of PRINT-TO-JFILE
-  :short "Generate the test Java file."
-  (b* ((cunit (atj-gen-test-cunit deep$
-                                  java-package$
-                                  java-class$
-                                  tests$
-                                  verbose$
-                                  pkg-class-names
-                                  fn-method-names))
-       ((unless (jcunitp cunit))
-        (raise "Internal error: generated an invalid compilation unit.")
-        state)
-       ((run-when verbose$)
-        (cw "~%Generate the test Java file.~%")))
-    (print-to-jfile (print-jcunit cunit)
-                    output-file-test$
-                    state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-gen-everything ((deep$ booleanp)
                             (guards$ booleanp)
                             (java-package$ maybe-stringp)
@@ -767,6 +585,7 @@
                                        state))
         (state (if tests$
                    (atj-gen-test-file deep$
+                                      guards$
                                       java-package$
                                       java-class$
                                       output-file-test$

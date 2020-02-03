@@ -20,6 +20,500 @@
 
 (in-package "ACL2")
 
+; Essay on Cert-data
+
+; In February 2016, Jared Davis requested on behalf of Centaur Technology
+; Inc. that we avoid recomputing runic type-prescriptions when including
+; certified books.  There were two problems: type-prescription rules from an
+; earlier included book were sometimes causing horrendous slowdowns in those
+; computations while including a later book; and, we can lose nice
+; type-prescriptions that were inferred during the proof (first) pass of
+; certify-book using local rules, where a similar problem can occur with
+; encapsulate.
+
+; In March 2016 we solved these problems by introducing "cert-data" structures,
+; which can be stored in certificates or in the state global variable
+; 'cert-data.  In January 2020 we added cert-data structures for storing the
+; results of translation, specifically, of translating bodies of defun(s) and
+; defthm events.  The new record structure was introduced as
+; translate-cert-data-record; see its defrec form for comments.  Thus,
+; cert-data stores information on runic type-prescriptions as well as results
+; from translating defun and defthm bodies.  Some day we might save other
+; information that could be expensive to recompute.
+
+; The rest of this Essay is in three parts.  First, we introduce some general
+; notions.  Second, we focus on cert-data structures for computing runic type
+; prescriptions.  Finally, we discuss cert-data structures for avoiding
+; re-translation at include-book time, at least for definitions and theorems.
+
+; Part 1: General Notions
+
+; One of the fields in a .cert file is a :CERT-DATA field, which is an alist
+; mapping keys to fast-alists.  As of this writing there are two keys:
+; :TYPE-PRESCRIPTION and :TRANSLATE.  Each of the two fast-alists (for the two
+; keys) is called a "cert-data entry".  See for example fast-cert-data, which
+; takes a :cert-data field value from a certificate and creates an alist
+; mapping each of the two keys to a cert-data entry (which is a fast-alist).
+; (Fast-cert-data is normally the identity function, but if the .cert file is
+; written without the serialize writer then fast-cert-data serves to create a
+; fast-alist to associate with each of those keys.)
+
+; Each of the two entries is a fast-alist whose keys are symbols.  In the case
+; of a :type-prescription entry, each key is a function symbol whose associated
+; value is a type-prescription record.  In the case of a :translate entry, each
+; key is an event name (currently, a function symbol or the name of a defthm
+; event) that is associated with a list of translate-cert-data-record records.
+
+; Part 2: Type Prescriptions
+
+; The following processes support the effective re-use of runic type
+; prescriptions.
+
+; (1) When including a certified book, all functions defined at the top level
+;     (i.e., not inside sub-books) get their runic type-prescriptions (if any)
+;     from the .cert file -- more specifically, from the value of state global
+;     'cert-data, which is bound to the value from the .cert file.
+
+; (2) Runic type-prescriptions are saved after pass1 of certify-book and
+;     encapsulate.  For each :logic-mode defun processed in the second pass at
+;     the top level (not in an included sub-book), an "intersection" is taken
+;     of the runic type-prescription from the first pass and the computed runic
+;     type-prescription computed in the usual way.  Note that since a function
+;     can be defined locally in a locally included book during the first pass
+;     but in a later defun at the top level in the second pass (which was
+;     redundant in the first pass), we even save some runic type-prescriptions
+;     from functions introduced during the first pass that were not introduced
+;     at the top level.
+
+;     Clearly each such rune is a logical consequence of the first pass; hence,
+;     by conservativity, it is a logical consequence of the second pass.  Note
+;     that we may need to recompute the :corollary, which otherwise might not
+;     be a term of the theory produced by the second pass.
+
+; (3) The runic type-prescription written to a .cert file is the one that
+;     exists after the second pass.  We save such a rule for every function
+;     that could be introduced when including the book, which includes the
+;     top-level portcullis functions and every function introduced by the book
+;     (even those not processed during pass 2).  Function
+;     newly-defined-top-level-fns provides this information; happily, even
+;     before we added support for cert-data, that function was already called
+;     under certify-book-fn to compute a list of function symbols to pass to
+;     write-expansion-file.
+
+; Now we elaborate on these processes.
+
+; Note that including an already-certified book gives you the specific type
+; prescription from the .cert file.  If however a book B1 includes another book
+; B2 only locally, then the type-prescription computed for B1 might be stronger
+; than that from B2, because of our "intersection" of rules in (2) above.
+
+; Suppose we are to determine the runic type-prescription for a given defun.
+; If state global 'cert-data has value nil, then we just do the usual iterative
+; calculation.  Otherwise we are to use that cert-data; but how do we know that
+; we should do the "intersection" operation because we are in the pass 2 case,
+; described in (2) above?  We bind key :pass1-saved to t in the value of state
+; global 'cert-data during the second pass (meaning, cert-data is from pass 1).
+; If necessary we could have non-nil values that provide more information than
+; t, for example, 'acl2::certify-book or 'acl2::encapsulate.  We don't bother
+; to bind :pass1-saved to nil for other than pass 2; we simply don't bind
+; :pass1-saved.
+
+; In (2) above we describe the saving of runic type-prescriptions to use during
+; the second pass.  In the case of certify-book, however, we do this only for
+; the part of the world not in the retraction after pass 1, since there is no
+; need to save information for defuns already processed before starting pass 2.
+
+; Why do we need the "intersection" operation described in (2) above?  That is,
+; why not just pick either the runic type-prescription from the first pass or
+; compute one for the second pass?  The answer is that either may be weaker
+; than desired, as illustrated by the following two examples.  (These examples
+; are for encapsulate, but certify-book has the same issue.)
+
+; (2a) First, here is an example showing that the second pass can do a better
+; job computing the runic type-prescription than the first pass.  (To see the
+; empty 'type-prescriptions we would get for FOO on the first pass, change
+; (encapsulate () ...) to (progn ...).)
+
+; (encapsulate
+;   ()
+;   (local (include-book "rtl/rel9/support/support/lnot" :dir :system))
+
+; ; Because of the following in-theory event, the cert-data from the first pass
+; ; associates no runic type-prescription with FOO.
+
+;   (local (in-theory nil))
+;   (defun fl (x)
+;     (declare (xargs :guard (real/rationalp x)))
+;     (floor x 1))
+;   (defun bits (x i j)
+;     (declare (xargs :guard (and (natp x) (natp i) (natp j))
+;                     :verify-guards nil))
+;     (mbe :logic (if (or (not (integerp i))
+;                         (not (integerp j)))
+;                     0
+;                     (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
+;          :exec (if (< i j)
+;                    0
+;                    (logand (ash x (- j))
+;                            (1- (ash 1 (1+ (- i j))))))))
+;   (defun lnot (x n)
+;     (declare (xargs :guard (and (natp x) (integerp n) (< 0 n))
+;                     :verify-guards nil))
+;     (if (natp n)
+;         (+ -1 (expt 2 n) (- (bits x (1- n) 0)))
+;         0))
+;   (defun foo (x n)
+;     (lnot x n)))
+
+; ; Using cert-data from the first pass only:
+; ; (assert-event (null (getpropc 'foo 'type-prescriptions)))
+
+; ; Computing the runic type-prescription in the second pass:
+; (assert-event
+;  (equal (decode-type-set
+;          (access type-prescription
+;                  (car (last (getpropc 'foo 'type-prescriptions)))
+;                  :basic-ts))
+;         '*ts-rational*)
+
+; What we actually get, now, is *ts-integer*, because that's the :basic-ts for
+; the runic type-prescription of lnot (and also of binary-logand, bits, and fl)
+; from the locally included book, saved from the first pass.
+
+; (2b) To obtain an example showing that the first pass can do a better job
+; computing the runic type-prescription than the second pass, simply omit
+; (in-theory nil) from the example above.  The second pass still gives us
+; *ts-rational, as above; but if we change (encapsulate () ...) to (progn ...),
+; we see:
+
+; (assert-event
+;  (equal (decode-type-set
+;          (access type-prescription
+;                  (car (last (getpropc 'foo 'type-prescriptions)))
+;                  :basic-ts))
+;         '*ts-non-negative-integer*))
+
+; Let's turn now to our handling of a few thorny issues.
+
+; Suppose we are certifying a book with an encapsulate that locally defines a
+; function, f, such that later in the book is a different, non-local definition
+; of f.  At the end of pass 1 of certify-book we will store a runic type
+; prescription for the second definition.  Then during pass 2 of certify-book,
+; might we make a mistake by associating that type-prescription with the first
+; (local) definition of f?  No, because local definitions are skipped during
+; pass 2.  But for robustness, we pass a value for cert-data to
+; process-embedded-events, which binds state global cert-data to that value.
+; Thus, we override the global cert-data when we process an encapsulate.
+
+; The expansion phase of make-event introduces definitions that are in effect
+; local.  As in the preceding paragraph, we need to avoid applying the global
+; cert-data to such definitions.  This problem is solved primarily by arranging
+; that protected-eval, via protect-system-state-globals, binds state global
+; cert-data to nil.  An additional binding of cert-data to nil is made before
+; calling make-event-fn2-lst, which handles :OR forms and thus can throw away
+; earlier values.  In such a case, the runic type-prescription will be
+; recomputed during include-book, but we think that such an exception is
+; tolerable.
+
+; We are careful to not use cert-data for non-trivial encapsulates.  It might
+; well be possible to do so correctly, but we would need to be very careful to
+; track constraints properly; it seems easy to have a soundness bug due to
+; recording insufficient constraints in pass 2 to justify deductions made from
+; stronger constraints in pass 1.
+
+; A runic type-prescription rule may contain symbols not present in the
+; certification world, as shown below.  A similar issue applies to the
+; :expansion-alist field of the certificate, which is addressed by finding the
+; problematic package names with pkg-names introducing hidden defpkg forms.  We
+; use that same solution for cert-data.  The following example shows how this
+; works.  First, let's look at a couple of books; notice the package definition
+; that is to be made in the certification world of the first book.
+
+;   $ cat sub.lisp
+;   ; (defpkg "FOO" nil)
+;   ; (certify-book "sub" 1)
+;
+;   (in-package "ACL2")
+;
+;   (defun f2 (x) x)
+;   $ cat top.lisp
+;   (in-package "ACL2")
+;
+;   (include-book "sub")
+;
+;   (defmacro my-def ()
+;     `(defun f (,(intern$ "X" "FOO")) ,(intern$ "X" "FOO")))
+;
+;   (my-def)
+;   $
+
+; After certification of both books, the :CERT-DATA field of top.cert has the
+; following value.
+
+;   ((:TYPE-PRESCRIPTION (F 0 (3413 F FOO::X)
+;                           (NIL)
+;                           ((FOO::X) :TYPE-PRESCRIPTION F)
+;                           EQUAL (F FOO::X)
+;                           FOO::X)))
+
+; Thus, a hidden defpkg is generated (here we abbreviate the directory as
+; <dir>).
+
+;   :BEGIN-PORTCULLIS-CMDS
+;   (DEFPKG "FOO" NIL NIL
+;           ("<dir>/sub.lisp")
+;           T)
+;   :END-PORTCULLIS-CMDS
+
+; Part 3: Translate
+
+; During the first pass of certify-book, a fast-alist is built up as the value
+; of the world global, TRANSLATE-CERT-DATA.  (See update-translate-cert-data.)
+; This fast-alist will ultimately be the value stored in the :translate entry
+; of the :cert-data field of the book's certificate.  When including a book,
+; that field will be the value of the cert-data given to
+; process-embedded-events in include-book-fn1.
+
+; In order for that fast-alist to be valid when consulted during include-book
+; (via the calls of get-translate-cert-data-record), we use function
+; store-cert-data to decide when to store into the world global,
+; TRANSLATE-CERT-DATA.  We must skip results of translation computed on behalf
+; of local events, which will of course be irrelevant (or even misleading) when
+; later including the book.  We also need to skip translations computed during
+; make-event expansion, but that happens automatically because we are recording
+; the results in a world global and the world is reverted after make-event
+; expansion.  We also take other measures in store-cert-data.  In particular,
+; we avoid storing results computed during the first pass of an encapsulate
+; (which is skipped during include-book), though that shouldn't be necessary
+; since the world is rolled back after that pass -- and note that we don't want
+; to use pass1 encapsulate results to avoid translating in pass2, because that
+; would avoid local incompatibility checking.  (For the same reason, we don't
+; retrieve :translate cert-data during the include-book phase of certify-book.)
+; Also, we avoid worrying about lambda objects.  See store-cert-data for
+; details.
+
+; Remarks (in no particular order).
+
+; (1) We considered explicitly avoiding storing translation results from inside
+; progn!, simply because of the unbounded flexibility of progn!.  But we view
+; it unlikely that progn! would cause a problem, since the only truly obvious
+; way to build a confusing cert-data entry (fast-alist) for the :translate key
+; seems to be to use redefinition, in which case we write an empty :translate
+; entry into the certificate (see cert-data-for-certificate); and besides,
+; progn! requires a trust tag, so we are sort of off the hook as far as weird
+; end cases are concerned.
+
+; (2) One can certify books in community books directory
+; books/system/tests/cert-data/ and look at their certificates with (read-file
+; "<bookname>.cert" state), to see the :cert-data field for each book.  For
+; example, the function f1 in top1.lisp and top1a.lisp is redundant with a
+; function in an earlier-included book, so its translated body is not stored in
+; the corresponding .cert file; but including top1a.lisp does use the
+; translated body when including the sub-book, sub1.lisp.
+
+; (3) We are careful not to retrieve translated terms during make-event
+; expansion or other uses of protect-system-state-globals, by binding state
+; global cert-data to nil in protect-system-state-globals.
+
+; (4) There could be a very few cases where the saved :translate cert-data
+; makes include-book a bit more permissive than it would be otherwise,
+; especially if trust tags are involved, though we have tried to minimize this.
+; An example is that for flet, translate disallows binding a symbol that is
+; also bound in the return-last-table.  But since translation was OK at
+; certify-book time, we don't mind using the same translation at include-book
+; time.  Another case is when functions called during macroexpansion (within
+; translation) are untouchable when including a book on top of a non-trivial
+; world; we don't check for that, though we do check for untouchables in the
+; translated terms before retrieval.  Another case: We don't re-run calls of
+; translate-and-test.
+
+; (5) We have considered saving more translation results.  But so far,
+; profiling has suggested, using (include-book "centaur/sv/top" :dir :system),
+; that the only non-trivial benefit might be in saving results of translating
+; event forms.  This would presumably involve honsing the (untranslated)
+; events, as keys; and we haven't thought through what additional work might be
+; necessary (for example, we ignored the case (eq stobjs-out :stobjs-out) in
+; translate11 because that shouldn't apply for defun or defthm).  Profiling
+; suggests that we already lose significant potential speed-up simply by having
+; to read larger .cert files, and that problem would be even greater if keys
+; are events instead of symbols.  (Or maybe we can use the cadr of some event
+; forms as symbols?... lots to think about.)  Another potential issue is added
+; complexity from how trans-eval handles IF lazily, rather than translating the
+; entire form at once.  So our initial work on :translate cert-data in January,
+; 2020, is only for translation of defun(s) and defthm bodies.
+
+; (6) Because of our calls of make-fast-alist in the definition of the function
+; fast-cert-data, it is unnecessary to store cert-data entries as fast-alists
+; in the .cert file.  But profiling suggests that it is harmless to do so.
+; Note that the relevant alists are already fast-alists anyhow; we'd have to
+; free them if we want to avoid storing them as fast-alists.
+
+; (7) As a sort of optimization, saving space in .cert files at the expense of
+; time: we could perhaps loosen the cons-count-bounded restriction in
+; store-cert-data by finding all constant symbols' values in the untranslated
+; input and doing a sublis to re-insert those symbols in the translated code,
+; and then use sublis in the other direction upon retrieval.
+
+; (8) Note that certain tests for ttags in translate11, such as (assoc-eq fn
+; *ttag-fns*), aren't a problem.  That's because if a trust tag is active at a
+; given non-local event during book certification, then it's still active at
+; include-book time, since that could only be defeated by inclusion of a
+; sub-book, but ttag settings in a sub-book are local to that sub-book.
+
+(defun cert-data-pair (fn cert-data-entry)
+
+; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key, e.g., for the
+; key, :type-prescription.
+
+  (and cert-data-entry ; optimization
+       (hons-get fn cert-data-entry)))
+
+(defun cert-data-val (fn cert-data-entry)
+
+; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key, e.g., for the
+; key, :type-prescription.
+
+  (let ((pair (and cert-data-entry ; optimization
+                   (hons-get fn cert-data-entry))))
+    (cdr pair)))
+
+(defun cert-data-entry-pair (key state)
+
+; Key is :type-prescription or any other keyword that can be associated in a
+; cert-data structure with an entry.
+
+  (let ((cert-data (f-get-global 'cert-data state)))
+    (and cert-data ; optimization
+         (assoc-eq key cert-data))))
+
+(defun cert-data-entry (key state)
+
+; Key is :type-prescription, :defthm, or any other keyword that can be
+; associated in a cert-data structure with an entry.  We return a valid
+; cert-data entry or nil.  Note that cert-data entries are not valid in a local
+; or make-event context.  See the Essay on Cert-data.
+
+  (let ((cert-data (f-get-global 'cert-data state)))
+    (and cert-data ; optimization
+         (not (f-get-global 'in-local-flg state))
+         (int= (f-get-global 'make-event-debug-depth state) 0)
+         (cdr (assoc-eq key cert-data)))))
+
+(defun in-encapsulatep (embedded-event-lst non-trivp)
+
+; This function determines if we are in the scope of an encapsulate.
+; If non-trivp is t, we restrict the interpretation to mean ``in the
+; scope of a non-trivial encapsulate'', i.e., in an encapsulate that
+; introduces a constrained function symbol.
+
+  (cond
+   ((endp embedded-event-lst) nil)
+   ((and (eq (car (car embedded-event-lst)) 'encapsulate)
+         (if non-trivp
+             (cadr (car embedded-event-lst))
+           t))
+    t)
+   (t (in-encapsulatep (cdr embedded-event-lst) non-trivp))))
+
+(mutual-recursion
+
+(defun contains-lambda-objectp (x)
+
+; This function returns true when the input contains a quoted lambda.
+
+  (declare (xargs :guard (pseudo-termp x)))
+  (cond ((atom x) nil)
+        ((eq (car x) 'quote)
+         (let ((u (unquote x)))
+           (and (consp u)
+                (eq (car u) 'lambda))))
+        (t (or (contains-lambda-object-listp (cdr x))
+               (and (flambda-applicationp x)
+                    (contains-lambda-objectp (lambda-body (car x))))))))
+
+(defun contains-lambda-object-listp (x)
+  (declare (xargs :guard (pseudo-term-listp x)))
+  (cond ((endp x) nil)
+        (t (or (contains-lambda-objectp (car x))
+               (contains-lambda-object-listp (cdr x))))))
+)
+
+(defun store-cert-data (val wrld state)
+  (and (f-get-global 'certify-book-info state)
+       (not (f-get-global 'in-local-flg state))
+       (not ; not inside include-book
+        (global-val 'include-book-path wrld))
+
+; The next conjunct is optional, as explained in the Essay on Cert-data.
+
+       (not ; not "obviously" in encapsulate pass1
+        (and (in-encapsulatep (global-val 'embedded-event-lst wrld) nil)
+             (not (eq (ld-skip-proofsp state) 'include-book))))
+
+; The following check may be needlessly conservative.  It addresses the
+; following concern: translation of quoted lambdas is complicated by
+; considerations involving apply$ and loop$.  For example, untouchable function
+; symbols inside such a quoted object might be a concern -- though probably
+; not, since we don't seem to allow function symbols to be both badged and
+; untouchable.  Rather than think through such issues, we simply skip all
+; quoted lambdas.  If the need arises, one can look into removing this
+; restriction.
+
+       (not (contains-lambda-objectp val))
+
+; The following heuristic check could be reconsidered.  It is intended to keep
+; .cert files from being too big.
+
+       (< (cons-count-bounded val)
+          (fn-count-evg-max-val))))
+
+(defrec translate-cert-data-record
+
+; Warning: Keep the fields in sync with update-translate-cert-data and
+; cert-data-for-certificate.
+
+; The form of inputs and value depends on type.
+; - For translate-bodies: inputs is the names argument to translate-bodies
+;   and value is (cons tbodies bindings), where tbodies is the list of
+;   translated bodies and bindings is the corresponding bindings from
+;   translate.
+; - For defthm: inputs is the name
+;   and value is the translated body (without making an adjustment for
+;   ACL2(r)).
+
+  ((type . inputs) . (value . (fns . vars)))
+  t)
+
+(defmacro update-translate-cert-data (name installed-wrld wrld
+                                           &key type inputs value fns vars)
+
+; Warning: Keep the fields in sync with translate-cert-data-record and
+; cert-data-for-certificate.
+
+  `(let ((old-translate-cert-data (global-val 'translate-cert-data
+                                              ,installed-wrld))
+         (name ,name)
+         (type ,type)
+         (inputs ,inputs)
+         (value ,value)
+         (fns ,fns)
+         (vars ,vars)
+         (wrld ,wrld))
+     (global-set 'translate-cert-data
+                 (let ((new (make translate-cert-data-record
+                                  :type type
+                                  :inputs inputs
+                                  :value value
+                                  :fns fns
+                                  :vars vars))
+                       (old-lst (cdr (hons-get name old-translate-cert-data))))
+                   (if (member-equal new old-lst)
+                       old-translate-cert-data
+                     (hons-acons name
+                                 (cons new old-lst)
+                                 old-translate-cert-data)))
+                 wrld)))
+
 ; Rockwell Addition: A major change is the provision of non-executable
 ; functions.  These are typically functions that use stobjs but which
 ; are translated as though they were theorems rather than definitions.
@@ -148,6 +642,75 @@
                               ""
                             ", as is laid down by defun-nx"))))))))
 
+(defun collect-untouchable-fns (syms state)
+
+  (let ((temp-touchable-fns (f-get-global 'temp-touchable-fns state)))
+    (cond ((eq temp-touchable-fns t) nil)
+          (t (let* ((wrld (w state)) ; installed world
+                    (untouchable-fns (global-val 'untouchable-fns wrld))
+                    (int (intersection-eq syms untouchable-fns)))
+               (cond (temp-touchable-fns
+                      (set-difference-eq int temp-touchable-fns))
+                     (t int)))))))
+
+(defun collect-untouchable-vars (syms state)
+  (let ((temp-touchable-vars (f-get-global 'temp-touchable-vars state)))
+    (cond ((eq temp-touchable-vars t) nil)
+          (t (let* ((wrld (w state)) ; installed world
+                    (untouchable-vars (global-val 'untouchable-vars wrld))
+                    (int (and syms ; optimization
+                              (intersection-eq syms untouchable-vars))))
+               (cond (temp-touchable-vars
+                      (set-difference-eq int temp-touchable-vars))
+                     (t int)))))))
+
+(defun get-translate-cert-data-record (type lst state)
+
+; Lst is a list of translate-cert-data-record records associated with a single
+; name.  We return the unique one associated with type, if any, else nil.
+; Reasons for returning nil include:
+
+; (a) two or more relevant records (which would necessarily be distinct; see
+;     update-translate-cert-data);
+; (b) function symbols in the translated term that are now untouchable; or
+; (c) state global symbols in the translated term, assigned or made unbound,
+;     that are now untouchable.
+
+  (cond ((endp lst) nil)
+        ((eq type (access translate-cert-data-record (car lst) :type))
+         (cond ((or (get-translate-cert-data-record type (cdr lst) state) ; (a)
+                    (collect-untouchable-fns
+                     (access translate-cert-data-record (car lst) :fns)
+                     state) ; (b)
+                    (collect-untouchable-vars
+                     (access translate-cert-data-record (car lst) :vars)
+                     state)) ; (c)
+                nil)
+               (t (car lst))))
+        (t (get-translate-cert-data-record type (cdr lst) state))))
+
+(defun get-translate-bodies (names cert-data-entry state)
+
+; Cert-data-entry is a valid cert-data entry for the :translate key.  It is
+; thus a list of translate-cert-data-record records.  We return nil or else the
+; unique bodies associated with names, checking for untouchables.
+
+  (cond ((null names) ; probably always false, but we check, for robustness
+         nil)
+        (t (let ((lst (cert-data-val (car names) cert-data-entry)))
+             (cond
+              ((null lst) ; optimization
+               nil)
+              (t (let ((val (get-translate-cert-data-record :translate-bodies
+                                                            lst
+                                                            state)))
+                   (and val
+                        (assert$ (equal (access translate-cert-data-record val
+                                                :inputs)
+                                        names)
+                                 (access translate-cert-data-record val
+                                         :value))))))))))
+
 (defun translate-bodies (non-executablep names arglists bodies known-stobjs-lst
                                          reclassifying-all-programp
                                          ctx wrld state)
@@ -160,7 +723,21 @@
 ; such replacements.
 
   (declare (xargs :guard (true-listp bodies)))
-  (mv-let (erp lst bindings)
+  (let ((cert-data-entry (cert-data-entry :translate state)))
+    (let ((cert-data-tbodies-and-bindings
+           (if cert-data-entry
+
+; Note that we do not need to rule out make-event expansion explicitly, because
+; it is already being ruled out: protect-system-state-globals (called by
+; protected-eval, which does the evaluation for make-event expansion) binds
+; state global 'cert-data to nil.
+
+               (get-translate-bodies names cert-data-entry state)
+             nil)))
+      (cond
+       (cert-data-tbodies-and-bindings (value cert-data-tbodies-and-bindings))
+       (t
+        (mv-let (erp lst bindings)
           (translate-bodies1 (eq non-executablep t) ; not :program
                              names bodies
                              (pairlis$ names names)
@@ -187,9 +764,10 @@
                                              non-executablep (cdr names)
                                              ctx state))
                  (t (value nil)))
-           (cond ((eq non-executablep t)
-                  (value (cons lst (pairlis-x2 names '(nil)))))
-                 (t (value (cons lst bindings)))))))
+           (value (cons lst
+                        (cond ((eq non-executablep t)
+                               (pairlis-x2 names '(nil)))
+                              (t bindings)))))))))))
 
 ; The next section develops our check that mutual recursion is
 ; sensibly used.
@@ -3293,231 +3871,6 @@
                             :corollary corollary)
                     ttree)))))))))))))
 
-; Essay on Cert-data
-
-; In February 2016, Jared Davis requested on behalf of Centaur Technology
-; Inc. that we avoid recomputing runic type-prescriptions when including
-; certified books.  There were two problems: type-prescription rules from an
-; earlier included book were sometimes causing horrendous slowdowns in those
-; computations while including a later book; and, we can lose nice
-; type-prescriptions that were inferred during the proof (first) pass of
-; certify-book using local rules, where a similar problem can occur with
-; encapsulate.
-
-; In March 2016 we solved these problems by introducing "cert-data" structures,
-; which can be stored in certificates or in the state global variable
-; 'cert-data.  Cert-data stores information on runic type-prescriptions, but
-; some day we might put results from translate or other information that could
-; be expensive to recompute.
-
-; The following processes support the effective re-use of runic type
-; prescriptions.
-
-; (1) When including a certified book, all functions defined at the top level
-;     (i.e., not inside sub-books) get their runic type-prescriptions (if any)
-;     from the .cert file -- more specifically, from the value of state global
-;     'cert-data, which is bound to the value from the .cert file.
-
-; (2) Runic type-prescriptions are saved after pass1 of certify-book and
-;     encapsulate.  For each :logic-mode defun processed in the second pass at
-;     the top level (not in an included sub-book), an "intersection" is taken
-;     of the runic type-prescription from the first pass and the computed runic
-;     type-prescription computed in the usual way.  Note that since a function
-;     can be defined locally in a locally included book during the first pass
-;     but in a later defun at the top level in the second pass (which was
-;     redundant in the first pass), we even save some runic type-prescriptions
-;     from functions introduced during the first pass that were not introduced
-;     at the top level.
-
-;     Clearly each such rune is a logical consequence of the first pass; hence,
-;     by conservativity, it is a logical consequence of the second pass.  Note
-;     that we may need to recompute the :corollary, which otherwise might not
-;     be a term of the theory produced by the second pass.
-
-; (3) The runic type-prescription written to a .cert file is the one that
-;     exists after the second pass.  We save such a rule for every function
-;     that could be introduced when including the book, which includes the
-;     top-level portcullis functions and every function introduced by the book
-;     (even those not processed during pass 2).  Function
-;     newly-defined-top-level-fns provides this information; happily, even
-;     before we added support for cert-data, that function was already called
-;     under certify-book-fn to compute a list of function symbols to pass to
-;     write-expansion-file.
-
-; Now we elaborate on these processes.
-
-; Note that including an already-certified book gives you the specific type
-; prescription from the .cert file.  If however a book B1 includes another book
-; B2 only locally, then the type-prescription computed for B1 might be stronger
-; than that from B2, because of our "intersection" of rules in (2) above.
-
-; Suppose we are to determine the runic type-prescription for a given defun.
-; If state global 'cert-data has value nil, then we just do the usual iterative
-; calculation.  Otherwise we are to use that cert-data; but how do we know that
-; we should do the "intersection" operation because we are in the pass 2 case,
-; described in (2) above?  We bind key :pass1-saved to t in the value of state
-; global 'cert-data during the second pass (meaning, cert-data is from pass 1).
-; If necessary we could have non-nil values that provide more information than
-; t, for example, 'acl2::certify-book or 'acl2::encapsulate.  We don't bother
-; to bind :pass1-saved to nil for other than pass 2; we simply don't bind
-; :pass1-saved.
-
-; In (2) above we describe the saving of runic type-prescriptions to use during
-; the second pass.  In the case of certify-book, however, we do this only for
-; the part of the world not in the retraction after pass 1, since there is no
-; need to save information for defuns already processed before starting pass 2.
-
-; Why do we need the "intersection" operation described in (2) above?  That is,
-; why not just pick either the runic type-prescription from the first pass or
-; compute one for the second pass?  The answer is that either may be weaker
-; than desired, as illustrated by the following two examples.  (These examples
-; are for encapsulate, but certify-book has the same issue.)
-
-; (2a) First, here is an example showing that the second pass can do a better
-; job computing the runic type-prescription than the first pass.  (To see the
-; empty 'type-prescriptions we would get for FOO on the first pass, change
-; (encapsulate () ...) to (progn ...).)
-
-; (encapsulate
-;   ()
-;   (local (include-book "rtl/rel9/support/support/lnot" :dir :system))
-
-; ; Because of the following in-theory event, the cert-data from the first pass
-; ; associates no runic type-prescription with FOO.
-
-;   (local (in-theory nil))
-;   (defun fl (x)
-;     (declare (xargs :guard (real/rationalp x)))
-;     (floor x 1))
-;   (defun bits (x i j)
-;     (declare (xargs :guard (and (natp x) (natp i) (natp j))
-;                     :verify-guards nil))
-;     (mbe :logic (if (or (not (integerp i))
-;                         (not (integerp j)))
-;                     0
-;                     (fl (/ (mod x (expt 2 (1+ i))) (expt 2 j))))
-;          :exec (if (< i j)
-;                    0
-;                    (logand (ash x (- j))
-;                            (1- (ash 1 (1+ (- i j))))))))
-;   (defun lnot (x n)
-;     (declare (xargs :guard (and (natp x) (integerp n) (< 0 n))
-;                     :verify-guards nil))
-;     (if (natp n)
-;         (+ -1 (expt 2 n) (- (bits x (1- n) 0)))
-;         0))
-;   (defun foo (x n)
-;     (lnot x n)))
-
-; ; Using cert-data from the first pass only:
-; ; (assert-event (null (getpropc 'foo 'type-prescriptions)))
-
-; ; Computing the runic type-prescription in the second pass:
-; (assert-event
-;  (equal (decode-type-set
-;          (access type-prescription
-;                  (car (last (getpropc 'foo 'type-prescriptions)))
-;                  :basic-ts))
-;         '*ts-rational*)
-
-; What we actually get, now, is *ts-integer*, because that's the :basic-ts for
-; the runic type-prescription of lnot (and also of binary-logand, bits, and fl)
-; from the locally included book, saved from the first pass.
-
-; (2b) To obtain an example showing that the first pass can do a better job
-; computing the runic type-prescription than the second pass, simply omit
-; (in-theory nil) from the example above.  The second pass still gives us
-; *ts-rational, as above; but if we change (encapsulate () ...) to (progn ...),
-; we see:
-
-; (assert-event
-;  (equal (decode-type-set
-;          (access type-prescription
-;                  (car (last (getpropc 'foo 'type-prescriptions)))
-;                  :basic-ts))
-;         '*ts-non-negative-integer*))
-
-; Let's turn now to our handling of a few thorny issues.
-
-; Suppose we are certifying a book with an encapsulate that locally defines a
-; function, f, such that later in the book is a different, non-local definition
-; of f.  At the end of pass 1 of certify-book we will store a runic type
-; prescription for the second definition.  Then during pass 2 of certify-book,
-; might we make a mistake by associating that type-prescription with the first
-; (local) definition of f?  No, because local definitions are skipped during
-; pass 2.  But for robustness, we pass a value for cert-data to
-; process-embedded-events, which binds state global cert-data to that value.
-; Thus, we override the global cert-data when we process an encapsulate.
-
-; The expansion phase of make-event introduces definitions that are in effect
-; local.  As in the preceding paragraph, we need to avoid applying the global
-; cert-data to such definitions.  This problem is solved primarily by arranging
-; that protected-eval, via protect-system-state-globals, binds state global
-; cert-data to nil.  An additional binding of cert-data to nil is made before
-; calling make-event-fn2-lst, which handles :OR forms and thus can throw away
-; earlier values.  In such a case, the runic type-prescription will be
-; recomputed during include-book, but we think that such an exception is
-; tolerable.
-
-; We are careful to not use cert-data for non-trivial encapsulates.  It might
-; well be possible to do so correctly, but we would need to be very careful to
-; track constraints properly; it seems easy to have a soundness bug due to
-; recording insufficient constraints in pass 2 to justify deductions made from
-; stronger constraints in pass 1.
-
-; A runic type-prescription rule may contain symbols not present in the
-; certification world, as shown below.  A similar issue applies to the
-; :expansion-alist field of the certificate, which is addressed by finding the
-; problematic package names with pkg-names introducing hidden defpkg forms.  We
-; use that same solution for cert-data.  The following example shows how this
-; works.  First, let's look at a couple of books; notice the package definition
-; that is to be made in the certification world of the first book.
-
-;   $ cat sub.lisp
-;   ; (defpkg "FOO" nil)
-;   ; (certify-book "sub" 1)
-;
-;   (in-package "ACL2")
-;
-;   (defun f2 (x) x)
-;   $ cat top.lisp
-;   (in-package "ACL2")
-;
-;   (include-book "sub")
-;
-;   (defmacro my-def ()
-;     `(defun f (,(intern$ "X" "FOO")) ,(intern$ "X" "FOO")))
-;
-;   (my-def)
-;   $
-
-; After certification of both books, the :CERT-DATA field of top.cert has the
-; following value.
-
-;   ((:TYPE-PRESCRIPTION (F 0 (3413 F FOO::X)
-;                           (NIL)
-;                           ((FOO::X) :TYPE-PRESCRIPTION F)
-;                           EQUAL (F FOO::X)
-;                           FOO::X)))
-
-; Thus, a hidden defpkg is generated (here we abbreviate the directory as
-; <dir>).
-
-;   :BEGIN-PORTCULLIS-CMDS
-;   (DEFPKG "FOO" NIL NIL
-;           ("<dir>/sub.lisp")
-;           T)
-;   :END-PORTCULLIS-CMDS
-
-(defun cert-data-val (fn cert-data-entry)
-
-; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key, e.g., for the
-; key, :type-prescription.
-
-  (let ((pair (and cert-data-entry ; optimization
-                   (hons-get fn cert-data-entry))))
-    (cdr pair)))
-
 (defun cleanse-type-prescriptions (names type-prescriptions-lst def-nume
                                          rmp-cnt ens wrld installed-wrld
                                          cert-data-tp-entry ttree)
@@ -3660,23 +4013,6 @@
                          (def-body (car names) wrld)
                          :concl)
                  (get-normalized-bodies (cdr names) wrld)))))
-
-(defun cert-data-pair (fn cert-data-entry)
-
-; Cert-data-entry is (cdr (assoc-eq key cert-data)) for some key, e.g., for the
-; key, :type-prescription.
-
-  (and cert-data-entry ; optimization
-       (hons-get fn cert-data-entry)))
-
-(defun cert-data-entry-pair (key state)
-
-; Key is :type-prescription or any other keyword that can be associated in a
-; cert-data structure with an entry.
-
-  (let ((cert-data (f-get-global 'cert-data state)))
-    (and cert-data ; optimization
-         (assoc-eq key cert-data))))
 
 (defun cert-data-putprop-type-prescription-lst-for-clique
     (cert-data-tp-entry names def-nume rmp-cnt ttree ens wrld installed-wrld
@@ -8646,6 +8982,30 @@
        (value new-pairs))))
    (t (value nil))))
 
+(mutual-recursion
+
+(defun state-globals-set-by (term acc)
+  (cond ((or (variablep term)
+             (fquotep term))
+         acc)
+        ((flambda-applicationp term)
+         (state-globals-set-by
+          (lambda-body (ffn-symb term))
+          (state-globals-set-by-lst (fargs term) acc)))
+        ((member-eq (ffn-symb term) '(put-global makunbound-global))
+         (let ((qvar (fargn term 1)))
+           (cond ((and (quotep qvar)
+                       (symbolp (unquote qvar)))
+                  (cons (unquote qvar) acc)))))
+        (t (state-globals-set-by-lst (fargs term) acc))))
+
+(defun state-globals-set-by-lst (termlist acc)
+  (cond ((endp termlist) acc)
+        (t (state-globals-set-by-lst
+            (cdr termlist)
+            (state-globals-set-by (car termlist) acc)))))
+)
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -8814,7 +9174,18 @@
                             (putprop-x-lst1 names 'classicalp
                                             nil wrld31))
                           #-:non-standard-analysis
-                          wrld31))
+                          wrld31)
+                   (wrld4 (if (store-cert-data (car bodies-and-bindings)
+                                               wrld
+                                               state)
+                              (update-translate-cert-data
+                               (car names) wrld wrld3
+                               :type :translate-bodies
+                               :inputs names
+                               :value bodies-and-bindings
+                               :fns (all-fnnames-lst bodies)
+                               :vars (state-globals-set-by-lst bodies nil))
+                            wrld3)))
               (er-let* ((guards (translate-term-lst
                                  (get-guards fives split-types-lst nil wrld2)
 
@@ -8972,7 +9343,7 @@
                                      symbol-class
                                      normalizeps
                                      reclassifying-all-programp
-                                     wrld3
+                                     wrld4
                                      non-executablep
                                      guard-debug
                                      measure-debug
