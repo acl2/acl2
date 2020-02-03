@@ -10,6 +10,12 @@
 
 (in-package "SOFT")
 
+(include-book "kestrel/std/system/definedp" :dir :system)
+(include-book "kestrel/std/system/function-symbol-listp" :dir :system)
+(include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "kestrel/std/system/measure" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
