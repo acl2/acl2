@@ -37,7 +37,7 @@
   "Java Representation of the ACL2 Values")
 
 (defconst *atj-tutorial-deep-shallow*
-  "Deep and Shallow Embedding")
+  "Deep and Shallow Embedding Approaches")
 
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
