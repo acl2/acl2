@@ -92,6 +92,8 @@
 (def-atj-main-function-type nonnegative-integer-quotient
   (:ainteger :ainteger) :ainteger)
 
+(def-atj-main-function-type string-append (:astring :astring) :astring)
+
 ; secondary types:
 
 (def-atj-other-function-type binary-+ (:arational :arational) :arational)
