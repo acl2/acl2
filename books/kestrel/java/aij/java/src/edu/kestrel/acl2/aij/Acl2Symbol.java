@@ -694,7 +694,7 @@ public final class Acl2Symbol extends Acl2Value {
     public static final Acl2Symbol OR;
 
     /**
-     * The symbol denotes by {@code acl2::nonnegative-integer-quotient}.
+     * The symbol denoted by {@code acl2::nonnegative-integer-quotient}.
      */
     public static final Acl2Symbol NONNEGATIVE_INTEGER_QUOTIENT;
 

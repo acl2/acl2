@@ -18,18 +18,20 @@ import java.util.Map;
  * as opposed to the functions that are defined via terms
  * (see {@link Acl2DefinedFunction}).
  * <p>
- * These native functions include the ACL2 primitive functions,
- * i.e. the ones listed in the {@code primitive} topic of the ACL2 manual.
- * These functions do not have an {@code unnormalized-body} property,
- * and thus they are not part of the defined functions
- * (see {@link Acl2DefinedFunction}).
- * These native functions also include the ACL2 "pseudo-function" {@code or},
- * described in {@link Acl2FunctionCall#eval(Acl2Value[])}.
- * These native functions also include the ACL2 built-in function
- * {@code nonnegative-integer-quotient};
- * this function has an {@code unnormalized-body} property,
- * but is implemented natively in Java for efficiency;
- * note that it is actually implemented by raw Lisp code in ACL2.
+ * These native functions include:
+ * <ul>
+ * <li>The ACL2 primitive functions,
+ *     i.e. the ones listed in the {@code primitive} topic of the ACL2 manual.
+ *     These functions do not have an {@code unnormalized-body} property,
+ *     and thus they are not part of the defined functions
+ *     (see {@link Acl2DefinedFunction}).</li>
+ * <li>The ACL2 "pseudo-function" {@code or},
+ *     described in {@link Acl2FunctionCall#eval(Acl2Value[])}.</li>
+ * <li>The ACL2 built-in function {@code nonnegative-integer-quotient}.
+ *     This function has an {@code unnormalized-body} property,
+ *     but is implemented natively in Java for efficiency.
+ *     Note that it is actually implemented by raw Lisp code in ACL2.</li>
+ * </ul>
  * More native functions could be added here in the future,
  * e.g. as optimized implementations of other ACL2 built-in functions.
  * <p>
@@ -1051,7 +1053,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Representation of the {@code nonnegative-integer-quotient}
-     * ACL2 primitive function.
+     * ACL2 built-in function.
      */
     private static final class NonnegativeIntegerQuotient
             extends Acl2NativeFunction {
