@@ -48,6 +48,7 @@
            equal
            if
            nonnegative-integer-quotient
+           string-append
            :deep t
            :guards nil
            :java-class "NativesDeepUnguarded"
