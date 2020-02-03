@@ -168,6 +168,18 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
+     * Coerces this string to a string, which is a no-op.
+     * This is consistent with
+     * the {@code str-fix} ACL2 (non-built-in) function.
+     *
+     * @return This string, unchanged.
+     */
+    @Override
+    Acl2String stringFix() {
+        return this;
+    }
+
+    /**
      * Compares this string with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *

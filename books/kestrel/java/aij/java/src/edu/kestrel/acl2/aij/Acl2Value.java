@@ -543,6 +543,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Coerces this value to a string.
+     * It returns the empty string by default;
+     * it is overridden in {@link Acl2String}.
+     * This is consistent with
+     * the {@code str-fix} ACL2 (non-built-in) function.
+     *
+     * @return The string that this value is coerced to.
+     */
+    Acl2String stringFix() {
+        return Acl2String.EMPTY;
+    }
+
+    /**
      * Compares this value with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *
