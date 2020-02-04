@@ -440,18 +440,14 @@
 
    (xdoc::p
     "AIJ represents ACL2 values
-     as immutable objects of class @('Value') and its subclasses
+     as immutable objects of class @('Acl2Value') and its subclasses
      in the "
     (xdoc::seetopic "atj-tutorial-simplified-uml"
                     "simplified UML class diagram")
-    " below.")
-
-   (xdoc::img :src "res/kestrel-java-atj-images/value-classes.png")
-
-   (xdoc::p
-    "Each class in the UML diagram above, except @('Acl2PackageName'),
+    " below.
+     Each class in the diagram, except @('Acl2PackageName'),
      corresponds to a set
-     in the earlier picture of ACL2 values (in blue).
+     in the picture of ACL2 values above.
      The subset relationships in that picture
      match the inheritance relationships in the UML diagram above.
      The sets of values that are unions of other sets of values
@@ -462,6 +458,8 @@
      ratios and complex rationals are built indirectly via AIJ's API,
      by building
      rationals that are not integers and numbers that are not rationals.")
+
+   (xdoc::img :src "res/kestrel-java-atj-images/value-classes.png")
 
    (xdoc::p
     "The information about the represented ACL2 values
@@ -532,7 +530,8 @@
 
    (xdoc::p
     "Thus, AIJ provides a public API to
-     build and unbuild Java representations of ACL2 values.
+     build and unbuild Java representations of ACL2 values:
+     the API consists of the factory and getter methods described above.
      When talking about AIJ,
      this tutorial calls `build' and `unbuild'
      what is often called `construct' and `destruct' in functional programming,
