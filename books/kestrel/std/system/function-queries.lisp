@@ -15,6 +15,7 @@
 (include-book "defchoose-queries")
 (include-book "definedp")
 (include-book "definedp-plus")
+(include-book "defun-sk-queries")
 (include-book "formals-plus")
 (include-book "fundef-disabledp")
 (include-book "fundef-enabledp")
