@@ -10,6 +10,7 @@
 
 (in-package "SOFT")
 
+(include-book "kestrel/std/system/defchoose-queries" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
@@ -19,7 +20,6 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "kestrel/utilities/system/defchoose-queries" :dir :system)
 (include-book "kestrel/utilities/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
