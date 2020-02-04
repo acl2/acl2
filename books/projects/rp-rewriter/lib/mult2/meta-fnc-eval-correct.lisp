@@ -1515,7 +1515,6 @@
                             rp-trans)))))
 
 
-
 (defthm can-c-merge-fast-correct-with-sk
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -2298,7 +2297,6 @@
                            ()))))
 
 
-
 (local
  (defthm rp-termp-of-d
    (iff (rp-termp `(d ,x))
@@ -2313,7 +2311,6 @@
  (defthm rp-termp-of-list
    (iff (rp-termp `(list . ,x))
         (rp-term-listp x))))
-
 
 
 (local
@@ -2383,7 +2380,7 @@
                             (:REWRITE
                              REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS)
                             (:REWRITE
-                                REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS)
+                             REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS)
                             rp-termp)))))
 
 (defthm c/d-merge-slow-aux-valid-sc
@@ -2420,9 +2417,9 @@
                             clean-c/d-args
                             d2-of-times2-reverse)
                            (d2-of-times2
-                            
+
                             (:TYPE-PRESCRIPTION S-SUM-MERGE)
-                            
+
                             (:DEFINITION RP-TERMP)
                             (:REWRITE IS-IF-RP-TERMP)
                             (:DEFINITION VALID-SC)
@@ -2512,7 +2509,7 @@
                             (:REWRITE
                              REGULAR-RP-EVL-OF_BIT-OF_WHEN_MULT-FORMULA-CHECKS)
                             (:REWRITE
-                                REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
+                             REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
                             rp-termp
                             valid-sc
                             c/d-merge-slow-aux-correct)))))
@@ -2944,14 +2941,12 @@
 (create-regular-eval-lemma sum-list 1 mult-formula-checks)
 (create-regular-eval-lemma c-res 3 mult-formula-checks)
 
-
 (defthmd
   rp-evlt-of-ex-from-rp-reverse-2
   (implies (syntaxp (or (atom term)))
            (equal (rp-evl (rp-trans term) a)
                   (rp-evl (rp-trans (ex-from-rp term))
                           a))))
-
 
 
 (progn
@@ -2971,7 +2966,6 @@
    (create-regular-eval-lemma binary-and 2 mult-formula-checks))
   (local
    (create-regular-eval-lemma binary-? 3 mult-formula-checks))
-  
 
   (local
    (defthm pp-termp-is-bitp-lemma
@@ -3060,7 +3054,6 @@
               :do-not-induct t
               :in-theory (e/d (LIGHT-PP-TERM-P) ()))))))
 
-
 (defthm 4vec->pp-term-valid-sc
   (implies (and (valid-sc term a))
            (valid-sc (4vec->pp-term term) a))
@@ -3088,13 +3081,12 @@
                             (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION ACL2::APPLY$-BADGEP)
-                            ;(:REWRITE VALID-SC-CADR)
+;(:REWRITE VALID-SC-CADR)
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
                             natp
                             rp-termp
                             include-fnc)))))
-
 
 
 
@@ -3108,21 +3100,40 @@
      (create-regular-eval-lemma sv::4vec-bitxor 2 mult-formula-checks)
      (create-regular-eval-lemma svl::4vec-bitor 2 mult-formula-checks)
      (create-regular-eval-lemma svl::4vec-? 3 mult-formula-checks)
-     
+
      (create-regular-eval-lemma sv::3vec-fix 1 mult-formula-checks)
      (create-regular-eval-lemma svl::4vec-?* 3 mult-formula-checks)))
 
   (local
    (create-regular-eval-lemma sv::4vec-fix$inline 1 mult-formula-checks))
-  
+
   (local
-   (skip-proofs
-    (defthmd bits-is-bit-of
-      (implies (and (natp start)
-                    (integerp num)
-                    (equal size 1))
-               (equal (svl::bits num start size)
-                      (bit-of num start))))))
+   (encapsulate
+     nil
+    
+     (local
+      (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  
+  
+     (defthmd bits-is-bit-of
+       (implies (and (natp start)
+                     (integerp num)
+                     (equal size 1))
+                (equal (svl::bits num start size)
+                       (bit-of num start)))
+       :hints (("Goal"
+                :in-theory (e/d (svl::bits
+                                 bit-of
+                                 SV::4VEC-SHIFT-CORE
+                                 SV::4VEC-RSH
+                                 SV::4VEC->UPPER
+                                 SV::4VEC->LOWER
+                                 SV::4VEC-PART-SELECT
+                                 SV::4VEC-ZERO-EXT)
+                                (SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
+                                 +-IS-SUM
+                                 FLOOR2-IF-F2
+                                 MOD2-IS-M2)))))))
 
   (progn
     (local
@@ -3174,7 +3185,6 @@
                             (binary-? num num2 num3)))))))
 
 
- 
 
   (local
    (defthm 4vec->pp-term-correct-bitp-lemma
@@ -3192,7 +3202,6 @@
 
 
 
-
   (local
    (encapsulate
      nil
@@ -3207,7 +3216,7 @@
                        VALID-SC-EX-FROM-RP
                        VALID-SC-OF-EX-FROM-RP
                        rp-evl-of-variable))))
-   
+
      (defthm 4vec->pp-term-correct-bitp-lemma-2
        (implies (and (valid-sc term a)
                      (rp-evl-meta-extract-global-facts :state state)
@@ -3227,7 +3236,6 @@
                 :do-not-induct t
                 :expand ((good-4vec-term-p term))
                 :cases ((valid-sc (ex-from-rp term) a)))))))
-
 
   (defthm 4vec->pp-term-correct
     (implies (and (valid-sc term a)
@@ -3274,7 +3282,6 @@
                               natp
                               bitp
                               rp-evlt-of-ex-from-rp))))))
-
 
 
 (defthm new-sum-merge-aux-correct
@@ -3360,8 +3367,6 @@
 
 
 
-
-
 (encapsulate
   nil
 
@@ -3422,7 +3427,6 @@
                                LIMIT-1-TO-SUM
                                natp))))))
 
-  
 
   (local
    (defthm maxp-of-bitp
@@ -3461,19 +3465,18 @@
 
   (local
    (defthm lemma4
-    (implies (NAT-LISTP lst)
-             (natp (sum-list lst)))
-    :hints (("Goal"
-             :induct (sum-list lst)
-                         :do-not-induct t
-                         :in-theory (e/d (sum-list
-                                          nat-listp
-                                          sum)
-                                         (+-is-sum))))
-    :rule-classes (:type-prescription :rewrite)))
+     (implies (NAT-LISTP lst)
+              (natp (sum-list lst)))
+     :hints (("Goal"
+              :induct (sum-list lst)
+              :do-not-induct t
+              :in-theory (e/d (sum-list
+                               nat-listp
+                               sum)
+                              (+-is-sum))))
+     :rule-classes (:type-prescription :rewrite)))
 
-  
-  
+
   (local
    (defthm quarternaryp-sum-aux-correct
      (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3551,8 +3554,6 @@
 
 
 
-
-
 (defthm contet-from-create-c-instance
   (equal (CONTEXT-FROM-RP (CREATE-C-INSTANCE a b c) context)
          context)
@@ -3570,8 +3571,8 @@
                 (rp-termp pp)
                 (if quarternaryp
                     (quarternaryp (sum (sum-list (rp-evlt s a))
-                                      (sum-list (rp-evlt pp a))
-                                      (rp-evlt c/d a)))
+                                       (sum-list (rp-evlt pp a))
+                                       (rp-evlt c/d a)))
                   t)
                 (rp-termp c/d))
            (and (equal (rp-evlt (c-spec-meta-aux s pp c/d quarternaryp) a)
@@ -3747,7 +3748,6 @@
            :in-theory (e/d (s-c-spec-meta
                             new-sum-MERGE)
                            (bitp)))))
-
 
 (defthm c-spec-valid-rp-meta-rulep
   (implies (and (rp-evl-meta-extract-global-facts :state state)
