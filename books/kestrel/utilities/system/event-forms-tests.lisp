@@ -15,20 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (maybe-pseudo-event-formp nil))
-
-(assert! (maybe-pseudo-event-formp '(defun f (x) x)))
-
-(assert! (maybe-pseudo-event-formp '(encapsulate () (defun f (x) x))))
-
-(assert! (not (maybe-pseudo-event-formp 33)))
-
-(assert! (not (maybe-pseudo-event-formp '("a" 1))))
-
-(assert! (not (maybe-pseudo-event-formp '((f x) y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (assert-equal (function-intro-macro t nil) 'defun)
 
 (assert-equal (function-intro-macro nil nil) 'defund)

@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,6 +20,7 @@
 (include-book "known-packages-plus")
 (include-book "logic-friendly")
 (include-book "macro-queries")
+(include-book "maybe-pseudo-event-formp")
 (include-book "plist-worldp-with-formals")
 (include-book "pseudo-command-landmark-listp")
 (include-book "pseudo-event-form-listp")
