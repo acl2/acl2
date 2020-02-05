@@ -14,6 +14,9 @@
 (include-book "utilities/xdoc-constructors")
 (include-book "parteval")
 
+; (depends-on "design-notes/restrict.pdf")
+; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *parteval-design-notes*
