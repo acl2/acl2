@@ -57,7 +57,7 @@
      ", provide the mathematical concepts and (meta) proofs
       upon which this transformation is based.
       These notes should be read alongside this reference documentation,
-      which refers to them in numerous places."))
+      which refers to them in some places."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
