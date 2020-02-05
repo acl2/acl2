@@ -522,8 +522,6 @@
 
                                   :expanded-fn-lst r.expanded-fn-lst)))
                  (formals (formals fn-call (w state)))
-                 (- (cw "fn-call: ~q0" fn-call))
-                 (- (cw "formals: ~q0" formals))
                  ((unless (symbol-listp formals))
                   (prog2$
                    (er hard? 'SMT-goal-generator=>expand "formals get a list that's not a symbol-listp for ~q0, the formals are ~q1" fn-call formals)
@@ -752,8 +750,6 @@
        (fn-lvls (initialize-fn-lvls fn-lst))
        (wrld-fn-len h.wrld-fn-len)
        (G (disjoin cl))
-       (- (cw "G: ~q0" G))
-       (- (cw "abs: ~q0" h.abs))
        ;; Do function expansion
        (expand-result
         (with-fast-alist fn-lst (expand (make-ex-args
@@ -764,7 +760,6 @@
                                         h.fty-info h.abs state)))
        ((ex-outs e) expand-result)
        (expanded-G (car e.expanded-term-lst))
-       (- (cw "expanded-G: ~q0" expanded-G))
        ;; generate expand hint
        (fncall-lst (strip-cars e.expanded-fn-lst))
        ((unless (alistp fncall-lst))
