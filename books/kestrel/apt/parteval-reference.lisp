@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,11 @@
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
 (include-book "parteval")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *parteval-design-notes*
+  (xdoc::ahref "res/kestrel-apt-design-notes/parteval.pdf" "design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +55,15 @@
     (xdoc::p
      "This transformation is related to @(tsee restrict),
       which also specializes a function,
-      but does not change its parameters."))
+      but does not change its parameters.")
+
+    (xdoc::p
+     "These " *parteval-design-notes* ", which use "
+     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
+     ", provide the mathematical concepts and (meta) proofs
+      upon which this transformation is based.
+      These notes should be read alongside this reference documentation,
+      which refers to them in some places."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,7 +118,10 @@
         "              y1 ... ym)>"))
       (xdoc::li
        "@('old') is recursive but it does not satisfy
-        some of the conditions in case 2 above.")))
+        some of the conditions in case 2 above."))
+     (xdoc::p
+      "In the " *parteval-design-notes* ",
+       @('old') is denoted by @($f$)."))
 
     (xdoc::desc
      "@('static')"
@@ -134,7 +150,11 @@
        the static parameters @('y1'), ..., @('ym')
        come after the dynamic parameters @('x1'), ..., @('xn').
        However, this is not required:
-       static and dynamic parameters can be intermixed in any way."))
+       static and dynamic parameters can be intermixed in any way.")
+     (xdoc::p
+      "In the " *parteval-design-notes* ",
+       @('cj') is denoted by @($\\widetilde{y}_j$),
+       for @($1 \\leq j \\leq m$)."))
 
     (xdoc::desc-apt-input-new-name)
 
@@ -201,7 +221,10 @@
       "In case 3, the new function is not recursive.
        This is simple, preliminary approach;
        support for more forms of recursive functions (besides case 2)
-       may be added in the future."))
+       may be added in the future.")
+     (xdoc::p
+      "In the " *parteval-design-notes* ",
+       @('new') is denoted by @($f'$)."))
 
     (xdoc::desc
      "@('old-to-new')"
@@ -213,7 +236,10 @@
       "                ..."
       "                (equal ym cm)"
       "           (equal (old x1 ... xn y1 ... ym)"
-      "                  (new x1 ... xn)))")))
+      "                  (new x1 ... xn)))")
+     (xdoc::p
+      "In the " *parteval-design-notes* ",
+       @('old-to-new') is denoted by @($\\mathit{ff}'$).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
