@@ -10,11 +10,11 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
 (include-book "parteval")
 
-; (depends-on "design-notes/restrict.pdf")
+; (depends-on "design-notes/parteval.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
