@@ -10,7 +10,7 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
 (include-book "casesplit")
 
@@ -304,9 +304,8 @@
       "Theorem that relates @('old') to @('new'):")
      (xdoc::codeblock
       "(defthm old-to-new"
-      "  (implies restriction<x1,...,xn>"
-      "           (equal (old x1 ... xn)"
-      "                  (new x1 ... xn))))")
+      "  (equal (old x1 ... xn)"
+      "         (new x1 ... xn)))")
      (xdoc::p
       "In the " *casesplit-design-notes* ",
        @('old-to-new') is denoted by @($\\mathit{ff}'$).")))))
