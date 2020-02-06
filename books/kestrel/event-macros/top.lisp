@@ -16,8 +16,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc event-macros
-  :parents (macro-libraries system-utilities)
-  :short "Concepts and utilities for event macros."
+  :parents (macro-libraries kestrel-books)
+  :short "A library of concepts and utilities for event macros."
   :long
   (xdoc::topstring
    (xdoc::p
