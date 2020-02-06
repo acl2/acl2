@@ -19,6 +19,7 @@
 (include-book "hexstrings")
 (include-book "string-kinds")
 (include-book "strings-codes")
+(include-book "strings-codes-fty")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
