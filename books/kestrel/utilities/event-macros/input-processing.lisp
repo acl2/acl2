@@ -1,4 +1,4 @@
-; Event Macros -- Input Processing
+; Event Macros Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
