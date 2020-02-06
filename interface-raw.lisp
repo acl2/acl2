@@ -6606,6 +6606,21 @@
      (strip-cars *user-stobj-alist*)
      wrld)
     (setq *saved-user-stobj-alist* *user-stobj-alist*))
+  (when (let ((i (f-get-global 'certify-book-info state)))
+          (and i
+               (not (access certify-book-info i :include-book-phase))
+               (not ; not inside include-book
+                (global-val 'include-book-path wrld))))
+
+; The world global 'translate-cert-data is only updated during book
+; certification, and not during include-book (especially, not during the
+; include-book pass of certify-book); hence the guard above.  The following
+; preservation of fast-alist status might only be necessary because of changes
+; to translate-cert-data made during make-event expansion.  But we protect the
+; fast-alist status of that world global against any change to the world made
+; (especially) by xtrans-eval.
+
+    (make-fast-alist (global-val 'translate-cert-data wrld)))
   #+hons
   (update-memo-entries-for-attachments *defattach-fns* wrld state)
   nil)
