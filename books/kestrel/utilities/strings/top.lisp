@@ -1,6 +1,6 @@
 ; String Utilities
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "char-code-theorems")
 (include-book "char-kinds")
 (include-book "chars-codes")
+(include-book "chars-codes-fty")
 (include-book "hexchars")
 (include-book "hex-digit-char-theorems")
 (include-book "hexstrings")
