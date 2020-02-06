@@ -7535,6 +7535,20 @@ e2-e1+1.
 ;
 ; redefun is provided by my hacker stuff. -Peter
 
+; Matt K. mod, 2/5/2020: Starting with recent changes to store translate
+; cert-data in a .cert file, we can get warnings
+;   ".Fast alist discipline violated in HONS-GET."
+; for the redefinitions of defuns-fn and defstobj-fn below.  I don't know why,
+; but I believe that these are the only such new warnings when running the
+; "everything" regression suite; and the fact that we're redefining defuns-fn
+; make it rather unsurprising to me that we see such warnings.  So I'll simply
+; turn them off!  Of course, anyone maintaining ACL2s who would like to get to
+; the bottom of this is welcome to do so!
+; Note that we must temporarily go into logic mode so that we don't skip the
+; local event below.  (We want it to be local so that we don't export its
+; effect.)
+(logic) (local (set-slow-alist-action nil)) (program)
+
 (redefun defuns-fn (def-lst state event-form #+:non-standard-analysis std-p)
          (ccg-defuns-fn def-lst state event-form #+:non-standard-analysis std-p))
 
