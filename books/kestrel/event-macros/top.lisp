@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "input-processing")
+(include-book "intro-macros")
 (include-book "xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
