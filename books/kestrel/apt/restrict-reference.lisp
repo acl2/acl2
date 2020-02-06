@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,17 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
 (include-book "restrict")
+
+; (depends-on "design-notes/restrict.pdf")
+; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *restrict-design-notes*
+  (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf" "design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,7 +47,15 @@
       This transformation adds restrictions to the guard,
       and wraps the body with a test for the restrictions,
       which may enable further optimizations
-      by taking advantage of the added restrictions."))
+      by taking advantage of the added restrictions.")
+
+    (xdoc::p
+     "These " *restrict-design-notes* ", which use "
+     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
+     ", provide the mathematical concepts and template proofs
+      upon which this transformation is based.
+      These notes should be read alongside this reference documentation,
+      which refers to them in some places."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -98,7 +114,27 @@
         in which the @('j')-th recursive call occurs.
         The dependency of @('updatej-xi<...,old>') and @('contextj<...,old>')
         on @('old') only applies to so-called `reflexive functions',
-        i.e. functions that occur in their own termination theorem.")))
+        i.e. functions that occur in their own termination theorem."))
+     (xdoc::p
+      "In the " *restrict-design-notes* ",
+       @('old') is denoted by @($f$).
+       When @('old') is not recursive,
+       @('old-body<x1,...,xn>') is denoted by @($e(\\overline{x})$).
+       When @('old') is recursive,
+       the design notes use
+       a single non-recursive branch @($b(\\overline{x})$)
+       controlled by @($a(\\overline{x})$)
+       and a single recursive branch
+       @($c(\\overline{x},f(\\overline{d}(\\overline{x})))$)
+       controlled by the negation of @($a(\\overline{x})$):
+       this is a representative recursive structure,
+       but the transformation handles
+       multiple non-recursive and recursive branches,
+       and also recursive functions that occur in their termination theorem;
+       in this representative recursive structure,
+       @('update-xi<x1,...,xn>') is denoted by @($d_i(\\overline{x})$)
+       and @('context<x1,...,xn>') is denoted by
+       the negation of @($a(\\overline{x})$)."))
 
     (xdoc::desc
      "@('restriction')"
@@ -117,7 +153,10 @@
      (xdoc::p
       "In order to highlight the dependence on @('x1'), ..., @('xn'),
        in the rest of this documentation page,
-       @('restriction<x1,...,xn>') is used for @('restriction')."))
+       @('restriction<x1,...,xn>') is used for @('restriction').")
+     (xdoc::p
+      "In the " *restrict-design-notes* ",
+       @('(lambda (x1 ... xn) restriction<x1,...,xn>)') is denoted by @($R$)."))
 
     (xdoc::desc
      "@(':undefined') &mdash; default @(':undefined')"
@@ -164,50 +203,58 @@
 
     restrict
 
-    (xdoc::desc
-     "@(':restriction-of-rec-calls')"
-     (xdoc::p
-      "@('(lambda (x1 ... xn) restriction<x1,...,xn>)')
-       is preserved across the recursive calls of @('old'):")
-     (xdoc::codeblock
-      "(implies restriction<x1,...,xn>"
-      "         (and (implies context1<x1,...,xn,?f>"
-      "                       restriction<update1-x1<x1,...,xn,?f>,"
-      "                                   ...,"
-      "                                   update1-xn<x1,...,xn,?f>>)"
-      "              ..."
-      "              (implies contextm<x1,...,xn,?f>"
-      "                       restriction<updatem-x1<x1,...,xn,?f>,"
-      "                                   ...,"
-      "                                   updatem-xn<x1,...,xn,?f>>)))")
-     (xdoc::p
-      "where @('?f') is an @('n')-ary stub that replaces @('old')
-       (this only applies to reflexive functions; see above).")
-     (xdoc::p
-      "This applicability condition is present iff @('old') is recursive."))
+    (xdoc::evmac-appcond
+     ":restriction-of-rec-calls"
+     (xdoc::&&
+      (xdoc::p
+       "@('(lambda (x1 ... xn) restriction<x1,...,xn>)')
+        is preserved across the recursive calls of @('old'):")
+      (xdoc::codeblock
+       "(implies restriction<x1,...,xn>"
+       "         (and (implies context1<x1,...,xn,?f>"
+       "                       restriction<update1-x1<x1,...,xn,?f>,"
+       "                                   ...,"
+       "                                   update1-xn<x1,...,xn,?f>>)"
+       "              ..."
+       "              (implies contextm<x1,...,xn,?f>"
+       "                       restriction<updatem-x1<x1,...,xn,?f>,"
+       "                                   ...,"
+       "                                   updatem-xn<x1,...,xn,?f>>)))")
+      (xdoc::p
+       "where @('?f') is an @('n')-ary stub that replaces @('old')
+        (this only applies to reflexive functions; see above)."))
+     :design-notes *restrict-design-notes*
+     :design-notes-appcond "@($\\mathit{Rd}$)"
+     :presence "@('old') is recursive")
 
-    (xdoc::desc
-     "@(':restriction-guard')"
-     (xdoc::p
-      "The restricting predicate is well-defined (according to its guard)
-       on every value in the guard of @('old'):")
-     (xdoc::codeblock
-      "(implies old-guard<x1,...,xn>"
-      "         restriction-guard<x1,...,xn>)")
-     (xdoc::p
-      "where @('restriction-guard<x1,...,xn>') is
-       the guard obligation of @('restriction<x1,...,xn>').")
-     (xdoc::p
-      "This applicability condition is present iff
-       the generated function is guard-verified
-       (which is determined by the @(':verify-guards') input; see above)."))
+    (xdoc::evmac-appcond
+     ":restriction-guard"
+     (xdoc::&&
+      (xdoc::p
+       "The restricting predicate is well-defined (according to its guard)
+        on every value in the guard of @('old'):")
+      (xdoc::codeblock
+       "(implies old-guard<x1,...,xn>"
+       "         restriction-guard<x1,...,xn>)")
+      (xdoc::p
+       "where @('restriction-guard<x1,...,xn>') is
+        the guard obligation of @('restriction<x1,...,xn>')."))
+     :design-notes *restrict-design-notes*
+     :design-notes-appcond "@($\\mathit{GR}$)"
+     :presence "the generated function is guard-verified
+                (which is determined by the @(':verify-guards') input;
+                see above)")
 
-    (xdoc::desc
-     "@(':restriction-boolean')"
-     (xdoc::p
-      "The restricting predicate is boolean-valued:")
-     (xdoc::codeblock
-      "(booleanp restriction<x1,...,xn>)")))
+    (xdoc::evmac-appcond
+     ":restriction-boolean"
+     (xdoc::&&
+      (xdoc::p
+       "The restricting predicate is boolean-valued:")
+      (xdoc::codeblock
+       "(booleanp restriction<x1,...,xn>)")
+      (xdoc::p
+       "This is not explicitly present in the " *restrict-design-notes*
+       ", which implicitly assume @($R$) to be boolean-valued."))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,7 +295,10 @@
        Since @(tsee mbt) requires its argument to be @('t')
        (not just non-@('nil')),
        the applicability condition @(':restriction-boolean') ensures that
-       the restriction test is @('t') when it is non-@('nil')."))
+       the restriction test is @('t') when it is non-@('nil').")
+     (xdoc::p
+      "In the " *restrict-design-notes* ",
+       @('new') is denoted by @($f'$)."))
 
     (xdoc::desc
      "@('old-to-new')"
@@ -258,7 +308,10 @@
       "(defthm old-to-new"
       "  (implies restriction<x1,...,xn>"
       "           (equal (old x1 ... xn)"
-      "                  (new x1 ... xn))))")))
+      "                  (new x1 ... xn))))")
+     (xdoc::p
+      "In the " *restrict-design-notes* ",
+       @('old-to-new') is denoted by @($\\mathit{ff}'$).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
