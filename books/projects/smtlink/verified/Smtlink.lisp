@@ -1484,7 +1484,7 @@
                                (w state) (acl2::default-state-vars t)))
          ((when err)
           (er hard? 'Smtlink-process-user-hint->trans-argument "Error ~
-    translating form: ~@0" to-be-trans)))
+    translating form: ~q0" to-be-trans)))
       `(,name ,(car term))))
 
   (define trans-formals ((val t) (state))
