@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,17 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
 (include-book "tailrec")
+
+; (depends-on "design-notes/tailrec.pdf")
+; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *tailrec-design-notes*
+  (xdoc::ahref "res/kestrel-apt-design-notes/tailrec.pdf" "design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,7 +49,15 @@
       whose arguments do not grow in the same way as the call stack
       of the original function.
       A tail-recursive function can be compiled into an imperative loop
-      that does not run out of space due to the call stack growth."))
+      that does not run out of space due to the call stack growth.")
+
+    (xdoc::p
+     "These " *tailrec-design-notes* ", which use "
+     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
+     ", provide the mathematical concepts and template proofs
+      upon which this transformation is based.
+      These notes should be read alongside this reference documentation,
+      which refers to them in some places."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,6 +79,9 @@
        If the @(':verify-guards') input of @('tailrec') is @('t'),
        @('old') must be guard-verified.")
      (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('old') is denoted by @($f$).")
+     (xdoc::p
       "With the body in <see topic='@(url acl2::term)'>translated</see> form,
        and after expanding all lambda expressions (i.e. @(tsee let)s),
        the function must have the form")
@@ -79,14 +98,24 @@
      (xdoc::ul
       (xdoc::li
        "The term @('test<x1,...,xn>') does not call @('old').
-        This term computes the exit test of the recursion.")
+        This term computes the exit test of the recursion.
+        In the " *tailrec-design-notes* ",
+        @('test<x1,...,xn>') is denoted by @($a(\\overline{x})$).")
       (xdoc::li
        "The term @('base<x1,...,xn>') does not call @('old').
         This term computes the base value of the recursion.
+        In the " *tailrec-design-notes* ",
+        @('base<x1,...,xn>') is denoted by @($b(\\overline{x})$).
         If the @(':variant') input of @('tailrec')
-        is @(':monoid') or @(':monoid-alt'),
+        is @(':monoid') or @(':monoid-alt') (see below),
         the term @('base<x1,...,xn>') must be ground,
-        i.e. actually not contain any of the @('xi') variables.")
+        i.e. actually not contain any of the @('xi') variables.
+        The section `Special case: Ground Base Value' of the design notes
+        shows that this restriction (which may be lifted eventually)
+        avoids the need to generate and use the function @($\\beta$).
+        (When the @(':variant') input is @(':assoc'),
+        no @($\\beta$) needs to be generated anyway,
+        and thus the restriction does not apply.)")
       (xdoc::li
        "The term
         @('combine<nonrec<x1,...,xn>,
@@ -95,6 +124,8 @@
         namely @('(old update-x1<x1,...,xn> ... update-xn<x1,...,xn>)'),
         where each @('update-xi<x1,...,xn>') is a term
         that does not call @('old').
+        In the " *tailrec-design-notes* ",
+        @('update-xi<x1,...,xn>') is denoted by @($d_i(\\overline{x})$).
         Let @('combine<nonrec<x1,...,xn>,r>') be the result of
         replacing @('(old update-x1<x1,...,xn> ... update-xn<x1,...,xn>)')
         with a fresh variable @('r').")
@@ -121,7 +152,10 @@
         of @('combine<nonrec<x1,...,xn>,r>'):
         the exact @('nonrec<x1,...,xn>') is determined
         via the procedure described in Section
-        `Decomposition of the Recursive Branch' below.")))
+        `Decomposition of the Recursive Branch' below.
+        In the " *tailrec-design-notes* ",
+        @('nonrec<x1,...,xn>') is denoted by @($c(\\overline{x})$),
+        and @('(lambda (q r) combine<q,r>)') is denoted by @($*$).")))
 
     (xdoc::desc
      "@(':variant') &mdash; default @(':monoid')"
@@ -132,24 +166,43 @@
        "@(':monoid'), for the monoidal variant,
         where the applicability conditions below imply
         the algebraic structure of a monoid (i.e. associativity and identity)
-        for the combination operator.")
+        for the combination operator.
+        In the " *tailrec-design-notes* ",
+        this variant is described in the sections
+        `Associative Binary Operator with Left and Right Identity' and
+        `Restriction of Operator Properties to a Domain'.")
       (xdoc::li
        "@(':monoid-alt'), for the alternative monoidal variant,
         where the applicability conditions below also imply
         the algebraic structure of a monoid (i.e. associativity and identity)
-        for the combination operator.")
+        for the combination operator.
+        In the " *tailrec-design-notes* ",
+        this variant is described in the section
+        `Extension of Operator Associativity and Closure outside the Domain'.")
       (xdoc::li
        "@(':assoc'), for the associative variant,
         where the applicability conditions below imply
         the algebraic structure of a semigroup (i.e. associativity only)
-        for the combination operator."))
+        for the combination operator.
+        In the " *tailrec-design-notes* ",
+        this variant is described in the sections
+        `Associative Binary Operator' and
+        `Restriction of Operator Properties to a Domain'."))
      (xdoc::p
       "The associative variant of the transformation is more widely applicable,
        but the monoidal and alternative monoidal variants
-       yield simpler functions.
+       yield simpler new functions.
        The applicability conditions for the alternative monoidal variant
        are neither stronger nor weaker than the ones for the monoidal variant,
-       so these two variants apply to different cases."))
+       so these two variants apply to different cases.")
+     (xdoc::p
+      "While the " *tailrec-design-notes*
+      "show how to handle variants in which, besides associativity,
+       only either left or right identity holds,
+       the current implementation does not handle them independently.
+       They are either both absent (in the @(':assoc') variant)
+       or both present (in the @(':monoid') and @(':monoid-alt') variants).
+       Support for their independent handling may be added eventually."))
 
     (xdoc::desc
      "@(':domain') &mdash; default @(':auto')"
@@ -164,12 +217,15 @@
               (which is determined by the @(':verify-guards') input; see below)"
       :dont-be-or-call "@('old')"
       :additional-forms
-       (xdoc::li
-        "@(':auto'), to automatically infer a domain
-         as described in Section `Automatic Inference of a Domain' below."))
+      (xdoc::li
+       "@(':auto'), to automatically infer a domain
+        as described in Section `Automatic Inference of a Domain' below."))
      (xdoc::p
       "In the rest of this documentation page,
-       let @('domain') be this function or lambda expression."))
+       let @('domain') be this function or lambda expression.")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('domain') is denoted by @($D$)."))
 
     (xdoc::desc-apt-input-new-name)
 
@@ -233,6 +289,14 @@
     (xdoc::p
      "If such a term @('nr') does not exist, decomposition fails.")
 
+    (xdoc::p
+     "In the " *tailrec-design-notes* ",
+      the section `Decomposition of the Old Function'
+      describes a more general decomposition process,
+      which has multiple solutions in general.
+      The current implementation follows the procedure
+      detailed in the paragraphs above.")
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (xdoc::h4 "Automatic Inference of a Domain")
@@ -280,160 +344,175 @@
 
     tailrec
 
-    (xdoc::desc
-     "@(':domain-of-base')"
-     (xdoc::p
-      "The base computation always returns values in the domain:")
-     (xdoc::codeblock
-      "(implies test<x1,...,xn>"
-      "         (domain base<x1,...,xn>))"))
+    (xdoc::evmac-appcond
+     ":domain-of-base"
+     (xdoc::&&
+      (xdoc::p
+       "The base computation always returns values in the domain:")
+      (xdoc::codeblock
+       "(implies test<x1,...,xn>"
+       "         (domain base<x1,...,xn>))"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{Db}$)")
 
-    (xdoc::desc
-     "@(':domain-of-nonrec')"
-     (xdoc::p
-      "The non-recursive operand of the combination operator
-       always returns values in the domain,
-       when the exit test of the recursion fails:")
-     (xdoc::codeblock
-      "(implies (not test<x1,...,xn>)"
-      "         (domain nonrec<x1,...,xn>))")
-     (xdoc::p
-      "This applicability condition is present iff
-       the @(':variant') input of @('tailrec')
-       is @(':monoid') or @(':assoc')."))
+    (xdoc::evmac-appcond
+     ":domain-of-nonrec"
+     (xdoc::&&
+      (xdoc::p
+       "The non-recursive operand of the combination operator
+        always returns values in the domain,
+        when the exit test of the recursion fails:")
+      (xdoc::codeblock
+       "(implies (not test<x1,...,xn>)"
+       "         (domain nonrec<x1,...,xn>))"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{Dc}$)"
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid') or @(':assoc')")
 
-    (xdoc::desc
-     "@(':domain-of-combine')"
-     (xdoc::p
-      "The domain is closed under the combination operator:")
-     (xdoc::codeblock
-      "(implies (and (domain u)"
-      "              (domain v))"
-      "         (domain combine<u,v>))")
-     (xdoc::p
-      "This applicability condition is present iff
-       the @(':variant') input of @('tailrec')
-       is @(':monoid') or @(':assoc')."))
+    (xdoc::evmac-appcond
+     ":domain-of-combine"
+     (xdoc::&&
+      (xdoc::p
+       "The domain is closed under the combination operator:")
+      (xdoc::codeblock
+       "(implies (and (domain u)"
+       "              (domain v))"
+       "         (domain combine<u,v>))"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($D*$)"
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid') or @(':assoc')")
 
-    (xdoc::desc
-     "@(':domain-of-combine-uncond')"
-     (xdoc::p
-      "The combination operator unconditionally returns values in the domain:")
-     (xdoc::codeblock
-      "(domain combine<u,v>)")
-     (xdoc::p
-      "This applicability condition is present iff
-       the @(':variant') input of @('tailrec') is @(':monoid-alt')."))
+    (xdoc::evmac-appcond
+     ":domain-of-combine-uncond"
+     (xdoc::&&
+      (xdoc::p
+       "The combination operator unconditionally returns values in the domain:")
+      (xdoc::codeblock
+       "(domain combine<u,v>)"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($D*'$)"
+     :presence "the @(':variant') input of @('tailrec') is @(':monoid-alt')")
 
-    (xdoc::desc
-     "@(':combine-associativity')"
-     (xdoc::p
-      "The combination operator is associative over the domain:")
-     (xdoc::codeblock
-      "(implies (and (domain u)"
-      "              (domain v)"
-      "              (domain w))"
-      "         (equal combine<u,combine<v,w>>"
-      "                combine<combine<u,v>,w>))")
-     (xdoc::p
-      "This applicability condition is present iff
-       the @(':variant') input of @('tailrec')
-       is @(':monoid') or @(':assoc')."))
+    (xdoc::evmac-appcond
+     ":combine-associativity"
+     (xdoc::&&
+      (xdoc::p
+       "The combination operator is associative over the domain:")
+      (xdoc::codeblock
+       "(implies (and (domain u)"
+       "              (domain v)"
+       "              (domain w))"
+       "         (equal combine<u,combine<v,w>>"
+       "                combine<combine<u,v>,w>))"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{ASC}$)"
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid') or @(':assoc')")
 
-    (xdoc::desc
-     "@(':combine-associativity-uncond')"
-     (xdoc::p
-      "The combination operator is unconditionally associative:")
-     (xdoc::codeblock
-      "(equal combine<u,combine<v,w>>"
-      "      combine<combine<u,v>,w>)")
-     (xdoc::p
-      "This applicability condition is present iff
-       the @(':variant') input of @('tailrec') is @(':monoid-alt')."))
+    (xdoc::evmac-appcond
+     ":combine-associativity-uncond"
+     (xdoc::&&
+      (xdoc::p
+       "The combination operator is unconditionally associative:")
+      (xdoc::codeblock
+       "(equal combine<u,combine<v,w>>"
+       "      combine<combine<u,v>,w>)"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{ASC}'$)"
+     :presence "the @(':variant') input of @('tailrec') is @(':monoid-alt')")
 
-    (xdoc::desc
-     "@(':combine-left-identity')"
-     (xdoc::p
-      "The base value of the recursion
+    (xdoc::evmac-appcond
+     ":combine-left-identity"
+     (xdoc::&&
+      (xdoc::p
+       "The base value of the recursion
       is left identity of the combination operator:")
-     (xdoc::codeblock
-      "(implies (and test<x1,...,xn>"
-      "             (domain u))"
-      "        (equal combine<base<x1...,xn>,u>"
-      "               u))")
-     (xdoc::p
-      "This applicability condition is present iff
-       the @(':variant') input of @('tailrec') is
-       @(':monoid') or @(':monoid-alt')."))
+      (xdoc::codeblock
+       "(implies (and test<x1,...,xn>"
+       "             (domain u))"
+       "        (equal combine<base<x1...,xn>,u>"
+       "               u))"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{LI}$)"
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid') or @(':monoid-alt')")
 
-    (xdoc::desc
-     "@(':combine-right-identity')"
-     (xdoc::p
-      "The base value of the recursion
-      is right identity of the combination operator:")
-     (xdoc::codeblock
-      "(implies (and test<x1,...,xn>"
-      "             (domain u))"
-      "        (equal combine<u,base<x1...,xn>>"
-      "               u))")
-     (xdoc::p
-      "This applicability condition is present iff
-       the @(':variant') input of @('tailrec') is
-       @(':monoid') or @(':monoid-alt')."))
+    (xdoc::evmac-appcond
+     ":combine-right-identity"
+     (xdoc::&&
+      (xdoc::p
+       "The base value of the recursion
+       is right identity of the combination operator:")
+      (xdoc::codeblock
+       "(implies (and test<x1,...,xn>"
+       "             (domain u))"
+       "        (equal combine<u,base<x1...,xn>>"
+       "               u))"))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{RI}$)"
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid') or @(':monoid-alt')")
 
-    (xdoc::desc
-     "@(':domain-guard')"
-     (xdoc::p
-      "The domain is well-defined (according to its guard) on every value:")
-     (xdoc::codeblock
-      "domain-guard<z>")
-     (xdoc::p
-      "where @('domain-guard<z>') is the guard term of @('domain')
-       if @('domain') is a function name,
-       while it is the guard obligation of @('domain')
-       if @('domain') is a lambda expression.")
-     (xdoc::p
-      "This applicability condition is present iff
-       the function(s) generated by @('tailrec') is/are guard-verified
-       (which is determined by
-       the @(':verify-guards') input of @('tailrec'))."))
+    (xdoc::evmac-appcond
+     ":domain-guard"
+     (xdoc::&&
+      (xdoc::p
+       "The domain is well-defined (according to its guard) on every value:")
+      (xdoc::codeblock
+       "domain-guard<z>")
+      (xdoc::p
+       "where @('domain-guard<z>') is the guard term of @('domain')
+        if @('domain') is a function name,
+        while it is the guard obligation of @('domain')
+        if @('domain') is a lambda expression."))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{GD}$)"
+     :presence "the function(s) generated by @('tailrec') is/are guard-verified
+                (which is determined by
+                the @(':verify-guards') input of @('tailrec')).")
 
-    (xdoc::desc
-     "@(':combine-guard')"
-     (xdoc::p
-      "The combination operator is well-defined (according to its guard)
-       on every value in the domain:")
-     (xdoc::codeblock
-      "(implies (and (domain q)"
-      "             (domain r))"
-      "        combine-guard<q,r>)")
-     (xdoc::p
-      "where @('combine-guard<q,r>') is
-       the guard obligation of @('combine<q,r>').")
-     (xdoc::p
-      "This applicability condition is present iff
-       the function(s) generated by @('tailrec') is/are guard-verified
-       (which is determined by
-       the @(':verify-guards') input of @('tailrec'))."))
+    (xdoc::evmac-appcond
+     ":combine-guard"
+     (xdoc::&&
+      (xdoc::p
+       "The combination operator is well-defined (according to its guard)
+        on every value in the domain:")
+      (xdoc::codeblock
+       "(implies (and (domain q)"
+       "             (domain r))"
+       "        combine-guard<q,r>)")
+      (xdoc::p
+       "where @('combine-guard<q,r>') is
+        the guard obligation of @('combine<q,r>')."))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($G*$)"
+     :presence "the function(s) generated by @('tailrec') is/are guard-verified
+                (which is determined by
+                the @(':verify-guards') input of @('tailrec')).")
 
-    (xdoc::desc
-     "@(':domain-of-nonrec-when-guard')"
-     (xdoc::p
-      "The non-recursive operand of the combination operator
-       returns values in the domain,
-       when the exit test of the recursion fails,
-       and under the guard of @('old'):")
-     (xdoc::codeblock
-      "(implies (and old-guard<x1,...,xn>"
-      "             (not test<x1,...,xn>))"
-      "        (domain nonrec<x1,...,xn>))")
-     (xdoc::p
-      "where @('old-guard<x1,...,xn>') is the guard term of @('old').")
-     (xdoc::p
-      "This applicability condition is present iff
-       the function(s) generated by @('tailrec') is/are guard-verified
-       (which is determined by the @(':verify-guards') input of @('tailrec'))
-       and the @(':variant') input of @('tailrec') is @(':monoid-alt')."))
+    (xdoc::evmac-appcond
+     ":domain-of-nonrec-when-guard"
+     (xdoc::&&
+      (xdoc::p
+       "The non-recursive operand of the combination operator
+        returns values in the domain,
+        when the exit test of the recursion fails,
+        and under the guard of @('old'):")
+      (xdoc::codeblock
+       "(implies (and old-guard<x1,...,xn>"
+       "             (not test<x1,...,xn>))"
+       "        (domain nonrec<x1,...,xn>))")
+      (xdoc::p
+       "where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{GDc}$)"
+     :presence "the function(s) generated by @('tailrec') is/are guard-verified
+                (which is determined by
+                the @(':verify-guards') input of @('tailrec'))
+                and the @(':variant') input of @('tailrec')
+                is @(':monoid-alt')")
 
     (xdoc::p
      "When present,
@@ -482,7 +561,10 @@
        are the same as @('old').")
      (xdoc::p
       "The guard is @('(and old-guard<x1,...,xn> (domain r))'),
-       where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
+       where @('old-guard<x1,...,xn>') is the guard term of @('old').")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('new') is denoted by @($f'$)."))
 
     (xdoc::desc
      "@('wrapper')"
@@ -504,7 +586,10 @@
      (xdoc::p
       "The guard is the same as @('old').")
      (xdoc::p
-      "This is generated only if the @(':wrapper') input is @('t')."))
+      "This is generated only if the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('new') is denoted by @($\\tilde{f}$)."))
 
     (xdoc::desc
      "@('old-to-new')"
@@ -526,7 +611,10 @@
       "                update-xn<x1,...,xn>"
       "                nonrec<x1,...,xn>))))")
      (xdoc::p
-      "This is generated only if the @(':wrapper') input is @('nil')."))
+      "This is generated only if the @(':wrapper') input is @('nil').")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('old-to-new') is denoted by @($f\\!f'$)."))
 
     (xdoc::desc
      "@('old-to-wrapper')"
@@ -537,7 +625,10 @@
       "  (equal (old x1 ... xn)"
       "         (wrapper x1 ... xn)))")
      (xdoc::p
-      "This is generated only if the @(':wrapper') input is @('t').")))
+      "This is generated only if the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('old-to-wrapper') is denoted by @($f\\!\\tilde{f}$).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
