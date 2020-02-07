@@ -1,6 +1,6 @@
 ; User Interface
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2017 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -14,7 +14,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/system/event-forms" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "maybe-unquote")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
