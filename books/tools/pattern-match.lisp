@@ -1,4 +1,6 @@
- ;; A scheme for pattern matching
+; Copyright (C) 2009-2015, Regents of the University of Texas
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+;; A scheme for pattern matching
 ;; written by Sol Swords, 6/01/2005
 ;; email: sswords@cs.utexas.edu
 
