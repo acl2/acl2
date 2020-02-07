@@ -552,3 +552,44 @@ functions over natural numbers.
   (and (member-equal f (fun-syms-in-term term)) t))
 |#
 
+(defconst *contract-checking-values*
+  '(:on :off))
+
+; Modified from set-guard-checking
+(defmacro set-contract-checking (flg)
+  (declare (xargs :guard
+                  (let ((flg (if (and (consp flg)
+                                      (eq (car flg) 'quote)
+                                      (consp (cdr flg)))
+                                 (cadr flg)
+                               flg)))
+                    (member-eq flg *contract-checking-values*))))
+  `(let* ((current-flg (f-get-global 'guard-checking-on state))
+          (flg ,(if (and (consp flg) (eq (car flg) 'quote) (consp (cdr flg)))
+                    (cadr flg)
+                  flg))
+          (gflg (if (eq flg :off) nil :all)))
+     (cond
+      ((and (raw-mode-p state) flg)
+       (er soft 'set-contract-checking
+           "It is illegal (and anyhow, would be useless) to attempt to modify ~
+            contract checking while in raw mode, since contracts are not checked in ~
+            raw mode."))
+      ((eq gflg current-flg)
+       (pprogn
+        (fms "Contract-checking already has value ~x0.~%~%"
+             (list (cons #\0 flg))
+             *standard-co* state nil)
+        (value :invisible)))
+      ((eq flg :off)
+       (pprogn (f-put-global 'guard-checking-on nil state)
+               (fms "Turning contract-checking :OFF.~%~%"
+                    nil *standard-co* state nil)
+               (value :invisible)))
+      (t (pprogn
+          (f-put-global 'guard-checking-on gflg state)
+          (assert$ (and gflg (not (eq gflg current-flg)))
+                   (fms "Turning contract-checking :ON.~%~%"
+                        nil *standard-co* state nil))
+          (value :invisible))))))
+

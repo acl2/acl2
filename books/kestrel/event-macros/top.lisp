@@ -1,6 +1,6 @@
-; Event Macros
+; Event Macros Library
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +11,14 @@
 (in-package "ACL2")
 
 (include-book "input-processing")
+(include-book "intro-macros")
 (include-book "xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc event-macros
-  :parents (macro-libraries system-utilities)
-  :short "Concepts and utilities for event macros."
+  :parents (macro-libraries kestrel-books)
+  :short "A library of concepts and utilities for event macros."
   :long
   (xdoc::topstring
    (xdoc::p

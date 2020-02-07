@@ -10,7 +10,7 @@
 
 (in-package "STD")
 
-(include-book "kestrel/utilities/system/event-forms" :dir :system)
+(include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 

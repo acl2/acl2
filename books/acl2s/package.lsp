@@ -219,9 +219,13 @@
       => ;sig
       _  ;range
 
+      <<
+      
       test? ;for acl2s-hooks query categorization
       acl2s-defaults acl2s-defaults-table
-    
+
+      clear-memo-table
+      
       begin-book
       rev ;why do we need to add this??
       with-time-limit

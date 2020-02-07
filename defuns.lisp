@@ -283,14 +283,14 @@
 ; make-event expansion, but that happens automatically because we are recording
 ; the results in a world global and the world is reverted after make-event
 ; expansion.  We also take other measures in store-cert-data.  In particular,
-; we avoid storing results computed during the first pass of an encapsulate
-; (which is skipped during include-book), though that shouldn't be necessary
-; since the world is rolled back after that pass -- and note that we don't want
-; to use pass1 encapsulate results to avoid translating in pass2, because that
-; would avoid local incompatibility checking.  (For the same reason, we don't
-; retrieve :translate cert-data during the include-book phase of certify-book.)
-; Also, we avoid worrying about lambda objects.  See store-cert-data for
-; details.
+; we sometimes avoid storing results computed during the first pass of an
+; encapsulate (which is skipped during include-book), though that is not
+; necessary since the world is rolled back after that pass -- and note that we
+; don't want to use pass1 encapsulate results to avoid translating in pass2,
+; because that would avoid local incompatibility checking.  (For the same
+; reason, we don't retrieve :translate cert-data during the include-book phase
+; of certify-book.)  Also, we avoid worrying about lambda objects.  See
+; store-cert-data for details.
 
 ; Remarks (in no particular order).
 
@@ -439,12 +439,16 @@
 )
 
 (defun store-cert-data (val wrld state)
-  (and (f-get-global 'certify-book-info state)
+  (and (let ((info (f-get-global 'certify-book-info state)))
+         (and info
+              (not (access certify-book-info info :include-book-phase))))
        (not (f-get-global 'in-local-flg state))
        (not ; not inside include-book
         (global-val 'include-book-path wrld))
 
-; The next conjunct is optional, as explained in the Essay on Cert-data.
+; The next conjunct is optional, as explained in the Essay on Cert-data.  Note
+; that in function encapsulate-fn, we are careful during encapsulate pass 1 to
+; avoid stealing the fast-alist stored in world global translate-cert-data.
 
        (not ; not "obviously" in encapsulate pass1
         (and (in-encapsulatep (global-val 'embedded-event-lst wrld) nil)
@@ -484,35 +488,33 @@
   ((type . inputs) . (value . (fns . vars)))
   t)
 
+(defun update-translate-cert-data-fn (name installed-wrld wrld
+                                           type inputs value fns vars)
+  (let ((old-translate-cert-data (global-val 'translate-cert-data
+                                             installed-wrld)))
+    (global-set 'translate-cert-data
+                (let ((new (make translate-cert-data-record
+                                 :type type
+                                 :inputs inputs
+                                 :value value
+                                 :fns fns
+                                 :vars vars))
+                      (old-lst (cdr (hons-get name old-translate-cert-data))))
+                  (if (member-equal new old-lst)
+                      old-translate-cert-data
+                    (hons-acons name
+                                (cons new old-lst)
+                                old-translate-cert-data)))
+                wrld)))
+
 (defmacro update-translate-cert-data (name installed-wrld wrld
                                            &key type inputs value fns vars)
 
 ; Warning: Keep the fields in sync with translate-cert-data-record and
 ; cert-data-for-certificate.
 
-  `(let ((old-translate-cert-data (global-val 'translate-cert-data
-                                              ,installed-wrld))
-         (name ,name)
-         (type ,type)
-         (inputs ,inputs)
-         (value ,value)
-         (fns ,fns)
-         (vars ,vars)
-         (wrld ,wrld))
-     (global-set 'translate-cert-data
-                 (let ((new (make translate-cert-data-record
-                                  :type type
-                                  :inputs inputs
-                                  :value value
-                                  :fns fns
-                                  :vars vars))
-                       (old-lst (cdr (hons-get name old-translate-cert-data))))
-                   (if (member-equal new old-lst)
-                       old-translate-cert-data
-                     (hons-acons name
-                                 (cons new old-lst)
-                                 old-translate-cert-data)))
-                 wrld)))
+  `(update-translate-cert-data-fn ,name ,installed-wrld ,wrld
+                                  ,type ,inputs ,value ,fns ,vars))
 
 ; Rockwell Addition: A major change is the provision of non-executable
 ; functions.  These are typically functions that use stobjs but which

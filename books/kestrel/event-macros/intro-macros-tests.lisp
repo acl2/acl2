@@ -1,6 +1,6 @@
-; System Utilities -- Event Forms -- Tests
+; Event Macros Library
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,22 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "event-forms")
-(include-book "kestrel/utilities/testing" :dir :system)
+(include-book "intro-macros")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(assert! (maybe-pseudo-event-formp nil))
-
-(assert! (maybe-pseudo-event-formp '(defun f (x) x)))
-
-(assert! (maybe-pseudo-event-formp '(encapsulate () (defun f (x) x))))
-
-(assert! (not (maybe-pseudo-event-formp 33)))
-
-(assert! (not (maybe-pseudo-event-formp '("a" 1))))
-
-(assert! (not (maybe-pseudo-event-formp '((f x) y))))
+(include-book "misc/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -3573,6 +3573,7 @@
             equal
             bad-atom<=) (list "x" "y"))
           (nonnegative-integer-quotient (list "i" "j"))
+          (string-append (list "str1" "str2"))
           (t (list "x"))))
        (fn-info (atj-get-function-type-info fn guards$ wrld))
        (main-fn-type (atj-function-type-info->main fn-info))
@@ -3613,6 +3614,7 @@
           (bad-atom<= "execBadAtomLessThanOrEqualTo")
           (if "execIf")
           (nonnegative-integer-quotient "execNonnegativeIntegerQuotient")
+          (string-append "execStringAppend")
           (t (impossible))))
        (jcall-arg-exprs (jexpr-name-list method-param-names))
        (jcall (jexpr-smethod *aij-type-native-fn*

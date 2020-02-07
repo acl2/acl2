@@ -52,6 +52,10 @@
 ;; for correctness proof
 (include-book "projects/rp-rewriter/lib/mult/svl-top" :dir :system)
 
+;; Matt K. mod: Turn off warnings about "Fast alist discipline violated".
+;; Mertcan Temel is aware of them and has approved this mod.
+(local (set-slow-alist-action nil))
+
 ;; load VL design
 (acl2::defconsts
  (*vl-design* state)

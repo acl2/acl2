@@ -989,7 +989,19 @@
                                 guards$)))
 
   :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
-             (local (in-theory (disable member-equal acl2::member-of-cons))))
+             ;; just to speed up the proofs a bit:
+             (local
+              (in-theory
+               (disable
+                member-equal
+                acl2::member-of-cons
+                acl2::true-listp-of-car-when-true-list-listp
+                acl2::subsetp-when-atom-right
+                true-list-listp
+                acl2::true-list-listp-of-cdr-when-true-list-listp
+                acl2::subsetp-when-atom-left
+                acl2::consp-when-member-equal-of-cons-listp
+                acl2::symbol-listp-when-not-consp))))
 
   :verify-guards nil ; done below
   ///
@@ -1320,7 +1332,7 @@
   (assert-event (symbol-listp *atj-allowed-options*))
   (assert-event (no-duplicatesp-eq *atj-allowed-options*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-inputs ((args true-listp) ctx state)
   :returns (mv erp

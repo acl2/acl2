@@ -37,7 +37,7 @@
   "Java Representation of the ACL2 Values")
 
 (defconst *atj-tutorial-deep-shallow*
-  "Deep and Shallow Embedding")
+  "Deep and Shallow Embedding Approaches")
 
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
@@ -124,6 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Main pages of the ATJ turorial, which can be navigated sequentially.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc atj-tutorial-motivation
 
   :short (atj-tutorial-short *atj-tutorial-motivation*)
@@ -196,7 +200,7 @@
 
    (atj-tutorial-next "atj-tutorial-background" *atj-tutorial-background*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-background
 
@@ -354,7 +358,7 @@
 
    (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-aij
 
@@ -386,7 +390,7 @@
 
    (atj-tutorial-next "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-acl2-values
 
@@ -436,29 +440,14 @@
 
    (xdoc::p
     "AIJ represents ACL2 values
-     as immutable objects of class @('Value') and its subclasses
+     as immutable objects of class @('Acl2Value') and its subclasses
      in the "
     (xdoc::seetopic "atj-tutorial-simplified-uml"
                     "simplified UML class diagram")
-    " below.")
-
-   (xdoc::p
-    "In AIJ's actual code,
-     each class name is prefixed with `@('Acl2')' (e.g. @('Acl2Value')),
-     so that external code can reference these classes unambiguously
-     without AIJ's package name @('edu.kestrel.acl2.aij').
-     This tutorial omits the prefix for brevity,
-     and uses fully qualified names for the Java standard classes
-     to avoid ambiguities,
-     e.g. @('java.lang.String') is the Java standard string class,
-     as distinguished from @('String') in the UML diagram above.")
-
-   (xdoc::img :src "res/kestrel-java-atj-images/value-classes.png")
-
-   (xdoc::p
-    "Each class in the UML diagram above, except @('PackageName'),
+    " below.
+     Each class in the diagram, except @('Acl2PackageName'),
      corresponds to a set
-     in the earlier picture of ACL2 values (in blue).
+     in the picture of ACL2 values above.
      The subset relationships in that picture
      match the inheritance relationships in the UML diagram above.
      The sets of values that are unions of other sets of values
@@ -470,29 +459,31 @@
      by building
      rationals that are not integers and numbers that are not rationals.")
 
+   (xdoc::img :src "res/kestrel-java-atj-images/value-classes.png")
+
    (xdoc::p
     "The information about the represented ACL2 values
      is stored in fields of the non-abstract classes.
-     @('Integer') stores
+     @('Acl2Integer') stores
      the numeric value as a @('java.math.BigInteger').
-     @('Ratio') stores
-     the numerator and denominator as @('Integer')s,
+     @('Acl2Ratio') stores
+     the numerator and denominator as @('Acl2Integer')s,
      in reduced form
      (i.e. their greatest common divisor is 1
      and the denominator is greater than 1).
-     @('ComplexRational') stores
-     the real and imaginary parts as @('Rational')s.
-     @('Character') stores
+     @('Acl2ComplexRational') stores
+     the real and imaginary parts as @('Acl2Rational')s.
+     @('Acl2Character') stores
      the 8-bit code of the character as a @('char') below 256.
-     @('String') stores
+     @('Acl2String') stores
      the codes and order of the characters as a @('java.lang.String')
      whose @('char')s are all below 256.
-     @('Symbol') stores
-     the symbol's package name as a @('PackageName')
+     @('Acl2Symbol') stores
+     the symbol's package name as a @('Acl2PackageName')
      (a wrapper of @('java.lang.String')
      that enforces the ACL2 constraints on package names)
-     and the symbol's name as a @('String').
-     @('Cons') stores the component @('Value')s.
+     and the symbol's name as a @('Acl2String').
+     @('Acl2ConsPair') stores the component @('Acl2Value')s.
      All these fields are private,
      thus encapsulating the internal representation choices
      and enabling their localized modification.
@@ -509,13 +500,14 @@
     "The public classes for ACL2 values and package names
      in the UML diagram above
      provide public static factory methods to build objects of these classes.
-     For example, @('Character.make(char)')
-     returns a @('Character') with the supplied argument as code,
+     For example, @('Acl2Character.make(char)')
+     returns a @('Acl2Character') with the supplied argument as code,
      throwing an exception if the argument is above 255.
-     As another example, @('Cons.make(Value,Value)')
-     returns a @('Cons') with the supplied arguments as components.
+     As another example, @('Acl2ConsPair.make(Acl2Value,Acl2Value)')
+     returns a @('Acl2ConsPair') with the supplied arguments as components.
      Some classes provide overloaded variants,
-     e.g. @('Integer.make(int)') and @('Integer.make(java.math.BigInteger)').
+     e.g. @('Acl2Integer.make(int)')
+     and @('Acl2Integer.make(java.math.BigInteger)').
      All these classes provide no public Java constructors,
      thus encapsulating the details of object creation and re-use,
      which is essentially transparent to external code
@@ -525,19 +517,21 @@
     "The public classes for ACL2 values in the UML diagram above
      provide public instance getter methods
      to unbuild (i.e. extract information from) instances of these classes.
-     For example, @('Character.getJavaChar()')
+     For example, @('Acl2Character.getJavaChar()')
      returns the code of the character
      as a @('char') that is always below 256.
-     As another example, @('Cons.getCar()') and @('Cons.getCdr()')
-     return the component @('Value')s of the \acl{cons') pair.
+     As another example,
+     @('Acl2ConsPair.getCar()') and @('Acl2ConsPair.getCdr()')
+     return the component @('Acl2Value')s of the \acl{cons') pair.
      Some classes provide variants,
-     e.g. @('Integer.getJavaInt()')
+     e.g. @('Acl2Integer.getJavaInt()')
      (which throws an exception if the integer does not fit in an @('int'))
-     and @('Integer.getJavaBigInteger()').")
+     and @('Acl2Integer.getJavaBigInteger()').")
 
    (xdoc::p
     "Thus, AIJ provides a public API to
-     build and unbuild Java representations of ACL2 values.
+     build and unbuild Java representations of ACL2 values:
+     the API consists of the factory and getter methods described above.
      When talking about AIJ,
      this tutorial calls `build' and `unbuild'
      what is often called `construct' and `destruct' in functional programming,
@@ -553,7 +547,7 @@
 
    (atj-tutorial-next "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-deep-shallow
 
@@ -617,6 +611,10 @@
                           *atj-tutorial-acl2-values*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Auxiliary pages of the ATJ tutorial, which are referenced from the main ones.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc atj-tutorial-simplified-uml
 

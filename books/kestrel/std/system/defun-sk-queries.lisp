@@ -1,4 +1,4 @@
-; System Utilities -- DEFUN-SK Queries
+; Standard System Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,14 +10,18 @@
 
 (in-package "ACL2")
 
+(include-book "function-namep")
+(include-book "non-executablep")
+(include-book "thm-formula")
+(include-book "ubody")
+
 (include-book "std/util/defenum" :dir :system)
-(include-book "world-queries")
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ defun-sk-queries
-  :parents (system-utilities-non-built-in defun-sk)
+  :parents (std/system/function-queries defun-sk)
   :short "Utilities to query @(tsee defun-sk) functions."
   :long
   (xdoc::topstring
@@ -377,9 +381,15 @@
      @('(equal (fn arg1 ... argN) core)'),
      with @('arg1'), ..., @('argN') and @('core') as above.")
    (xdoc::p
+    "Note that here we consider a function to be defined
+     if it has an unnormalized body (via @(tsee ubody)).
+     Certain program-mode functions may be defined
+     without having an unnormalized body;
+     however, @(tsee defun-sk) functions should always be in logic mode.")
+   (xdoc::p
     "Use @(tsee defun-sk-imatrix)
      to retrieve the matrix in untranslated form."))
-  (b* ((core (if (definedp fn wrld)
+  (b* ((core (if (ubody fn wrld)
                  (b* ((body (ubody fn wrld)))
                    (if (non-executablep fn wrld)
                        (car (last body))
