@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "event-forms")
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
 (include-book "named-formulas")
