@@ -1423,7 +1423,6 @@
     syntax error in the hints: ~q0Therefore proceed without Smtlink...~%" user-hint)
                   (list cl)))
          (combined-hint (combine-hints user-hint (smt-hint)))
-         ;; (- (cw "combined-hint: ~q0" combined-hint))
          (next-cp (cdr (assoc-equal 'process-hint *SMT-architecture*)))
          ((if (null next-cp)) (list cl))
          (cp-hint `(:clause-processor (,next-cp clause ',combined-hint)))
@@ -1477,7 +1476,7 @@
     (b* (((unless (and (true-listp val)
                        (car val) (cadr val)))
           val)
-         ((list name type) val)
+         ((list* name type rest) val)
          (to-be-trans `(,type ,name))
          ((mv err term)
           (acl2::translate-cmp to-be-trans t t nil 'Smtlink-process-user-hint->trans-hypothesis
@@ -1485,7 +1484,7 @@
          ((when err)
           (er hard? 'Smtlink-process-user-hint->trans-argument "Error ~
     translating form: ~q0" to-be-trans)))
-      `(,name ,(car term))))
+      `(,name ,(car term) ,@rest)))
 
   (define trans-formals ((val t) (state))
     :parents (translate-cmp-smtlink)
