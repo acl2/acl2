@@ -14,6 +14,7 @@
 (include-book "kestrel/std/system/conjoin-equalities" :dir :system)
 (include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/make-mv-nth-calls" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/defthmr" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
@@ -21,7 +22,6 @@
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "kestrel/utilities/system/event-form-lists" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 
