@@ -72,7 +72,7 @@
          (cl0 `((hint-please ',the-hint)
                 (not (type-hyp (hide ,type-decl-list) ':type))
                 ,G/type))
-         (cl1 `((hint-please '(:in-theory '(minimal-theory)
+         (cl1 `((hint-please '(:in-theory (enable type-hyp)
                                :expand ((:free (x) (hide x)))))
                 (not (implies (type-hyp (hide ,type-decl-list) ':type)
                               ,G/type))
