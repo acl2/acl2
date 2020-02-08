@@ -1033,8 +1033,24 @@ What you can enter at the SVTV-CHASE prompt:
  SMARTP             Toggle data-aware dependency reduction feature
                     (reduces the number of irrelevant signals listed).
                     On by default.
+
+ (EV form)          Evaluates form using simple-translate-and-eval 
+                    and prints the result.  You need to set up an attachment
+                    to do this, which you can do by running
+                    (sv::setup-ev-for-chase) in the ACL2 loop.  You can undo this
+                    with (sv::unsetup-ev-for-chase).
 ")
 
+(defmacro setup-ev-for-chase ()
+  '(progn
+     (defttag trans)
+     (defattach (simple-translate-and-eval-logic acl2::simple-translate-and-eval-cmp)
+       :skip-checks t)))
+
+(defmacro unsetup-ev-for-chase ()
+  '(progn
+     (defttag nil)
+     (defattach (simple-translate-and-eval-logic nil))))
 
 ;; (local (defthm chase-position-addr-p-car-when-chase-stack-addr-p
 ;;          (implies (and (chase-stack-addr-p x)
@@ -1075,6 +1091,24 @@ What you can enter at the SVTV-CHASE prompt:
 (verify-guards evisc-tuple)
 
 
+(encapsulate
+  (((simple-translate-and-eval-logic
+     * * * * * * state * * *) => (mv * *)
+    :formals (x alist ok-stobj-names msg ctx wrld state aok safe-mode gc-off)
+    :guard t))
+  (set-ignore-ok t)
+  (set-irrelevant-formals-ok t)
+  (local (defun simple-translate-and-eval-logic (x alist ok-stobj-names msg ctx wrld state aok safe-mode gc-off)
+           (declare (xargs :stobjs state))
+           (mv nil nil))))
+
+
+(local (in-theory (disable w)))
+
+(local (defthm w-of-read-object
+         (equal (w (mv-nth 2 (read-object channel state)))
+                (w state))
+         :hints(("Goal" :in-theory (enable w read-object)))))
 
 (define svtv-chase-rep (&key
                         (debugdata 'debugdata)
@@ -1199,7 +1233,34 @@ What you can enter at the SVTV-CHASE prompt:
                 (acl2::fmt-to-comment-window! "~x0~%"
                                               `((#\0 . ,(chase-expr svtv-chase-data)))
                                               0 (evisc-tuple (car args) nil nil nil) nil)
-              (mv nil svtv-chase-data state))))
+                (mv nil svtv-chase-data state)))
+             ((when (equal objname "EV"))
+              (b* (((unless (and (consp args)
+                                 (not (cdr args))))
+                    (cw! "EV directive must be of the form (EV term).~%")
+                    (mv nil svtv-chase-data state))
+                   (attachment (fgetprop 'simple-translate-and-eval-logic 'acl2::attachment nil (w state)))
+                   ((unless (and attachment
+                                 (alistp attachment)
+                                 (eq (cdr (assoc-eq 'simple-translate-and-eval-logic attachment))
+                                     'acl2::simple-translate-and-eval-cmp)))
+                    (cw! "In order to use EV you must set ~x0 as the ~
+                          attachment for ~x1, as in the following ~
+                          form:~%~x2~%Note that to (mostly) undo this you may ~
+                          do:~%~x3~%"
+                         'acl2::simple-translate-and-eval-cmp
+                         'simple-translate-and-eval-logic
+                         '(setup-ev-for-chase)
+                         '(unsetup-ev-for-chase))
+                    (mv nil svtv-chase-data state))
+                   ((mv err term-dot-val)
+                    (simple-translate-and-eval-logic (car args) nil nil "The argument to EV"
+                                                     'svtv-chase-rep (w state) state t nil nil))
+                   ((when (or err (not (consp term-dot-val))))
+                    (cw! "Failed to evaluate: ~@0~%" term-dot-val)
+                    (mv nil svtv-chase-data state)))
+                (cw! "~x0~%" (cdr term-dot-val))
+                (mv nil svtv-chase-data state))))
           (cw! "Error -- unrecognized directive: ~x0~%Type ? for allowed commands.~%" obj)
           (mv nil svtv-chase-data state))))
     (cw! "Error -- unrecognized directive: ~x0~%Type ? for allowed commands.~%" obj)
@@ -1220,6 +1281,7 @@ What you can enter at the SVTV-CHASE prompt:
     (implies (open-input-channel-p1 *standard-oi* :object state)
              (open-input-channel-p1 *standard-oi* :object new-state))))
 
+  
 
 (define svtv-chase-repl (&key
                          (debugdata 'debugdata)
