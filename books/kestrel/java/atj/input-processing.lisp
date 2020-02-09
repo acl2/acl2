@@ -1162,7 +1162,8 @@
     "Note that, as explained in the overview of the algorithm,
      functions natively implemented, which include the ACL2 primitive functions,
      never appear in the worklists and collected lists.
-     Thus, when we encounter a function without an unnormalized body,
+     Thus, when we encounter a function
+     without an unnormalized body and without an attachment,
      we stop with an error.")
    (xdoc::p
     "If the function satisfies all the needed constraints,
@@ -1204,10 +1205,11 @@
         (er-soft+ ctx t nil
                   "The function ~x0 has input or output stobjs; ~
                    therefore, code generation cannot proceed." fn))
-       (body (ubody fn (w state)))
+       (body (atj-fn-body fn (w state)))
        ((unless body)
         (er-soft+ ctx t nil
-                  "The function ~x0 has no unnormalized body; ~
+                  "The function ~x0 has no unnormalized body ~
+                   and no suitable attachment; ~
                    therefore, code generation cannot proceed." fn))
        ((run-when verbose$)
         (cw "  ~x0~%" fn))

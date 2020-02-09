@@ -78,7 +78,8 @@
 
    (xdoc::p
     "ATJ accepts all the ACL2 functions that
-     (1) have an unnormalized body (see @(tsee acl2::ubody)) and
+     (1) have either an unnormalized body (see @(tsee acl2::ubody))
+     or an attachment and
      (2) either do not have raw Lisp code
      or have raw Lisp code but belong to a whitelist.
      The ACL2 functions with raw Lisp code
@@ -187,7 +188,7 @@
 
    (xdoc::p
     "ATJ translates the target ACL2 functions into Java representations,
-     based on their unnormalized bodies.
+     based on their unnormalized bodies or attachments.
      It does so recursively,
      starting from the top-level functions specified by the user
      and stopping at the ACL2 functions that
@@ -196,7 +197,7 @@
      represent Java primitive operations or primitive array operations.
      If a function is encountered that
      is not natively implemented in AIJ
-     and has no unnormalized body,
+     and has no unnormalized body and no attachment,
      ATJ stops with an error.
      If a function is encountered that has raw Lisp code
      and is not in the whitelist
@@ -283,13 +284,15 @@
      "Each @('fni') must be a symbol that names a function that
       either has an unnormalized body
       and no raw Lisp code (unless it is in the whitelist),
+      or it has an attachment,
       or is natively implemented in AIJ
       (currently, this is equivalent to the function being "
      (xdoc::seetopic "acl2::primitive" "primitive") ").
       Each of these functions must have
       no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") ".
       Each of these functions must transitively call
-      (in the unnormalized body, if not natively implemented in AIJ)
+      (in the unnormalized body or attachment,
+      if not natively implemented in AIJ)
       only functions that satisfy the same constraints,
       except for calls of @(tsee return-last) as described below.")
     (xdoc::p

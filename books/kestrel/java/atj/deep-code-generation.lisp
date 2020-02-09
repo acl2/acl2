@@ -14,8 +14,6 @@
 (include-book "pre-translation")
 
 (include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
-(include-book "kestrel/std/system/formals-plus" :dir :system)
-(include-book "kestrel/std/system/ubody-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -399,7 +397,7 @@
        (jvar-formals "formals")
        (jvar-body "body")
        (formals (formals+ fn wrld))
-       (body (ubody+ fn wrld))
+       (body (atj-fn-body fn wrld))
        (in-types (repeat (len formals) :avalue)) ; actually irrelevant
        (out-types (list :avalue)) ; actually irrelevant
        ((mv formals body &)
