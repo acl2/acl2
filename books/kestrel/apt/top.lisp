@@ -13,19 +13,19 @@
 (include-book "utilities/top")
 
 (include-book "common-concepts")
-(include-book "common-options-reference")
+(include-book "common-options")
 
 (include-book "casesplit")
-(include-book "casesplit-reference")
+(include-book "casesplit-doc")
 
 (include-book "parteval")
-(include-book "parteval-reference")
+(include-book "parteval-doc")
 
 (include-book "restrict")
-(include-book "restrict-reference")
+(include-book "restrict-doc")
 
 (include-book "tailrec")
-(include-book "tailrec-reference")
+(include-book "tailrec-doc")
 
 ; (depends-on "images/apt-logo.png")
 
