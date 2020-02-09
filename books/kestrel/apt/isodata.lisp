@@ -34,7 +34,7 @@
    (xdoc::p
     "The implementation functions have formal parameters,
      as well as result names
-     (in the <see topic='@(url returns-specifiers)'>@(':returns')</see>),
+     (in the <see topic='@(url std::returns-specifiers)'>@(':returns')</see>),
      consistently named as follows:")
    (xdoc::ul
     (xdoc::li
@@ -1805,7 +1805,7 @@
      The @('nil') in the &lsquo;else&rsquo; branch of the @(tsee if)
      is actually a variable name in the pseudo-term returned by this function,
      but it has the desired effect that
-     the untranslation of the @(tsee if) in @(tsee isodata-events)
+     the untranslation of the @(tsee if) in @(tsee isodata-gen-everything)
      does not turn the @(tsee if) into an @(tsee and)."))
   (b* ((old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
@@ -1898,9 +1898,9 @@
    (xdoc::p
     "Given the body, measure, and well-founded relation
      of the generated function
-     (see @(tsee isodata-new-body),
-     @(tsee isodata-new-measure),
-     and @(tsee isodata-events)),
+     (see @(tsee isodata-gen-new-fn-body),
+     @(tsee isodata-gen-new-fn-measure),
+     and @(tsee isodata-gen-everything)),
      the termination theorem to be proved for the generated function
      has (essentially) the form")
    (xdoc::codeblock
@@ -2090,7 +2090,7 @@
      in case the old function's termination depends on any ruler extender.")
    (xdoc::p
     "Guard verification is deferred;
-     see @(tsee isodata-new-fn-verify-guards-event).")
+     see @(tsee isodata-gen-new-fn-verify-guards).")
    (xdoc::p
     "If the old function returns a multi-value result,
      we adjust the body of the new function to do the same."))
@@ -3608,7 +3608,7 @@
     "     (newp yp)"
     "     old-body<...,(back y1),...,(back yp),...>)")
    (xdoc::p
-    "(see @(tsee isodata-new-body-pred)),
+    "(see @(tsee isodata-gen-new-fn-body-pred)),
      the guards of the generated function are verified as follows:")
    (xdoc::ul
     (xdoc::li
@@ -3719,7 +3719,7 @@
     "                                      (back yp),"
     "                                      ...>))>)")
    (xdoc::p
-    "(see @(tsee isodata-new-body-pred)),
+    "(see @(tsee isodata-gen-new-fn-body-pred)),
      the guards of the generated function are verified as follows:")
    (xdoc::ul
     (xdoc::li
@@ -3771,7 +3771,8 @@
     (xdoc::li
      "Given @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
       derived above,
-      we use the relating theorem (see @(tsee isodata-old-to-new-formula))
+      we use the relating theorem
+      (see @(tsee isodata-gen-old-to-new-thm-formula))
       to replace, in the guard obligation of the generated function,
       each
       @('(new ... (forth updatej-yk<...,(back y1),...,(back yp),...>) ...)')
@@ -3915,12 +3916,12 @@
     "     (newp yp)"
     "     old-guard<...,(back y1),...,(back yp),...>)")
    (xdoc::p
-    "(see @(tsee isodata-new-guard))
+    "(see @(tsee isodata-gen-new-fn-guard))
      and that the body of the generated function (when non-recursive) is")
    (xdoc::codeblock
     "old-body<...,(back y1),...,(back yp),...>")
    (xdoc::p
-    "(see @(tsee isodata-new-body)),
+    "(see @(tsee isodata-gen-new-fn-body)),
      the guards of the generated function are verified as follows:")
    (xdoc::ul
     (xdoc::li
@@ -3996,7 +3997,7 @@
     "     (newp yp)"
     "     old-guard<...,(back y1),...,(back yp),...>)")
    (xdoc::p
-    "(see @(tsee isodata-new-guard))
+    "(see @(tsee isodata-gen-new-fn-guard))
      and that the body of the generated function (when recursive) is")
    (xdoc::codeblock
     "(if (and (newp y1)"
@@ -4030,7 +4031,7 @@
     "                                    ...>))>"
     "  nil)")
    (xdoc::p
-    "(see @(tsee isodata-new-body)),
+    "(see @(tsee isodata-gen-new-fn-body)),
      the guards of the generated function are verified as follows:")
    (xdoc::ul
     (xdoc::li
@@ -4104,7 +4105,8 @@
     (xdoc::li
      "Given @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
       derived above,
-      we use the relating theorem (see @(tsee isodata-old-to-new-formula))
+      we use the relating theorem
+      (see @(tsee isodata-gen-old-to-new-thm-formula))
       to replace, in the guard obligation of the generated function,
       each
       @('(new ... (forth updatej-yk<...,(back y1),...,(back yp),...>) ...)')
@@ -4320,7 +4322,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned in @(tsee isodata-new-fn-intro-events),
+    "As mentioned elsewhere,
      the verification of the guards of the new function,
      when it has to take place,
      is deferred when the function is introduced.
