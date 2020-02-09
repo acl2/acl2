@@ -18,6 +18,9 @@
 (include-book "casesplit")
 (include-book "casesplit-doc")
 
+(include-book "isodata")
+(include-book "isodata-doc")
+
 (include-book "parteval")
 (include-book "parteval-doc")
 
@@ -107,6 +110,7 @@
 (xdoc::order-subtopics apt (common-concepts
                             common-options
                             casesplit
+                            isodata
                             parteval
                             restrict
                             tailrec
