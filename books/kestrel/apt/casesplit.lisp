@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ casesplit-implementation
-  :parents (implementation casesplit)
+  :parents (casesplit)
   :short "Implementation of @(tsee casesplit)."
   :long
   (xdoc::topstring

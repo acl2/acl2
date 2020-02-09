@@ -26,7 +26,7 @@
 
 (defxdoc parteval
 
-  :parents (reference)
+  :parents (apt)
 
   :short "APT partial evaluation transformation:
           specialize a function by setting one or more parameters

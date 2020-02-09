@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parteval-implementation
-  :parents (implementation parteval)
+  :parents (parteval)
   :short "Implementation of @(tsee parteval)."
   :long
   (xdoc::topstring

@@ -26,7 +26,7 @@
 
 (defxdoc restrict
 
-  :parents (reference)
+  :parents (apt)
 
   :short "APT domain restriction transformation:
           restrict the effective domain of a function."

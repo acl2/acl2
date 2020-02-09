@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ restrict-implementation
-  :parents (implementation restrict)
+  :parents (restrict)
   :short "Implementation of @(tsee restrict)."
   :long
   "<p>

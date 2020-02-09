@@ -26,7 +26,7 @@
 
 (defxdoc casesplit
 
-  :parents (reference)
+  :parents (apt)
 
   :short "APT case splitting transformation:
           rephrase a function definition by cases."

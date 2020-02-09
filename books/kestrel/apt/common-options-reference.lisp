@@ -1,7 +1,7 @@
 ; APT (Automated Program Transformations) Library
 ;
 ; Copyright (C) 2018 Regents of the University of Texas
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc common-options
-  :parents (reference)
+  :parents (apt)
   :short "Options that are common to different APT transformations.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -26,7 +26,7 @@
 
 (defxdoc tailrec
 
-  :parents (reference)
+  :parents (apt)
 
   :short "APT tail recursion transformation:
           turn a recursive function that is not tail-recursive
