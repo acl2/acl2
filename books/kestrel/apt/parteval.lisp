@@ -10,11 +10,12 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
-(include-book "kestrel/utilities/system/event-form-lists" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
@@ -25,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parteval-implementation
-  :parents (implementation parteval)
+  :parents (parteval)
   :short "Implementation of @(tsee parteval)."
   :long
   (xdoc::topstring

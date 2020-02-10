@@ -39,6 +39,9 @@
 (defconst *atj-tutorial-deep-shallow*
   "Deep and Shallow Embedding Approaches")
 
+(defconst *atj-tutorial-deep*
+  "Deep Embedding Approach")
+
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
@@ -608,7 +611,269 @@
      to the shallow embedding approach.")
 
    (atj-tutorial-previous "atj-tutorial-acl2-values"
-                          *atj-tutorial-acl2-values*)))
+                          *atj-tutorial-acl2-values*)
+
+   (atj-tutorial-next "atj-tutorial-deep" *atj-tutorial-deep*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-deep
+
+  :short (atj-tutorial-short *atj-tutorial-deep*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
+    " not only provides "
+    (xdoc::seetopic "atj-tutorial-acl2-values"
+                    "a default Java representation of the ACL2 values")
+    ": it is a "
+    (xdoc::seetopic "atj-tutorial-deep-shallow"
+                    "deep embedding of ACL2 in Java")
+    "; more precisely, a deep embedding of the
+     executable, "
+    (xdoc::seetopic "atj-tutorial-background" "side-effect")
+    "-free,
+     non-"
+    (xdoc::seetopic "acl2::stobj" "stobj")
+    "-accessing
+     subset of the ACL2 language without guards.
+     AIJ includes
+     a Java representation of the ACL2 terms
+     (in "
+    (xdoc::seetopic "acl2::term" "translated")
+    " form)
+     and a Java representation of the ACL2 environment,
+     consisting of "
+    (xdoc::seetopic "defun" "function definitions")
+    " and "
+    (xdoc::seetopic "defpkg" "package definitions")
+    ". AIJ also includes
+     a Java implementation of the ACL2 "
+    (xdoc::seetopic "acl2::primitive" "primitive functions")
+    ", and an ACL2 "
+    (xdoc::seetopic "atj-tutorial-background" "evaluator")
+    " written in Java.")
+
+   (xdoc::p
+    "Besides an "
+    (xdoc::seetopic "atj-tutorial-acl2-values"
+                    "API to build and unbuild ACL2 values")
+    ", AIJ also provides
+     an API to build an ACL2 environment
+     (i.e. to build ACL2 function and package definitions),
+     and an API to evaluate calls of ACL2 primitive and defined functions
+     without checking guards.
+     External Java code could use this whole API as follows
+     (see picture below):")
+   (xdoc::ol
+    (xdoc::li
+     "Build the ACL2 environment:"
+     (xdoc::ol
+      (xdoc::li
+       "Define the ACL2 packages of interest,
+        both built-in and user-defined,
+        in the order in which they appear in the ACL2 @(see world).")
+      (xdoc::li
+       "Define the ACL2 functions of interest,
+        both built-in and user-defined (except the primitive ones),
+        in any order.")))
+    (xdoc::li
+     "Evaluate ACL2 function calls:"
+     (xdoc::ol
+      (xdoc::li
+       "Build the name of the ACL2 function to call,
+        as well as zero or more ACL2 values to pass as arguments,
+        via the factory methods of the "
+       (xdoc::seetopic "atj-tutorial-acl2-values" "value classes")
+       ".")
+      (xdoc::li
+       "Call the @('Acl2NamedFunction.call(Acl2Value[])') method
+        on the function name with the (array of) arguments.")
+      (xdoc::li
+       "Unbuild the returned @('Acl2Value') as needed to inspect and use it,
+        using the getter methods of the "
+       (xdoc::seetopic "atj-tutorial-acl2-values" "value classes")
+       "."))))
+
+   (xdoc::img :src "res/kestrel-java-atj-images/aij-api.png")
+
+   (xdoc::p
+    "ATJ automates the first part of the protocol described above,
+     namely the building of the ACL2 environment
+     (see picture below).
+     ATJ generates Java code
+     that uses the AIJ API to build the ACL2 environment
+     and that provides a wrapper API
+     for external Java code to evaluate ACL2 function calls.
+     The external Java code must still directly use the AIJ API
+     to build and unbuild ACL2 values
+     passed to and received from function calls.")
+
+   (xdoc::img :src "res/kestrel-java-atj-images/atj-aij-api.png")
+
+   (xdoc::p
+    "For example, consider the following factorial function:")
+   (xdoc::codeblock
+    "(defun fact (n)"
+    "  (declare (xargs :guard (natp n)))"
+    "  (if (zp n)"
+    "      1"
+    "    (* n (fact (1- n)))))")
+
+   (xdoc::p
+    "To generate Java code for that function,
+     include ATJ via")
+   (xdoc::codeblock
+    "(include-book \"kestrel/java/atj/top\" :dir :system)")
+   (xdoc::p
+    "and call ATJ via")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil)")
+   (xdoc::p
+    "where @(':deep t') specifies the deep embedding approach
+     and @(':guards nil') specifies not to assume the guards' satisfaction
+     (more on this later).")
+
+   (xdoc::p
+    "As conveyed by the message shown on the screen by ATJ,
+     a single Java file @('Acl2Code.java') is generated,
+     in the current directory.
+     Opening the file reveals that it contains
+     a single Java public class called @('Acl2Code').
+     The file imports all the (public) AIJ classes,
+     which are in the @('edu.kestrel.acl2.aij') Java package,
+     and a few classes from the Java standard library.")
+
+   (xdoc::p
+    "The class starts with a static initializer that calls
+     a number of methods to define ACL2 packages
+     and a number of methods to define ACL2 functions.
+     The packages are all the known ones in the ACL2 @(see world)
+     at the time that ATJ is called:
+     the method names are derived from the package names,
+     as should be apparent.
+     The functions are @('fact') and all the ones
+     called directly or indirectly by @('fact'),
+     except for the "
+    (xdoc::seetopic "acl2::primitive" "primitive functions")
+    ". In this case, the functions are
+     @('fact'), @(tsee zp), and @(tsee not):")
+   (xdoc::ul
+    (xdoc::li
+     "@('fact') calls @(tsee zp), which calls @(tsee not).")
+    (xdoc::li
+     "@('fact') also calls @(tsee *) and @(tsee 1-),
+      but these are macros whose expansions call
+      the primitive functions @(tsee binary-*) and @(tsee binary-+).")
+    (xdoc::li
+     "@(tsee zp) also calls the primitive function @(tsee if),
+      and the macro @(tsee <=), whose expansion calls @(tsee not)
+      and the primitive function @(tsee <).")
+    (xdoc::li
+     "@(tsee not) calls the primitive function @(tsee if)."))
+   (xdoc::p
+    "ATJ looks at the "
+    (xdoc::seetopic "acl2::term" "translated")
+    " bodies of the functions,
+     where macros, and also named constants, are expanded already.")
+
+   (xdoc::p
+    "The static initializer is followed by
+     the declarations of the (private) methods that it calls.
+     The package definition methods
+     build the packages' import lists (some quite long)
+     and pass them to the AIJ method to define packages;
+     the code that builds the import lists is generated by ATJ,
+     based on the results of @(tsee pkg-imports) on the known packages.
+     The function definition methods
+     build the functions' names, formal parameter, and bodies,
+     and pass them to the AIJ method to define functions;
+     the code that builds formal parameters and bodies is generated by ATJ,
+     based on the @('formals') and @('unnormalized-body') properties
+     of the function symbols.
+     The details of all these methods are unimportant here.")
+
+   (xdoc::p
+    "At the end of the class declaration (and file)
+     there are two public methods,
+     which form the API to the ATJ-generated Java code
+     illustrated in the picture above.
+     The @('initialize()') method has an empty body,
+     but its purpose is to ensure the initialization of the class,
+     and therefore the execution of the static initializer,
+     which defines all the ACL2 packages and functions of interest.
+     The @('call()') method evaluates an ACL2 function call,
+     by invoking the relevant AIJ method (the details are unimportant here).")
+
+   (xdoc::p
+    "External Java code must call @('initialize()')
+     not only before calling @('call()'),
+     but also before using AIJ's API to build
+     the @('Acl2Symbol') and @('Acl2Value')s
+     to pass to @('call()').
+     The reason is that the building of @('Acl2Symbol')s
+     depends on the definitions of the known packages being in place,
+     just as in ACL2.")
+
+   (xdoc::p
+    "The following is a simple example of external Java code
+     that uses the ATJ-generated and AIJ:")
+   (xdoc::codeblock
+    "import edu.kestrel.acl2.aij.*;"
+    ""
+    "public class Test {"
+    "    public static void main(String[] args)"
+    "        throws Acl2UndefinedPackageException {"
+    "        Acl2Code.initialize();"
+    "        Acl2Symbol function = Acl2Symbol.make(\"ACL2\", \"FACT\");"
+    "        Acl2Value argument = Acl2Integer.make(100);"
+    "        Acl2Value[] arguments = new Acl2Value[]{argument};"
+    "        Acl2Value result = Acl2Code.call(function, arguments);"
+    "        System.out.println(\"Result: \" + result + \".\");"
+    "    }"
+    "}")
+   (xdoc::p
+    "This code initializes the ACL2 environment,
+     creates the function symbol `@('acl2::fact')',
+     creates a singleton array of arguments with the ACL2 integer 100,
+     calls the factorial function,
+     and prints the resulting value.
+     (AIJ's API includes @('toString()') methods
+     to convert ACL2 values to Java strings.)
+     The @('Acl2UndefinedPackageException') must be declared
+     because @('call()') may throw it in general,
+     even though it will not in this case.")
+
+   (xdoc::p
+    "If the code above is in a file @('Test.java')
+     in the same directory where @('Acl2Code.java') was generated,
+     it can be compiled via")
+   (xdoc::codeblock
+    "javac -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar \\"
+    "      Acl2Code.java Test.java")
+   (xdoc::p
+    "where @('[books]/...') must be replaced with
+     a proper path to the AIJ jar file
+     (see the documentation of "
+    (xdoc::seetopic "aij" "AIJ")
+    "for instructions on how to obtain that jar file.")
+
+   (xdoc::p
+    "After compiling, the code can be run via")
+   (xdoc::codeblock
+    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
+    "      Test")
+   (xdoc::p
+    "where again @('[books]/...') must be replaced with a proper path.
+     A fairly large number will be printed on the screen.
+     Some ACL2 has just been run in Java.")
+
+   (atj-tutorial-previous "atj-tutorial-deep-shallow"
+                          *atj-tutorial-deep-shallow*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

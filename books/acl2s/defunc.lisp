@@ -2237,13 +2237,19 @@ To debug a failed defunc form, you can proceed in multiple ways:
    ")
 
 (defmacro defuncd (name &rest args)
-  `(encapsulate
-    nil
-    (defunc ,name ,@args)
-    (make-event 
-     `(in-theory
-       (disable
-        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
+  `(with-output
+    :off :all :on (error) :stack :push
+    (encapsulate
+     nil
+     (with-output
+      :stack :pop
+      (defunc ,name ,@args))
+     (make-event 
+      `(with-output
+        :off :all :on (summary) :summary (form)
+        (in-theory
+         (disable
+          ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))
 
 (defmacro defunc-no-test (name &rest args)
   `(gen-acl2s-local testing-enabled
@@ -2256,13 +2262,19 @@ To debug a failed defunc form, you can proceed in multiple ways:
                     ((defuncd ,name ,@args))))
 
 (defmacro defundcd (name &rest args)
-  `(encapsulate
-    nil
-    (defundc ,name ,@args)
-    (make-event 
-     `(in-theory
-       (disable
-        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
+  `(with-output
+    :off :all :on (error) :stack :push
+    (encapsulate
+     nil
+     (with-output
+      :stack :pop
+      (defundc ,name ,@args))
+     (make-event 
+      `(with-output
+        :off :all :on (summary) :summary (form)
+        (in-theory
+         (disable
+          ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))
 
 (defmacro defundc-no-test (name &rest args)
   `(gen-acl2s-local testing-enabled

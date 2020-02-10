@@ -21,7 +21,6 @@
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
-(include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "std/typed-alists/cons-pos-alistp" :dir :system)
 
 (local (include-book "kestrel/std/basic/symbol-name-lst" :dir :system))
@@ -3844,7 +3843,7 @@
      that consists of all @(':value') types."))
   (b* ((curr-pkg (symbol-package-name fn))
        (formals (formals+ fn wrld))
-       (body (ubody+ fn wrld))
+       (body (atj-fn-body fn wrld))
        ((run-when (null body))
         (raise "Internal error: ~
                 the function ~x0 has no unnormalized body."

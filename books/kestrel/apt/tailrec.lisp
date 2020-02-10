@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ tailrec-implementation
-  :parents (implementation tailrec)
+  :parents (tailrec)
   :short "Implementation of @(tsee tailrec)."
   :long
   "<p>

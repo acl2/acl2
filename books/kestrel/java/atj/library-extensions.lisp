@@ -16,6 +16,8 @@
 
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
+(include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 
@@ -151,6 +153,44 @@
      ///
      (defret len-of-atj-make-mv-let-call-aux
        (equal (len terms) (len indices))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-fn-body ((fn symbolp) (wrld plist-worldp))
+  :returns (body pseudo-termp)
+  :short "Return the unnormalized body or attachment of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function extends @(tsee ubody+) as follows:
+     if @('fn') has no unnormalized body,
+     but it has an attachment @('fn2'),
+     we consider @('(fn2 x1 ... xn)') to be the body of @('fn'),
+     where @('x1'), ..., @('xn') are the formals of @('fn').
+     For the purpose of ATJ's code generation,
+     the attachment of @('fn2') to @('fn') is equivalent to
+     @('fn2') being defined to call @('fn') with the same arguments.")
+   (xdoc::p
+    "The attachment is in the @('acl2::attachment') property of @('fn').
+     The property has the form @('((fn . fn2))').
+     If the property is absent or does not have this form,
+     @('fn') is regarded as not being defined,
+     and ATJ will stop because it cannot generate code for it."))
+  (b* ((ubody (ubody+ fn wrld))
+       ((when ubody) ubody)
+       (attachment (getpropc fn 'acl2::attachment nil wrld))
+       ((unless (tuplep 1 attachment)) nil)
+       (element (car attachment)))
+    (if (and (consp element)
+             (eq (car element) fn)
+             (symbolp (cdr element))
+             (not (eq (cdr element) 'quote)))
+        (fcons-term (cdr element) (formals+ fn wrld))
+      nil))
+  :prepwork
+  ((defrulel returns-lemma
+     (implies (symbol-listp x)
+              (pseudo-term-listp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

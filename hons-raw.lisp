@@ -2301,7 +2301,7 @@ See :DOC slow-alist-warning to suppress or break on this warning.
               name)
       (when (eq action :break)
         (format *error-output* "
-To avoid the following break and get only the above warning:~%  ~a~%"
+To avoid the following break and get only the above warning:~%  ~s~%"
                 '(set-slow-alist-action :warning))
         (break$)))))
 
@@ -2566,7 +2566,7 @@ or suppress this warning message with~%  ~a~%
               '(set-slow-alist-action nil))
       (when (eq action :break)
         (format *error-output* "
-To avoid the following break and get only the above warning:~%  ~a~%"
+To avoid the following break and get only the above warning:~%  ~s~%"
                 '(set-slow-alist-action :warning))
         (break$)))))
 
