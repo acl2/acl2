@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "assert")
+(include-book "eval")
+
 (include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
