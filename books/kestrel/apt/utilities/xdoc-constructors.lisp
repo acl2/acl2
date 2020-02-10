@@ -435,3 +435,21 @@
           ,it/them
           " iff @('old') is guard-verified."))
         ,@additional))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::desc-apt-input-untranslate
+  :short "Build a description of the @(':untranslate') input
+          for the reference documentation of an APT transformation."
+  :long (xdoc::topstring-@def "xdoc::desc-apt-input-untranslate")
+  (defmacro xdoc::desc-apt-input-untranslate (&rest additional)
+    `(xdoc::desc
+      "@(':untranslate') &mdash; default @(':nice')"
+      (xdoc::p
+       "Specifies if and how the body of @('new') should be turned
+        from internal translated form to external untranslated form.")
+      (xdoc::p
+       "It must be an "
+       (xdoc::seetopic "untranslate-specifier" "untranslate specifier")
+       "; see that documentation topic for details.")
+      ,@additional)))
