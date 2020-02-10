@@ -205,8 +205,6 @@
 
 
 (local (in-theory (disable w)))
-(defcong world-equiv equal (meta-extract-formula name st) 2
-  :hints(("Goal" :in-theory (enable world-equiv meta-extract-formula))))
 
 (defthmd w-state-equal-forward
   (implies (equal (w st) (w state))

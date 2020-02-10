@@ -1,0 +1,82 @@
+; Centaur Meta-reasoning Library
+; Copyright (C) 2019 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: Sol Swords <sswords@centtech.com>
+
+(in-package "CMR")
+
+(include-book "centaur/misc/universal-equiv" :dir :system)
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
+
+(local (in-theory (disable w)))
+
+(defun-nx world-equiv (x y)
+  (equal (w x) (w y)))
+
+(defequiv world-equiv)
+
+(defcong world-equiv equal (w st) 1)
+
+(defcong world-equiv equal (meta-extract-formula name st) 2
+  :hints(("Goal" :in-theory (enable meta-extract-formula))))
+
+(defcong world-equiv equal (meta-extract-global-fact+ obj st state) 3
+  :hints(("Goal" :in-theory (enable meta-extract-global-fact+))))
+
+
+(defchoose base-ev-falsify (a) (x)
+  (not (base-ev x a)))
+
+(defmacro base-ev-theoremp (x)
+  `(base-ev ,x (base-ev-falsify ,x)))
+
+(defchoose base-ev-meta-extract-global-badguy (obj st) (state)
+  (not (base-ev-theoremp (meta-extract-global-fact+ obj st state))))
+
+(defmacro base-ev-meta-extract-global-facts (&key (state 'state))
+  `(base-ev
+    (meta-extract-global-fact+
+     (mv-nth 0 (base-ev-meta-extract-global-badguy ,state))
+     (mv-nth 1 (base-ev-meta-extract-global-badguy ,state))
+     ,state)
+    (base-ev-falsify
+     (meta-extract-global-fact+
+      (mv-nth 0 (base-ev-meta-extract-global-badguy ,state))
+      (mv-nth 1 (base-ev-meta-extract-global-badguy ,state))
+      ,state))))
+
+(defthm base-ev-meta-extract-global-facts-when-world-equiv
+  (implies (and (base-ev-meta-extract-global-facts :state old)
+                (world-equiv old new))
+           (base-ev-meta-extract-global-facts :state new))
+  :hints (("goal" :in-theory (disable world-equiv meta-extract-global-fact+)
+           :use ((:instance base-ev-meta-extract-global-badguy
+                  (obj  (mv-nth 0 (base-ev-meta-extract-global-badguy new)))
+                  (st   (mv-nth 1 (base-ev-meta-extract-global-badguy new)))
+                  (state old))))))
+  

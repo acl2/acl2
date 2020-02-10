@@ -34,6 +34,7 @@
 (include-book "stack-ev")
 (include-book "scratch-isomorphic")
 (include-book "interp-st-bfrs-ok")
+(include-book "centaur/meta/world-equiv" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable w)))
@@ -500,12 +501,6 @@
 
 
 
-(defun-nx world-equiv (x y)
-  (equal (w x) (w y)))
-
-(acl2::def-universal-equiv world-equiv
-  :equiv-terms ((equal (w x)))
-  :already-definedp t)
 
 
 
@@ -719,7 +714,6 @@
                   (world-equiv st state))
          :hints(("Goal" :in-theory (enable world-equiv)))
          :rule-classes :forward-chaining))
-               
 
 (local (defthm fgl-formula-checks-stub-when-world-equal
          (implies (and (fgl-formula-checks-stub st)
