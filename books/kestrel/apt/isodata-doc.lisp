@@ -317,6 +317,8 @@
 
     (xdoc::desc-apt-input-verify-guards :never)
 
+    (xdoc::desc-apt-input-untranslate)
+
     (xdoc::evmac-input-hints)
 
     (xdoc::evmac-input-print isodata)

@@ -14,12 +14,14 @@
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/util/defiso" :dir :system)
+(include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
+(include-book "utilities/untranslate-specifiers")
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -54,6 +56,7 @@
       @('non-executable'),
       @('normalize'),
       @('verify-guards'),
+      @('untranslate'),
       @('hints'),
       @('print'), and
       @('show-only')
@@ -70,6 +73,7 @@
       @('non-executable'),
       @('normalize'),
       @('verify-guards$'),
+      @('untranslate$'),
       @('hints$'),
       @('print$'), and
       @('show-only$')
@@ -902,6 +906,7 @@
                                 non-executable
                                 normalize
                                 verify-guards
+                                untranslate
                                 hints
                                 print
                                 show-only
@@ -1012,6 +1017,9 @@
        ((er &) (ensure-boolean$ normalize "The :NORMALIZE input" t nil))
        (app-cond-keywords (isodata-app-cond-present-keywords
                            old$ predicate verify-guards$ wrld))
+       ((er &) (ensure-is-untranslate-specifier$ untranslate
+                                                 "The :UNTRANSLATE input"
+                                                 t nil))
        ((er hints$) (evmac-process-input-hints
                      hints app-cond-keywords ctx state))
        ((er &) (evmac-process-input-print print ctx state))
@@ -2068,6 +2076,7 @@
    (non-executable$ booleanp)
    (normalize$ booleanp)
    (verify-guards$ booleanp)
+   (untranslate$ untranslate-specifier-p)
    (app-cond-thm-names symbol-symbol-alistp
                        "Result of @(tsee isodata-gen-app-conds).")
    (wrld plist-worldp))
@@ -2101,7 +2110,23 @@
        (body (if (> (number-of-results old$ wrld) 1)
                  (mvify body)
                body))
-       (body (untranslate body nil wrld))
+       (body (case untranslate$
+               (:nice
+                (directed-untranslate (car (last (get-event old$ wrld)))
+                                      (ubody old$ wrld)
+                                      body
+                                      nil
+                                      nil
+                                      wrld))
+               (:nice-expanded
+                (directed-untranslate-no-lets (car (last (get-event old$ wrld)))
+                                              (ubody old$ wrld)
+                                              body
+                                              nil
+                                              nil
+                                              wrld))
+               (nil body)
+               (t (untranslate body nil wrld))))
        (guard (isodata-gen-new-fn-guard old$ args$ newp$ back$ predicate$ wrld))
        (guard (conjoin (flatten-ands-in-lit guard)))
        (guard (untranslate guard nil wrld))
@@ -4385,6 +4410,7 @@
    (non-executable$ booleanp)
    (normalize$ booleanp)
    (verify-guards$ booleanp)
+   (untranslate$ untranslate-specifier-p)
    (hints$ symbol-truelist-alistp)
    (print$ evmac-input-print-p)
    (show-only$ booleanp)
@@ -4500,6 +4526,7 @@
                             non-executable$
                             normalize$
                             verify-guards$
+                            untranslate$
                             app-cond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
@@ -4588,6 +4615,7 @@
                     non-executable
                     normalize
                     verify-guards
+                    untranslate
                     hints
                     print
                     show-only
@@ -4651,6 +4679,7 @@
                                 non-executable
                                 normalize
                                 verify-guards
+                                untranslate
                                 hints
                                 print
                                 show-only
@@ -4683,6 +4712,7 @@
                                       non-executable$
                                       normalize
                                       verify-guards$
+                                      untranslate
                                       hints$
                                       print
                                       show-only
@@ -4716,6 +4746,7 @@
                      (non-executable ':auto)
                      (normalize 't)
                      (verify-guards ':auto)
+                     (untranslate ':nice)
                      (hints 'nil)
                      (print ':result)
                      (show-only 'nil))
@@ -4729,6 +4760,7 @@
                                    ',non-executable
                                    ',normalize
                                    ',verify-guards
+                                   ',untranslate
                                    ',hints
                                    ',print
                                    ',show-only
