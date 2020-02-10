@@ -220,7 +220,8 @@
      (table fgl-formula-checks ',name
             (cdr (assoc ',name (table-alist 'cmr::formula-checkers world))))
      (defcong world-equiv equal (,name st) 1
-       :hints(("Goal" :in-theory (enable ,name))))
+       :hints(("Goal" :in-theory (enable ,name
+                                         w-state-equal-forward))))
      (def-updater-independence-thm
        ,(intern-in-package-of-symbol
          (concatenate 'string (symbol-name name)
@@ -666,7 +667,8 @@
         ;; (def-formula-checks <prefix>-formula-checks <formula-check-fns>)
         (cmr::def-formula-checker <prefix>-formula-checks <formula-check-fns>)
         (defcong world-equiv equal (<prefix>-formula-checks st) 1
-          :hints(("Goal" :in-theory (enable <prefix>-formula-checks))))
+          :hints(("Goal" :in-theory (enable <prefix>-formula-checks
+                                            w-state-equal-forward))))
         (local (cmr::def-formula-checker-lemmas <prefix>-formula-checks <formula-check-fns>))
         (local (progn . <formula-check-thms>))
 
@@ -832,7 +834,8 @@
           (fgl-formula-checks-stub <prefix>-formula-checks)
           :hints(("Goal"
                   :do-not '(preprocess simplify)
-                  :in-theory (disable w fgl-ev-context-equiv-forall-extensions)
+                  :in-theory (e/d (w-state-equal-forward)
+                                  (w fgl-ev-context-equiv-forall-extensions))
                   :clause-processor dumb-clausify-cp)
                  '(:do-not nil)
                  ;; (let ((term (car (last clause))))
