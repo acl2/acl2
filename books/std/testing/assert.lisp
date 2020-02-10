@@ -1,7 +1,7 @@
 ; Event-Level Assertions
 ;
 ; Copyright (C) 2017 Regents of the University of Texas
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -25,7 +25,7 @@
 ; have less clutter when including the book.
 
 (defxdoc assert!
-  :parents (testing-utilities assert$ errors)
+  :parents (std/testing assert$ errors)
   :short "Form of @(tsee assert$) that is an event"
   :long "<p>The @('assert!') macro is similar to @('assert$'), but its calls
   may appear as top-level @(see events) in @(see books) and @(see encapsulate)
@@ -94,7 +94,7 @@
 ; assertion.
 
 (defxdoc assert!-stobj
-  :parents (testing-utilities assert$ errors)
+  :parents (std/testing assert$ errors)
   :short "Form of @(tsee assert$) involving @(see stobj)s that is an event"
   :long "<p>This variant of @(see assert!) allows forms that modify @(see
  stobj)s.</p>
@@ -161,7 +161,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection assert-equal
-  :parents (testing-utilities errors)
+  :parents (std/testing errors)
   :short "Abbreviation for calling @(tsee assert!) on an equality."
   :long "@(def assert-equal)"
   (defmacro assert-equal (x y)

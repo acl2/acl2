@@ -1,7 +1,7 @@
 ; Event-Level Evaluation
 ;
 ; Copyright (C) 2018 Regents of the University of Texas
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-eval-to
-  :parents (testing-utilities errors)
+  :parents (std/testing errors)
   :short "A top-level @(tsee assert$)-like command to ensure that
           a form evaluates to a non-erroneous error triple
           with the value of a specified expression."
@@ -100,7 +100,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-eval-to-t
-  :parents (testing-utilities errors must-eval-to)
+  :parents (std/testing errors must-eval-to)
   :short "A specialization of @(tsee must-eval-to) to ensure that
           a form evaluates to a non-erroneous error triple with value @('t')."
   :long
@@ -131,7 +131,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-succeed
-  :parents (testing-utilities errors)
+  :parents (std/testing errors)
   :short "A top-level @(see assert$)-like command.  Ensures that a command
 which returns an @(see error-triple)&mdash;e.g., a @(see defun) or
 @(see defthm)&mdash;will return successfully."
@@ -217,7 +217,7 @@ customize this, as in @(see make-event).</p>
 
 (defsection must-succeed*
 
-  :parents (testing-utilities errors must-succeed)
+  :parents (std/testing errors must-succeed)
 
   :short "A variant of @(tsee must-succeed) that accepts multiple forms."
 
@@ -277,7 +277,7 @@ customize this, as in @(see make-event).</p>
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-fail
-  :parents (testing-utilities errors)
+  :parents (std/testing errors)
   :short "A top-level @(see assert$)-like command.  Ensures that a command
 which returns an @(see error-triple)&mdash;e.g., @(see defun) or @(see
 defthm)&mdash;will not be successful."
@@ -408,7 +408,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-fail-local
-  :parents (testing-utilities errors must-fail)
+  :parents (std/testing errors must-fail)
   :short "A @(see local) variant of @(tsee must-fail)."
   :long
   "<p>
@@ -422,7 +422,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-fail-with-error
-  :parents (testing-utilities errors must-fail)
+  :parents (std/testing errors must-fail)
   :short "A specialization of @(tsee must-fail) to ensure that an error occurs."
 
   :long "<p>Evaluation of @('(must-fail-with-error <form>)') returns without
@@ -450,7 +450,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-fail-with-soft-error
-  :parents (testing-utilities errors must-fail)
+  :parents (std/testing errors must-fail)
   :short "A specialization of @(tsee must-fail) to ensure that
           a soft error occurs."
 
@@ -479,7 +479,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-fail-with-hard-error
-  :parents (testing-utilities errors must-fail)
+  :parents (std/testing errors must-fail)
   :short "A specialization of @(tsee must-fail) to ensure that
           a hard error occurs."
 
@@ -508,7 +508,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-prove
-  :parents (testing-utilities errors)
+  :parents (std/testing errors)
   :short "A top-level @(tsee assert$)-like command to ensure that
           a formula gets proved."
   :long
@@ -532,7 +532,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-not-prove
-  :parents (testing-utilities errors)
+  :parents (std/testing errors)
   :short "A top-level @(tsee assert$)-like command to ensure that
           a formula does not get proved."
   :long
@@ -556,7 +556,7 @@ including a book (because of the way that @('must-fail') is implemented using
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-be-redundant
-  :parents (testing-utilities errors)
+  :parents (std/testing errors)
   :short "A top-level @(tsee assert$)-like command
           to ensure that given forms are redundant."
   :long
