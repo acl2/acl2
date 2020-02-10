@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
@@ -86,27 +87,6 @@
     "The parameters of implementation functions that are not listed above
      are described in, or clear from, those functions' documentation."))
   :order-subtopics t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ parteval-library-extensions
-  :parents (parteval-implementation)
-  :short "Library extensions for @(tsee parteval)."
-  :long
-  (xdoc::topstring-p
-   "This material may be moved to appropriate libraries.")
-  :order-subtopics t
-  :default-parent t)
-
-(define ibody ((fn symbolp) (wrld plist-worldp))
-  :returns (body "An untranslated term.")
-  :mode :program
-  :short "Retrieve the untranslated body of a function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is as introduced (hence the @('i') in the name) by the user."))
-  (car (last (get-event fn wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

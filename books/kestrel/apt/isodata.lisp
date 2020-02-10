@@ -12,6 +12,7 @@
 
 (include-book "kestrel/apt/utilities/transformation-table" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
@@ -2112,19 +2113,11 @@
                body))
        (body (case untranslate$
                (:nice
-                (directed-untranslate (car (last (get-event old$ wrld)))
-                                      (ubody old$ wrld)
-                                      body
-                                      nil
-                                      nil
-                                      wrld))
+                (directed-untranslate
+                 (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
                (:nice-expanded
-                (directed-untranslate-no-lets (car (last (get-event old$ wrld)))
-                                              (ubody old$ wrld)
-                                              body
-                                              nil
-                                              nil
-                                              wrld))
+                (directed-untranslate-no-lets
+                 (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
                (nil body)
                (t (untranslate body nil wrld))))
        (guard (isodata-gen-new-fn-guard old$ args$ newp$ back$ predicate$ wrld))

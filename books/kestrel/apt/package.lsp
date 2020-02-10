@@ -174,6 +174,7 @@
                          get-unnormalized-bodies
                          guard-raw
                          guard-verified-p
+                         ibody
                          implicate
                          implicate-untranslated-terms
                          impossible
