@@ -220,8 +220,9 @@
      (table fgl-formula-checks ',name
             (cdr (assoc ',name (table-alist 'cmr::formula-checkers world))))
      (defcong world-equiv equal (,name st) 1
-       :hints(("Goal" :in-theory (enable ,name
-                                         w-state-equal-forward))))
+       :hints(("Goal" :in-theory (e/d (,name
+                                       w-state-equal-forward)
+                                      (w)))))
      (def-updater-independence-thm
        ,(intern-in-package-of-symbol
          (concatenate 'string (symbol-name name)
@@ -229,7 +230,8 @@
          name)
        (implies (equal (w new) (w old))
                 (equal (,name new) (,name old)))
-       :hints(("Goal" :in-theory (enable w-state-equal-forward))))))
+       :hints(("Goal" :in-theory (e/d (w-state-equal-forward)
+                                      (w)))))))
 
 
 ;; (defcong world-equiv equal (meta-extract-global-fact+ obj st sta) 3
@@ -307,7 +309,7 @@
                        ;; (and stable-under-simplificationp
                        ;;      '(
                        :in-theory (e/d (w-state-equal-forward)
-                                       (fgl-meta-constraint-necc))))))
+                                       (fgl-meta-constraint-necc w))))))
 
       (defret fgl-meta-constraint-of-<fn>
         (implies (case-split (implies formula-check <formula-check-arg>))
@@ -424,7 +426,7 @@
                          ;; (and stable-under-simplificationp
                          ;;      '(
                          :in-theory (e/d (w-state-equal-forward)
-                                         (fgl-primitive-constraint-necc))))))
+                                         (fgl-primitive-constraint-necc w))))))
 
       (defret fgl-primitive-constraint-of-<fn>
         (implies (case-split (implies formula-check <formula-check-arg>))
@@ -566,7 +568,7 @@
                 ;; (and stable-under-simplificationp
                 ;;      '(
                        :in-theory (e/d (w-state-equal-forward)
-                                       (fgl-binder-constraint-necc))))))
+                                       (fgl-binder-constraint-necc w))))))
 
       (defret fgl-binder-constraint-of-<fn>
         (implies (case-split (implies formula-check <formula-check-arg>))
@@ -667,8 +669,9 @@
         ;; (def-formula-checks <prefix>-formula-checks <formula-check-fns>)
         (cmr::def-formula-checker <prefix>-formula-checks <formula-check-fns>)
         (defcong world-equiv equal (<prefix>-formula-checks st) 1
-          :hints(("Goal" :in-theory (enable <prefix>-formula-checks
-                                            w-state-equal-forward))))
+          :hints(("Goal" :in-theory (e/d (<prefix>-formula-checks
+                                          w-state-equal-forward)
+                                         (w)))))
         (local (cmr::def-formula-checker-lemmas <prefix>-formula-checks <formula-check-fns>))
         (local (progn . <formula-check-thms>))
 
