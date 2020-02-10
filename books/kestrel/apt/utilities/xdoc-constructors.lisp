@@ -34,7 +34,7 @@
 
 (defsection xdoc::desc-apt-input-old
   :short "Build a description of the @('old') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long (xdoc::topstring-@def "xdoc::desc-apt-input-old")
   (defmacro xdoc::desc-apt-input-old (&rest additional)
     `(xdoc::desc
@@ -55,7 +55,7 @@
 
 (defsection xdoc::desc-apt-input-new-name
   :short "Build a description of the @(':new-name') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long (xdoc::topstring-@def "xdoc::desc-apt-input-new-name")
   (defmacro xdoc::desc-apt-input-new-name (&rest additional)
     `(xdoc::desc
@@ -82,7 +82,7 @@
 
 (defsection xdoc::desc-apt-input-new-enable
   :short "Build a description of the @(':new-enable') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long (xdoc::topstring-@def "xdoc::desc-apt-input-new-enable")
   (defmacro xdoc::desc-apt-input-new-enable (&rest additional)
     `(xdoc::desc
@@ -102,7 +102,7 @@
 
 (defsection xdoc::desc-apt-input-wrapper
   :short "Build a description of the @(':wrapper') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long (xdoc::topstring-@def "xdoc::desc-apt-input-wrapper")
   (defmacro xdoc::desc-apt-input-wrapper (&rest additional)
     `(xdoc::desc
@@ -120,7 +120,7 @@
 
 (defsection xdoc::desc-apt-input-wrapper-name
   :short "Build a description of the @(':wrapper-name') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -166,7 +166,7 @@
 
 (defsection xdoc::desc-apt-input-wrapper-enable
   :short "Build a description of the @(':wrapper-enable') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -206,7 +206,7 @@
 
 (defsection xdoc::desc-apt-input-thm-name
   :short "Build a description of the @(':thm-name') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -272,7 +272,7 @@
 
 (defsection xdoc::desc-apt-input-thm-enable
   :short "Build a description of the @(':thm-enable') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -316,7 +316,7 @@
 
 (defsection xdoc::desc-apt-input-non-executable
   :short "Build a description of the @(':non-executable') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -379,7 +379,7 @@
 
 (defsection xdoc::desc-apt-input-verify-guards
   :short "Build a description of the @(':verify-guards') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -440,7 +440,7 @@
 
 (defsection xdoc::desc-apt-input-untranslate
   :short "Build a description of the @(':untranslate') input
-          for the reference documentation of an APT transformation."
+          for the user documentation of an APT transformation."
   :long (xdoc::topstring-@def "xdoc::desc-apt-input-untranslate")
   (defmacro xdoc::desc-apt-input-untranslate (&rest additional)
     `(xdoc::desc
