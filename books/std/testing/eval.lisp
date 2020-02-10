@@ -1,4 +1,4 @@
-; Event-Level Evaluation
+; Standard Testing Library
 ;
 ; Copyright (C) 2018 Regents of the University of Texas
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
@@ -11,15 +11,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Here we define macros that employ make-event to check evaluations of forms.
-; See community book make-event/eval-tests.lisp (and many other .lisp files in
-; that directory) for how these macros may be employed.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Event-Level Evaluation
+
+; Here we define macros that employ make-event to check evaluations of forms.
+; See community book make-event/eval-tests.lisp (and many other .lisp files in
+; that directory) for how these macros may be employed.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

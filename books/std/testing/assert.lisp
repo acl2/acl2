@@ -1,4 +1,4 @@
-; Event-Level Assertions
+; Standard Testing Library
 ;
 ; Copyright (C) 2017 Regents of the University of Texas
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
@@ -14,6 +14,10 @@
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Event-Level Assertions
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
