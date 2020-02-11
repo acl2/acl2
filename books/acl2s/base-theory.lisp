@@ -715,8 +715,13 @@ I commented out some disabled theorems that seem fine to me.
            :in-theory (disable ACL2::|(* r (denominator r))|)))
   :rule-classes ((:linear) (:rewrite)))
 
-(defun posp-ind (n)
-  (if (or (zp n) (equal n 1))
+(definec natp-ind (n :nat) :nat
+  (if (zp n)
+      n
+    (natp-ind (- n 1))))
+
+(definec posp-ind (n :pos) :pos
+  (if (= n 1)
       n
     (posp-ind (- n 1))))
 
@@ -751,7 +756,7 @@ I commented out some disabled theorems that seem fine to me.
                 (< 0 n))
            (< (numerator (+ (- n) r))
               (numerator r)))
-  :hints (("goal" :induct (posp-ind n))
+  :hints (("goal" :induct (posp-ind-induction-scheme-from-definition n))
           ("subgoal *1/2.2"
            :use ((:instance numerator-1-decreases
                             (n (+ r (- n) 1))))))
