@@ -12,11 +12,9 @@
 
 (in-package "ECURVE")
 
-(include-book "kestrel/crypto/ecurve/secp256k1-domain-parameters" :dir :system)
-(include-book "kestrel/crypto/ecurve/secp256k1-prime" :dir :system)
-(include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "secp256k1-domain-parameters")
+(include-book "secp256k1-prime")
 (include-book "kestrel/utilities/testing" :dir :system) ; for assertions
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system) ; for rtl::primep
 (include-book "short-weierstrass")
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
