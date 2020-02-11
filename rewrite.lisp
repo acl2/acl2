@@ -5910,10 +5910,10 @@
   (declare (type (signed-byte 30) i max))
   (the (signed-byte 30)
        (cond ((atom x) i)
-             (t (let ((i (cons-count-bounded-ac (cdr x) i max)))
+             (t (let ((i (cons-count-bounded-ac (car x) i max)))
                   (declare (type (signed-byte 30) i))
                   (cond ((>= i max) max)
-                        (t (cons-count-bounded-ac (car x) (1+f i) max))))))))
+                        (t (cons-count-bounded-ac (cdr x) (1+f i) max))))))))
 
 (defun cons-count-bounded (x)
 

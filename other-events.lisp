@@ -14556,29 +14556,48 @@
 
 (defun pkg-names-memoize (x)
 
-; See pkg-names.
+; This function caused a stack overflow when certifying an example sent
+; 2/10/2020 by Shilpi Goel, and had already caused a stack overflow when
+; certifying a version of books/projects/apply/loop-tests.lisp, modified by
+; removing LOCAL from the last event marked LOCAL in that book.  Even with the
+; change to avoid pkg-names-memoize, the modified loop-tests.lisp still fails
+; to certify because of a stack overflow from ser-encode-conses (see also
+; below), though that can be solved by certifying after evaluating
+; (set-serialize-character-system nil state) or by increasing the stack size,
+; e.g., in saved_acl2 using "-Z 1024M" for CCL and "--control-stack-size 1024"
+; for SBCL.
 
-; For the following book we get a stack overflow in pkg-names-memoize in Step 3
-; of certification.
+  (declare (ignore x))
+  (er hard! 'pkg-names-memoize
+      "The function ~x0 is obsolete, and should not be called!"
+      'pkg-names-memoize)
 
-; (in-package "ACL2")
-; (include-book "projects/apply/top" :dir :system)
-; (make-event `(defconst *m* ',(make-list 10000000)))
+; Old code:
 
-; Before trying to fix pkg-names-memoize, however, note that if we comment out
-; the include-book form above, then instead we get a stack overflow in
-; ser-encode-conses in Step 4.  So it might not be worth trying to improve
-; pkg-names-memoize unless we also try to improve ser-encode-conses.  Both
-; might be difficult fixes that aren't necessary; see the workaround using
-; LOCAL near the end of community book books/projects/apply/loop-tests.lisp.
-
-  (cond ((consp x)
-         (hons-union-ordered-string-lists
-          (pkg-names-memoize (car x))
-          (pkg-names-memoize (cdr x))))
-        ((and x (symbolp x))
-         (hons (symbol-package-name x) nil))
-        (t nil)))
+; ; See pkg-names.
+; 
+; ; For the following book we get a stack overflow in pkg-names-memoize in Step 3
+; ; of certification.
+; 
+; ; (in-package "ACL2")
+; ; (include-book "projects/apply/top" :dir :system)
+; ; (make-event `(defconst *m* ',(make-list 10000000)))
+; 
+; ; Before trying to fix pkg-names-memoize, however, note that if we comment out
+; ; the include-book form above, then instead we get a stack overflow in
+; ; ser-encode-conses in Step 4.  So it might not be worth trying to improve
+; ; pkg-names-memoize unless we also try to improve ser-encode-conses.  Both
+; ; might be difficult fixes that aren't necessary; see the workaround using
+; ; LOCAL near the end of community book books/projects/apply/loop-tests.lisp.
+; 
+;   (cond ((consp x)
+;          (hons-union-ordered-string-lists
+;           (pkg-names-memoize (car x))
+;           (pkg-names-memoize (cdr x))))
+;         ((and x (symbolp x))
+;          (hons (symbol-package-name x) nil))
+;         (t nil)))
+  )
 
 (defun pkg-names (x base-kpa)
 
@@ -14599,19 +14618,23 @@
    ((null x) ; optimization
     nil)
    (t
-    #+(and hons (not acl2-loop-only))
 
-; Here we use a more efficient but equivalent version of this function that
-; memoizes, contributed initially by Sol Swords.  This version is only more
-; efficient when fast alists are available; otherwise the memo table will be a
-; linear list ultimately containing every cons visited, resulting in quadratic
-; behavior because of the membership tests against it.
+; The following is obsolete; see commented-out code for pkg-names-memoize.
 
-    (return-from
-     pkg-names
-     (loop for name in (pkg-names-memoize x)
-           when (not (find-package-entry name base-kpa))
-           collect name))
+;     #+(and hons (not acl2-loop-only))
+; 
+; ; Here we use a more efficient but equivalent version of this function that
+; ; memoizes, contributed initially by Sol Swords.  This version is only more
+; ; efficient when fast alists are available; otherwise the memo table will be a
+; ; linear list ultimately containing every cons visited, resulting in quadratic
+; ; behavior because of the membership tests against it.
+; 
+;     (return-from
+;      pkg-names
+;      (loop for name in (pkg-names-memoize x)
+;            when (not (find-package-entry name base-kpa))
+;            collect name))
+
     (merge-sort-lexorder ; sort the small list, to agree with hons result above
      (pkg-names0 x base-kpa nil)))))
 
