@@ -1240,7 +1240,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            ,@decls
            ,dynamic-body))
         (me-assign defunc-failure-reason :none)
-        (make-event ,(print-summary-ev name oc kwd-alist pkg)))))))
+        ;(make-event ,(print-summary-ev name oc kwd-alist pkg))
+        )))))
 
 (defun print-guard-extra-info-hyps (hyps yesp)
   (if (endp hyps)
