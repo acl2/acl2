@@ -219,7 +219,10 @@
       => ;sig
       _  ;range
 
+      d<
+      l<
       <<
+      lexp
       
       test? ;for acl2s-hooks query categorization
       acl2s-defaults acl2s-defaults-table
