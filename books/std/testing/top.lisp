@@ -12,6 +12,8 @@
 
 (include-book "assert")
 (include-book "eval")
+(include-book "must-be-table-key")
+(include-book "must-not-be-table-key")
 
 (include-book "xdoc/constructors" :dir :system)
 
