@@ -969,7 +969,7 @@
     "The set of ACL2 "
     (xdoc::seetopic "acl2::term" "translated")
     " terms consists of
-     (i) variables',
+     (i) variables,
      which are symbols,
      (ii) quoted constants,
      which are lists @('(quote value)') where @('value') is a value,
