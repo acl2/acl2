@@ -585,7 +585,7 @@
      not only "
     (xdoc::seetopic "atj-tutorial-acl2-values"
                     "representing the ACL2 values in Java")
-    "but also representing the ACL2 language constructs
+    " but also representing the ACL2 language constructs
      (function definitions, conditionals, etc.)
      in Java in some way so that they can be executed in Java.
      There are generally two approaches
