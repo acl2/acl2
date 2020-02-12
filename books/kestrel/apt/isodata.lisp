@@ -29,104 +29,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ isodata-implementation
-  :parents (isodata)
-  :short "Implementation of @(tsee isodata)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The implementation functions have formal parameters,
-     as well as result names
-     (in the <see topic='@(url std::returns-specifiers)'>@(':returns')</see>),
-     consistently named as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "@('state') is the ACL2 @(see state).")
-    (xdoc::li
-     "@('wrld') is the ACL2 @(see world).")
-    (xdoc::li
-     "@('ctx') is the context used for errors.")
-    (xdoc::li
-     "@('old'),
-      @('args-iso'),
-      @('predicate'),
-      @('new-name'),
-      @('new-enable'),
-      @('thm-name'),
-      @('thm-enable'),
-      @('non-executable'),
-      @('normalize'),
-      @('verify-guards'),
-      @('untranslate'),
-      @('hints'),
-      @('print'), and
-      @('show-only')
-      are the homonymous inputs to @(tsee isodata),
-      before being validated.
-      These formal parameters have no types because they may be any values.")
-    (xdoc::li
-     "@('old$'),
-      @('predicate$'),
-      @('new-name$'),
-      @('new-enable$'),
-      @('thm-name$'),
-      @('thm-enable$'),
-      @('non-executable'),
-      @('normalize'),
-      @('verify-guards$'),
-      @('untranslate$'),
-      @('hints$'),
-      @('print$'), and
-      @('show-only$')
-      are the result of processing
-      the homonymous inputs (without the @('$')).
-      Some are identical to the corresponding inputs,
-      but they have types implied by their successful validation,
-      performed when they are processed.")
-    (xdoc::li
-     "@('args$') is the result of processing
-      the @('args') component of the @('args-iso') input.")
-    (xdoc::li
-     "@('iso$') is the @('iso') component of the @('args-iso') input
-      if @('iso') is the name of a @(tsee defiso);
-      otherwise, it is the fresh @(tsee defiso) name
-      internally generated and used by @(tsee isodata).")
-    (xdoc::li
-     "@('oldp$'),
-      @('newp$'),
-      @('forth$'), and
-      @('back$'),
-      are the domains and conversions
-      of the @(tsee defiso) referenced or generated
-      by the @('iso') component of the @('args-iso') input.")
-    (xdoc::li
-     "@('forth-image'),
-      @('back-image'),
-      @('back-of-forth'),
-      @('forth-of-back'),
-      @('oldp-guard'),
-      @('newp-guard'),
-      @('forth-guard'),
-      @('back-guard'),
-      @('forth-injective'), and
-      @('back-injective')
-      are the theorems
-      of the @(tsee defiso) referenced or generated
-      by the @('iso') component of the @('args-iso') input.
-      The @('...-guard') ones are @('nil') if absent.")
-    (xdoc::li
-     "@('namedp') is
-      @('t') if @('iso) is the name of an existing @(tsee defiso),
-      @('nil') otherwise.")
-    (xdoc::li
-     "@('iso-hints') are the hints that are part of
-      the @('iso') component of the @('args-iso') input,
-      when @('iso') is not a name."))
-   (xdoc::p
-    "Implementation functions' formal parameters and result names
-     that are not listed above
-     are described in, or clear from, those functions' documentation."))
-  :order-subtopics t)
+(xdoc::evmac-topic-implementation
+
+ isodata
+
+ :items
+
+ ("@('state') is the ACL2 @(see state)."
+
+  "@('wrld') is the ACL2 @(see world)."
+
+  "@('ctx') is the context used for errors."
+
+  "@('old'),
+   @('args-iso'),
+   @('predicate'),
+   @('new-name'),
+   @('new-enable'),
+   @('thm-name'),
+   @('thm-enable'),
+   @('non-executable'),
+   @('normalize'),
+   @('verify-guards'),
+   @('untranslate'),
+   @('hints'),
+   @('print'), and
+   @('show-only')
+   are the homonymous inputs to @(tsee isodata),
+   before being validated.
+   These formal parameters have no types because they may be any values."
+
+  "@('old$'),
+   @('predicate$'),
+   @('new-name$'),
+   @('new-enable$'),
+   @('thm-name$'),
+   @('thm-enable$'),
+   @('non-executable'),
+   @('normalize'),
+   @('verify-guards$'),
+   @('untranslate$'),
+   @('hints$'),
+   @('print$'), and
+   @('show-only$')
+   are the result of processing
+   the homonymous inputs (without the @('$')).
+   Some are identical to the corresponding inputs,
+   but they have types implied by their successful validation,
+   performed when they are processed."
+
+  "@('args$') is the result of processing
+   the @('args') component of the @('args-iso') input."
+
+  "@('iso$') is the @('iso') component of the @('args-iso') input
+   if @('iso') is the name of a @(tsee defiso);
+   otherwise, it is the fresh @(tsee defiso) name
+   internally generated and used by @(tsee isodata)."
+
+  "@('oldp$'),
+   @('newp$'),
+   @('forth$'), and
+   @('back$'),
+   are the domains and conversions
+   of the @(tsee defiso) referenced or generated
+   by the @('iso') component of the @('args-iso') input."
+
+  "@('forth-image'),
+   @('back-image'),
+   @('back-of-forth'),
+   @('forth-of-back'),
+   @('oldp-guard'),
+   @('newp-guard'),
+   @('forth-guard'),
+   @('back-guard'),
+   @('forth-injective'), and
+   @('back-injective')
+   are the theorems
+   of the @(tsee defiso) referenced or generated
+   by the @('iso') component of the @('args-iso') input.
+   The @('...-guard') ones are @('nil') if absent."
+
+  "@('namedp') is
+   @('t') if @('iso) is the name of an existing @(tsee defiso),
+   @('nil') otherwise."
+
+  "@('iso-hints') are the hints that are part of
+   the @('iso') component of the @('args-iso') input,
+   when @('iso') is not a name."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

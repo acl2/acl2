@@ -24,76 +24,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ casesplit-implementation
-  :parents (casesplit)
-  :short "Implementation of @(tsee casesplit)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The implementation functions have formal parameters
-     consistently named as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "@('state') is the ACL2 @(see state).")
-    (xdoc::li
-     "@('wrld') is the ACL2 @(see world).")
-    (xdoc::li
-     "@('ctx') is the context used for errors.")
-    (xdoc::li
-     "@('old'),
-      @('conditions'),
-      @('theorems'),
-      @('new-name'),
-      @('new-enable'),
-      @('thm-name'),
-      @('thm-enable'),
-      @('verify-guards'),
-      @('hints'),
-      @('print'), and
-      @('show-only')
-      are the homonymous inputs to @(tsee casesplit),
-      before being processed.
-      These formal parameters have no types because they may be any values.")
-    (xdoc::li
-     "@('call') is the call to @(tsee casesplit) supplied by the user.")
-    (xdoc::li
-     "@('old$'),
-      @('conditions$'),
-      @('theorems$'),
-      @('new-name$'),
-      @('new-enable$'),
-      @('thm-name$'),
-      @('thm-enable$'),
-      @('non-executable$'),
-      @('verify-guards$'),
-      @('hints$'),
-      @('print$'), and
-      @('show-only$')
-      are the results of processing
-      the homonymous inputs (without the @('$')) to @(tsee casesplit).
-      Some are identical to the corresponding inputs,
-      but they have types implied by their successful validation,
-      performed when they are processed.")
-    (xdoc::li
-     "@('hyps') is the list @('(hyp1 ... hypp hyp0)') of hypotheses
-      of the theorems named in the @('theorems') input, in the same order.")
-    (xdoc::li
-     "@('news') is the list @('(new1 ... newp new0)') of right-hand sides
-      of the theorems named in the @('theorems') input, in the same order.")
-    (xdoc::li
-     "@('app-cond-thm-names') is an alist
-      from the keywords that identify the applicability conditions
-      to the corresponding generated theorem names.")
-    (xdoc::li
-     "@('new-unnorm-name') is the name of the generated theorem
-      that installs the non-normalized definition of the new function.")
-    (xdoc::li
-     "@('names-to-avoid') is a cumulative list of names of generated events,
-      used to ensure the absence of name clashes in the generated events."))
-   (xdoc::p
-    "The parameters of implementation functions that are not listed above
-     are described in, or clear from, those functions' documentation."))
-  :order-subtopics t)
+(xdoc::evmac-topic-implementation
+
+ casesplit
+
+ :items
+
+ ("@('state') is the ACL2 @(see state)."
+
+  "@('wrld') is the ACL2 @(see world)."
+
+  "@('ctx') is the context used for errors."
+
+  "@('old'),
+   @('conditions'),
+   @('theorems'),
+   @('new-name'),
+   @('new-enable'),
+   @('thm-name'),
+   @('thm-enable'),
+   @('verify-guards'),
+   @('hints'),
+   @('print'), and
+   @('show-only')
+   are the homonymous inputs to @(tsee casesplit),
+   before being processed.
+   These formal parameters have no types because they may be any values."
+
+  "@('call') is the call to @(tsee casesplit) supplied by the user."
+
+  "@('old$'),
+   @('conditions$'),
+   @('theorems$'),
+   @('new-name$'),
+   @('new-enable$'),
+   @('thm-name$'),
+   @('thm-enable$'),
+   @('non-executable$'),
+   @('verify-guards$'),
+   @('hints$'),
+   @('print$'), and
+   @('show-only$')
+   are the results of processing
+   the homonymous inputs (without the @('$')) to @(tsee casesplit).
+   Some are identical to the corresponding inputs,
+   but they have types implied by their successful validation,
+   performed when they are processed."
+
+  "@('hyps') is the list @('(hyp1 ... hypp hyp0)') of hypotheses
+   of the theorems named in the @('theorems') input, in the same order."
+
+  "@('news') is the list @('(new1 ... newp new0)') of right-hand sides
+   of the theorems named in the @('theorems') input, in the same order."
+
+  "@('app-cond-thm-names') is an alist
+   from the keywords that identify the applicability conditions
+   to the corresponding generated theorem names."
+
+  "@('new-unnorm-name') is the name of the generated theorem
+   that installs the non-normalized definition of the new function."
+
+  "@('names-to-avoid') is a cumulative list of names of generated events,
+   used to ensure the absence of name clashes in the generated events."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

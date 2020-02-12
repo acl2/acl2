@@ -24,95 +24,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ restrict-implementation
-  :parents (restrict)
-  :short "Implementation of @(tsee restrict)."
-  :long
-  "<p>
-   The implementation functions have formal parameters
-   consistently named as follows:
-   </p>
-   <ul>
-     <li>
-     @('state') is the ACL2 @(see state).
-     </li>
-     <li>
-     @('wrld') is the ACL2 @(see world).
-     </li>
-     <li>
-     @('ctx') is the context used for errors.
-     </li>
-     <li>
-     @('old'),
-     @('restriction'),
-     @('undefined'),
-     @('new-name'),
-     @('new-enable'),
-     @('thm-name'),
-     @('thm-enable'),
-     @('non-executable'),
-     @('verify-guards'),
-     @('hints'),
-     @('print'), and
-     @('show-only')
-     are the homonymous inputs to @(tsee restrict),
-     before being processed.
-     These formal parameters have no types because they may be any values.
-     </li>
-     <li>
-     @('call') is the call to @(tsee restrict) supplied by the user.
-     </li>
-     <li>
-     @('old$'),
-     @('restriction$'),
-     @('undefined$'),
-     @('new-name$'),
-     @('new-enable$'),
-     @('thm-name$'),
-     @('thm-enable$'),
-     @('non-executable$'),
-     @('verify-guards$'),
-     @('hints$'),
-     @('print$'), and
-     @('show-only$')
-     are the results of processing
-     the homonymous inputs (without the @('$')) to @(tsee restrict).
-     Some are identical to the corresponding inputs,
-     but they have types implied by their successful validation,
-     performed when they are processed.
-     </li>
-     <li>
-     @('stub?') is the stub called @('?f') in the documentation
-     if @('old') is a reflexive function,
-     or @('nil') otherwise.
-     </li>
-     <li>
-     @('app-cond-present-names') is the list of the names (keywords) of
-     the applicability conditions that are present.
-     </li>
-     <li>
-     @('app-cond-thm-names') is an alist
-     from the keywords that identify the applicability conditions
-     to the corresponding generated theorem names.
-     </li>
-     <li>
-     @('old-unnorm-name') is the name of the generated theorem
-     that installs the non-normalized definition of the target function.
-     </li>
-     <li>
-     @('new-unnorm-name') is the name of the generated theorem
-     that installs the non-normalized definition of the new function.
-     </li>
-     <li>
-     @('names-to-avoid') is a cumulative list of names of generated events,
-     used to ensure the absence of name clashes in the generated events.
-     </li>
-   </ul>
-   <p>
-   The parameters of implementation functions that are not listed above
-   are described in, or clear from, those functions' documentation.
-   </p>"
-  :order-subtopics t)
+(xdoc::evmac-topic-implementation
+
+ restrict
+
+ :items
+
+ ("@('state') is the ACL2 @(see state)."
+
+  "@('wrld') is the ACL2 @(see world)."
+
+  "@('ctx') is the context used for errors."
+
+  "@('old'),
+   @('restriction'),
+   @('undefined'),
+   @('new-name'),
+   @('new-enable'),
+   @('thm-name'),
+   @('thm-enable'),
+   @('non-executable'),
+   @('verify-guards'),
+   @('hints'),
+   @('print'), and
+   @('show-only')
+   are the homonymous inputs to @(tsee restrict),
+   before being processed.
+   These formal parameters have no types because they may be any values."
+
+  "@('call') is the call to @(tsee restrict) supplied by the user."
+
+  "@('old$'),
+   @('restriction$'),
+   @('undefined$'),
+   @('new-name$'),
+   @('new-enable$'),
+   @('thm-name$'),
+   @('thm-enable$'),
+   @('non-executable$'),
+   @('verify-guards$'),
+   @('hints$'),
+   @('print$'), and
+   @('show-only$')
+   are the results of processing
+   the homonymous inputs (without the @('$')) to @(tsee restrict).
+   Some are identical to the corresponding inputs,
+   but they have types implied by their successful validation,
+   performed when they are processed."
+
+  "@('stub?') is the stub called @('?f') in the documentation
+   if @('old') is a reflexive function,
+   or @('nil') otherwise."
+
+  "@('app-cond-present-names') is the list of the names (keywords) of
+   the applicability conditions that are present."
+
+  "@('app-cond-thm-names') is an alist
+   from the keywords that identify the applicability conditions
+   to the corresponding generated theorem names."
+
+  "@('old-unnorm-name') is the name of the generated theorem
+   that installs the non-normalized definition of the target function."
+
+  "@('new-unnorm-name') is the name of the generated theorem
+   that installs the non-normalized definition of the new function."
+
+  "@('names-to-avoid') is a cumulative list of names of generated events,
+   used to ensure the absence of name clashes in the generated events."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
