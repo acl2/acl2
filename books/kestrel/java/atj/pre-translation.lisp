@@ -878,8 +878,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines atj-type-annotate-term
   :short "Add ATJ type annotations to ACL2 terms."
   :long

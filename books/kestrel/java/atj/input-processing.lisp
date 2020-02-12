@@ -871,19 +871,19 @@
     :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
                  (new-worklist-chk symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
-    (b* (((when (member-eq (acl2::pseudo-term-kind term)
+    (b* (((when (member-eq (pseudo-term-kind term)
                            '(:null :var :quote)))
           (mv worklist-gen worklist-chk nil))
-         (fn (acl2::pseudo-term-call->fn term))
-         (args (acl2::pseudo-term-call->args term))
+         (fn (pseudo-term-call->fn term))
+         (args (pseudo-term-call->args term))
          ((when (eq fn 'return-last))
           (b* ((1st-arg (first args))
-               ((unless (acl2::pseudo-term-case 1st-arg :quote))
+               ((unless (pseudo-term-case 1st-arg :quote))
                 (raise "Internal error: ~
                         the first argument of ~x0 is not a quoted constant."
                        term)
                 (mv worklist-gen worklist-chk nil))) ; irrelevant
-            (case (acl2::pseudo-term-quote->val 1st-arg)
+            (case (pseudo-term-quote->val 1st-arg)
               (acl2::mbe1-raw (if guards$
                                   (atj-collect-fns-in-term (second args)
                                                            gen?
@@ -933,8 +933,8 @@
                                     deep$
                                     guards$))
          ((when unsupported-return-last?) (mv worklist-gen worklist-chk t))
-         ((when (acl2::pseudo-lambda-p fn))
-          (atj-collect-fns-in-term (acl2::pseudo-lambda->body fn)
+         ((when (pseudo-lambda-p fn))
+          (atj-collect-fns-in-term (pseudo-lambda->body fn)
                                    gen?
                                    worklist-gen
                                    worklist-chk
@@ -963,7 +963,7 @@
           (mv worklist-gen
               (cons fn worklist-chk)
               nil))))
-    :measure (acl2::pseudo-term-count term))
+    :measure (pseudo-term-count term))
 
   (define atj-collect-fns-in-terms ((terms pseudo-term-listp)
                                     (gen? booleanp)
@@ -995,7 +995,7 @@
                                 collected-chk
                                 deep$
                                 guards$))
-    :measure (acl2::pseudo-term-list-count terms))
+    :measure (pseudo-term-list-count terms))
 
   :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
              (local (in-theory
