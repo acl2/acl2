@@ -926,6 +926,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::evmac-topic-implementation
+  :short "Generate an XDOC topic for the implementation of an event macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The topic lists the names used for arguments and results of functions,
+     along with brief descriptions of the names.
+     This listing consists of bullet in an unordered list.
+     The @(':items') argument must be a list of XDOC trees,
+     each of which is wrapped into an @(tsee xdoc::li),
+     and the so-wrapped items are put into an @(tsee xdoc::ul).")
+   (xdoc::@def "xdoc::evmac-topic-implementation"))
+
+  (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
+    :returns (li-wrapped-items true-listp)
+    (cond ((endp items) nil)
+          (t (cons `(xdoc::li ,(car items))
+                   (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
+
+  (defmacro xdoc::evmac-topic-implementation (macro &key items)
+    (declare (xargs :guard (symbolp macro)))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+         (this-topic (add-suffix macro "-IMPLEMENTATION"))
+         (parent-topic macro)
+         (short (concatenate 'string "Implementation of " macro-ref "."))
+         (long `(xdoc::topstring
+                 (xdoc::p
+                  "The implementation functions have arguments,
+                   as well as results (in the "
+                  (xdoc::seetopic "std::returns-specifiers"
+                                  "@(':returns') specifiers")
+                  "), consistently named as follows:")
+                 (xdoc::ul
+                  ,@(xdoc::evmac-topic-implementation-li-wrap items))
+                 (xdoc::p
+                  "Implementation functions' arguments and results
+                   that are not listed above
+                   are described in, or clear from,
+                   those functions' documentation."))))
+      `(defxdoc+ ,this-topic
+         :parents (,parent-topic)
+         :short ,short
+         :long ,long
+         :order-subtopics t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::evmac-topic-library-extensions
   :short "Generate an XDOC topic for the library extensions
           that are part of the implementation of an event macro."
