@@ -15,11 +15,11 @@
 (include-book "../language/keywords")
 
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "std/typed-lists/pseudo-term-listp" :dir :system)
 

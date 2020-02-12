@@ -12,7 +12,7 @@
 
 (include-book "defiso")
 
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
 ; (depends-on "design-notes/defiso.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
