@@ -954,7 +954,7 @@
     "For the "
     (xdoc::seetopic "atj-tutorial-deep" "deep embedding approach")
     ", "
-    (xdoc::seetopic "atj-tutotial-aij" "AIJ")
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
     " provides a default representatioin of the ACL2 terms.
      Since ACL2 terms are also ACL2 values,
      in principle the "
