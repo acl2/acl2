@@ -97,14 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ casesplit-library-extensions
-  :parents (casesplit-implementation)
-  :short "Library extensions for @(tsee casesplit)."
-  :long
-  (xdoc::topstring-p
-   "This material may be moved to appropriate libraries.")
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-library-extensions casesplit)
 
 (define negate-terms ((terms pseudo-term-listp))
   :returns (negated-terms pseudo-term-listp :hyp (pseudo-term-listp terms))
