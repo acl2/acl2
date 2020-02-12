@@ -1878,162 +1878,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If @('old') is recursive,
-     its <see topic='@(url tthm)'>termination theorem</see>
-     has (essentially) the form")
-   (xdoc::codeblock
-    "(and (P measure<...,y1,...,yp,...>)"
-    "     (implies context1<...,y1,...,yp,...>"
-    "              (R measure<...,"
-    "                         update1-y1<...,y1,...,yp,...>,"
-    "                         ...,"
-    "                         update1-yp<...,y1,...,yp,...>,"
-    "                         ...>"
-    "                 measure<...,y1,...,yp,...>))"
-    "     ..."
-    "     (implies contextm<...,y1,...,yp,...>"
-    "              (R measure<...,"
-    "                         updatem-y1<...,y1,...,yp,...>,"
-    "                         ...,"
-    "                         updatem-yp<...,y1,...,yp,...>,"
-    "                         ...>"
-    "                 measure<...,y1,...,yp,...>)))")
-   (xdoc::p
-    "where @('R') is a well-founded relation (often @(tsee o<)),
-     and @('P') is the corresponding predicate (often @(tsee o-p)).")
-   (xdoc::p
-    "Given the body, measure, and well-founded relation
-     of the generated function
-     (see @(tsee isodata-gen-new-fn-body),
-     @(tsee isodata-gen-new-fn-measure),
-     and @(tsee isodata-gen-everything)),
-     the termination theorem to be proved for the generated function
-     has (essentially) the form")
-   (xdoc::codeblock
-    "(and (P measure<...,(back y1),...,(back yp),...>)"
-    "     (implies"
-    "       (and (newp y1)"
-    "            ..."
-    "            (newp yp))"
-    "       (implies context1<...,(back y1),...,(back yp),...>"
-    "                (R measure<...,"
-    "                           (back (forth update1-y1<...,"
-    "                                                  (back y1),"
-    "                                                  ...,"
-    "                                                  (back yp),"
-    "                                                  ...>)),"
-    "                           ...,"
-    "                           (back (forth update1-yp<...,"
-    "                                                   (back y1),"
-    "                                                   ...,"
-    "                                                   (back yp),"
-    "                                                   ...>)),"
-    "                           ...>"
-    "                   measure<...,(back y1),...,(back yp),...>))"
-    "       ..."
-    "       (implies contextm<...,(back y1),...,(back yp),...>"
-    "                (R measure<...,"
-    "                           (back (forth updatem-y1<...,"
-    "                                                   (back y1),"
-    "                                                   ...,"
-    "                                                   (back yp),"
-    "                                                   ...>)),"
-    "                           ...,"
-    "                           (back (forth updatem-yp<...,"
-    "                                                   (back y1),"
-    "                                                   ...,"
-    "                                                   (back yp)>)),"
-    "                           ...>"
-    "                   measure<...,(back y1),...,(back yp),...>))))")
-   (xdoc::p
-    "which is proved as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "From the assumptions @('(newp y1)'), ..., @('(newp yp)')
-      in the top-level implication above,
-      we use
-      @('(:instance oldp-of-back (y y1))'),
-      ...,
-      @('(:instance oldp-of-back (y yp))')
-      to derive
-      @('(oldp (back y1))'), ..., @('(oldp (back yp))').")
-    (xdoc::li
-     "From these,
-      we use
-      @('(:instance oldp-of-rec-calls
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to derive
-      @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
-      for every @('j') from 1 to @('m')
-      and for every @('k') from 1 to @('p').")
-    (xdoc::li
-     "From each of these,
-      we use
-      @('(:instance back-of-forth
-                    (x updatej-yk<...,(back y1),...,(back yp),...>))')
-      to reduce @('(back (forth updatej-yk<...,(back y1),...,(back yp),...>))')
-      to @('updatej-yk<...,(back y1),...,(back yp),...>').")
-    (xdoc::li
-     (xdoc::p
-      "With these reductions, the theorem to be proved reduces to")
-     (xdoc::codeblock
-      "(and (P measure<...,(back y1),...,(back yp),...>)"
-      "     (implies"
-      "       (and (newp y1)"
-      "            ..."
-      "            (newp yp))"
-      "       (implies context1<...,(back y1),...,(back yp),...>"
-      "                (R measure<...,"
-      "                           update1-y1<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>,"
-      "                           ...,"
-      "                           update1-yp<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>,"
-      "                           ...>"
-      "                 measure<...,(back y1),...,(back yp),...>))"
-      "       ..."
-      "       (implies contextM<...,(back y1),...,(back yp),...>"
-      "                (R measure<...,"
-      "                           updatem-y1<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp)>,"
-      "                           ...,"
-      "                           updatem-yp<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>,"
-      "                           ...>"
-      "                   measure<...,"
-      "                           (back y1),"
-      "                           ...,"
-      "                           (back yp),"
-      "                           ...>))))")
-     (xdoc::p
-      "which, except for the assumptions of the top-level implication
-       that were used for the reductions,
-       is exactly
-       @('(:instance (:termination-theorem old)
-                     (y1 (back y1)) ... (yp (back yp)))').")))
-   (xdoc::p
-    "The @('oldp-of-back') and @('back-of-forth') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes,
+     taking into account that there may be multiple recursive calls,
+     while the design notes only assume one."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-back back-image)
        (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
                                  app-cond-thm-names)))
-       (instances-oldp-of-back
-        (isodata-gen-lemma-instances-of-var oldp-of-back
+       (instance-termination-thm-old
+        (isodata-gen-lemma-instance-back-args `(:termination-theorem ,old$)
+                                              args$
+                                              back$))
+       (instances-back-image
+        (isodata-gen-lemma-instances-of-var back-image
                                             b
                                             args$))
        (instance-oldp-of-rec-calls
@@ -2047,18 +1904,13 @@
                                                old$
                                                args$
                                                back$
-                                               wrld))
-       (instance-termination-thm-old
-        (isodata-gen-lemma-instance-back-args `(:termination-theorem
-                                                ,old$)
-                                              args$
-                                              back$)))
+                                               wrld)))
     `(("Goal"
        :in-theory nil
-       :use (,@instances-oldp-of-back
+       :use (,instance-termination-thm-old
+             ,@instances-back-image
              ,instance-oldp-of-rec-calls
-             ,@instances-back-of-forth
-             ,instance-termination-thm-old)))))
+             ,@instances-back-of-forth)))))
 
 (define isodata-gen-new-fn
   ((old$ symbolp)
@@ -2207,81 +2059,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The generated relating theorem")
-   (xdoc::codeblock
-    "(equal (old ... y1 ... yp ...)"
-    "       (and (oldp y1)"
-    "            ..."
-    "            (oldp yp)"
-    "            (new ... (forth y1) ... (forth yp) ...)))")
-   (xdoc::p
-    "is proved as follows:")
-   (xdoc::ul
-    (xdoc::li
-     (xdoc::p
-      "The non-normalized definitions of @('old') and @('new')
-       are expanded,
-       via the theory consisting of the relative theorems,
-       reducing the equality to be proved to:")
-     (xdoc::codeblock
-      "(equal old-body<...,y1,...,yp,...>"
-      "       (and (oldp y1)"
-      "            ..."
-      "            (oldp yp)"
-      "            (and (newp (forth y1))"
-      "                 ..."
-      "                 (newp (forth yp))"
-      "                 old-body<...,"
-      "                           (back (forth y1)),"
-      "                           ...,"
-      "                           (back (forth yp)),"
-      "                           ...>)))"))
-    (xdoc::li
-     (xdoc::p
-      "@('(:instance back-of-forth (x y1))'),
-       ...,
-       @('(:instance back-of-forth (x yp))')
-       are used to reduce the equality above to:")
-     (xdoc::codeblock
-      "(equal old-body<...,y1,...,yp,...>"
-      "       (and (oldp y1)"
-      "            ..."
-      "            (oldp yp)"
-      "            (and (newp (forth y1))"
-      "                 ..."
-      "                 (newp (forth yp))"
-      "                 old-body<...,y1,...,yp,...>)))"))
-    (xdoc::li
-     (xdoc::p
-      "@('(:instance newp-of-forth (x y1))'),
-       ...
-       @('(:instance newp-of-forth (x yp))')
-       are used to reduce the equality above to:")
-     (xdoc::codeblock
-      "(equal old-body<...,y1,...,yp,...>"
-      "       (and (oldp y1)"
-      "            ..."
-      "            (oldp yp)"
-      "            old-body<...,y1,...,yp,...>))"))
-    (xdoc::li
-     (xdoc::p
-      "@('oldp-when-old') is used to reduce the equality above to:")
-     (xdoc::codeblock
-      "(equal old-body<...,y1,...,yp,...>"
-      "       old-body<...,y1,...,yp,...>)")))
-   (xdoc::p
-    "The @('newp-of-forth') and @('back-of-forth') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
-       (newp-of-forth forth-image)
        (instances-back-of-forth
         (isodata-gen-lemma-instances-of-var back-of-forth
                                             a
                                             args$))
-       (instances-newp-of-forth
-        (isodata-gen-lemma-instances-of-var newp-of-forth
+       (instances-forth-image
+        (isodata-gen-lemma-instances-of-var forth-image
                                             a
                                             args$))
        (instance-oldp-when-old (cdr (assoc-eq :oldp-when-old
@@ -2289,7 +2074,7 @@
     `(("Goal"
        :in-theory '(,old-fn-unnorm-name ,new-fn-unnorm-name)
        :use (,@instances-back-of-forth
-             ,@instances-newp-of-forth
+             ,@instances-forth-image
              ,instance-oldp-when-old)))))
 
 (define isodata-gen-old-to-new-thm-hints-pred-rec
@@ -2316,560 +2101,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The generated relating theorem")
-   (xdoc::codeblock
-    "(equal (old ... y1 ... yp ...)"
-    "       (and (oldp y1)"
-    "            ..."
-    "            (oldp yp)"
-    "            (new ... (forth y1) ... (forth yp) ...)))")
-   (xdoc::p
-    "is proved as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "The proof is by induction on @('(old ... y1 ... yp ...)').")
-    (xdoc::li
-     (xdoc::p
-      "Each base case of the induction")
-     (xdoc::codeblock
-      "(implies"
-      "  base-case-hyps<...,y1,...,yp,...>"
-      "  (equal (old ... y1 ... yp ...)"
-      "         (and (oldp y1)"
-      "              ..."
-      "              (oldp yp))"
-      "              (new ... (forth y1) ... (forth yp) ...)))")
-     (xdoc::p
-      "is proved as follows:")
-     (xdoc::ul
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('old'),
-         reducing the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (equal base-case-result<...,y1,...,yp,...>"
-        "         (and (oldp y1)"
-        "              ..."
-        "              (oldp yp)"
-        "              (new ... (forth y1) ... (forth yp) ...))))")
-       (xdoc::p
-        "where @('base-case-result<...,y1,...,yp,...>') is
-         the subterm of the body of @('old')
-         reached under the base case hypotheses
-         @('base-case-hyps<...,y1,...,yp,...>')."))
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)'),
-        we use
-        @('(:instance back-of-forth (x y1))'),
-        ...,
-        @('(:instance back-of-forth (x yp))')
-        to derive
-        @('(equal (back (forth y1)) y1)'),
-        ...,
-        @('(equal (back (forth yp)) yp)').")
-      (xdoc::li
-       "From these and from the assumption
-        @('base-case-hyps<...,y1,...,yp,...>'),
-        we derive
-        @('base-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>').")
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('new'),
-         which together with
-         @('base-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>')
-         derived above,
-         reduces the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (equal base-case-result<...,y1,...,yp,...>"
-        "         (and (oldp y1)"
-        "              ..."
-        "              (oldp yp)"
-        "              (and (newp (forth y1))"
-        "                   ..."
-        "                   (newp (forth yp))"
-        "                   base-case-result<...,"
-        "                                    (back (forth y1)),"
-        "                                    ...,"
-        "                                    (back (forth yp)),"
-        "                                    ....>))))"))
-      (xdoc::li
-       (xdoc::p
-        "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)'),
-         we use
-         @('(:instance newp-of-forth (x y1))'),
-         ...,
-         @('(:instance newp-of-forth (x yp))')
-         to derive
-         @('(newp (forth y1))'), ..., @('(newp (forth yp))'),
-         reducing the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (equal base-case-result<...,y1,...,yp,...>"
-        "         (and (oldp y1)"
-        "              ..."
-        "              (oldp yp)"
-        "              base-case-result<...,"
-        "                               (back (forth y1)),"
-        "                               ...,"
-        "                               (back (forth yp)),"
-        "                               ....>)))"))
-      (xdoc::li
-       (xdoc::p
-        "We use the equalities
-         @('(equal (back (forth y1)) y1)'),
-         ...,
-         @('(equal (back (forth yp)) yp)')
-         derived above
-         to reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (equal base-case-result<...,y1,...,yp,...>"
-        "         (and (oldp y1)"
-        "              ..."
-        "              (oldp yp)"
-        "              base-case-result<...,y1,...,yp,...>)))"))
-      (xdoc::li
-       (xdoc::p
-        "We use @('oldp-when-old'),
-         together with the fact that @('(old ... y1 ... yp ...)')
-         expands to @('base-case-result<...,y1,...,yp,...>')
-         under @('base-case-hyps<...,y1,...,yp,...>'),
-         to reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (equal base-case-result<...,y1,...,yp,...>"
-        "         base-case-result<...,y1,...,yp,...>))"))))
-    (xdoc::li
-     (xdoc::p
-      "Each step case of the induction")
-     (xdoc::codeblock
-      "(implies"
-      "  (and step-case-hyps<...,y1,...,yp,...>"
-      "       ;; induction hypotheses:"
-      "       (equal (old ..."
-      "                    updatej1-y1<...,y1,...,yp,...>"
-      "                    ..."
-      "                    updatej1-yp<...,y1,...,yp,...>"
-      "                    ...)"
-      "              (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-      "                   ..."
-      "                   (oldp updatej1-yp<...,y1,...,yp,...>)"
-      "                   (new ..."
-      "                        (forth updatej1-y1<...,y1,...,yp,...>)"
-      "                        ..."
-      "                        (forth updatej1-yp<...,y1,...,yp,...>)"
-      "                        ...)))"
-      "       ..."
-      "       (equal (old ..."
-      "                    updatejq-y1<...,y1,...,yp,...>"
-      "                    ..."
-      "                    updatejq-yp<...,y1,...,yp,...>"
-      "                    ...)"
-      "              (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-      "                   ..."
-      "                   (oldp updatejq-yp<...,y1,...,yp,...>)"
-      "                   (new ..."
-      "                        (forth updatejq-y1<...,y1,...,yp,...>)"
-      "                        ..."
-      "                        (forth updatejq-yp<...,y1,...,yp,...>)"
-      "                        ...))))"
-      "  (equal (old ... y1 ... yp ...)"
-      "         (and (oldp y1)"
-      "              ..."
-      "              (oldp yp)"
-      "              (new ... (forth y1) ... (forth yp) ...))))")
-     (xdoc::p
-      "where @('updatej1'), ..., @('updatejq') are a subset of
-       all the recursive calls @('update1'), ..., @('updatem')
-       (i.e. the indices @('j1'), ..., @('jq')
-       are a subset of the indices 1, ..., @('m')),
-       is proved as follows:")
-     (xdoc::ul
-      (xdoc::li
-       (xdoc::p
-        "If any of @('(oldp y1)'), ..., @('(oldp yp)') is @('nil'),
-         then by @('oldp-when-old')
-         we have that @('(old ... y1 ... yp ...)') is @('nil'),
-         and the theorem to be proved reduces to")
-       (xdoc::codeblock
-        "(implies ..."
-        "         (equal nil nil))"))
-      (xdoc::li
-       (xdoc::p
-        "So we assume @('(oldp y1)'), ..., @('(oldp yp)')
-         for the rest of this proof,
-         reducing the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       (equal (old ..."
-        "                    updatej1-y1<...,y1,...,yp,...>"
-        "                    ..."
-        "                    updatej1-yp<...,y1,...,yp,...>"
-        "                    ...)"
-        "              (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-        "                   ..."
-        "                   (oldp updatej1-yp<...,y1,...,yp,...>)"
-        "                   (new ..."
-        "                        (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                        ..."
-        "                        (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                        ...)))"
-        "       ..."
-        "       (equal (old ..."
-        "                    updatejq-y1<...,y1,...,yp,...>"
-        "                    ..."
-        "                    updatejq-yp<...,y1,...,yp,...>"
-        "                    ...)"
-        "              (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-        "                   ..."
-        "                   (oldp updatejq-yp<...,y1,...,yp,...>)"
-        "                   (new ..."
-        "                        (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                        ..."
-        "                        (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                        ...))))"
-        "  (equal (old ... y1 ... yp ...)"
-        "         (new ... (forth y1) ... (forth yp) ...)))"))
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('old')
-         in the conclusion,
-         reducing the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       (equal (old ..."
-        "                    updatej1-y1<...,y1,...,yp,...>"
-        "                    ..."
-        "                    updatej1-yp<...,y1,...,yp,...>"
-        "                    ...)"
-        "              (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-        "                   ..."
-        "                   (oldp updatej1-yp<...,y1,...,yp,...>)"
-        "                   (new ..."
-        "                        (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                        ..."
-        "                        (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                        ...)))"
-        "       ..."
-        "       (equal (old ..."
-        "                    updatejq-y1<...,y1,...,yp,...>"
-        "                    ..."
-        "                    updatejq-yp<...,y1,...,yp,...>"
-        "                    ...)"
-        "              (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-        "                   ..."
-        "                   (oldp updatejq-yp<...,y1,...,yp,...>)"
-        "                   (new ..."
-        "                        (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                        ..."
-        "                        (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                        ...))))"
-        "  (equal step-case-result<...,y1,...,yp,...,"
-        "                          (old"
-        "                           ..."
-        "                           updatej1-y1<...,y1,...,yp,...>"
-        "                           ..."
-        "                           updatej1-yp<...,y1,...,yp,...>"
-        "                           ...),"
-        "                          ...,"
-        "                          (old"
-        "                           ..."
-        "                           updatejq-y1<...,y1,...,yp,...>"
-        "                           ..."
-        "                           updatejq-yp<...,y1,...,yp,...>"
-        "                           ...)>"
-        "         (new ... (forth y1) ... (forth yp) ...)))")
-       (xdoc::p
-        "where @('step-case-result<...>') is
-         the subterm of the body of @('old')
-         reached under the step case hypotheses
-         @('step-case-hyps<...,y1,...,yp,...>')."))
-      (xdoc::li
-       (xdoc::p
-        "From the equalities of the induction hypotheses,
-         we reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       (equal (old ..."
-        "                    updatej1-y1<...,y1,...,yp,...>"
-        "                    ..."
-        "                    updatej1-yp<...,y1,...,yp,...>"
-        "                    ...)"
-        "              (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-        "                   ..."
-        "                   (oldp updatej1-yp<...,y1,...,yp,...>)"
-        "                   (new ..."
-        "                        (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                        ..."
-        "                        (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                        ...)))"
-        "       ..."
-        "       (equal (old ..."
-        "                    updatejq-y1<...,y1,...,yp,...>"
-        "                    ..."
-        "                    updatejq-yp<...,y1,...,yp,...>"
-        "                    ...)"
-        "              (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-        "                   ..."
-        "                   (oldp updatejq-yp<...,y1,...,yp,...>)"
-        "                   (new ..."
-        "                        (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                        ..."
-        "                        (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                        ...))))"
-        "  (equal step-case-result<...,y1,...,yp,...,"
-        "                          (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-        "                               ..."
-        "                               (oldp updatej1-yp<...,y1,...,yp,...>)"
-        "                               (new"
-        "                                ..."
-        "                                (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                                ..."
-        "                                (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                                ...)),"
-        "                          ...,"
-        "                          (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-        "                               ..."
-        "                               (oldp updatejq-yp<...,y1,...,yp,...>)"
-        "                               (new"
-        "                                ..."
-        "                                (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                                ..."
-        "                                (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                                . ..))>"
-        "         (new ... (forth y1) ... (forth yp) ...)))"))
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)')
-        made above,
-        we use @('oldp-of-rec-calls')
-        to derive
-        @('(oldp updatej1-y1<...,y1,...,yp,...>)'),
-        ...,
-        @('(oldp updatejq-yp<...,y1,...,yp,...>)'),
-        ...,
-        @('(oldp updatej1-y1<...,y1,...,yp,...>)'),
-        ...,
-        @('(oldp updatejq-yp<...,y1,...,yp,...>)').
-        Note that the assumption @('step-case-hyps<...,y1,...,yp,...>')
-        coincides with @('contextj1'), ..., @('contextjq')
-        in @('oldp-of-rec-calls').")
-      (xdoc::li
-       (xdoc::p
-        "From these, we reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       ...)"
-        "  (equal step-case-result<...,y1,...,yp,...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                           ...),"
-        "                          ...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                           ...)>"
-        "         (new ... (forth y1) ... (forth yp) ...)))"))
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)')
-        made above,
-        we use
-        @('(:instance back-of-forth (x y1))'),
-        ...,
-        @('(:instance back-of-forth (x yp))')
-        to derive
-        @('(equal (back (forth y1)) y1)'),
-        ...,
-        @('(equal (back (forth yp)) yp)').")
-      (xdoc::li
-       "From these and from the assumption
-        @('step-case-hyps<...,y1,...,yp,...>'),
-        we derive
-        @('step-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>').")
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('new'),
-         which together with
-         @('step-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>')
-         derived above,
-         reduces the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       ...)"
-        "  (equal step-case-result<...,y1,...,yp,...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                           ...),"
-        "                          ...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                           ...)>"
-        "         (and (newp (forth y1))"
-        "              ..."
-        "              (newp (forth yp))"
-        "              step-case-result<...,"
-        "                               (back (forth y1)),"
-        "                               ...,"
-        "                               (back (forth yp)),"
-        "                               ...,"
-        "                               (new"
-        "                                ..."
-        "                                (forth updatej1-y1"
-        "                                        <...,"
-        "                                         (back (forth y1)),"
-        "                                         ...,"
-        "                                         (back (forth yp)),"
-        "                                         ...>)"
-        "                                ..."
-        "                                (forth updatej1-yp"
-        "                                        <...,"
-        "                                         (back (forth y1)),"
-        "                                         ...,"
-        "                                         (back (forth yp)),"
-        "                                         ...>)"
-        "                                ...),"
-        "                               ...,"
-        "                               (new"
-        "                                ..."
-        "                                (forth updatejq-y1"
-        "                                        <...,"
-        "                                         (back (forth y1)),"
-        "                                         ...,"
-        "                                         (back (forth yp)),"
-        "                                         ...>)"
-        "                                ..."
-        "                                (forth updatejq-yp"
-        "                                        <...,"
-        "                                         (back (forth y1)),"
-        "                                         ...,"
-        "                                         (back (forth yp)),"
-        "                                         ...>)"
-        "                                ...)>)))"))
-      (xdoc::li
-       (xdoc::p
-        "We use the equalities
-         @('(equal (back (forth y1)) y1)'),
-         ...,
-         @('(equal (back (forth yp)) yp)')
-         derived above
-         to reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       ...)"
-        "  (equal step-case-result<...,y1,...,yp,...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                           ...),"
-        "                          ...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                           ...)>"
-        "         (and (newp (forth y1))"
-        "              ..."
-        "              (newp (forth yp))"
-        "              step-case-result<...,y1,...,yp,...,"
-        "                               (new"
-        "                                ..."
-        "                                (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                                ..."
-        "                                (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                                ...),"
-        "                               ...,"
-        "                               (new"
-        "                                ..."
-        "                                (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                                ..."
-        "                                (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                                ...)>)))"))
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)')
-        made above,
-        we use
-        @('(:instance newp-of-forth (x y1))'),
-        ...,
-        @('(:instance newp-of-forth (x yp))')
-        to derive
-        @('(newp (forth y1))'), ..., @('(newp (forth yp))').")
-      (xdoc::li
-       (xdoc::p
-        "From these, we reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       ...)"
-        "  (equal step-case-result<...,y1,...,yp,...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                           ...),"
-        "                          ...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                           . ..)>"
-        "         step-case-result<...,y1,...,yp,...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                           ...),"
-        "                          ...,"
-        "                          (new"
-        "                           ..."
-        "                           (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                           ..."
-        "                           (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                           ...)>))")))))
-   (xdoc::p
-    "The @('newp-of-forth') and @('back-of-forth') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes,
+     taking into account that there may be multiple recursive calls,
+     while the design notes only assume one."))
   (b* ((x (isodata-gen-var-a forth$ wrld))
-       (newp-of-forth forth-image)
-       (instances-newp-of-forth
-        (isodata-gen-lemma-instances-of-var newp-of-forth
+       (instances-forth-image
+        (isodata-gen-lemma-instances-of-var forth-image
                                             x
                                             args$))
        (instances-back-of-forth
@@ -2885,7 +2122,7 @@
                     ,new-fn-unnorm-name
                     (:induction ,old$))
        :induct (,old$ ,@(formals old$ wrld)))
-      '(:use (,@instances-newp-of-forth
+      '(:use (,@instances-forth-image
               ,@instances-back-of-forth
               ,oldp-of-rec-calls
               ,oldp-when-old)))))
@@ -2949,46 +2186,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The generated relating theorem")
-   (xdoc::codeblock
-    "(implies (and (oldp y1)"
-    "              ..."
-    "              (oldp yp))"
-    "         (equal (old ... y1 ... yp ...)"
-    "                (new ... (forth y1) ... (forth yp) ...)))")
-   (xdoc::p
-    "is proved as follows:")
-   (xdoc::ul
-    (xdoc::li
-     (xdoc::p
-      "The non-normalized definitions of @('old') and @('new')
-       are expanded,
-       via the theory consisting of the relative theorems,
-       reducing the theorem to be proved to")
-     (xdoc::codeblock
-      "(implies"
-      "  (and (oldp y1)"
-      "       ..."
-      "       (oldp yp))"
-      "  (equal old-body<...,y1,...,yp,...>"
-      "         old-body<...,(back (forth y1)),...,(back (forth yp)),...>))"))
-    (xdoc::li
-     (xdoc::p
-      "@('(:instance back-of-forth (x y1))'),
-       ...,
-       @('(:instance back-of-forth (x yp))')
-       are used to reduce the theorem to be proved to")
-     (xdoc::codeblock
-      "(implies (and (oldp y1)"
-      "              ..."
-      "              (oldp yp))"
-      "         (equal old-body<...,y1,...,yp,...>"
-      "                old-body<...,y1,...,yp,...>))")))
-   (xdoc::p
-    "The @('back-of-forth') lemma
-     whose instance appears in the generated hints is taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise it is taken from the applicability condition theorems."))
+    "This is according to the design notes."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (instances-back-of-forth
         (isodata-gen-lemma-instances-of-var back-of-forth
@@ -3022,439 +2220,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The generated relating theorem")
-   (xdoc::codeblock
-    "(implies (and (oldp y1)"
-    "              ..."
-    "              (oldp yp))"
-    "         (equal (old ... y1 ... yp ...)"
-    "                (new ... (forth y1) ... (forth yp) ...)))")
-   (xdoc::p
-    "is proved as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "The proof is by induction on @('(old ... y1 ... yp ...)').")
-    (xdoc::li
-     (xdoc::p
-      "Each base case of the induction")
-     (xdoc::codeblock
-      "(implies"
-      "  base-case-hyps<...,y1,...,yp,...>"
-      "  (implies (and (oldp y1)"
-      "                ..."
-      "                (oldp yp))"
-      "           (equal (old ... y1 ... yp ...)"
-      "                  (new ... (forth y1) ... (forth yp) ...))))")
-     (xdoc::p
-      "is proved as follows:")
-     (xdoc::ul
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('old'),
-         reducing the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (implies (and (oldp y1)"
-        "                ..."
-        "                (oldp yp))"
-        "           (equal base-case-result<...,y1,...,yp,...>"
-        "                  (new ... (forth y1) ... (forth yp) ...))))")
-       (xdoc::p
-        "where @('base-case-result<...,y1,...,yp,...>') is
-         the subterm of the body of @('old')
-         reached under the base case hypotheses
-         @('base-case-hyps<...,y1,...,yp,...>')."))
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)'),
-        we use
-        @('(:instance newp-of-forth (x y1))'),
-        ...,
-        @('(:instance newp-of-forth (x yp))')
-        to derive
-        @('(newp (forth y1))'), ..., @('(newp (forth yp))').")
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)'),
-        we use
-        @('(:instance back-of-forth (x y1))'),
-        ...,
-        @('(:instance back-of-forth (x yp))')
-        to derive
-        @('(equal (back (forth y1)) y1)'),
-        ...,
-        @('(equal (back (forth yp)) yp)').")
-      (xdoc::li
-       "From these and from the assumption
-        @('base-case-hyps<...,y1,...,yp,...>'),
-        we derive
-        @('base-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>').")
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('new'),
-         which together with
-         @('(newp (forth y1))'), ..., @('(newp (forth yp))')
-         derived above
-         and with
-         @('base-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>')
-         derived above,
-         reduces the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (implies (and (oldp y1)"
-        "                ..."
-        "                (oldp yp))"
-        "           (equal base-case-result<...,y1,...,yp,...>"
-        "                  base-case-result<...,"
-        "                                   (back (forth y1)),"
-        "                                   ...,"
-        "                                   (back (forth yp)),"
-        "                                   ...>)))"))
-      (xdoc::li
-       (xdoc::p
-        "We use the equalities
-         @('(equal (back (forth y1)) y1)'),
-         ...,
-         @('(equal (back (forth yp)) yp)')
-         derived above
-         to reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  base-case-hyps<...,y1,...,yp,...>"
-        "  (implies (and (oldp y1)"
-        "                ..."
-        "                (oldp yp))"
-        "           (equal base-case-result<...,y1,...,yp,...>"
-        "                  base-case-result<...,y1,...,yp,...>)))"))))
-    (xdoc::li
-     (xdoc::p
-      "Each step case of the induction")
-     (xdoc::codeblock
-      "(implies"
-      "  (and step-case-hyps<...,y1,...,yp,...>"
-      "       ;; induction hypotheses:"
-      "       (implies (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-      "                     ..."
-      "                     (oldp updatej1-yp<...,y1,...,yp,...>))"
-      "                (equal (old ..."
-      "                            updatej1-y1<...,y1,...,yp,...>"
-      "                            ..."
-      "                            updatej1-yp<...,y1,...,yp,...>"
-      "                            ...)"
-      "                       (new ..."
-      "                            (forth updatej1-y1<...,y1,...,yp,...>)"
-      "                            ..."
-      "                            (forth updatej1-yp<...,y1,...,yp,...>)"
-      "                            ...)))"
-      "       ..."
-      "       (implies (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-      "                     ..."
-      "                     (oldp updatejq-yp<...,y1,...,yp,...>))"
-      "                (equal (old ..."
-      "                            updatejq-y1<...,y1,...,yp,...>"
-      "                            ..."
-      "                            updatejq-yp<...,y1,...,yp,...>"
-      "                            ...)"
-      "                       (new ..."
-      "                            (forth updatejq-y1<...,y1,...,yp,...>)"
-      "                            ..."
-      "                            (forth updatejq-yp<...,y1,...,yp,...>)"
-      "                            ...))))"
-      "  (implies (and (oldp y1)"
-      "                ..."
-      "                (oldp yp))"
-      "           (equal (old ... y1 ... yp ...)"
-      "                  (new ... (forth y1) ... (forth yp) ...))))")
-     (xdoc::p
-      "where @('updatej1'), ..., @('updatejq') are a subset of
-       all the recursive calls @('update1'), ..., @('updatem')
-       (i.e. the indices @('j1'), ..., @('jq')
-       are a subset of the indices 1, ..., @('m')),
-       is proved as follows:")
-     (xdoc::ul
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('old')
-         in the conclusion,
-         reducing the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       (implies (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-        "                     ..."
-        "                     (oldp updatej1-yp<...,y1,...,yp,...>))"
-        "                (equal (old ..."
-        "                            updatej1-y1<...,y1,...,yp,...>"
-        "                            ..."
-        "                            updatej1-yp<...,y1,...,yp,...>"
-        "                            ...)"
-        "                       (new ..."
-        "                            (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                            ..."
-        "                            (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                            ...)))"
-        "       ..."
-        "       (implies (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-        "                     ..."
-        "                     (oldp updatejq-yp<...,y1,...,yp,...>))"
-        "                (equal (old ..."
-        "                            updatejq-y1<...,y1,...,yp,...>"
-        "                            ..."
-        "                            updatejq-yp<...,y1,...,yp,...>"
-        "                            ...)"
-        "                       (new ..."
-        "                            (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                            ..."
-        "                            (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                            ...))))"
-        "  (implies (and (oldp y1)"
-        "                ..."
-        "                (oldp yp))"
-        "           (equal step-case-result<...,y1,...,yp,...,"
-        "                                   (old"
-        "                                    ..."
-        "                                    updatej1-y1<...,y1,...,yp,...>"
-        "                                    ..."
-        "                                    updatej1-yp<...,y1,...,yp,...>"
-        "                                    ...),"
-        "                                   ...,"
-        "                                   (old"
-        "                                    ..."
-        "                                    updatejq-y1<...,y1,...,yp,...>"
-        "                                    ..."
-        "                                    updatejq-yp<...,y1,...,yp,...>"
-        "                                    ...)>"
-        "                  (new ... (forth y1) ... (forth yp) ...))))")
-       (xdoc::p
-        "where @('step-case-result<...>') is
-         the subterm of the body of @('old')
-         reached under the step case hypotheses
-         @('step-case-hyps<...,y1,...,yp,...>')."))
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)'),
-        we use @('oldp-of-rec-calls')
-        to derive
-        @('(oldp updatej1-y1<...,y1,...,yp,...>)'),
-        ...,
-        @('(oldp updatej1-yp<...,y1,...,yp,...>)'),
-        ...,
-        @('(oldp updatejq-y1<...,y1,...,yp,...>)'),
-        ...,
-        @('(oldp updatejq-yp<...,y1,...,yp,...>)').
-        Note that the assumption @('step-case-hyps<...,y1,...,yp,...>')
-        coincides with @('contextj1'), ..., @('contextjq')
-        in @('oldp-of-rec-calls').")
-      (xdoc::li
-       (xdoc::p
-        "From these and from the equalities of the induction hypotheses,
-         we reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       (implies (and (oldp updatej1-y1<...,y1,...,yp,...>)"
-        "                     ..."
-        "                     (oldp updatej1-yp<...,y1,...,yp,...>))"
-        "                (equal (old ..."
-        "                            updatej1-y1<...,y1,...,yp,...>"
-        "                            ..."
-        "                            updatej1-yp<...,y1,...,yp,...>"
-        "                            ...)"
-        "                       (new ..."
-        "                            (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                            ..."
-        "                            (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                            ...)))"
-        "       ..."
-        "       (implies (and (oldp updatejq-y1<...,y1,...,yp,...>)"
-        "                     ..."
-        "                     (oldp updatejq-yp<...,y1,...,yp,...>))"
-        "                (equal (old ..."
-        "                            updatejq-y1<...,y1,...,yp,...>"
-        "                            ..."
-        "                            updatejq-yp<...,y1,...,yp,...>"
-        "                            ...)"
-        "                       (new ..."
-        "                            (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                            ..."
-        "                            (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                            ...))))"
-        "  (implies (and (oldp y1)"
-        "                ..."
-        "                (oldp yp))"
-        "           (equal step-case-result<...,y1,...,yp,...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth updatej1-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth updatej1-yp<...,y1,...,yp,...>)"
-        "                                    ...),"
-        "                                   ...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth updatejq-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth updatejq-yp<...,y1,...,yp,...>)"
-        "                                    ...)>"
-        "                  (new ... (forth y1) ... (forth yp) ...))))"))
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)'),
-        we use
-        @('(:instance newp-of-forth (x y1))'),
-        ...,
-        @('(:instance newp-of-forth (x yp))')
-        to derive
-        @('(newp (forth y1))'), ..., @('(newp (forth yp))').")
-      (xdoc::li
-       "From the assumptions @('(oldp y1)'), ..., @('(oldp yp)'),
-        we use
-        @('(:instance back-of-forth (x y1))'),
-        ...,
-        @('(:instance back-of-forth (x yp))')
-        to derive
-        @('(equal (back (forth y1)) y1)'),
-        ...,
-        @('(equal (back (forth yp)) yp)').")
-      (xdoc::li
-       "From these and from the assumption @('step-case-hyps<...,y1,...,yp,...>'),
-        we derive
-        @('step-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>').")
-      (xdoc::li
-       (xdoc::p
-        "We expand the non-normalized definition of @('new'),
-         which together with
-         @('(newp (forth y1))'), ..., @('(newp (forth yp))')
-         derived above
-         and with
-         @('step-case-hyps<...,(back (forth y1)),...,(back (forth yp)),...>')
-         derived above,
-         reduces the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       ...)"
-        "  (implies (and (oldp y1)"
-        "                ..."
-        "                (oldp yp))"
-        "           (equal step-case-result<...,y1,...,yp,...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatej1-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatej1-yp<...,y1,...,yp,...>)"
-        "                                    ...),"
-        "                                   ...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatejq-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatejq-yp<...,y1,...,yp,...>)"
-        "                                    ...)>"
-        "                  step-case-result<...,"
-        "                                   (back (forth y1)),"
-        "                                   ...,"
-        "                                   (back (forth yp)),"
-        "                                   ...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth updatej1-y1"
-        "                                           <...,"
-        "                                            (back (forth y1)),"
-        "                                            ...,"
-        "                                            (back (forth yp)),"
-        "                                            ...>)"
-        "                                    ..."
-        "                                    (forth updatej1-yp"
-        "                                           <...,"
-        "                                            (back (forth y1)),"
-        "                                            ...,"
-        "                                            (back (forth yp)),"
-        "                                            ...>)"
-        "                                    ...),"
-        "                                   ...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth updatejp-y1"
-        "                                           <...,"
-        "                                            (back (forth y1)),"
-        "                                            ...,"
-        "                                            (back (forth yp)),"
-        "                                            ...>)"
-        "                                    ..."
-        "                                    (forth updatejq-yp"
-        "                                           <...,"
-        "                                            (back (forth y1)),"
-        "                                            ...,"
-        "                                            (back (forth yp)),"
-        "                                            ...>)"
-        "                                    ...)>)))"))
-      (xdoc::li
-       (xdoc::p
-        "We use the equalities
-         @('(equal (back (forth y1)) y1)'),
-         ...,
-         @('(equal (back (forth yp)) yp)')
-         derived above
-         to reduce the theorem to be proved to")
-       (xdoc::codeblock
-        "(implies"
-        "  (and step-case-hyps<...,y1,...,yp,...>"
-        "       ;; induction hypotheses:"
-        "       ...)"
-        "  (implies (and (oldp y1)"
-        "                ..."
-        "                (oldp yp))"
-        "           (equal step-case-result<...,y1,...,yp,...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatej1-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatej1-yp<...,y1,...,yp,...>)"
-        "                                    ...),"
-        "                                   ...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatejq-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatejq-yp<...,y1,...,yp,...>)"
-        "                                    ...)>"
-        "                  step-case-result<...,y1,...,yp,...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatej1-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatej1-yp<...,y1,...,yp,...>)"
-        "                                    ...),"
-        "                                   ...,"
-        "                                   (new"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatejq-y1<...,y1,...,yp,...>)"
-        "                                    ..."
-        "                                    (forth"
-        "                                     updatejq-yp<...,y1,...,yp,...>)"
-        "                                    ...)>)))")))))
-   (xdoc::p
-    "The @('newp-of-forth') and @('back-of-forth') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes,
+     taking into account that there may be multiple recursive calls,
+     while the design notes only assume one."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
-       (newp-of-forth forth-image)
-       (instances-newp-of-forth
-        (isodata-gen-lemma-instances-of-var newp-of-forth
+       (instances-forth-image
+        (isodata-gen-lemma-instances-of-var forth-image
                                             a
                                             args$))
        (instances-back-of-forth
@@ -3468,7 +2239,7 @@
                     ,new-fn-unnorm-name
                     (:induction ,old$))
        :induct (,old$ ,@(formals old$ wrld)))
-      '(:use (,@instances-newp-of-forth
+      '(:use (,@instances-forth-image
               ,@instances-back-of-forth
               ,oldp-of-rec-calls)))))
 
@@ -3605,6 +2376,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (back$ pseudo-termfnp)
+   (back-image symbolp)
    (newp-guard symbolp)
    (back-guard symbolp)
    (wrld plist-worldp))
@@ -3615,47 +2387,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Given that the guard of the generated function is @('t')
-     and that the body of the generated function is")
-   (xdoc::codeblock
-    "(and (newp y1)"
-    "     ..."
-    "     (newp yp)"
-    "     old-body<...,(back y1),...,(back yp),...>)")
-   (xdoc::p
-    "(see @(tsee isodata-gen-new-fn-body-pred)),
-     the guards of the generated function are verified as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "We use
-      @('(:instance newp-guard (y y1))'),
-      ...,
-      @('(:instance newp-guard (y yp))')
-      to verify the guards of @('(newp y1)'), ..., @('(newp yp)').")
-    (xdoc::li
-     "From @('(newp y1)'), ..., @('(newp yp)'),
-      we use
-      @('(:instance back-guard (y y1))'),
-      ...,
-      @('(:instance back-guard (y yp))')
-      to verify the guards of @('(back y1)'), ..., @('(back yp)').")
-    (xdoc::li
-     "We use
-      @('(:instance (:guard-theorem old)
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to verify the remaining guard obligations,
-      which are the result of replacing each @('yk') with @('(back yk)')
-      in the guard obligations of @('old').")
-    (xdoc::li
-     "We use
-      @('(:instance old-guard (y1 (back y1)) ... (yp (back yp)))')
-      to discharge the hypothesis (if any) of the guard theorem of @('old')."))
-   (xdoc::p
-    "The @('newp-guard') and @('back-guard') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes."))
   (b* ((b (isodata-gen-var-b back$ wrld))
+       (old-guard-pred (cdr (assoc-eq :old-guard-pred app-cond-thm-names)))
+       (instance-guard-thm-old
+        (isodata-gen-lemma-instance-back-args `(:guard-theorem ,old$)
+                                              args$
+                                              back$))
        (instances-newp-guard
         (isodata-gen-lemma-instances-of-var newp-guard
                                             b
@@ -3664,22 +2402,21 @@
         (isodata-gen-lemma-instances-of-var back-guard
                                             b
                                             args$))
-       (instance-guard-thm-old
-        (isodata-gen-lemma-instance-back-args `(:guard-theorem ,old$)
+       (instance-old-guard-pred
+        (isodata-gen-lemma-instance-back-args old-guard-pred
                                               args$
                                               back$))
-       (instance-old-guard
-        (isodata-gen-lemma-instance-back-args (cdr
-                                               (assoc-eq :old-guard-pred
-                                                 app-cond-thm-names))
-                                              args$
-                                              back$)))
+       (instances-back-image
+        (isodata-gen-lemma-instances-of-var back-image
+                                            b
+                                            args$)))
     `(("Goal"
        :in-theory nil
-       :use (,@instances-newp-guard
+       :use (,instance-guard-thm-old
+             ,@instances-newp-guard
              ,@instances-back-guard
-             ,instance-guard-thm-old
-             ,instance-old-guard)))))
+             ,instance-old-guard-pred
+             ,@instances-back-image)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-rec
   ((app-cond-thm-names symbol-symbol-alistp
@@ -3701,126 +2438,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Given that the guard of the generated function is @('t')
-     and that the body of the generated function is")
-   (xdoc::codeblock
-    "(and (newp y1)"
-    "     ..."
-    "     (newp yp)"
-    "     old-body<...,(back y1),...,(back yp),...,"
-    "               (new ..."
-    "                    (forth update1-y1<...,"
-    "                                      (back y1),"
-    "                                      ...,"
-    "                                      (back yp),"
-    "                                      ...>)"
-    "                    ..."
-    "                    (forth update1-yp<...,"
-    "                                      (back y1),"
-    "                                      ...,"
-    "                                      (back yp),"
-    "                                      ...>)),"
-    "               ..."
-    "               (new ..."
-    "                    (forth updatem-y1<...,"
-    "                                      (back y1),"
-    "                                      ...,"
-    "                                      (back yp),"
-    "                                      ...>)"
-    "                    ..."
-    "                    (forth updatem-yp<...,"
-    "                                      (back y1),"
-    "                                      ...,"
-    "                                      (back yp),"
-    "                                      ...>))>)")
-   (xdoc::p
-    "(see @(tsee isodata-gen-new-fn-body-pred)),
-     the guards of the generated function are verified as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "We use
-      @('(:instance newp-guard (y y1))'),
-      ...,
-      @('(:instance newp-guard (y yp))')
-      to verify the guards of
-      @('(newp y1)'), ..., @('(newp yp)').")
-    (xdoc::li
-     "From the assumptions @('newp y1'), ..., @('newp yp'),
-      we use
-      @('(:instance back-guard (y y1))'),
-      ...,
-      @('(:instance back-guard (y yp))')
-      to verify the guards of
-      @('(back y1)'), ..., @('(back yp)').")
-    (xdoc::li
-     "From the assumptions @('newp y1'), ..., @('newp yp'),
-      we use
-      @('(:instance oldp-of-back (y y1))'),
-      ...,
-      @('(:instance oldp-of-back (y yp))')
-      to derive
-      @('(oldp (back y1))'), ..., @('(oldp (back yp))').")
-    (xdoc::li
-     "From these,
-      we use
-      @('(:instance oldp-of-rec-calls
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to derive
-      @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
-      for every @('j') from 1 to @('m')
-      and for every @('k') from 1 to @('p').
-      Note that the context
-      of each @('updatej-yk<...,(back y1),...,(back yp),...>')
-      in the body of @('new') above
-      coincides with @('contextj<...,(back y1),...,(back yp),...>'),
-      where @('contextj<...,y1,...,yp,...>') is the context
-      that appears in @('oldp-of-rec-calls').")
-    (xdoc::li
-     "From these,
-      we use
-      @('(:instance forth-guard
-                    (x updatej-yk<...,(back y1),...,(back yp),...>))'),
-      for every @('j') and @('k') as above,
-      to verify the guards of each
-      @('(forth updatej-yk<...,(back y1),...,(back yp),...>)').")
-    (xdoc::li
-     "Given @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
-      derived above,
-      we use the relating theorem
-      (see @(tsee isodata-gen-old-to-new-thm-formula))
-      to replace, in the guard obligation of the generated function,
-      each
-      @('(new ... (forth updatej-yk<...,(back y1),...,(back yp),...>) ...)')
-      with
-      @('(old ... updatej-yk<...,(back y1),...,(back yp),...> ...)').")
-    (xdoc::li
-     "The thus-obtained guard obligation consists of
-      the obligations already verified above
-      plus the guard obligation of @('old')
-      with each @('yk') replaced by @('(back yk)').
-      We use
-      @('(:instance (:guard-theorem old)
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to verify this remaining obligation.")
-    (xdoc::li
-     "We use
-      @('(:instance old-guard
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to discharge the hypothesis (if any)
-      of the guard theorem of @('old')."))
-   (xdoc::p
-    "The @('oldp-of-back'),
-     @('newp-guard'), @('forth-guard'), and  @('back-guard') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes,
+     taking into account that there may be multiple recursive calls,
+     while the design notes only assume one."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-back back-image)
        (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
                                  app-cond-thm-names)))
        (old-guard-pred (cdr (assoc-eq :old-guard-pred
                               app-cond-thm-names)))
+       (instance-guard-thm-old
+        (isodata-gen-lemma-instance-back-args `(:guard-theorem ,old$)
+                                              args$
+                                              back$))
        (instances-newp-guard
         (isodata-gen-lemma-instances-of-var newp-guard
                                             b
@@ -3829,8 +2459,8 @@
         (isodata-gen-lemma-instances-of-var back-guard
                                             b
                                             args$))
-       (instances-oldp-of-back
-        (isodata-gen-lemma-instances-of-var oldp-of-back
+       (instances-back-image
+        (isodata-gen-lemma-instances-of-var back-image
                                             b
                                             args$))
        (instance-oldp-of-rec-calls
@@ -3854,10 +2484,6 @@
                                                          args$
                                                          back$
                                                          wrld))
-       (instance-guard-thm-old
-        (isodata-gen-lemma-instance-back-args `(:guard-theorem ,old$)
-                                              args$
-                                              back$))
        (instance-old-guard
         (isodata-gen-lemma-instance-back-args old-guard-pred
                                               args$
@@ -3866,7 +2492,7 @@
        :in-theory nil
        :use (,@instances-newp-guard
              ,@instances-back-guard
-             ,@instances-oldp-of-back
+             ,@instances-back-image
              ,instance-oldp-of-rec-calls
              ,@instances-forth-guard
              ,@instances-old-to-new
@@ -3906,6 +2532,7 @@
                                                         old$
                                                         args$
                                                         back$
+                                                        back-image
                                                         newp-guard
                                                         back-guard
                                                         wrld)))
@@ -3924,47 +2551,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Given that the guard of the generated function is")
-   (xdoc::codeblock
-    "(and (newp y1)"
-    "     ..."
-    "     (newp yp)"
-    "     old-guard<...,(back y1),...,(back yp),...>)")
-   (xdoc::p
-    "(see @(tsee isodata-gen-new-fn-guard))
-     and that the body of the generated function (when non-recursive) is")
-   (xdoc::codeblock
-    "old-body<...,(back y1),...,(back yp),...>")
-   (xdoc::p
-    "(see @(tsee isodata-gen-new-fn-body)),
-     the guards of the generated function are verified as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "We use
-      @('(:instance newp-guard (y y1))'),
-      ...,
-      @('(:instance newp-guard (y yp))')
-      to verify the guards of @('(newp y1)'), ..., @('(newp yp)').")
-    (xdoc::li
-     "From @('(newp y1)'), ..., @('(newp yp)'),
-      we use
-      @('(:instance back-guard (y y1))'),
-      ...,
-      @('(:instance back-guard (y yp))')
-      to verify the guards of @('(back y1)'), ..., @('(back yp)').")
-    (xdoc::li
-     "We use
-      @('(:instance (:guard-theorem old)
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to verify the remaining guard obligations,
-      which are the result of replacing each @('yk') with @('(back yk)')
-      in the guard obligations of @('old')."))
-   (xdoc::p
-    "The @('newp-guard') and @('back-guard') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes."))
   (b* ((b (isodata-gen-var-b back$ wrld))
+       (instance-guard-thm-old
+        (isodata-gen-lemma-instance-back-args `(:guard-theorem ,old$)
+                                              args$
+                                              back$))
        (instances-newp-guard
         (isodata-gen-lemma-instances-of-var newp-guard
                                             b
@@ -3972,16 +2564,12 @@
        (instances-back-guard
         (isodata-gen-lemma-instances-of-var back-guard
                                             b
-                                            args$))
-       (instance-guard-thm-old
-        (isodata-gen-lemma-instance-back-args `(:guard-theorem ,old$)
-                                              args$
-                                              back$)))
+                                            args$)))
     `(("Goal"
        :in-theory nil
-       :use (,@instances-newp-guard
-             ,@instances-back-guard
-             ,instance-guard-thm-old)))))
+       :use (,instance-guard-thm-old
+             ,@instances-newp-guard
+             ,@instances-back-guard)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec
   ((app-cond-thm-names symbol-symbol-alistp
@@ -4005,157 +2593,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Given that the guard of the generated function is")
-   (xdoc::codeblock
-    "(and (newp y1)"
-    "     ..."
-    "     (newp yp)"
-    "     old-guard<...,(back y1),...,(back yp),...>)")
-   (xdoc::p
-    "(see @(tsee isodata-gen-new-fn-guard))
-     and that the body of the generated function (when recursive) is")
-   (xdoc::codeblock
-    "(if (and (newp y1)"
-    "         ..."
-    "         (newp yp))"
-    "    old-body<...,(back y1),...,(back yp),...,"
-    "             (new ..."
-    "                  (forth update1-y1<...,"
-    "                                    (back y1),"
-    "                                    ...,"
-    "                                    (back yp),"
-    "                                    ...>)"
-    "                  ..."
-    "                  (forth update1-yp<...,"
-    "                                    (back y1),"
-    "                                    ...,"
-    "                                    (back yp),"
-    "                                    ...>)),"
-    "             ..."
-    "             (new ..."
-    "                  (forth updatem-y1<...,"
-    "                                    (back y1),"
-    "                                    ...,"
-    "                                    (back yp),"
-    "                                    ...>)"
-    "                  ..."
-    "                  (forth updatem-yp<...,"
-    "                                    (back y1),"
-    "                                    ...,"
-    "                                    (back yp),"
-    "                                    ...>))>"
-    "  nil)")
-   (xdoc::p
-    "(see @(tsee isodata-gen-new-fn-body)),
-     the guards of the generated function are verified as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "We use
-      @('(:instance newp-guard (y y1))'),
-      ...,
-      @('(:instance newp-guard (y yp))')
-      to verify the guards of
-      @('(newp y1)'), ..., @('(newp yp)').")
-    (xdoc::li
-     "From the assumptions @('newp y1'), ..., @('newp yp'),
-      we use
-      @('(:instance back-guard (y y1))'),
-      ...,
-      @('(:instance back-guard (y yp))')
-      to verify the guards of
-      @('(back y1)'), ..., @('(back yp)').")
-    (xdoc::li
-     "From the assumptions @('newp y1'), ..., @('newp yp'),
-      we use
-      @('(:instance oldp-of-back (y y1))'),
-      ...,
-      @('(:instance oldp-of-back (y yp))')
-      to derive
-      @('(oldp (back y1))'), ..., @('(oldp (back yp))').")
-    (xdoc::li
-     "From these,
-      we use
-      @('(:instance oldp-of-rec-calls
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to derive
-      @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
-      for every @('j') from 1 to @('m')
-      and for every @('k') from 1 to @('p').
-      Note that the context
-      of each @('updatej-yk<...,(back y1),...,(back yp),...>')
-      in the body of @('new') above
-      coincides with @('contextj<...,(back y1),...,(back yp),...>'),
-      where @('contextj<...,y1,...,yp,...>') is the context
-      that appears in @('oldp-of-rec-calls').")
-    (xdoc::li
-     "From these,
-      we use
-      @('(:instance forth-guard
-                    (x updatej-yk<...,(back y1),...,(back yp),...>))'),
-      for every @('I') and @('J') as above,
-      to verify the guards of each
-      @('(forth updatej-yk<...,(back y1),...,(back yp),...>)').")
-    (xdoc::li
-     "From each @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
-      derived above,
-      we use
-      @('(:instance newp-of-forth
-                    (x updatej-yk<...,(back y1),...,(back yp),...>))')
-      to derive
-      @('(newp (forth updatej-yk<...,(back y1),...,(back yp),...>))'),
-      which is used to verify the guard obligations
-      @('(newp y1)'), ..., @('(newp yp)')
-      of the recursive calls of @('new').")
-    (xdoc::li
-     "From each @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
-      derived above,
-      we use
-      @('(:instance back-of-forth
-                    (x updatej-yk<...,(back y1),...,(back yp),...>))')
-      to turn @('(back (forth updatej-yk<...,(back y1),...,(back yp),...>))')
-      into @('updatej-yk<...,(back y1),...,(back yp),...>')
-      in the guard obligation
-      @('old-guard<...,(back y1),...,(back yp),...>')
-      of the recursive calls of @('new').")
-    (xdoc::li
-     "Given @('(oldp updatej-yk<...,(back y1),...,(back yp),...>)')
-      derived above,
-      we use the relating theorem
-      (see @(tsee isodata-gen-old-to-new-thm-formula))
-      to replace, in the guard obligation of the generated function,
-      each
-      @('(new ... (forth updatej-yk<...,(back y1),...,(back yp),...>) ...)')
-      with
-      @('(old ... updatej-yk<...,(back y1),...,(back yp),...>)').")
-    (xdoc::li
-     "The thus-obtained guard obligation consists of
-      the obligations already verified above
-      plus the guard obligation of @('old')
-      with each @('yk') replaced by @('(back yk)').
-      We use
-      @('(:instance (:guard-theorem old)
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to verify this remaining obligation.")
-    (xdoc::li
-     "We use
-      @('(:instance old-guard
-                    (y1 (back y1)) ... (yp (back yp)))')
-      to discharge the hypothesis (if any)
-      of the guard theorem of @('old')."))
-   (xdoc::p
-    "This function is called only when @(':verify-guards') is non-@('nil'),
-     because it accesses names of applicability condition theorems
-     that are generated only when @(':verify-guards') is non-@('nil').")
-   (xdoc::p
-    "The @('oldp-of-back'), @('newp-of-forth'), @('back-of-forth'),
-     @('newp-guard'), @('forth-guard'), and  @('back-guard') lemmas
-     whose instances appear in the generated hints are taken
-     from the @(tsee defiso) theorems if @('iso$') references one,
-     otherwise they are taken from the applicability condition theorems."))
+    "This is according to the design notes,
+     taking into account that there may be multiple recursive calls,
+     while the design notes only assume one."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-back back-image)
-       (newp-of-forth forth-image)
        (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
                                  app-cond-thm-names)))
        (old-guard (cdr (assoc-eq :old-guard app-cond-thm-names)))
@@ -4167,8 +2609,8 @@
         (isodata-gen-lemma-instances-of-var back-guard
                                             b
                                             args$))
-       (instances-oldp-of-back
-        (isodata-gen-lemma-instances-of-var oldp-of-back
+       (instances-back-image
+        (isodata-gen-lemma-instances-of-var back-image
                                             b
                                             args$))
        (instance-oldp-of-rec-calls
@@ -4183,8 +2625,8 @@
                                                args$
                                                back$
                                                wrld))
-       (instances-newp-of-forth
-        (isodata-gen-lemma-instances-rec-calls newp-of-forth
+       (instances-forth-image
+        (isodata-gen-lemma-instances-rec-calls forth-image
                                                a
                                                (recursive-calls old$ wrld)
                                                old$
@@ -4220,10 +2662,10 @@
        :in-theory nil
        :use (,@instances-newp-guard
              ,@instances-back-guard
-             ,@instances-oldp-of-back
+             ,@instances-back-image
              ,instance-oldp-of-rec-calls
              ,@instances-forth-guard
-             ,@instances-newp-of-forth
+             ,@instances-forth-image
              ,@instances-back-of-forth
              ,@instances-old-to-new
              ,instance-guard-thm-old
