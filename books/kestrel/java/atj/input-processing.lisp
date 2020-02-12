@@ -933,7 +933,7 @@
                                     deep$
                                     guards$))
          ((when unsupported-return-last?) (mv worklist-gen worklist-chk t))
-         ((when (pseudo-lambda-p fn))
+         ((when (consp fn))
           (atj-collect-fns-in-term (pseudo-lambda->body fn)
                                    gen?
                                    worklist-gen
