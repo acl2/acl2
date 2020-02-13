@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,6 +24,6 @@
           that occur in its @(see measure) expression."
   :long
   (xdoc::topstring-p
-   "See @(tsee measured-subset+) for a logic-friendly variant of this utility.")
+   "See @(tsee measured-subset+) for an enhanced variant of this utility.")
   (b* ((justification (getpropc fn 'justification nil wrld)))
     (access justification justification :subset)))

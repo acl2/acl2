@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -40,7 +40,7 @@
      If a function does not have an @('unnormalized-body') property,
      this utility returns @('nil').")
    (xdoc::p
-    "See @(tsee ubody+) for a logic-friendly variant of this utility."))
+    "See @(tsee ubody+) for an enhanced variant of this utility."))
   (cond ((symbolp fn) (getpropc fn 'unnormalized-body nil wrld))
         (t (lambda-body fn)))
   :guard-hints (("Goal" :in-theory (enable pseudo-termfnp pseudo-lambdap))))

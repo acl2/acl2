@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,5 +21,5 @@
   :short "List of names of the known packages, in chronological order."
   :long
   (xdoc::topstring-p
-   "See @(tsee known-packages+) for a logic-friendly variant of this utility.")
+   "See @(tsee known-packages+) for an enhanced variant of this utility.")
   (reverse (strip-cars (known-package-alist state))))

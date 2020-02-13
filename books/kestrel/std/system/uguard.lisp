@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -31,6 +31,6 @@
      the code that handles the case in which the second argument is @('nil');
      thus, this utility is in logic mode and guard-verified.")
    (xdoc::p
-    "See @(tsee uguard+) for a logic-friendly variant of this utility."))
+    "See @(tsee uguard+) for an enhanced variant of this utility."))
   (cond ((symbolp fn) (getpropc fn 'guard *t* wrld))
         (t *t*)))

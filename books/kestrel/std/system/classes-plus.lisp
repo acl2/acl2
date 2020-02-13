@@ -20,9 +20,7 @@
 (define classes+ ((thm symbolp) (wrld plist-worldp))
   :returns (classes keyword-to-keyword-value-list-alistp)
   :parents (std/system/theorem-queries)
-  :short (xdoc::topstring
-          (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @(tsee classes).")
+  :short "Enhanced variant of @(tsee classes)."
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee classes),

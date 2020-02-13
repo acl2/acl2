@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,9 +17,7 @@
 (define measured-subset+ ((fn symbolp) (wrld plist-worldp))
   :returns (measured-subset symbol-listp)
   :parents (std/system/function-queries)
-  :short (xdoc::topstring
-          (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @(tsee measured-subset).")
+  :short "Enhanced variant of @(tsee measured-subset)."
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee measured-subset),
