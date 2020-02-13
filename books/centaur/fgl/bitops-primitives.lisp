@@ -414,7 +414,8 @@
                            boolean-listp
                            (tau-system))))
 
-(local (in-theory (enable gobj-bfr-eval)))
+;; (local (in-theory (enable gobj-bfr-eval)))
+(local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
 
 (def-fgl-primitive equal (x y)
   (b* (((when (equal x y)) (mv t t interp-st))

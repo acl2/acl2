@@ -577,7 +577,8 @@
                       :rule-classes :congruence))
              (local (acl2::use-trivial-ancestors-check))
 
-             (local (in-theory (enable gobj-bfr-eval bfr-eval aignet::lit-eval)))
+             (local (in-theory (enable gobj-bfr-eval ;; bfr-eval ;; aignet::lit-eval
+                                       )))
 
              (local
               (defthm nth-of-of-interp-st-sat-counterexample
@@ -598,9 +599,18 @@
                                           aignet::aignet-vals->regvals
                                           aignet::aignet-vals->regvals-iter)
                                          (aignet-vals-p-of-interp-st-sat-counterexample))))))
+
+             (local
+              #!aignet
+              (defthm id-eval-of-lit->var
+                (equal (id-eval (lit->var lit) invals regvals aignet)
+                       (b-xor (lit->neg lit)
+                              (lit-eval lit invals regvals aignet)))
+                :hints(("Goal" :in-theory (enable lit-eval)))))
+
              (local (in-theory (disable member-equal)))
 
-             (local (defthm sat-check-with-witness-raw-fixes
+             (local (defthmd sat-check-with-witness-raw-fixes
                       (and (equal (sat-check-with-witness-raw '(:failed nil) config x) '(:failed nil))
                            (implies (not x)
                                     (equal (sat-check-with-witness-raw '(:unsat nil) config x)
@@ -611,7 +621,15 @@
                            (implies (case-split (implies ctrex x))
                                     (equal (sat-check-with-witness-raw (list :sat ctrex) config x)
                                            (list :sat ctrex))))
-                      :hints(("Goal" :in-theory (enable sat-check-with-witness-raw))))))
+                      :hints(("Goal" :in-theory (enable sat-check-with-witness-raw)))))
+
+             (defcong iff equal (sat-check-with-witness-raw ans config x) 3
+               :hints(("Goal" :in-theory (enable sat-check-with-witness-raw))))
+             (local (set-default-hints
+                     '((and stable-under-simplificationp
+                            '(:in-theory (enable sat-check-with-witness-raw-fixes
+                                                 bfr-eval
+                                                 w-state-equal-forward)))))))
   :formula-check sat-formula-checks)
 
 (add-fgl-binder-meta sat-check-with-witness-raw sat-check-with-witness-raw-binder)
