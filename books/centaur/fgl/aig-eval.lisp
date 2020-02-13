@@ -392,6 +392,7 @@
                                     (mv ok val interp-st))
                   :otherwise (mv nil nil interp-st))
     :otherwise (mv nil nil interp-st))
+  :returns (mv successp ans interp-st)
   :formula-check aig-eval-formula-checks)
 
 
