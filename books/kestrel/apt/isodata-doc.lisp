@@ -11,7 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/apt/utilities/xdoc-constructors" :dir :system)
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "isodata")
 
 ; (depends-on "design-notes/isodata.pdf")
@@ -316,6 +316,8 @@
        "@('nil'), to not normalize it.")))
 
     (xdoc::desc-apt-input-verify-guards :never)
+
+    (xdoc::desc-apt-input-untranslate)
 
     (xdoc::evmac-input-hints)
 

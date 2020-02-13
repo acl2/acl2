@@ -1863,7 +1863,11 @@
    (isodata p (((x) (natp natp (lambda (a) a) (lambda (a) a)))) :predicate t))
   (must-succeed
    (isodata p (((x y) (natp natp (lambda (a) a) (lambda (a) a))))
-                :predicate t)))
+            :predicate t
+            ;; without the following :UNTRANSLATE T,
+            ;; we get an implementation error from directed-untranslate:
+            :untranslate t))
+  :with-output-off nil)
  (must-succeed*
   (defiso nat-id natp natp (lambda (a) a) (lambda (a) a))
   (must-succeed
@@ -1873,7 +1877,11 @@
   (must-succeed
    (isodata p (((x) nat-id)) :predicate t))
   (must-succeed
-   (isodata p (((x y) nat-id)) :predicate t)))
+   (isodata p (((x y) nat-id))
+            :predicate t
+            ;; without the following :UNTRANSLATE T,
+            ;; we get an implementation error from directed-untranslate:
+            :untranslate t)))
 
  ;; isomorphism between naturals and integers:
  (must-succeed*
@@ -1915,7 +1923,10 @@
                        (lambda (i) (if (>= i 0)
                                        (* 2 i)
                                      (1- (- (* 2 i))))))))
-            :predicate t)))
+            :predicate t
+            ;; without the following :UNTRANSLATE T,
+            ;; we get an implementation error from directed-untranslate:
+            :untranslate t)))
  (must-succeed*
   (include-book "arithmetic-5/top" :dir :system)
   (defiso nat/int
@@ -1934,7 +1945,11 @@
   (must-succeed
    (isodata p (((x) nat/int)) :predicate t))
   (must-succeed
-   (isodata p (((x y) nat/int)) :predicate t))))
+   (isodata p (((x y) nat/int))
+            :predicate t
+            ;; without the following :UNTRANSLATE T,
+            ;; we get an implementation error from directed-untranslate:
+            :untranslate t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

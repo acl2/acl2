@@ -45,6 +45,9 @@
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
+(defconst *atj-tutorial-acl2-terms*
+  "Java Representation of the ACL2 Terms")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Create the :SHORT string for a tutorial page with the given subtitle.
@@ -357,6 +360,23 @@
      while logically correct and within @('simplify')'s stipulations,
      may be undesired or unexpected.")
 
+   (xdoc::p
+    "Macros are normally expanded
+     (the expansion being also according to ACL2's evaluation semantics),
+     and their expansion is then evaluated.
+     However, the macros listed in the global variable @('macros-with-raw-code')
+     have an evaluation semantics specified by raw Lisp code.
+     The evaluation semantics specified by their raw Lisp code
+     may be consistent with the evaluation semantics of their expansion or not,
+     due to side effects or apparent circularities.
+     For instance, the @(tsee concatenate) macro has raw Lisp code,
+     which obviously terminates execution;
+     however, the expansion of @(tsee concatenate) calls @(tsee string-append),
+     whose @(':exec') part calls @(tsee concatenate),
+     and therefore execution may not terminate.
+     Thus, macros with raw Lisp code may also need to be taken into account
+     when translating ACL2 code to Java or other programming languages.")
+
    (atj-tutorial-previous "atj-tutorial-motivation" *atj-tutorial-motivation*)
 
    (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*)))
@@ -565,7 +585,7 @@
      not only "
     (xdoc::seetopic "atj-tutorial-acl2-values"
                     "representing the ACL2 values in Java")
-    "but also representing the ACL2 language constructs
+    " but also representing the ACL2 language constructs
      (function definitions, conditionals, etc.)
      in Java in some way so that they can be executed in Java.
      There are generally two approaches
@@ -641,9 +661,10 @@
     (xdoc::seetopic "acl2::stobj" "stobj")
     "-accessing
      subset of the ACL2 language without guards.
-     AIJ includes
-     a Java representation of the ACL2 terms
-     (in "
+     AIJ includes a "
+    (xdoc::seetopic "atj-tutorial-acl2-terms"
+                    "Java representation of the ACL2 terms")
+    " (in "
     (xdoc::seetopic "acl2::term" "translated")
     " form)
      and a Java representation of the ACL2 environment,
@@ -918,3 +939,138 @@
      These UML class diagrams are simplified because
      the class boxes do not contain fields and methods,
      as they should in a full UML class diagram.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-acl2-terms
+
+  :short (atj-tutorial-short *atj-tutorial-acl2-terms*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "For the "
+    (xdoc::seetopic "atj-tutorial-deep" "deep embedding approach")
+    ", "
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
+    " provides a Java representation of the ACL2 terms.
+     Since ACL2 terms are also ACL2 values,
+     in principle the "
+    (xdoc::seetopic "atj-tutorial-acl2-values"
+                    "Java representation of the ACL2 values")
+    "provided by AIJ could be used to represent the ACL2 terms as well.
+     However, it is more convenient to use
+     a more specialized representation,
+     described in this tutorial page.")
+
+   (xdoc::p
+    "The set of ACL2 "
+    (xdoc::seetopic "acl2::term" "translated")
+    " terms consists of
+     (i) variables,
+     which are symbols,
+     (ii) quoted constants,
+     which are lists @('(quote value)') where @('value') is a value,
+     and (iii) function applications,
+     which are lists @('(fn arg1 ... argn)')
+     where @('fn') is a function
+     and @('arg1'), ..., @('argn') are zero or more terms.
+     A function @('fn') used in a term is
+     (i) a named function,
+     which is a symbol,
+     or (ii) a lambda expression,
+     which is a list @('(lambda (var1 ... varm) body)')
+     where @('var1'), ..., @('varm') are zero or more symbols
+     and @('body') is a term,
+     whose free variables are all among @('var1'), ..., @('varm')
+     (i.e. lambda expressions are always closed).")
+
+   (xdoc::p
+    "AIJ represents ACL2 terms in a manner similar to ACL2 values,
+     as objects of class @('Acl2Term') and its subclasses in the "
+    (xdoc::seetopic "atj-tutorial-simplified-uml"
+                    "simplified UML class diagram")
+    " below.
+     Functions are represented
+     as objects of class @('Acl2Function') and its subclasses
+     in the same diagram.
+     The classes with subclasses are abstract,
+     while classes without subclasses are concrete.
+     All these classes are public, except @('Acl2DefinedFunction').
+     The information about the represented ACL2 terms (and functions)
+     is stored in private fields.")
+
+   (xdoc::img :src "res/kestrel-java-atj-images/term-classes.png")
+
+   (xdoc::p
+    "@('Acl2Variable') is a wrapper of @('Acl2Symbol'), and
+     @('Acl2QuotedConstant') is a wrapper of @('Acl2Value');
+     these wrappers place @('Acl2Symbol') and @('Acl2Value')
+     into the class hierarchy of @('Acl2Term'),
+     given that Java does not support multiple class inheritance
+     (e.g. @('Acl2Symbol') could not be
+     both a subclass of @('Acl2Value') and a subclass of @('Acl2Term')).
+     An @('Acl2FunctionCall') stores
+     an @('Acl2Function') and zero or more @('Acl2Term')s.")
+
+   (xdoc::p
+    "An @('Acl2LambdaExpression') stores
+     zero or more @('Acl2Variable')s and an @('Acl2Term').
+     @('Acl2NamedFunction') is a wrapper of @('Acl2Symbol'),
+     placing @('Acl2Symbol') into the class hierarchy of @('Acl2Function').
+     AIJ's Java representation of named functions
+     differentiates between native and defined functions.
+     An @('Acl2DefinedFunction') stores a definition
+     consisting of zero or more formal parameters (@('Acl2Symbol')s)
+     and of a body (a @('Acl2Term')),
+     which are put together into a lambda expression
+     (as in a higher-order equality @('(equal fn (lambda ...))')).
+     An @('Acl2NativeFunction') represents an ACL2 function
+     that is implemented natively via Java code,
+     not via (a Java representation of) an ACL2 definiens.
+     Here `native' is with respect to ACL2, not Java;
+     it has nothing to do with "
+    (xdoc::ahref "https://docs.oracle.com/javase/10/docs/specs/jni" "JNI")
+    ". There is an instance of @('Acl2NativeFunction')
+     for each "
+    (xdoc::seetopic "acl2::primitive" "ACL2 primitive function")
+    ": these could not be instances of @('Acl2DefinedFunction'),
+     because they have "
+    (xdoc::seetopic "atj-tutorial-background" "no ACL2 definition")
+    ". There are also instances of @('Acl2NativeFunction')
+     for other built-in ACL2 functions,
+     and more may be added in the future,
+     particularly for execution efficiency.")
+
+   (xdoc::p
+    "The classes for ACL2 terms (and functions) provide
+     public static factory methods to build instances of these classes,
+     but no public Java constructors,
+     similarly to "
+    (xdoc::seetopic "atj-tutorial-acl2-values" "the classes for ACL2 values")
+    ". In the "
+    (xdoc::seetopic "atj-tutorial-deep" "deep embedding approach")
+    ", the Java code generated by ATJ
+     uses these factory methods to build the terms in the definientia
+     of the ACL2 functions that are being translated to Java.
+     Note that since @('Acl2QuotedConstant') wraps @('Acl2Value'),
+     the ATJ-generated Java code also uses
+     the factory methods of the classes of ACL2 values.")
+
+   (xdoc::p
+    "The classes for ACL2 terms (and functions) do not provide
+     getter methods to extract information,
+     unlike the classes for the ACL2 values.
+     The reason is that code external to AIJ
+     (including the code generated by ATJ)
+     only need to build terms, not unbuild them.
+     In contrast, code external to AIJ,
+     and to ATJ-generated code,
+     may need to unbuild the results obtained by evaluating
+     calls of ACL2 functions.")
+
+   (xdoc::p
+    "For more details on AIJ's implementation and API of ACL2 terms,
+     see the Javadoc in AIJ's Java code.")))

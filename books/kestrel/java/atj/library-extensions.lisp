@@ -14,12 +14,14 @@
 (include-book "../language/boolean-literals")
 (include-book "../language/keywords")
 
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "std/typed-lists/pseudo-term-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,6 +193,30 @@
   ((defrulel returns-lemma
      (implies (symbol-listp x)
               (pseudo-term-listp x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Pseudo-term fixtype:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-count-lemma1
+  (implies (not (member-eq (acl2::pseudo-term-kind term)
+                           '(:null :var :quote)))
+           (< (acl2::pseudo-term-list-count (acl2::pseudo-term-call->args term))
+              (acl2::pseudo-term-count term)))
+  :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-count-lemma2
+  (implies (and (not (member-eq (acl2::pseudo-term-kind term)
+                                '(:null :var :quote)))
+                (acl2::pseudo-lambda-p (acl2::pseudo-term-call->fn term)))
+           (< (acl2::pseudo-term-count (acl2::pseudo-lambda->body
+                                        (acl2::pseudo-term-call->fn term)))
+              (acl2::pseudo-term-count term)))
+  :expand ((acl2::pseudo-term-count term)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

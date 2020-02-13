@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -94,24 +94,27 @@
      and (ii) an abstractor from lists of @('unicode-input-character') trees
      to lists of Unicode characters.")
    (xdoc::p
-    "We actually introduce two such functions:
-     one that formalizes Java's first lexical translation step,
-     and one that omits the check that
-     an eligible backslash followed by one or more @('u') letters
-     must be followed by four hexadecimal digits.
-     In fact, the check is not ``necessary''
-     for turning Unicode escapes into single Unicode characters:
-     if an eligible backslash followed by one or more @('u') letters
-     is not followed by four hexadecimal digits,
-     these characters could be simply left unchanged by the transformation,
-     as done for other character sequences that do not form Unicode escapes.
+    "The parser always succeeds,
+     even if there is an eligible backslash
+     followed by one of more @('u') letters
+     but with the last @('u') not followed by four hexadecimal digits
+     (in which case, as noted above, the processing of Unicode escapes fails).
+     In this case, the parser just leaves the characters as they are,
+     without recognizing any Unicode escape (since there is not one).
+     This makes the parser slightly more general,
+     and perhaps useful in other circumstances.
      Presumably [JLS] prescribes an error in this situation
+     (as opposed to simply leaving the characters unchanged)
      because the resulting Unicode character sequence
      could never be a valid Java program anyhow,
      and so parsing can stop immediately instead of stopping later anyhow.
-     One of our two functions still followed the prescription in [JLS],
-     but the other one (the one that omits the check)
-     may have more general uses."))
+     Nonetheless, when we compose the parser with the abstractor (see above),
+     we perform the check for that situation,
+     and return an error if the situation occurs,
+     as prescribed by [JLS].
+     In other words, our formalization of Unicode escape processing
+     is faithful to [JLS],
+     but its parser component is a bit more general."))
   :order-subtopics t
   :default-parent t)
 
@@ -294,21 +297,14 @@
    (xdoc::p
     "This is used to formalize when the list of Unicode characters
      does not satisfy the constraints related to Unicode escapes,
-     i.e. it is not a valid Java program
+     i.e. the whole sequence of Unicode characters is not a valid Java program
      right at the first lexical translation step.")
    (xdoc::p
     "This is the case when
      there is at least one candidate Unicode escape that is invalid.
      That is, there is an eligible backslash
      followed by one or more `u' letters
-     that are not followed by four hexadecimal digits.")
-   (xdoc::p
-    "As mentioned in the "
-    (xdoc::seetopic "unicode-escapes" "the overview")
-    ", we define two slightly different top-level functions
-     that formalize the processing of Unicode escapes:
-     one that includes the check formalized by this predicate as per [JLS],
-     and one that does not for potentially other uses."))
+     that are not followed by four hexadecimal digits."))
   (exists (pos)
           (and (integer-range-p 0 (len unicodes) pos)
                (uniescape-candidate-p pos unicodes)
@@ -449,7 +445,7 @@
      this predicate only takes a list of trees as argument:
      the Unicode character list can be derived from the list of trees.")
    (xdoc::p
-    "Note that here we do not need to use @(tsee uniescapep) here,
+    "Note that we do not need to use @(tsee uniescapep) here,
      because the implicit grammar constraint,
      namely that the string at the leaves of the tree is the parser input,
      captures most of @(tsee uniescapep),
@@ -484,7 +480,7 @@
     "Note that the position in question is expressed not directly,
      but indirectly via an index in the list of trees.
      There is no ``loss'' in doing that,
-     because the the string has to be decomposed into trees
+     because the string has to be decomposed into trees
      according to the grammar anyhow."))
   (forall (i)
           (implies
@@ -503,8 +499,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The Unicode escape parser,
-     which captures the first lexical translation step of Java,
+    "The Unicode escape parser
      takes as input a list of Unicode characters
      and returns as output a list of parsed @('unicode-input-character') trees.
      This predicate characterizes the parser's input/output relationship:
@@ -513,10 +508,12 @@
    (xdoc::p
     "As motivated in "
     (xdoc::seetopic "unicode-escapes" "the overview")
-    ", for now we omit the check that
+    ", the parser omits the check that
      @(tsee some-uniescape-candidate-invalid-p) does not hold,
      which does not involve the output anyhow.
-     We will include this check in one of the two top-level functions.")
+     This check in the top-level function
+     that formalizes Unicode escape processing,
+     of which he parser is a component.")
    (xdoc::p
     "Here we express the constraints of the output with respect to the input.
      The string at the leaves of the trees must be the input string:
@@ -802,33 +799,19 @@
 (define uniescape-process ((unicodes unicode-listp))
   :returns (mv (errorp booleanp)
                (new-unicodes unicode-listp))
-  :short "Process the Unicode escapes in a list of Unicode characters."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This function captures Java's first lexical translation step,
-     except for the check that there are not invalid Unicode escape candidates;
-     this check is included in the function @(tsee uniescape-process-and-check).
-     We parse the Unicode characters into trees,
-     and then we abstract the trees into Unicode characters.
-     This processing should never fail, because the parser should never fail,
-     but it remains to be proved formally."))
-  (b* (((mv errorp trees) (uniescape-parse unicodes))
-       ((when errorp) (mv t nil)))
-    (mv nil (abs-unicode-input-character-list trees))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uniescape-process-and-check ((unicodes unicode-listp))
-  :returns (mv (errorp booleanp)
-               (new-unicodes unicode-listp))
   :short "Perform Java's first lexical translation step."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This function is like @(tsee uniescape-process),
-     but is also ensures that there are no invalid Unicode escape candidates.
-     It returns an error if there are any."))
-  (if (some-uniescape-candidate-invalid-p unicodes)
-      (mv t nil)
-    (uniescape-process unicodes)))
+    "We parse the Unicode characters into trees,
+     and then we abstract the trees into Unicode characters.
+     We also check that there no invalid Unicode escape candidates,
+     returning an error if there are any.")
+   (xdoc::p
+    "We propagate any errors from the parser,
+     even though there should never be any.
+     See comments in @(tsee uniescape-parse) about this."))
+  (b* (((when (some-uniescape-candidate-invalid-p unicodes)) (mv t nil))
+       ((mv errorp trees) (uniescape-parse unicodes))
+       ((when errorp) (mv t nil)))
+    (mv nil (abs-unicode-input-character-list trees))))

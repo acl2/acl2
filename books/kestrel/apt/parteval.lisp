@@ -10,12 +10,14 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
@@ -25,101 +27,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parteval-implementation
-  :parents (parteval)
-  :short "Implementation of @(tsee parteval)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The implementation functions have parameters
-     consistently named as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "@('state') is the ACL2 @(see state).")
-    (xdoc::li
-     "@('wrld') is the ACL2 @(see world).")
-    (xdoc::li
-     "@('ctx') is the context used for errors.")
-    (xdoc::li
-     "@('old'),
-      @('static'),
-      @('new-name'),
-      @('new-enable'),
-      @('thm-name'),
-      @('thm-enable'),
-      @('verify-guards'),
-      @('untranslate'),
-      @('print'), and
-      @('show-only')
-      are the homonymous inputs to @(tsee parteval),
-      before being processed.
-      These parameters have no types because they may be any values.")
-    (xdoc::li
-     "@('old$'),
-      @('static$'),
-      @('new-name$'),
-      @('new-enable$'),
-      @('thm-name$'),
-      @('thm-enable$'),
-      @('verify-guards$'),
-      @('untranslate$'),
-      @('print$'), and
-      @('show-only$')
-      are the results of processing
-      the homonymous inputs (without the @('$')) to @(tsee parteval).
-      Some are identical to the corresponding inputs,
-      but they have types implied by their successful validation,
-      performed when they are processed.")
-    (xdoc::li
-     "@('y1...ym') is the list of static formals @('(y1 ... ym)').")
-    (xdoc::li
-     "@('yj...ym') is a suffix of @('y1...ym').")
-    (xdoc::li
-     "@('new-formals') are the formal parameters of the new function.")
-    (xdoc::li
-     "@('case') is 1, 2, or 3, corresponding to the three forms of @('old')
-      described in the reference documentation.")
-    (xdoc::li
-     "@('call') is the call to @(tsee restrict) supplied by the user."))
-   (xdoc::p
-    "The parameters of implementation functions that are not listed above
-     are described in, or clear from, those functions' documentation."))
-  :order-subtopics t)
+(xdoc::evmac-topic-implementation
+
+ parteval
+
+ :items
+
+ ("@('state') is the ACL2 @(see state)."
+
+  "@('wrld') is the ACL2 @(see world)."
+
+  "@('ctx') is the context used for errors."
+
+  "@('old'),
+   @('static'),
+   @('new-name'),
+   @('new-enable'),
+   @('thm-name'),
+   @('thm-enable'),
+   @('verify-guards'),
+   @('untranslate'),
+   @('print'), and
+   @('show-only')
+   are the homonymous inputs to @(tsee parteval),
+   before being processed.
+   These parameters have no types because they may be any values."
+
+  "@('old$'),
+   @('static$'),
+   @('new-name$'),
+   @('new-enable$'),
+   @('thm-name$'),
+   @('thm-enable$'),
+   @('verify-guards$'),
+   @('untranslate$'),
+   @('print$'), and
+   @('show-only$')
+   are the results of processing
+   the homonymous inputs (without the @('$')) to @(tsee parteval).
+   Some are identical to the corresponding inputs,
+   but they have types implied by their successful validation,
+   performed when they are processed."
+
+  "@('y1...ym') is the list of static formals @('(y1 ... ym)')."
+
+  "@('yj...ym') is a suffix of @('y1...ym')."
+
+  "@('new-formals') are the formal parameters of the new function."
+
+  "@('case') is 1, 2, or 3, corresponding to the three forms of @('old')
+   described in the reference documentation."
+
+  "@('call') is the call to @(tsee restrict) supplied by the user."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parteval-library-extensions
-  :parents (parteval-implementation)
-  :short "Library extensions for @(tsee parteval)."
-  :long
-  (xdoc::topstring-p
-   "This material may be moved to appropriate libraries.")
-  :order-subtopics t
-  :default-parent t)
-
-(define ibody ((fn symbolp) (wrld plist-worldp))
-  :returns (body "An untranslated term.")
-  :mode :program
-  :short "Retrieve the untranslated body of a function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is as introduced (hence the @('i') in the name) by the user."))
-  (car (last (get-event fn wrld))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ parteval-input-processing
-  :parents (parteval-implementation)
-  :short "Input processing performed by @(tsee parteval)."
-  :long
-  (xdoc::topstring-p
-   "This involves validating the inputs.
-    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
-    Thus, generally the input processing functions return
-    <see topic='@(url acl2::error-triple)'>error triples</see>.")
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-input-processing parteval)
 
 (define parteval-process-old (old verify-guards ctx state)
   :returns (mv erp

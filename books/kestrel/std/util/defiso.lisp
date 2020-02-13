@@ -11,14 +11,14 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/event-macros/input-processing" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/conjoin-equalities" :dir :system)
 (include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/make-mv-nth-calls" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/defthmr" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)

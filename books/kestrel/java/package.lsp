@@ -115,7 +115,16 @@
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
+                         pseudo-lambda->body
+                         pseudo-lambda-p
                          pseudo-lambdap
+                         pseudo-term-call->args
+                         pseudo-term-call->fn
+                         pseudo-term-case
+                         pseudo-term-count
+                         pseudo-term-kind
+                         pseudo-term-list-count
+                         pseudo-term-quote->val
                          pseudo-termfn-listp
                          pseudo-termfnp
                          pure-raw-p

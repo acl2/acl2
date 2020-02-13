@@ -348,7 +348,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (force-ic-hyps-in-definitionp 
            (get1 :force-ic-hyps-in-definitionp kwd-alist))
           (typed-undef (get1 :typed-undef kwd-alist))
-          (ic (if force-ic-hyps-in-definitionp (map-force-ic ic) ic))
+          (fic (if force-ic-hyps-in-definitionp (map-force-ic ic) ic))
 ;          (contract-name (gen-sym-sym (list name '-contract) name))
 ;          (contract (formula contract-name nil (w state)))
 ; Experimented with using chyps instead of ic in lbody, etc. but
@@ -378,9 +378,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (def-rule-conc
             `(equal (,name ,@formals) ,ebody))
           (def-rule-body
-            (if (equal ic t)
+            (if (equal fic t)
                 def-rule-conc
-              `(implies ,ic ,def-rule-conc)))
+              `(implies ,fic ,def-rule-conc)))
           (def-rule
             `(with-output
               :off :all
@@ -1473,7 +1473,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                (remove-keyword :normalize
                                (remove-keyword :verify-guards ans-kwd-val-lst)))))
     (b* ((curr-kwd-val-lst (cdr (cadr (car xargs-decls)))))
-
       (collect-xargs-into-single-declare
        (cdr xargs-decls)
        (acl2s::union-keyword-value-lists curr-kwd-val-lst ans-kwd-val-lst)))))

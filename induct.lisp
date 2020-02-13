@@ -362,7 +362,8 @@
         :ttree ttree))
 
 (defun intrinsic-suggested-induction-cand
-  (term formals quick-block-info justification machine xterm ttree ens wrld)
+  (induction-rune term formals quick-block-info justification machine xterm
+                  ttree)
 
 ; Note: An "intrinsically suggested" induction scheme is an induction scheme
 ; suggested by a justification of a recursive function.  The rune controlling
@@ -381,24 +382,20 @@
 ; unrelated to term and is the term appearing in the original conjecture from
 ; which we (somehow) obtained term for consideration.
 
-  (let ((induction-rune (list :induction (ffn-symb term))))
+  (let ((mask (sound-induction-principle-mask term formals
+                                              quick-block-info
+                                              (access justification
+                                                      justification
+                                                      :subset))))
     (cond
-     ((enabled-runep induction-rune ens wrld)
-      (let ((mask (sound-induction-principle-mask term formals
-                                                  quick-block-info
-                                                  (access justification
-                                                          justification
-                                                          :subset))))
-        (cond
-         (mask
-          (list (flesh-out-induction-principle term formals
-                                               justification
-                                               mask
-                                               machine
-                                               xterm
-                                               (push-lemma induction-rune
-                                                           ttree))))
-         (t nil))))
+     (mask
+      (list (flesh-out-induction-principle term formals
+                                           justification
+                                           mask
+                                           machine
+                                           xterm
+                                           (push-lemma induction-rune
+                                                       ttree))))
      (t nil))))
 
 ; The following is now defined in rewrite.lisp.
@@ -512,13 +509,14 @@
                                                               rule
                                                               :rune)
                                                       ttree)
+                                                     nil ; eflg
                                                      (cons nume seen)
                                                      ens wrld)))))))))
         (t nil))))
      (t nil))))
 
 (defun suggested-induction-cands1
-  (induction-rules term type-alist xterm ttree seen ens wrld)
+  (induction-rules term type-alist xterm ttree eflg seen ens wrld)
 
 ; We map down induction-rules and apply each enabled rule to term, which is
 ; known to be an application of the function symbol fn to some args.  Each rule
@@ -529,6 +527,10 @@
 
 ; Seen is a list of numes of induction-rules already encountered, used in order
 ; to prevent infinite loops.
+
+; Eflg represents an "enable flag".  When true, an induction rune that
+; represents the induction scheme of a recursive definition must be enabled in
+; order to be applicable.  When false (nil), it may be applied regardless.
 
   (cond
    ((null induction-rules)
@@ -553,30 +555,32 @@
 ;       (or (enabled-fnp fn nil ens wrld)
 ;           (and induct-hint-val
 ;                (not (equal induct-hint-val *t*))))
-
-        (intrinsic-suggested-induction-cand
-         term
-         (formals fn wrld)
-         (getpropc fn 'quick-block-info
-                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                   wrld)
-         (getpropc fn 'justification
-                   '(:error "See SUGGESTED-INDUCTION-CANDS1.")
-                   wrld)
-         machine
-         xterm
-         ttree
-         ens
-         wrld)))))
+        
+        (let ((induction-rune (list :induction (ffn-symb term))))
+          (and (or (null eflg)
+                   (enabled-runep induction-rune ens wrld))
+               (intrinsic-suggested-induction-cand
+                induction-rune
+                term
+                (formals fn wrld)
+                (getpropc fn 'quick-block-info
+                          '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                          wrld)
+                (getpropc fn 'justification
+                          '(:error "See SUGGESTED-INDUCTION-CANDS1.")
+                          wrld)
+                machine
+                xterm
+                ttree)))))))
    (t (append (apply-induction-rule (car induction-rules)
                                     term type-alist
                                     xterm ttree seen ens wrld)
               (suggested-induction-cands1 (cdr induction-rules)
                                           term type-alist
-                                          xterm ttree seen ens wrld)))))
+                                          xterm ttree eflg seen ens wrld)))))
 
 (defun suggested-induction-cands
-  (term type-alist xterm ttree seen ens wrld)
+  (term type-alist xterm ttree eflg seen ens wrld)
 
 ; Term is some fn applied to args.  Xterm is some term occurring in the
 ; conjecture we are exploring and is the term upon which this induction
@@ -594,7 +598,7 @@
    ((flambdap (ffn-symb term)) nil)
    (t (suggested-induction-cands1
        (getpropc (ffn-symb term) 'induction-rules nil wrld)
-       term type-alist xterm ttree seen ens wrld))))
+       term type-alist xterm ttree eflg seen ens wrld))))
 )
 
 (mutual-recursion
@@ -612,7 +616,9 @@
             (fargs term)
             type-alist ens wrld
             (append (suggested-induction-cands term type-alist
-                                               term nil nil ens wrld)
+                                               term nil
+                                               t ; eflg
+                                               nil ens wrld)
                     ans)))))
 
 (defun get-induction-cands-lst (lst type-alist ens wrld ans)

@@ -275,12 +275,12 @@
 
   (defmacro xdoc::evmac-section-appconds (macro &rest content)
     (declare (xargs :guard (symbolp macro)))
-    (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')"))
-           (inputs-ref (concatenate 'string
-                                    "`"
-                                    xdoc::*evmac-section-inputs-title*
-                                    "' section")))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@('" macro-name "')"))
+         (inputs-ref (concatenate 'string
+                                  "`"
+                                  xdoc::*evmac-section-inputs-title*
+                                  "' section")))
       `(xdoc::&&
         (xdoc::h3 xdoc::*evmac-section-appconds-title*)
         (xdoc::p
@@ -346,8 +346,8 @@
 
   (defmacro xdoc::evmac-section-redundancy (macro)
     (declare (xargs :guard (symbolp macro)))
-    (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')")))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@('" macro-name "')")))
       `(xdoc::&&
         (xdoc::h3 xdoc::*evmac-section-redundancy-title*)
         (xdoc::p
@@ -429,16 +429,16 @@
 
   (defmacro xdoc::evmac-input-print (macro &rest additional)
     (declare (xargs :guard (symbolp macro)))
-    (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')"))
-           (generated-ref (concatenate 'string
-                                       "`"
-                                       xdoc::*evmac-section-generated-title*
-                                       "' section"))
-           (redundancy-ref (concatenate 'string
-                                        "`"
-                                        xdoc::*evmac-section-redundancy-title*
-                                        "' section")))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@('" macro-name "')"))
+         (generated-ref (concatenate 'string
+                                     "`"
+                                     xdoc::*evmac-section-generated-title*
+                                     "' section"))
+         (redundancy-ref (concatenate 'string
+                                      "`"
+                                      xdoc::*evmac-section-redundancy-title*
+                                      "' section")))
       `(xdoc::desc
         "@(':print') &mdash; default @(':result')"
         (xdoc::p
@@ -507,12 +507,12 @@
 
   (defmacro xdoc::evmac-input-show-only (macro &rest additional)
     (declare (xargs :guard (symbolp macro)))
-    (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@('" macro-name "')"))
-           (redundancy-ref (concatenate 'string
-                                        "`"
-                                        xdoc::*evmac-section-redundancy-title*
-                                        "' section")))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@('" macro-name "')"))
+         (redundancy-ref (concatenate 'string
+                                      "`"
+                                      xdoc::*evmac-section-redundancy-title*
+                                      "' section")))
       `(xdoc::desc
         "@(':show-only') &mdash; default @('nil')"
         (xdoc::p
@@ -882,34 +882,34 @@
     (declare (xargs :guard (and (symbolp macro)
                                 (stringp notes-ref)
                                 (symbol-listp additional-parents))))
-    (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
-           (this-topic (add-suffix macro "-DESIGN"))
-           (parents (cons macro additional-parents))
-           (short (concatenate 'string
-                               "Design notes for "
-                               macro-ref
-                               "."))
-           (long `(xdoc::topstring
-                   (xdoc::p
-                    "The design of "
-                    ,macro-ref
-                    " is described in "
-                    (xdoc::a :href ,notes-ref "these notes")
-                    ", which use "
-                    (xdoc::a :href "res/kestrel-design-notes/notation.pdf"
-                      "this notation")
-                    ".")
-                   ,@(and correspondences
-                          `((xdoc::p
-                             "The correspondence between
-                              the design notes and the reference documentation
-                              is the following:")
-                            (xdoc::ul-fn
-                             nil
-                             (xdoc::evmac-topic-design-notes-make-bullets
-                              (list ,@correspondences)))))
-                   ,@additional-doc)))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+         (this-topic (add-suffix macro "-DESIGN"))
+         (parents (cons macro additional-parents))
+         (short (concatenate 'string
+                             "Design notes for "
+                             macro-ref
+                             "."))
+         (long `(xdoc::topstring
+                 (xdoc::p
+                  "The design of "
+                  ,macro-ref
+                  " is described in "
+                  (xdoc::a :href ,notes-ref "these notes")
+                  ", which use "
+                  (xdoc::a :href "res/kestrel-design-notes/notation.pdf"
+                    "this notation")
+                  ".")
+                 ,@(and correspondences
+                        `((xdoc::p
+                           "The correspondence between
+                            the design notes and the reference documentation
+                            is the following:")
+                          (xdoc::ul-fn
+                           nil
+                           (xdoc::evmac-topic-design-notes-make-bullets
+                            (list ,@correspondences)))))
+                 ,@additional-doc)))
       `(defxdoc ,this-topic
          :parents ,parents
          :short ,short
@@ -926,6 +926,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection xdoc::evmac-topic-implementation
+  :short "Generate an XDOC topic for the implementation of an event macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The topic lists the names used for arguments and results of functions,
+     along with brief descriptions of the names.
+     This listing consists of bullet in an unordered list.
+     The @(':items') argument must be a list of XDOC trees,
+     each of which is wrapped into an @(tsee xdoc::li),
+     and the so-wrapped items are put into an @(tsee xdoc::ul).")
+   (xdoc::@def "xdoc::evmac-topic-implementation"))
+
+  (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
+    :returns (li-wrapped-items true-listp)
+    (cond ((endp items) nil)
+          (t (cons `(xdoc::li ,(car items))
+                   (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
+
+  (defmacro xdoc::evmac-topic-implementation (macro &key items)
+    (declare (xargs :guard (symbolp macro)))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+         (this-topic (add-suffix macro "-IMPLEMENTATION"))
+         (parent-topic macro)
+         (short (concatenate 'string "Implementation of " macro-ref "."))
+         (long `(xdoc::topstring
+                 (xdoc::p
+                  "The implementation functions have arguments,
+                   as well as results (in the "
+                  (xdoc::seetopic "std::returns-specifiers"
+                                  "@(':returns') specifiers")
+                  "), consistently named as follows:")
+                 (xdoc::ul
+                  ,@(xdoc::evmac-topic-implementation-li-wrap items))
+                 (xdoc::p
+                  "Implementation functions' arguments and results
+                   that are not listed above
+                   are described in, or clear from,
+                   those functions' documentation."))))
+      `(defxdoc+ ,this-topic
+         :parents (,parent-topic)
+         :short ,short
+         :long ,long
+         :order-subtopics t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection xdoc::evmac-topic-library-extensions
   :short "Generate an XDOC topic for the library extensions
           that are part of the implementation of an event macro."
@@ -933,19 +981,16 @@
 
   (defmacro xdoc::evmac-topic-library-extensions (macro)
     (declare (xargs :guard (symbolp macro)))
-    (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
-           (this-topic (add-suffix macro "-LIBRARY-EXTENSIONS"))
-           (parent-topic (add-suffix macro "-IMPLEMENTATION"))
-           (short (concatenate 'string
-                               "Library extensions for "
-                               macro-ref
-                               "."))
-           (long (xdoc::topstring-p
-                  "These are used by, but more general than, "
-                  macro-ref
-                  ". Thus, they should be moved
-                   to more general libraries eventually.")))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+         (this-topic (add-suffix macro "-LIBRARY-EXTENSIONS"))
+         (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+         (short (concatenate 'string "Library extensions for " macro-ref "."))
+         (long (xdoc::topstring-p
+                "These are used by, but more general than, "
+                macro-ref
+                ". Thus, they should be moved
+                 to more general libraries eventually.")))
       `(defxdoc+ ,this-topic
          :parents (,parent-topic)
          :short ,short
@@ -965,29 +1010,29 @@
      which are added at the end of the generated @(':long').")
    (xdoc::@def "xdoc::evmac-topic-input-processing"))
 
-  (defmacro xdoc::evmac-topic-input-processing (macro &rest additional)
-    (declare (xargs :guard (symbolp macro)))
-    (let* ((macro-name (string-downcase (symbol-name macro)))
-           (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
-           (this-topic (add-suffix macro "-INPUT-PROCESSING"))
-           (parent-topic (add-suffix macro "-IMPLEMENTATION"))
-           (short (concatenate 'string
-                               "Input processing performed by "
-                               macro-ref
-                               "."))
-           (long `(xdoc::topstring
-                   (xdoc::p
-                    "This involves validating the inputs.
-                     When validation fails, "
-                    (xdoc::seetopic "acl2::er" "soft errors")
-                    " occur.
-                     Thus, generally the input processing functions return "
-                    (xdoc::seetopic "acl2::error-triple" "error triples")
-                    ".")
-                   ,@additional)))
-      `(defxdoc+ ,this-topic
-         :parents (,parent-topic)
-         :short ,short
-         :long ,long
-         :order-subtopics t
-         :default-parent t))))
+(defmacro xdoc::evmac-topic-input-processing (macro &rest additional)
+  (declare (xargs :guard (symbolp macro)))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+       (this-topic (add-suffix macro "-INPUT-PROCESSING"))
+       (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+       (short (concatenate 'string
+                           "Input processing performed by "
+                           macro-ref
+                           "."))
+       (long `(xdoc::topstring
+               (xdoc::p
+                "This involves validating the inputs.
+                 When validation fails, "
+                (xdoc::seetopic "acl2::er" "soft errors")
+                " occur.
+                 Thus, generally the input processing functions return "
+                (xdoc::seetopic "acl2::error-triple" "error triples")
+                ".")
+               ,@additional)))
+    `(defxdoc+ ,this-topic
+       :parents (,parent-topic)
+       :short ,short
+       :long ,long
+       :order-subtopics t
+       :default-parent t))))
