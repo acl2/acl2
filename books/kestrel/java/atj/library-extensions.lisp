@@ -201,22 +201,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule pseudo-term-count-lemma1
-  (implies (not (member-eq (acl2::pseudo-term-kind term)
+  (implies (not (member-eq (pseudo-term-kind term)
                            '(:null :var :quote)))
-           (< (acl2::pseudo-term-list-count (acl2::pseudo-term-call->args term))
-              (acl2::pseudo-term-count term)))
+           (< (pseudo-term-list-count (pseudo-term-call->args term))
+              (pseudo-term-count term)))
   :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule pseudo-term-count-lemma2
-  (implies (and (not (member-eq (acl2::pseudo-term-kind term)
+  (implies (and (not (member-eq (pseudo-term-kind term)
                                 '(:null :var :quote)))
-                (acl2::pseudo-lambda-p (acl2::pseudo-term-call->fn term)))
-           (< (acl2::pseudo-term-count (acl2::pseudo-lambda->body
-                                        (acl2::pseudo-term-call->fn term)))
-              (acl2::pseudo-term-count term)))
-  :expand ((acl2::pseudo-term-count term)))
+                (pseudo-lambda-p (pseudo-term-call->fn term)))
+           (< (pseudo-term-count
+               (pseudo-lambda->body (pseudo-term-call->fn term)))
+              (pseudo-term-count term)))
+  :expand ((pseudo-term-count term)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
