@@ -341,7 +341,7 @@
 (defmacro >=* (x y) `(not* (< ,x ,y)))
 
 (make-event
- (let ((body `(b* (((mv successp ans new-interp-st new-state) result))
+ (let ((body `;; (b* (((mv successp ans new-interp-st new-state) result))
                 (and* ,@(sublis '((implies . implies*)
                                   (and . and*)
                                   (not . not*)
@@ -366,27 +366,27 @@
                                 (equal (fgl-ev-context-fix contexts
                                                            (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                                        (fgl-ev-context-fix contexts
-                                                           (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st)))))))))
+                                                           (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st))))))))
    `(progn (defconst *fgl-primitive-constraint-base-body* ',body)
-           (defun-nx fgl-primitive-constraint-base (result
+           (defun-nx fgl-primitive-constraint-base (successp ans new-interp-st new-state
                                                     origfn args interp-st state
                                                     formula-check
                                                     mode env n contexts st)
              ,body))))
 
-(defun-sk fgl-primitive-constraint (result
+(defun-sk fgl-primitive-constraint (successp ans new-interp-st new-state
                                     origfn args interp-st sta
                                     formula-check)
   (forall (mode env n contexts st)
           (fgl-primitive-constraint-base
-           result
+           successp ans new-interp-st new-state
            origfn args interp-st sta
            formula-check
            mode env n contexts st))
   :rewrite :direct)
 
 (defthm fgl-primitive-constraint-of-fail
-  (fgl-primitive-constraint (list nil nil interp-st state)
+  (fgl-primitive-constraint nil nil interp-st state
                             origfn args interp-st state formula-check))
 
 
@@ -411,7 +411,7 @@
 
 
 (make-event
- (let ((body `(b* (((mv successp rhs bindings new-interp-st new-state) result))
+ (let ((body `;; (b* (((mv successp rhs bindings new-interp-st new-state) result))
                 (and* ,@(sublis '((implies . implies*)
                                   (and . and*)
                                   (not . not*)
@@ -442,28 +442,28 @@
                                                         (interp-st->logicman interp-st))))
                                          nil)
                                  rhs
-                                 (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st))))))))
+                                 (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))))
    `(progn
       (defconst *fgl-meta-constraint-base-body* ',body)
-      (defun-nx fgl-meta-constraint-base (result
+      (defun-nx fgl-meta-constraint-base (successp rhs bindings new-interp-st new-state
                                           origfn args interp-st state
                                           formula-check
                                           mode env n contexts st)
         ,body))))
 
-(defun-sk fgl-meta-constraint (result
+(defun-sk fgl-meta-constraint (successp rhs bindings new-interp-st new-state
                                origfn args interp-st sta
                                formula-check)
   (forall (mode env n contexts st)
           (fgl-meta-constraint-base
-           result
+           successp rhs bindings new-interp-st new-state
            origfn args interp-st sta
            formula-check
            mode env n contexts st))
   :rewrite :direct)
 
 (defthm fgl-meta-constraint-of-fail
-  (fgl-meta-constraint (list nil nil nil interp-st state)
+  (fgl-meta-constraint nil nil nil interp-st state
                        origfn args interp-st state formula-check))
 
 (defconst *fgl-binder-rule-thms*
@@ -493,7 +493,7 @@
           *fgl-meta-primitive-and-binder-rule-thms*))
 
 (make-event
- (let ((body `(b* (((mv successp rhs bindings rhs-contexts new-interp-st new-state) result))
+ (let ((body `;; (b* (((mv successp rhs bindings rhs-contexts new-interp-st new-state) result))
                 (and* ,@(sublis '((implies . implies*)
                                   (and . and*)
                                   (not . not*)
@@ -528,27 +528,27 @@
                                                                                         args env
                                                                                         (interp-st->logicman interp-st)))))
                                                                           nil))
-                                     (fgl-ev-context-fix contexts rhs-val)))))))
+                                     (fgl-ev-context-fix contexts rhs-val))))))
    `(progn (defconst *fgl-binder-constraint-base-body* ',body)
-           (defun-nx fgl-binder-constraint-base (result
+           (defun-nx fgl-binder-constraint-base (successp rhs bindings rhs-contexts new-interp-st new-state
                                                  origfn args interp-st state
                                                  formula-check
                                                  mode env n contexts st rhs-val eval-alist)
              ,body))))
 
-(defun-sk fgl-binder-constraint (result
+(defun-sk fgl-binder-constraint (successp rhs bindings rhs-contexts new-interp-st new-state
                                  origfn args interp-st sta
                                  formula-check)
   (forall (mode env n contexts st rhs-val eval-alist)
           (fgl-binder-constraint-base
-           result
+           successp rhs bindings rhs-contexts new-interp-st new-state
            origfn args interp-st sta
            formula-check
            mode env n contexts st rhs-val eval-alist))
   :rewrite :direct)
 
 (defthm fgl-binder-constraint-of-fail
-  (fgl-binder-constraint (list nil nil nil nil interp-st state)
+  (fgl-binder-constraint nil nil nil nil interp-st state
                          origfn args interp-st state formula-check))
 
 
@@ -630,7 +630,7 @@
   ;;                                       (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st))))))
 
   (defret fgl-primitive-constraint-of-<fn>
-    (fgl-primitive-constraint <call>
+    (fgl-primitive-constraint successp ans new-interp-st new-state
                               origfn args interp-st state
                               (fgl-formula-checks-stub state))
     :fn fgl-primitive-fncall-stub)
@@ -684,7 +684,7 @@
   ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
 
   (defret fgl-meta-constraint-of-<fn>
-    (fgl-meta-constraint <call>
+    (fgl-meta-constraint successp rhs bindings new-interp-st new-state
                          origfn args interp-st state
                          (fgl-formula-checks-stub state))
     :fn fgl-meta-fncall-stub)
@@ -740,7 +740,7 @@
   ;;                   (fgl-ev-context-fix contexts rhs-val))))
 
   (defret fgl-binder-constraint-of-<fn>
-    (fgl-binder-constraint <call>
+    (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
                            origfn args interp-st state
                            (fgl-formula-checks-stub state))
     :fn fgl-binder-fncall-stub)
@@ -791,7 +791,11 @@
     ///
     (defret and*-ev-of-conjoin-<fn>
       (iff (and*-ev (conjoin lambdas) env)
-           (and*-ev (conjoin bodies) (pairlis$ formals (and*-ev-list args env))))))
+           (and*-ev (conjoin bodies) (pairlis$ formals (and*-ev-list args env)))))
+
+    (defret and*-ev-of-disjoin-<fn>
+      (iff (and*-ev (disjoin lambdas) env)
+           (and*-ev (disjoin bodies) (pairlis$ formals (and*-ev-list args env))))))
 
   (define split-and* ((x pseudo-termp))
     :returns (conj pseudo-term-listp)
@@ -887,21 +891,45 @@
                     (pseudo-term-listp (acl2::dumb-negate-lit-lst x)))
            :hints(("Goal" :in-theory (enable acl2::dumb-negate-lit-lst)))))
 
+  (define flatten-and*-hyp ((lit pseudo-termp))
+    :returns (lits pseudo-term-listp)
+    :measure (pseudo-term-count lit)
+    :verify-guards nil
+    (pseudo-term-case lit
+      :fncall (cond ((eq lit.fn 'not)
+                     (ec-call (acl2::dumb-negate-lit-lst (split-and* (first lit.args)))))
+                    ((eq lit.fn 'implies)
+                     (append (ec-call (acl2::dumb-negate-lit-lst (split-and* (first lit.args))))
+                             (list (second lit.args))))
+                    (t (list (pseudo-term-fix lit))))
+      :lambda (lambda-calls-from-bodies lit.formals
+                                        (flatten-and*-hyp lit.body)
+                                        lit.args)
+      :otherwise (list (pseudo-term-fix lit)))
+    ///
+    (verify-guards flatten-and*-hyp)
+    (local (defun-sk and*-ev-of-flatten-and*-hyp-cond (lit)
+             (forall a
+                     (iff (and*-ev (disjoin (flatten-and*-hyp lit)) a)
+                          (and*-ev lit a)))
+             :rewrite :direct))
+    (local (in-theory (disable and*-ev-of-flatten-and*-hyp-cond)))
+    (local (defthmd and*-ev-of-flatten-and*-hyp-lemma
+             (and*-ev-of-flatten-and*-hyp-cond lit)
+             :hints (("goal" :induct (flatten-and*-hyp lit))
+                     (and stable-under-simplificationp
+                          `(:expand (,(car (last clause))))))))
+    (defthm and*-ev-of-flatten-and*-hyp
+      (iff (and*-ev (disjoin (flatten-and*-hyp lit)) a)
+           (and*-ev lit a))
+      :hints (("goal" :use and*-ev-of-flatten-and*-hyp-lemma))))
+
   (define flatten-and*-hyps ((clause pseudo-term-listp))
     :returns (new-clause pseudo-term-listp)
-    (b* (((when (atom clause)) nil)
-         (lit (car clause)))
-      (pseudo-term-case lit
-        :fncall (cond ((eq lit.fn 'not)
-                       (append (ec-call (acl2::dumb-negate-lit-lst (split-and* (first lit.args))))
-                               (flatten-and*-hyps (cdr clause))))
-                      ((eq lit.fn 'implies)
-                       (append (ec-call (acl2::dumb-negate-lit-lst (split-and* (first lit.args))))
-                               (cons (second lit.args)
-                                     (flatten-and*-hyps (cdr clause)))))
-                      (t (cons (pseudo-term-fix lit) (flatten-and*-hyps (cdr clause)))))
-        :otherwise
-        (cons (pseudo-term-fix lit) (flatten-and*-hyps (cdr clause)))))
+    (if (atom clause)
+        nil
+      (append (flatten-and*-hyp (car clause))
+              (flatten-and*-hyps (cdr clause))))
     ///
     (defthm and*-ev-of-flatten-and*-hyps
       (iff (and*-ev (disjoin (flatten-and*-hyps clause)) a)
@@ -918,6 +946,54 @@
       :rule-classes :clause-processor)))
 
 
+(make-event
+ `(defthm fgl-primitive-constraint-rule
+    (b* (((mv successp ans new-interp-st new-state)
+          (fgl-primitive-fncall-stub
+           primfn origfn args interp-st state))
+         (formula-check (fgl-formula-checks-stub state)))
+      ,(sublis '((and* . and)
+                 (implies* . implies)
+                 (iff* . iff)
+                 (not* . not)
+                 (or* . or)
+                 (<=* . <=)
+                 (>=* . >=))
+               ;; (remove-bind-free
+
+               *fgl-primitive-constraint-base-body*))
+    :hints (("goal" :use (fgl-primitive-constraint-of-fgl-primitive-fncall-stub
+                          (:instance fgl-primitive-constraint-necc
+                           (successp (mv-nth 0 (fgl-primitive-fncall-stub
+                                                primfn origfn args interp-st state)))
+                           (ans      (mv-nth 1 (fgl-primitive-fncall-stub
+                                                primfn origfn args interp-st state)))
+                           (new-interp-st (mv-nth 2 (fgl-primitive-fncall-stub
+                                                     primfn origfn args interp-st state)))
+                           (new-state (mv-nth 3 (fgl-primitive-fncall-stub
+                                                 primfn origfn args interp-st state)))
+                           (sta state)
+                           (formula-check (fgl-formula-checks-stub state))))
+             :in-theory nil)
+            '(:clause-processor (flatten-and*-clause-proc clause)
+              :in-theory '(fgl-primitive-constraint-base))
+            '(:clause-processor (and*-split-clause-proc clause))
+            '(:in-theory '(fgl-primitive-constraint-base
+                           implies*-of-nil implies*-of-t implies*-x-nil implies*-x-t
+                           acl2::and*-rem-first acl2::and*-rem-second
+                           acl2::and*-nil-first acl2::and*-nil-second
+                           iff-implies-equal-implies*-1
+                           iff-implies-equal-implies*-2
+                           iff-implies-equal-not*-1
+                           acl2::iff-implies-equal-and*-1
+                           acl2::iff-implies-iff-and*-2
+                           iff*
+                           (not*))
+              :do-not '(preprocess)
+              ;; :case-split-limitations (10 10)
+              )
+            (and stable-under-simplificationp
+                 '(:clause-processor (flatten-and*-clause-proc clause))))))
 
 (defsection fgl-primitive-fncall-stub
   (local (std::set-define-current-function fgl-primitive-fncall-stub))
@@ -933,66 +1009,43 @@
   ;;         (defattach-system quick-and-dirty-srs quick-and-dirty-srs-off)))
   (local
    (make-event
-    `(progn
-       ;; (defthm fgl-primitive-constraint-base-rule1
-       ;;   (equal (fgl-primitive-constraint-base
-       ;;           (fgl-primitive-fncall-stub
-       ;;            primfn origfn args interp-st state)
-       ;;           origfn args interp-st state formula-check mode env n contexts st)
-       ;;          ,(subst '(fgl-primitive-fncall-stub
-       ;;                    primfn origfn args interp-st state)
-       ;;                  'result
-       ;;                  (remove-bind-free *fgl-primitive-constraint-base-body*)))
-       ;;   :hints (("goal" :by (:instance fgl-primitive-constraint-base
-       ;;                        (result (fgl-primitive-fncall-stub primfn origfn args interp-st state))))))
-       (defthm fgl-primitive-constraint-base-rule
-         (implies (fgl-primitive-constraint-base
-                   (fgl-primitive-fncall-stub
-                    primfn origfn args interp-st state)
-                   origfn args interp-st state
-                   (fgl-formula-checks-stub state)
-                   mode env n contexts st)
-                  ,(sublis '((result . (fgl-primitive-fncall-stub
-                                        primfn origfn args interp-st state))
-                             (formula-check . (fgl-formula-checks-stub state))
-                             (and* . and)
-                             (implies* . implies)
-                             (not* . not)
-                             (or* . or)
-                             (<=* . <=)
-                             (>=* . >=))
-                          (remove-bind-free *fgl-primitive-constraint-base-body*)))
-         :hints (("goal" :clause-processor (flatten-and*-clause-proc clause)
-                  :in-theory '(fgl-primitive-constraint-base))
-                 '(:clause-processor (and*-split-clause-proc clause))
-                 '(:in-theory '(fgl-primitive-constraint-base
-                                implies*-of-nil implies*-of-t implies*-x-nil implies*-x-t
-                                acl2::and*-rem-first acl2::and*-rem-second
-                                acl2::and*-nil-first acl2::and*-nil-second
-                                iff-implies-equal-implies*-1
-                                iff-implies-equal-implies*-2
-                                iff-implies-equal-not*-1
-                                acl2::iff-implies-equal-and*-1
-                                acl2::iff-implies-iff-and*-2
-                                (not*))
-                   :do-not '(preprocess)
-                   ;; :case-split-limitations (10 10)
-                   )
-                 (and stable-under-simplificationp
-                      '(:clause-processor (flatten-and*-clause-proc clause)))
-                 )))))
-  
-  (set-default-hints
-   '('(:use ((:instance fgl-primitive-constraint-necc
-              (result (fgl-primitive-fncall-stub
-                       primfn origfn args interp-st state))
-              (sta state)
-              (formula-check (fgl-formula-checks-stub state))))
-       :in-theory '(fgl-primitive-constraint-of-fgl-primitive-fncall-stub
-                    fgl-primitive-constraint-base-rule
-                    interp-st-scratch-isomorphic-is-an-equivalence)
-       ;; :do-not '(preprocess)
-       )))
+    `(defthm fgl-primitive-constraint-rule
+       (b* (((mv successp ans new-interp-st new-state)
+             (fgl-primitive-fncall-stub
+              primfn origfn args interp-st state))
+            (formula-check (fgl-formula-checks-stub state)))
+         ,(sublis '((and* . and)
+                    (implies* . implies)
+                    (iff* . iff)
+                    (not* . not)
+                    (or* . or)
+                    (<=* . <=)
+                    (>=* . >=))
+                  *fgl-primitive-constraint-base-body*))
+       :hints (("goal" :use (fgl-primitive-constraint-of-fgl-primitive-fncall-stub
+                             (:instance fgl-primitive-constraint-necc
+                              (successp (mv-nth 0 (fgl-primitive-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (ans      (mv-nth 1 (fgl-primitive-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (new-interp-st (mv-nth 2 (fgl-primitive-fncall-stub
+                                                        primfn origfn args interp-st state)))
+                              (new-state (mv-nth 3 (fgl-primitive-fncall-stub
+                                                    primfn origfn args interp-st state)))
+                              (sta state)
+                              (formula-check (fgl-formula-checks-stub state))))
+                :in-theory nil)
+               '(:in-theory '(fgl-primitive-constraint-base
+                              implies*-of-nil implies*-of-t implies*-x-nil implies*-x-t
+                              acl2::and*-rem-first acl2::and*-rem-second
+                              acl2::and*-nil-first acl2::and*-nil-second
+                              iff-implies-equal-implies*-1
+                              iff-implies-equal-implies*-2
+                              iff-implies-equal-not*-1
+                              acl2::iff-implies-equal-and*-1
+                              acl2::iff-implies-iff-and*-2
+                              iff*
+                              (not*)))))))
   (make-event
    `(progn . ,*fgl-primitive-rule-thms*))
 
@@ -1016,16 +1069,7 @@
              (equal (fgl-ev-context-fix contexts
                                         (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
                     (fgl-ev-context-fix contexts
-                                        (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st)))))
-    :hints (("goal" :use ((:instance fgl-primitive-constraint-necc
-                           (result (fgl-primitive-fncall-stub
-                                    primfn origfn args interp-st state))
-                           (sta state)
-                           (formula-check (fgl-formula-checks-stub state))))
-             :in-theory '(fgl-primitive-constraint-of-fgl-primitive-fncall-stub
-                          fgl-primitive-constraint-base-rule
-                          interp-st-scratch-isomorphic-is-an-equivalence
-                          fgl-formula-checks-stub-when-world-equal)))))
+                                        (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st)))))))
 
 
 
@@ -1036,70 +1080,50 @@
   ;;          (equal (iff x y) (iff* x y))))
   (local
    (make-event
-    `(progn
-       ;; (defthm fgl-meta-constraint-base-rule1
-       ;;   (equal (fgl-meta-constraint-base
-       ;;           (fgl-meta-fncall-stub
-       ;;            primfn origfn args interp-st state)
-       ;;           origfn args interp-st state formula-check mode env n contexts st)
-       ;;          ,(subst '(fgl-meta-fncall-stub
-       ;;                    primfn origfn args interp-st state)
-       ;;                  'result
-       ;;                  (remove-bind-free *fgl-meta-constraint-base-body*)))
-       ;;   :hints (("goal" :by (:instance fgl-meta-constraint-base
-       ;;                        (result (fgl-meta-fncall-stub primfn origfn args interp-st state))))))
-       (defthm fgl-meta-constraint-base-rule
-         (implies (fgl-meta-constraint-base
-                   (fgl-meta-fncall-stub
-                    primfn origfn args interp-st state)
-                   origfn args interp-st state
-                   (fgl-formula-checks-stub state)
-                   mode env n contexts st)
-                  ,(sublis '((result . (fgl-meta-fncall-stub
-                                        primfn origfn args interp-st state))
-                             (formula-check . (fgl-formula-checks-stub state))
-                             (and* . and)
-                             (implies* . implies)
-                             (not* . not)
-                             (or* . or)
-                             (<=* . <=)
-                             (>=* . >=))
-                           (remove-bind-free *fgl-meta-constraint-base-body*)))
-         :hints (("goal" :clause-processor (flatten-and*-clause-proc clause)
-                  :in-theory '(fgl-meta-constraint-base))
-                 '(:clause-processor (and*-split-clause-proc clause))
-                 '(:in-theory '(fgl-meta-constraint-base
-                                implies*-of-nil implies*-of-t implies*-x-nil implies*-x-t
-                                acl2::and*-rem-first acl2::and*-rem-second
-                                acl2::and*-nil-first acl2::and*-nil-second
-                                iff-implies-equal-implies*-1
-                                iff-implies-equal-implies*-2
-                                iff-implies-equal-not*-1
-                                acl2::iff-implies-equal-and*-1
-                                acl2::iff-implies-iff-and*-2
-                                (not*))
-                   :do-not '(preprocess)
-                   ;; :case-split-limitations (10 10)
-                   )
-                 (and stable-under-simplificationp
-                      '(:clause-processor (flatten-and*-clause-proc clause)))
-                 )))))
+    `(defthm fgl-meta-constraint-rule
+       (b* (((mv successp rhs bindings new-interp-st new-state)
+             (fgl-meta-fncall-stub
+              primfn origfn args interp-st state))
+            (formula-check (fgl-formula-checks-stub state)))
+         ,(sublis '((and* . and)
+                    (implies* . implies)
+                    (iff* . iff)
+                    (not* . not)
+                    (or* . or)
+                    (<=* . <=)
+                    (>=* . >=))
+                  ;; (remove-bind-free
+
+                  *fgl-meta-constraint-base-body*))
+       :hints (("goal" :use (fgl-meta-constraint-of-fgl-meta-fncall-stub
+                             (:instance fgl-meta-constraint-necc
+                              (successp (mv-nth 0 (fgl-meta-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (rhs      (mv-nth 1 (fgl-meta-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (bindings (mv-nth 2 (fgl-meta-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (new-interp-st (mv-nth 3 (fgl-meta-fncall-stub
+                                                        primfn origfn args interp-st state)))
+                              (new-state (mv-nth 4 (fgl-meta-fncall-stub
+                                                    primfn origfn args interp-st state)))
+                              (sta state)
+                              (formula-check (fgl-formula-checks-stub state))))
+                :in-theory nil)
+               '(:in-theory '(fgl-meta-constraint-base
+                              implies*-of-nil implies*-of-t implies*-x-nil implies*-x-t
+                              acl2::and*-rem-first acl2::and*-rem-second
+                              acl2::and*-nil-first acl2::and*-nil-second
+                              iff-implies-equal-implies*-1
+                              iff-implies-equal-implies*-2
+                              iff-implies-equal-not*-1
+                              acl2::iff-implies-equal-and*-1
+                              acl2::iff-implies-iff-and*-2
+                              iff*
+                              (not*)))))))
   
-  (set-default-hints
-   '('(:use ((:instance fgl-meta-constraint-necc
-              (result (fgl-meta-fncall-stub
-                       primfn origfn args interp-st state))
-              (sta state)
-              (formula-check (fgl-formula-checks-stub state))))
-       :in-theory '(fgl-meta-constraint-of-fgl-meta-fncall-stub
-                    fgl-meta-constraint-base-rule
-                    interp-st-scratch-isomorphic-is-an-equivalence)
-       ;; :do-not '(preprocess)
-       )))
   (make-event
    `(progn . ,*fgl-meta-rule-thms*))
-
-  (set-default-hints nil)
 
   (defret eval-of-<fn>
     (implies (and successp
@@ -1124,88 +1148,61 @@
                                      (interp-st->logicman interp-st))))
                       nil)
               rhs
-              (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st))))
-    :hints (("goal" :use ((:instance fgl-meta-constraint-necc
-                           (result (fgl-meta-fncall-stub
-                                    primfn origfn args interp-st state))
-                           (sta state)
-                           (formula-check (fgl-formula-checks-stub state))))
-             :in-theory '(fgl-meta-constraint-of-fgl-meta-fncall-stub
-                          fgl-meta-constraint-base-rule
-                          interp-st-scratch-isomorphic-is-an-equivalence
-                          fgl-formula-checks-stub-when-world-equal)))))
+              (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st))))))
+
+
+
 
 
 (defsection fgl-binder-fncall-stub
   (local (std::set-define-current-function fgl-binder-fncall-stub))
-  ;; (local (defthm iff-is-iff*
-  ;;          (equal (iff x y) (iff* x y))))
+
   (local
    (make-event
-    `(progn
-       ;; (defthm fgl-binder-constraint-base-rule1
-       ;;   (equal (fgl-binder-constraint-base
-       ;;           (fgl-binder-fncall-stub
-       ;;            primfn origfn args interp-st state)
-       ;;           origfn args interp-st state formula-check mode env n contexts st)
-       ;;          ,(subst '(fgl-binder-fncall-stub
-       ;;                    primfn origfn args interp-st state)
-       ;;                  'result
-       ;;                  (remove-bind-free *fgl-binder-constraint-base-body*)))
-       ;;   :hints (("goal" :by (:instance fgl-binder-constraint-base
-       ;;                        (result (fgl-binder-fncall-stub primfn origfn args interp-st state))))))
-       (defthm fgl-binder-constraint-base-rule
-         (implies (fgl-binder-constraint-base
-                   (fgl-binder-fncall-stub
-                    primfn origfn args interp-st state)
-                   origfn args interp-st state
-                   (fgl-formula-checks-stub state)
-                   mode env n contexts st rhs-val eval-alist)
-                  ,(sublis '((result . (fgl-binder-fncall-stub
-                                        primfn origfn args interp-st state))
-                             (formula-check . (fgl-formula-checks-stub state))
-                             (and* . and)
-                             (implies* . implies)
-                             (not* . not)
-                             (or* . or)
-                             (<=* . <=)
-                             (>=* . >=))
-                           (remove-bind-free *fgl-binder-constraint-base-body*)))
-         :hints (("goal" :clause-processor (flatten-and*-clause-proc clause)
-                  :in-theory '(fgl-binder-constraint-base))
-                 '(:clause-processor (and*-split-clause-proc clause))
-                 '(:in-theory '(fgl-binder-constraint-base
-                                implies*-of-nil implies*-of-t implies*-x-nil implies*-x-t
-                                acl2::and*-rem-first acl2::and*-rem-second
-                                acl2::and*-nil-first acl2::and*-nil-second
-                                iff-implies-equal-implies*-1
-                                iff-implies-equal-implies*-2
-                                iff-implies-equal-not*-1
-                                acl2::iff-implies-equal-and*-1
-                                acl2::iff-implies-iff-and*-2
-                                (not*))
-                   :do-not '(preprocess)
-                   ;; :case-split-limitations (10 10)
-                   )
-                 (and stable-under-simplificationp
-                      '(:clause-processor (flatten-and*-clause-proc clause)))
-                 )))))
+    `(defthm fgl-binder-constraint-rule
+       (b* (((mv successp rhs bindings rhs-contexts new-interp-st new-state)
+             (fgl-binder-fncall-stub
+              primfn origfn args interp-st state))
+            (formula-check (fgl-formula-checks-stub state)))
+         ,(sublis '((and* . and)
+                    (implies* . implies)
+                    (iff* . iff)
+                    (not* . not)
+                    (or* . or)
+                    (<=* . <=)
+                    (>=* . >=))
+                  *fgl-binder-constraint-base-body*))
+       :hints (("goal" :use (fgl-binder-constraint-of-fgl-binder-fncall-stub
+                             (:instance fgl-binder-constraint-necc
+                              (successp (mv-nth 0 (fgl-binder-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (rhs      (mv-nth 1 (fgl-binder-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (bindings (mv-nth 2 (fgl-binder-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (rhs-contexts (mv-nth 3 (fgl-binder-fncall-stub
+                                                       primfn origfn args interp-st state)))
+                              (new-interp-st (mv-nth 4 (fgl-binder-fncall-stub
+                                                        primfn origfn args interp-st state)))
+                              (new-state (mv-nth 5 (fgl-binder-fncall-stub
+                                                    primfn origfn args interp-st state)))
+                              (sta state)
+                              (formula-check (fgl-formula-checks-stub state))))
+                :in-theory nil)
+               '(:in-theory '(fgl-binder-constraint-base
+                              implies*-of-nil implies*-of-t implies*-x-nil implies*-x-t
+                              acl2::and*-rem-first acl2::and*-rem-second
+                              acl2::and*-nil-first acl2::and*-nil-second
+                              iff-implies-equal-implies*-1
+                              iff-implies-equal-implies*-2
+                              iff-implies-equal-not*-1
+                              acl2::iff-implies-equal-and*-1
+                              acl2::iff-implies-iff-and*-2
+                              iff*
+                              (not*)))))))
   
-  (set-default-hints
-   '('(:use ((:instance fgl-binder-constraint-necc
-              (result (fgl-binder-fncall-stub
-                       primfn origfn args interp-st state))
-              (sta state)
-              (formula-check (fgl-formula-checks-stub state))))
-       :in-theory '(fgl-binder-constraint-of-fgl-binder-fncall-stub
-                    fgl-binder-constraint-base-rule
-                    interp-st-scratch-isomorphic-is-an-equivalence)
-       ;; :do-not '(preprocess)
-       )))
   (make-event
    `(progn . ,*fgl-binder-rule-thms*))
-
-  (set-default-hints nil)
 
   (defret eval-of-<fn>
     (implies (and successp
@@ -1235,15 +1232,7 @@
                                                                        (interp-st->logicman interp-st)))))
                                                          nil))
                     (fgl-ev-context-fix contexts rhs-val)))
-    :hints (("goal" :use ((:instance fgl-binder-constraint-necc
-                           (result (fgl-binder-fncall-stub
-                                    primfn origfn args interp-st state))
-                           (sta state)
-                           (formula-check (fgl-formula-checks-stub state))))
-             :in-theory '(fgl-binder-constraint-of-fgl-binder-fncall-stub
-                          fgl-binder-constraint-base-rule
-                          interp-st-scratch-isomorphic-is-an-equivalence
-                          fgl-formula-checks-stub-when-world-equal)))))
+    :hints(("Goal" :in-theory (disable fgl-ev-context-equiv-forall-extensions)))))
 
 
 

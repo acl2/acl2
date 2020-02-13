@@ -210,9 +210,9 @@
           (if msg
               arg
             (append (take 3 arg)
-                    (list "fGl-interp ~x0: ~st real, ~sc cpu, ~sa bytes~%"
+                    (list "fgl-interp ~x0: ~st real, ~sc cpu, ~sa bytes~%"
                           (list term-descrip)))))
-      (list 0 nil nil "fGl-interp ~x0: ~st real, ~sc cpu, ~sa bytes~%"
+      (list 0 nil nil "fgl-interp ~x0: ~st real, ~sc cpu, ~sa bytes~%"
             (list term-descrip)))))
 
 (local (defthm assoc-when-key
@@ -3461,7 +3461,7 @@
         :returns (mv
                   (xobj fgl-object-p)
                   new-interp-st new-state)
-        (b* (((when (equal return-last-fnname ''time$1-raw))
+        (b* (((when (equal return-last-fnname ''acl2::time$1-raw))
               (fgl-interp-time$ first-arg x interp-st state))
              (interp-st (interp-st-incr-term-index (+ (fgl-minor-frame-subterm-count return-last-fnname)
                                                       (fgl-minor-frame-subterm-count first-arg))
