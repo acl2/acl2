@@ -21,6 +21,7 @@
 (include-book "fundef-enabledp")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
+(include-book "ibody")
 (include-book "induction-machine")
 (include-book "induction-machine-plus")
 (include-book "irecursivep")

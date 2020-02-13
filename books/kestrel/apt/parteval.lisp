@@ -11,6 +11,8 @@
 (in-package "APT")
 
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
@@ -88,38 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parteval-library-extensions
-  :parents (parteval-implementation)
-  :short "Library extensions for @(tsee parteval)."
-  :long
-  (xdoc::topstring-p
-   "This material may be moved to appropriate libraries.")
-  :order-subtopics t
-  :default-parent t)
-
-(define ibody ((fn symbolp) (wrld plist-worldp))
-  :returns (body "An untranslated term.")
-  :mode :program
-  :short "Retrieve the untranslated body of a function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is as introduced (hence the @('i') in the name) by the user."))
-  (car (last (get-event fn wrld))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ parteval-input-processing
-  :parents (parteval-implementation)
-  :short "Input processing performed by @(tsee parteval)."
-  :long
-  (xdoc::topstring-p
-   "This involves validating the inputs.
-    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
-    Thus, generally the input processing functions return
-    <see topic='@(url acl2::error-triple)'>error triples</see>.")
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-input-processing parteval)
 
 (define parteval-process-old (old verify-guards ctx state)
   :returns (mv erp

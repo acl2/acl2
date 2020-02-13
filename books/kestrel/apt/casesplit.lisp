@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
@@ -113,17 +114,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ casesplit-input-processing
-  :parents (casesplit-implementation)
-  :short "Input processing performed by @(tsee casesplit)."
-  :long
-  (xdoc::topstring-p
-   "This involves validating the inputs.
-    When validation fails, <see topic='@(url er)'>soft errors</see> occur.
-    Thus, generally the input processing functions return
-    <see topic='@(url acl2::error-triple)'>error triples</see>.")
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-input-processing casesplit)
 
 (define casesplit-process-old (old verify-guards ctx state)
   :returns (mv erp

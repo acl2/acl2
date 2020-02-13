@@ -357,6 +357,23 @@
      while logically correct and within @('simplify')'s stipulations,
      may be undesired or unexpected.")
 
+   (xdoc::p
+    "Macros are normally expanded
+     (the expansion being also according to ACL2's evaluation semantics),
+     and their expansion is then evaluated.
+     However, the macros listed in the global variable @('macros-with-raw-code')
+     have an evaluation semantics specified by raw Lisp code.
+     The evaluation semantics specified by their raw Lisp code
+     may be consistent with the evaluation semantics of their expansion or not,
+     due to side effects or apparent circularities.
+     For instance, the @(tsee concatenate) macro has raw Lisp code,
+     which obviously terminates execution;
+     however, the expansion of @(tsee concatenate) calls @(tsee string-append),
+     whose @(':exec') part calls @(tsee concatenate),
+     and therefore execution may not terminate.
+     Thus, macros with raw Lisp code may also need to be taken into account
+     when translating ACL2 code to Java or other programming languages.")
+
    (atj-tutorial-previous "atj-tutorial-motivation" *atj-tutorial-motivation*)
 
    (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*)))

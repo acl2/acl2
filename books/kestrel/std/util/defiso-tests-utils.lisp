@@ -11,8 +11,11 @@
 (in-package "ACL2")
 
 (include-book "defiso")
-(include-book "kestrel/utilities/testing" :dir :system)
-(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+
+(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-be-table-key" :dir :system)
+(include-book "std/testing/must-not-be-table-key" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,29 +77,13 @@
   (declare (xargs :guard (symbol-listp names)))
   `(progn ,@(must-not-be-theorems-fn names)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test that a given table has an entry with a given key:
-
-(defmacro must-be-table-entry (key table)
-  (declare (xargs :guard (and (symbolp key) (symbolp table))))
-  `(assert! (assoc-eq ',key (table-alist ',table (w state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; test that a given table does not have an entry with a given key:
-
-(defmacro must-not-be-table-entry (key table)
-  (declare (xargs :guard (and (symbolp key) (symbolp table))))
-  `(assert! (not (assoc-eq ',key (table-alist ',table (w state))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; test that the DEFISO table does not have an entry with the given name:
 
 (defmacro must-not-be-defiso (&key (name 'iso))
   (declare (xargs :guard (symbolp name)))
-  `(must-not-be-table-entry ,name ,*defiso-table-name*))
+  `(must-not-be-table-key ,name ,*defiso-table-name*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

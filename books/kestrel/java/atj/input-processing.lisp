@@ -871,15 +871,21 @@
     :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
                  (new-worklist-chk symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
-    (b* (((when (variablep term)) (mv worklist-gen worklist-chk nil))
-         ((when (fquotep term)) (mv worklist-gen worklist-chk nil))
-         (fn (ffn-symb term))
-         ((when (and (eq fn 'return-last)
-                     (quotep (fargn term 1)))) ; this should be always true
-          (b* ((1st-arg (fargn term 1)))
-            (case (unquote 1st-arg)
+    (b* (((when (member-eq (acl2::pseudo-term-kind term)
+                           '(:null :var :quote)))
+          (mv worklist-gen worklist-chk nil))
+         (fn (acl2::pseudo-term-call->fn term))
+         (args (acl2::pseudo-term-call->args term))
+         ((when (eq fn 'return-last))
+          (b* ((1st-arg (first args))
+               ((unless (acl2::pseudo-term-case 1st-arg :quote))
+                (raise "Internal error: ~
+                        the first argument of ~x0 is not a quoted constant."
+                       term)
+                (mv worklist-gen worklist-chk nil))) ; irrelevant
+            (case (acl2::pseudo-term-quote->val 1st-arg)
               (acl2::mbe1-raw (if guards$
-                                  (atj-collect-fns-in-term (fargn term 2)
+                                  (atj-collect-fns-in-term (second args)
                                                            gen?
                                                            worklist-gen
                                                            worklist-chk
@@ -887,7 +893,7 @@
                                                            collected-chk
                                                            deep$
                                                            guards$)
-                                (atj-collect-fns-in-term (fargn term 3)
+                                (atj-collect-fns-in-term (third args)
                                                          gen?
                                                          worklist-gen
                                                          worklist-chk
@@ -898,7 +904,7 @@
               (acl2::progn (b* (((mv worklist-gen
                                      worklist-chk
                                      unsuppported-return-last?)
-                                 (atj-collect-fns-in-term (fargn term 2)
+                                 (atj-collect-fns-in-term (second args)
                                                           nil
                                                           worklist-gen
                                                           worklist-chk
@@ -908,7 +914,7 @@
                                                           guards$))
                                 ((when unsuppported-return-last?)
                                  (mv worklist-gen worklist-chk t)))
-                             (atj-collect-fns-in-term (fargn term 3)
+                             (atj-collect-fns-in-term (third args)
                                                       gen?
                                                       worklist-gen
                                                       worklist-chk
@@ -918,7 +924,7 @@
                                                       guards$)))
               (t (mv worklist-gen worklist-chk t)))))
          ((mv worklist-gen worklist-chk unsupported-return-last?)
-          (atj-collect-fns-in-terms (fargs term)
+          (atj-collect-fns-in-terms args
                                     gen?
                                     worklist-gen
                                     worklist-chk
@@ -927,19 +933,20 @@
                                     deep$
                                     guards$))
          ((when unsupported-return-last?) (mv worklist-gen worklist-chk t))
-         ((when (flambdap fn)) (atj-collect-fns-in-term (lambda-body fn)
-                                                        gen?
-                                                        worklist-gen
-                                                        worklist-chk
-                                                        collected-gen
-                                                        collected-chk
-                                                        deep$
-                                                        guards$))
+         ((when (acl2::pseudo-lambda-p fn))
+          (atj-collect-fns-in-term (acl2::pseudo-lambda->body fn)
+                                   gen?
+                                   worklist-gen
+                                   worklist-chk
+                                   collected-gen
+                                   collected-chk
+                                   deep$
+                                   guards$))
          ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
-                     (or (member-eq fn *atj-java-primitive-fns*)
-                         (member-eq fn *atj-java-primarray-fns*))))
+                     (or (atj-java-primitive-fn-p fn)
+                         (atj-java-primarray-fn-p fn))))
           (mv worklist-gen worklist-chk nil)))
       (if gen?
           (if (or (member-eq fn worklist-gen)
@@ -955,7 +962,8 @@
             (mv worklist-gen worklist-chk nil)
           (mv worklist-gen
               (cons fn worklist-chk)
-              nil)))))
+              nil))))
+    :measure (acl2::pseudo-term-count term))
 
   (define atj-collect-fns-in-terms ((terms pseudo-term-listp)
                                     (gen? booleanp)
@@ -986,128 +994,23 @@
                                 collected-gen
                                 collected-chk
                                 deep$
-                                guards$)))
+                                guards$))
+    :measure (acl2::pseudo-term-list-count terms))
 
   :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
-             ;; just to speed up the proofs a bit:
-             (local
-              (in-theory
-               (disable
-                member-equal
-                acl2::member-of-cons
-                acl2::true-listp-of-car-when-true-list-listp
-                acl2::subsetp-when-atom-right
-                true-list-listp
-                acl2::true-list-listp-of-cdr-when-true-list-listp
-                acl2::subsetp-when-atom-left
-                acl2::consp-when-member-equal-of-cons-listp
-                acl2::symbol-listp-when-not-consp))))
+             (local (in-theory
+                     ;; just to speed up the proofs:
+                     (disable pseudo-termp
+                              member-equal
+                              acl2::member-of-cons
+                              acl2::symbol-listp-when-subsetp-equal))))
 
   :verify-guards nil ; done below
   ///
   (verify-guards atj-collect-fns-in-term
-    :hints (("Goal" :expand (pseudo-termp term))))
-
-  (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
-  (local (include-book "std/lists/remove1-equal" :dir :system))
-
-  ;; the following lemmas about ALL-FNNAMES1 seem a bit too specific
-  ;; to be in [books]/kestrel/std/system/all-fnnames.lisp:
-
-  (defruledl all-fnnames1-lemma1
-    (implies (and (consp x)
-                  (equal fn (car x))
-                  (not (equal fn 'quote))
-                  (not (consp fn)))
-             (member-equal fn (all-fnnames1 nil x acc)))
-    :expand ((all-fnnames1 nil x acc))
-    :disable acl2::all-fnnames1-includes-acc
-    :use (:instance acl2::all-fnnames1-includes-acc
-          (flg t) (x (cdr x)) (acc (cons fn acc))))
-
-  (defruledl all-fnnames1-lemma2
-    (implies (and (consp x)
-                  (not (eq (car x) 'quote)))
-             (subsetp-equal (all-fnnames1 t (cdr x) nil)
-                            (all-fnnames1 nil x nil)))
-    :enable all-fnnames1)
-
-  (defruledl all-fnnames1-lemma3
-    (implies (and (consp x)
-                  (not (equal (car x) 'quote))
-                  (not (consp (car x))))
-             (subsetp-equal (all-fnnames1 nil (caddr x) nil)
-                            (all-fnnames1 nil x nil)))
-    :use (:instance acl2::all-fnnames1-includes-acc
-          (flg nil)
-          (x (cadr x))
-          (acc (all-fnnames1 nil
-                             (caddr x)
-                             (all-fnnames1 t
-                                           (cdddr x)
-                                           (list (car x))))))
-    :disable acl2::all-fnnames1-includes-acc
-    :enable all-fnnames1)
-
-  (defruledl all-fnnames1-lemma4
-    (implies (and (consp x)
-                  (not (equal (car x) 'quote))
-                  (not (consp (car x))))
-             (subsetp-equal (all-fnnames1 nil (cadddr x) nil)
-                            (all-fnnames1 nil x nil)))
-    :use ((:instance acl2::all-fnnames1-includes-acc
-           (flg nil)
-           (x (cadr x))
-           (acc (all-fnnames1
-                 nil
-                 (caddr x)
-                 (all-fnnames1 nil
-                               (cadddr x)
-                               (all-fnnames1 t
-                                             (cddddr x)
-                                             (list (car x)))))))
-          (:instance acl2::all-fnnames1-includes-acc
-           (flg nil)
-           (x (caddr x))
-           (acc (all-fnnames1 nil
-                              (cadddr x)
-                              (all-fnnames1 t
-                                            (cddddr x)
-                                            (list (car x)))))))
-    :disable acl2::all-fnnames1-includes-acc
-    :enable all-fnnames1)
-
-  (defret-mutual subsetp-equal-of-atj-collect-fns-in-term
-    (defret subsetp-equal-of-atj-collect-fns-in-term
-      (and (subsetp-equal new-worklist-gen
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames term)))
-           (subsetp-equal new-worklist-chk
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames term))))
-      :fn atj-collect-fns-in-term)
-    (defret subsetp-equal-of-atj-collect-fns-in-terms
-      (and (subsetp-equal new-worklist-gen
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames-lst terms)))
-           (subsetp-equal new-worklist-chk
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames-lst terms))))
-      :fn atj-collect-fns-in-terms)
-    :mutual-recursion atj-collect-fns-in-term
-    :hints (("Goal" :in-theory (e/d (atj-collect-fns-in-term
-                                     atj-collect-fns-in-terms
-                                     all-fnnames1
-                                     all-fnnames1-lemma1
-                                     all-fnnames1-lemma2
-                                     all-fnnames1-lemma3
-                                     all-fnnames1-lemma4)
-                                    (member-equal
-                                     acl2::member-of-cons))))))
+    :hints (("Goal"
+             :expand (pseudo-termp term)
+             :in-theory (enable member-equal acl2::member-of-cons)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
