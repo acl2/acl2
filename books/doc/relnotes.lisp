@@ -228,7 +228,7 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
-                             "Standards Typed Alists Library"))
+                             "Standard Typed Alists Library"))
 
    (xdoc::p
     "A new library has been added,
@@ -314,6 +314,10 @@
     "@(tsee apt::parteval) has been extended to support "
     (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
     ".")
+
+   (xdoc::p
+    "A new transformation, @(tsee apt::isodata),
+     has been added to transform data between isomorphic representations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
