@@ -827,15 +827,16 @@
      but its purpose is to ensure the initialization of the class,
      and therefore the execution of the static initializer,
      which defines all the ACL2 packages and functions of interest.
-     The @('call()') method evaluates an ACL2 function call,
+     The @('call(Acl2Symbol, Acl2Value[])') method
+     evaluates an ACL2 function call,
      by invoking the relevant AIJ method (the details are unimportant here).")
 
    (xdoc::p
     "External Java code must call @('initialize()')
-     not only before calling @('call()'),
+     not only before calling @('call(Acl2Symbol, Acl2Value[])'),
      but also before using AIJ's API to build
      the @('Acl2Symbol') and @('Acl2Value')s
-     to pass to @('call()').
+     to pass to @('call(Acl2Symbol, Acl2Value[])').
      The reason is that the building of @('Acl2Symbol')s
      depends on the definitions of the known packages being in place,
      just as in ACL2.")
@@ -866,7 +867,7 @@
      (AIJ's API includes @('toString()') methods
      to convert ACL2 values to Java strings.)
      The @('Acl2UndefinedPackageException') must be declared
-     because @('call()') may throw it in general,
+     because @('call(Acl2Symbol, Acl2Value[])') may throw it in general,
      even though it will not in this case.")
 
    (xdoc::p
