@@ -110,13 +110,13 @@
                     (len vars)))
     :hyp :guard)
 
-  (defret atj-check-mv-let-call-mv-term-smaller
+  (defret atj-check-mv-let-call-mv-term-smaller-acl2-count
     (implies yes/no
              (< (acl2-count mv-term)
                 (acl2-count term)))
     :rule-classes :linear)
 
-  (defret atj-check-mv-let-call-body-term-smaller
+  (defret atj-check-mv-let-call-body-term-smaller-acl2-count
     (implies yes/no
              (< (acl2-count body-term)
                 (acl2-count term)))
