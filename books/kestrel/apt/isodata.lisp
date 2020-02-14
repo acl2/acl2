@@ -1577,6 +1577,30 @@
                               (pairlis$ args$ back-of-args))))
     `(:instance ,lemma :extra-bindings-ok ,@args-to-back-of-args)))
 
+(define isodata-gen-lemma-instance-forth-args
+  ((lemma (or (symbolp lemma) (symbol-listp lemma))
+          "Lemma to generate an instance of.")
+   (args$ symbol-listp)
+   (forth$ pseudo-termfnp))
+  :returns (lemma-instance true-listp)
+  :verify-guards nil
+  :short "Generate the lemma instance used in generated proof hints,
+          where @('y1'), ..., @('yp')
+          are instantiated to @('(forth y1)'), ..., @('(forth yp)')."
+  :long
+  (xdoc::topstring-p
+   "The transformation generates proof hints
+    that use lemma instances of the form
+    @('(:instance lemma (y1 (forth y1)) ... (yp (forth yp)))'),
+    where @('lemma') is a theorem name
+    or the guard or termination theorem of @('old').
+    Note that if it is a guard or termination theorem,
+    it is a list of symbols, hence the guard.")
+  (b* ((forth-of-args (apply-unary-to-terms forth$ args$))
+       (args-to-forth-of-args (alist-to-doublets
+                               (pairlis$ args$ forth-of-args))))
+    `(:instance ,lemma :extra-bindings-ok ,@args-to-forth-of-args)))
+
 (define isodata-gen-lemma-instances-rec-call
   ((lemma symbolp "Lemma to generate instances of.")
    (var symbolp "Lemma variable to instantiate.")
@@ -2222,200 +2246,24 @@
        (new-call
         (subcor-var args$ forth-of-args `(,new-name$ ,@formals))))
     (if predicate$
-        `(equal (,old$ ,@formals)
-                (and ,@oldp-of-args
-                     ,new-call))
+        (implicate (conjoin oldp-of-args)
+                   `(equal (,old$ ,@formals)
+                           ,new-call))
       (implicate (conjoin oldp-of-args)
                  `(equal (,old$ ,@formals)
                          ,new-call)))))
 
-(define isodata-gen-old-to-new-thm-hints-pred-nonrec
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (args$ symbol-listp)
-   (forth$ pseudo-termfnp)
-   (forth-image symbolp)
-   (back-of-forth symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
-  :returns (hints true-listp)
-  :verify-guards nil
-  :short "Generate the hints to prove the theorem
-          that relates the old and new function,
-          when the old function is not recursive
-          and when @(':predicate') is @('t')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes."))
-  (b* ((a (isodata-gen-var-a forth$ wrld))
-       (instances-back-of-forth
-        (isodata-gen-lemma-instances-of-var back-of-forth
-                                            a
-                                            args$))
-       (instances-forth-image
-        (isodata-gen-lemma-instances-of-var forth-image
-                                            a
-                                            args$))
-       (instance-oldp-when-old (cdr (assoc-eq :oldp-when-old
-                                      app-cond-thm-names))))
-    `(("Goal"
-       :in-theory '(,old-fn-unnorm-name ,new-fn-unnorm-name)
-       :use (,@instances-back-of-forth
-             ,@instances-forth-image
-             ,instance-oldp-when-old)))))
-
-(define isodata-gen-old-to-new-thm-hints-pred-rec
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (forth$ pseudo-termfnp)
-   (back-of-forth symbolp)
-   (forth-image symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
-  :returns (hints true-listp)
-  :verify-guards nil
-  :short "Generate the hints to prove the theorem
-          that relates the old and new function,
-          when the old function is recursive
-          and @(':predicate') is @('t')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes,
-     taking into account that there may be multiple recursive calls,
-     while the design notes only assume one."))
-  (b* ((x (isodata-gen-var-a forth$ wrld))
-       (instances-forth-image
-        (isodata-gen-lemma-instances-of-var forth-image
-                                            x
-                                            args$))
-       (instances-back-of-forth
-        (isodata-gen-lemma-instances-of-var back-of-forth
-                                            x
-                                            args$))
-       (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
-                                 app-cond-thm-names)))
-       (oldp-when-old (cdr (assoc-eq :oldp-when-old
-                             app-cond-thm-names))))
-    `(("Goal"
-       :in-theory '(,old-fn-unnorm-name
-                    ,new-fn-unnorm-name
-                    (:induction ,old$))
-       :induct (,old$ ,@(formals old$ wrld)))
-      '(:use (,@instances-forth-image
-              ,@instances-back-of-forth
-              ,oldp-of-rec-calls
-              ,oldp-when-old)))))
-
-(define isodata-gen-old-to-new-thm-hints-pred
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (forth$ pseudo-termfnp)
-   (forth-image symbolp)
-   (back-of-forth symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
-  :returns (hints true-listp)
-  :verify-guards nil
-  :short "Generate the hints to prove the theorem
-          that relates the old and new function,
-          when @(':predicate') is @('t')."
-  (if (recursivep old$ nil wrld)
-      (isodata-gen-old-to-new-thm-hints-pred-rec app-cond-thm-names
-                                                 old$
-                                                 args$
-                                                 forth$
-                                                 forth-image
-                                                 back-of-forth
-                                                 old-fn-unnorm-name
-                                                 new-fn-unnorm-name
-                                                 wrld)
-    (isodata-gen-old-to-new-thm-hints-pred-nonrec app-cond-thm-names
-                                                  args$
-                                                  forth$
-                                                  forth-image
-                                                  back-of-forth
-                                                  old-fn-unnorm-name
-                                                  new-fn-unnorm-name
-                                                  wrld)))
-
-(define isodata-gen-old-to-new-thm-hints-nonpred-nonrec
+(define isodata-gen-old-to-new-thm-hints
   ((args$ symbol-listp)
    (forth$ pseudo-termfnp)
-   (back-of-forth symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
-  :returns (hints true-listp)
-  :verify-guards nil
-  :short "Generate the hints to prove the theorem
-          that relates the old and new function,
-          when the old function is not recursive
-          and @(':predicate') is @('nil')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes."))
-  (b* ((a (isodata-gen-var-a forth$ wrld))
-       (instances-back-of-forth
-        (isodata-gen-lemma-instances-of-var back-of-forth
-                                            a
-                                            args$)))
-    `(("Goal"
-       :in-theory '(,old-fn-unnorm-name ,new-fn-unnorm-name)
-       :use (,@instances-back-of-forth)))))
-
-(define isodata-gen-old-to-new-thm-hints-nonpred-rec
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (forth$ pseudo-termfnp)
    (forth-image symbolp)
    (back-of-forth symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
+   (new-to-old symbolp)
    (wrld plist-worldp))
-  :returns (hints true-listp)
-  :verify-guards nil
+  :returns (hints "A @(tsee true-listp).")
+  :mode :program
   :short "Generate the hints to prove the theorem
-          that relates the old and new function,
-          when the old function is recursive
-          and @(':predicate') is @('nil')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes,
-     taking into account that there may be multiple recursive calls,
-     while the design notes only assume one."))
+          that relates the old and new function."
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (instances-forth-image
         (isodata-gen-lemma-instances-of-var forth-image
@@ -2425,93 +2273,15 @@
         (isodata-gen-lemma-instances-of-var back-of-forth
                                             a
                                             args$))
-       (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
-                                 app-cond-thm-names))))
+       (instance-new-to-old
+        (isodata-gen-lemma-instance-forth-args new-to-old
+                                               args$
+                                               forth$)))
     `(("Goal"
-       :in-theory '(,old-fn-unnorm-name
-                    ,new-fn-unnorm-name
-                    (:induction ,old$))
-       :induct (,old$ ,@(formals old$ wrld)))
-      '(:use (,@instances-forth-image
-              ,@instances-back-of-forth
-              ,oldp-of-rec-calls)))))
-
-(define isodata-gen-old-to-new-thm-hints-nonpred
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (forth$ pseudo-termfnp)
-   (forth-image symbolp)
-   (back-of-forth symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
-  :returns (hints true-listp)
-  :verify-guards nil
-  :short "Generate the hints to prove the theorem
-          that relates the old and new function,
-          when @(':predicate') is @('nil')."
-  (if (recursivep old$ nil wrld)
-      (isodata-gen-old-to-new-thm-hints-nonpred-rec app-cond-thm-names
-                                                    old$
-                                                    args$
-                                                    forth$
-                                                    forth-image
-                                                    back-of-forth
-                                                    old-fn-unnorm-name
-                                                    new-fn-unnorm-name
-                                                    wrld)
-    (isodata-gen-old-to-new-thm-hints-nonpred-nonrec args$
-                                                     forth$
-                                                     back-of-forth
-                                                     old-fn-unnorm-name
-                                                     new-fn-unnorm-name
-                                                     wrld)))
-
-(define isodata-gen-old-to-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (forth$ pseudo-termfnp)
-   (forth-image symbolp)
-   (back-of-forth symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (predicate$ booleanp)
-   (wrld plist-worldp))
-  :returns (hints true-listp)
-  :verify-guards nil
-  :short "Generate the hints to prove the theorem
-          that relates the old and new function."
-  (if predicate$
-      (isodata-gen-old-to-new-thm-hints-pred app-cond-thm-names
-                                             old$
-                                             args$
-                                             forth$
-                                             forth-image
-                                             back-of-forth
-                                             old-fn-unnorm-name
-                                             new-fn-unnorm-name
-                                             wrld)
-    (isodata-gen-old-to-new-thm-hints-nonpred app-cond-thm-names
-                                              old$
-                                              args$
-                                              forth$
-                                              forth-image
-                                              back-of-forth
-                                              old-fn-unnorm-name
-                                              new-fn-unnorm-name
-                                              wrld)))
+       :in-theory nil
+       :use (,@instances-forth-image
+             ,@instances-back-of-forth
+             ,instance-new-to-old)))))
 
 (define isodata-gen-old-to-new-thm
   ((old$ symbolp)
@@ -2524,14 +2294,7 @@
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
+   (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (mv (old-to-new-local-event "A @(tsee pseudo-event-formp).")
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
@@ -2545,15 +2308,11 @@
        (formula (isodata-gen-old-to-new-thm-formula
                  old$ args$ oldp$ forth$ predicate$ new-name$ wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-old-to-new-thm-hints app-cond-thm-names
-                                                old$
-                                                args$
+       (hints (isodata-gen-old-to-new-thm-hints args$
                                                 forth$
                                                 forth-image
                                                 back-of-forth
-                                                old-fn-unnorm-name
-                                                new-fn-unnorm-name
-                                                predicate$
+                                                new-to-old
                                                 wrld))
        (local-event `(local
                       (,macro ,thm-name$
@@ -3158,7 +2917,8 @@
        ((mv new-fn-unnorm-event
             new-fn-unnorm-name)
         (install-not-norm-event new-name$ t names-to-avoid wrld))
-       ((mv new-to-old-thm-event &)
+       ((mv new-to-old-thm-event
+            new-to-old)
         (isodata-new-to-old-thm old$
                                 args$
                                 newp$
@@ -3186,9 +2946,7 @@
                                     new-name$
                                     thm-name$
                                     thm-enable$
-                                    app-cond-thm-names
-                                    old-fn-unnorm-name
-                                    new-fn-unnorm-name
+                                    new-to-old
                                     wrld))
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
