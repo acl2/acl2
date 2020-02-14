@@ -35,7 +35,7 @@
 
 (include-book "../defaggregate")
 (include-book "../deflist")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (encapsulate
  ()

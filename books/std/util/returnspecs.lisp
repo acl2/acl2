@@ -31,7 +31,7 @@
 (in-package "STD")
 (include-book "da-base")
 (include-book "look-up")
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (program)
 
 (defxdoc returns-specifiers
@@ -680,6 +680,3 @@ For example, @('natp-of-foo').</dd>
        (ignorable-names (make-symbols-ignorable names))
        (binds   `((mv . ,ignorable-names) (,name-fn . ,formals))))
     (returnspec-multi-thms name name-fn binds specs body-subst hint-subst badname-okp world)))
-
-
-
