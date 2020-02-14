@@ -2508,10 +2508,17 @@
                            (curr-pkg stringp)
                            (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
-    :returns (mv (new-term pseudo-termp :hyp :guard)
-                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
-                 (new-indices symbol-pos-alistp :hyp :guard))
-    (b* (((when (variablep term))
+    :returns (mv (new-term pseudo-termp)
+                 (new-renaming-old symbol-symbol-alistp)
+                 (new-indices symbol-pos-alistp))
+    (b* (((unless (mbt (pseudo-termp term))) (mv nil nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-new))) (mv nil nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-old))) (mv nil nil nil))
+         ((unless (mbt (symbol-pos-alistp indices))) (mv nil nil nil))
+         ((unless (mbt (stringp curr-pkg))) (mv nil nil nil))
+         ((unless (mbt (string-symbollist-alistp vars-by-name)))
+          (mv nil nil nil))
+         ((when (variablep term))
           (b* (((mv var new?) (atj-unmark-var term))
                (renaming-pair (assoc-eq var (if new?
                                                 renaming-new
@@ -2622,30 +2629,41 @@
                             (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (new-terms (and (pseudo-term-listp new-terms)
-                                 (equal (len new-terms) (len terms)))
-                            :hyp :guard)
-                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
-                 (new-indices symbol-pos-alistp :hyp :guard))
-    (cond ((endp terms) (mv nil renaming-old indices))
-          (t (b* (((mv new-term
-                       renaming-old
-                       indices) (atj-rename-term (car terms)
-                                                 renaming-new
-                                                 renaming-old
-                                                 indices
-                                                 curr-pkg
-                                                 vars-by-name))
-                  ((mv new-terms
-                       renaming-old
-                       indices) (atj-rename-terms (cdr terms)
-                                                  renaming-new
-                                                  renaming-old
-                                                  indices
-                                                  curr-pkg
-                                                  vars-by-name)))
-               (mv (cons new-term new-terms)
-                   renaming-old
-                   indices)))))
+                                 (equal (len new-terms) (len terms))))
+                 (new-renaming-old symbol-symbol-alistp)
+                 (new-indices symbol-pos-alistp))
+    (b* (((unless (mbt (pseudo-term-listp terms)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-new)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-old)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (symbol-pos-alistp indices)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (stringp curr-pkg)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (string-symbollist-alistp vars-by-name)))
+          (mv (repeat (len terms) nil) nil nil)))
+      (cond ((endp terms) (mv nil renaming-old indices))
+            (t (b* (((mv new-term
+                         renaming-old
+                         indices) (atj-rename-term (car terms)
+                         renaming-new
+                         renaming-old
+                         indices
+                         curr-pkg
+                         vars-by-name))
+                    ((mv new-terms
+                         renaming-old
+                         indices) (atj-rename-terms (cdr terms)
+                         renaming-new
+                         renaming-old
+                         indices
+                         curr-pkg
+                         vars-by-name)))
+                 (mv (cons new-term new-terms)
+                     renaming-old
+                     indices))))))
 
   :verify-guards nil ; done below
   ///
