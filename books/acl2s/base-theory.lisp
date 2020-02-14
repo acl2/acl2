@@ -795,6 +795,9 @@ I commented out some disabled theorems that seem fine to me.
 (defmacro != (x y)
   `(not (equal ,x ,y)))
 
+(defmacro => (x y)
+  `(implies ,x ,y))
+
 #|
 
  Useful theorems about mod.
