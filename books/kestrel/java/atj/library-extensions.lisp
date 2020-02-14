@@ -240,6 +240,15 @@
               (pseudo-term-count term)))
   :expand ((pseudo-term-count term)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-count-lemma3
+  (implies (pseudo-term-case term :lambda)
+           (< (pseudo-term-count
+               (pseudo-lambda->body (pseudo-term-call->fn term)))
+              (pseudo-term-count term)))
+  :rule-classes :linear)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Java:
