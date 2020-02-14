@@ -120,7 +120,29 @@
     (implies yes/no
              (< (acl2-count body-term)
                 (acl2-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret atj-check-mv-let-call-mv-term-smaller-pseudo-term-count
+    (implies yes/no
+             (< (pseudo-term-count mv-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable pseudo-term-count
+                                pseudo-term-call->args
+                                acl2::pseudo-term-lambda->body
+                                pseudo-term-kind))))
+
+  (defret atj-check-mv-let-call-body-term-smaller-pseudo-term-count
+    (implies yes/no
+             (< (pseudo-term-count body-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable pseudo-term-count
+                                pseudo-term-call->args
+                                acl2::pseudo-term-lambda->body
+                                pseudo-term-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
