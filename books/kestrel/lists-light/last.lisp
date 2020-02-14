@@ -46,3 +46,20 @@
                   x))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable last))))
+
+(defthm consp-of-last
+  (equal (consp (last l))
+         (consp l))
+  :hints (("Goal" :in-theory (enable last))))
+
+(defthm last-iff
+  (iff (last l)
+       l)
+  :hints (("Goal" :in-theory (enable last))))
+
+(defthm len-of-last
+  (equal (len (last l))
+         (if (consp l)
+             1
+           0))
+  :hints (("Goal" :in-theory (enable last))))
