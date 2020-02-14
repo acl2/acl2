@@ -130,7 +130,7 @@
     :hints (("Goal"
              :in-theory (enable pseudo-term-count
                                 pseudo-term-call->args
-                                acl2::pseudo-term-lambda->body
+                                pseudo-term-lambda->body
                                 pseudo-term-kind))))
 
   (defret atj-check-mv-let-call-body-term-smaller-pseudo-term-count
@@ -141,7 +141,7 @@
     :hints (("Goal"
              :in-theory (enable pseudo-term-count
                                 pseudo-term-call->args
-                                acl2::pseudo-term-lambda->body
+                                pseudo-term-lambda->body
                                 pseudo-term-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
