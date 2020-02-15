@@ -22,3 +22,5 @@
 (include-book "lookup-equal-safe")
 (include-book "lookup-safe")
 (include-book "lookup-eq-lst")
+
+(include-book "pairlis-dollar")
