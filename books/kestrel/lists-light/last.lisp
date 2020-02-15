@@ -13,6 +13,7 @@
 
 (in-theory (disable last))
 
+;; Use the param name x to match books/kestrel/utilities/lists/last-theorems.lisp.
 (defthm last-of-cdr
   (equal (last (cdr x))
          (if (consp (cdr x))
@@ -41,9 +42,9 @@
   :hints (("Goal" :in-theory (enable last))))
 
 (defthm last-when-not-consp-cheap
-  (implies (not (consp x))
-           (equal (last x)
-                  x))
+  (implies (not (consp l))
+           (equal (last l)
+                  l))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable last))))
 
