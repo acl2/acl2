@@ -14,8 +14,8 @@
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for cw-event
 ;; These include-books are not strictly needed but are convenient for users of
 ;; deftest:
-(include-book "misc/eval" :dir :system) ;brings in MUST-BE-REDUNDANT
-(include-book "misc/assert" :dir :system) ;brings in ASSERT-EQUAL and ASSERT!
+(include-book "std/testing/eval" :dir :system) ;brings in MUST-BE-REDUNDANT
+(include-book "std/testing/assert" :dir :system) ;brings in ASSERT-EQUAL and ASSERT!
 
 ;; Test whether something like `(encapsulate nil (local ,form)) will give an
 ;; error because the form is already implicitly local.

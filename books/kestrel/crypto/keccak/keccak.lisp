@@ -160,9 +160,6 @@
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
-;; for assert-equal
-(include-book "misc/assert" :dir :system)
-
 ;; for string=>nats
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
