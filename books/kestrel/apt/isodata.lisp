@@ -1705,6 +1705,60 @@
         lemma (cdr rec-calls-with-tests)
         old$ args$ back$ wrld)))))
 
+(define isodata-gen-lemma-instances-forth-rec-calls-back-args
+  ((lemma symbolp "Lemma to generate instances of.")
+   (rec-calls-with-tests pseudo-tests-and-call-listp
+                         "Result of @('(recursive-calls old)')
+                          initially,
+                          then suffix of it in the recursive calls
+                          of this function.")
+   (old$ symbolp)
+   (args$ symbol-listp)
+   (forth$ pseudo-termfnp)
+   (back$ pseudo-termfnp)
+   (wrld plist-worldp))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate the lemma instances used in generated proof hints,
+          where @('y1'), ..., @('yp') are instantiated to
+          @('(forth updatej-y1<...,(back y1),...,(back yp),...>)'),
+          ...,
+          @('(forth updatej-yp<...,(back y1),...,(back yp),...>)'),
+          for each recursive call of @('old')."
+  :long
+  (xdoc::topstring-p
+   "The transformation generates proof hints
+    that use lemma instances of the form
+    @('(:instance lemma
+                  (y1 (forth updatej-y1<...,(back y1),...,(back yp),...>))
+                  ...
+                  (yp (forth updatej-yp<...,(back y1),...,(back yp),...>)))'),
+    where @('lemma') is a theorem name
+    and where @('updatej-yk<...,y1,...,yp,...>') is the actual argument
+    of the @('j')-th recursive call of @('old')
+    that corresponds to the @('yk') formal of @('old')
+    whose representation is being transformed.")
+  (if (endp rec-calls-with-tests)
+      nil
+    (let* ((tests-and-call (car rec-calls-with-tests))
+           (rec-call (access tests-and-call tests-and-call :call))
+           (rec-call-args (isodata-get-rec-call-args-transformed
+                           rec-call old$ args$ wrld))
+           (back-of-args (apply-unary-to-terms back$ args$))
+           (rec-call-back-args
+            (subcor-var-lst args$ back-of-args rec-call-args))
+           (forth-rec-call-back-args
+            (apply-unary-to-terms forth$ rec-call-back-args))
+           (args-to-forth-rec-calls-of-back-args
+            (alist-to-doublets (pairlis$ args$ forth-rec-call-back-args))))
+      (cons
+       `(:instance ,lemma
+         :extra-bindings-ok
+         ,@args-to-forth-rec-calls-of-back-args)
+       (isodata-gen-lemma-instances-forth-rec-calls-back-args
+        lemma (cdr rec-calls-with-tests)
+        old$ args$ forth$ back$ wrld)))))
+
 (define isodata-gen-new-fn-guard ((old$ symbolp)
                                   (args$ symbol-listp)
                                   (newp$ pseudo-termfnp)
@@ -2332,14 +2386,14 @@
         (isodata-gen-lemma-instances-of-var back-guard
                                             b
                                             args$))
-       (instance-old-guard-pred
-        (isodata-gen-lemma-instance-back/forth-args old-guard-pred
-                                                    args$
-                                                    back$))
        (instances-back-image
         (isodata-gen-lemma-instances-of-var back-image
                                             b
-                                            args$)))
+                                            args$))
+       (instance-old-guard-pred
+        (isodata-gen-lemma-instance-back/forth-args old-guard-pred
+                                                    args$
+                                                    back$)))
     `(("Goal"
        :in-theory nil
        :use (,instance-guard-thm-old
@@ -2355,11 +2409,13 @@
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
    (back$ pseudo-termfnp)
+   (forth-image symbolp)
    (back-image symbolp)
+   (back-of-forth symbolp)
    (newp-guard symbolp)
    (forth-guard symbolp)
    (back-guard symbolp)
-   (thm-name$ symbolp)
+   (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2385,18 +2441,6 @@
         (isodata-gen-lemma-instances-of-var newp-guard
                                             b
                                             args$))
-       (instances-back-guard
-        (isodata-gen-lemma-instances-of-var back-guard
-                                            b
-                                            args$))
-       (instances-back-image
-        (isodata-gen-lemma-instances-of-var back-image
-                                            b
-                                            args$))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
-                                                    args$
-                                                    back$))
        (instances-forth-guard
         (isodata-gen-lemma-instances-rec-calls forth-guard
                                                a
@@ -2405,29 +2449,59 @@
                                                args$
                                                back$
                                                wrld))
-       (instances-old-to-new
-        (isodata-gen-lemma-instances-rec-calls-back-args thm-name$
-                                                         (recursive-calls
-                                                          old$
-                                                          wrld)
-                                                         old$
-                                                         args$
-                                                         back$
-                                                         wrld))
-       (instance-old-guard
+       (instances-back-guard
+        (isodata-gen-lemma-instances-of-var back-guard
+                                            b
+                                            args$))
+       (instances-forth-image
+        (isodata-gen-lemma-instances-rec-calls forth-image
+                                               a
+                                               (recursive-calls old$ wrld)
+                                               old$
+                                               args$
+                                               back$
+                                               wrld))
+       (instances-back-image
+        (isodata-gen-lemma-instances-of-var back-image
+                                            b
+                                            args$))
+       (instances-back-of-forth
+        (isodata-gen-lemma-instances-rec-calls back-of-forth
+                                               a
+                                               (recursive-calls old$ wrld)
+                                               old$
+                                               args$
+                                               back$
+                                               wrld))
+       (instance-old-guard-pred
         (isodata-gen-lemma-instance-back/forth-args old-guard-pred
                                                     args$
-                                                    back$)))
+                                                    back$))
+       (instance-oldp-of-rec-calls
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
+                                                    args$
+                                                    back$))
+       (instances-new-to-old
+        (isodata-gen-lemma-instances-forth-rec-calls-back-args
+         new-to-old
+         (recursive-calls old$ wrld)
+         old$
+         args$
+         forth$
+         back$
+         wrld)))
     `(("Goal"
        :in-theory nil
        :use (,@instances-newp-guard
-             ,@instances-back-guard
-             ,@instances-back-image
-             ,instance-oldp-of-rec-calls
              ,@instances-forth-guard
-             ,@instances-old-to-new
+             ,@instances-back-guard
+             ,@instances-forth-image
+             ,@instances-back-image
+             ,@instances-back-of-forth
              ,instance-guard-thm-old
-             ,instance-old-guard)))))
+             ,instance-old-guard-pred
+             ,instance-oldp-of-rec-calls
+             ,@instances-new-to-old)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-pred
   ((app-cond-thm-names symbol-symbol-alistp
@@ -2436,11 +2510,13 @@
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
    (back$ pseudo-termfnp)
+   (forth-image symbolp)
    (back-image symbolp)
+   (back-of-forth symbolp)
    (newp-guard symbolp)
    (forth-guard symbolp)
    (back-guard symbolp)
-   (thm-name$ symbolp)
+   (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2452,11 +2528,13 @@
                                                        args$
                                                        forth$
                                                        back$
+                                                       forth-image
                                                        back-image
+                                                       back-of-forth
                                                        newp-guard
                                                        forth-guard
                                                        back-guard
-                                                       thm-name$
+                                                       new-to-old
                                                        wrld)
     (isodata-gen-new-fn-verify-guards-hints-pred-nonrec app-cond-thm-names
                                                         old$
@@ -2530,23 +2608,14 @@
        (b (isodata-gen-var-b back$ wrld))
        (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
                                  app-cond-thm-names)))
-       (old-guard (cdr (assoc-eq :old-guard app-cond-thm-names)))
+       (instance-guard-thm-old
+        (isodata-gen-lemma-instance-back/forth-args `(:guard-theorem ,old$)
+                                                    args$
+                                                    back$))
        (instances-newp-guard
         (isodata-gen-lemma-instances-of-var newp-guard
                                             b
                                             args$))
-       (instances-back-guard
-        (isodata-gen-lemma-instances-of-var back-guard
-                                            b
-                                            args$))
-       (instances-back-image
-        (isodata-gen-lemma-instances-of-var back-image
-                                            b
-                                            args$))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
-                                                    args$
-                                                    back$))
        (instances-forth-guard
         (isodata-gen-lemma-instances-rec-calls forth-guard
                                                a
@@ -2555,6 +2624,10 @@
                                                args$
                                                back$
                                                wrld))
+       (instances-back-guard
+        (isodata-gen-lemma-instances-of-var back-guard
+                                            b
+                                            args$))
        (instances-forth-image
         (isodata-gen-lemma-instances-rec-calls forth-image
                                                a
@@ -2563,6 +2636,10 @@
                                                args$
                                                back$
                                                wrld))
+       (instances-back-image
+        (isodata-gen-lemma-instances-of-var back-image
+                                            b
+                                            args$))
        (instances-back-of-forth
         (isodata-gen-lemma-instances-rec-calls back-of-forth
                                                a
@@ -2571,35 +2648,29 @@
                                                args$
                                                back$
                                                wrld))
-       (instances-old-to-new
-        (isodata-gen-lemma-instances-rec-calls-back-args thm-name$
-                                                         (recursive-calls
-                                                          old$
-                                                          wrld)
-                                                         old$
-                                                         args$
-                                                         back$
-                                                         wrld))
-       (instance-guard-thm-old
-        (isodata-gen-lemma-instance-back/forth-args `(:guard-theorem ,old$)
+       (instance-oldp-of-rec-calls
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
                                                     args$
                                                     back$))
-       (instance-old-guard
-        (isodata-gen-lemma-instance-back/forth-args old-guard
-                                                    args$
-                                                    back$)))
+       (instances-old-to-new
+        (isodata-gen-lemma-instances-rec-calls-back-args
+         thm-name$
+         (recursive-calls old$ wrld)
+         old$
+         args$
+         back$
+         wrld)))
     `(("Goal"
        :in-theory nil
        :use (,@instances-newp-guard
-             ,@instances-back-guard
-             ,@instances-back-image
-             ,instance-oldp-of-rec-calls
              ,@instances-forth-guard
+             ,@instances-back-guard
              ,@instances-forth-image
+             ,@instances-back-image
              ,@instances-back-of-forth
-             ,@instances-old-to-new
              ,instance-guard-thm-old
-             ,instance-old-guard)))))
+             ,instance-oldp-of-rec-calls
+             ,@instances-old-to-new)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred
   ((app-cond-thm-names symbol-symbol-alistp
@@ -2655,6 +2726,7 @@
    (forth-guard symbolp)
    (back-guard symbolp)
    (predicate$ booleanp)
+   (new-to-old symbolp)
    (thm-name$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -2666,11 +2738,13 @@
                                                    args$
                                                    forth$
                                                    back$
+                                                   forth-image
                                                    back-image
+                                                   back-of-forth
                                                    newp-guard
                                                    forth-guard
                                                    back-guard
-                                                   thm-name$
+                                                   new-to-old
                                                    wrld)
     (isodata-gen-new-fn-verify-guards-hints-nonpred app-cond-thm-names
                                                     old$
@@ -2701,6 +2775,7 @@
    (back-guard symbolp)
    (predicate$ booleanp)
    (new-name$ symbolp)
+   (new-to-old symbolp)
    (thm-name$ symbolp)
    (wrld plist-worldp))
   :returns (new-fn-verify-guards-event "A @(tsee pseudo-event-formp).")
@@ -2739,6 +2814,7 @@
                                                       forth-guard
                                                       back-guard
                                                       predicate$
+                                                      new-to-old
                                                       thm-name$
                                                       wrld))
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
@@ -2942,6 +3018,7 @@
                                            back-guard
                                            predicate$
                                            new-name$
+                                           new-to-old
                                            thm-name$
                                            wrld))))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
