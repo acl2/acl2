@@ -2265,7 +2265,6 @@
                                             (args$ symbol-listp)
                                             (oldp$ pseudo-termfnp)
                                             (forth$ pseudo-termfnp)
-                                            (predicate$ booleanp)
                                             (new-name$ symbolp)
                                             (wrld plist-worldp))
   :returns (old-to-new-formula "A @(tsee pseudo-termp).")
@@ -2277,13 +2276,9 @@
        (forth-of-args (apply-unary-to-terms forth$ args$))
        (new-call
         (subcor-var args$ forth-of-args `(,new-name$ ,@formals))))
-    (if predicate$
-        (implicate (conjoin oldp-of-args)
-                   `(equal (,old$ ,@formals)
-                           ,new-call))
-      (implicate (conjoin oldp-of-args)
-                 `(equal (,old$ ,@formals)
-                         ,new-call)))))
+    (implicate (conjoin oldp-of-args)
+               `(equal (,old$ ,@formals)
+                       ,new-call))))
 
 (define isodata-gen-old-to-new-thm-hints
   ((args$ symbol-listp)
@@ -2322,7 +2317,6 @@
    (forth$ pseudo-termfnp)
    (forth-image symbolp)
    (back-of-forth symbolp)
-   (predicate$ booleanp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
@@ -2338,7 +2332,7 @@
     whether the theorem must be enabled or not.")
   (b* ((macro (theorem-intro-macro thm-enable$))
        (formula (isodata-gen-old-to-new-thm-formula
-                 old$ args$ oldp$ forth$ predicate$ new-name$ wrld))
+                 old$ args$ oldp$ forth$ new-name$ wrld))
        (formula (untranslate formula t wrld))
        (hints (isodata-gen-old-to-new-thm-hints args$
                                                 forth$
@@ -2996,7 +2990,6 @@
                                     forth$
                                     forth-image
                                     back-of-forth
-                                    predicate$
                                     new-name$
                                     thm-name$
                                     thm-enable$
