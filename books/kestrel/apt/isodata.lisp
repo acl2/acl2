@@ -1768,15 +1768,15 @@
   :returns (new-guard "A @(tsee pseudo-termp).")
   :mode :program
   :short "Generate the guard of the new function."
-  (if predicate$
-      *t*
-    (b* ((old-guard (guard old$ nil wrld))
-         (back-of-args (apply-unary-to-terms back$ args$))
-         (old-guard-with-back-of-args
-          (subcor-var args$ back-of-args old-guard))
-         (newp-of-args (apply-unary-to-terms newp$ args$)))
-      `(and ,@newp-of-args
-            ,old-guard-with-back-of-args))))
+  (b* ((newp-of-args (apply-unary-to-terms newp$ args$)))
+    (if predicate$
+        `(and ,@newp-of-args)
+      (b* ((old-guard (guard old$ nil wrld))
+           (back-of-args (apply-unary-to-terms back$ args$))
+           (old-guard-with-back-of-args
+            (subcor-var args$ back-of-args old-guard)))
+        `(and ,@newp-of-args
+              ,old-guard-with-back-of-args)))))
 
 (define isodata-gen-new-fn-body-pred ((old$ symbolp)
                                       (args$ symbol-listp)

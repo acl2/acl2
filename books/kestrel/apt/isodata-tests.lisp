@@ -848,7 +848,7 @@
   (isodata p ((x (natp natp identity identity))) :predicate t)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -858,7 +858,7 @@
   (isodata p ((x nat-id)) :predicate t)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -894,7 +894,7 @@
   (isodata p ((x (natp natp identity identity))) :predicate t :new-name :auto)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -904,7 +904,7 @@
   (isodata p ((x nat-id)) :predicate t :new-name :auto)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -938,7 +938,7 @@
   (isodata p ((x (natp natp identity identity))) :predicate t :new-name q)
   (must-be-redundant
    (DEFUN Q (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; no numbered name has been recorded
@@ -947,7 +947,7 @@
   (isodata p ((x nat-id)) :predicate t :new-name q)
   (must-be-redundant
    (DEFUN Q (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; no numbered name has been recorded
@@ -1525,13 +1525,13 @@
  (must-succeed*
   (defun p (x) (and (natp x) (> x 10))) ; OLD
   (isodata p ((x (natp natp identity identity))) :predicate t)
-  (assert-event (equal (guard 'p{1} nil (w state)) *t*)))
+  (assert-event (equal (guard 'p{1} nil (w state)) '(natp x))))
 
  (must-succeed*
   (defun p (x) (and (natp x) (> x 10))) ; OLD
   (defiso nat-id natp natp identity identity) ; ISO
   (isodata p ((x nat-id)) :predicate t)
-  (assert-event (equal (guard 'p{1} nil (w state)) *t*))))
+  (assert-event (equal (guard 'p{1} nil (w state)) '(natp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
