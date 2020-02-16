@@ -3174,7 +3174,7 @@
 
 (defsection isodata-macro-definition
   :parents (isodata-implementation)
-  :short "Implementation of the isomorphic data transformation."
+  :short "Definition of the @(tsee isodata) macro."
   :long
   (xdoc::topstring
    (xdoc::p
