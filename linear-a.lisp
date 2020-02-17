@@ -374,15 +374,20 @@
 (defconst *fake-rune-for-anonymous-enabled-rule*
   '(:FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE nil))
 
+(defmacro fake-rune-for-anonymous-enabled-rule-p (rune)
+
+; Rather than pay the price of recognizing the
+; *fake-rune-for-anonymous-enabled-rule* perfectly we exploit the fact that no
+; true rune has :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE as its token.
+
+  `(eq (car ,rune) :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE))
+
 (defabbrev push-lemma (rune ttree)
 
 ; This is just (add-to-tag-tree 'lemma rune ttree) and is named in honor of the
-; corresponding act in Nqthm.  We do not record uses of the fake rune.  Rather
-; than pay the price of recognizing the *fake-rune-for-anonymous-enabled-rule*
-; perfectly we exploit the fact that no true rune has
-; :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE as its token.
+; corresponding act in Nqthm.  We do not record uses of the fake rune.
 
-  (cond ((eq (car rune) :FAKE-RUNE-FOR-ANONYMOUS-ENABLED-RULE) ttree)
+  (cond ((fake-rune-for-anonymous-enabled-rule-p rune) ttree)
         (t (add-to-tag-tree 'lemma rune ttree))))
 
 ; Historical Note from the days when tag-trees were constructed using (acons
