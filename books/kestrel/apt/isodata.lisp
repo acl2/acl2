@@ -121,7 +121,11 @@
 
   "@('iso-hints') are the hints that are part of
    the @('iso') component of the @('args/res-iso') input,
-   when @('iso') is not a name."))
+   when @('iso') is not a name."
+
+  "@('app-cond-thm-names') is an alist
+   from the applicability condition keywords
+   to the corresponding theorem names."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2125,8 +2129,7 @@
     (subcor-var args$ back-of-args old-measure)))
 
 (define isodata-gen-new-fn-termination-hints
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -2175,25 +2178,23 @@
              ,instance-oldp-of-rec-calls
              ,@instances-back-of-forth)))))
 
-(define isodata-gen-new-fn
-  ((old$ symbolp)
-   (args$ symbol-listp)
-   (res$ booleanp)
-   (newp$ pseudo-termfnp)
-   (forth$ pseudo-termfnp)
-   (back$ pseudo-termfnp)
-   (back-image symbolp)
-   (back-of-forth symbolp)
-   (predicate$ booleanp)
-   (new-name$ symbolp)
-   (new-enable$ booleanp)
-   (non-executable$ booleanp)
-   (normalize$ booleanp)
-   (verify-guards$ booleanp)
-   (untranslate$ untranslate-specifier-p)
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (wrld plist-worldp))
+(define isodata-gen-new-fn ((old$ symbolp)
+                            (args$ symbol-listp)
+                            (res$ booleanp)
+                            (newp$ pseudo-termfnp)
+                            (forth$ pseudo-termfnp)
+                            (back$ pseudo-termfnp)
+                            (back-image symbolp)
+                            (back-of-forth symbolp)
+                            (predicate$ booleanp)
+                            (new-name$ symbolp)
+                            (new-enable$ booleanp)
+                            (non-executable$ booleanp)
+                            (normalize$ booleanp)
+                            (verify-guards$ booleanp)
+                            (untranslate$ untranslate-specifier-p)
+                            (app-cond-thm-names symbol-symbol-alistp)
+                            (wrld plist-worldp))
   :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
                (new-fn-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
@@ -2320,8 +2321,7 @@
      :in-theory '(,old-fn-unnorm-name ,new-fn-unnorm-name))))
 
 (define isodata-gen-new-to-old-thm-hints-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -2382,8 +2382,7 @@
               ,@instances-back-of-forth)))))
 
 (define isodata-gen-new-to-old-thm-hints-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -2460,8 +2459,7 @@
               ,@instances-back-of-forth-res)))))
 
 (define isodata-gen-new-to-old-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (res$ booleanp)
@@ -2524,8 +2522,7 @@
    (predicate$ booleanp)
    (new-name$ symbolp)
    (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+   (app-cond-thm-names symbol-symbol-alistp)
    (old-fn-unnorm-name symbolp "Name of the theorem that installs
                                 the non-normalized definition
                                 of the old function.")
@@ -2627,8 +2624,7 @@
              ,instance-new-to-old)))))
 
 (define isodata-gen-old-to-new-thm-res-hints
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -2667,8 +2663,7 @@
              ,instance-back-of-forth-res)))))
 
 (define isodata-gen-old-to-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (res$ booleanp)
@@ -2697,22 +2692,20 @@
                                              new-to-old
                                              wrld)))
 
-(define isodata-gen-old-to-new-thm
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (res$ booleanp)
-   (oldp$ pseudo-termfnp)
-   (forth$ pseudo-termfnp)
-   (back$ pseudo-termfnp)
-   (forth-image symbolp)
-   (back-of-forth symbolp)
-   (new-name$ symbolp)
-   (thm-name$ symbolp)
-   (thm-enable$ booleanp)
-   (new-to-old symbolp)
-   (wrld plist-worldp))
+(define isodata-gen-old-to-new-thm ((app-cond-thm-names symbol-symbol-alistp)
+                                    (old$ symbolp)
+                                    (args$ symbol-listp)
+                                    (res$ booleanp)
+                                    (oldp$ pseudo-termfnp)
+                                    (forth$ pseudo-termfnp)
+                                    (back$ pseudo-termfnp)
+                                    (forth-image symbolp)
+                                    (back-of-forth symbolp)
+                                    (new-name$ symbolp)
+                                    (thm-name$ symbolp)
+                                    (thm-enable$ booleanp)
+                                    (new-to-old symbolp)
+                                    (wrld plist-worldp))
   :returns (mv (old-to-new-local-event "A @(tsee pseudo-event-formp).")
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
@@ -2762,8 +2755,7 @@
                `(,newp$ (,new-name$ ,@(formals old$ wrld))))))
 
 (define isodata-gen-newp-of-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -2806,20 +2798,18 @@
              ,instance-forth-image
              ,new-to-old)))))
 
-(define isodata-gen-newp-of-new-thm
-  ((old$ symbolp)
-   (args$ symbol-listp)
-   (newp$ pseudo-termfnp)
-   (forth$ pseudo-termfnp)
-   (back$ pseudo-termfnp)
-   (forth-image symbolp)
-   (back-image symbolp)
-   (new-name$ symbolp)
-   (new-to-old symbolp)
-   (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
-   (wrld plist-worldp))
+(define isodata-gen-newp-of-new-thm ((old$ symbolp)
+                                     (args$ symbol-listp)
+                                     (newp$ pseudo-termfnp)
+                                     (forth$ pseudo-termfnp)
+                                     (back$ pseudo-termfnp)
+                                     (forth-image symbolp)
+                                     (back-image symbolp)
+                                     (new-name$ symbolp)
+                                     (new-to-old symbolp)
+                                     (names-to-avoid symbol-listp)
+                                     (app-cond-thm-names symbol-symbol-alistp)
+                                     (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp) that names the theorem."))
   :mode :program
@@ -2853,8 +2843,7 @@
     (mv event name)))
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-nonrec
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (back$ pseudo-termfnp)
@@ -2901,8 +2890,7 @@
              ,@instances-back-image)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-rec
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -3002,8 +2990,7 @@
              ,@instances-new-to-old)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-pred
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -3080,8 +3067,7 @@
              ,@instances-back-guard)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-res
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (back$ pseudo-termfnp)
@@ -3138,8 +3124,7 @@
              ,instance-old-fn-unnorm-name)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -3233,8 +3218,7 @@
              ,@instances-old-to-new)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (forth$ pseudo-termfnp)
@@ -3371,8 +3355,7 @@
              ,@instances-back-guard-res)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (res$ booleanp)
@@ -3448,8 +3431,7 @@
        wrld))))
 
 (define isodata-gen-new-fn-verify-guards-hints
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (res$ booleanp)
@@ -3506,8 +3488,7 @@
                                                     wrld)))
 
 (define isodata-gen-new-fn-verify-guards
-  ((app-cond-thm-names symbol-symbol-alistp
-                       "Result of @(tsee isodata-gen-app-conds).")
+  ((app-cond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (args$ symbol-listp)
    (res$ booleanp)
