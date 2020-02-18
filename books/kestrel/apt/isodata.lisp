@@ -2511,7 +2511,7 @@
     (isodata-gen-new-to-old-thm-hints-nonrec old-fn-unnorm-name
                                              new-fn-unnorm-name)))
 
-(define isodata-new-to-old-thm
+(define isodata-gen-new-to-old-thm
   ((old$ symbolp)
    (args$ symbol-listp)
    (res$ booleanp)
@@ -3729,22 +3729,22 @@
         (install-not-norm-event new-name$ t names-to-avoid wrld))
        ((mv new-to-old-thm-event
             new-to-old)
-        (isodata-new-to-old-thm old$
-                                args$
-                                res$
-                                newp$
-                                forth$
-                                back$
-                                forth-image
-                                back-image
-                                back-of-forth
-                                predicate$
-                                new-name$
-                                names-to-avoid
-                                app-cond-thm-names
-                                old-fn-unnorm-name
-                                new-fn-unnorm-name
-                                wrld))
+        (isodata-gen-new-to-old-thm old$
+                                    args$
+                                    res$
+                                    newp$
+                                    forth$
+                                    back$
+                                    forth-image
+                                    back-image
+                                    back-of-forth
+                                    predicate$
+                                    new-name$
+                                    names-to-avoid
+                                    app-cond-thm-names
+                                    old-fn-unnorm-name
+                                    new-fn-unnorm-name
+                                    wrld))
        (names-to-avoid (cons new-to-old names-to-avoid))
        ((mv newp-of-new-thm-event?
             newp-of-new?)
