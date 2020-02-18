@@ -24,3 +24,4 @@
 (include-book "lookup-eq-lst")
 
 (include-book "pairlis-dollar")
+(include-book "pairlis-dollar-fast")
