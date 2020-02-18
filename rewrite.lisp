@@ -183,7 +183,9 @@
   (let* ((big-n (big-n))
          (fns (ev-fncall+-fns fn args w big-n safe-mode gc-off strictp)))
     (mv-let (erp val latches)
-      (ev-fncall-rec-logical fn args w
+      (ev-fncall-rec-logical fn args
+                             nil ; irrelevant arg-exprs (as latches is nil)
+                             w
                              nil ; user-stobj-alist
                              big-n safe-mode gc-off
                              nil ; latches
@@ -9690,7 +9692,7 @@
     (one-way-unify pat term))
    (t (one-way-unify-restrictions1 pat term restrictions))))
 
-(defun ev-fncall! (fn args state latches aok)
+(defun ev-fncall! (fn args state aok)
 
 ; This function is logically equivalent to ev-fncall.  However, it is
 ; much faster because it can only be used for certain fn and args: fn
@@ -9711,28 +9713,27 @@
                          (eq (symbol-class fn wrld)
                              :common-lisp-compliant)
                          (mv-let
-                          (erp val latches)
-                          (ev (guard fn nil wrld)
-                              (pairlis$ (formals fn wrld)
-                                        args)
-                              state
-                              nil
-                              t
-                              aok)
-
-; Formerly, here we had (declare (ignore latches)).  But CCL complained
-; about unused lexical variable LATCHES when defining/compiling the *1*
-; function.  So instead we use LATCHES in a trivial way.
-
-                          (prog2$ latches ; fool CCL; see comment above
-                                  (and (null erp)
-                                       val)))))))
+                           (erp val latches)
+                           (ev (guard fn nil wrld)
+                               (pairlis$ (formals fn wrld)
+                                         args)
+                               state
+                               nil
+                               t
+                               aok)
+                           (assert$
+                            (null latches)
+                            (and (null erp)
+                                 val)))))))
   #+(and (not acl2-loop-only) lucid)
   (declare (ignore state))
   #-acl2-loop-only
   (return-from ev-fncall!
-               (mv nil (apply fn args) latches))
-  (ev-fncall fn args state latches
+               (mv nil (apply fn args) nil))
+  (ev-fncall fn args
+             nil ; irrelevant arg-exprs (as latches is nil)
+             state
+             nil ; latches
 
 ; Since ev-fncall-meta calls ev-fncall!, the comment about sys-call under
 ; ev-fncall-meta explains why the following argument of nil is important.
@@ -9770,8 +9771,11 @@
 ; evaluators in rules of class :meta or :clause-processor, so that we can use
 ; aok = t in the calls of ev-fncall! and ev-fncall just below.
 
-           (ev-fncall! fn args state nil t))
-          (t (ev-fncall fn args state nil
+           (ev-fncall! fn args state t))
+          (t (ev-fncall fn args
+                        nil ; irrelevant arg-exprs (as latches is nil)
+                        state
+                        nil ; latches
 
 ; The next argument, hard-error-returns-nilp, is nil.  Think hard before
 ; changing it!  For example, it guarantees that if a metafunction invokes
