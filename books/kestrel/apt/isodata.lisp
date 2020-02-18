@@ -125,7 +125,13 @@
 
   "@('app-cond-thm-names') is an alist
    from the applicability condition keywords
-   to the corresponding theorem names."))
+   to the corresponding theorem names."
+
+  "@('old-fn-unnorm-name') is the name of the theorem
+   that installs the non-normalized definition of the old function."
+
+  "@('new-fn-unnorm-name') is the name of the theorem
+   that installs the non-normalized definition of the new function."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2306,13 +2312,8 @@
                    (apply-term* forth$ old-call)
                  old-call)))))
 
-(define isodata-gen-new-to-old-thm-hints-nonrec
-  ((old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function."))
+(define isodata-gen-new-to-old-thm-hints-nonrec ((old-fn-unnorm-name symbolp)
+                                                 (new-fn-unnorm-name symbolp))
   :returns (hints true-listp)
   :short "Generate the hints to prove the theorem
           that expresses the new function in terms of the old function,
@@ -2330,12 +2331,8 @@
    (back-image symbolp)
    (back-of-forth symbolp)
    (new-name$ symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
+   (old-fn-unnorm-name symbolp)
+   (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2391,12 +2388,8 @@
    (back-image symbolp)
    (back-of-forth symbolp)
    (new-name$ symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
+   (old-fn-unnorm-name symbolp)
+   (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2469,12 +2462,8 @@
    (back-image symbolp)
    (back-of-forth symbolp)
    (new-name$ symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
+   (old-fn-unnorm-name symbolp)
+   (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2509,27 +2498,22 @@
     (isodata-gen-new-to-old-thm-hints-nonrec old-fn-unnorm-name
                                              new-fn-unnorm-name)))
 
-(define isodata-gen-new-to-old-thm
-  ((old$ symbolp)
-   (args$ symbol-listp)
-   (res$ booleanp)
-   (newp$ pseudo-termfnp)
-   (forth$ pseudo-termfnp)
-   (back$ pseudo-termfnp)
-   (forth-image symbolp)
-   (back-image symbolp)
-   (back-of-forth symbolp)
-   (predicate$ booleanp)
-   (new-name$ symbolp)
-   (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
-   (new-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the new function.")
-   (wrld plist-worldp))
+(define isodata-gen-new-to-old-thm ((old$ symbolp)
+                                    (args$ symbol-listp)
+                                    (res$ booleanp)
+                                    (newp$ pseudo-termfnp)
+                                    (forth$ pseudo-termfnp)
+                                    (back$ pseudo-termfnp)
+                                    (forth-image symbolp)
+                                    (back-image symbolp)
+                                    (back-of-forth symbolp)
+                                    (predicate$ booleanp)
+                                    (new-name$ symbolp)
+                                    (names-to-avoid symbol-listp)
+                                    (app-cond-thm-names symbol-symbol-alistp)
+                                    (old-fn-unnorm-name symbolp)
+                                    (new-fn-unnorm-name symbolp)
+                                    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp) that names the theorem."))
   :mode :program
@@ -3074,9 +3058,7 @@
    (newp-guard symbolp)
    (back-image symbolp)
    (back-guard symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
+   (old-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (hints true-listp)
   :verify-guards nil
@@ -3231,9 +3213,7 @@
    (back-guard symbolp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
+   (old-fn-unnorm-name symbolp)
    (newp-of-new symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -3369,9 +3349,7 @@
    (back-guard symbolp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
+   (old-fn-unnorm-name symbolp)
    (newp-of-new symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -3447,9 +3425,7 @@
    (new-to-old symbolp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
+   (old-fn-unnorm-name symbolp)
    (newp-of-new symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -3504,9 +3480,7 @@
    (new-name$ symbolp)
    (new-to-old symbolp)
    (thm-name$ symbolp)
-   (old-fn-unnorm-name symbolp "Name of the theorem that installs
-                                the non-normalized definition
-                                of the old function.")
+   (old-fn-unnorm-name symbolp)
    (newp-of-new symbolp)
    (wrld plist-worldp))
   :returns (new-fn-verify-guards-event "A @(tsee pseudo-event-formp).")
