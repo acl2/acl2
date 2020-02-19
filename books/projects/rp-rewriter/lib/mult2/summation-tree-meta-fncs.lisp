@@ -141,6 +141,8 @@
                (mv x t 1))
               (('bit-of & &)
                (mv x t 1))
+              (('rp ''bitp &)
+               (mv x t 1))
               (& (mv x nil -1))))
            ((mv y atom-y len-y)
             (case-match y
@@ -149,6 +151,8 @@
               (('binary-and & &)
                (mv (cdr y) nil 2))
               (''1
+               (mv y t 1))
+              (('rp ''bitp &)
                (mv y t 1))
               (('bit-of & &)
                (mv y t 1))
@@ -293,7 +297,7 @@
             (mv `(list . ,res) cnt)
           (mv ''nil 0)))))
 
-  (memoize 'pp-sum-merge :condition '(and (not (equal pp1 ''nil)) (not (equal pp2 ''nil)))))
+  (memoize 'pp-sum-merge :condition '(and (not (equal pp1 'nil)) (not (equal pp2 'nil)))))
 
 (progn
 

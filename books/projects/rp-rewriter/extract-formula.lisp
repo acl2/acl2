@@ -544,18 +544,6 @@
        (rules-alist (to-fast-alist rules-alist)))
     rules-alist))
 
-#|(defun get-enabled-exec-rules (runes)
-  ;; get the names of enabled executable counterpart rules
-  (declare (xargs :guard t))
-  (if (atom runes)
-      nil
-    (if (and (equal (len (car runes)) 2)
-             (equal (caar runes) ':executable-counterpart)
-             (symbolp (cadar runes)))
-        (hons-acons (cadar runes) nil
-                    (get-enabled-exec-rules (cdr runes)))
-      (get-enabled-exec-rules (cdr runes)))))||#
-
 (defmacro rp-attach-sc (rule-name sc-rule-name)
   (declare (xargs :guard (and (symbolp rule-name)
                               (symbolp sc-rule-name))))
@@ -632,6 +620,90 @@
   (defmacro enable-exc-counterpart (fnc)
     `(table rp-exc-rules ',fnc t)))
 
+
+
+(xdoc::defxdoc
+ rp-ruleset
+ :parents (rp-rewriter)
+ :short "Functions to manage RP-Rewriter's ruleset"
+ :long
+ "Users can use 
+the functions below to register rules to RP-Rewriter's
+ ruleset:
+
+<code> 
+@('(rp::add-rp-rule <rule-name> 
+                 &optional (disabled 'nil))')
+</code>
+ This macro submits a table event that saves the given rule in the
+ ruleset. The time you use submit this event will affect the priority the rule
+ will have. If you choose to add the rule as disabled, you may use the
+ corresponding key.
+
+<code> @('(rp::def-rp-rule <rule-name> <conjecture> <optional-hints> ...)') </code>
+This macro has the
+ same signature as defthm, and it submits a defthm event. It also submits a
+ add-rp-rule event to save the rule in the rule-set.
+
+<code>
+@('(rp::enable-rules <rules>)')
+</code>
+This macro submits an event to enable a list of
+ rules from the given list.
+
+<code> 
+@('(rp::disable-rules <rules>)')
+</code>
+ The opposite of rp::enable-rules.
+
+
+<code>@('(rp::disable-all-rules)')</code>
+
+This submits an event and disables all the rewrite rules. 
+
+<code> @('(rp::disable-exc-counterpart <fnc-name>)') </code> The executable
+ counterparts are enabled by default for all functions and they belong to a
+ different rule-set for rp-rewriter. This macro submits an event to disable the
+ executable counterpart of given function.
+
+ <code> @('(rp::enable-exc-counterpart <fnc-name>)') </code>
+ The opposite of rp::disable-exc-counterpart.
+
+
+"
+ )
+
+
+(xdoc::defxdoc
+ add-rp-rule
+ :short "@(see rp::rp-ruleset)")
+
+
+(xdoc::defxdoc
+ rp::def-rp-rule
+ :short "Documentation under @(see rp::rp-ruleset).")
+
+(xdoc::defxdoc
+ rp::disable-rules
+ :short "Documentation under @(see rp::rp-ruleset)")
+
+(xdoc::defxdoc
+ rp::enable-rules
+ :short "Documentation under @(see rp::rp-ruleset)")
+
+(xdoc::defxdoc
+ disable-all-rules
+ :short "Documentation under @(see rp::rp-ruleset)")
+
+(xdoc::defxdoc
+ rp::disable-exc-counterpart
+ :short "Documentation under @(see rp::rp-ruleset)")
+
+(xdoc::defxdoc
+ rp::enable-exc-counterpart
+ :short "Documentation under @(see rp::rp-ruleset)")
+
+
 (progn
 
   (defund get-disabled-exc-rules-from-table (rp-exc-rules)
@@ -699,3 +771,4 @@
          (rp-exc-rules (table-alist 'rp-exc-rules world))
          (rules-ex (get-disabled-exc-rules-from-table rp-exc-rules)))
       (mv (append rules-rw rules-def) rules-ex))))
+

@@ -89,6 +89,8 @@
            :in-theory (e/d (is-lambda is-lambda-strict get-lambda-free-vars)
                            ()))))
 
+(set-ignore-ok t)
+
 (make-event
  `(defthm rp-termp-implies
     (implies (rp-termp term)

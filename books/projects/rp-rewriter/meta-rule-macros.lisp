@@ -151,6 +151,22 @@
          (table rp-rw 'formal-checks-fn-list ',(strip-cars all-rp-rw-meta-rules))
          ,@(create-rp-clause-proc cl-name-prefix appended-meta-rules)))))
 
+
+(xdoc::defxdoc
+ update-rp-clause-proc
+ :parents (rp-rewriter/meta-rules)
+ :short "Creates a new clause processor function to register added meta rules."
+ :long "<p>
+After calling @(see add-meta-rules) or when different books with meta rules are
+ included, users need to call update-rp-clause-proc. This creates a
+ new clause processor function and proves it correct. Then @(see defthmrp)
+ automatically uses the most recently created clause processor function. </p>
+<code>(update-rp-clause-proc cl-name-prefix)</code>
+<p> cl-name-prefix: should be a unique name that will be a prefic to the name
+ of the new clause processor.</p>
+")
+
+
 (defun add-meta-rules-fn (formal-checks-fn new-meta-rules cl-name-prefix)
   `(make-event
     (b* ((?talist (table-alist 'rp-rw (w state)))
@@ -202,6 +218,44 @@
   `(make-event
     (add-meta-rules-fn ',formal-checks-fn ,new-meta-rules ',cl-name-prefix)))
 
+(xdoc::defxdoc
+ add-meta-rules
+ :parents (rp-rewriter/meta-rules)
+ :short "A macro to add created meta rules to RP-Rewriter"
+ :long "<p>
+<code> (add-meta-rules formal-checks-fn new-meta-rules) </code>
+
+OR  
+
+<code> (add-meta-rules formal-checks-fn new-meta-rules cl-name-prefix) </code>
+
+submits an event that saves previously proved meta-rules in rp-rewriter's
+rule-set for meta rules.  
+</p>
+
+<p> formal-checks-fn: it is the name of the formula-checks function created
+with def-formula-checks </p>
+
+<p> new-meta-rules: a list of constructs created with defrec struct
+rp-meta-rule-rec. It can have one or more meta-rules that are proved with the
+same formula-checks function.  For example: <code> 
+(list
+  (make rp-meta-rule-rec
+        :fnc 'rp-equal-meta
+        :trig-fnc 'equal
+        :dont-rw t
+        :valid-syntax t))
+</code>
+</p>
+
+<p>cl-name-prefix: An optional argument. When non-nil, the macro also calls
+@(see rp::update-rp-clause-proc) to create a new clause processor function for
+RP-Rewriter. </p>
+"
+ )
+
+
+
 (defun is-rp-clause-processor-up-to-date (world)
   (declare (xargs :guard (and (PLIST-WORLDP world))
                   :guard-hints (("Goal"
@@ -213,6 +267,20 @@
                                                (table-alist 'rp-rw world)))))
     (equal (len all-rp-rw-meta-rules)
            (len added-meta-formal-checks-fn-list))))
+
+
+(xdoc::defxdoc
+ is-rp-clause-processor-up-to-date
+ :parents (rp-rewriter/meta-rules)
+ :short "Checks if all the added meta-rules are 'registered'"
+ :long "<p>
+After calling @(see add-meta-rules) or when different books with meta rules are
+ included, users need to call @(see rp::update-rp-clause-proc). This function
+ checks if it is necessary. </p>
+<code>(is-rp-clause-processor-up-to-date world)</code>
+")
+
+
 
 (define check-if-clause-processor-up-to-date (world)
   (declare (xargs :guard (and (PLIST-WORLDP world))
@@ -315,3 +383,138 @@
 (defmacro create-regular-eval-lemma (fn argc formula-checks)
   `(make-event
     (create-regular-eval-lemma-fn ',fn ',argc ',formula-checks)))  
+
+
+
+
+(xdoc::defxdoc
+ rp-rewriter/meta-rules
+ :parents (rp-rewriter)
+ :short "The steps necessary to add meta rules to RP-Rewriter"
+ :long "<p>Below are the steps users need to follow, and information they may
+ use:</p>
+
+<p>
+1. Create your  meta function.
+<code>
+@('(define <meta-fnc> (term)
+     :returns (mv term dont-rw) OR (term)
+     ...)')
+</code>
+Your meta function can return either two values:term and @(see rp::dont-rw); or
+only term. For best performance, it is recommended that you return dont-rw
+structure as well. If you do not want the returned term to be rewritten at all,
+you can return 't' for dont-rw.
+</p>
+
+<p>
+2. Create formula-checks function.
+<code> 
+@('(def-formula-checks <formula-check-name>
+       (<list-of-function-names>))')
+</code>
+This event submits a function with signature @('(<formula-check-name> state)'). When
+you add this function to your correctness theorem for this meta function, the
+evaluator of RP-Rewriter will recognize the functions you list. 
+</p>
+
+<p>
+3. Prove that evaluation of the function returns an equivalent term under the
+evaluator.
+<code>
+@('(defthm rp-evlt-of-meta-fnc
+    (implies (and (valid-sc term a) ;;optional
+                  (rp-termp term) ;;optional
+                  (rp-evl-meta-extract-global-facts)
+                  (<formula-check-name> state))
+             (equal (rp-evlt (<meta-fnc> term) a)
+                    (rp-evlt term a))))')
+</code>
+
+This is the correctness theorem of the meta rule. Optionally, you may have
+(valid-sc term a), which states that the side-conditions in RP-Rewriter are
+correct; and (rp-termp term), which states that some of the syntactic
+invariances hold and the term is syntactically compatible with RP-Rewriter. See
+discussions for @(see valid-sc) and @(see rp-termp).
+</p> 
+
+<p>
+If the meta function returns dont-rw, then you need to prove the same lemma for
+@('(mv-nth 0 (<meta-fnc> term))'). 
+</p>
+
+<p>
+4. Prove that meta-function retains the correctness of side-conditions. 
+<code>
+ @('(defthm valid-sc-of-meta-fnc
+    (implies (and (rp-termp term) ;;optional
+                  (valid-sc term a))               
+             (valid-sc (<meta-fnc> term) a)))')
+</code>
+
+Meta functions can introduce or change side-conditions by manipulating 'rp'
+instances. Therefore users need to prove that the invariance about side
+conditions are maintained.
+</p> 
+
+<p>
+If the meta function returns dont-rw, then you need to prove the same lemma for
+@('(mv-nth 0 (<meta-fnc> term))'). 
+</p>
+
+
+<p>
+5. Optionally, prove that the meta function returns a valid syntax. 
+<code>
+@('(defthm rp-termp-of-meta-fnc
+    (implies (rp-termp term)               
+             (rp-termp (<meta-fnc> term))))')
+</code>
+
+Even though it is optional, it is recommended that you prove such a lemma for
+your meta function. It prevents syntactic check on every term returned from
+meta function.
+</p> 
+<p>
+If the meta function returns dont-rw, then you need to prove the same lemma for
+@('(mv-nth 0 (<meta-fnc> term))'). 
+</p>
+
+<p>
+6. If your function returns @(see rp::dont-rw), then you also need to prove
+that it is syntactically correct. Otherwise skip this step.
+<code>
+@('(defthm dont-rw-syntaxp-of-meta-fnc
+   (dont-rw-syntaxp (mv-nth 1 (<meta-fnc> term))))')
+</code>
+</p>
+
+<p>
+7. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
+<code>
+@('
+(add-meta-rules <formula-check-name>
+    (list (make rp-meta-rule-rec
+                :fnc <meta-fnc>
+                :trig-fnc <trig-fnc>
+                :dont-rw <t-if-returns-dont-rw>
+                :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))')
+</code>
+
+</p>
+
+<p>
+8. Update clause processor with @(see rp::update-rp-clause-proc). 
+<code>
+@('(update-rp-clause-proc <a-unique-name-for-updated-clause-processor>)')
+</code>
+If you are going to include this book later when other meta rules for
+RP-Rewriter is present, you may want to call this function when all the meta
+rules are included.
+</p>
+
+<p>
+You may look at examples of RP-Rewriter meta rules under
+/books/projects/RP-Rewriter/meta/*
+</p>
+")
