@@ -2026,8 +2026,10 @@
 (define isodata-gen-new-fn-body-nonpred-nonrec ((old$ symbolp)
                                                 (args$ symbol-listp)
                                                 (res$ booleanp)
+                                                (newp$ pseudo-termfnp)
                                                 (forth$ pseudo-termfnp)
                                                 (back$ pseudo-termfnp)
+                                                compatibility
                                                 (wrld plist-worldp))
   :returns (new-body "A @(tsee pseudo-termp).")
   :verify-guards nil
@@ -2044,10 +2046,20 @@
                    (ubody old$ wrld)))
        (back-of-args (apply-unary-to-terms back$ args$))
        (old-body-with-back-of-args
-        (subcor-var args$ back-of-args old-body)))
-    (if res$
-        (apply-term* forth$ old-body-with-back-of-args)
-      old-body-with-back-of-args)))
+        (subcor-var args$ back-of-args old-body))
+       (newp-of-args (apply-unary-to-terms newp$ args$))
+       (then-branch (if res$
+                        (apply-term* forth$ old-body-with-back-of-args)
+                      old-body-with-back-of-args))
+       (else-branch (b* ((n (number-of-results old$ wrld)))
+                      (if (> n 1)
+                          (cons 'mv (repeat n nil))
+                        nil))))
+    (if compatibility
+        then-branch
+      `(if ,(conjoin newp-of-args)
+           ,then-branch
+         ,else-branch))))
 
 (define isodata-gen-new-fn-body-nonpred-rec ((old$ symbolp)
                                              (args$ symbol-listp)
@@ -2110,6 +2122,7 @@
                                  (back$ pseudo-termfnp)
                                  (predicate$ booleanp)
                                  (new-name$ symbolp)
+                                 compatibility
                                  (wrld plist-worldp))
   :returns (new-body "A @(tsee pseudo-termp).")
   :verify-guards nil
@@ -2121,7 +2134,7 @@
         (isodata-gen-new-fn-body-nonpred-rec
          old$ args$ res$ newp$ forth$ back$ new-name$ wrld)
       (isodata-gen-new-fn-body-nonpred-nonrec
-       old$ args$ res$ forth$ back$ wrld))))
+       old$ args$ res$ newp$ forth$ back$ compatibility wrld))))
 
 (define isodata-gen-new-fn-measure ((old$ symbolp)
                                     (args$ symbol-listp)
@@ -2199,6 +2212,7 @@
                             (normalize$ booleanp)
                             (verify-guards$ booleanp)
                             (untranslate$ untranslate-specifier-p)
+                            compatibility
                             (app-cond-thm-names symbol-symbol-alistp)
                             (wrld plist-worldp))
   :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
@@ -2227,7 +2241,8 @@
   (b* ((macro (function-intro-macro new-enable$ non-executable$))
        (formals (formals old$ wrld))
        (body (isodata-gen-new-fn-body
-              old$ args$ res$ newp$ forth$ back$ predicate$ new-name$ wrld))
+              old$ args$ res$ newp$ forth$ back$ predicate$ new-name$
+              compatibility wrld))
        (body (if (> (number-of-results old$ wrld) 1)
                  (mvify body)
                body))
@@ -2289,7 +2304,6 @@
                                             (newp$ pseudo-termfnp)
                                             (forth$ pseudo-termfnp)
                                             (back$ pseudo-termfnp)
-                                            (predicate$ booleanp)
                                             (new-name$ symbolp)
                                             (wrld plist-worldp))
   :returns (new-to-old-formula "A @(tsee pseudo-termp).")
@@ -2300,17 +2314,11 @@
        (newp-of-args (apply-unary-to-terms newp$ args$))
        (back-of-args (apply-unary-to-terms back$ args$))
        (old-call (subcor-var args$ back-of-args `(,old$ ,@formals))))
-    (if (or predicate$
-            (recursivep old$ nil wrld))
-        (implicate (conjoin newp-of-args)
-                   `(equal (,new-name$ ,@formals)
-                           ,(if res$
-                                (apply-term* forth$ old-call)
-                              old-call)))
-      `(equal (,new-name$ ,@formals)
-              ,(if res$
-                   (apply-term* forth$ old-call)
-                 old-call)))))
+    (implicate (conjoin newp-of-args)
+               `(equal (,new-name$ ,@formals)
+                       ,(if res$
+                            (apply-term* forth$ old-call)
+                          old-call)))))
 
 (define isodata-gen-new-to-old-thm-hints-nonrec ((old-fn-unnorm-name symbolp)
                                                  (new-fn-unnorm-name symbolp))
@@ -2507,7 +2515,6 @@
                                     (forth-image symbolp)
                                     (back-image symbolp)
                                     (back-of-forth symbolp)
-                                    (predicate$ booleanp)
                                     (new-name$ symbolp)
                                     (names-to-avoid symbol-listp)
                                     (app-cond-thm-names symbol-symbol-alistp)
@@ -2530,7 +2537,6 @@
                                                     newp$
                                                     forth$
                                                     back$
-                                                    predicate$
                                                     new-name$
                                                     wrld))
        (formula (untranslate formula t wrld))
@@ -3562,6 +3568,7 @@
    (hints$ symbol-truelist-alistp)
    (print$ evmac-input-print-p)
    (show-only$ booleanp)
+   compatibility
    (names-to-avoid symbol-listp)
    (app-conds isodata-app-cond-keyword-listp)
    (call pseudo-event-formp)
@@ -3677,6 +3684,7 @@
                             normalize$
                             verify-guards$
                             untranslate$
+                            compatibility
                             app-cond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
@@ -3693,7 +3701,6 @@
                                     forth-image
                                     back-image
                                     back-of-forth
-                                    predicate$
                                     new-name$
                                     names-to-avoid
                                     app-cond-thm-names
@@ -3812,6 +3819,7 @@
                     hints
                     print
                     show-only
+                    compatibility
                     (call pseudo-event-formp)
                     ctx
                     state)
@@ -3911,6 +3919,7 @@
                                       hints$
                                       print
                                       show-only
+                                      compatibility
                                       names-to-avoid
                                       app-cond-keywords
                                       call
@@ -3944,7 +3953,8 @@
                      (untranslate ':nice)
                      (hints 'nil)
                      (print ':result)
-                     (show-only 'nil))
+                     (show-only 'nil)
+                     (compatibility 'nil))
     `(make-event-terse (isodata-fn ',old
                                    ',args-iso
                                    ',predicate
@@ -3959,6 +3969,7 @@
                                    ',hints
                                    ',print
                                    ',show-only
+                                   ',compatibility
                                    ',call
                                    (cons 'isodata ',old)
                                    state)
