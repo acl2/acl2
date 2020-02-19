@@ -4855,6 +4855,30 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
                         (:instance exact-bits-1 (x (fl z)) (n (1+ (expo z))) (k (- (1+ (expo z)) n)))
                         (:instance exact-bits-3 (x (fl z)) (k (- (1+ (expo z)) n)))))))
 
+(defthmd roundup-pos-thm-1
+  (implies (and (rationalp z)
+                (> z 0)
+                (not (zp n))
+                (<= (expt 2 n) z))
+           (let ((x (fl z)))
+             (iff (exactp z n)
+                  (and (integerp z) (= (bits x (- (expo x) n) 0) 0)))))
+  :hints (("Goal" :use rp-5)))
+
+(defthmd roundup-pos-thm-2
+  (implies (and (common-mode-p mode)
+                (rationalp z)
+                (> z 0)
+                (not (zp n))
+                (<= (expt 2 n) z))
+           (let ((x (fl z))
+                 (sticky (if (integerp z) 0 1)))
+             (equal (rnd z mode n)
+                    (if (roundup-pos x (expo x) sticky mode n)
+                        (fp+ (rtz x n) n)
+                      (rtz x n)))))
+  :hints (("Goal" :use rp-2)))
+
 (defthmd roundup-pos-thm
   (implies (and (common-mode-p mode)
                 (rationalp z)
