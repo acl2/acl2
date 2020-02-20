@@ -31,7 +31,7 @@
 (in-package "STR")
 (include-book "strprefixp")
 (local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (in-theory (disable acl2::prefixp-when-equal-lengths)))
 
@@ -109,5 +109,3 @@ That is, @('(strsuffixp \"\" x)') is always true.</p>"
 
   (defcong streqv equal (strsuffixp x y) 1)
   (defcong streqv equal (strsuffixp x y) 2))
-
-

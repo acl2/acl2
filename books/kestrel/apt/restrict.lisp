@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,123 +10,91 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/input-processing" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "kestrel/utilities/event-macros/input-processing" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/system/named-formulas" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "utilities/transformation-table")
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ restrict-implementation
-  :parents (implementation restrict)
-  :short "Implementation of @(tsee restrict)."
-  :long
-  "<p>
-   The implementation functions have formal parameters
-   consistently named as follows:
-   </p>
-   <ul>
-     <li>
-     @('state') is the ACL2 @(see state).
-     </li>
-     <li>
-     @('wrld') is the ACL2 @(see world).
-     </li>
-     <li>
-     @('ctx') is the context used for errors.
-     </li>
-     <li>
-     @('old'),
-     @('restriction'),
-     @('undefined'),
-     @('new-name'),
-     @('new-enable'),
-     @('thm-name'),
-     @('thm-enable'),
-     @('non-executable'),
-     @('verify-guards'),
-     @('hints'),
-     @('print'), and
-     @('show-only')
-     are the homonymous inputs to @(tsee restrict),
-     before being processed.
-     These formal parameters have no types because they may be any values.
-     </li>
-     <li>
-     @('call') is the call to @(tsee restrict) supplied by the user.
-     </li>
-     <li>
-     @('old$'),
-     @('restriction$'),
-     @('undefined$'),
-     @('new-name$'),
-     @('new-enable$'),
-     @('thm-name$'),
-     @('thm-enable$'),
-     @('non-executable$'),
-     @('verify-guards$'),
-     @('hints$'),
-     @('print$'), and
-     @('show-only$')
-     are the results of processing
-     the homonymous inputs (without the @('$')) to @(tsee restrict).
-     Some are identical to the corresponding inputs,
-     but they have types implied by their successful validation,
-     performed when they are processed.
-     </li>
-     <li>
-     @('stub?') is the stub called @('?f') in the documentation
-     if @('old') is a reflexive function,
-     or @('nil') otherwise.
-     </li>
-     <li>
-     @('app-cond-present-names') is the list of the names (keywords) of
-     the applicability conditions that are present.
-     </li>
-     <li>
-     @('app-cond-thm-names') is an alist
-     from the keywords that identify the applicability conditions
-     to the corresponding generated theorem names.
-     </li>
-     <li>
-     @('old-unnorm-name') is the name of the generated theorem
-     that installs the non-normalized definition of the target function.
-     </li>
-     <li>
-     @('new-unnorm-name') is the name of the generated theorem
-     that installs the non-normalized definition of the new function.
-     </li>
-     <li>
-     @('names-to-avoid') is a cumulative list of names of generated events,
-     used to ensure the absence of name clashes in the generated events.
-     </li>
-   </ul>
-   <p>
-   The parameters of implementation functions that are not listed above
-   are described in, or clear from, those functions' documentation.
-   </p>"
-  :order-subtopics t)
+(xdoc::evmac-topic-implementation
+
+ restrict
+
+ :items
+
+ ("@('state') is the ACL2 @(see state)."
+
+  "@('wrld') is the ACL2 @(see world)."
+
+  "@('ctx') is the context used for errors."
+
+  "@('old'),
+   @('restriction'),
+   @('undefined'),
+   @('new-name'),
+   @('new-enable'),
+   @('thm-name'),
+   @('thm-enable'),
+   @('non-executable'),
+   @('verify-guards'),
+   @('hints'),
+   @('print'), and
+   @('show-only')
+   are the homonymous inputs to @(tsee restrict),
+   before being processed.
+   These formal parameters have no types because they may be any values."
+
+  "@('call') is the call to @(tsee restrict) supplied by the user."
+
+  "@('old$'),
+   @('restriction$'),
+   @('undefined$'),
+   @('new-name$'),
+   @('new-enable$'),
+   @('thm-name$'),
+   @('thm-enable$'),
+   @('non-executable$'),
+   @('verify-guards$'),
+   @('hints$'),
+   @('print$'), and
+   @('show-only$')
+   are the results of processing
+   the homonymous inputs (without the @('$')) to @(tsee restrict).
+   Some are identical to the corresponding inputs,
+   but they have types implied by their successful validation,
+   performed when they are processed."
+
+  "@('stub?') is the stub called @('?f') in the documentation
+   if @('old') is a reflexive function,
+   or @('nil') otherwise."
+
+  "@('app-cond-present-names') is the list of the names (keywords) of
+   the applicability conditions that are present."
+
+  "@('app-cond-thm-names') is an alist
+   from the keywords that identify the applicability conditions
+   to the corresponding generated theorem names."
+
+  "@('old-unnorm-name') is the name of the generated theorem
+   that installs the non-normalized definition of the target function."
+
+  "@('new-unnorm-name') is the name of the generated theorem
+   that installs the non-normalized definition of the new function."
+
+  "@('names-to-avoid') is a cumulative list of names of generated events,
+   used to ensure the absence of name clashes in the generated events."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ restrict-input-processing
-  :parents (restrict-implementation)
-  :short "Input processing performed by @(tsee restrict)."
-  :long
-  "<p>
-   This involves validating the inputs.
-   When validation fails, <see topic='@(url er)'>soft errors</see> occur.
-   Thus, generally the input processing functions return
-   <see topic='@(url acl2::error-triple)'>error triples</see>.
-   </p>"
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-input-processing restrict)
 
 (define restrict-process-old (old verify-guards ctx state)
   :returns (mv erp

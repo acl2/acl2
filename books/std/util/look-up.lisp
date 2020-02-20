@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "support")
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 
 (defsection var-is-stobj-p
   :parents (support)

@@ -32,7 +32,7 @@
 (include-book "cat")
 (include-book "strprefixp")
 
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "arithmetic"))
 
 (defsection strsubst-aux

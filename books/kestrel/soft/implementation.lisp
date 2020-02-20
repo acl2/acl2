@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,17 +10,23 @@
 
 (in-package "SOFT")
 
+(include-book "kestrel/std/system/defchoose-queries" :dir :system)
+(include-book "kestrel/std/system/definedp" :dir :system)
+(include-book "kestrel/std/system/defun-sk-queries" :dir :system)
+(include-book "kestrel/std/system/function-symbol-listp" :dir :system)
+(include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "kestrel/std/system/measure" :dir :system)
+(include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "kestrel/utilities/system/defchoose-queries" :dir :system)
-(include-book "kestrel/utilities/system/defun-sk-queries" :dir :system)
-(include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

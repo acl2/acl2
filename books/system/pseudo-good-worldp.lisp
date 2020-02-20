@@ -15,6 +15,7 @@
 (include-book "pseudo-event-form-listp")
 (include-book "pseudo-command-formp")
 (include-book "pseudo-event-landmarkp")
+(include-book "pseudo-command-landmarkp")
 (include-book "pseudo-tests-and-calls-listp")
 
 ; -----------------------------------------------------------------
@@ -272,24 +273,8 @@
 
 ; COMMAND-LANDMARK [GLOBAL-VALUE]
 
-(defun pseudo-command-landmarkp (val)
-
-; Warning: Keep this in sync with (defrec command-tuple ...) in the ACL2
-; sources.
-
-  (and (consp val)
-       (or (eql (car val) -1) (natp (car val)))
-       (consp (cdr val))
-       (consp (cadr val))
-       (if (keywordp (car (cadr val)))
-           (and (eq (car (cadr val)) :logic)
-                (pseudo-command-formp (cdr (cadr val))))
-           (pseudo-command-formp (cadr val)))
-       (consp (cddr val))
-       (or (null (caddr val))
-           (stringp (caddr val)))
-       (or (null (cdddr val))
-           (pseudo-command-formp (cdddr val)))))
+; See pseudo-command-landmarkp in pseudo-command-landmarkp.lisp.
+; That function was originally here in this file.
 
 ; -----------------------------------------------------------------
 ; KNOWN-PACKAGE-ALIST [GLOBAL-VALUE]
@@ -966,6 +951,21 @@
 
 (defun pseudo-free-var-runes-oncep (val)
   (pseudo-theoryp1 val))
+
+; -----------------------------------------------------------------
+; TRANSLATE-CERT-DATA [GLOBAL-VALUE]
+
+(defun weak-translate-cert-data-record-listp (lst)
+  (cond ((atom lst) (null lst))
+        (t (and (weak-translate-cert-data-record-p (car lst))
+                (weak-translate-cert-data-record-listp (cdr lst))))))
+
+(defun pseudo-translate-cert-datap (val)
+  (cond ((atom val) (null val))
+        (t (and (consp (car val))
+                (symbolp (caar val))
+                (weak-translate-cert-data-record-listp (cdar val))
+                (pseudo-translate-cert-datap (cdr val))))))
 
 ; -----------------------------------------------------------------
 ; CHK-NEW-NAME-LST [GLOBAL-VALUE]
@@ -1752,6 +1752,7 @@
     (PROOF-SUPPORTERS-ALIST (proof-supporters-alistp val))
     (FREE-VAR-RUNES-ALL (pseudo-free-var-runes-allp val))
     (FREE-VAR-RUNES-ONCE (pseudo-free-var-runes-oncep val))
+    (TRANSLATE-CERT-DATA (pseudo-translate-cert-datap val))
     (CHK-NEW-NAME-LST (chk-new-name-lstp val))
     (TAU-CONJUNCTIVE-RULES (pseudo-tau-conjunctive-rulesp val))
     (TAU-NEXT-INDEX (natp val))

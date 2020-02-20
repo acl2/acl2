@@ -1,3 +1,5 @@
+; Copyright (C) 2009-2015, Regents of the University of Texas
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ; Defsum: a macro for defining recursive data types
 ; by Sol Swords & William Cook
 

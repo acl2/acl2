@@ -219,16 +219,28 @@
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
-    "A new library for standard system utilities has been started. This is
+    "A new library for standard system utilities has been started.  This is
      currently under the Kestrel books, but it could be moved directly under
-     @('[books]/std/system') eventually. This new library is being populated
+     @('[books]/std/system') eventually.  This new library is being populated
      with existing utilities factored out of some Kestrel Books with system
      utilities, as well as with some new utilities.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
+
+   (xdoc::p
+    "A new library for standard testing utilities has been started.  The
+     contents of the files @('[books]/misc/assert.lisp') and
+     @('[books]/misc/eval.lisp') have been moved here (with the same names),
+     while the two files under @('[books]/misc/') have been turned into
+     relocation stubs.  Some new testing utilities have been added to this new
+     library as well.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
-                             "Standards Typed Alists Library"))
+                             "Standard Typed Alists Library"))
 
    (xdoc::p
     "A new library has been added,
@@ -314,6 +326,10 @@
     "@(tsee apt::parteval) has been extended to support "
     (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
     ".")
+
+   (xdoc::p
+    "A new transformation, @(tsee apt::isodata),
+     has been added to transform data between isomorphic representations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -635,7 +651,7 @@
 
    (xdoc::p
     "Models have been added
-     of the decimal, hexadecimal, octal, and binary digits.")
+     of the decimal, hexadecimal, octal, and binary integer literals.")
 
    (xdoc::p
     "A model of the processing of Unicode escapes has been added.
@@ -1394,7 +1410,7 @@
 
  <p>Improved and extended some documentation.</p>
 
- <h4><see topic='@(url xdoc-utilities)'>XDOC Utilities</see></h4>
+ <h4>XDOC Utilities</h4>
 
  <p>Improved the <see topic='@(url xdoc::constructors)'>XDOC constructors</see>
  to use a tree representation that is converted into a flat string only at the
@@ -1514,11 +1530,11 @@
  from previously-proved theorems.  It does this by generating suitable @(see
  hints) using the new utility, @(see previous-subsumer-hints).</p>
 
- <p>Added some <see topic='@(url xdoc-utilities)'>utilities for building XDOC
- documentation</see>.  The <see topic='@(url xdoc::constructors)'>XDOC
- constructors</see> are utilities to construct well-tagged XDOC strings via
- ACL2 function calls whose nesting structure mirrors the nesting of the XML.
- @(tsee defxdoc+) extends @(tsee defxdoc) with additional conveniences.</p>
+ <p>Added some utilities for building XDOC documentation.  The <see
+ topic='@(url xdoc::constructors)'>XDOC constructors</see> are utilities to
+ construct well-tagged XDOC strings via ACL2 function calls whose nesting
+ structure mirrors the nesting of the XML.  @(tsee defxdoc+) extends @(tsee
+ defxdoc) with additional conveniences.</p>
 
  <p>A new event, @(tsee defunt), is a variant of @(tsee defun) that uses
  termination theorems from a large set of @(see community-books) &mdash;
@@ -1626,9 +1642,9 @@
  <p>Extended the <see topic='@(url error-checking)'>error-checking
  utilities</see> with several error-checking functions.</p>
 
- <p>Extended the <see topic='@(url world-queries)'>world query utilities</see>
- with functions to collect the names of all the known packages in the ACL2
- @(see world) and to check if a function is primitive.</p>
+ <p>Extended the Kestrel world query utilities with functions to collect the
+ names of all the known packages in the ACL2 @(see world) and to check if a
+ function is primitive.</p>
 
  <p>Extended the <see topic='@(url std/system/term-function-recognizers)'>term
  function recognizers</see> with recognizers for true lists of
@@ -2035,10 +2051,10 @@
  easier to reason about than its tail-recursive definition for execution (which
  has not changed).</p>
 
- <p>The Kestrel <see topic='@(url world-queries)'>world query utilities</see>,
- term utilities, <see topic='@(url string-utilities)'>string utilities</see>,
- and character utilities (@('[books]/kestrel/utilities/characters.lisp')) have
- undergone several improvements and extensions.</p>
+ <p>The Kestrel world query utilities, term utilities, <see topic='@(url
+ string-utilities)'>string utilities</see>, and character utilities
+ (@('[books]/kestrel/utilities/characters.lisp')) have undergone several
+ improvements and extensions.</p>
 
  <p>A few theorems about world-related functions and theorems about lists (in
  @('kestrel/utilities/list-theorems.lisp')) have been added.</p>

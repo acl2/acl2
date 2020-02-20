@@ -116,7 +116,7 @@
 
 
 
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 
 (local
  (encapsulate
@@ -139,5 +139,3 @@
   (ACL2::assert! (not (strsplit "" #\:)))
 
   (ACL2::assert! (not (strsplit ":::::" #\:)))))
-
-

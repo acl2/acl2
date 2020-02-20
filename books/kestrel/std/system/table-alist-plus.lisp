@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,9 +18,7 @@
 (define table-alist+ ((name symbolp) (wrld plist-worldp))
   :returns (alist alistp)
   :parents (std/system)
-  :short (xdoc::topstring
-          (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @('table-alist').")
+  :short "Enhanced variant of @('table-alist')."
   :long
   (xdoc::topstring-p
    "This returns the same result as the built-in @('table-alist') function

@@ -24,6 +24,8 @@
 (include-book "make-mv-let-call")
 (include-book "make-mv-nth-calls")
 (include-book "mvify")
+(include-book "quote-term")
+(include-book "quote-term-list")
 (include-book "remove-dead-if-branches")
 (include-book "remove-mbe")
 (include-book "remove-progn")

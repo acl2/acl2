@@ -22,5 +22,5 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee classes+) for a logic-friendly variant of this utility."))
+    "See @(tsee classes+) for an enhanced variant of this utility."))
   (getpropc thm 'classes nil wrld))

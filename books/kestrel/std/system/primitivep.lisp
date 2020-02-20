@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,7 +21,7 @@
   :short "Check if a named function is @(see primitive)."
   :long
   (xdoc::topstring-p
-   "See @(tsee primitivep+) for a logic-friendly variant of this utility.")
+   "See @(tsee primitivep+) for an enhanced variant of this utility.")
   (and (member-eq fn (strip-cars *primitive-formals-and-guards*)) t)
   ///
 

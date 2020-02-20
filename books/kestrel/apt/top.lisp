@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,29 +13,28 @@
 (include-book "utilities/top")
 
 (include-book "common-concepts")
-(include-book "common-options-reference")
+(include-book "common-options")
 
 (include-book "casesplit")
-(include-book "casesplit-design")
-(include-book "casesplit-reference")
+(include-book "casesplit-doc")
+
+(include-book "isodata")
+(include-book "isodata-doc")
 
 (include-book "parteval")
-(include-book "parteval-design")
-(include-book "parteval-reference")
+(include-book "parteval-doc")
 
 (include-book "restrict")
-(include-book "restrict-design")
-(include-book "restrict-reference")
+(include-book "restrict-doc")
 
 (include-book "tailrec")
-(include-book "tailrec-design")
-(include-book "tailrec-reference")
+(include-book "tailrec-doc")
 
 ; (depends-on "images/apt-logo.png")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ apt
+(defxdoc apt
 
   :parents (acl2::kestrel-books acl2::macro-libraries acl2::projects)
 
@@ -106,29 +105,16 @@
    (xdoc::p
     "Also see the "
     (xdoc::a :href "http://www.kestrel.edu/home/projects/apt"
-      "APT Project Web page") "."))
+      "APT Project Web page") ".")))
 
-  :order-subtopics t)
+(xdoc::order-subtopics apt (common-concepts
+                            common-options
+                            casesplit
+                            isodata
+                            parteval
+                            restrict
+                            tailrec
+                            utilities))
 
 (xdoc::add-resource-directory "kestrel-apt-images" "images")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc reference
-  :parents (apt)
-  :short "Reference for the APT tools.")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc design-notes
-  :parents (apt)
-  :short "Design notes for the APT tools.")
-
 (xdoc::add-resource-directory "kestrel-apt-design-notes" "design-notes")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ implementation
-  :parents (apt)
-  :short "Implementation of the APT tools."
-  :order-subtopics t)

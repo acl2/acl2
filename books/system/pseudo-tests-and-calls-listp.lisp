@@ -8,7 +8,7 @@
 (include-book "pseudo-tests-and-callsp")
 
 (defsection pseudo-tests-and-calls-listp
-  :parents (std/system)
+  :parents (system-utilities-non-built-in)
   :short "Recognize true lists of well-formed @('tests-and-calls') records."
 
   (defun pseudo-tests-and-calls-listp (x)

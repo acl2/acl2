@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,7 +15,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file contains tests for AIJ's natively implemented ACL2 functions.
-; Currently these are the ACL2 primitive functions.
 ; For now we only have tests for well-guarded calls of these functions,
 ; because ATJ does not yet handle (RETURN-LAST 'WITH-GUARD-CHECKING1-RAW ...),
 ; which arises if we wrap the ill-guarded calls to test
@@ -943,6 +942,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *nonnegative-integer-quotient-tests*
+  '(("NonnegIntQuot0" (nonnegative-integer-quotient 0 889))
+    ("NonnegIntQuot1" (nonnegative-integer-quotient 3 7))
+    ("NonnegIntQuot2" (nonnegative-integer-quotient 363202 783))
+    ("NonnegIntQuot3" (nonnegative-integer-quotient 528 22))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *string-append-tests*
+  '(("StringAppend0" (string-append "" ""))
+    ("StringAppend1" (string-append "abc" ""))
+    ("StringAppend2" (string-append "" "xyz"))
+    ("StringAppend3" (string-append "string" "append"))
+    ("StringAppend4" (string-append "SJSKDN83KD" "KSKSOWOWOZZNCM8D88383"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *all-tests*
   (append *characterp-tests*
           *stringp-tests*
@@ -974,4 +990,6 @@
           *car-tests-tests*
           *cdr-tests-tests*
           *equal-tests*
-          *if-tests*))
+          *if-tests*
+          *nonnegative-integer-quotient-tests*
+          *string-append-tests*))

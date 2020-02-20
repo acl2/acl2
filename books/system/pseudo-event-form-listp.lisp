@@ -7,11 +7,13 @@
 
 (include-book "pseudo-event-formp")
 
-; Here we recognize true lists of event forms.  See pseudo-event-form.lisp.
+(defsection pseudo-event-form-listp
+  :parents (system-utilities-non-built-in)
+  :short "Recognize true lists of well-formed event forms."
 
-(defun pseudo-event-form-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (equal x nil)
-    (and (pseudo-event-formp (car x))
-         (pseudo-event-form-listp (cdr x)))))
+  (defun pseudo-event-form-listp (x)
+    (declare (xargs :guard t))
+    (if (atom x)
+        (equal x nil)
+      (and (pseudo-event-formp (car x))
+           (pseudo-event-form-listp (cdr x))))))

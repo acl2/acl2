@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -35,5 +35,5 @@
      depends on how it is called.")
    (xdoc::p
     "See @(tsee number-of-results+) for
-     a logic-friendly variant of this utility."))
+     an enhanced variant of this utility."))
   (len (stobjs-out fn wrld)))

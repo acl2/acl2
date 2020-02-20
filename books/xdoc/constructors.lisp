@@ -1,6 +1,6 @@
-; XDOC Constructors
+; XDOC Documentation System for ACL2
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 (in-package "XDOC")
 
 ; Only the following book should be non-locally included here,
-; to minimize footprint and dependencies of this XDOC constructor library.
+; to minimize footprint and dependencies.
 (include-book "top")
 
 ; The books locally included here should be minimized, for the above reason.
@@ -697,7 +697,7 @@
                    that must be passed to this constructor.</p>"
                   "@(def "
                   (string-downcase$ (symbol-name macro-name))
-                  ").")))
+                  ")")))
       `(defsection ,macro-name
          :parents (primitive-constructors)
          :short ,doc
@@ -755,7 +755,7 @@
                              (string-escape
                               (string-downcase$
                                (symbol-name macro-name)))
-                             ").")
+                             ")")
          (defund ,fn-name (trees)
            (declare (xargs :guard (tree-listp trees)))
            (make-tree-dir/&& ,dir/&& trees))
@@ -1169,6 +1169,3 @@
 
   (defmacro seetopic (topic text)
     `(see_ :topic (@url ,topic) ,text)))
-
-; temporary synonym for compatibility with existing uses:
-(defmacro seeurl (&rest args) `(seetopic ,@args))

@@ -693,6 +693,16 @@ public final class Acl2Symbol extends Acl2Value {
      */
     public static final Acl2Symbol OR;
 
+    /**
+     * The symbol denoted by {@code acl2::nonnegative-integer-quotient}.
+     */
+    public static final Acl2Symbol NONNEGATIVE_INTEGER_QUOTIENT;
+
+    /**
+     * The symbol denoted by {@code acl2::string-append}.
+     */
+    public static final Acl2Symbol STRING_APPEND;
+
     static { // builds the pre-created symbols
         // names of the symbols:
         Acl2String stringT = Acl2String.imake("T");
@@ -735,6 +745,9 @@ public final class Acl2Symbol extends Acl2Value {
         Acl2String stringBadAtomLessThanOrEqualTo =
                 Acl2String.imake("BAD-ATOM<=");
         Acl2String stringOr = Acl2String.imake("OR");
+        Acl2String stringNonnegativeIntegerQuotient =
+                Acl2String.imake("NONNEGATIVE-INTEGER-QUOTIENT");
+        Acl2String stringStringAppend = Acl2String.make("STRING-APPEND");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);
@@ -778,6 +791,11 @@ public final class Acl2Symbol extends Acl2Value {
                 new Acl2Symbol(Acl2PackageName.ACL2,
                         stringBadAtomLessThanOrEqualTo);
         OR = new Acl2Symbol(Acl2PackageName.LISP, stringOr);
+        NONNEGATIVE_INTEGER_QUOTIENT =
+                new Acl2Symbol(Acl2PackageName.ACL2,
+                        stringNonnegativeIntegerQuotient);
+        STRING_APPEND =
+                new Acl2Symbol(Acl2PackageName.ACL2, stringStringAppend);
         // initial inner map for the "COMMON-LISP" package:
         Map<Acl2String, Acl2Symbol> initialLispMap = new HashMap<>();
         initialLispMap.put(stringT, T);
@@ -820,6 +838,9 @@ public final class Acl2Symbol extends Acl2Value {
         initialAcl2Map.put(stringBinaryTimes, BINARY_STAR);
         initialAcl2Map.put(stringBadAtomLessThanOrEqualTo,
                 BAD_ATOM_LESS_THAN_OR_EQUAL_TO);
+        initialAcl2Map.put(stringNonnegativeIntegerQuotient,
+                NONNEGATIVE_INTEGER_QUOTIENT);
+        initialAcl2Map.put(stringStringAppend, STRING_APPEND);
         // initial outer map:
         symbols.put(Acl2PackageName.LISP, initialLispMap);
         symbols.put(Acl2PackageName.ACL2, initialAcl2Map);

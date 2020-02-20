@@ -1,6 +1,6 @@
 ; Error Checking -- Generator
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/enumerations" :dir :system)
-(include-book "kestrel/utilities/system/event-forms" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

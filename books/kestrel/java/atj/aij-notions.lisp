@@ -15,9 +15,9 @@
 (include-book "java-abstract-syntax")
 
 (include-book "kestrel/std/system/primitivep" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "std/util/defval" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,13 +127,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define aij-nativep ((fn symbolp))
-  :returns (yes/no booleanp)
-  :short "ACL2 built-in functions natively implemented in AIJ."
+(defval *aij-natives*
+  :short "List of built-in ACL2 functions natively implemented in AIJ."
   :long
   (xdoc::topstring-p
-   "Currently these are exactly the ACL2 primitive functions.")
-  (primitivep fn))
+   "Currently these are the ACL2 primitive functions
+    plus @(tsee nonnegative-integer-quotient) and @(tsee string-append).")
+  (append (strip-cars *primitive-formals-and-guards*)
+          (list 'nonnegative-integer-quotient
+                'string-append)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define aij-nativep ((fn symbolp))
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 built-in functions natively implemented in AIJ."
+  (and (member-eq fn *aij-natives*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +188,9 @@
     (cdr . "CDR")
     (equal . "EQUAL")
     (bad-atom<= . "BAD_ATOM_LESS_THAN_OR_EQUAL_TO")
-    (or . "OR"))
+    (or . "OR")
+    (nonnegative-integer-quotient . "NONNEGATIVE_INTEGER_QUOTIENT")
+    (string-append . "STRING_APPEND"))
   ///
   (assert-event (symbol-string-alistp *aij-symbol-constants*))
   (assert-event (no-duplicatesp-equal (strip-cdrs *aij-symbol-constants*))))

@@ -6618,17 +6618,19 @@
    (let* ((alist (if success-p
                      (car alist-stack)
                    (accumulated-persistence-make-failures (car alist-stack))))
-          (new-alist (cond
-                      (success-p
-                       (add-accumulated-persistence-s
-                        xrune
-                        delta
-                        alist alist nil))
-                      (t
-                       (add-accumulated-persistence-f
-                        xrune
-                        delta
-                        alist alist nil)))))
+          (new-alist (cond ((fake-rune-for-anonymous-enabled-rule-p
+                             (xrune-rune xrune))
+                            alist)
+                           (success-p
+                            (add-accumulated-persistence-s
+                             xrune
+                             delta
+                             alist alist nil))
+                           (t
+                            (add-accumulated-persistence-f
+                             xrune
+                             delta
+                             alist alist nil)))))
      (cons (merge-accumulated-persistence new-alist (cadr alist-stack))
            (cddr alist-stack)))))
 
@@ -6931,11 +6933,16 @@
   (let* ((xrune-stack (access accp-info info :xrune-stack))
          (xrune (car xrune-stack))
          (xp (x-xrunep xrune))
-         (new-cnt (and (not xp) ; optimization
-                       (cond (success-p
-                              (1+ (access accp-info info :cnt-s)))
-                             (t
-                              (1+ (access accp-info info :cnt-f))))))
+         (new-cnt
+          (and (not xp) ; else new-cnt is irrelevant
+               (cond (success-p
+                      (if (fake-rune-for-anonymous-enabled-rule-p xrune)
+                          (access accp-info info :cnt-s)
+                        (1+ (access accp-info info :cnt-s))))
+                     (t
+                      (if (fake-rune-for-anonymous-enabled-rule-p xrune)
+                          (access accp-info info :cnt-f)
+                        (1+ (access accp-info info :cnt-f)))))))
          (top-level-p (not (member-equal xrune (cdr xrune-stack)))))
     (cond
      (xp

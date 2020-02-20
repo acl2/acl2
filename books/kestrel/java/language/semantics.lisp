@@ -15,6 +15,9 @@
 (include-book "primitive-values")
 (include-book "primitive-operations")
 (include-book "primitive-conversions")
+(include-book "pointers")
+(include-book "reference-values")
+(include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

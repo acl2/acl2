@@ -32,7 +32,7 @@
 (include-book "cat")
 (include-book "eqv")
 (include-book "misc/definline" :dir :system)  ;; bozo
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/revappend" :dir :system))
 
@@ -139,5 +139,3 @@ baz,
     beyo"
                    (list #\Space #\, #\Newline))
            (list "foo" "bar" "baz" "heyo" "beyo")))))
-
-

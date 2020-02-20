@@ -33,7 +33,7 @@
 (include-book "../defines")
 (include-book "../deflist")
 (include-book "utils")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (defun foo (x)
   (declare (xargs :guard (natp x) :mode :logic))
@@ -249,7 +249,7 @@
   (defthm global2 (integerp (len x))))
 
 (include-book "std/strings/substrp" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (assert!
  (let ((long (cdr (assoc :long (xdoc::find-topic 'doc-test (xdoc::get-xdoc-table (w state)))))))

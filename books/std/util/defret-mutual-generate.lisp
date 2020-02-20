@@ -54,77 +54,38 @@ repetition and isn't very DRY.  Instead, one might be able to generate the
 theorems using rules based on the input/output signature of the functions.
 That is what defret-mutual-generate is intended to do.</p>
 
-<h3>Theorem Generation Rules</h3>
+<p>The general idea is that for each function in the clique, we get that
+function's input/output signature and apply a sequence of rules, defined by the
+arguments to @('defret-mutual-generate'), which result in a theorem to prove.
+The rules may check things like the presence or absence of a formal or return
+value, the name of the function, etc., and compose the resulting theorem by
+adding hypothesis or conclusion conjuncts, @('B*') bindings, etc.  Then we
+take the results from all the functions in the clique and prove them all
+together using @('defret-mutual').</p>
 
-<p>For each function in the mutual recursion, @('defret-mutual-generate')
-produces a @(see defret) form by applying a series of rules.  Each rule is a
-pair @('(condition actions)') where if the condition is satisfied, the actions
-modify the @('defret') form.  The rules may be written directly by the user or
-generated using some abbreviations, discussed below (BOZO maybe).</p>
+<h4>Invocation Syntax</h4>
 
-<h4>Condition language</h4>
-
-<p>The condition under which a rule applies may be a Boolean formula using
-AND/OR/NOT, T and NIL, and the following checks:</p>
-
-<ul>
-<li>@('(:has-formal :name name :type type)') checks that the function has a
-formal satisfying the specified criteria.  If @(':name') is given then it
-checks for a formal with the given name; if @(':type') is given then it checks
-for a formal that has a guard @('(type name)').</li>
-
-<li>@('(:has-return :name name :type type)') checks that the function has a
-return value satisfying the given criteria, simple to @('has-formal').</li>
-
-<li>@('(:fnname name)') only applies to the given function.</li>
-
-</ul>
-<p>See the function @('dmgen-eval-condition') for implementation.</p>
-
-<h4>Actions</h4>
-
-<p>An action may be any of the following:</p>
-
-<ul>
-<li>@('(:add-hyp term)') adds @('term') as a top-level hypothesis.</li>
-<li>@('(:push-hyp term)') pushes @('term') as a hypothesis for any conclusions
-added subsequently until it is popped off the stack with @('(:pop-hyp)').</li>
-<li>@('(:pop-hyp)') removes the most recently pushed hypothesis so it won't
-affect subsequent conclusions added.</li>
-<li>@('(:add-concl term)') adds @('term') as a conclusion, conjoined with any others.</li>
-<li>@('(:add-bindings . bindings)') adds the given bindings as B* bindings, after
-binding the return values but outside of both the hyps and conclusions.</li>
-<li>@('(:each-formal :type type :var var :action action)'), where each action
-is an @(':add-hyp'), @(':push-hyp') or @(':add-concl') form, adds the
-given hyp or conclusion for each formal with the given type, with @('var') in
-these actions replaced by the name of the formal.</li>
-
-<li>@('(:each-return :type type :var var :action action)'), similar to
-@('each-formal') but acts on return values instead of formals.</li>
-
-<li>@('(:add-keyword key val ...)') adds the keyword/value pairs as arguments to the
-resulting @('defret') form.</li>
-
-<li>@('(:set-thmname template)') sets the theorem name template for the
-@('defret') to the given symbol, which may include the substring @('<FN>')
-which is replaced by the name of the function.</li>
-
-</ul>
-
-<h4>Syntax</h4>
-
-<p>For a single set of rules generating a mutually inductive set theorems, use
-the following form:</p>
+<p>For a single set of rules generating a mutually inductive set of theorems, use
+the following form.  The conditions and actions used by the rules entries are
+described below.</p>
 
 @({
  (defret-mutual-generate thmname-template
    :rules ((condition1 action1 ...)
            (condition2 action2 ...))
    ...
+   ;; optional keywords
+   :hints top-level-hints
+   :instructions rarely-used
+   :no-induction-hint nil
+   :otf-flg nil
+   ;; defaults to the most recent defines form:
    :mutual-recursion defines-name)
  })
 
-<p>(Other keywords besides @(':rules') may used as discussed below under Common Abbreviations.)</p>
+<p>A few other keywords effectively generate additional @(':rules') entries, as
+discussed below under Common Abbreviations.  These may be used wherever
+@(':rules') may occur.</p>
 
 <p>For example:</p>
 
@@ -157,14 +118,82 @@ recursion, and makes a @('defret-mutual') form containing all of the resulting
      :rules rules2
      ...)
    ...
+   ;; same optional keywords as above
+   :hints top-level-hints
    :mutual-recursion my-defines-name)
  })
+
+
+<h3>Theorem Generation Rules</h3>
+
+<p>For each function in the mutual recursion, @('defret-mutual-generate')
+produces a @(see defret) form by applying a series of rules.  Each rule is a
+pair @('(condition actions)') where if the condition is satisfied, the actions
+modify the @('defret') form.  The rules may be written directly by the user or
+generated using some abbreviations, discussed below.</p>
+
+
+<h4>Condition language</h4>
+
+<p>The condition under which a rule applies may be a Boolean formula using
+AND/OR/NOT, T and NIL, and the following checks:</p>
+
+<ul>
+<li>@('(:has-formal :name name :type type)') checks that the function has a
+formal satisfying the specified criteria.  If @(':name') is given then it
+checks for a formal with the given name; if @(':type') is given then it checks
+for a formal that has a guard @('(type name)').</li>
+
+<li>@('(:has-return :name name :type type)') checks that the function has a
+return value satisfying the given criteria, simple to @('has-formal').</li>
+
+<li>@('(:fnname name)') only applies to the given function.</li>
+
+</ul>
+<p>See the function @('dmgen-eval-condition') for implementation.</p>
+
+<h4>Actions</h4>
+
+<p>An action may be any of the following:</p>
+
+<ul>
+<li>@('(:add-hyp term)') adds @('term') as a top-level hypothesis.</li>
+<li>@('(:add-concl term)') adds @('term') as a conclusion, conjoined with any others.</li>
+<li>@('(:add-bindings . bindings)') adds the given @('B*') bindings, after
+binding the return values but outside of both the hyps and conclusions.</li>
+<li>@('(:each-formal :type type :var var :action action)'), where each action
+is an @(':add-hyp'), @(':push-hyp') or @(':add-concl') form, adds the
+given hyp or conclusion for each formal with the given type, with @('var') in
+these actions replaced by the name of the formal.</li>
+
+<li>@('(:each-return :type type :var var :action action)'), similar to
+@('each-formal') but acts on return values instead of formals.</li>
+
+<li>@('(:push-hyp term)') pushes @('term') as a hypothesis for any conclusions
+added subsequently until it is popped off the stack with @('(:pop-hyp)').</li>
+<li>@('(:pop-hyp)') removes the most recently pushed hypothesis so it won't
+affect subsequent conclusions added.</li>
+
+<li>@('(:add-keyword key val ...)') adds the keyword/value pairs as arguments
+to the resulting @('defret') form; typical keys to use are @(':hints') and
+@(':rule-classes').</li>
+
+<li>@('(:set-thmname template)') sets the theorem name template for the
+@('defret') to the given symbol, which may include the substring @('<FN>')
+which is replaced by the name of the function.</li>
+
+</ul>
+
 
 <h4>Common Abbreviations</h4>
 
 <p>The @('defret-mutual-generate') macro supports some other keywords
 besides :rules, each of which generates rules according to some common usage
-patterns.</p>
+patterns.  Note that the ordering of rules is significant for the behavior of
+@(':push-hyp')/@(':pop-hyp') and @(':add-concl').  The rules generated by these
+abbreviations are considered before the explicit @(':rules'); this means that
+any conclusions generated by @(':return-concls') will not be affected by any
+@(':push-hyp') forms from the @(':rules').</p>
 
 <h5>@(':formal-hyps')</h5>
 
@@ -305,7 +334,7 @@ function names. For example:</p>
 (defun dmgen-check-formal/return-action (action)
   (if (atom action)
       (msg "Bad formal action (atom): ~x0" action)
-    (if (member-eq (car action) '(:add-hyp :push-hyp :add-concl))
+    (if (member-eq (car action) '(:add-hyp :push-hyp :pop-hyp :add-concl))
         (dmgen-check-add-hyp/concl-action action)
       (msg "Bad formal action: ~x0" action))))
 

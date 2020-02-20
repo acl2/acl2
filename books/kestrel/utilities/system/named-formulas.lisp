@@ -1,6 +1,6 @@
 ; System Utilities -- Named Formulas
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,10 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "../er-soft-plus")
-(include-book "event-form-lists")
 (include-book "fresh-names")
-(include-book "../prove-interface")
+(include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/prove-interface" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-truelist-alistp" :dir :system)
 

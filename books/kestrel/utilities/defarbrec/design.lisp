@@ -1,6 +1,6 @@
 ; Arbitrary Recursion Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
 ; (depends-on "kestrel/utilities/design-notes/defarbrec.pdf" :dir :system)

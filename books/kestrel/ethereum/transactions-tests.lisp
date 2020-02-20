@@ -17,7 +17,7 @@
 (include-book "kestrel/crypto/ecdsa/secp256k1-attachment" :dir :system)
 
 (include-book "kestrel/utilities/strings/hexstrings" :dir :system)
-(include-book "misc/assert" :dir :system) ; for assert!
+(include-book "std/testing/assert" :dir :system) ; for assert!
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,4 +52,3 @@
                      #x28EF61340BD939BC2195FE537567866003E1A15D3C71FF63E1590620AA636276)
               (equal (transaction->sign-s *eip-155-example-transaction*)
                      #x67CBE9D8997F761AECB703304B3800CCF555C9F3DC64214B297FB1966A3B6D83)))
-

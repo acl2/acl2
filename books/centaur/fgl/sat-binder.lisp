@@ -461,7 +461,14 @@
 
 
 
-
+(local (defthmd mv-nth-when-equal-cons
+         (implies (and (syntaxp (quotep n))
+                       (equal x (cons a b)))
+                  (equal (mv-nth n x)
+                         (if (zp n)
+                             a
+                           (mv-nth (1- n) b))))
+         :hints(("Goal" :in-theory (enable mv-nth)))))
 
 (def-fgl-binder-meta sat-check-with-witness-raw-binder
   (if (and (eq (pseudo-fnsym-fix fn) 'sat-check-with-witness-raw)
@@ -520,8 +527,7 @@
         (mv t 'x `((x . ,(g-cons :sat (g-cons (mk-g-boolean ans) nil))))
             nil interp-st state))
     (mv nil nil nil nil interp-st state))
-  :prepwork ((local (in-theory (enable sat-check-with-witness-raw)))
-             (local (defret fgl-object-eval-when-gobj-syntactic-boolean-fix
+  :prepwork ((local (defret fgl-object-eval-when-gobj-syntactic-boolean-fix
                       (implies okp
                                (iff (fgl-object-eval x env)
                                     (gobj-bfr-eval (gobj-syntactic-boolean->bool new-x) env)))
@@ -571,7 +577,8 @@
                       :rule-classes :congruence))
              (local (acl2::use-trivial-ancestors-check))
 
-             (local (in-theory (enable gobj-bfr-eval bfr-eval aignet::lit-eval)))
+             (local (in-theory (enable gobj-bfr-eval ;; bfr-eval ;; aignet::lit-eval
+                                       )))
 
              (local
               (defthm nth-of-of-interp-st-sat-counterexample
@@ -592,7 +599,37 @@
                                           aignet::aignet-vals->regvals
                                           aignet::aignet-vals->regvals-iter)
                                          (aignet-vals-p-of-interp-st-sat-counterexample))))))
-             )
+
+             (local
+              #!aignet
+              (defthm id-eval-of-lit->var
+                (equal (id-eval (lit->var lit) invals regvals aignet)
+                       (b-xor (lit->neg lit)
+                              (lit-eval lit invals regvals aignet)))
+                :hints(("Goal" :in-theory (enable lit-eval)))))
+
+             (local (in-theory (disable member-equal)))
+
+             (local (defthmd sat-check-with-witness-raw-fixes
+                      (and (equal (sat-check-with-witness-raw '(:failed nil) config x) '(:failed nil))
+                           (implies (not x)
+                                    (equal (sat-check-with-witness-raw '(:unsat nil) config x)
+                                           '(:unsat nil)))
+                           (implies (and (equal rhs  (list :sat ctrex))
+                                         (case-split (implies ctrex x)))
+                                    (equal (sat-check-with-witness-raw rhs config x) rhs))
+                           (implies (case-split (implies ctrex x))
+                                    (equal (sat-check-with-witness-raw (list :sat ctrex) config x)
+                                           (list :sat ctrex))))
+                      :hints(("Goal" :in-theory (enable sat-check-with-witness-raw)))))
+
+             (defcong iff equal (sat-check-with-witness-raw ans config x) 3
+               :hints(("Goal" :in-theory (enable sat-check-with-witness-raw))))
+             (local (set-default-hints
+                     '((and stable-under-simplificationp
+                            '(:in-theory (enable sat-check-with-witness-raw-fixes
+                                                 bfr-eval
+                                                 w-state-equal-forward)))))))
   :formula-check sat-formula-checks)
 
 (add-fgl-binder-meta sat-check-with-witness-raw sat-check-with-witness-raw-binder)

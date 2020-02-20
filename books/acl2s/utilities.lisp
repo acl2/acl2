@@ -318,6 +318,9 @@ Now in defthm.lisp
 
 |#
 
+(defun gen-keyword (symbol)
+  (intern (symbol-name symbol) "KEYWORD"))
+
 (defun fix-sym (sym)
   (declare (xargs :guard (symbolp sym)))
   (if (equal (symbol-package-name sym) *main-lisp-package-name*)
@@ -362,6 +365,9 @@ Now in defthm.lisp
                               (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l)
                (if pkg pkg (best-package-symbl-list l "ACL2"))))
+
+(defun mk-acl2s-sym (lsym)
+  (make-symbl lsym "ACL2S"))
 
 (defmacro make-sym (s suf &optional pkg)
 ; Returns the symbol s-suf.
@@ -545,4 +551,45 @@ functions over natural numbers.
                   :verify-guards nil))
   (and (member-equal f (fun-syms-in-term term)) t))
 |#
+
+(defconst *contract-checking-values*
+  '(:on :off))
+
+; Modified from set-guard-checking
+(defmacro set-contract-checking (flg)
+  (declare (xargs :guard
+                  (let ((flg (if (and (consp flg)
+                                      (eq (car flg) 'quote)
+                                      (consp (cdr flg)))
+                                 (cadr flg)
+                               flg)))
+                    (member-eq flg *contract-checking-values*))))
+  `(let* ((current-flg (f-get-global 'guard-checking-on state))
+          (flg ,(if (and (consp flg) (eq (car flg) 'quote) (consp (cdr flg)))
+                    (cadr flg)
+                  flg))
+          (gflg (if (eq flg :off) nil :all)))
+     (cond
+      ((and (raw-mode-p state) flg)
+       (er soft 'set-contract-checking
+           "It is illegal (and anyhow, would be useless) to attempt to modify ~
+            contract checking while in raw mode, since contracts are not checked in ~
+            raw mode."))
+      ((eq gflg current-flg)
+       (pprogn
+        (fms "Contract-checking already has value ~x0.~%~%"
+             (list (cons #\0 flg))
+             *standard-co* state nil)
+        (value :invisible)))
+      ((eq flg :off)
+       (pprogn (f-put-global 'guard-checking-on nil state)
+               (fms "Turning contract-checking :OFF.~%~%"
+                    nil *standard-co* state nil)
+               (value :invisible)))
+      (t (pprogn
+          (f-put-global 'guard-checking-on gflg state)
+          (assert$ (and gflg (not (eq gflg current-flg)))
+                   (fms "Turning contract-checking :ON.~%~%"
+                        nil *standard-co* state nil))
+          (value :invisible))))))
 

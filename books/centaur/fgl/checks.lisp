@@ -57,6 +57,18 @@ suffixed with @('!') and simply wraps the function invocation in @('(binder
 
 (local (xdoc::set-default-parents fgl-syntactic-checker-binders))
 
+(define check-true (ans x)
+  :short "FGL binder that checks whether X is syntactically known true."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
+  (and x ans t)
+  ///
+  (defthm check-true-implies-true
+    (implies (check-true ans x)
+             x)
+    :rule-classes :forward-chaining)
+
+  (defcong iff equal (check-true ans x) 2))
+
 (define check-integerp (ans x)
   :short "FGL binder that checks whether X is syntactically an integer."
   :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"

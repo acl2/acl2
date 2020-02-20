@@ -327,6 +327,7 @@
 
 (include-book "xdoc/topics" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/alter" :dir :system)
 
 

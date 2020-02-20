@@ -34,6 +34,7 @@
 (include-book "std/stobjs/bitarr" :dir :system)
 (include-book "misc/definline" :dir :system)
 (include-book "std/lists/equiv" :dir :system)
+(include-book "std/stobjs/clone" :dir :system)
 (local (include-book "data-structures/list-defthms" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
@@ -686,3 +687,8 @@
   ;;   (set-u32 (id-val id) (lnfix n) u32arr))
   )
 
+
+
+(defstobj-clone mark bitarr :suffix "-MARK")
+(defstobj-clone copy litarr :prefix "COPY")
+(defstobj-clone vals bitarr :prefix "VALS")

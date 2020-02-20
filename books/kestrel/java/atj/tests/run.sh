@@ -4,7 +4,7 @@
 
 # Java Library
 #
-# Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -60,6 +60,13 @@ java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimitivesShallow
 # test the Java code that manipulates Java primitive arrays
 # (without timings because they are very fast, all print as 0.000):
 java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G PrimarraysShallowGuardedTests
+
+# test the multi-value functions
+# (without timings because they are very fast, all print as 0.000):
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueDeepUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueDeepGuardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueShallowUnguardedTests
+java -cp ../../aij/java/out/artifacts/AIJ_jar/AIJ.jar:. -Xss1G MultivalueShallowGuardedTests
 
 # printed only if all the tests succeed:
 echo "" # blank line

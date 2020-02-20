@@ -97,7 +97,7 @@ returns T if @('x') is syntactically an integer.  Another application is to
 perform a SAT check and return the result (@(':unsat'), @(':sat'), or
 @(':failed')).</p>" val)
 
-(defsection bind-var
+(define bind-var (ans form)
   :parents (fgl-rewrite-rules)
   :short "Form that can bind a free variable to the result of an arbitrary computation."
   :long "<p>Logically, @('(bind-var var form)') just returns @('var').
@@ -107,20 +107,18 @@ rewritten under an @('unequiv') congruence so it can do extralogical things
 like examining the interpreter state and term syntax. The @('var') argument
 must be a variable that hasn't yet been bound during the application of the
 current rewrite rule.</p>"
-  (define bind-var1 (ans form)
-    :ignore-ok t
-    :irrelevant-formals-ok t
-    :enabled t
-    ans
-    ///
-    (defcong unequiv equal (bind-var1 ans form) 2)
-    (defmacro bind-var (&rest args)
-      `(binder (bind-var1 . ,args)))
-
-    (defthmd bind-var-binder-rule
-      (implies (equal ans form)
-               (equal (bind-var1 ans form)
-                      ans)))))
+  
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  ans
+  ///
+  (defcong unequiv equal (bind-var ans form) 2)
+  
+  (defthmd bind-var-binder-rule
+    (implies (equal ans form)
+             (equal (bind-var ans form)
+                    ans))))
 
 (defxdoc syntax-interp
   :parents (fgl-rewrite-rules)

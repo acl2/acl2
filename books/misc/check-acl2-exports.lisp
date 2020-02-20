@@ -200,6 +200,9 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    STANDARD-CHAR-P+
+    SUBSEQUENCEP
+
 ; NOTE: DEFMACRO-UNTOUCHABLE can probably be removed from special treatment in
 ; books/projects/apply-model/portcullis.lisp
 ; and

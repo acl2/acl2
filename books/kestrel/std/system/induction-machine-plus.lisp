@@ -20,9 +20,7 @@
 (define induction-machine+ ((fn symbolp) (wrld plist-worldp))
   :returns (result pseudo-tests-and-calls-listp)
   :parents (std/system/function-queries)
-  :short (xdoc::topstring
-          (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @(tsee induction-machine).")
+  :short "Enhanced variant of @(tsee induction-machine)."
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee induction-machine),

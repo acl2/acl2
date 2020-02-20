@@ -15,6 +15,7 @@
 (include-book "java-primitive-arrays")
 (include-book "test-structures")
 
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
 (include-book "kestrel/std/system/pure-raw-p" :dir :system)
@@ -24,7 +25,6 @@
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
 (include-book "oslib/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -525,7 +525,7 @@
    (xdoc::p
     "The first two arguments of this function are the two components
      of a pair in the alist computed from @(':tests').
-     These two components are the name of the tests and the call of the tests.")
+     These two components are the name of the test and the call of the test.")
    (xdoc::p
     "We first ensure that the name is a non-empty string
      consisting only of letters and digits.
@@ -537,17 +537,19 @@
      obtaining the corresponding input test values.
      If the @(':guards') input is @('t'),
      we ensure that the inputs satisfy the guard of the function.
-     We evaluate the call @('(fn in1 in2 ...)'), obtaining a result value.
+     We evaluate the call @('(fn in1 in2 ...)'),
+     obtaining either a single result value (if @('fn') is single-valued)
+     or a list of result values (if @('fn') is multi-valued).
      If @(':deep') is @('nil') and @(':guards') is @('t'),
      we ensure that the inputs will select an overloaded methods,
-     and we will obtain the corresponding output type
-     to contruct the appropriate kind of output test value.
+     and we obtain the corresponding output types
+     to contruct the appropriate kind of output test values.
      We create and return an @(tsee atj-test) record.")
    (xdoc::p
-    "For now functions that return @(tsee mv) values
-     are regarded as returning a single non-empty list value.
-     Thus, if the result of @(tsee atj-output-types-of-min-input-types)
-     is not a singleton list, we treat it as a single @(':acons') type."))
+    "Note that a single-valued function may return a list.
+     So we need to look at the number of results returned by the function
+     to recognize the result of the function call from @(tsee trans-eval)
+     as either a single list result or a list of multiple results."))
   (b* (((er &) (ensure-string$ name
                                (msg "The test name ~x0 in the :TESTS input"
                                     name)
@@ -578,15 +580,6 @@
                       the test term ~x1 in the :TESTS input"
                      fn call)
                 t nil))
-       ((unless (or (member-eq fn *stobjs-out-invalid*)
-                    (= (number-of-results+ fn (w state)) 1)))
-        (er-soft+ ctx t nil
-                  "The function ~x0 called by ~
-                   the test term ~x1 in the :TESTS input ~
-                   must return a single result. ~
-                   (Support for functions returning multiple results ~
-                   will be added in the future.)"
-                  fn call))
        (inputs (fargs term$))
        (fn-info (atj-get-function-type-info fn guards$ (w state)))
        (main-fn-type (atj-function-type-info->main fn-info))
@@ -614,35 +607,38 @@
                                     because the :GUARDS input is T." call)
                        (value nil)))
                  (value nil)))
-       ((er (cons & output)) (trans-eval term$ ctx state nil))
+       ((er (cons & output/outputs)) (trans-eval term$ ctx state nil))
+       (nresults (atj-number-of-results fn (w state)))
+       ((when (and (>= nresults 2)
+                   (or (not (true-listp output/outputs))
+                       (not (equal (len output/outputs)
+                                   nresults)))))
+        (value (raise "Internal error: ~
+                       the function ~x0 returns ~x1 results, ~
+                       but evaluating its call returns ~x2, ~
+                       which is not a true list of length ~x1."
+                      fn nresults output/outputs)))
+       (outputs (if (= nresults 1)
+                    (list output/outputs)
+                  output/outputs))
        ((when (or deep$ (not guards$)))
-        (b* ((test-output (atj-test-value-avalue output)))
-          (value (atj-test name fn test-inputs test-output))))
+        (b* ((test-outputs (atj-test-value-avalue-list outputs)))
+          (value (atj-test name fn test-inputs test-outputs))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
        (out-types? (atj-output-types-of-min-input-types in-types all-fn-types))
        ((when (null out-types?))
-        (er-soft+ ctx t nil
-                  "The test term ~x0 in the :TESTS input ~
-                   does not have a corresponding Java overloaded method."
-                  call))
-       (out-type (atj-type-list-to-type/acons out-types?))
-       (test-output
-        (case out-type
-          (:jboolean (atj-test-value-jvalue-boolean output))
-          (:jchar (atj-test-value-jvalue-char output))
-          (:jbyte (atj-test-value-jvalue-byte output))
-          (:jshort (atj-test-value-jvalue-short output))
-          (:jint (atj-test-value-jvalue-int output))
-          (:jlong (atj-test-value-jvalue-long output))
-          (:jboolean[] (atj-test-value-jvalue-boolean-array output))
-          (:jchar[] (atj-test-value-jvalue-char-array output))
-          (:jbyte[] (atj-test-value-jvalue-byte-array output))
-          (:jshort[] (atj-test-value-jvalue-short-array output))
-          (:jint[] (atj-test-value-jvalue-int-array output))
-          (:jlong[] (atj-test-value-jvalue-long-array output))
-          (t (atj-test-value-avalue output)))))
-    (value (atj-test name fn test-inputs test-output))))
+        (value (raise "Internal error: ~
+                       the test term ~x0 in the :TESTS input ~
+                       does not have a corresponding Java overloaded method."
+                      call)))
+       ((unless (= (len outputs) (len out-types?)))
+        (value (raise "Internal error: ~
+                       the number of results ~x0 of ~x1 ~
+                       does not match the number ~x2 of its output types."
+                      (len outputs) fn (len out-types?))))
+       (test-outputs (atj-test-values-of-types outputs out-types?)))
+    (value (atj-test name fn test-inputs test-outputs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -875,15 +871,21 @@
     :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
                  (new-worklist-chk symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
-    (b* (((when (variablep term)) (mv worklist-gen worklist-chk nil))
-         ((when (fquotep term)) (mv worklist-gen worklist-chk nil))
-         (fn (ffn-symb term))
-         ((when (and (eq fn 'return-last)
-                     (quotep (fargn term 1)))) ; this should be always true
-          (b* ((1st-arg (fargn term 1)))
-            (case (unquote 1st-arg)
+    (b* (((when (member-eq (pseudo-term-kind term)
+                           '(:null :var :quote)))
+          (mv worklist-gen worklist-chk nil))
+         (fn (pseudo-term-call->fn term))
+         (args (pseudo-term-call->args term))
+         ((when (eq fn 'return-last))
+          (b* ((1st-arg (first args))
+               ((unless (pseudo-term-case 1st-arg :quote))
+                (raise "Internal error: ~
+                        the first argument of ~x0 is not a quoted constant."
+                       term)
+                (mv worklist-gen worklist-chk nil))) ; irrelevant
+            (case (pseudo-term-quote->val 1st-arg)
               (acl2::mbe1-raw (if guards$
-                                  (atj-collect-fns-in-term (fargn term 2)
+                                  (atj-collect-fns-in-term (second args)
                                                            gen?
                                                            worklist-gen
                                                            worklist-chk
@@ -891,7 +893,7 @@
                                                            collected-chk
                                                            deep$
                                                            guards$)
-                                (atj-collect-fns-in-term (fargn term 3)
+                                (atj-collect-fns-in-term (third args)
                                                          gen?
                                                          worklist-gen
                                                          worklist-chk
@@ -902,7 +904,7 @@
               (acl2::progn (b* (((mv worklist-gen
                                      worklist-chk
                                      unsuppported-return-last?)
-                                 (atj-collect-fns-in-term (fargn term 2)
+                                 (atj-collect-fns-in-term (second args)
                                                           nil
                                                           worklist-gen
                                                           worklist-chk
@@ -912,7 +914,7 @@
                                                           guards$))
                                 ((when unsuppported-return-last?)
                                  (mv worklist-gen worklist-chk t)))
-                             (atj-collect-fns-in-term (fargn term 3)
+                             (atj-collect-fns-in-term (third args)
                                                       gen?
                                                       worklist-gen
                                                       worklist-chk
@@ -922,7 +924,7 @@
                                                       guards$)))
               (t (mv worklist-gen worklist-chk t)))))
          ((mv worklist-gen worklist-chk unsupported-return-last?)
-          (atj-collect-fns-in-terms (fargs term)
+          (atj-collect-fns-in-terms args
                                     gen?
                                     worklist-gen
                                     worklist-chk
@@ -931,19 +933,20 @@
                                     deep$
                                     guards$))
          ((when unsupported-return-last?) (mv worklist-gen worklist-chk t))
-         ((when (flambdap fn)) (atj-collect-fns-in-term (lambda-body fn)
-                                                        gen?
-                                                        worklist-gen
-                                                        worklist-chk
-                                                        collected-gen
-                                                        collected-chk
-                                                        deep$
-                                                        guards$))
+         ((when (consp fn))
+          (atj-collect-fns-in-term (pseudo-lambda->body fn)
+                                   gen?
+                                   worklist-gen
+                                   worklist-chk
+                                   collected-gen
+                                   collected-chk
+                                   deep$
+                                   guards$))
          ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
-                     (or (member-eq fn *atj-java-primitive-fns*)
-                         (member-eq fn *atj-java-primarray-fns*))))
+                     (or (atj-java-primitive-fn-p fn)
+                         (atj-java-primarray-fn-p fn))))
           (mv worklist-gen worklist-chk nil)))
       (if gen?
           (if (or (member-eq fn worklist-gen)
@@ -959,7 +962,8 @@
             (mv worklist-gen worklist-chk nil)
           (mv worklist-gen
               (cons fn worklist-chk)
-              nil)))))
+              nil))))
+    :measure (pseudo-term-count term))
 
   (define atj-collect-fns-in-terms ((terms pseudo-term-listp)
                                     (gen? booleanp)
@@ -990,116 +994,23 @@
                                 collected-gen
                                 collected-chk
                                 deep$
-                                guards$)))
+                                guards$))
+    :measure (pseudo-term-list-count terms))
 
   :prepwork ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
-             (local (in-theory (disable member-equal acl2::member-of-cons))))
+             (local (in-theory
+                     ;; just to speed up the proofs:
+                     (disable pseudo-termp
+                              member-equal
+                              acl2::member-of-cons
+                              acl2::symbol-listp-when-subsetp-equal))))
 
   :verify-guards nil ; done below
   ///
   (verify-guards atj-collect-fns-in-term
-    :hints (("Goal" :expand (pseudo-termp term))))
-
-  (local (include-book "kestrel/std/system/all-fnnames" :dir :system))
-  (local (include-book "std/lists/remove1-equal" :dir :system))
-
-  ;; the following lemmas about ALL-FNNAMES1 seem a bit too specific
-  ;; to be in [books]/kestrel/std/system/all-fnnames.lisp:
-
-  (defruledl all-fnnames1-lemma1
-    (implies (and (consp x)
-                  (equal fn (car x))
-                  (not (equal fn 'quote))
-                  (not (consp fn)))
-             (member-equal fn (all-fnnames1 nil x acc)))
-    :expand ((all-fnnames1 nil x acc))
-    :disable acl2::all-fnnames1-includes-acc
-    :use (:instance acl2::all-fnnames1-includes-acc
-          (flg t) (x (cdr x)) (acc (cons fn acc))))
-
-  (defruledl all-fnnames1-lemma2
-    (implies (and (consp x)
-                  (not (eq (car x) 'quote)))
-             (subsetp-equal (all-fnnames1 t (cdr x) nil)
-                            (all-fnnames1 nil x nil)))
-    :enable all-fnnames1)
-
-  (defruledl all-fnnames1-lemma3
-    (implies (and (consp x)
-                  (not (equal (car x) 'quote))
-                  (not (consp (car x))))
-             (subsetp-equal (all-fnnames1 nil (caddr x) nil)
-                            (all-fnnames1 nil x nil)))
-    :use (:instance acl2::all-fnnames1-includes-acc
-          (flg nil)
-          (x (cadr x))
-          (acc (all-fnnames1 nil
-                             (caddr x)
-                             (all-fnnames1 t
-                                           (cdddr x)
-                                           (list (car x))))))
-    :disable acl2::all-fnnames1-includes-acc
-    :enable all-fnnames1)
-
-  (defruledl all-fnnames1-lemma4
-    (implies (and (consp x)
-                  (not (equal (car x) 'quote))
-                  (not (consp (car x))))
-             (subsetp-equal (all-fnnames1 nil (cadddr x) nil)
-                            (all-fnnames1 nil x nil)))
-    :use ((:instance acl2::all-fnnames1-includes-acc
-           (flg nil)
-           (x (cadr x))
-           (acc (all-fnnames1
-                 nil
-                 (caddr x)
-                 (all-fnnames1 nil
-                               (cadddr x)
-                               (all-fnnames1 t
-                                             (cddddr x)
-                                             (list (car x)))))))
-          (:instance acl2::all-fnnames1-includes-acc
-           (flg nil)
-           (x (caddr x))
-           (acc (all-fnnames1 nil
-                              (cadddr x)
-                              (all-fnnames1 t
-                                            (cddddr x)
-                                            (list (car x)))))))
-    :disable acl2::all-fnnames1-includes-acc
-    :enable all-fnnames1)
-
-  (defret-mutual subsetp-equal-of-atj-collect-fns-in-term
-    (defret subsetp-equal-of-atj-collect-fns-in-term
-      (and (subsetp-equal new-worklist-gen
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames term)))
-           (subsetp-equal new-worklist-chk
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames term))))
-      :fn atj-collect-fns-in-term)
-    (defret subsetp-equal-of-atj-collect-fns-in-terms
-      (and (subsetp-equal new-worklist-gen
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames-lst terms)))
-           (subsetp-equal new-worklist-chk
-                          (append worklist-gen
-                                  worklist-chk
-                                  (all-fnnames-lst terms))))
-      :fn atj-collect-fns-in-terms)
-    :mutual-recursion atj-collect-fns-in-term
-    :hints (("Goal" :in-theory (e/d (atj-collect-fns-in-term
-                                     atj-collect-fns-in-terms
-                                     all-fnnames1
-                                     all-fnnames1-lemma1
-                                     all-fnnames1-lemma2
-                                     all-fnnames1-lemma3
-                                     all-fnnames1-lemma4)
-                                    (member-equal
-                                     acl2::member-of-cons))))))
+    :hints (("Goal"
+             :expand (pseudo-termp term)
+             :in-theory (enable member-equal acl2::member-of-cons)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1154,7 +1065,8 @@
     "Note that, as explained in the overview of the algorithm,
      functions natively implemented, which include the ACL2 primitive functions,
      never appear in the worklists and collected lists.
-     Thus, when we encounter a function without an unnormalized body,
+     Thus, when we encounter a function
+     without an unnormalized body and without an attachment,
      we stop with an error.")
    (xdoc::p
     "If the function satisfies all the needed constraints,
@@ -1196,10 +1108,11 @@
         (er-soft+ ctx t nil
                   "The function ~x0 has input or output stobjs; ~
                    therefore, code generation cannot proceed." fn))
-       (body (ubody fn (w state)))
+       (body (atj-fn-body fn (w state)))
        ((unless body)
         (er-soft+ ctx t nil
-                  "The function ~x0 has no unnormalized body; ~
+                  "The function ~x0 has no unnormalized body ~
+                   and no suitable attachment; ~
                    therefore, code generation cannot proceed." fn))
        ((run-when verbose$)
         (cw "  ~x0~%" fn))
@@ -1264,9 +1177,7 @@
      The list is in no particular order."))
   (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
-       (worklist-gen (set-difference-eq
-                      targets$
-                      (strip-cars *primitive-formals-and-guards*)))
+       (worklist-gen (set-difference-eq targets$ *aij-natives*))
        ((er fns) (atj-worklist-iterate worklist-gen
                                        nil
                                        nil
@@ -1326,7 +1237,7 @@
   (assert-event (symbol-listp *atj-allowed-options*))
   (assert-event (no-duplicatesp-eq *atj-allowed-options*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-inputs ((args true-listp) ctx state)
   :returns (mv erp

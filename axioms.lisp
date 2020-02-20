@@ -4511,6 +4511,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       t
     nil))
 
+(defun standard-char-p+ (x)
+
+; The following guard is required by p. 234 of CLtL.
+
+  (declare (xargs :guard t))
+  (and (characterp x)
+       (standard-char-p x)))
+
 (defun standard-char-listp (l)
   (declare (xargs :guard t))
   (cond ((consp l)
@@ -10911,7 +10919,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                  (list
                                   (list 'rationalp var)
                                   (list 'not (list 'integerp var)))))
-        ((eq x 'standard-char) (list 'standard-charp var))
+        ((eq x 'standard-char) (list 'standard-char-p+ var))
         ((eq x 'string) (list 'stringp var))
         ((and (consp x)
               (eq (car x) 'string)
@@ -13475,7 +13483,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     untrace$-fn1 ; eval
     bdd-top ; (GCL only) si::sgc-on
     defstobj-field-fns-raw-defs ; call to memoize-flush when #+hons
-    pkg-names
     times-mod-m31 ; gcl has raw code
     iprint-ar-aref1
     prove ; #+write-arithmetic-goals
@@ -13520,6 +13527,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-fncall+-w
     extend-current-theory
     defstobj-fn ; might be avoidable; see comment in that definition
+    apply-user-stobj-alist-or-kwote ; no raw code but ill-guarded; see comments
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -21169,6 +21177,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     trace-evisceration-alist ; returns bad object
 
     update-enabled-structure-array ; many assumptions for calling correctly
+
+    apply-user-stobj-alist-or-kwote ; extra-logical EQ use; see its commments
 
 ; See the Essay on Memoization with Attachments for why
 ; doppelganger-apply$-userfn and doppelganger-badge-userfn are untouchable.

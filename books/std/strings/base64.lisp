@@ -36,7 +36,7 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 
 (defsection base64
   :parents (std/strings)
@@ -1186,4 +1186,3 @@ an accumulator."
    (assert! (equal "foob" (base64-decode-easy "Zm9vYg==")))
    (assert! (equal "fooba" (base64-decode-easy "Zm9vYmE=")))
    (assert! (equal "foobar" (base64-decode-easy "Zm9vYmFy")))))
-

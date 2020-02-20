@@ -27,6 +27,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::p
+    "This manual page contains user-level reference documentation for ATJ.
+     If you are new to ATJ, you should start with the "
+    (xdoc::seetopic "atj-tutorial" "tutorial")
+    ", which provides user-level information
+     on how ATJ works and how to use ATJ effectively.
+     Some of the material in this manual page
+     will likely be moved to the tutorial,
+     which is in progress.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h3 "Introduction")
 
    (xdoc::p
@@ -42,7 +54,7 @@
 
    (xdoc::p
     "This manual page provides reference documentation for ATJ.
-     A separate tutorial may be written in the future.
+     A separate tutorial in being written, as noted above.
      See the files under @('[books]/kestrel/java/atj/tests/')
      for examples of use of ATJ.")
 
@@ -66,7 +78,8 @@
 
    (xdoc::p
     "ATJ accepts all the ACL2 functions that
-     (1) have an unnormalized body (see @(tsee acl2::ubody)) and
+     (1) have either an unnormalized body (see @(tsee acl2::ubody))
+     or an attachment and
      (2) either do not have raw Lisp code
      or have raw Lisp code but belong to a whitelist.
      The ACL2 functions with raw Lisp code
@@ -175,7 +188,7 @@
 
    (xdoc::p
     "ATJ translates the target ACL2 functions into Java representations,
-     based on their unnormalized bodies.
+     based on their unnormalized bodies or attachments.
      It does so recursively,
      starting from the top-level functions specified by the user
      and stopping at the ACL2 functions that
@@ -184,7 +197,7 @@
      represent Java primitive operations or primitive array operations.
      If a function is encountered that
      is not natively implemented in AIJ
-     and has no unnormalized body,
+     and has no unnormalized body and no attachment,
      ATJ stops with an error.
      If a function is encountered that has raw Lisp code
      and is not in the whitelist
@@ -271,13 +284,15 @@
      "Each @('fni') must be a symbol that names a function that
       either has an unnormalized body
       and no raw Lisp code (unless it is in the whitelist),
+      or it has an attachment,
       or is natively implemented in AIJ
       (currently, this is equivalent to the function being "
      (xdoc::seetopic "acl2::primitive" "primitive") ").
       Each of these functions must have
       no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") ".
       Each of these functions must transitively call
-      (in the unnormalized body, if not natively implemented in AIJ)
+      (in the unnormalized body or attachment,
+      if not natively implemented in AIJ)
       only functions that satisfy the same constraints,
       except for calls of @(tsee return-last) as described below.")
     (xdoc::p
@@ -716,4 +731,25 @@
      contains examples of command to compile and run the code.
      See "
     (xdoc::seetopic "aij" "the AIJ documentation")
-    " for instructions on how to generate the @('.jar') file.")))
+    " for instructions on how to generate the @('.jar') file.")
+
+   (xdoc::p
+    "When the @(':deep') input is @('t'),
+     (the Java representations of) the ACL2 functions
+     are evaluated via AIJ's recursive interpreter:
+     evaluating recursive ACL2 functions on sufficiently large inputs
+     may cause a stack overflow error in Java.
+     When the @(':deep') input is @('nil'),
+     recursive ACL2 functions are translated to recursive Java methods,
+     except for tail-recursive functions, which are translated to loops:
+     calling these recursive methods on sufficiently large inputs
+     may cause a stack overflow error in Java.
+     These stack overflow issues may be mitigated
+     by passing a larger stack size to the Java Virtual Machine
+     (via the @('-Xss') option to the @('java') command;
+     see the comments in the file @('[books]/kestrel/atj/tests/run.sh')),
+     or, when @(':deep') is @('nil'),
+     by making all the recursive ACL2 functions tail-recursive
+     (e.g. via "
+    (xdoc::seetopic "apt::tailrec" "APT's tail recursion transformation")
+    ") prior to generating Java code.")))

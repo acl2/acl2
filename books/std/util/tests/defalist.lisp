@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "../defalist")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 ;; Basic tests to make sure defalist seems to be working.
 
