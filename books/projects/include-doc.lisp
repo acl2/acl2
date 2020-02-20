@@ -20,8 +20,10 @@
      (include-book "sat/proof-checker-array/top")
      (include-book "sat/dimacs-reader/reader")
      (include-book "irv/top")
-     
      (include-book "rp-rewriter/top")
+     (include-book "rp-rewriter/lib/mult/doc")
+     (include-book "rp-rewriter/lib/mult2/doc")
+     
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/doc")
             :endif)

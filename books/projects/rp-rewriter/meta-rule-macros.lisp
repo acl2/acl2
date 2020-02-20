@@ -490,21 +490,44 @@ that it is syntactically correct. Otherwise skip this step.
 </p>
 
 <p>
-7. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
+7. Submit an event of the following form that uses all the lemmas proved so
+far. This lemma will be the only necessary lemma to be used when registering the
+meta rule with  RP-Rewriter.
+
 <code>
 @('
-(add-meta-rules <formula-check-name>
-    (list (make rp-meta-rule-rec
-                :fnc <meta-fnc>
-                :trig-fnc <trig-fnc>
-                :dont-rw <t-if-returns-dont-rw>
-                :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))')
+ (defhtm <meta-fnc>-is-valid 
+   (implies (and (rp-equal-meta-formula-checks state)
+                 (rp-evl-meta-extract-global-facts :state state))
+            (let ((rule (make rp-meta-rule-rec
+                              :fnc <meta-fnc>
+                              :trig-fnc <trig-fnc>
+                              :dont-rw <t-if-returns-dont-rw>
+                              :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))
+              (and (valid-rp-meta-rulep rule state)
+                   (rp-meta-valid-syntaxp-sk rule state))))
+   ')
 </code>
 
 </p>
 
 <p>
-8. Update clause processor with @(see rp::update-rp-clause-proc). 
+8. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
+<code>
+@('
+(add-meta-rules <formula-check-name>
+                (list (make rp-meta-rule-rec
+                            :fnc <meta-fnc>
+                            :trig-fnc <trig-fnc>
+                            :dont-rw <t-if-returns-dont-rw>
+                            :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))')
+</code>
+
+</p>
+
+
+<p>
+9. Update clause processor with @(see rp::update-rp-clause-proc). 
 <code>
 @('(update-rp-clause-proc <a-unique-name-for-updated-clause-processor>)')
 </code>
@@ -513,8 +536,47 @@ RP-Rewriter is present, you may want to call this function when all the meta
 rules are included.
 </p>
 
+
+
 <p>
 You may look at examples of RP-Rewriter meta rules under
 /books/projects/RP-Rewriter/meta/*
 </p>
+
+<p>
+Some books under /books/projects/RP-Rewriter/proofs/* might be useful when
+proving when proving meta rules correct, especially aux-function-lemmas and
+eval-functions-lemmas.
+</p> 
+
 ")
+
+
+(xdoc::defxdoc
+ dont-rw
+ :parents (rp-rewriter/meta-rules)
+ :short "A special data structure that RP-Rewriter meta rules may return to
+ control rewriting of returned terms."
+ :long "<p>When a term us returned from a meta rule, it appears as completely
+ new to the rewriter and by default, it will be parsed completely and be
+ rewritten for a second time. This can cause performance issues with big
+ terms. To solve this problem, we use a special structure called dont-rw that
+ meta functions may generate and return to control which subterms should be
+ rewritten and which should not.</p>
+
+<p>
+The dont-rw structure has the same cons skeleton as the term itself such that
+it is traversed (car'ed and cdr'ed) the same way as the term. Whenever dont-rw
+structure becomes an atom and non-nil, the rewriting of corresponding term
+stops. For example, assume that a meta rule returns the following term and we
+would like to avoid rewriting all the instances of g, then the following
+dont-rw structure would enable that.</p>
+
+<code>
+ (f1 (f2 (g a b) c)
+     (f3 d (g x y)))
+ </code>
+ <code>
+ (nil (nil t t)
+      (nil t t))
+</code>")
