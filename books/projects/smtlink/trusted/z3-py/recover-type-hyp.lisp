@@ -16,18 +16,22 @@
   :short "Recovering types from type-hyp"
 
   (define is-type-decl ((type symbolp)
-                        (fty-info fty-info-alist-p))
+                        (fty-info fty-info-alist-p)
+                        (abs symbol-listp))
     :returns (ok booleanp)
     (b* ((type (symbol-fix type))
          (fty-info (fty-info-alist-fix fty-info)))
       (if (or ;; basic types
            (member-equal type (strip-cars *SMT-types*))
+           ;; abstract types
+           (member-equal type abs)
            ;; fty types
            (typedecl-of-flextype type fty-info))
           t nil)))
 
   (define recover-type-decl-list ((hyp-lst t)
-                                  (fty-info fty-info-alist-p))
+                                  (fty-info fty-info-alist-p)
+                                  (abs symbol-listp))
     :returns (type-decl-list decl-listp)
     (b* ((fty-info (fty-info-alist-fix fty-info))
          ((unless (consp hyp-lst)) nil)
@@ -39,15 +43,16 @@
                           type term: ~q0" first))
          (type (car first))
          (var (cadr first))
-         ((unless (is-type-decl type fty-info))
+         ((unless (is-type-decl type fty-info abs))
           (er hard? 'recover-type-hyp=>recover-type-decl-list "not a type: ~q0"
               type)))
       (cons (make-decl :name var :type (make-hint-pair :thm type :hints nil))
-            (recover-type-decl-list rest fty-info))))
+            (recover-type-decl-list rest fty-info abs))))
 
   (define recover-type-hyp ((decl-list pseudo-term-listp)
                             (fn-alst func-alistp)
                             (fty-info fty-info-p)
+                            (abs symbol-listp)
                             (fn-decl-acc func-alistp)
                             state)
     ;; :returns (mv (fn-decl-list func-alistp)
@@ -69,9 +74,9 @@
                            untranslated-hyp-lst)
                        (mv fn-decl-acc nil)))
                      (hyp-lst (cdr untranslated-hyp-lst))
-                     (first-type-decl (recover-type-decl-list hyp-lst fty-info))
+                     (first-type-decl (recover-type-decl-list hyp-lst fty-info abs))
                      ((mv rest-fn-decl rest-type-decl)
-                      (recover-type-hyp rest fn-alst fty-info
+                      (recover-type-hyp rest fn-alst fty-info abs
                                         fn-decl-acc state)))
                   (mv rest-fn-decl
                       (append first-type-decl rest-type-decl))))
@@ -88,14 +93,14 @@
                               return-type-term)
                           (mv fn-decl-acc nil)))
                         (return-type (car return-type-term))
-                        ((unless (is-type-decl return-type fty-info))
+                        ((unless (is-type-decl return-type fty-info abs))
                          (prog2$
                           (er hard? 'recover-type-hyp=>recover-type-hyp "not a ~
                           type: ~q0" return-type)
                           (mv fn-decl-acc nil)))
                         (fn-name (caadr return-type-term))
                         ((if (assoc-equal fn-name fn-decl-acc))
-                         (recover-type-hyp rest fn-alst fty-info
+                         (recover-type-hyp rest fn-alst fty-info abs
                                            fn-decl-acc state))
                         (fn-in-hint (cdr (assoc-equal fn-name fn-alst)))
                         ((unless fn-in-hint)
@@ -113,7 +118,7 @@
                                                         :thm return-type
                                                         :hints nil)))))
                         ((mv rest-fn-decl rest-type-decl)
-                         (recover-type-hyp rest fn-alst fty-info
+                         (recover-type-hyp rest fn-alst fty-info abs
                                            (acons fn-name the-fn fn-decl-acc) state)))
                      (mv rest-fn-decl rest-type-decl)))
                   (& (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp

@@ -26,7 +26,8 @@
          ((unless (equal fn-name 'type-hyp)) nil))
       t))
 
-  (define extract-is-decl ((expr pseudo-termp) (fty-info fty-info-alist-p))
+  (define extract-is-decl ((expr pseudo-termp) (fty-info fty-info-alist-p)
+                           (abs symbol-listp))
     :returns (is-decl? booleanp)
     (b* (((if (is-type-hyp-decl expr)) t)
          ((unless (equal (len expr) 2))
@@ -36,6 +37,8 @@
          ((unless
               (or ;; basic types
                (member-equal fn-name (strip-cars *SMT-types*))
+               ;; abstract types
+               (member-equal fn-name abs)
                ;; fty types
                (typedecl-of-flextype fn-name fty-info)
                ))
@@ -55,7 +58,8 @@
     :parents (SMT-extract)
     :short "Functions for extracting type declarations from clause."
 
-    (define extract-disjunct ((term pseudo-termp) (fty-info fty-info-alist-p))
+    (define extract-disjunct ((term pseudo-termp) (fty-info fty-info-alist-p)
+                              (abs symbol-listp))
       :returns (mv (decl-list pseudo-term-listp) (theorem pseudo-termp))
       :verify-guards nil
       :guard-debug t
@@ -63,22 +67,22 @@
       (b* ((term (pseudo-term-fix term)))
         (cond ((not (consp term)) (mv nil term))
               ((and (equal (car term) 'if) (equal (caddr term) ''t))
-               (b* (((mv decl1 term1) (extract-disjunct (cadr term) fty-info))
-                    ((mv decl2 term2) (extract-disjunct (cadddr term) fty-info)))
+               (b* (((mv decl1 term1) (extract-disjunct (cadr term) fty-info abs))
+                    ((mv decl2 term2) (extract-disjunct (cadddr term) fty-info abs)))
                  (mv (append decl1 decl2)
                      (cond ((or (equal term1 ''t) (equal term2 ''t)) ''t)
                            ((equal term1 ''nil) term2)
                            ((equal term2 ''nil) term1)
                            (t `(if ,term1 't ,term2))))))
               ((equal (car term) 'not)
-               (b* (((mv decl0 term0) (extract-conjunct (cadr term) fty-info)))
+               (b* (((mv decl0 term0) (extract-conjunct (cadr term) fty-info abs)))
                  (mv decl0
                      (cond ((equal term0 ''nil) ''t)
                            ((equal term0 ''t)   ''nil)
                            (t `(not ,term0))))))
               ((equal (car term) 'implies)
-               (b* (((mv decl1 term1) (extract-conjunct (cadr term) fty-info))
-                    ((mv decl2 term2) (extract-disjunct (caddr term) fty-info)))
+               (b* (((mv decl1 term1) (extract-conjunct (cadr term) fty-info abs))
+                    ((mv decl2 term2) (extract-disjunct (caddr term) fty-info abs)))
                  (mv (append decl1 decl2)
                      (cond ((or (equal term1 ''nil) (equal term2 ''t)) ''t)
                            ((equal term1 ''t) term2)
@@ -86,7 +90,8 @@
                            (t `(implies ,term1 ,term2))))))
               (t (mv nil term)))))
 
-    (define extract-conjunct ((term pseudo-termp) (fty-info fty-info-alist-p))
+    (define extract-conjunct ((term pseudo-termp) (fty-info fty-info-alist-p)
+                              (abs symbol-listp))
       :returns (mv (decl-list pseudo-term-listp) (theorem pseudo-termp))
       :verify-guards nil
       :guard-debug t
@@ -94,20 +99,20 @@
       (b* ((term (pseudo-term-fix term)))
         (cond ((not (consp term)) (mv nil term))
               ((and (equal (car term) 'if) (equal (cadddr term) ''nil))
-               (b* (((mv decl1 term1) (extract-conjunct (cadr term) fty-info))
-                    ((mv decl2 term2) (extract-conjunct (caddr term) fty-info)))
+               (b* (((mv decl1 term1) (extract-conjunct (cadr term) fty-info abs))
+                    ((mv decl2 term2) (extract-conjunct (caddr term) fty-info abs)))
                  (mv (append decl1 decl2)
                      (cond ((or (equal term1 ''nil) (equal term2 ''nil)) ''nil)
                            ((equal term1 ''t) term2)
                            ((equal term2 ''t) term1)
                            (t `(if ,term1 ,term2 'nil))))))
               ((equal (car term) 'not)
-               (b* (((mv decl0 term0) (extract-disjunct (cadr term) fty-info)))
+               (b* (((mv decl0 term0) (extract-disjunct (cadr term) fty-info abs)))
                  (mv decl0
                      (cond ((equal term0 ''nil) ''t)
                            ((equal term0 ''t)   ''nil)
                            (t `(not ,term0))))))
-              ((extract-is-decl term fty-info)
+              ((extract-is-decl term fty-info abs)
                (mv (list term) ''t))
               (t (mv nil term)))))
     )
@@ -115,9 +120,10 @@
   (verify-guards extract-conjunct)
   (verify-guards extract-disjunct)
 
-  (define SMT-extract ((term pseudo-termp) (fty-info fty-info-alist-p))
+  (define SMT-extract ((term pseudo-termp) (fty-info fty-info-alist-p)
+                       (abs symbol-listp))
     :returns (mv (decl-list pseudo-term-listp) (theorem pseudo-termp))
-    (b* (((mv decl-list theorem) (extract-disjunct term fty-info)))
+    (b* (((mv decl-list theorem) (extract-disjunct term fty-info abs)))
       (mv decl-list theorem)))
 )
 
