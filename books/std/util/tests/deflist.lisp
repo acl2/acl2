@@ -36,7 +36,7 @@
 (in-package "STD")
 (include-book "../deflist")
 (include-book "std/strings/top" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (make-event
  (prog2$
@@ -412,6 +412,3 @@
 (deflist nonempty-intlist2-p (x) (integerp x) :non-emptyp t :elementp-of-nil nil)
 (deflist nonempty-int-truelist-p (x) (integerp x) :non-emptyp t :true-listp t)
 (deflist nonempty-int-truelist2-p (x) (integerp x) :non-emptyp t :true-listp t :elementp-of-nil nil)
-
-
-

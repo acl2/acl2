@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "support")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (set-state-ok t)
 (program)
 

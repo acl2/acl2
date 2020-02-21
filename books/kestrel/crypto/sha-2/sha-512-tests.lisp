@@ -14,7 +14,7 @@
 (include-book "sha-512")
 (include-book "../../bv-lists/string-to-bits")
 (include-book "../../utilities/strings/hexstrings")
-(include-book "../../../misc/assert")
+(include-book "../../../std/testing/assert")
 
 ;; Test of the padding operation (from Section 5.1.2):
 (acl2::assert-equal

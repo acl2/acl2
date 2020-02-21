@@ -31,8 +31,8 @@
 (in-package "STD")
 (include-book "../define")
 (include-book "utils")
-(include-book "misc/assert" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (define foo ()
   :returns (ans integerp)
@@ -623,8 +623,8 @@
 
 ;; [Shilpi] Added some basic config and :after-returns related tests below.
 
-(make-define-config 
- :inline t 
+(make-define-config
+ :inline t
  :no-function t)
 
 (define inline-and-no-function ((x natp))
@@ -648,4 +648,3 @@
   (defret natp-of-qux-alt
     (implies (and (integerp x) (<= -54 x))
              (natp ret))))
-

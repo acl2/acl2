@@ -12,6 +12,8 @@
 
 (include-book "defconstrained-recognizer")
 (include-book "deffixer")
+(include-book "defiso")
+(include-book "defiso-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,3 +30,7 @@
    (xdoc::p
     "These extensions could be moved under @('[books]/std/util')
      at some point.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::add-resource-directory "kestrel-std-util-design-notes" "design-notes")

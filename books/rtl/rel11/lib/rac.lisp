@@ -124,9 +124,20 @@
 
 (defmacro if1 (x y z) `(if (eql ,x 0) ,z ,y))
 
+;;;**********************************************************************
+;;;                        Miscellaneous Macros
+;;;**********************************************************************
+
+(defmacro defundd (&rest def)
+  (declare (xargs :guard (and (true-listp def)
+                              (symbolp (car def))
+                              (symbol-listp (cadr def)))))
+  `(progn
+     (defun ,@def)
+     (in-theory (disable ,(car def) (,(car def))))))
+
 (defmacro in-function (fn term)
   `(if1 ,term () (er hard ',fn "Assertion ~x0 failed" ',term)))
-
 
 ;;;**********************************************************************
 ;;;                           Arrays

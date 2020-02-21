@@ -715,8 +715,13 @@ I commented out some disabled theorems that seem fine to me.
            :in-theory (disable ACL2::|(* r (denominator r))|)))
   :rule-classes ((:linear) (:rewrite)))
 
-(defun posp-ind (n)
-  (if (or (zp n) (equal n 1))
+(definec natp-ind (n :nat) :nat
+  (if (zp n)
+      n
+    (natp-ind (- n 1))))
+
+(definec posp-ind (n :pos) :pos
+  (if (= n 1)
       n
     (posp-ind (- n 1))))
 
@@ -789,6 +794,9 @@ I commented out some disabled theorems that seem fine to me.
 
 (defmacro != (x y)
   `(not (equal ,x ,y)))
+
+(defmacro => (x y)
+  `(implies ,x ,y))
 
 #|
 
@@ -1256,6 +1264,17 @@ Useful for testing defunc/definec errors
 
 (definec lrev (x :tl) :tl
   (rev x))
+
+; Added this since even on very simple examples defconst
+; seems to go on forever.
+(defmacro def-const (name form &optional doc)
+  `(with-output
+    :off :all :gag-mode nil :stack :push
+    (make-event
+     (let ((form ,form))
+       `(with-output
+         :stack :pop 
+         (defconst ,',name ',form ,@(and ,doc '(,doc))))))))
 
 (in-theory
  #!acl2(disable

@@ -146,7 +146,7 @@
   ;; Has an under-the-hood implementation
   nil)
 
-(table hons 'slow-alist-warning :warning)
+(table hons 'slow-alist-warning :break)
 
 (defmacro set-slow-alist-action (action)
   (declare (xargs :guard (or (eq action :warning)

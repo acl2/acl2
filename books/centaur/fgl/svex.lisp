@@ -36,6 +36,7 @@
 (include-book "def-fgl-rewrite")
 (include-book "syntax-bind")
 (include-book "fgl-object")
+(include-book "checks")
 (include-book "centaur/misc/starlogic" :dir :system)
 
 #!sv
@@ -71,7 +72,15 @@
                       :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
               (?ign (fast-alist-free env))
               (aig-env (make-fast-alist aig-env))
-              (ans (a4veclist-eval a4vecs aig-env)))
+              (ans ;; (fgl::fgl-progn (fgl::syntax-interp
+                   ;;                  (cw "Aig-env: ~x0~%" aig-env))
+                   ;;                 (fgl::syntax-interp
+                   ;;                  (fgl::interp-st-put-user-scratch
+                   ;;                   :aig-envs
+                   ;;                   (cons aig-env (cdr (hons-get :aig-envs
+                   ;;                                                (fgl::interp-st->user-scratch 'interp-st))))
+                   ;;                   'interp-st))
+                                   (a4veclist-eval a4vecs aig-env)))
            (fast-alist-free aig-env)
            ans))
   :hints (("Goal" :use svexlist-eval-for-symbolic-redef
@@ -194,11 +203,9 @@
 (def-fgl-rewrite 4vec-fix-resolve
   #!sv
   (equal (4vec-fix x)
-         (b* (((when (and (fgl::syntax-bind check-integerp (fgl::fgl-object-case x '(:g-concrete :g-integer)))
-                          (integerp x)))
+         (b* (((when (fgl::check-integerp xintp x))
                x)
-              ((when (and (fgl::syntax-bind check-consp (fgl::fgl-object-case x '(:g-concrete :g-cons)))
-                          (consp x)))
+              ((when (fgl::check-consp xconsp x))
                (4vec (fgl::int (car x)) (fgl::int (cdr x))))
               (4vecp (and (4vec-p x) t))
               ((when (and (fgl::syntax-bind 4vecpc (equal 4vecp t)) 4vecp))
@@ -233,13 +240,13 @@
 
 (def-fgl-rewrite 4vec->upper-of-cons
   #!sv
-  (implies (consp x)
+  (implies (fgl::check-consp xconsp x)
            (equal (4vec->upper x) (fgl::int (car x))))
   :hints(("Goal" :in-theory (enable sv::4vec->upper))))
 
 (def-fgl-rewrite 4vec->lower-of-cons
   #!sv
-  (implies (consp x)
+  (implies (fgl::check-consp xconsp x)
            (equal (4vec->lower x) (fgl::int (cdr x))))
   :hints(("Goal" :in-theory (enable sv::4vec->lower))))
 

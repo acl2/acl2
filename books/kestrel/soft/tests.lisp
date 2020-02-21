@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,8 @@
 
 (include-book "implementation")
 (include-book "kestrel/utilities/testing" :dir :system)
+
+(include-book "kestrel/std/system/theorem-namep" :dir :system)
 
 ; Matt K. mod: Avoid ACL2(p) error from fvmeas-i (clause-processor returns more
 ; than two values).

@@ -14,10 +14,14 @@
 (include-book "../language/boolean-literals")
 (include-book "../language/keywords")
 
+(include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
-(include-book "kestrel/utilities/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
+(include-book "kestrel/std/system/ubody-plus" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "std/typed-lists/pseudo-term-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,17 +110,39 @@
                     (len vars)))
     :hyp :guard)
 
-  (defret atj-check-mv-let-call-mv-term-smaller
+  (defret atj-check-mv-let-call-mv-term-smaller-acl2-count
     (implies yes/no
              (< (acl2-count mv-term)
                 (acl2-count term)))
     :rule-classes :linear)
 
-  (defret atj-check-mv-let-call-body-term-smaller
+  (defret atj-check-mv-let-call-body-term-smaller-acl2-count
     (implies yes/no
              (< (acl2-count body-term)
                 (acl2-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret atj-check-mv-let-call-mv-term-smaller-pseudo-term-count
+    (implies yes/no
+             (< (pseudo-term-count mv-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable pseudo-term-count
+                                pseudo-term-call->args
+                                pseudo-term-lambda->body
+                                pseudo-term-kind))))
+
+  (defret atj-check-mv-let-call-body-term-smaller-pseudo-term-count
+    (implies yes/no
+             (< (pseudo-term-count body-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable pseudo-term-count
+                                pseudo-term-call->args
+                                pseudo-term-lambda->body
+                                pseudo-term-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,6 +177,77 @@
      ///
      (defret len-of-atj-make-mv-let-call-aux
        (equal (len terms) (len indices))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-fn-body ((fn symbolp) (wrld plist-worldp))
+  :returns (body pseudo-termp)
+  :short "Return the unnormalized body or attachment of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function extends @(tsee ubody+) as follows:
+     if @('fn') has no unnormalized body,
+     but it has an attachment @('fn2'),
+     we consider @('(fn2 x1 ... xn)') to be the body of @('fn'),
+     where @('x1'), ..., @('xn') are the formals of @('fn').
+     For the purpose of ATJ's code generation,
+     the attachment of @('fn2') to @('fn') is equivalent to
+     @('fn2') being defined to call @('fn') with the same arguments.")
+   (xdoc::p
+    "The attachment is in the @('acl2::attachment') property of @('fn').
+     The property has the form @('((fn . fn2))').
+     If the property is absent or does not have this form,
+     @('fn') is regarded as not being defined,
+     and ATJ will stop because it cannot generate code for it."))
+  (b* ((ubody (ubody+ fn wrld))
+       ((when ubody) ubody)
+       (attachment (getpropc fn 'acl2::attachment nil wrld))
+       ((unless (tuplep 1 attachment)) nil)
+       (element (car attachment)))
+    (if (and (consp element)
+             (eq (car element) fn)
+             (symbolp (cdr element))
+             (not (eq (cdr element) 'quote)))
+        (fcons-term (cdr element) (formals+ fn wrld))
+      nil))
+  :prepwork
+  ((defrulel returns-lemma
+     (implies (symbol-listp x)
+              (pseudo-term-listp x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Pseudo-term fixtype:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-count-lemma1
+  (implies (not (member-eq (pseudo-term-kind term)
+                           '(:null :var :quote)))
+           (< (pseudo-term-list-count (pseudo-term-call->args term))
+              (pseudo-term-count term)))
+  :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-count-lemma2
+  (implies (and (not (member-eq (pseudo-term-kind term)
+                                '(:null :var :quote)))
+                (pseudo-lambda-p (pseudo-term-call->fn term)))
+           (< (pseudo-term-count
+               (pseudo-lambda->body (pseudo-term-call->fn term)))
+              (pseudo-term-count term)))
+  :expand ((pseudo-term-count term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-count-lemma3
+  (implies (pseudo-term-case term :lambda)
+           (< (pseudo-term-count
+               (pseudo-lambda->body (pseudo-term-call->fn term)))
+              (pseudo-term-count term)))
+  :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

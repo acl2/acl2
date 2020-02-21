@@ -34,7 +34,7 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable unsigned-byte-p)))
 (local (in-theory (acl2::enable* acl2::arith-equiv-forwarding)))
@@ -738,5 +738,3 @@ characters other than 0 or 1, or is empty, we return @('nil').</p>"
   (local (assert! (equal (strval2 "") nil)))
   (local (assert! (equal (strval2 "0") 0)))
   (local (assert! (equal (strval2 "0101") #b0101))))
-
-

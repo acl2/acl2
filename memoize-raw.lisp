@@ -897,7 +897,7 @@
 
 ; As of this writing (Version_7.0), the number 4 is assigned to the
 ; non-function "outside-caller" (denoting the caller of outermost call of a
-; memoized function) and 5-7 are assigned to the first three built-in functions
+; memoized function) and 5-6 are assigned to the first two built-in functions
 ; listed below; they are always memoized by explicit calls to memoize in
 ; boot-strap-pass-2-b.lisp.  Of course, this set and the particular numbers may
 ; change in future releases, but we include this information here to indicate
@@ -908,9 +908,8 @@
 ; fn                               number assigned
 ; "outside-caller"                     4
 ; FCHECKSUM-OBJ                        5
-; PKG-NAMES-MEMOIZE                    6
-; WORSE-THAN-BUILTIN                   7
-; BAD-LISP-OBJECTP                     8
+; WORSE-THAN-BUILTIN                   6
+; BAD-LISP-OBJECTP                     7
 
 ; By the way, the assignment of a unique number to each memoized function is
 ; done initially by symbol-to-fixnum-create.

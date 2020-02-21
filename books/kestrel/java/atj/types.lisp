@@ -17,11 +17,11 @@
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/typed-lists/cons-listp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defenum" :dir :system)
 (include-book "std/util/defval" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1657,26 +1657,3 @@
     (prog2$
      (raise "Internal error: ~x0 is not a singleton list of types." types)
      :avalue))) ; irrelevant
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-type-list-to-type/acons ((types atj-type-listp))
-  :guard (consp types)
-  :returns (type atj-typep :hyp :guard)
-  :short "Treat a non-empty list of ATJ types as a single type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is temporary code, useful while we are in the process of
-     building more direct support for @(tsee mv) in ATJ.
-     As we are generalizing things (e.g. type annotations)
-     from single types to (non-empty) lists of types,
-     it is sometimes necessary to treat lists of two or more types
-     as the single @(':acons') type,
-     which was the output type of @(tsee mv) functions
-     before we started to build more direct support for @(tsee mv).
-     If instead the list of types is a singleton,
-     we return the unique element."))
-  (if (= (len types) 1)
-      (car types)
-    :acons))

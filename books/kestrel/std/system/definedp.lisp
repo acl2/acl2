@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,5 +27,5 @@
     "Some program-mode functions may be defined
      but not have an @('unnormalized-body') property.")
    (xdoc::p
-    "See @(tsee definedp+) for a logic-friendly variant of this utility."))
+    "See @(tsee definedp+) for an enhanced variant of this utility."))
   (if (getpropc fn 'unnormalized-body nil wrld) t nil))

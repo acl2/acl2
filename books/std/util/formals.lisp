@@ -31,7 +31,7 @@
 (in-package "STD")
 (include-book "look-up")
 (include-book "da-base")
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (program)
 
 (defxdoc extended-formals
@@ -528,4 +528,3 @@ occasionally improve efficiency.</p>")
    (assert! (equal (make-wrapper-macro 'foo 'foo-fn '(x y &optional (a '5) &key (z '3)))
                    `(defmacro foo (x y &optional (a '5) &key (z '3))
                       (list 'foo-fn x y a z))))))
-

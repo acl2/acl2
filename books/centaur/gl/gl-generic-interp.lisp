@@ -1905,7 +1905,7 @@
   )
 
 (local (include-book "std/basic/arith-equivs" :dir :system))
-(local (include-book "clause-processors/constant-prop" :dir :System))
+;; (local (include-book "clause-processors/constant-prop" :dir :System))
 
 (defsection bvar-in-range
   (defund bvar-in-range (k bvar-db)

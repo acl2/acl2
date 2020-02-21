@@ -64,7 +64,7 @@
 (local
  (progn
 
-   (include-book "misc/assert" :dir :system)
+   (include-book "std/testing/assert" :dir :system)
 
    (defconst *test-numbers*
      (list 1 0 -1

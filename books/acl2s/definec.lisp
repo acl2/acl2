@@ -257,22 +257,34 @@ bells and whistles of @('acl2s::defunc').
   )
 
 (defmacro definecd (name &rest args)
-  `(encapsulate
-    nil
-    (definec ,name ,@args)
-    (make-event 
-     `(in-theory
-       (disable
-        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
+  `(with-output
+    :off :all :on (error) :stack :push
+    (encapsulate
+     nil
+     (with-output
+      :stack :pop
+      (definec ,name ,@args))
+     (make-event 
+      `(with-output
+        :off :all :on (summary) :summary (form)
+        (in-theory
+         (disable
+          ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))
 
 (defmacro definedcd (name &rest args)
-  `(encapsulate
-    nil
-    (definedc ,name ,@args)
-    (make-event 
-     `(in-theory
-       (disable
-        ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))
+  `(with-output
+    :off :all :on (error) :stack :push
+    (encapsulate
+     nil
+     (with-output
+      :stack :pop
+      (definedc ,name ,@args))
+     (make-event 
+      `(with-output
+        :off :all :on (summary) :summary (form)
+        (in-theory
+         (disable
+          ,(make-symbl `(,',name -DEFINITION-RULE) (current-package state)))))))))
 
 (defmacro definec-no-test (name &rest args)
   `(gen-acl2s-local testing-enabled

@@ -245,7 +245,8 @@
      equiv-contextsp
      equiv-contexts-fix
      equiv-contextslist-p
-     equiv-contextslist-fix)))
+     equiv-contextslist-fix
+     world-equiv)))
 
 
 ;; bozo I don't think we need any of these

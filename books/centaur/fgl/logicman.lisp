@@ -1703,9 +1703,9 @@ registers are not used.</p>"
                                            aignet::aignet-install-gate
                                            AIGNET::|SIMPLIFY-(AND X0 X1)-LEVEL-1|
                                            aignet::aignet-strash-gate)
-                 :expand ((:free (x) (aignet::reduce-gate-rec 0 0 x gatesimp aignet))
-                          (:free (x) (aignet::reduce-gate-rec 0 x 0 gatesimp aignet))
-                          (:free (x) (aignet::reduce-gate-rec 4 0 x gatesimp aignet)))))))
+                 :expand ((:free (x) (aignet::reduce-gate-rec 0 0 x gatesimp strash aignet))
+                          (:free (x) (aignet::reduce-gate-rec 0 x 0 gatesimp strash aignet))
+                          (:free (x) (aignet::reduce-gate-rec 4 0 x gatesimp strash aignet)))))))
 
 (local (defthm lit-negate-cond-0
          (equal (satlink::lit-negate-cond x 0)
@@ -1723,9 +1723,9 @@ registers are not used.</p>"
                                            aignet::aignet-install-gate
                                            AIGNET::|SIMPLIFY-(AND X0 X1)-LEVEL-1|
                                            aignet::aignet-strash-gate)
-                 :expand ((:free (x) (aignet::reduce-gate-rec 0 1 x gatesimp aignet))
-                          (:free (x) (aignet::reduce-gate-rec 0 x 1 gatesimp aignet))
-                          (:free (x) (aignet::reduce-gate-rec 4 x 0 gatesimp aignet)))))))
+                 :expand ((:free (x) (aignet::reduce-gate-rec 0 1 x gatesimp strash aignet))
+                          (:free (x) (aignet::reduce-gate-rec 0 x 1 gatesimp strash aignet))
+                          (:free (x) (aignet::reduce-gate-rec 4 x 0 gatesimp strash aignet)))))))
 
 (local (defthm make-lit-of-lit->var
          (implies (and (satlink::litp x)
@@ -1766,9 +1766,9 @@ registers are not used.</p>"
                                            aignet::aignet-lit-fix
                                            satlink::equal-of-make-lit
                                            )
-                 :expand ((:free (x y) (aignet::reduce-gate-rec 2 x y gatesimp aignet))
-                          (:free (x y) (aignet::reduce-gate-rec 4 x y gatesimp aignet))
-                          (:free (x y) (aignet::reduce-gate-rec 5 x y gatesimp aignet)))))))
+                 :expand ((:free (x y) (aignet::reduce-gate-rec 2 x y gatesimp strash aignet))
+                          (:free (x y) (aignet::reduce-gate-rec 4 x y gatesimp strash aignet))
+                          (:free (x y) (aignet::reduce-gate-rec 5 x y gatesimp strash aignet)))))))
 
 
 

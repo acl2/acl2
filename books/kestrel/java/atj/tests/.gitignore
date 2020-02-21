@@ -55,3 +55,15 @@ PrimitivesShallowGuardedTests.java
 
 PrimarraysShallowGuarded.java
 PrimarraysShallowGuardedTests.java
+
+MultivalueDeepUnguarded.java
+MultivalueDeepUnguardedTests.java
+
+MultivalueDeepGuarded.java
+MultivalueDeepGuardedTests.java
+
+MultivalueShallowUnguarded.java
+MultivalueShallowUnguardedTests.java
+
+MultivalueShallowGuarded.java
+MultivalueShallowGuardedTests.java

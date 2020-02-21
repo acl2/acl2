@@ -258,6 +258,14 @@
   (assert-event (function-name-listp *atj-java-primitive-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primitive-fns*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primitive-fn-p ((fn symbolp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 funcion (symbol) is one that models
+          Java primitive value constructions and operations."
+  (and (member-eq fn *atj-java-primitive-fns*) t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atj-types-for-java-primitives

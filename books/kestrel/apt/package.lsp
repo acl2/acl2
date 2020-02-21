@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,7 +16,8 @@
 
 (defpkg "APT" (set-difference-eq
                (append *std-pkg-symbols*
-                       '(*fake-runes*
+                       '(*defiso-table-name*
+                         *fake-runes*
                          *force-xnume*
                          *geneqv-iff*
                          *nil*
@@ -35,6 +36,7 @@
                          apply-fn-if-known
                          apply-term
                          apply-term*
+                         apply-unary-to-terms
                          assert-equal
                          assume-true-false-aggressive-p
                          attachment-pair
@@ -49,6 +51,7 @@
                          conjoin
                          conjoin-untranslated-terms
                          conjoin2
+                         cons-term
                          constant-t-function-arity-0
                          control-screen-output
                          convert-soft-error
@@ -59,6 +62,9 @@
                          def-error-checker
                          defattach-system
                          definedp
+                         defiso
+                         defiso-info
+                         defiso-lookup
                          defun-sk-bound-vars
                          defun-sk-imatrix
                          defun-sk-matrix
@@ -168,6 +174,7 @@
                          get-unnormalized-bodies
                          guard-raw
                          guard-verified-p
+                         ibody
                          implicate
                          implicate-untranslated-terms
                          impossible
@@ -180,6 +187,7 @@
                          io?
                          irecursivep
                          justification
+                         keyword-listp
                          keyword-value-list-to-alist
                          lambda-applicationp
                          lambda-body
@@ -197,11 +205,14 @@
                          msg-downcase-first
                          must-eval-to-t
                          must-succeed*
+                         mvify
                          named-formulas-to-thm-events
                          next-numbered-name
                          non-executablep
+                         number-of-results
                          on-failure
                          packn
+                         packn-pos
                          pairlis-x1
                          pseudo-event-form-listp
                          pseudo-event-formp
@@ -234,6 +245,7 @@
                          strip-cddrs
                          strip-keyword-list
                          subcor-var
+                         subcor-var-lst
                          sublis-expr
                          sublis-var
                          subst-expr
@@ -242,6 +254,7 @@
                          symbol-class
                          symbol-package-name-safe
                          symbol-symbol-alistp
+                         symbol-truelist-alistp
                          term-guard-obligation
                          termify-clause-set
                          tests-and-call

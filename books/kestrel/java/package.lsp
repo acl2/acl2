@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,7 +14,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "JAVA" (append *std-pkg-symbols*
+(defpkg "JAVA" (append (set-difference-eq *std-pkg-symbols*
+                                          '(pointers
+                                            values))
                        '(*nil*
                          *pkg-witness-name*
                          *primitive-formals-and-guards*
@@ -113,9 +115,29 @@
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
+                         pseudo-fn-args-p
+                         pseudo-lambda
+                         pseudo-lambda->body
+                         pseudo-lambda->formals
+                         pseudo-lambda-p
                          pseudo-lambdap
+                         pseudo-term-call
+                         pseudo-term-call->args
+                         pseudo-term-call->fn
+                         pseudo-term-case
+                         pseudo-term-count
+                         pseudo-term-kind
+                         pseudo-term-lambda->formals
+                         pseudo-term-lambda->body
+                         pseudo-term-list-count
+                         pseudo-term-null
+                         pseudo-term-quote
+                         pseudo-term-quote->val
+                         pseudo-term-var
+                         pseudo-term-var->name
                          pseudo-termfn-listp
                          pseudo-termfnp
+                         pseudo-var-p
                          pure-raw-p
                          quote-listp
                          rawp

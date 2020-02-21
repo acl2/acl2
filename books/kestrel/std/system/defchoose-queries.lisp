@@ -12,11 +12,11 @@
 
 (include-book "function-namep")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc defchoose-queries
+(defxdoc+ defchoose-queries
   :parents (std/system/function-queries defchoose)
   :short "Utilities to query @(tsee defchoose) functions."
   :long
@@ -27,11 +27,11 @@
     Besides the non-@(tsee defchoose)-specific constituents
     (e.g. formal arguments),
     which can be queried with "
-   (xdoc::seeurl "std/system/function-queries" "more general utilities")
+   (xdoc::seetopic "std/system/function-queries" "more general utilities")
    ", these functions have @(tsee defchoose)-specific constituent,
-    which can be queried with these @(tsee defchoose) query utilities."))
-
-(local (xdoc::set-default-parents defchoose-queries))
+    which can be queried with these @(tsee defchoose) query utilities.")
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,6 +41,8 @@
           returning the function's constraining axiom if the check succeeds."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "If the check fails, @('nil') is returned.")
    (xdoc::p
     "A function introduced via @(tsee defchoose) is recognizable
      by the presence of the @('defchoose-axiom') property,
@@ -56,7 +58,6 @@
 
 (define defchoose-namep (x (wrld plist-worldp))
   :returns (yes/no booleanp)
-  ;; :verify-guards nil
   :short "Recognize symbols
           that name functions introduced via @(tsee defchoose)."
   :long

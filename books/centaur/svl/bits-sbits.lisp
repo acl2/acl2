@@ -1751,7 +1751,6 @@
        (equal (4vec-fix-wog (4vec-concat$ size val1 val2))
               (4vec-concat$ size val1 val2))))
 
-
 (def-rp-rule 4vec-p-of-all-4vec-fncs
   #!SV
   (and (4vec-p (4vec-bitand x y))
@@ -1805,7 +1804,6 @@
 (rp::add-rp-rule 4vec-p-of-bits)
 (rp::add-rp-rule 4vec-p-of-4vec-concat$)
 ;;(rp::add-rp-rule svl::svl-env-p-of-svl-env)
-
 
 (def-rp-rule concat-of-rsh-with-0-to-bits
   (implies (and (natp start)
@@ -1876,3 +1874,34 @@
     bits-of-sbits-3-no-syntaxp
     bits-of-sbits-4-no-syntaxp
     bits-of-sbits-5-no-syntaxp))
+
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+  
+  (def-rp-rule$ t nil
+    logbit-to-bits
+    (implies (and (natp index)
+                  (integerp x))
+             (equal (acl2::logbit index x)
+                    (bits x index 1)))
+    :hints (("Goal"
+             :in-theory (e/d (4vec-part-select
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              4VEC-RSH
+                              4VEC-ZERO-EXT
+                              4VEC-SHIFT-CORE)
+                             (4VEC-CONCAT$-OF-SIZE=1-TERM2=0
+                              4VEC-ZERO-EXT-IS-4VEC-CONCAT)))))
+
+  (defthm logbit-to-bits-side-cond
+    (implies (and (natp index)
+                  (integerp x))
+             (integerp (bits x index 1)))
+    :rule-classes nil)
+
+  (rp-attach-sc logbit-to-bits
+                logbit-to-bits-side-cond))

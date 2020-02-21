@@ -41,7 +41,7 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 
 (local (defthm unsigned-byte-p-5-when-print-base-p
          (implies (print-base-p x)
@@ -2081,6 +2081,3 @@ for making particular replacements of particular subterms; see @(see eviscconfig
 for details.</p>
 
 """})
-
-
-

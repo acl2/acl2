@@ -164,6 +164,8 @@
 ;Jan 5 '15
 (defdata is3 (enum (list 3)))
 
+;Pete: this was failing; fixed 1/28/2020
+(defdata isx (enum (list 'x)))
 
 (defdata is4 (range integer (3 < _ < 5)))
 ;(acl2::defmacro must-fail (acl2::&rest rest) `(acl2::must-fail ,@rest))

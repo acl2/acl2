@@ -12,7 +12,7 @@
 
 (include-book "packbv-def")
 (include-book "unpackbv")
-(include-book "../../misc/assert")
+(include-book "../../std/testing/assert")
 
 ;; Pack 3 items of size 4 into a single bv
 (assert-equal (packbv 3 4 '(#b1111 #b0000 #b0101)) #b111100000101)

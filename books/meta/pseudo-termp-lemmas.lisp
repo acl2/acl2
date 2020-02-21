@@ -1,4 +1,6 @@
-; By John Cowles, modified by Matt Kaufmann and Sol Swords
+; Written by John Cowles
+; Copyright/License: See the LICENSE file in directory ../cowles/LICENSE
+; Modifications by Matt Kaufmann and Sol Swords
 
 (in-package "ACL2")
 

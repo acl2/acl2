@@ -2132,7 +2132,9 @@
    5
    (signed-byte 30)
    (mv-let (erp val latches)
-           (ev-fncall op (cst-list-to-evg-list args) state nil nil nil)
+           (ev-fncall op (cst-list-to-evg-list args)
+                      nil ; irrelevant arg-exprs (as latches is nil)
+                      state nil nil nil)
            (declare (ignore latches))
            (cond
             (erp

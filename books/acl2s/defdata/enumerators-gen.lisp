@@ -81,6 +81,7 @@ data last modified: [2017-06-25 Sun]
 ;CHECK: It is very important for union constituents to have base cases first!
                  `(MV-LET (_CHOICE ,i)
                           (SWITCH-NAT ,k ,i)
+                          (declare (ignorable ,i))
                       (CASE _CHOICE
                             . ,(list-up-lists (make-numlist-from 0 k)
                                         (make-enum-Is... (cdr s) (make-list k :initial-element i)))))

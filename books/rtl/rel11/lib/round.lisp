@@ -1564,6 +1564,28 @@
                    (= (bitn x (- (1+ e) n)) 1))))
     (otherwise ())))
 
+(defthmd roundup-pos-thm-1
+  (implies (and (rationalp z)
+                (> z 0)
+                (not (zp n))
+                (<= (expt 2 n) z))
+           (let ((x (fl z)))
+             (iff (exactp z n)
+                  (and (integerp z) (= (bits x (- (expo x) n) 0) 0))))))
+
+(defthmd roundup-pos-thm-2
+  (implies (and (common-mode-p mode)
+                (rationalp z)
+                (> z 0)
+                (not (zp n))
+                (<= (expt 2 n) z))
+           (let ((x (fl z))
+                 (sticky (if (integerp z) 0 1)))
+             (equal (rnd z mode n)
+                    (if (roundup-pos x (expo x) sticky mode n)
+                        (fp+ (rtz x n) n)
+                      (rtz x n))))))
+
 (defthmd roundup-pos-thm
   (implies (and (common-mode-p mode)
                 (rationalp z)

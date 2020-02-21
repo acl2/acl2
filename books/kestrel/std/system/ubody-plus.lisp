@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,9 +17,7 @@
 (define ubody+ ((fn pseudo-termfnp) (wrld plist-worldp))
   :returns (body pseudo-termp)
   :parents (std/system/function-queries)
-  :short (xdoc::topstring
-          (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @(tsee ubody).")
+  :short "Enhanced variant of @(tsee ubody)."
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee ubody),

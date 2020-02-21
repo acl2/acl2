@@ -15,9 +15,9 @@
 (include-book "java-abstract-syntax")
 
 (include-book "kestrel/std/system/primitivep" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
 (include-book "std/typed-alists/symbol-string-alistp" :dir :system)
 (include-book "std/util/defval" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,9 +132,10 @@
   :long
   (xdoc::topstring-p
    "Currently these are the ACL2 primitive functions
-    plus @(tsee nonnegative-integer-quotient).")
+    plus @(tsee nonnegative-integer-quotient) and @(tsee string-append).")
   (append (strip-cars *primitive-formals-and-guards*)
-          (list 'nonnegative-integer-quotient)))
+          (list 'nonnegative-integer-quotient
+                'string-append)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +189,8 @@
     (equal . "EQUAL")
     (bad-atom<= . "BAD_ATOM_LESS_THAN_OR_EQUAL_TO")
     (or . "OR")
-    (nonnegative-integer-quotient . "NONNEGATIVE_INTEGER_QUOTIENT"))
+    (nonnegative-integer-quotient . "NONNEGATIVE_INTEGER_QUOTIENT")
+    (string-append . "STRING_APPEND"))
   ///
   (assert-event (symbol-string-alistp *aij-symbol-constants*))
   (assert-event (no-duplicatesp-equal (strip-cdrs *aij-symbol-constants*))))

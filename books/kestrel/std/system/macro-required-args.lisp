@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,7 +37,7 @@
      or a symbol starting with @('&') is encountered.")
    (xdoc::p
     "See @(tsee macro-required-args+) for
-     a logic-friendly variant of this utility."))
+     an enhanced variant of this utility."))
   (b* ((all-args (macro-args mac wrld)))
     (if (endp all-args)
         nil

@@ -697,7 +697,7 @@
                    that must be passed to this constructor.</p>"
                   "@(def "
                   (string-downcase$ (symbol-name macro-name))
-                  ").")))
+                  ")")))
       `(defsection ,macro-name
          :parents (primitive-constructors)
          :short ,doc
@@ -755,7 +755,7 @@
                              (string-escape
                               (string-downcase$
                                (symbol-name macro-name)))
-                             ").")
+                             ")")
          (defund ,fn-name (trees)
            (declare (xargs :guard (tree-listp trees)))
            (make-tree-dir/&& ,dir/&& trees))
@@ -1169,6 +1169,3 @@
 
   (defmacro seetopic (topic text)
     `(see_ :topic (@url ,topic) ,text)))
-
-; temporary synonym for compatibility with existing uses:
-(defmacro seeurl (&rest args) `(seetopic ,@args))

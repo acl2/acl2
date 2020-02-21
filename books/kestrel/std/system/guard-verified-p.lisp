@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,5 +22,5 @@
   :long
   (xdoc::topstring-p
    "See @(tsee guard-verified-p+) for
-    a logic-friendly variant of this utility.")
+    an enhanced variant of this utility.")
   (eq (symbol-class fn/thm wrld) :common-lisp-compliant))

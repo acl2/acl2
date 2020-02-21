@@ -49,7 +49,8 @@
 ;;; Next we test equality handling for stobjs with a single field that is an
 ;;; array of bits.  Before a fix made 1/24/2020, the following test failed
 ;;; because of the use of rassoc-equal instead of rassoc-eq in
-;;; actual-stobjs-out1, as explained in a comment there.
+;;; actual-stobjs-out1 (which was dramatically changed on 2/18/2020, but we
+;;; might as well keep this test).
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; This test is essentially due to Sol Swords.

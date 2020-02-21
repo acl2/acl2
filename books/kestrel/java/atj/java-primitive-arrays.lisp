@@ -145,6 +145,14 @@
   (assert-event (function-name-listp *atj-java-primarray-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primarray-fns*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primarray-fn-p ((fn symbolp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACL2 funcion (symbol) is one that models
+          Java primitive array operations."
+  (and (member-eq fn *atj-java-primarray-fns*) t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection atj-types-for-java-primitive-arrays

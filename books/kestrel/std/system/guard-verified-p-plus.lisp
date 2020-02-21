@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,9 +18,7 @@
 (define guard-verified-p+ ((fn/thm symbolp) (wrld plist-worldp))
   :returns (yes/no booleanp)
   :parents (std/system/function-queries std/system/theorem-queries)
-  :short (xdoc::topstring
-          (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @(tsee guard-verified-p).")
+  :short "Enhanced variant of @(tsee guard-verified-p)."
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee guard-verified-p),

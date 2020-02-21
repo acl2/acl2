@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -282,7 +282,7 @@
     :returns (mv (error? maybe-rlp-error-p)
                  (tree rlp-treep)
                  (rest byte-listp))
-    (b* ((encoding (mbe :logic (byte-list-fix encoding) :exec encoding))
+    (b* ((encoding (byte-list-fix encoding))
          (irrelevant (rlp-tree-leaf nil))
          ((when (endp encoding)) (mv (rlp-error-no-bytes) irrelevant nil))
          ((cons first encoding) encoding)

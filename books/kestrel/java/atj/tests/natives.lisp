@@ -950,6 +950,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *string-append-tests*
+  '(("StringAppend0" (string-append "" ""))
+    ("StringAppend1" (string-append "abc" ""))
+    ("StringAppend2" (string-append "" "xyz"))
+    ("StringAppend3" (string-append "string" "append"))
+    ("StringAppend4" (string-append "SJSKDN83KD" "KSKSOWOWOZZNCM8D88383"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *all-tests*
   (append *characterp-tests*
           *stringp-tests*
@@ -982,4 +991,5 @@
           *cdr-tests-tests*
           *equal-tests*
           *if-tests*
-          *nonnegative-integer-quotient-tests*))
+          *nonnegative-integer-quotient-tests*
+          *string-append-tests*))

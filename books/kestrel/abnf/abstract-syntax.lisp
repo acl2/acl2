@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,17 +13,17 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/fty/nati" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
-(include-book "kestrel/utilities/xdoc/defxdoc-plus" :dir :system)
-(include-book "kestrel/utilities/system/event-form-lists" :dir :system)
 (include-book "misc/seq" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/util/defval" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))

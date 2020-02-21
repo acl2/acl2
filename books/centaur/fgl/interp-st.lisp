@@ -1012,3 +1012,9 @@
     (implies (and msg2 (not (equal msg2 msg)))
              (equal (equal (interp-st->errmsg new-interp-st) msg2)
                     (equal (interp-st->errmsg interp-st) msg2)))))
+
+(define interp-st-bvar-db-debug (interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (alist)
+             (bvar-db-debug bvar-db)
+             alist))

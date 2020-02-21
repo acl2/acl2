@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 (in-package "JAVA")
 
 (include-book "kestrel/fty/defbytelist" :dir :system)
-(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes-fty" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,8 +129,7 @@
      with an appropriate return type theorem.")
    (xdoc::p
     "See also @(tsee ascii=>string)."))
-  (b* ((string (mbe :logic (str-fix string) :exec string)))
-    (string=>nats string))
+  (string=>nats string)
   :prepwork ((defruledl unsigned-byte-listp-16-when-8
                (implies (unsigned-byte-listp 8 x)
                         (unsigned-byte-listp 16 x))

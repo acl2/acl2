@@ -13,7 +13,7 @@
 (include-book "sha-384")
 (include-book "../../bv-lists/string-to-bits")
 (include-book "../../utilities/strings/hexstrings")
-(include-book "../../../misc/assert")
+(include-book "../../../std/testing/assert")
 
 ;;
 ;; Examples (see https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/SHA384.pdf)

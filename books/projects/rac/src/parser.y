@@ -71,9 +71,9 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 %type <vdl> param_dec_list nontrivial_param_dec_list
 %type <tpd> template_param_dec
 %type <tdl> template_param_dec_list nontrivial_template_param_dec_list
-%type <stml> statement_list
-%type <stm> statement block var_dec const_dec untyped_var_dec untyped_const_dec
-%type <stm> for_statement for_init multiple_var_dec multiple_const_dec null_statement
+%type <stml> statement_list r_statement_list
+%type <stm> statement r_statement block r_block var_dec const_dec untyped_var_dec untyped_const_dec
+%type <stm> for_statement for_init multiple_var_dec multiple_const_dec null_statement final_statement
 %type <stm> if_statement switch_statement break_statement
 %type <stm> simple_statement assignment multiple_assignment assertion return_statement
 %type <c> case
@@ -89,11 +89,11 @@ Stack<SymDec> *symTab = new Stack<SymDec>;
 //*************************************************************************************
 
 // A program consists of a sequence of type definitions, global constant declarations,
-// and function definitions.  The parser produces four linked lists  corresponding to
+// and function definitions.  The parser produces four linked lists corresponding to
 // these sequences, stored as the values of the variables typeDefs, constDecs, and funDefs.
 
 program
-  : program_element program {}
+  : program program_element {}
   | program_element
   ;
 
@@ -488,7 +488,7 @@ nontrivial_arith_expr_list
 
 //*************************************************************************************
 // Statements
-//*************************************************************************************tes
+//*************************************************************************************
 
 statement
   : simple_statement ';'
@@ -498,13 +498,17 @@ statement
   | switch_statement
   ;
 
+r_statement
+  : final_statement
+  | r_block
+  ;
+
 simple_statement
   : var_dec
   | const_dec
   | multiple_var_dec
   | multiple_const_dec
   | break_statement
-  | return_statement
   | assignment
   | multiple_assignment
   | assertion
@@ -713,13 +717,27 @@ null_statement
   : {$$ = new NullStmt;}
   ;
 
-block
-  : '{' {symTab->pushFrame();} statement_list '}'  {symTab->popFrame(); $$ = new Block($3);}
+dummy
+  : {symTab->pushFrame();}
   ;
+
+block
+  : '{' dummy statement_list '}'  {symTab->popFrame(); $$ = new Block($3);}
+  ; // Replace 'dummy' with the midrule action '{symTab->pushFrame();}'
+    // will cause reduce/reduce conflicts.
+
+r_block
+  : '{' dummy r_statement_list '}'  {symTab->popFrame(); $$ = new Block($3);}
+  ; // Replace 'dummy' with the midrule action '{symTab->pushFrame();}'
+    // will cause reduce/reduce conflicts.
 
 statement_list
   : {$$ = NULL;}
   | statement_list statement  {$$ = $1 ? $1->add($2) : new List<Statement>($2);}
+  ;
+
+r_statement_list
+  : statement_list final_statement  {$$ = $1 ? $1->add($2) : new List<Statement>($2);}
   ;
 
 for_statement
@@ -767,12 +785,17 @@ case_label
       }
     }
 
+final_statement
+  : return_statement ';'
+  | IF '(' expression ')' r_statement ELSE r_statement  {$$ = new IfStmt($3, $5, $7);}
+  ;
+
 //*************************************************************************************
 // Function Definitions
 //*************************************************************************************
 
 func_def
-  : type_spec ID {symTab->pushFrame();} '(' param_dec_list ')' block
+  : type_spec ID {symTab->pushFrame();} '(' param_dec_list ')' r_block
     {$$ = new FunDef($2, $1, $5, (Block*)$7); symTab->popFrame();}
   | func_template
   ;
@@ -789,7 +812,7 @@ nontrivial_param_dec_list
 
 func_template
   : TEMPLATE {symTab->pushFrame();} '<' template_param_dec_list '>'
-    type_spec ID '(' param_dec_list ')' block
+    type_spec ID '(' param_dec_list ')' r_block
     {
       $$ = new Template($7, $6, $9, (Block*)$11, $4); symTab->popFrame();
       if (!prog.templates) {

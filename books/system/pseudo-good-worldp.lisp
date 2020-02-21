@@ -953,6 +953,21 @@
   (pseudo-theoryp1 val))
 
 ; -----------------------------------------------------------------
+; TRANSLATE-CERT-DATA [GLOBAL-VALUE]
+
+(defun weak-translate-cert-data-record-listp (lst)
+  (cond ((atom lst) (null lst))
+        (t (and (weak-translate-cert-data-record-p (car lst))
+                (weak-translate-cert-data-record-listp (cdr lst))))))
+
+(defun pseudo-translate-cert-datap (val)
+  (cond ((atom val) (null val))
+        (t (and (consp (car val))
+                (symbolp (caar val))
+                (weak-translate-cert-data-record-listp (cdar val))
+                (pseudo-translate-cert-datap (cdr val))))))
+
+; -----------------------------------------------------------------
 ; CHK-NEW-NAME-LST [GLOBAL-VALUE]
 
 ; This global is actually a constant.  It is a list of the names that are
@@ -1737,6 +1752,7 @@
     (PROOF-SUPPORTERS-ALIST (proof-supporters-alistp val))
     (FREE-VAR-RUNES-ALL (pseudo-free-var-runes-allp val))
     (FREE-VAR-RUNES-ONCE (pseudo-free-var-runes-oncep val))
+    (TRANSLATE-CERT-DATA (pseudo-translate-cert-datap val))
     (CHK-NEW-NAME-LST (chk-new-name-lstp val))
     (TAU-CONJUNCTIVE-RULES (pseudo-tau-conjunctive-rulesp val))
     (TAU-NEXT-INDEX (natp val))

@@ -49,8 +49,10 @@ data last modified: [2017-06-22 Thu]
 
 (defun member-pred-I (x s) `(and (member-equal ,x ,(cadr s)) t))
 (defun member-enum-I (i s) `(nth (mod ,i (len ,(cadr s))) ,(cadr s)))
-(defun member-enum/acc-I (i s) (declare (ignorable i))
-  `(mv-let (idx _SEED) (random-index-seed (len ,(cadr s)) _SEED)
+(defun member-enum/acc-I (i s)
+  (declare (ignorable i))
+  `(mv-let (idx _SEED)
+           (random-index-seed (len ,(cadr s)) _SEED)
            (mv (nth idx ,(cadr s)) (the (unsigned-byte 31) _SEED))))
 
 
@@ -295,7 +297,9 @@ data last modified: [2017-06-22 Thu]
                   (t (make-enum-exp-for-bounded-range
                        ivar seedvar domain (sampling-dist-hi lo1 hi1 mid1 mid2))))))
 
-    `(mv-let (,ivar ,seedvar) (random-natural-seed ,seedvar) ;;overwrite original value of ivar
+    `(mv-let (,ivar ,seedvar)
+             (random-natural-seed ,seedvar) ;;overwrite original value of ivar
+             (declare (ignorable ,ivar))
              ,exp)))
 
 (defun range-enum/acc-I (ivar s)
@@ -461,14 +465,14 @@ Mainly to be used for evaluating enum lists "
 (push-untouchable acl2::ev-fncall-w t) ; see Matt K. comment above
 
 (defun trans-my-ev-w (form ctx w hard-error-returns-nilp)
-(declare (xargs :mode :program
-                :guard (and (plist-worldp w)
-                            (booleanp hard-error-returns-nilp))))
+  (declare (xargs :mode :program
+                  :guard (and (plist-worldp w)
+                              (booleanp hard-error-returns-nilp))))
 
   (mv-let
    (erp term x)
    (acl2::translate11 form nil nil nil nil nil nil
-                ctx w (acl2::default-state-vars nil))
+                      ctx w (acl2::default-state-vars nil))
    (declare (ignore x))
    (if erp
        (if hard-error-returns-nilp
@@ -591,5 +595,4 @@ Mainly to be used for evaluating enum lists "
        (list-val (remove-duplicates list-val)))
     (if (consp (cdr list-val))
         (cons 'or (kwote-lst list-val))
-      (car list-val))))
-
+      (kwote (car list-val)))))

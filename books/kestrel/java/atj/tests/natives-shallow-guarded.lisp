@@ -50,6 +50,7 @@
            equal
            if
            nonnegative-integer-quotient
+           string-append
            :deep nil
            :guards t
            :java-class "NativesShallowGuarded"

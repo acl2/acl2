@@ -274,12 +274,19 @@ REBUILD_MAKEFILE_BOOKS := $(shell \
   ls -l $(BUILD_DIR)/Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))
 
+ifdef ACL2_PCERT
+	PCERT_OPT := "--pcert-all"	
+else
+	PCERT_OPT := 
+endif
+
 $(info Scanning for dependencies...)
 REBUILD_MAKEFILE_DEPS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-deps $(BUILD_DIR)/Makefile-deps.out; \
     time ($(EXPORT_SHELL_ENV) \
           $(BUILD_DIR)/cert.pl \
           --quiet \
+          $(PCERT_OPT) \
           --static-makefile $(BUILD_DIR)/Makefile-deps \
           --cache $(BUILD_DIR)/Makefile-cache \
           --acl2-books `pwd` \
@@ -801,7 +808,7 @@ clause-processors/SULFA/target.cert: \
 	then \
 	(cd $(@D) ; $(MAKE)) ; \
 	else \
-	echo "*NOTE*: Skipping SULFA subdirectory (need SAT solver installed as per books/clause-processors/SULFA/README)." ; \
+	echo "NOTE: Skipping SULFA subdirectory (need SAT solver installed as per books/clause-processors/SULFA/README)." ; \
 	fi
 
 projects/translators/l3-to-acl2/target.cert: \

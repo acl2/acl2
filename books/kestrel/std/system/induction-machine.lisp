@@ -34,5 +34,5 @@
      induction is not directly supported for mutually recursive functions.")
    (xdoc::p
     "See @(tsee induction-machine+) for
-     a logic-friendly variant of this utility."))
+     an enhanced variant of this utility."))
   (getpropc fn 'induction-machine nil wrld))

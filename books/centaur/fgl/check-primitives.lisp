@@ -35,6 +35,7 @@
 (include-book "bfr-arithmetic")
 (include-book "def-fgl-rewrite")
 (include-book "checks")
+(include-book "congruence-rules")
 (local (include-book "primitive-lemmas"))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -43,7 +44,8 @@
 
 
 (def-formula-checks checks-formula-checks
-  (check-integerp
+  (check-true
+   check-integerp
    check-natp
    check-int-endp
    check-bitp
@@ -92,6 +94,29 @@
 (local (in-theory (disable member-equal
                            equal-of-booleans-rewrite)))
 
+(add-fgl-congruence iff-implies-equal-check-true-2)
+
+(def-fgl-binder-meta check-true-binder
+  (b* ((ans
+        (fgl-object-case arg
+          :g-concrete arg.val
+          :g-integer t
+          :g-boolean (eq arg.bool t)
+          :g-cons t
+          :g-map arg.alist
+          :otherwise nil)))
+    (mv t (if ans ''t ''nil) nil nil interp-st state))
+  :formula-check checks-formula-checks
+  :prepwork ((local (in-theory (enable check-true)))
+             (local (defthm fgl-object-alist-eval-under-iff
+                      (iff (fgl-object-alist-eval x env)
+                           (fgl-object-alist-fix x))
+                      :hints (("goal" :expand ((fgl-object-alist-eval x env)
+                                               (fgl-object-alist-fix x))
+                               :in-theory (enable (:i len))
+                               :induct (len x))))))
+  :origfn check-true :formals (arg))
+
 (def-fgl-binder-meta check-integerp-binder
   (b* ((ans
         (fgl-object-case arg
@@ -105,9 +130,6 @@
   :formula-check checks-formula-checks
   :prepwork ((local (in-theory (enable check-integerp))))
   :origfn check-integerp :formals (arg))
-
-
-
 
 
 (def-fgl-binder-meta check-natp-binder

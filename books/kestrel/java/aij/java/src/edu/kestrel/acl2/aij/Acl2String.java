@@ -168,6 +168,50 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
+     * Coerces this string to a string, which is a no-op.
+     * This is consistent with
+     * the {@code str-fix} ACL2 (non-built-in) function.
+     *
+     * @return This string, unchanged.
+     */
+    @Override
+    Acl2String stringFix() {
+        return this;
+    }
+
+    /**
+     * String-appends the argument value to the right of this string,
+     * consistently with the {@code string-append} ACL2 function.
+     *
+     * @param other The value to string-append to the right of this string.
+     *              Invariant: not null.
+     * @return The resulting of string-appending
+     * the argument value to the right this string.
+     */
+    @Override
+    Acl2String stringAppendValueRight(Acl2Value other) {
+        return other.stringAppendStringLeft(this);
+    }
+
+    /**
+     * String-appends the argument string to the left of this value,
+     * consistently with the {@code string-append} ACL2 function.
+     * It returns the argument by default;
+     * it is overridden in {@link Acl2String}.
+     *
+     * @param other The string to string-append to the left of this string.
+     *              Invariant: not null.
+     * @return The result of string-appending
+     * the argument string to the left of this string.
+     */
+    @Override
+    Acl2String stringAppendStringLeft(Acl2String other) {
+        String left = other.jstring;
+        String right = this.jstring;
+        return imake(left.concat(right));
+    }
+
+    /**
      * Compares this string with the argument character for order.
      * This is consistent with the {@code lexorder} ACL2 function.
      *

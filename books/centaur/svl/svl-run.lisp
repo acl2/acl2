@@ -25,7 +25,71 @@
 
 (in-package "SVL")
 
-(include-book "svl-flatten")
+(include-book "type-defs")
+
+(include-book "bits-sbits-defs")
+
+(include-book "svex-eval-wog")
+
+
+(local
+ (defthm natp-implied-4vec-p
+   (implies (natp x)
+            (4vec-p x))
+   :hints (("Goal"
+            :in-theory (e/d (4vec-p)
+                            ())))
+   :rule-classes :type-prescription))
+
+
+(define entry-4vec-fix (entry)
+  :guard (or (consp entry)
+             (not entry))
+  :enabled t
+  (if entry
+      (cdr entry)
+    (sv::4vec-x))
+  ///
+  (add-rp-rule entry-4vec-fix))
+
+(define save-wires-to-env-wires ((val sv::4vec-p)
+                                 (wires wire-list-p)
+                                 (env-wires sv::svex-env-p))
+  :returns (res sv::svex-env-p
+                :hyp (and (sv::4vec-p val)
+                          (wire-list-p wires)
+                          (sv::svex-env-p env-wires)))
+  :verify-guards nil
+  (if (atom wires)
+      env-wires
+    (b* ((wire (car wires))
+         (old-val-entry (hons-get (wire-name wire) env-wires)))
+      (case-match wire
+        ((& w . s) (hons-acons
+                    (wire-name wire)
+                    (sbits s w val (entry-4vec-fix old-val-entry))
+                    (save-wires-to-env-wires (4vec-rsh w val)
+                                             (cdr wires)
+                                             env-wires)))
+        (& (hons-acons
+            (wire-name wire)
+            val
+            env-wires)))))
+  ///
+
+  (local
+   (defthm lemma
+     (IMPLIES (AND
+               (WIRE-LIST-P WIRES)
+               (CONSP WIRES)
+               (CONSP (CAR WIRES))
+               (CONSP (CDR (CAR WIRES))))
+              (4VEC-P (CADR (CAR WIRES))))
+     :hints (("Goal"
+              :in-theory (e/d (wire-list-p 4vec-p
+                                           sv::svar-p) ())))))
+
+  (verify-guards save-wires-to-env-wires ))
 
 (progn
   (define svl-get-module-rank ((modname sv::modname-p)
@@ -664,8 +728,15 @@
      :hints (("Goal"
               :in-theory (e/d (sv::svex-env-p
                                pairlis3
-                               sv::svar-p) ())))))
+                               sv::svar-p)
+                              ())))))
 
+  (local
+   (defthm alistp-append
+     (implies (and (alistp x)
+                   (alistp y))
+              (alistp (append x y))))) 
+  
   (define svl-run-aux ((modname sv::modname-p)
                        (inputs 4vec-list-listp)
                        (out-wires sv::svarlist-p)
@@ -673,6 +744,7 @@
                        (delayed-env svl-env-p)
                        (modules svl-module-alist-p))
     :guard (string-listp (strip-cars out-bind-alist))
+    :returns (res alistp)
     (if (atom inputs)
         (progn$ ;(svl-free-env modname delayed-env modules (expt 2 30))
          nil)
@@ -692,7 +764,8 @@
                                svl-module-alist-p
                                sv::svarlist-p
                                wire-list-p
-                               wire-list-fix) ())))))
+                               wire-list-fix)
+                              ())))))
 
   (local
    (defthm svl-run-guard-lemma2
@@ -704,7 +777,8 @@
                                svl-module-alist-p
                                sv::svarlist-p
                                wire-list-p
-                               wire-list-fix) ())))))
+                               wire-list-fix)
+                              ())))))
 
   (local
    (defthm wire-listp-implies-alistp
@@ -721,6 +795,7 @@
                    (modules svl-module-alist-p))
     :guard (and (string-listp (strip-cars out-bind-alist))
                 (string-listp (strip-cars ins-bind-alist)))
+    :returns (res alistp)
     (declare (ignorable out-bind-alist))
     (b* ((module (assoc-equal modname modules))
          ((unless module)

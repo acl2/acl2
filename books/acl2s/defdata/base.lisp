@@ -40,6 +40,7 @@
 (include-book "tools/rulesets" :dir :system)
 
 (include-book "var-book" :ttags :all)
+(include-book "ordinals/lexicographic-book" :dir :system)
 
 ;; (make-event ;TODO make sure to get this working
 ;;  (er-progn
@@ -1503,8 +1504,18 @@ The corresponding rules do not seem to help, at all.
 
 
 
-
 (defdata nat-list (listof nat))
+(defdata non-empty-nat-list (cons nat nat-list))
+
+(local 
+ (defthm non-empty-nat-list-thm
+   (equal (non-empty-nat-listp x)
+          (and (consp x)
+               (nat-listp x)))
+   :rule-classes ((:forward-chaining
+                   :trigger-terms ((non-empty-nat-listp x))))))
+
+(defdata lex (oneof nat non-empty-nat-list))
 
 ;; (verify-termination pos-listp) ; pos-listp is in program mode, so we need this.
 ;; (verify-guards pos-listp)

@@ -1,6 +1,6 @@
 ; System Utilities
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "defchoose-queries")
-(include-book "defun-sk-queries")
-(include-book "event-forms")
 (include-book "fresh-names")
 (include-book "install-not-norm-event")
 (include-book "named-formulas")

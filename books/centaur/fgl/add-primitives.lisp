@@ -34,96 +34,113 @@
 (include-book "primitives-stub")
 (include-book "def-fgl-rewrite")
 (include-book "centaur/meta/def-formula-checks" :dir :system)
+(include-book "clause-processors/find-subterms" :dir :system)
 (set-state-ok t)
 
-(defthm fgl-primitive-constraint-base-monotonic-in-formula-check
-  (implies (and (bind-free '((formula-check . formula-check)) (formula-check))
-                (fgl-primitive-constraint-base
-                 ans origfn args interp-st state formula-check
-                 mode env n contexts st))
-           (fgl-primitive-constraint-base
-            ans origfn args interp-st state nil
-            mode env n contexts st))
-  :hints (("goal" :do-not '(preprocess)
-           :in-theory (disable fgl-primitive-constraint-necc
-                               equal-of-booleans-rewrite
-                               nth member-equal pseudo-termp))))
+(defsection base-constraints-formula-check-lemmas
+  (local (in-theory (enable and*)))
 
-(defcong iff equal 
-  (fgl-primitive-constraint-base
-   ans origfn args interp-st state formula-check
-   mode env n contexts st)
-  6
-  :hints (("goal" :do-not '(preprocess)
-           :in-theory (disable fgl-primitive-constraint-necc
-                               equal-of-booleans-rewrite
-                               nth member-equal pseudo-termp))))
+  (defthm fgl-primitive-constraint-base-monotonic-in-formula-check
+    (implies (and (bind-free '((formula-check . formula-check)) (formula-check))
+                  (fgl-primitive-constraint-base
+                   successp ans new-interp-st new-state
+                   origfn args interp-st state formula-check
+                   mode env n contexts st))
+             (fgl-primitive-constraint-base
+              successp ans new-interp-st new-state
+              origfn args interp-st state nil
+              mode env n contexts st))
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (disable fgl-primitive-constraint-necc
+                                 equal-of-booleans-rewrite
+                                 nth member-equal pseudo-termp))))
 
-(defthm fgl-meta-constraint-base-monotonic-in-formula-check
-  (implies (and (bind-free '((formula-check . formula-check)) (formula-check))
-                (fgl-meta-constraint-base
-                 ans origfn args interp-st state formula-check
-                 mode env n contexts st))
-           (fgl-meta-constraint-base
-            ans origfn args interp-st state nil
-            mode env n contexts st))
-  :hints (("goal" :do-not '(preprocess)
-           :in-theory (disable fgl-meta-constraint-necc
-                               equal-of-booleans-rewrite
-                               nth member-equal pseudo-termp))))
+  (defcong iff equal 
+    (fgl-primitive-constraint-base
+     successp ans new-interp-st new-state
+     origfn args interp-st state formula-check
+     mode env n contexts st)
+    9
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (disable fgl-primitive-constraint-necc
+                                 equal-of-booleans-rewrite
+                                 nth member-equal pseudo-termp))))
 
-(defcong iff equal 
-  (fgl-meta-constraint-base
-   ans origfn args interp-st state formula-check
-   mode env n contexts st)
-  6
-  :hints (("goal" :do-not '(preprocess)
-           :in-theory (disable fgl-meta-constraint-necc
-                               equal-of-booleans-rewrite
-                               nth member-equal pseudo-termp))))
+  (defthm fgl-meta-constraint-base-monotonic-in-formula-check
+    (implies (and (bind-free '((formula-check . formula-check)) (formula-check))
+                  (fgl-meta-constraint-base
+                   successp rhs bindings new-interp-st new-state
+                   origfn args interp-st state formula-check
+                   mode env n contexts st))
+             (fgl-meta-constraint-base
+              successp rhs bindings new-interp-st new-state
+              origfn args interp-st state nil
+              mode env n contexts st))
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (disable fgl-meta-constraint-necc
+                                 equal-of-booleans-rewrite
+                                 nth member-equal pseudo-termp))))
 
-(defthm fgl-binder-constraint-base-monotonic-in-formula-check
-  (implies (and (bind-free '((formula-check . formula-check)) (formula-check))
-                (fgl-binder-constraint-base
-                 ans origfn args interp-st state formula-check
-                 mode env n contexts st rhs-val eval-alist))
-           (fgl-binder-constraint-base
-            ans origfn args interp-st state nil
-            mode env n contexts st rhs-val eval-alist))
-  :hints (("goal" :do-not '(preprocess)
-           :in-theory (disable fgl-binder-constraint-necc
-                               equal-of-booleans-rewrite
-                               nth member-equal pseudo-termp))))
+  (defcong iff equal 
+    (fgl-meta-constraint-base
+     successp rhs bindings new-interp-st new-state
+     origfn args interp-st state formula-check
+     mode env n contexts st)
+    10
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (disable fgl-meta-constraint-necc
+                                 equal-of-booleans-rewrite
+                                 nth member-equal pseudo-termp))))
 
-(defcong iff equal 
-  (fgl-binder-constraint-base
-   ans origfn args interp-st state formula-check
-   mode env n contexts st rhs-val eval-alist)
-  6
-  :hints (("goal" :do-not '(preprocess)
-           :in-theory (disable fgl-binder-constraint-necc
-                               equal-of-booleans-rewrite
-                               nth member-equal pseudo-termp))))
+  (defthm fgl-binder-constraint-base-monotonic-in-formula-check
+    (implies (and (bind-free '((formula-check . formula-check)) (formula-check))
+                  (fgl-binder-constraint-base
+                   successp rhs bindings rhs-contexts new-interp-st new-state
+                   origfn args interp-st state formula-check
+                   mode env n contexts st rhs-val eval-alist))
+             (fgl-binder-constraint-base
+              successp rhs bindings rhs-contexts new-interp-st new-state
+              origfn args interp-st state nil
+              mode env n contexts st rhs-val eval-alist))
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (disable fgl-binder-constraint-necc
+                                 equal-of-booleans-rewrite
+                                 nth member-equal pseudo-termp))))
+
+  (defcong iff equal 
+    (fgl-binder-constraint-base
+     successp rhs bindings rhs-contexts new-interp-st new-state
+     origfn args interp-st state formula-check
+     mode env n contexts st rhs-val eval-alist)
+    11
+    :hints (("goal" :do-not '(preprocess)
+             :in-theory (disable fgl-binder-constraint-necc
+                                 equal-of-booleans-rewrite
+                                 nth member-equal pseudo-termp)))))
 
 (defthm fgl-primitive-constraint-monotonic-in-formula-check
   (implies (fgl-primitive-constraint
-            ans origfn args interp-st state formula-check)
+            successp ans new-interp-st new-state
+            origfn args interp-st state formula-check)
            (fgl-primitive-constraint
-            ans origfn args interp-st state nil))
+            successp ans new-interp-st new-state
+            origfn args interp-st state nil))
   :hints(("Goal" :in-theory (disable fgl-primitive-constraint-base
                                      fgl-primitive-constraint)
           :expand ((fgl-primitive-constraint
-                    ans origfn args interp-st state nil)))))
+                    successp ans new-interp-st new-state
+                    origfn args interp-st state nil)))))
 
 (defcong iff equal (fgl-primitive-constraint
-                    result origfn args interp-st sta formula-check) 6
+                    successp ans new-interp-st new-state
+                    origfn args interp-st sta formula-check) 9
                     :hints(("Goal" :in-theory (disable fgl-primitive-constraint-base
                                                        fgl-primitive-constraint
                                                        fgl-primitive-constraint-necc
                                                        iff))
                            (and stable-under-simplificationp
                                 (let* ((lit (assoc 'fgl-primitive-constraint clause))
-                                       (other-fc (if (eq (nth 6 lit) 'formula-check) 'formula-check-equiv 'formula-check))
+                                       (other-fc (if (eq (nth 9 lit) 'formula-check) 'formula-check-equiv 'formula-check))
                                        (lit-witness (cons 'fgl-primitive-constraint-witness (cdr lit)))
                                        (hint
                                         `(:expand ,lit
@@ -139,23 +156,27 @@
 
 (defthm fgl-meta-constraint-monotonic-in-formula-check
   (implies (fgl-meta-constraint
-            ans origfn args interp-st state formula-check)
+            successp rhs bindings new-interp-st new-state
+            origfn args interp-st state formula-check)
            (fgl-meta-constraint
-            ans origfn args interp-st state nil))
+            successp rhs bindings new-interp-st new-state
+            origfn args interp-st state nil))
   :hints(("Goal" :in-theory (disable fgl-meta-constraint-base
                                      fgl-meta-constraint)
           :expand ((fgl-meta-constraint
-                    ans origfn args interp-st state nil)))))
+                    successp rhs bindings new-interp-st new-state
+                    origfn args interp-st state nil)))))
 
 (defcong iff equal (fgl-meta-constraint
-                    result origfn args interp-st sta formula-check) 6
+                    successp rhs bindings new-interp-st new-state
+                    origfn args interp-st sta formula-check) 10
                     :hints(("Goal" :in-theory (disable fgl-meta-constraint-base
                                                        fgl-meta-constraint
                                                        fgl-meta-constraint-necc
                                                        iff))
                            (and stable-under-simplificationp
                                 (let* ((lit (assoc 'fgl-meta-constraint clause))
-                                       (other-fc (if (eq (nth 6 lit) 'formula-check) 'formula-check-equiv 'formula-check))
+                                       (other-fc (if (eq (nth 10 lit) 'formula-check) 'formula-check-equiv 'formula-check))
                                        (lit-witness (cons 'fgl-meta-constraint-witness (cdr lit)))
                                        (hint
                                         `(:expand ,lit
@@ -171,23 +192,27 @@
 
 (defthm fgl-binder-constraint-monotonic-in-formula-check
   (implies (fgl-binder-constraint
-            ans origfn args interp-st state formula-check)
+            successp rhs bindings rhs-contexts new-interp-st new-state
+            origfn args interp-st state formula-check)
            (fgl-binder-constraint
-            ans origfn args interp-st state nil))
+            successp rhs bindings rhs-contexts new-interp-st new-state
+            origfn args interp-st state nil))
   :hints(("Goal" :in-theory (disable fgl-binder-constraint-base
                                      fgl-binder-constraint)
           :expand ((fgl-binder-constraint
-                    ans origfn args interp-st state nil)))))
+                    successp rhs bindings rhs-contexts new-interp-st new-state
+                    origfn args interp-st state nil)))))
 
 (defcong iff equal (fgl-binder-constraint
-                    result origfn args interp-st sta formula-check) 6
+                    successp rhs bindings rhs-contexts new-interp-st new-state
+                    origfn args interp-st sta formula-check) 11
                     :hints(("Goal" :in-theory (disable fgl-binder-constraint-base
                                                        fgl-binder-constraint
                                                        fgl-binder-constraint-necc
                                                        iff))
                            (and stable-under-simplificationp
                                 (let* ((lit (assoc 'fgl-binder-constraint clause))
-                                       (other-fc (if (eq (nth 6 lit) 'formula-check) 'formula-check-equiv 'formula-check))
+                                       (other-fc (if (eq (nth 11 lit) 'formula-check) 'formula-check-equiv 'formula-check))
                                        (lit-witness (cons 'fgl-binder-constraint-witness (cdr lit)))
                                        (hint
                                         `(:expand ,lit
@@ -205,8 +230,6 @@
 
 
 (local (in-theory (disable w)))
-(defcong world-equiv equal (meta-extract-formula name st) 2
-  :hints(("Goal" :in-theory (enable world-equiv meta-extract-formula))))
 
 (defthmd w-state-equal-forward
   (implies (equal (w st) (w state))
@@ -222,7 +245,9 @@
      (table fgl-formula-checks ',name
             (cdr (assoc ',name (table-alist 'cmr::formula-checkers world))))
      (defcong world-equiv equal (,name st) 1
-       :hints(("Goal" :in-theory (enable ,name))))
+       :hints(("Goal" :in-theory (e/d (,name
+                                       w-state-equal-forward)
+                                      (w)))))
      (def-updater-independence-thm
        ,(intern-in-package-of-symbol
          (concatenate 'string (symbol-name name)
@@ -230,7 +255,8 @@
          name)
        (implies (equal (w new) (w old))
                 (equal (,name new) (,name old)))
-       :hints(("Goal" :in-theory (enable w-state-equal-forward))))))
+       :hints(("Goal" :in-theory (e/d (w-state-equal-forward)
+                                      (w)))))))
 
 
 ;; (defcong world-equiv equal (meta-extract-global-fact+ obj st sta) 3
@@ -286,33 +312,31 @@
       ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
       
       (defret fgl-meta-constraint-of-<fn>-lemma
-        (fgl-meta-constraint <call>
+        (fgl-meta-constraint successp rhs bindings new-interp-st new-state
                              origfn args interp-st state
                              <formula-check-arg>)
         :hints (("goal" :in-theory '(fgl-meta-constraint))
                 (and stable-under-simplificationp
-                     '(:clause-processor
-                       (acl2::simple-generalize-cp
-                        clause
-                        '(((mv-nth '0 (fgl-meta-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . mode)
-                          ((mv-nth '1 (fgl-meta-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . env)
-                          ((mv-nth '2 (fgl-meta-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . n)
-                          ((mv-nth '3 (fgl-meta-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . contexts)
-                          ((mv-nth '4 (fgl-meta-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . st)))
-                       ;;        :in-theory '(fgl-meta-constraint-base)))
-                       ;; (and stable-under-simplificationp
-                       ;;      '(
-                       :in-theory (e/d (w-state-equal-forward)
-                                       (fgl-meta-constraint-necc))))))
+                     (let ((witness (acl2::find-call-lst 'fgl-meta-constraint-witness clause)))
+                       `(:computed-hint-replacement
+                         ('(:in-theory (e/d (w-state-equal-forward and* implies* not* or*)
+                                            (fgl-meta-constraint-necc w))))
+                         :clause-processor
+                         (acl2::simple-generalize-cp
+                          clause
+                          '(((mv-nth '0 ,witness) . mode)
+                            ((mv-nth '1 ,witness) . env)
+                            ((mv-nth '2 ,witness) . n)
+                            ((mv-nth '3 ,witness) . contexts)
+                            ((mv-nth '4 ,witness) . st)))
+                         ;;        :in-theory '(fgl-meta-constraint-base)))
+                         ;; (and stable-under-simplificationp
+                         ;;      '(
+                         )))))
 
       (defret fgl-meta-constraint-of-<fn>
         (implies (case-split (implies formula-check <formula-check-arg>))
-                 (fgl-meta-constraint <call>
+                 (fgl-meta-constraint successp rhs bindings new-interp-st new-state
                                       origfn args interp-st state
                                       formula-check))
         :hints (("goal" :use fgl-meta-constraint-of-<fn>-lemma
@@ -329,7 +353,7 @@
                  (<body> . ,body)
                  (<formula-check-arg> . ,(if formula-check-fn
                                              `(,formula-check-fn state)
-                                           t)))
+                                           ''t)))
    :str-alist `(("<METAFN>" . ,(symbol-name name)))))
 
 (defun def-fgl-meta-fn (name fn formals body formula-check-fn prepwork)
@@ -403,33 +427,31 @@
         ;;                   (fgl-ev-context-fix contexts
         ;;                                       (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st))))))
         (defret fgl-primitive-constraint-of-<fn>-lemma
-          (fgl-primitive-constraint <call>
+          (fgl-primitive-constraint successp ans new-interp-st new-state
                                  origfn args interp-st state
                                  <formula-check-arg>)
           :hints (("goal" :in-theory '(fgl-primitive-constraint))
                   (and stable-under-simplificationp
-                       '(:clause-processor
-                         (acl2::simple-generalize-cp
-                          clause
-                          '(((mv-nth '0 (fgl-primitive-constraint-witness
-                                         <call> fn args interp-st state <formula-check-arg>)) . mode)
-                            ((mv-nth '1 (fgl-primitive-constraint-witness
-                                         <call> fn args interp-st state <formula-check-arg>)) . env)
-                            ((mv-nth '2 (fgl-primitive-constraint-witness
-                                         <call> fn args interp-st state <formula-check-arg>)) . n)
-                            ((mv-nth '3 (fgl-primitive-constraint-witness
-                                         <call> fn args interp-st state <formula-check-arg>)) . contexts)
-                            ((mv-nth '4 (fgl-primitive-constraint-witness
-                                         <call> fn args interp-st state <formula-check-arg>)) . st)))
-                         ;;        :in-theory '(fgl-primitive-constraint-base)))
-                         ;; (and stable-under-simplificationp
-                         ;;      '(
-                         :in-theory (e/d (w-state-equal-forward)
-                                         (fgl-primitive-constraint-necc))))))
+                       (let ((witness (acl2::find-call-lst 'fgl-primitive-constraint-witness clause)))
+                         `(:computed-hint-replacement
+                           ('(:in-theory (e/d (w-state-equal-forward and* implies* not* or*)
+                                              (fgl-primitive-constraint-necc w))))
+                           :clause-processor
+                           (acl2::simple-generalize-cp
+                            clause
+                            '(((mv-nth '0 ,witness) . mode)
+                              ((mv-nth '1 ,witness) . env)
+                              ((mv-nth '2 ,witness) . n)
+                              ((mv-nth '3 ,witness) . contexts)
+                              ((mv-nth '4 ,witness) . st)))
+                           ;;        :in-theory '(fgl-primitive-constraint-base)))
+                           ;; (and stable-under-simplificationp
+                           ;;      '(
+                           )))))
 
       (defret fgl-primitive-constraint-of-<fn>
         (implies (case-split (implies formula-check <formula-check-arg>))
-                 (fgl-primitive-constraint <call>
+                 (fgl-primitive-constraint successp ans new-interp-st new-state
                                            origfn args interp-st state
                                            formula-check))
         :hints (("goal" :use fgl-primitive-constraint-of-<fn>-lemma
@@ -451,7 +473,7 @@
                    (<body> . ,body)
                    (<formula-check-arg> . ,(if formula-check-fn
                                                `(,formula-check-fn state)
-                                             t)))
+                                             ''t)))
      :str-alist `(("<FN>" . ,(symbol-name fn)))
      :features (and updates-state '(:updates-state)))))
 
@@ -541,37 +563,33 @@
       ;;                                                        nil))
       ;;                   (fgl-ev-context-fix contexts rhs-val))))
       (defret fgl-binder-constraint-of-<fn>-lemma
-        (fgl-binder-constraint <call>
+        (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
                                fn args interp-st state
                                <formula-check-arg>)
         :hints (("goal" :in-theory '(fgl-binder-constraint))
                 (and stable-under-simplificationp
-                     '(:clause-processor
+                     (let ((witness (acl2::find-call-lst 'fgl-binder-constraint-witness clause)))
+                       `(:computed-hint-replacement
+                       ('(:in-theory (e/d (w-state-equal-forward and* implies* not* or*)
+                                       (fgl-binder-constraint-necc w))))
+                       :clause-processor
                        (acl2::simple-generalize-cp
                         clause
-                        '(((mv-nth '0 (fgl-binder-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . mode)
-                          ((mv-nth '1 (fgl-binder-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . env)
-                          ((mv-nth '2 (fgl-binder-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . n)
-                          ((mv-nth '3 (fgl-binder-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . contexts)
-                          ((mv-nth '4 (fgl-binder-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . st)
-                          ((mv-nth '5 (fgl-binder-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . rhs-val)
-                          ((mv-nth '6 (fgl-binder-constraint-witness
-                                       <call> fn args interp-st state <formula-check-arg>)) . eval-alist)))
+                        '(((mv-nth '0 ,witness) . mode)
+                          ((mv-nth '1 ,witness) . env)
+                          ((mv-nth '2 ,witness) . n)
+                          ((mv-nth '3 ,witness) . contexts)
+                          ((mv-nth '4 ,witness) . st)
+                          ((mv-nth '5 ,witness) . rhs-val)
+                          ((mv-nth '6 ,witness) . eval-alist)))
                 ;;        :in-theory '(fgl-binder-constraint-base)))
                 ;; (and stable-under-simplificationp
                 ;;      '(
-                       :in-theory (e/d (w-state-equal-forward)
-                                       (fgl-binder-constraint-necc))))))
+                       )))))
 
       (defret fgl-binder-constraint-of-<fn>
         (implies (case-split (implies formula-check <formula-check-arg>))
-                 (fgl-binder-constraint <call>
+                 (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
                                         fn args interp-st state
                                         formula-check))
         :hints (("goal" :use fgl-binder-constraint-of-<fn>-lemma
@@ -588,7 +606,7 @@
                  (<body> . ,body)
                  (<formula-check-arg> . ,(if formula-check-fn
                                              `(,formula-check-fn state)
-                                           t)))
+                                           ''t)))
    :str-alist `(("<METAFN>" . ,(symbol-name name)))))
 
 (defun def-fgl-binder-meta-fn (name fn formals body formula-check-fn prepwork)
@@ -668,7 +686,9 @@
         ;; (def-formula-checks <prefix>-formula-checks <formula-check-fns>)
         (cmr::def-formula-checker <prefix>-formula-checks <formula-check-fns>)
         (defcong world-equiv equal (<prefix>-formula-checks st) 1
-          :hints(("Goal" :in-theory (enable <prefix>-formula-checks))))
+          :hints(("Goal" :in-theory (e/d (<prefix>-formula-checks
+                                          w-state-equal-forward)
+                                         (w)))))
         (local (cmr::def-formula-checker-lemmas <prefix>-formula-checks <formula-check-fns>))
         (local (progn . <formula-check-thms>))
 
@@ -716,7 +736,7 @@
           ;;                   (fgl-ev-context-fix contexts
           ;;                                       (fgl-object-eval (g-apply origfn args) env (interp-st->logicman interp-st))))))
           (defret fgl-primitive-constraint-of-<fn>
-            (fgl-primitive-constraint <call>
+            (fgl-primitive-constraint successp ans new-interp-st new-state
                                       origfn args interp-st state
                                       (<prefix>-formula-checks state)))
 
@@ -757,7 +777,7 @@
           ;;             rhs
           ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
           (defret fgl-meta-constraint-of-<fn>
-            (fgl-meta-constraint <call>
+            (fgl-meta-constraint successp rhs bindings new-interp-st new-state
                                       origfn args interp-st state
                                       (<prefix>-formula-checks state)))
           (fty::deffixequiv <prefix>-meta-fncall))
@@ -805,7 +825,7 @@
           ;;                                                  nil))
           ;;                   (fgl-ev-context-fix contexts rhs-val))))
           (defret fgl-binder-constraint-of-<fn>
-            (fgl-binder-constraint <call>
+            (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
                                       origfn args interp-st state
                                       (<prefix>-formula-checks state)))
 
@@ -834,7 +854,8 @@
           (fgl-formula-checks-stub <prefix>-formula-checks)
           :hints(("Goal"
                   :do-not '(preprocess simplify)
-                  :in-theory (disable w fgl-ev-context-equiv-forall-extensions)
+                  :in-theory (e/d (w-state-equal-forward)
+                                  (w fgl-ev-context-equiv-forall-extensions))
                   :clause-processor dumb-clausify-cp)
                  '(:do-not nil)
                  ;; (let ((term (car (last clause))))
