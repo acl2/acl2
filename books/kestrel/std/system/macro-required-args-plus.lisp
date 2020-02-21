@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,9 +17,7 @@
 (define macro-required-args+ ((mac symbolp) (wrld plist-worldp))
   :returns (required-args symbol-listp)
   :parents (std/system/macro-queries)
-  :short (xdoc::topstring
-          (xdoc::seetopic "std/system/logic-friendly" "Logic-friendly")
-          " variant of @(tsee macro-required-args).")
+  :short "Enhanced variant of @(tsee macro-required-args)."
   :long
   (xdoc::topstring-p
    "This returns the same result as @(tsee macro-required-args),

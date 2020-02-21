@@ -36,7 +36,7 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 
 (local (in-theory (acl2::enable* set::definitions set::expensive-rules
                                  bitops::ash-1-removal)))

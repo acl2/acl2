@@ -803,8 +803,36 @@
     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
     ", we systematically add type information to each ACL2 variable.
      We do so by adding @('[types]') before the variable name,
-     where @('types') identifies a list of ATJ types."))
-  (packn-pos (list "[" (atj-types-id types) "]" var) var))
+     where @('types') identifies a list of ATJ types.")
+   (xdoc::p
+    "The result of this function is never the symbol @('nil'),
+     because the name of that symbol always starts with @('[')."))
+  (packn-pos (list "[" (atj-types-id types) "]" var) var)
+  ///
+
+  (defrule atj-type-annotate-var-not-nil
+    (implies (symbolp var)
+             (not (equal (atj-type-annotate-var var types) nil)))
+    :rule-classes :type-prescription
+    :enable (atj-type-annotate-var)
+    :disable symbol-name-intern-in-package-of-symbol
+    :use ((:instance symbol-name-intern-in-package-of-symbol
+           (s (implode (cons #\[
+                             (append (explode (atj-types-id types))
+                                     (cons #\] (explode-atom var 10))))))
+           (any-symbol var))
+          (:instance lemma
+           (x "NIL")
+           (y (implode (cons #\[
+                             (append (explode (atj-types-id types))
+                                     (cons #\] (explode-atom var 10))))))))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (stringp x)
+                     (stringp y)
+                     (equal x y))
+                (equal (char x 0)
+                       (char y 0)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1112,25 +1140,26 @@
                                   (wrld plist-worldp))
     :guard (cons-listp mv-typess)
     :returns (mv (annotated-term pseudo-termp)
-                 (resulting-types atj-type-listp)
+                 (resulting-types (and (atj-type-listp resulting-types)
+                                       (consp resulting-types)))
                  (new-mv-typess (and (atj-type-list-listp new-mv-typess)
                                      (cons-listp new-mv-typess))))
-    (b* (((unless (mbt (pseudo-termp term)))
-          (mv nil (list :avalue) nil))
-         ((unless (mbt (atj-type-listp required-types?)))
-          (mv nil (list :avalue) nil))
+    (b* (((unless (mbt (atj-type-listp required-types?)))
+          (mv (pseudo-term-null) (list :avalue) nil))
          ((unless (mbt (atj-symbol-type-alistp var-types)))
-          (mv nil (list :avalue) nil))
+          (mv (pseudo-term-null) (list :avalue) nil))
          ((unless (mbt (and (atj-type-list-listp mv-typess)
                             (cons-listp mv-typess))))
-          (mv nil (list :avalue) nil))
-         ((when (variablep term))
-          (b* ((var term)
+          (mv (pseudo-term-null) (list :avalue) nil))
+         ((when (pseudo-term-case term :null))
+          (mv (pseudo-term-null) (list :avalue) nil))
+         ((when (pseudo-term-case term :var))
+          (b* ((var (pseudo-term-var->name term))
                (var+type (assoc-eq var var-types))
                ((unless (consp var+type))
                 (prog2$
                  (raise "Internal error: the variable ~x0 has no type." term)
-                 (mv nil (list :avalue) nil))) ; irrelevant
+                 (mv (pseudo-term-null) (list :avalue) nil)))
                (type (cdr var+type))
                (types (list type))
                (var (atj-type-annotate-var var types))
@@ -1139,12 +1168,14 @@
                         requiring multiple types ~x0 ~
                         for a single-type variable ~x1."
                        required-types? var)
-                (mv nil (list :avalue) nil))) ; irrelevant
-            (mv (atj-type-wrap-term var types required-types?)
+                (mv (pseudo-term-null) (list :avalue) nil)))
+            (mv (atj-type-wrap-term (pseudo-term-var var)
+                                    types
+                                    required-types?)
                 (or required-types? types)
                 mv-typess)))
-         ((when (fquotep term))
-          (b* ((value (unquote-term term))
+         ((when (pseudo-term-case term :quote))
+          (b* ((value (pseudo-term-quote->val term))
                (type (atj-type-of-value value))
                (types (list type))
                ((unless (<= (len required-types?) 1))
@@ -1152,7 +1183,7 @@
                         requiring multiple types ~x0 ~
                         for a quoted constant ~x1."
                        required-types? term)
-                (mv nil (list :avalue) nil))) ; irrelevant
+                (mv (pseudo-term-null) (list :avalue) nil)))
             (mv (atj-type-wrap-term term types required-types?)
                 (or required-types? types)
                 mv-typess)))
@@ -1164,12 +1195,13 @@
                                     guards$
                                     wrld))
          ((when successp) (mv annotated-term resulting-types mv-typess))
-         (fn (ffn-symb term))
+         (fn (pseudo-term-call->fn term))
+         (args (pseudo-term-call->args term))
          ((when (and (eq fn 'if)
-                     (int= (len (fargs term)) 3))) ; should be always true
-          (b* ((test (fargn term 1))
-               (then (fargn term 2))
-               (else (fargn term 3)))
+                     (int= (len args) 3))) ; should be always true
+          (b* ((test (first args))
+               (then (second args))
+               (else (third args)))
             (if (equal test then) ; it's an OR
                 (b* ((first test)
                      (second else)
@@ -1178,7 +1210,7 @@
                               requiring multiple types ~x0 ~
                               for the term ~x1."
                              required-types? term)
-                      (mv nil (list :avalue) nil)) ; irrelevant
+                      (mv (pseudo-term-null) (list :avalue) nil))
                      ((mv first first-types mv-typess)
                       (atj-type-annotate-term first
                                               required-types?
@@ -1191,7 +1223,7 @@
                               the first disjunct ~x0 of the term ~x1 ~
                               returns multiple values."
                              first term)
-                      (mv nil (list :avalue) nil)) ; irrelevant
+                      (mv (pseudo-term-null) (list :avalue) nil))
                      ((mv second second-types mv-typess)
                       (atj-type-annotate-term second
                                               required-types?
@@ -1204,7 +1236,7 @@
                               the second disjunct ~x0 of the term ~x1 ~
                               returns multiple values."
                              second term)
-                      (mv nil (list :avalue) nil)) ; irrelevant
+                      (mv (pseudo-term-null) (list :avalue) nil))
                      (types (or required-types?
                                 (atj-type-list-join first-types second-types)))
                      (first (if required-types?
@@ -1217,7 +1249,7 @@
                                (atj-type-rewrap-term second
                                                      second-types
                                                      types)))
-                     (term (fcons-term* 'if first first second)))
+                     (term (pseudo-term-call 'if (list first first second))))
                   (mv (atj-type-wrap-term term types types)
                       types
                       mv-typess))
@@ -1233,7 +1265,7 @@
                             the test ~x0 of the term ~x1 ~
                             returns multiple values."
                            test term)
-                    (mv nil (list :avalue) nil)) ; irrelevant
+                    (mv (pseudo-term-null) (list :avalue) nil))
                    ((mv then then-types mv-typess)
                     (atj-type-annotate-term then
                                             required-types?
@@ -1254,31 +1286,26 @@
                             have different numbers of types, ~
                             namely ~x3 and ~x4."
                            then else term then-types else-types)
-                    (mv nil (list :avalue) nil)) ; irrelevant
+                    (mv (pseudo-term-null) (list :avalue) nil))
                    ((unless (or (null required-types?)
                                 (= (len required-types?) (len then-types))))
                     (raise "Internal error: ~
                             requiring the types ~x0 for the term ~x1, ~
                             which has a different number of types ~x2."
                            required-types? term (len then-types))
-                    (mv nil (list :avalue) nil)) ; irrelevant
+                    (mv (pseudo-term-null) (list :avalue) nil))
                    (types (or required-types?
                               (atj-type-list-join then-types else-types)))
                    (then (if required-types?
                              then
-                           (atj-type-rewrap-term then
-                                                 then-types
-                                                 types)))
+                           (atj-type-rewrap-term then then-types types)))
                    (else (if required-types?
                              else
-                           (atj-type-rewrap-term else
-                                                 else-types
-                                                 types)))
-                   (term (fcons-term* 'if test then else)))
+                           (atj-type-rewrap-term else else-types types)))
+                   (term (pseudo-term-call 'if (list test then else))))
                 (mv (atj-type-wrap-term term types types)
                     types
                     mv-typess)))))
-         (args (fargs term))
          ((mv args types mv-typess) (atj-type-annotate-args args
                                                             var-types
                                                             mv-typess
@@ -1289,26 +1316,26 @@
                 (raise "Internal error: ~
                         found MV applied to arguments ~x0."
                        args)
-                (mv nil (list :avalue) nil)) ; irrelevant
+                (mv (pseudo-term-null) (list :avalue) nil))
                ((unless (or (null required-types?)
                             (= (len types) (len required-types?))))
                 (raise "Internal error: ~
                         requiring the types ~x0 for the term ~x1."
                        required-types? term)
-                (mv nil (list :avalue) nil)) ; irrelevant
+                (mv (pseudo-term-null) (list :avalue) nil))
                (resulting-types (or required-types? types)))
-            (mv (atj-type-wrap-term (fcons-term 'mv args)
+            (mv (atj-type-wrap-term (pseudo-term-call 'mv args)
                                     types
                                     required-types?)
                 resulting-types
                 (add-to-set-equal resulting-types mv-typess))))
-         ((when (symbolp fn))
+         ((when (pseudo-term-case term :fncall))
           (b* ((fn-info (atj-get-function-type-info fn guards$ wrld))
                (main-fn-type (atj-function-type-info->main fn-info))
                (other-fn-types (atj-function-type-info->others fn-info))
                (all-fn-types (cons main-fn-type other-fn-types))
-               (types? (atj-output-types-of-min-input-types types
-                                                            all-fn-types)))
+               (types?
+                (atj-output-types-of-min-input-types types all-fn-types)))
             (if (consp types?)
                 (b* (((unless (or (null required-types?)
                                   (= (len required-types?) (len types?))))
@@ -1316,8 +1343,8 @@
                               requiring the types ~x0 for the term ~x1, ~
                               which has a different number of types ~x2."
                              required-types? term types?)
-                      (mv nil (list :avalue) nil))) ; irrelevant
-                  (mv (atj-type-wrap-term (fcons-term fn args)
+                      (mv (pseudo-term-null) (list :avalue) nil)))
+                  (mv (atj-type-wrap-term (pseudo-term-call fn args)
                                           types?
                                           required-types?)
                       (or required-types? types?)
@@ -1329,13 +1356,13 @@
                             the function ~x0 has ~x1 arguments ~
                             but a different number of input types ~x2."
                            fn (len args) (len in-types))
-                    (mv nil (list :avalue) nil)) ; irrelevant
+                    (mv (pseudo-term-null) (list :avalue) nil))
                    ((unless (= (len in-types) (len types)))
                     (raise "Internal error: ~
                             the input types ~x0 of the function ~x1 ~
                             differ in number from the argument types ~x2."
                            in-types fn types)
-                    (mv nil (list :avalue) nil)) ; irrelevant
+                    (mv (pseudo-term-null) (list :avalue) nil))
                    (args (atj-type-rewrap-terms args
                                                 (atj-type-list-to-type-list-list
                                                  types)
@@ -1345,29 +1372,30 @@
                     (raise "Internal error: ~
                             the function ~x0 has an empty list of output types."
                            fn)
-                    (mv nil (list :avalue) nil))) ; irrelevant
-                (mv (atj-type-wrap-term (fcons-term fn args)
+                    (mv (pseudo-term-null) (list :avalue) nil)))
+                (mv (atj-type-wrap-term (pseudo-term-call fn args)
                                         out-types
                                         required-types?)
                     (or required-types? out-types)
                     mv-typess)))))
-         (formals (lambda-formals fn))
+         (formals (pseudo-lambda->formals fn))
          (var-types (append (pairlis$ formals types) var-types))
          (formals (atj-type-annotate-vars formals types))
-         ((mv body types mv-typess) (atj-type-annotate-term (lambda-body fn)
-                                                            required-types?
-                                                            var-types
-                                                            mv-typess
-                                                            guards$
-                                                            wrld))
-         (term (fcons-term (make-lambda formals body) args))
+         ((mv body types mv-typess)
+          (atj-type-annotate-term (pseudo-lambda->body fn)
+                                  required-types?
+                                  var-types
+                                  mv-typess
+                                  guards$
+                                  wrld))
+         (term (pseudo-term-call (pseudo-lambda formals body) args))
          ((unless (or (null required-types?)
                       (= (len required-types?) (len types))))
           (raise "Internal error: ~
                   requiring the types ~x0 for the term ~x1, ~
                   whose inferred types are ~x2."
                  required-types? term types)
-          (mv nil (list :avalue) nil))) ; irrelevant
+          (mv (pseudo-term-null) (list :avalue) nil)))
       (mv (atj-type-wrap-term term
                               types
                               required-types?)
@@ -1375,7 +1403,7 @@
           mv-typess))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-TYPE-ANNOTATE-MV-LET decreases:
-    :measure (two-nats-measure (acl2-count term) 1))
+    :measure (two-nats-measure (pseudo-term-count term) 1))
 
   (define atj-type-annotate-mv-let ((term pseudo-termp)
                                     (required-types? atj-type-listp)
@@ -1386,12 +1414,11 @@
     :guard (cons-listp mv-typess)
     :returns (mv (success booleanp)
                  (annotated-term pseudo-termp)
-                 (resulting-types atj-type-listp)
+                 (resulting-types (and (atj-type-listp resulting-types)
+                                       (consp resulting-types)))
                  (new-mv-typess (and (atj-type-list-listp new-mv-typess)
                                      (cons-listp new-mv-typess))))
-    (b* (((unless (mbt (pseudo-termp term)))
-          (mv nil nil (list :avalue) nil))
-         ((unless (mbt (atj-type-listp required-types?)))
+    (b* (((unless (mbt (atj-type-listp required-types?)))
           (mv nil nil (list :avalue) nil))
          ((unless (mbt (atj-symbol-type-alistp var-types)))
           (mv nil nil (list :avalue) nil))
@@ -1401,11 +1428,11 @@
          ((mv mv-let-p indices vars mv-term body-term)
           (atj-check-mv-let-call term))
          ((unless mv-let-p)
-          (mv nil nil (list :avalue) mv-typess))
+          (mv (pseudo-term-null) nil (list :avalue) mv-typess))
          ((mv annotated-mv-term mv-term-types mv-typess)
           (atj-type-annotate-term mv-term nil var-types mv-typess guards$ wrld))
          ((when (= (len mv-term-types) 1))
-          (mv nil nil (list :avalue) mv-typess))
+          (mv nil (pseudo-term-null) (list :avalue) mv-typess))
          (annotated-mv (atj-type-annotate-var 'mv mv-term-types))
          (sel-types (atj-select-mv-term-types indices mv-term-types))
          (annotated-vars (atj-type-annotate-vars vars sel-types))
@@ -1423,19 +1450,21 @@
                   requiring the types ~x0 for the term ~x1, ~
                   whose inferred types are ~x2."
                  required-types? term body-term-types)
-          (mv nil nil (list :avalue) nil)) ; 2nd/3rd/4th result irrelevant
+          (mv nil (pseudo-term-null) (list :avalue) nil))
          (wrapped-mv (atj-type-wrap-term annotated-mv mv-term-types nil))
          (annotated-mv-nth-calls (atj-type-annotate-mv-nth-terms sel-types
                                                                  indices
                                                                  wrapped-mv))
-         (inner-lambda (make-lambda annotated-vars annotated-body-term))
-         (inner-lambda-app (fcons-term inner-lambda annotated-mv-nth-calls))
+         (inner-lambda (pseudo-lambda annotated-vars annotated-body-term))
+         (inner-lambda-app (pseudo-term-call inner-lambda
+                                             annotated-mv-nth-calls))
          (annotated-inner-lambda-app (atj-type-wrap-term inner-lambda-app
                                                          body-term-types
                                                          body-term-types))
-         (outer-lambda (make-lambda (list annotated-mv)
-                                    annotated-inner-lambda-app))
-         (outer-lambda-app (fcons-term outer-lambda (list annotated-mv-term)))
+         (outer-lambda (pseudo-lambda (list annotated-mv)
+                                      annotated-inner-lambda-app))
+         (outer-lambda-app (pseudo-term-call outer-lambda
+                                             (list annotated-mv-term)))
          (final-term (atj-type-wrap-term outer-lambda-app
                                          body-term-types
                                          body-term-types)))
@@ -1443,7 +1472,7 @@
           final-term
           (or required-types? body-term-types)
           mv-typess))
-    :measure (two-nats-measure (acl2-count term) 0))
+    :measure (two-nats-measure (pseudo-term-count term) 0))
 
   (define atj-type-annotate-args ((args pseudo-term-listp)
                                   (var-types atj-symbol-type-alistp)
@@ -1459,13 +1488,15 @@
                                               (len args))))
                  (new-mv-typess (and (atj-type-list-listp new-mv-typess)
                                      (cons-listp new-mv-typess))))
-    (b* (((unless (mbt (pseudo-term-listp args)))
-          (mv (repeat (len args) nil) (repeat (len args) :avalue) nil))
-         ((unless (mbt (atj-symbol-type-alistp var-types)))
-          (mv (repeat (len args) nil) (repeat (len args) :avalue) nil))
+    (b* (((unless (mbt (atj-symbol-type-alistp var-types)))
+          (mv (repeat (len args) (pseudo-term-null))
+              (repeat (len args) :avalue)
+              nil))
          ((unless (mbt (and (atj-type-list-listp mv-typess)
                             (cons-listp mv-typess))))
-          (mv (repeat (len args) nil) (repeat (len args) :avalue) nil))
+          (mv (repeat (len args) (pseudo-term-null))
+              (repeat (len args) :avalue)
+              nil))
          ((when (endp args)) (mv nil nil mv-typess))
          ((mv arg types mv-typess) (atj-type-annotate-term (car args)
                                                            nil ; REQUIRED-TYPES?
@@ -1477,7 +1508,9 @@
           (raise "Internal error: ~
                   the function argument ~x0 has types ~x1."
                  (car args) types)
-          (mv (repeat (len args) nil) (repeat (len args) :avalue) nil))
+          (mv (repeat (len args) (pseudo-term-null))
+              (repeat (len args) :avalue)
+              nil))
          (type (car types))
          ((mv args types mv-typess) (atj-type-annotate-args (cdr args)
                                                             var-types
@@ -1485,7 +1518,7 @@
                                                             guards$
                                                             wrld)))
       (mv (cons arg args) (cons type types) mv-typess))
-    :measure (two-nats-measure (acl2-count args) 0))
+    :measure (two-nats-measure (pseudo-term-list-count args) 0))
 
   :prepwork
 
@@ -1495,10 +1528,12 @@
      :guard (= (len types) (len indices))
      :returns (terms pseudo-term-listp)
      (b* (((when (endp types)) nil)
-          (wrapped-index (atj-type-wrap-term (list 'quote (car indices))
+          (wrapped-index (atj-type-wrap-term (pseudo-term-quote
+                                              (car indices))
                                              (list :ainteger)
                                              (list :ainteger)))
-          (mv-nth-call `(mv-nth ,wrapped-index ,wrapped-mv))
+          (mv-nth-call (pseudo-term-call 'mv-nth
+                                         (list wrapped-index wrapped-mv)))
           (wrapped-mv-nth-call (atj-type-wrap-term mv-nth-call
                                                    (list :avalue)
                                                    (list (car types))))
@@ -1531,76 +1566,16 @@
      ///
      (defret len-of-atj-select-mv-term-types
        (equal (len selected-mv-types)
-              (len indices)))))
+              (len indices))))
+
+   (local (include-book "std/lists/top" :dir :system))
+
+   (local (in-theory (disable pseudo-termp
+                              acl2::consp-under-iff-when-true-listp))))
 
   :verify-guards nil ; done below
 
   ///
-
-  (defrule consp-of-atj-type-annotate-args.resulting-types-is-consp-of-args
-    (equal (consp (mv-nth 1 (atj-type-annotate-args
-                             args var-types mv-typess guards$ wrld)))
-           (consp args))
-    :prep-lemmas
-    ((defrule lemma
-       (iff (consp x)
-            (>= (len x) 1)))))
-
-  (defret-mutual atj-type-annotate-term
-    (defret consp-of-atj-type-annotate-term.resulting-types
-      (consp resulting-types)
-      :hyp (true-listp required-types?)
-      :rule-classes :type-prescription
-      :fn atj-type-annotate-term)
-    (defret consp-of-atj-type-annotate-mv-let.resulting-types
-      (consp resulting-types)
-      :hyp (true-listp required-types?)
-      :rule-classes :type-prescription
-      :fn atj-type-annotate-mv-let)
-    (defret consp-of-atj-type-annotate-term/mv-let.resulting-types-aux
-      t
-      :rule-classes nil
-      :fn atj-type-annotate-args)
-    :hints (("Goal"
-             :in-theory (enable atj-type-annotate-term
-                                atj-type-annotate-mv-let
-                                atj-type-annotate-args)
-             :expand ((atj-type-annotate-term
-                       term nil var-types mv-typess guards$ wrld)))))
-
-  (defret-mutual atj-type-annotate-term
-    (defret true-listp-of-atj-type-annotate-args.annotated-args-aux1
-      t
-      :rule-classes nil
-      :fn atj-type-annotate-term)
-    (defret true-listp-of-atj-type-annotate-args.annotated-args-aux2
-      t
-      :rule-classes nil
-      :fn atj-type-annotate-mv-let)
-    (defret true-listp-of-atj-type-annotate-args.annotated-args
-      (true-listp annotated-args)
-      :rule-classes :type-prescription
-      :fn atj-type-annotate-args)
-    :hints (("Goal" :in-theory (enable atj-type-annotate-term
-                                       atj-type-annotate-mv-let
-                                       atj-type-annotate-args))))
-
-  (defret-mutual atj-type-annotate-term
-    (defret true-listp-of-atj-type-annotate-args.resulting-types-aux1
-      t
-      :rule-classes nil
-      :fn atj-type-annotate-term)
-    (defret true-listp-of-atj-type-annotate-args.resulting-types-aux2
-      t
-      :rule-classes nil
-      :fn atj-type-annotate-mv-let)
-    (defret true-listp-of-atj-type-annotate-args.resulting-types
-      (true-listp resulting-types)
-      :rule-classes :type-prescription
-      :fn atj-type-annotate-args)
-    :hints (("Goal" :in-theory (enable atj-type-annotate-term
-                                       atj-type-annotate-mv-let
-                                       atj-type-annotate-args))))
 
   (defrulel verify-guards-lemma-1
     (implies (>= (len x) 1)
@@ -1610,7 +1585,14 @@
     (implies (atj-type-listp x)
              (true-listp x)))
 
-  (verify-guards atj-type-annotate-term))
+  (defrulel verify-guards-lemma-3
+    (implies (symbolp x)
+             (pseudo-termp x))
+    :enable pseudo-termp)
+
+  (verify-guards atj-type-annotate-term
+    :hints (("Goal" :in-theory (enable pseudo-fn-args-p
+                                       pseudo-var-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1988,9 +1970,13 @@
                          (vars-in-scope symbol-listp)
                          (vars-used-after symbol-listp)
                          (vars-to-mark-new symbol-listp))
-    :returns (mv (marked-term pseudo-termp :hyp :guard)
-                 (new-vars-in-scope symbol-listp :hyp :guard))
-    (b* (((when (variablep term))
+    :returns (mv (marked-term pseudo-termp)
+                 (new-vars-in-scope symbol-listp))
+    (b* (((unless (mbt (pseudo-termp term))) (mv nil nil))
+         ((unless (mbt (symbol-listp vars-in-scope))) (mv nil nil))
+         ((unless (mbt (symbol-listp vars-used-after))) (mv nil nil))
+         ((unless (mbt (symbol-listp vars-to-mark-new))) (mv nil nil))
+         ((when (variablep term))
           (if (member-eq term vars-to-mark-new)
               (mv (atj-mark-var-new term) vars-in-scope)
             (mv (atj-mark-var-old term) vars-in-scope)))
@@ -2068,10 +2054,17 @@
                           (vars-to-mark-new symbol-listp))
     :returns (mv (marked-terms (and (pseudo-term-listp marked-terms)
                                     (equal (len marked-terms)
-                                           (len terms)))
-                               :hyp :guard)
-                 (new-vars-in-scope symbol-listp :hyp :guard))
-    (b* (((when (endp terms)) (mv nil vars-in-scope))
+                                           (len terms))))
+                 (new-vars-in-scope symbol-listp))
+    (b* (((unless (mbt (pseudo-term-listp terms)))
+          (mv (repeat (len terms) nil) nil))
+         ((unless (mbt (symbol-listp vars-in-scope)))
+          (mv (repeat (len terms) nil) nil))
+         ((unless (mbt (symbol-listp vars-used-after)))
+          (mv (repeat (len terms) nil) nil))
+         ((unless (mbt (symbol-listp vars-to-mark-new)))
+          (mv (repeat (len terms) nil) nil))
+         ((when (endp terms)) (mv nil vars-in-scope))
          (first-term (car terms))
          (rest-terms (cdr terms))
          (vars-used-after-first-term (union-eq vars-used-after
@@ -2515,10 +2508,17 @@
                            (curr-pkg stringp)
                            (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
-    :returns (mv (new-term pseudo-termp :hyp :guard)
-                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
-                 (new-indices symbol-pos-alistp :hyp :guard))
-    (b* (((when (variablep term))
+    :returns (mv (new-term pseudo-termp)
+                 (new-renaming-old symbol-symbol-alistp)
+                 (new-indices symbol-pos-alistp))
+    (b* (((unless (mbt (pseudo-termp term))) (mv nil nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-new))) (mv nil nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-old))) (mv nil nil nil))
+         ((unless (mbt (symbol-pos-alistp indices))) (mv nil nil nil))
+         ((unless (mbt (stringp curr-pkg))) (mv nil nil nil))
+         ((unless (mbt (string-symbollist-alistp vars-by-name)))
+          (mv nil nil nil))
+         ((when (variablep term))
           (b* (((mv var new?) (atj-unmark-var term))
                (renaming-pair (assoc-eq var (if new?
                                                 renaming-new
@@ -2629,30 +2629,41 @@
                             (vars-by-name string-symbollist-alistp))
     :guard (not (equal curr-pkg ""))
     :returns (mv (new-terms (and (pseudo-term-listp new-terms)
-                                 (equal (len new-terms) (len terms)))
-                            :hyp :guard)
-                 (new-renaming-old symbol-symbol-alistp :hyp :guard)
-                 (new-indices symbol-pos-alistp :hyp :guard))
-    (cond ((endp terms) (mv nil renaming-old indices))
-          (t (b* (((mv new-term
-                       renaming-old
-                       indices) (atj-rename-term (car terms)
-                                                 renaming-new
-                                                 renaming-old
-                                                 indices
-                                                 curr-pkg
-                                                 vars-by-name))
-                  ((mv new-terms
-                       renaming-old
-                       indices) (atj-rename-terms (cdr terms)
-                                                  renaming-new
-                                                  renaming-old
-                                                  indices
-                                                  curr-pkg
-                                                  vars-by-name)))
-               (mv (cons new-term new-terms)
-                   renaming-old
-                   indices)))))
+                                 (equal (len new-terms) (len terms))))
+                 (new-renaming-old symbol-symbol-alistp)
+                 (new-indices symbol-pos-alistp))
+    (b* (((unless (mbt (pseudo-term-listp terms)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-new)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (symbol-symbol-alistp renaming-old)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (symbol-pos-alistp indices)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (stringp curr-pkg)))
+          (mv (repeat (len terms) nil) nil nil))
+         ((unless (mbt (string-symbollist-alistp vars-by-name)))
+          (mv (repeat (len terms) nil) nil nil)))
+      (cond ((endp terms) (mv nil renaming-old indices))
+            (t (b* (((mv new-term
+                         renaming-old
+                         indices) (atj-rename-term (car terms)
+                         renaming-new
+                         renaming-old
+                         indices
+                         curr-pkg
+                         vars-by-name))
+                    ((mv new-terms
+                         renaming-old
+                         indices) (atj-rename-terms (cdr terms)
+                         renaming-new
+                         renaming-old
+                         indices
+                         curr-pkg
+                         vars-by-name)))
+                 (mv (cons new-term new-terms)
+                     renaming-old
+                     indices))))))
 
   :verify-guards nil ; done below
   ///

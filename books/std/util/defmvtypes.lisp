@@ -31,7 +31,7 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 
 (defxdoc defmvtypes
   :parents (std/util)
@@ -249,4 +249,3 @@ by giving any @(':hints').</p>")
 
    (defmvtypes f
      ((equal x 0) booleanp natp))))
-

@@ -29,7 +29,8 @@
   :parents (apt)
 
   :short "APT isomorphic data transformation:
-          change function arguments into isomorphic representations."
+          change function arguments and results
+          into isomorphic representations."
 
   :long
 
@@ -41,7 +42,7 @@
 
     (xdoc::p
      "This transformation changes the representation of
-      one or more of a function's arguments
+      one or more of a function's arguments and results
       into an isomorphic representation.
       This transformation is useful
       to carry out certain data type refinements
@@ -50,14 +51,13 @@
       (when analyzing programs).")
 
     (xdoc::p
-     "By regarding the remaining arguments
+     "When at least one argument's representation is being changed,
+      then by regarding the remaining arguments
       as being changed via an indentity isomorphism,
       we can say that this transformation changes the representation of
       (the tuple of) all the function's arguments
-      into a new representation that is element-wise isomorphic.")
-
-    (xdoc::p
-     "There are two variants of this transformation:")
+      into a new representation that is element-wise isomorphic.
+      In this case, there are two variants of this transformation:")
     (xdoc::ul
      (xdoc::li
       "When the function operates only on argument tuples
@@ -68,7 +68,7 @@
        that are isomorphic to the old guard.")
      (xdoc::li
       "When the function operates on
-       at least all tuples in the old representation (and possibly more)
+       at least all the tuples in the old representation (and possibly more)
        (i.e. the function's guard is a superset of the old representation),
        and is used as a predicate to recognize
        a subset of argument tuples all of which are in the old representation,
@@ -80,6 +80,9 @@
       and produce slightly different results.
       These two variants are selected
       via the @(':predicate') input (see below).")
+    (xdoc::p
+     "If only the representation of some results (and of no arguments)
+      is changed, then there is a single variant of this transformation.")
 
     (xdoc::p
      "These " *isodata-design-notes* ", which use "
@@ -117,16 +120,19 @@
      (xdoc::p
       "@('old') must
        be in logic mode,
-       be defined,
-       have at least one argument, and
-       have no input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
-       If the @(':predicate') input (see below) is @('t'),
-       @('old') must return a non-<see topic='@(url mv)'>multiple</see> value.
+       be defined, and
+       have no input or output "
+      (xdoc::seetopic "acl2::stobj" "stobjs")
+      ". If the @(':predicate') input (see below) is @('t'),
+       or the @('args/res-iso') input (see below) includes @(':result'),
+       then @('old') must return
+       a non-" (xdoc::seetopic "mv" "multiple") " value.
        If @('old') is recursive, it must
        be singly (not mutually) recursive,
        not have a @(':?') measure, and
-       not occur in its own <see topic='@(url tthm)'>termination theorem</see>
-       (i.e. not occur in the tests and arguments of its own recursive calls).
+       not occur in its own "
+      (xdoc::seetopic "tthm" "termination theorem")
+      " (i.e. not occur in the tests and arguments of its own recursive calls).
        If the @(':verify-guards') input is @('t'),
        @('old') must be guard-verified.")
      (xdoc::p
@@ -171,33 +177,41 @@
        and @($p$) when @(':predicate') is @('t')."))
 
     (xdoc::desc
-     "@('args-iso')"
+     "@('args/res-iso')"
      (xdoc::p
-      "Specifies the arguments of @('old') that are transformed
+      "Specifies the arguments and results of @('old') that are transformed
        and the way in which they are transformed.")
      (xdoc::p
-      "It must be a singleton list of doublets "
-      (xdoc::tt "(args iso)")
-      " (future versions of @('isodata') will allow non-singleton lists),
+      "It must be a singleton list of doublets @('((args/res iso))')
+       (future versions of @('isodata') will allow non-singleton lists),
        where:")
      (xdoc::ul
       (xdoc::li
        (xdoc::p
-        "@('args') denotes the arguments of @('old')
+        "@('args/res') denotes the arguments and results of @('old')
          whose representation is transformed.")
        (xdoc::p
         "It must be one of the following:")
        (xdoc::ul
         (xdoc::li
-         "A non-empty list without duplicates of elements of @('(x1 ... xn)'),
+         "A non-empty list without duplicates
+          of elements among @('x1'), ... @('xn'), and @(':result'),
           in any order.")
         (xdoc::li
-         "A single element @('xi') of @('(x1 ... xn)'),
-          abbreviating the singleton list @('(xi)')."))
+         "A single element among @('x1'), ... @('xn'), and @(':result'),
+          abbreviating the singleton list with that element."))
        (xdoc::p
         "In the rest of the documentation page, for expository convenience,
-         it is assumed that @('args') is @('(y1 ... yp)')
-         and that they are in the same order as in @('(x1 ... xn)')."))
+         it is assumed that @('args/res') is
+         @('(y1 ... yp)') or @('(y1 ... yp :result)'),
+         where @('y1'), ..., @('yp') are arguments of @('old'),
+         in the same order as they appear in @('(x1 ... xn)').")
+       (xdoc::p
+        "Each @('yh') specifies an argument of @('old'),
+         while @(':result') specifies the (only) result of @('old')
+         (future versions of @('isodata') will allow
+         the specification of one or more results
+         when @('old') returns multiple results."))
       (xdoc::li
        (xdoc::p
         "@('iso') denotes the old and new isomorphic representations
@@ -250,26 +264,36 @@
        `Compositional Establishment of Isomorphic Mappings on Tuples'
        describes the compositional establishment of an isomorphic mapping
        between the inputs of old and new function.
-       The @('args-iso') input currently supported by this transformation
-       amounts to the following partitioning and sub-mappings:"
-      (xdoc::ul
-       (xdoc::li
-        "The new function's arguments are the same (i.e. have the same names)
-         as the old function's arguments, i.e. @('x1'), ..., @('xn').")
-       (xdoc::li
-        "The arguments are partitioned into @('n') singleton partitions.")
-       (xdoc::li
-        "The (unary) isomorphic mapping specified in @('args-iso')
-         is used for each of the @('y1'), ..., @('yp') partitions.")
-       (xdoc::li
-        "An implicit identity isomorphism over all ACL2 values
-         is used for the remaining partitions.")))
+       The @('args/res-iso') input currently supported by this transformation
+       amounts to the following partitioning and sub-mappings:")
+     (xdoc::ul
+      (xdoc::li
+       "The new function's arguments are the same (i.e. have the same names)
+        as the old function's arguments, i.e. @('x1'), ..., @('xn').")
+      (xdoc::li
+       "The new function has the same number of results as the old function.")
+      (xdoc::li
+       "The arguments are partitioned into @('n') singleton partitions.")
+      (xdoc::li
+       "The results are partitioned into singleton partitions as well.")
+      (xdoc::li
+       "The (unary) isomorphic mapping specified in @('args/res-iso')
+        is used for each of the @('y1'), ..., @('yp') partitions,
+        and for the result partition if @(':result') is in in @('args/res-iso')
+        (in this case, there is just one result).")
+      (xdoc::li
+       "An implicit identity isomorphism over all ACL2 values
+        is used for the remaining (argument and result) partitions."))
      (xdoc::p
       "In the design notes,
        the resulting isomorphic mapping over all function arguments
        is denoted as consisting of
        the domains @($A$) and @($A'$) and
-       the isomorphisms @($\\alpha$) and @($\\alpha'$).")
+       the isomorphisms @($\\alpha$) and @($\\alpha'$),
+       and the resulting isomorphic mapping over all function results
+       is denoted as consisting of
+       the domains @($B$) and @($B'$) and
+       the isomorphisms @($\\beta$) and @($\\beta'$).")
      (xdoc::p
       "The transformation of results,
        and the establishment of isomorphic mappings between results,
@@ -288,6 +312,9 @@
        "@('nil'), to select the variant in which @('old')
         is treated as a function that operates
         only on argument tuples that are all in the old representation."))
+     (xdoc::p
+      "This input may be @('t') only if @('args/res-iso')
+       does not include @(':result').")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        the sections with `Function' in their title
@@ -323,7 +350,14 @@
 
     (xdoc::evmac-input-print isodata)
 
-    (xdoc::evmac-input-show-only isodata))
+    (xdoc::evmac-input-show-only isodata)
+
+    (xdoc::desc
+     "@(':compatibility') &mdash; default @('nil')"
+     (xdoc::p
+      "This is a temporary option that is not documented
+       because it should not be used
+       (except in very specific transitional situations).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,6 +368,21 @@
     (xdoc::p
      "The following conditions must be proved
       in order for the transformation to apply.")
+
+    (xdoc::evmac-appcond
+     ":oldp-of-old"
+     (xdoc::&&
+      (xdoc::p
+       "@('old') maps arguments in the old representation
+        to results in the old representation:")
+      (xdoc::codeblock
+       "(implies (and (oldp y1)"
+       "              ..."
+       "              (oldp yp))"
+       "         (oldp (old x1 ... xn)))"))
+     :design-notes *isodata-design-notes*
+     :design-notes-appcond "@($fAB$)"
+     :presence "@('args/res-iso') includes @(':result')")
 
     (xdoc::evmac-appcond
      ":oldp-when-old"
@@ -425,11 +474,25 @@
      (xdoc::p
       "Isomorphic version of @('old'):")
      (xdoc::codeblock
-      ";; when old is not recursive:"
+      ";; when old is not recursive and args/res-iso does not include :result:"
       "(defun new (x1 ... xn)"
-      "  old-body<...,(back y1),...,(back yp),...>)"
+      "  (if (and (newp y1)"
+      "           ..."
+      "           (newp yp))"
+      "      old-body<...,(back y1),...,(back yp),...>"
+      "    nil)) ; or (mv nil ... nil)"
       ""
-      ";; when old is recursive and the :predicate input is nil:"
+      ";; when old is not recursive and args/res-iso includes :result:"
+      "(defun new (x1 ... xn)"
+      "  (if (and (newp y1)"
+      "           ..."
+      "           (newp yp))"
+      "      (forth old-body<...,(back y1),...,(back yp),...>)"
+      "    nil))"
+      ""
+      ";; when old is recursive,"
+      ";; the :predicate input is nil,"
+      ";; and args/res-iso does not include :result:"
       "(defun new (x1 ... xn)"
       "  (if (and (newp y1)"
       "           ..."
@@ -462,9 +525,48 @@
       "                                    (back yp),"
       "                                    ...>),"
       "                  ...)>"
-      "  nil)) ; or (mv nil ... nil)"
+      "    nil)) ; or (mv nil ... nil)"
       ""
-      ";; when old is recursive and the :predicate input is t:"
+      ";; when old is recursive,"
+      ";; the :predicate input is nil,"
+      ";; and args/res-iso includes :result"
+      ";; (in which case the function returns a single result):"
+      "(defun new (x1 ... xn)"
+      "  (if (and (newp y1)"
+      "           ..."
+      "           (newp yp))"
+      "      (forth old-body<...,(back y1),...,(back yp),...,"
+      "                      (new ..."
+      "                           (forth update1-y1<...,"
+      "                                             (back y1),"
+      "                                             ...,"
+      "                                             (back yp),"
+      "                                             ...>)"
+      "                           ..."
+      "                           (forth update1-yp<...,"
+      "                                             (back y1),"
+      "                                             ...,"
+      "                                             (back yp),"
+      "                                             ...>),"
+      "                           ...),"
+      "                      ..."
+      "                      (new ..."
+      "                           (forth updatem-y1<...,"
+      "                                             (back y1),"
+      "                                             ...,"
+      "                                             (back yp),"
+      "                                             ...>)"
+      "                         ..."
+      "                         (forth updatem-yp<...,"
+      "                                           (back y1),"
+      "                                           ...,"
+      "                                           (back yp),"
+      "                                           ...>),"
+      "                         ...)>)"
+      "    nil))"
+      ""
+      ";; when old is recursive and the :predicate input is t"
+      ";; (in which case args/res-iso does not include :result):"
       "(defun new (x1 ... xn)"
       "  old-body<...,(back y1),...,(back yp),...,"
       "           (new ..."
@@ -502,15 +604,23 @@
         "When @(':predicate') is @('nil'),
          @('new') is defined to map
          each argument tuple in the new representation
-         to the same value that @('old') maps
+         to the same or isomorphic value that @('old') maps
          the isomorphic argument tuple in the old representation.
          The following is a theorem:")
        (xdoc::codeblock
+        ";; when args/res-iso does not include :result:"
         "(implies (and (newp y1)"
         "              ..."
         "              (newp yp))"
         "         (equal (new x1 ... xn)"
-        "                (old ... (back y1 ... (back yp) ...))))"))
+        "                (old ... (back y1 ... (back yp) ...))))"
+        ""
+        ";; when args/res-iso includes :result:"
+        "(implies (and (newp y1)"
+        "              ..."
+        "              (newp yp))"
+        "         (equal (new x1 ... xn)"
+        "                (forth (old ... (back y1 ... (back yp) ...)))))"))
       (xdoc::li
        (xdoc::p
         "When @(':predicate') is @('t'),
@@ -551,13 +661,23 @@
      (xdoc::p
       "Theorem that relates @('old') to @('new'):")
      (xdoc::codeblock
-      ";; when the :predicate input is nil:"
+      ";; when the :predicate input is nil"
+      ";; and args/res-iso does not include :result:"
       "(defthm old-to-new"
       "  (implies (and (oldp y1)"
       "                ..."
       "                (oldp yp))"
       "           (equal (old x1 ... xn)"
       "                  (new ... (forth y1) ... (forth yp) ...))))"
+      ""
+      ";; when the :predicate input is nil"
+      ";; and args/res-iso includes :result:"
+      "(defthm old-to-new"
+      "  (implies (and (oldp y1)"
+      "                ..."
+      "                (oldp yp))"
+      "           (equal (old x1 ... xn)"
+      "                  (back (new ... (forth y1) ... (forth yp) ...)))))"
       ""
       ";; whem the :predicate input is t:"
       "(defthm old-to-new"

@@ -107,7 +107,7 @@
 
 (must-succeed*
 
- (test-title "Check ARGS-ISO input.")
+ (test-title "Check ARGS/RES-ISO input.")
 
  (defun f (x y) ; OLD when :PREDICATE is NIL
    (declare (xargs :guard (and (natp x) (natp y))))
@@ -137,7 +137,7 @@
 
 (must-succeed*
 
- (test-title "Check ARGS input.")
+ (test-title "Check ARGS/RES input.")
 
  (defun f (x y) ; OLD when :PREDICATE is NIL
    (declare (xargs :guard (and (natp x) (natp y))))
@@ -145,8 +145,8 @@
 
  (defun p (x y) (and (natp x) (natp y) (> x y))) ; OLD when :PREDICATE is T
 
- ;; ARGS is not a formal argument of OLD
- ;; or a non-empty list of formal arguments of OLD:
+ ;; ARGS/RES is not a formal argument of OLD or :RESULT
+ ;; or a non-empty list of formal arguments of OLD and :RESULT:
  (must-succeed*
   (must-fail (isodata f ((z (oldp newp forth back)))))
   (must-fail (isodata f ((z iso))))
@@ -156,6 +156,8 @@
   (must-fail (isodata f ((nil iso))))
   (must-fail (isodata f (((x z) (oldp newp forth back)))))
   (must-fail (isodata f (((x z) iso))))
+  (must-fail (isodata f ((:resultt iso))))
+  (must-fail (isodata f ((z :result iso))))
   (must-fail (isodata p ((z (oldp newp forth back))) :predicate t))
   (must-fail (isodata p ((z iso)) :predicate t))
   (must-fail (isodata p (((a b) (oldp newp forth back))) :predicate t))
@@ -163,14 +165,18 @@
   (must-fail (isodata p ((nil (oldp newp forth back))) :predicate t))
   (must-fail (isodata p ((nil iso)) :predicate t))
   (must-fail (isodata p (((x z) (oldp newp forth back))) :predicate t))
-  (must-fail (isodata p (((x z) iso)) :predicate t)))
+  (must-fail (isodata p (((x z) iso)) :predicate t))
+  (must-fail (isodata p ((:resultt iso))))
+  (must-fail (isodata p ((z :result iso)))))
 
- ;; ARGS is a list of formal arguments of OLD with duplicates:
+ ;; ARGS/RES is a list of formal arguments of OLD and :RESULT with duplicates:
  (must-succeed*
   (must-fail (isodata f (((x y y) (oldp newp forth back)))))
   (must-fail (isodata f (((x y y) iso))))
+  (must-fail (isodata f (((x :result y :result) iso))))
   (must-fail (isodata p (((x y x) (oldp newp forth back))) :predicate t))
-  (must-fail (isodata p (((x y x) iso)) :predicate t))))
+  (must-fail (isodata p (((x y x) iso)) :predicate t))
+  (must-fail (isodata p (((x :result y :result) iso))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,7 +186,7 @@
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
- ;; ISO is not a symbol or a 4-tuple:
+ ;; ISO is not a symbol, or a 4-tuple, or a 6-tuple whose 5th element is :HINTS:
  (must-succeed*
   (must-fail (isodata f ((x #\c))))
   (must-fail (isodata f ((x "iso"))))
@@ -188,13 +194,16 @@
   (must-fail (isodata f ((x (oldp newp)))))
   (must-fail (isodata f ((x (oldp newp forth)))))
   (must-fail (isodata f ((x (oldp newp forth back more)))))
-  (must-fail (isodata f ((x (oldp newp forth back . more)))))))
+  (must-fail (isodata f ((x (oldp newp forth back . more)))))
+  (must-fail (isodata f ((x (oldp newp forth back :hints)))))
+  (must-fail (isodata f ((x (oldp newp forth back
+                                  :hintss (("Goal" :in-theory nil)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
 
- (test-title "Check OLDP input.")
+ (test-title "Check OLDP input, when ISO is not a name.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
@@ -273,7 +282,7 @@
 
 (must-succeed*
 
- (test-title "Check NEWP input.")
+ (test-title "Check NEWP input, when ISO is not a name.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
@@ -352,7 +361,7 @@
 
 (must-succeed*
 
- (test-title "Check FORTH input.")
+ (test-title "Check FORTH input, when ISO is not a name.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
@@ -431,7 +440,7 @@
 
 (must-succeed*
 
- (test-title "Check BACK input.")
+ (test-title "Check BACK input, when ISO is not a name.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
@@ -511,7 +520,7 @@
 
 (must-succeed*
 
- (test-title "Check ISO input.")
+ (test-title "Check ISO input when it is a name.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
@@ -532,13 +541,21 @@
 
  (test-title "Wildcard in OLD.")
 
+ (defiso nat-id natp natp identity identity)
+
+ (defiso acl2-number-id acl2-numberp acl2-numberp identity identity)
+
  (must-succeed* ; :PREDICATE is NIL
   (defun f{3} (x) (declare (xargs :guard (natp x))) (1+ x)) ; denoted by OLD
   (add-numbered-name-in-use f{3}) ; mark F{3} in use
   (add-numbered-name-in-use f{2}) ; wildcard won't resolve to this one
   (must-succeed (isodata f{*} ((x (natp natp identity identity)))))
-  (defiso nat-id natp natp identity identity)
+  (must-succeed (isodata f{*} (((x :result) (natp natp identity identity)))))
+  (must-succeed
+   (isodata f{*} ((:result (acl2-numberp acl2-numberp identity identity)))))
   (must-succeed (isodata f{*} ((x nat-id))))
+  (must-succeed (isodata f{*} (((x :result) nat-id))))
+  (must-succeed (isodata f{*} ((:result acl2-number-id))))
   :with-output-off nil)
 
  (must-succeed* ; :PREDICATE is T
@@ -547,7 +564,6 @@
   (add-numbered-name-in-use p{2}) ; wildcard won't resolve to this one
   (must-succeed
    (isodata p{*} ((x (natp natp identity identity))) :predicate t))
-  (defiso nat-id natp natp identity identity)
   (must-succeed (isodata p{*} ((x nat-id)) :predicate t))
   :with-output-off nil))
 
@@ -559,7 +575,7 @@
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; NEW-NAME is not a symbol:
  (must-fail (isodata f ((x (natp natp identity identity))) :new-name "g"))
@@ -585,7 +601,7 @@
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; THM-NAME is not a symbol:
  (must-fail
@@ -629,7 +645,7 @@
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; PREDICATE is not a boolean:
  (must-fail (isodata f ((x (natp natp identity identity))) :predicate 4))
@@ -669,7 +685,7 @@
 
  (defun p (x) (and (natp x) (> x 10))) ; OLD when PREDICATE is T
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; hints for :OLDP-OF-REC-CALLS allowed only if OLD is recursive:
  (must-fail (isodata p ((x (natp natp identity identity)))
@@ -699,7 +715,18 @@
                       :hints (:old-guard-pred (("Goal" :in-theory nil)))))
   (must-fail (isodata f ((x (natp natp identity identity)))
                       :verify-guards nil
-                      :hints (:old-guard-pred (("Goal" :in-theory nil)))))))
+                      :hints (:old-guard-pred (("Goal" :in-theory nil))))))
+
+ ;; hints for :OLDP-OF-OLD disallowed
+ ;; if ARGS/RES-ISO does not include :RESULT:
+ (must-succeed*
+  (must-fail (isodata p ((x (natp natp identity identity)))
+                      :predicate t
+                      :verify-guards nil
+                      :hints (:oldp-of-old (("Goal" :in-theory nil)))))
+  (must-fail (isodata f ((x (natp natp identity identity)))
+                      :verify-guards nil
+                      :hints (:old-of-old (("Goal" :in-theory nil)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -712,22 +739,52 @@
 
  (defun p (x) (and (natp x) (> x 10))) ; OLD when :PREDICATE is T
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
+
+ (defiso acl2-number-id acl2-numberp acl2-numberp identity identity)
 
  ;; not a print specifier:
  (must-fail (isodata f ((x (natp natp identity identity))) :print 88))
+ (must-fail (isodata f (((x :result) (natp natp identity identity))) :print 88))
+ (must-fail
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity)))
+           :print 88))
  (must-fail (isodata f ((x nat-id)) :print 88))
+ (must-fail (isodata f (((x :result) nat-id)) :print 88))
+ (must-fail (isodata f ((:result acl2-number-id)) :print 88))
  (must-fail
   (isodata p ((x (natp natp identity identity))) :predicate t :print #\t))
  (must-fail
+  (isodata p (((x :result) (natp natp identity identity)))
+           :predicate t :print #\t))
+ (must-fail
+  (isodata p ((:result (acl2-numberp acl2-numberp identity identity)))
+           :predicate t :print #\t))
+ (must-fail
   (isodata p ((x nat-id)) :predicate t :print #\t))
+ (must-fail
+  (isodata p (((x :result) nat-id)) :predicate t :print #\t))
+ (must-fail
+  (isodata p ((:result acl2-number-id)) :predicate t :print #\t))
 
  ;; default output:
  (must-succeed
   (isodata f ((x (natp natp identity identity))))
   :with-output-off nil)
  (must-succeed
+  (isodata f (((x :result) (natp natp identity identity))))
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity))))
+  :with-output-off nil)
+ (must-succeed
   (isodata f ((x nat-id)))
+  :with-output-off nil)
+ (must-succeed
+  (isodata f (((x :result) nat-id)))
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result acl2-number-id)))
   :with-output-off nil)
  (must-succeed
   (isodata p ((x (natp natp identity identity))) :predicate t)
@@ -741,7 +798,20 @@
   (isodata f ((x (natp natp identity identity))) :print nil)
   :with-output-off nil)
  (must-succeed
+  (isodata f (((x :result) (natp natp identity identity))) :print nil)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity)))
+           :print nil)
+  :with-output-off nil)
+ (must-succeed
   (isodata f ((x nat-id)) :print nil)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f (((x :result) nat-id)) :print nil)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result acl2-number-id)) :print nil)
   :with-output-off nil)
  (must-succeed
   (isodata p ((x (natp natp identity identity))) :predicate t :print nil)
@@ -755,7 +825,20 @@
   (isodata f ((x (natp natp identity identity))) :print :error)
   :with-output-off nil)
  (must-succeed
+  (isodata f (((x :result) (natp natp identity identity))) :print :error)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity)))
+           :print :error)
+  :with-output-off nil)
+ (must-succeed
   (isodata f ((x nat-id)) :print :error)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f (((x :result) nat-id)) :print :error)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result acl2-number-id)) :print :error)
   :with-output-off nil)
  (must-succeed
   (isodata p ((x (natp natp identity identity))) :predicate t :print :error)
@@ -769,7 +852,20 @@
   (isodata f ((x (natp natp identity identity))) :print :result)
   :with-output-off nil)
  (must-succeed
+  (isodata f (((x :result) (natp natp identity identity))) :print :result)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity)))
+           :print :result)
+  :with-output-off nil)
+ (must-succeed
   (isodata f ((x nat-id)) :print :result)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f (((x :result) nat-id)) :print :result)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result acl2-number-id)) :print :result)
   :with-output-off nil)
  (must-succeed
   (isodata p ((x (natp natp identity identity))) :predicate t :print :result)
@@ -783,7 +879,20 @@
   (isodata f ((x (natp natp identity identity))) :print :info)
   :with-output-off nil)
  (must-succeed
+  (isodata f (((x :result) (natp natp identity identity))) :print :info)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity)))
+           :print :info)
+  :with-output-off nil)
+ (must-succeed
   (isodata f ((x nat-id)) :print :info)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f (((x :result) nat-id)) :print :info)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result acl2-number-id)) :print :info)
   :with-output-off nil)
  (must-succeed
   (isodata p ((x (natp natp identity identity))) :predicate t :print :info)
@@ -797,7 +906,20 @@
   (isodata f ((x (natp natp identity identity))) :print :all)
   :with-output-off nil)
  (must-succeed
+  (isodata f (((x :result) (natp natp identity identity))) :print :all)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity)))
+           :print :all)
+  :with-output-off nil)
+ (must-succeed
   (isodata f ((x nat-id)) :print :all)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f (((x :result) nat-id)) :print :all)
+  :with-output-off nil)
+ (must-succeed
+  (isodata f ((:result acl2-number-id)) :print :all)
   :with-output-off nil)
  (must-succeed
   (isodata p ((x (natp natp identity identity))) :predicate t :print :all)
@@ -817,7 +939,9 @@
 
  (defun p (x) (and (natp x) (> x 10))) ; OLD when :PREDICATE is T
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
+
+ (defiso acl2-number-id acl2-numberp acl2-numberp identity identity)
 
  ;; default NEW name for F:
  (must-succeed*
@@ -827,7 +951,29 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (+ 1 (IDENTITY X))))
+     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f (((x :result) (natp natp identity identity))))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity))))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF T (IDENTITY (+ 1 X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -838,7 +984,29 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (+ 1 (IDENTITY X))))
+     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f (((x :result) nat-id)))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f ((:result acl2-number-id)))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF T (IDENTITY (+ 1 X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -848,7 +1016,7 @@
   (isodata p ((x (natp natp identity identity))) :predicate t)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -858,7 +1026,7 @@
   (isodata p ((x nat-id)) :predicate t)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -873,7 +1041,29 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (+ 1 (IDENTITY X))))
+     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f (((x :result) (natp natp identity identity))))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity))))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF T (IDENTITY (+ 1 X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -884,7 +1074,29 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (+ 1 (IDENTITY X))))
+     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f (((x :result) nat-id)))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+  (assert-event ; numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state))
+          '((f . (1))))))
+ (must-succeed*
+  (isodata f ((:result acl2-number-id)))
+  (must-be-redundant
+   (DEFUN F{1} (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF T (IDENTITY (+ 1 X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -894,7 +1106,7 @@
   (isodata p ((x (natp natp identity identity))) :predicate t :new-name :auto)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -904,7 +1116,7 @@
   (isodata p ((x nat-id)) :predicate t :new-name :auto)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; numbered name has been recorded
@@ -919,7 +1131,28 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (+ 1 (IDENTITY X))))
+     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+  (assert-event ; no numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state)) nil)))
+ (must-succeed*
+  (isodata f (((x :result) (natp natp identity identity))) :new-name g)
+  (must-be-redundant
+   (DEFUN G (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+  (assert-event ; no numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state)) nil)))
+ (must-succeed*
+  (isodata f ((:result (acl2-numberp acl2-numberp identity identity)))
+           :new-name g)
+  (must-be-redundant
+   (DEFUN G (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF T (IDENTITY (+ 1 X)) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -929,7 +1162,27 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (+ 1 (IDENTITY X))))
+     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+  (assert-event ; no numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state)) nil)))
+ (must-succeed*
+  (isodata f (((x :result) nat-id)) :new-name g)
+  (must-be-redundant
+   (DEFUN G (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+  (assert-event ; no numbered name has been recorded
+   (equal (table-alist 'numbered-names-in-use (w state)) nil)))
+ (must-succeed*
+  (isodata f ((:result acl2-number-id)) :new-name g)
+  (must-be-redundant
+   (DEFUN G (X)
+     (DECLARE (XARGS :GUARD (AND (NATP X))
+                     :VERIFY-GUARDS T
+                     :MODE :LOGIC))
+     (IF T (IDENTITY (+ 1 X)) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
 
@@ -938,7 +1191,7 @@
   (isodata p ((x (natp natp identity identity))) :predicate t :new-name q)
   (must-be-redundant
    (DEFUN Q (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; no numbered name has been recorded
@@ -947,7 +1200,7 @@
   (isodata p ((x nat-id)) :predicate t :new-name q)
   (must-be-redundant
    (DEFUN Q (X)
-     (DECLARE (XARGS :GUARD T :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
           (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
   (assert-event ; no numbered name has been recorded
@@ -961,7 +1214,7 @@
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; by default, NEW is enabled iff OLD is:
  (must-succeed*
@@ -1046,7 +1299,7 @@
 
  (defun p (x) (and (natp x) (> x 10))) ; OLD when :PREDICATE is T
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; default OLD-TO-NEW name for F:
  (must-succeed*
@@ -1065,12 +1318,12 @@
   (isodata p ((x (natp natp identity identity))) :predicate t)
   (must-be-redundant
    (DEFTHM P-~>-P{1}
-     (EQUAL (P X) (AND (NATP X) (P{1} (IDENTITY X)))))))
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id)) :predicate t)
   (must-be-redundant
    (DEFTHM P-~>-P{1}
-     (EQUAL (P X) (AND (NATP X) (P{1} (IDENTITY X)))))))
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
  ;; automatic OLD-TO-NEW name for F:
  (must-succeed*
@@ -1093,14 +1346,14 @@
            :thm-name :auto)
   (must-be-redundant
    (DEFTHM P-~>-P{1}
-     (EQUAL (P X) (AND (NATP X) (P{1} (IDENTITY X)))))))
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
            :thm-name :auto)
   (must-be-redundant
    (DEFTHM P-~>-P{1}
-     (EQUAL (P X) (AND (NATP X) (P{1} (IDENTITY X)))))))
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
  ;; explicitly named OLD-TO-NEW for F:
  (must-succeed*
@@ -1123,14 +1376,14 @@
            :thm-name p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
-     (EQUAL (P X) (AND (NATP X) (P{1} (IDENTITY X)))))))
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
            :thm-name p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
-     (EQUAL (P X) (AND (NATP X) (P{1} (IDENTITY X))))))))
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1140,7 +1393,7 @@
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; by default, OLD-TO-NEW is enabled:
  (must-succeed*
@@ -1172,7 +1425,7 @@
 
  (test-title "Non-executability of NEW.")
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; by default, NEW is non-executable iff OLD is:
  (must-succeed*
@@ -1398,71 +1651,43 @@
    (declare (xargs :normalize nil))
    (and (natp x) (integerp x)))
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; by default, NEW is normalized:
  (must-succeed*
   (must-succeed*
-   (isodata f ((x (natp natp identity identity))))
-   (assert-event (equal (body 'f{1} t (w state)) '(binary-+ '1 (identity x)))))
+   (isodata f ((x (natp natp identity identity)))))
   (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t)
-   (assert-event (equal (body 'p{1} t (w state)) '(natp x)))))
+   (isodata p ((x (natp natp identity identity))) :predicate t)))
  (must-succeed*
   (must-succeed*
-   (isodata f ((x nat-id)))
-   (assert-event (equal (body 'f{1} t (w state)) '(binary-+ '1 (identity x)))))
+   (isodata f ((x nat-id))))
   (must-succeed*
-   (isodata p ((x nat-id)) :predicate t)
-   (assert-event (equal (body 'p{1} t (w state)) '(natp x)))))
+   (isodata p ((x nat-id)) :predicate t)))
 
  ;; normalize NEW:
  (must-succeed*
   (must-succeed*
-   (isodata f ((x (natp natp identity identity))) :normalize t)
-   (assert-event (equal (body 'f{1} t (w state)) '(binary-+ '1 (identity x)))))
+   (isodata f ((x (natp natp identity identity))) :normalize t))
   (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t :normalize t)
-   (assert-event (equal (body 'p{1} t (w state)) '(natp x)))))
+   (isodata p ((x (natp natp identity identity))) :predicate t :normalize t)))
  (must-succeed*
   (must-succeed*
-   (isodata f ((x nat-id)) :normalize t)
-   (assert-event (equal (body 'f{1} t (w state)) '(binary-+ '1 (identity x)))))
+   (isodata f ((x nat-id)) :normalize t))
   (must-succeed*
-   (isodata p ((x nat-id)) :predicate t :normalize t)
-   (assert-event (equal (body 'p{1} t (w state)) '(natp x)))))
+   (isodata p ((x nat-id)) :predicate t :normalize t)))
 
  ;; do not normalize NEW:
  (must-succeed*
   (must-succeed*
-   (isodata f ((x (natp natp identity identity))) :normalize nil)
-   (assert-event (equal (body 'f{1} t (w state))
-                        '(if (natp (identity x))
-                             (binary-+ '1 (identity x))
-                           (binary-+ '1 (identity x))))))
+   (isodata f ((x (natp natp identity identity))) :normalize nil))
   (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t :normalize nil)
-   (assert-event (equal (body 'p{1} t (w state))
-                        '(if (natp x)
-                             (if (natp (identity x))
-                                 (integerp (identity x))
-                               'nil)
-                           'nil)))))
+   (isodata p ((x (natp natp identity identity))) :predicate t :normalize nil)))
  (must-succeed*
   (must-succeed*
-   (isodata f ((x nat-id)) :normalize nil)
-   (assert-event (equal (body 'f{1} t (w state))
-                        '(if (natp (identity x))
-                             (binary-+ '1 (identity x))
-                           (binary-+ '1 (identity x))))))
+   (isodata f ((x nat-id)) :normalize nil))
   (must-succeed*
-   (isodata p ((x nat-id)) :predicate t :normalize nil)
-   (assert-event (equal (body 'p{1} t (w state))
-                        '(if (natp x)
-                             (if (natp (identity x))
-                                 (integerp (identity x))
-                               'nil)
-                           'nil))))))
+   (isodata p ((x nat-id)) :predicate t :normalize nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1472,7 +1697,7 @@
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; by default, NEW is guard-verified if OLD is:
  (must-succeed*
@@ -1512,7 +1737,7 @@
 
  (must-succeed*
   (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
-  (defiso nat-id natp natp identity identity) ; ISO
+  (defiso nat-id natp natp identity identity)
   (isodata f ((x nat-id)))
   (assert-event (equal (guard 'f{1} nil (w state))
                        '(if (natp x) (natp (identity x)) 'nil)))))
@@ -1525,13 +1750,13 @@
  (must-succeed*
   (defun p (x) (and (natp x) (> x 10))) ; OLD
   (isodata p ((x (natp natp identity identity))) :predicate t)
-  (assert-event (equal (guard 'p{1} nil (w state)) *t*)))
+  (assert-event (equal (guard 'p{1} nil (w state)) '(natp x))))
 
  (must-succeed*
   (defun p (x) (and (natp x) (> x 10))) ; OLD
-  (defiso nat-id natp natp identity identity) ; ISO
+  (defiso nat-id natp natp identity identity)
   (isodata p ((x nat-id)) :predicate t)
-  (assert-event (equal (guard 'p{1} nil (w state)) *t*))))
+  (assert-event (equal (guard 'p{1} nil (w state)) '(natp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1563,11 +1788,14 @@
   (must-succeed
    (isodata f ((n (natp integerp nat-to-int int-to-nat)))))
   (must-succeed
+   (isodata f (((:result n) (natp integerp nat-to-int int-to-nat)))))
+  (must-succeed
    (isodata p ((n (natp integerp nat-to-int int-to-nat))) :predicate t)))
 
  (must-succeed*
   (defiso nat/int natp integerp nat-to-int int-to-nat)
   (must-succeed (isodata f ((n nat/int))))
+  (must-succeed (isodata f (((:result n) nat/int))))
   (must-succeed (isodata p ((n nat/int)) :predicate t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1576,7 +1804,7 @@
 
  (test-title "OLD with unused formals/locals.")
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  ;; unused formal:
  (must-succeed*
@@ -1626,7 +1854,7 @@
    (declare (xargs :guard (natp x) :verify-guards nil))
    (car x))
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  (isodata f ((x (natp natp identity identity))) :verify-guards nil)
 
@@ -1640,7 +1868,7 @@
    (declare (xargs :verify-guards nil))
    (and (> x 10) (natp x)))
 
- (defiso nat-id natp natp identity identity) ; ISO
+ (defiso nat-id natp natp identity identity)
 
  (isodata p ((x (natp natp identity identity)))
           :predicate t :verify-guards nil)
@@ -1961,6 +2189,14 @@
    (declare (xargs :guard (natp x)))
    (if (zp x) nil (f (1- x))))
 
+ (defun g (x) ; OLD when :PREDICATE is NIL
+   (declare (xargs :guard t))
+   (if (atom x) 0 (g (car x))))
+
+ (defun h (x) ; OLD when :PREDICATE is NIL
+   (declare (xargs :guard (natp x)))
+   (if (zp x) 0 (h (1- x))))
+
  (defun p (x) ; OLD when :PREDICATE is T
    (and (natp x)
         (if (zp x) nil (p (1- x)))))
@@ -1970,11 +2206,18 @@
   (must-succeed
    (isodata f ((x (natp natp (lambda (m) m) (lambda (m) m))))))
   (must-succeed
-   (isodata p ((x (natp natp (lambda (y) y) (lambda (y) y)))) :predicate t)))
- (must-succeed*
+   (isodata g ((:result (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
+   (isodata h (((x :result) (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
+   (isodata p ((x (natp natp (lambda (y) y) (lambda (y) y)))) :predicate t))
   (defiso nat-id natp natp (lambda (m) m) (lambda (m) m))
   (must-succeed
    (isodata f ((x (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
+   (isodata g ((:result (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
+   (isodata h (((x :result) (natp natp (lambda (m) m) (lambda (m) m))))))
   (must-succeed
    (isodata p ((x (natp natp (lambda (y) y) (lambda (y) y)))) :predicate t)))
 
@@ -1992,6 +2235,10 @@
                   (1- (- (* 2 i))))))
   (must-succeed
    (isodata f ((x nat/int))))
+  (must-succeed
+   (isodata g ((:result nat/int))))
+  (must-succeed
+   (isodata h (((x :result) nat/int))))
   (must-succeed
    (isodata p ((x nat/int)) :predicate t))))
 
@@ -2019,6 +2266,10 @@
   (must-succeed
    (isodata f ((x (natp natp (lambda (m) m) (lambda (m) m))))))
   (must-succeed
+   (isodata f (((x :result) (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
+   (isodata f ((:result (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
    (isodata p ((x (natp natp (lambda (y) y) (lambda (y) y)))) :predicate t)))
  (must-succeed*
   (defiso nat-id natp natp (lambda (y) y) (lambda (y) y))
@@ -2039,6 +2290,24 @@
                    (lambda (i) (if (>= i 0)
                                    (* 2 i)
                                  (1- (- (* 2 i))))))))))
+  (must-succeed
+   (isodata f (((x :result) (natp
+                             integerp
+                             (lambda (n) (if (evenp n)
+                                             (/ n 2)
+                                           (- (/ (1+ n) 2))))
+                             (lambda (i) (if (>= i 0)
+                                             (* 2 i)
+                                           (1- (- (* 2 i))))))))))
+  (must-succeed
+   (isodata f ((:result (natp
+                         integerp
+                         (lambda (n) (if (evenp n)
+                                         (/ n 2)
+                                       (- (/ (1+ n) 2))))
+                         (lambda (i) (if (>= i 0)
+                                         (* 2 i)
+                                       (1- (- (* 2 i))))))))))
   (must-succeed
    (isodata p ((x (natp
                    integerp
@@ -2062,6 +2331,10 @@
                   (1- (- (* 2 i))))))
   (must-succeed
    (isodata f ((x nat/int))))
+  (must-succeed
+   (isodata f (((x :result) nat/int))))
+  (must-succeed
+   (isodata f ((:result nat/int))))
   (must-succeed
    (isodata p ((x nat/int)) :predicate t))))
 
@@ -2095,49 +2368,54 @@
   (must-succeed
    (isodata fib ((n (natp natp (lambda (m) m) (lambda (m) m))))))
   (must-succeed
+   (isodata fib (((n :result) (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
+   (isodata fib ((:result (natp natp (lambda (m) m) (lambda (m) m))))))
+  (must-succeed
    (isodata p ((x (natp natp (lambda (y) y) (lambda (y) y)))) :predicate t)))
  (must-succeed*
   (defiso nat-id natp natp (lambda (y) y) (lambda (y) y))
   (must-succeed
    (isodata fib ((n nat-id))))
   (must-succeed
+   (isodata fib (((n :result) nat-id))))
+  (must-succeed
+   (isodata fib ((:result nat-id))))
+  (must-succeed
    (isodata p ((x nat-id)) :predicate t)))
+
+ (defun forth (n)
+   (declare (xargs :guard (natp n)))
+   (if (evenp n)
+       (/ n 2)
+     (- (/ (1+ n) 2))))
+
+ (defun back (i)
+   (declare (xargs :guard (integerp i)))
+   (if (>= i 0)
+       (* 2 i)
+     (1- (- (* 2 i)))))
 
  ;; isomorphism between naturals and integers:
  (must-succeed*
   (include-book "arithmetic-5/top" :dir :system)
   (must-succeed
-   (isodata fib ((n (natp
-                     integerp
-                     (lambda (n) (if (evenp n)
-                                     (/ n 2)
-                                   (- (/ (1+ n) 2))))
-                     (lambda (i) (if (>= i 0)
-                                     (* 2 i)
-                                   (1- (- (* 2 i))))))))))
+   (isodata fib ((n (natp integerp forth back)))))
   (must-succeed
-   (isodata p ((x (natp
-                   integerp
-                   (lambda (n) (if (evenp n)
-                                   (/ n 2)
-                                 (- (/ (1+ n) 2))))
-                   (lambda (i) (if (>= i 0)
-                                   (* 2 i)
-                                 (1- (- (* 2 i))))))))
-            :predicate t)))
+   (isodata fib ((:result (natp integerp forth back)))))
+  (must-succeed
+   (isodata fib (((n :result) (natp integerp forth back)))))
+  (must-succeed
+   (isodata p ((x (natp integerp forth back))) :predicate t)))
  (must-succeed*
   (include-book "arithmetic-5/top" :dir :system)
-  (defiso nat/int
-    natp
-    integerp
-    (lambda (n) (if (evenp n)
-                    (/ n 2)
-                  (- (/ (1+ n) 2))))
-    (lambda (i) (if (>= i 0)
-                    (* 2 i)
-                  (1- (- (* 2 i))))))
+  (defiso nat/int natp integerp forth back)
   (must-succeed
    (isodata fib ((n nat/int))))
+  (must-succeed
+   (isodata fib ((:result nat/int))))
+  (must-succeed
+   (isodata fib (((n :result) nat/int))))
   (must-succeed
    (isodata p ((x nat/int)) :predicate t))))
 
@@ -2216,7 +2494,7 @@
 
  ;;;;;;;;;;
 
- (defun g (x) ; OLD with an top-level IF
+ (defun g (x) ; OLD with a top-level IF
    (declare (xargs :guard (natp x)))
    (if (evenp x)
        (mv (+ x x) (* x x))

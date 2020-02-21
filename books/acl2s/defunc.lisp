@@ -327,7 +327,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun make-generic-typed-defunc-events
     (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
   "Generate events which simulate a typed ACL2s language."
-  (declare (ignorable wrld))
+  (declare (ignorable wrld d? decls))
   (declare (xargs :mode :program))
   `(with-output
     :off :all
@@ -336,18 +336,18 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (formals ',formals)
           (ic ',ic)
           (oc ',oc)
-          (decls ',decls)
+;;;          (decls ',decls)
           (body ',body)
           (kwd-alist ',kwd-alist)
           (make-staticp ',make-staticp)
-          (d? ',d?)
+;;;       (d? ',d?)
           (pkg ',pkg)
           (recursivep (get1 :recursivep kwd-alist))
           (skip-admissibilityp 
            (get1 :skip-admissibilityp kwd-alist))
           (force-ic-hyps-in-definitionp 
            (get1 :force-ic-hyps-in-definitionp kwd-alist))
-          (typed-undef (get1 :typed-undef kwd-alist))
+;;;          (typed-undef (get1 :typed-undef kwd-alist))
           (fic (if force-ic-hyps-in-definitionp (map-force-ic ic) ic))
 ;          (contract-name (gen-sym-sym (list name '-contract) name))
 ;          (contract (formula contract-name nil (w state)))
@@ -357,24 +357,24 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ;                       ((and (consp contract) (equal (car contract) 'implies))
 ;                        (second contract))
 ;                       (t t)))
-          (lbody (make-defun-body/logic
-                  name formals ic oc body (w state)
-                  make-staticp d? typed-undef pkg))
+;;;          (lbody (make-defun-body/logic
+;;;                  name formals ic oc body (w state)
+;;;                  make-staticp d? typed-undef pkg))
           (ebody (make-defun-body/exec name formals oc body
                                        (w state) make-staticp))
-          (fun-ind-name (make-sym name 'induction-scheme-from-definition pkg))
+;;;          (fun-ind-name (make-sym name 'induction-scheme-from-definition pkg))
           (ind-scheme-name (make-sym name 'induction-scheme pkg))
-          (defun `(defun-no-test ,fun-ind-name ,formals
-                    ,@decls
-                    ,(subst-fun-sym fun-ind-name name lbody)))
-          (defun (wrap-test-skip skip-admissibilityp defun))
+;;;          (defun `(defun-no-test ,fun-ind-name ,formals
+;;;                    ,@decls
+;;;                    ,(subst-fun-sym fun-ind-name name lbody)))
+;;;          (defun (wrap-test-skip skip-admissibilityp defun))
           (defthmnotest (if skip-admissibilityp 'defthmskipall 'defthm-no-test))
           (ind-defthm
            `(,defthmnotest ,ind-scheme-name
               t
               :rule-classes ((:induction :pattern ,(cons name formals)
                                          :condition ,ic
-                                         :scheme ,(cons fun-ind-name formals)))))
+                                         :scheme ,(cons name formals)))))
           (def-rule-conc
             `(equal (,name ,@formals) ,ebody))
           (def-rule-body
@@ -403,8 +403,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ; Submit a function to get an induction scheme?
 ; Would be good to reuse the termination proof we already did here,
 ; but the use of ccg make that hard
-           (and recursivep
-                `(,defun))
+;;;           (and recursivep
+;;;                `(,defun)
+;;;                )
            
         ;; The above defun can take a long time to admit, but
         ;; since its termination argument is exactly the same
@@ -432,8 +433,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 ; Disable some rules
            `((in-theory (disable (:definition ,name)
                                  ,@(and recursivep
-                                        `((:induction ,name)
-                                          (:definition ,fun-ind-name))))))
+                                        `(;;;(:induction ,name)
+                                          ;;;(:definition ,fun-ind-name)
+                                          )))))
         ))))))
 
 
@@ -1154,12 +1156,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                 (value-triple :trivial-contract-thm))))
          (verify-guards-ev (make-verify-guards-ev name kwd-alist))
          (timeout-secs (get1 :timeout kwd-alist))
+         (debug? (or (get1 :debug kwd-alist) (get1 :verbose kwd-alist)))
          ;; PETE: make sure this makes sense
          ;; We already tested the defunc, so why do it again?
          (test-subgoals-p nil))
 ;         (test-subgoals-p (eq t (get1 :testing-enabled kwd-alist))))
       `(with-output
-        :off :all
+        ,@(and (not debug?) '(:off :all))
+        ,@(and debug? '(:on :all))
         (with-time-limit
          ,timeout-secs
          (encapsulate
@@ -1174,7 +1178,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (cw "~|Form:  ( ADMIT-DEFINITION ~x0 ... )~%" ',name))
 
           (with-output
-           :off :all :on (summary) :summary (time) 
+           ,@(and (not debug?) '(:off :all :on (summary) :summary (time)))
+           ,@(and debug? '(:on :all))
+           
 ;           :off :all :on (error summary) :summary (time) 
            (with-time-limit ,(* 4/5 timeout-secs) ,defun/ng))
 
@@ -1187,8 +1193,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (cw "~|Form:  ( PROVE-FUNCTION-CONTRACT ~x0 ... )~%" ',name))
           ,@(and contract-defthm ;(list contract-defthm))
                  `((with-output
+                    ,@(and (not debug?) '(:off :all :on (summary) :summary (time)))
+                    ,@(and debug? '(:on :all))
 ;                    :off :all :on (summary error) :summary (time)
-                    :off :all :on (summary) :summary (time)
                     (with-time-limit ,(* 1/3 timeout-secs) ,contract-defthm))))
 ;         ,@(and test-subgoals-p
 ;                '((local (acl2s-defaults :set testing-enabled nil))))
@@ -1198,7 +1205,9 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (cw "~|Form:  ( PROVE-BODY-CONTRACTS ~x0 ... )~%" ',name))
          
           (with-output
-           :off :all :on (summary) :summary (time)
+           ,@(and (not debug?) '(:off :all :on (summary) :summary (time)))
+           ,@(and debug? '(:on :all))
+           
            (with-time-limit
             ,(* 1/3 timeout-secs) ,verify-guards-ev))
 
@@ -1222,9 +1231,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (b* ((typed-undef (get1 :typed-undef kwd-alist))
        (dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d? typed-undef pkg))
        (decls (update-xargs-decls decls :guard ic :mode :program))
+       (debug? (or (get1 :debug kwd-alist) (get1 :verbose kwd-alist)))
        (timeout-secs (get1 :timeout kwd-alist)))
     `(with-output
-      :off :all
+      ,@(and (not debug?) '(:off :all))
+      ,@(and debug? '(:on :all))
       (with-time-limit
        ,timeout-secs
        (encapsulate
@@ -1235,7 +1246,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (value-triple
          (cw "~|Form:  ( ADMIT-DEFINITION ~x0 ... )~%" ',name))
         (with-output
-         :off :all :on (error summary) :summary (time) 
+         ,@(and (not debug?) '(:off :all :on (error summary) :summary (time)))
+         ,@(and debug? '(:on :all))
          (defun ,name ,formals
            ,@decls
            ,dynamic-body))
@@ -1291,8 +1303,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                (- (print-guard-extra-info-hyps (append hyps hyps1) erp)))
             (mv t nil state))))
       (test-body-contracts1 (cdr guards) hints override-defaults timeout state))))
-
-
+     
 (defun test-body-contracts (guard-obligation hints override-defaults timeout state)
   "This is just a looping test?-fn over multiple guards, and on error, printing out the appropriate guard-info."
   (declare (xargs :mode :program :stobjs (state)))
@@ -1327,8 +1338,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                      (append (update-xargs-decls decls :guard ic :mode mode)
                              (list body))))
        (redef? (and (getpropc name 'formals) t))
-       (debug (get1 :debug kwd-alist))
-       (- (cw? debug "~|defun : ~x0 ~| ic : ~x1 ~| oc: ~x2~%" defun ic oc))
+       (debug? (or (get1 :debug kwd-alist) (get1 :verbose kwd-alist)))
+       (- (cw? debug? "~|defun : ~x0 ~| ic : ~x1 ~| oc: ~x2~%" defun ic oc))
        (hints (get1 :body-contracts-hints kwd-alist))
        ((mv start state) (acl2::read-run-time state))
        (- (cw "~%~|Form:  ( TEST-DEFINITION ~x0 ... )~%" name))
@@ -1338,7 +1349,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (acl2::trans-eval
           `(make-event
             (with-output 
-             :off :all ;:on (error)
+             ,@(and (not debug?) '(:off :all)) ;:on (error)
              ;; Pete: Below, we have to check for redefinitions. If
              ;; the current defunc is a redefinition that just has
              ;; different keywords, say :skip-tests t in one version,
@@ -1360,24 +1371,28 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                      (with-output! :off :all :on (error) (skip-proofs ,defun))))
                   (- (cw "~|Form:  ( TEST-BODY-CONTRACTS ~x0... ) ~%" ',name))
                   ((er guard-ob) (acl2::function-guard-obligation ',name state))
-                  (- (cw? ,debug "~|Guard obligation: ~x0~%" guard-ob))
+                  (- (cw? ,debug? "~|Guard obligation: ~x0~%" guard-ob))
                   ((er &) (with-time-limit
                            ,testing-timeout
                            (with-output!
-                            :off :all :on (error)
+                            ,@(and (not debug?) '(:off :all :on (error)))
+                            ,@(and debug? '(:on :all))
                             (test-body-contracts
                              guard-ob
                              ',hints
-                             '(:print-cgen-summary nil :num-witnesses 0)
+                             '(:print-cgen-summary ,debug? :debug ,debug? :num-witnesses 0)
                              ,testing-timeout
                              state))))
                   (- (cw "~|Form:  ( TEST-FUNCTION-CONTRACT ~x0 ...) ~%" ',name))
+                  (- (cw? ,debug? "~|Function contract: ~x0~%" '(implies ,ic ,oc)))
                   ((er &) (with-time-limit
                            ,testing-timeout
                            (with-output!
-                            :off :all :on (error)
+                            ,@(and (not debug?) '(:off :all :on (error)))
+                            ,@(and debug? '(:on :all))
                             (test? (implies ,ic ,oc)
-                              :print-cgen-summary nil
+                              :debug ,debug?
+                              :print-cgen-summary ,debug?
                               :num-witnesses 0))))
                   (- (cw "~|Testing: Done ~%")))
                (value '(value-triple :invisible)))))
@@ -1796,22 +1811,22 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (make-event ,(print-summary-ev name oc kwd-alist pkg))))))))
 
 (defmacro defunc-core (name d? &rest args)
-  (b* ((verbosep (let ((lst (member :verbose args)))
-                   (and lst (cadr lst))))
-       (verbosep (or verbosep
-                     (let ((lst (member :debug args)))
-                       (and lst (cadr lst)))))
+  (b* ((debug? (let ((lst (member :verbose args)))
+                 (and lst (cadr lst))))
+       (debug? (or debug?
+                   (let ((lst (member :debug args)))
+                     (and lst (cadr lst)))))
        (timeout-arg (let ((lst (member :timeout args)))
                       (and lst (cadr lst)))))
     `(with-output
-      ,@(and (not verbosep) '(:off :all))
-      :gag-mode ,(not verbosep)
+      ,@(and (not debug?) '(:off :all))
+      :gag-mode ,(not debug?)
       :stack :push
       (make-event
        (b* ((name ',name)
             (d? ',d?)
             (args ',args)
-            (verbosep ',verbosep)
+            (debug? ',debug?)
             (timeout-arg ',timeout-arg)
             (termination-method (get-termination-method (w state)))
             (ccg-timeout1 (get-ccg-time-limit (w state)))
@@ -1823,11 +1838,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                          `(declare (xargs :time-limit ,timeout))
                          (cdr args)))
             (parsed (parse-defunc name args termination-method
-                             (current-package state) (w state))))
+                                  (current-package state) (w state))))
          `(encapsulate
            nil
            (with-output
-            ,@(and (not verbosep) '(:off :all)) :on (error)
+            ,@(and (not debug?) '(:off :all)) :on (error)
             (make-event
              (make-undefined ',parsed nil (current-package state) (w state))))
            (make-event

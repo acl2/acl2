@@ -35,7 +35,7 @@
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "arithmetic"))
 (local (std::add-default-post-define-hook :fix))
 
@@ -280,5 +280,3 @@ characters."
   (b* ((x (mbe :logic (str-fix x) :exec x))
        ((mv ?col acc) (html-encode-string-aux x 0 (length x) 0 tabsize nil)))
     (rchars-to-string acc)))
-
-

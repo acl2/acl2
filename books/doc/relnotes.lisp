@@ -219,16 +219,28 @@
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
-    "A new library for standard system utilities has been started. This is
+    "A new library for standard system utilities has been started.  This is
      currently under the Kestrel books, but it could be moved directly under
-     @('[books]/std/system') eventually. This new library is being populated
+     @('[books]/std/system') eventually.  This new library is being populated
      with existing utilities factored out of some Kestrel Books with system
      utilities, as well as with some new utilities.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
+
+   (xdoc::p
+    "A new library for standard testing utilities has been started.  The
+     contents of the files @('[books]/misc/assert.lisp') and
+     @('[books]/misc/eval.lisp') have been moved here (with the same names),
+     while the two files under @('[books]/misc/') have been turned into
+     relocation stubs.  Some new testing utilities have been added to this new
+     library as well.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
-                             "Standards Typed Alists Library"))
+                             "Standard Typed Alists Library"))
 
    (xdoc::p
     "A new library has been added,
@@ -314,6 +326,10 @@
     "@(tsee apt::parteval) has been extended to support "
     (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
     ".")
+
+   (xdoc::p
+    "A new transformation, @(tsee apt::isodata),
+     has been added to transform data between isomorphic representations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

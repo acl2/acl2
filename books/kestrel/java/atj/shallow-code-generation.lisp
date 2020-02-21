@@ -3410,6 +3410,10 @@
             jvar-tmp-index)))
     :measure (two-nats-measure (acl2-count terms) 0))
 
+  :prepwork ((local (in-theory (disable posp
+                                        member-equal
+                                        acl2::member-of-cons))))
+
   :verify-guards nil ; done below
   ///
   (verify-guards atj-gen-shallow-term
@@ -3418,6 +3422,7 @@
       :do-not-induct t
       :in-theory
       (enable atj-type-unwrap-term
+              acl2::member-of-cons
               unquote-term
               pseudo-termfnp
               pseudo-lambdap

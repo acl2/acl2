@@ -281,6 +281,7 @@
      (main-hint true-listp :default nil)
      (let-binding let-binding-p :default (make-let-binding))
      (symbols symbol-listp :default nil)
+     (abs symbol-listp :default nil)
      (fty symbol-listp :default nil)
      (fty-info fty-info-alist-p :default nil)
      (fty-types fty-types-p :default nil)

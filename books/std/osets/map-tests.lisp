@@ -38,7 +38,7 @@
 
 (in-package "ACL2")
 (include-book "map")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (set-verify-guards-eagerness 2)
 
 
@@ -99,6 +99,3 @@
                     :arg-guard ((rationalp arg2)))           ; extra arg names specified above
 
 (assert! (equal (MAP<plus> '(1 2 3) 1) '(2 3 4)))
-
-
-

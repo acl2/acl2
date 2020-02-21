@@ -31,7 +31,7 @@
 (in-package "STD")
 (include-book "../defrule")
 (include-book "std/strings/coerce" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (set-state-ok t)
 (logic)
 
@@ -288,4 +288,3 @@
   (compare-output
    (in-theory (enable len))
    (defrule blah (equal (len (append x y)) (+ (len x) (len y))) :enable len)))
-

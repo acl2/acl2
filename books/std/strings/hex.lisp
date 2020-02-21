@@ -34,7 +34,7 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 (local (defthm unsigned-byte-p-8-of-char-code

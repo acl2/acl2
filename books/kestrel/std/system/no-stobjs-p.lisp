@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,6 +27,6 @@
     "The function must not be in @('*stobjs-out-invalid*'),
      because in that case its (output) stobjs depend on how it is called.")
    (xdoc::p
-    "See @(tsee no-stobjs-p+) for a logic-friendly variant of this utility."))
+    "See @(tsee no-stobjs-p+) for an enhanced variant of this utility."))
   (and (all-nils (stobjs-in fn wrld))
        (all-nils (stobjs-out fn wrld))))

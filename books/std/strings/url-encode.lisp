@@ -34,7 +34,7 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -211,4 +211,3 @@ character lists and strings.</p>")
           (let ((x "foo123$%20 blah !==[]{}7&*^!@&*^&*)($"))
             (equal (url-encode-string x)
                    (implode (url-encode-chars (explode x))))))))
-

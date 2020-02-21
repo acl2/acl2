@@ -32,7 +32,7 @@
 (include-book "../defmapappend")
 (include-book "../deflist")
 (include-book "../defprojection")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (deflist my-nat-listp (x)
   (natp x)
@@ -98,5 +98,3 @@
 
 (assert! (let ((topic (xdoc::find-topic 'm3 (xdoc::get-xdoc-table (w state)))))
            (not topic)))
-
-

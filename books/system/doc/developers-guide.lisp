@@ -1940,23 +1940,23 @@
  > If continued: Skip evaluation of (acl2::acl2-default-restart)
  > Type :? for other options.
  1 > :b
- *(7FF6DBFFE710) : 0 (F 3) 16
-  (7FF6DBFFE770) : 1 (RAW-EV-FNCALL F (3) ((STATE . ACL2_INVISIBLE::|The Live State Itself|)) ((COMMAND-LANDMARK GLOBAL-VALUE 7359 # \"/v/filer5b/v41q001/kaufmann/\") (EVENT-LANDMARK GLOBAL-VALUE 8627 DEFUN F ...) (F ABSOLUTE-EVENT-NUMBER . 8627) (CLTL-COMMAND GLOBAL-VALUE DEFUNS :PROGRAM NIL ...) (TOP-LEVEL-CLTL-COMMAND-STACK GLOBAL-VALUE #) ...) NIL NIL T) 1341
-  (7FF6DBFFE838) : 2 (EV (F '3) ((STATE . ACL2_INVISIBLE::|The Live State Itself|)) ACL2_INVISIBLE::|The Live State Itself| ((STATE . ACL2_INVISIBLE::|The Live State Itself|)) NIL T) 357
+ *(25819710) : 0 (F 3) 16
+  (25819770) : 1 (RAW-EV-FNCALL F (3) ('3) ((STATE . ACL2_INVISIBLE::|The Live State Itself|)) ((COMMAND-LANDMARK GLOBAL-VALUE 7662 # \"/Users/kaufmann/acl2/acl2-git-scratch/books/system/doc/\") (EVENT-LANDMARK GLOBAL-VALUE 9539 DEFUN F ...) (F ABSOLUTE-EVENT-NUMBER . 9539) (CLTL-COMMAND GLOBAL-VALUE DEFUNS :PROGRAM NIL ...) (TOP-LEVEL-CLTL-COMMAND-STACK GLOBAL-VALUE #) ...) NIL NIL T) 1253
+  (25819840) : 2 (EV (F '3) ((STATE . ACL2_INVISIBLE::|The Live State Itself|)) ACL2_INVISIBLE::|The Live State Itself| ((STATE . ACL2_INVISIBLE::|The Live State Itself|)) NIL T) 357
 
  <<... etc. ...>>
 
-  (7FF6DBFFEF98) : 21 (FUNCALL #'#<(:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION)>) 277
+  (25819F98) : 21 (FUNCALL #'#<(:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION)>) 277
  1 > (:form 1) ; show the form labeled with 1 in the backtrace
  (RAW-EV-FNCALL 'F '# '# '# ...)
- 1 > (walkabout (unquote (nth 4 *)) state) ; world
+ 1 > (walkabout (unquote (nth 5 *)) state) ; world
 
  Commands:
  0, 1, 2, ..., nx, bk, pp, (pp n), (pp lev len), =, (= symb), and q.
 
- ((COMMAND-LANDMARK GLOBAL-VALUE 7359 ...)
-  (EVENT-LANDMARK GLOBAL-VALUE 8627 ...)
-  (F ABSOLUTE-EVENT-NUMBER . 8627)
+ ((COMMAND-LANDMARK GLOBAL-VALUE 7662 ...)
+  (EVENT-LANDMARK GLOBAL-VALUE 9539 ...)
+  (F ABSOLUTE-EVENT-NUMBER . 9539)
   ...)
  :
  })

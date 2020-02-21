@@ -756,7 +756,7 @@ I commented out some disabled theorems that seem fine to me.
                 (< 0 n))
            (< (numerator (+ (- n) r))
               (numerator r)))
-  :hints (("goal" :induct (posp-ind-induction-scheme-from-definition n))
+  :hints (("goal" :induct (posp-ind n))
           ("subgoal *1/2.2"
            :use ((:instance numerator-1-decreases
                             (n (+ r (- n) 1))))))
@@ -794,6 +794,9 @@ I commented out some disabled theorems that seem fine to me.
 
 (defmacro != (x y)
   `(not (equal ,x ,y)))
+
+(defmacro => (x y)
+  `(implies ,x ,y))
 
 #|
 

@@ -110,17 +110,39 @@
                     (len vars)))
     :hyp :guard)
 
-  (defret atj-check-mv-let-call-mv-term-smaller
+  (defret atj-check-mv-let-call-mv-term-smaller-acl2-count
     (implies yes/no
              (< (acl2-count mv-term)
                 (acl2-count term)))
     :rule-classes :linear)
 
-  (defret atj-check-mv-let-call-body-term-smaller
+  (defret atj-check-mv-let-call-body-term-smaller-acl2-count
     (implies yes/no
              (< (acl2-count body-term)
                 (acl2-count term)))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defret atj-check-mv-let-call-mv-term-smaller-pseudo-term-count
+    (implies yes/no
+             (< (pseudo-term-count mv-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable pseudo-term-count
+                                pseudo-term-call->args
+                                pseudo-term-lambda->body
+                                pseudo-term-kind))))
+
+  (defret atj-check-mv-let-call-body-term-smaller-pseudo-term-count
+    (implies yes/no
+             (< (pseudo-term-count body-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable pseudo-term-count
+                                pseudo-term-call->args
+                                pseudo-term-lambda->body
+                                pseudo-term-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,22 +223,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule pseudo-term-count-lemma1
-  (implies (not (member-eq (acl2::pseudo-term-kind term)
+  (implies (not (member-eq (pseudo-term-kind term)
                            '(:null :var :quote)))
-           (< (acl2::pseudo-term-list-count (acl2::pseudo-term-call->args term))
-              (acl2::pseudo-term-count term)))
+           (< (pseudo-term-list-count (pseudo-term-call->args term))
+              (pseudo-term-count term)))
   :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule pseudo-term-count-lemma2
-  (implies (and (not (member-eq (acl2::pseudo-term-kind term)
+  (implies (and (not (member-eq (pseudo-term-kind term)
                                 '(:null :var :quote)))
-                (acl2::pseudo-lambda-p (acl2::pseudo-term-call->fn term)))
-           (< (acl2::pseudo-term-count (acl2::pseudo-lambda->body
-                                        (acl2::pseudo-term-call->fn term)))
-              (acl2::pseudo-term-count term)))
-  :expand ((acl2::pseudo-term-count term)))
+                (pseudo-lambda-p (pseudo-term-call->fn term)))
+           (< (pseudo-term-count
+               (pseudo-lambda->body (pseudo-term-call->fn term)))
+              (pseudo-term-count term)))
+  :expand ((pseudo-term-count term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-count-lemma3
+  (implies (pseudo-term-case term :lambda)
+           (< (pseudo-term-count
+               (pseudo-lambda->body (pseudo-term-call->fn term)))
+              (pseudo-term-count term)))
+  :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

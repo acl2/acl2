@@ -737,3 +737,17 @@ Possible counter-example found: ((M2 (SOME 0)) (M1 (SOME 0)))
            (< y (- (* 3 (- x (/ 17 8)) (- x (/ 17 8))) 3)))
   :hints(("Goal"
           :smtlink nil)))
+
+;; Abstract datatype example
+(encapsulate
+  (((abstract-p *) => *))
+  (local
+   (defun abstract-p (x)
+       (acl2::any-p x))))
+
+(defthm abstract-example
+  (implies (abstract-p x)
+           (equal x x))
+  :hints(("Goal"
+          :smtlink (:abstract (abstract-p))))
+  :rule-classes nil)

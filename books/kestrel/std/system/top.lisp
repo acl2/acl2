@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "arglistp")
+(include-book "enhanced-utilities")
 (include-book "event-landmark-names")
 (include-book "event-name-queries")
 (include-book "function-queries")
@@ -18,7 +19,6 @@
 (include-book "included-books")
 (include-book "known-packages")
 (include-book "known-packages-plus")
-(include-book "logic-friendly")
 (include-book "macro-queries")
 (include-book "maybe-pseudo-event-formp")
 (include-book "plist-worldp-with-formals")

@@ -31,7 +31,7 @@
 (in-package "STD")
 (include-book "../defredundant")
 (include-book "misc/definline" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "../defines")
 
 (encapsulate
@@ -183,5 +183,3 @@
 (assert-enabled (:executable-counterpart f2) t)
 (assert-enabled (:executable-counterpart f3) nil)
 (assert-enabled (:executable-counterpart f9) t)
-
-

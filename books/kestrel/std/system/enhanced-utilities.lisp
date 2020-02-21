@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,9 +14,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/system/logic-friendly
+(defxdoc std/system/enhanced-utilities
   :parents (std/system)
-  :short "System utilities that are logic-friendly."
+  :short "System utilities with some enhanced features."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -35,22 +35,21 @@
    (xdoc::p
     "For code where proving at least some type-like properties
      (particularly verifying guards and return types) is instead desired,
-     the @(csee std/system) library provides variants
+     the @(csee std/system) library provides ``enhanced'' versions
      of some of the aforementioned system utilities (built-in or not).
      These variants may have stronger guards,
      and often have stronger return type theorems:
      the latter are made possible via run-time checks
      that are expected to never fail.
-     In this sense, these variants are logic-friendly.
      Because of the run-time checks,
      these variants are slower than the corresponding utilities
      with weaker guards and weaker (or no) return type theorems.
-     The logic-friendly variants are named
+     These enhanced variants are named
      like the corresponding utilities,
      but with a @('+') at the end.")
    (xdoc::p
     "Besides the run-time checks for the return type theorems,
-     some of these logic-friendly variants include
+     some of these enhanced variants include
      additional run-time checks on their arguments.
      Making those checks part of the guards
      would make these utilities harder to use in practice,
@@ -60,10 +59,10 @@
      For instance, the customary @(tsee pseudo-termp) guard
      does not ensure that function symbols in terms
      satisfy @(tsee function-symbolp):
-     so, if some logic-friendly utilities operating on named functions
+     so, if some enhanced utilities operating on named functions
      were to require the function symbol to satisfy @(tsee function-symbolp),
      the @(tsee pseudo-termp) guard
      would have to be replaced with something stronger.
-     Instead, these logic-friendly utilities operating on named functions
+     Instead, these enhanced utilities operating on named functions
      can check that @(tsee function-symbolp) at run time,
      helping to detect programming errors.")))

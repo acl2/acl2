@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -39,7 +39,7 @@
      we put name and default value as a pair into an alist.")
    (xdoc::p
     "See @(tsee macro-keyword-args) for
-     a logic-friendly variant of this utility."))
+     an enhanced variant of this utility."))
   (b* ((all-args (macro-args mac wrld))
        (args-after-&key (cdr (member-eq '&key all-args)))
        (keyword-args (macro-keyword-args-aux args-after-&key)))
