@@ -715,15 +715,46 @@ I commented out some disabled theorems that seem fine to me.
            :in-theory (disable ACL2::|(* r (denominator r))|)))
   :rule-classes ((:linear) (:rewrite)))
 
-(definec natp-ind (n :nat) :nat
+(definec nat-ind (n :nat) :nat
   (if (zp n)
       n
-    (natp-ind (- n 1))))
+    (nat-ind (- n 1))))
 
-(definec posp-ind (n :pos) :pos
+(definec pos-ind (n :pos) :pos
   (if (= n 1)
       n
-    (posp-ind (- n 1))))
+    (pos-ind (- n 1))))
+
+(definec int-ind (x :int) :nat
+  (cond ((zip x) x)
+        ((< x 0) (int-ind (1+ x)))
+        (t (int-ind (1- x)))))
+
+(defthm nat-induction-scheme
+  t
+  :rule-classes
+  ((:induction :pattern (integerp x)
+               :condition (and (integerp x) (>= x 0))
+               :scheme (nat-ind x))))
+
+(defthm pos-induction-scheme
+  t
+  :rule-classes
+  ((:induction :pattern (integerp x)
+               :condition (and (integerp x) (>= x 1))
+               :scheme (pos-ind x))))
+
+(defthm int-induction-scheme
+  t
+  :rule-classes
+  ((:induction :pattern (integerp x)
+               :condition (integerp x)
+               :scheme (int-ind x))))
+
+; The above induction schemes maybe useful in certain cases, but they
+; also tend to cause ACL2 to pick the "wrong" induction schemes, so
+; they are off by default.
+(in-theory (disable nat-induction-scheme pos-induction-scheme int-induction-scheme))
 
 (defthm cancel-<-+-1
   (equal (< (+ a b) a)
@@ -756,7 +787,7 @@ I commented out some disabled theorems that seem fine to me.
                 (< 0 n))
            (< (numerator (+ (- n) r))
               (numerator r)))
-  :hints (("goal" :induct (posp-ind n))
+  :hints (("goal" :induct (pos-ind n))
           ("subgoal *1/2.2"
            :use ((:instance numerator-1-decreases
                             (n (+ r (- n) 1))))))
@@ -962,7 +993,7 @@ Useful for testing defunc/definec errors
 (definec-no-test gen-car-cdr-aux
   (car :var cdr :var carstr :string cdrstr :string
        depth :nat res :l-str-all) :l-str-all
-  (declare (xargs :consider-only-ccms ( depth )))
+  (declare (xargs :consider-only-ccms (depth)))
   (cond ((endp res) (gen-car-cdr-aux
                      car
                      cdr
