@@ -690,14 +690,14 @@
 
  (defiso nat-id natp natp identity identity)
 
- ;; hints for :OLDP-OF-REC-CALLS allowed only if OLD is recursive:
+ ;; hints for :OLDP-OF-REC-CALL-ARGS allowed only if OLD is recursive:
  (must-fail (isodata p ((x (natp natp identity identity)))
                      :predicate t
-                     :hints (:oldp-of-rec-calls-hints
+                     :hints (:oldp-of-rec-call-args-hints
                              (("Goal" :in-theory nil)))))
  (must-fail (isodata p ((x nat-id))
                      :predicate t
-                     :hints (:oldp-of-rec-calls-hints
+                     :hints (:oldp-of-rec-call-args-hints
                              (("Goal" :in-theory nil)))))
 
  ;; hints for :OLD-GUARD disallowed if VERIFY-GUARDS is NIL or PREDICATE is T:

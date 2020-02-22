@@ -400,10 +400,10 @@
      :presence "@(':predicate') is @('t')")
 
     (xdoc::evmac-appcond
-     ":oldp-of-rec-calls"
+     ":oldp-of-rec-call-args"
      (xdoc::&&
       (xdoc::p
-       "@('oldp') is preserved on @('y1'), ..., @('yp')
+       "@('oldp') is preserved on the arguments @('y1'), ..., @('yp')
         in the recursive calls of @('old'):")
       (xdoc::codeblock
        "(implies (and (oldp y1)"

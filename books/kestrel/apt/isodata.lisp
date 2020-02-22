@@ -836,7 +836,7 @@
   :short "Keywords that identify the applicability conditions."
   '(:oldp-of-old
     :oldp-when-old
-    :oldp-of-rec-calls
+    :oldp-of-rec-call-args
     :old-guard
     :old-guard-pred)
   ///
@@ -871,7 +871,7 @@
   (case keyword
     (:oldp-of-old res$)
     (:oldp-when-old predicate$)
-    (:oldp-of-rec-calls (and (irecursivep old$ wrld) t))
+    (:oldp-of-rec-call-args (and (irecursivep old$ wrld) t))
     (:old-guard (and verify-guards$ (not predicate$)))
     (:old-guard-pred (and verify-guards$ predicate$))
     (t (impossible)))
@@ -1247,7 +1247,7 @@
     "     ..."
     "     (oldp updateJ-yp<x1,...,xn>))")
    (xdoc::p
-    "of the @(':oldp-of-rec-calls') applicability condition."))
+    "of the @(':oldp-of-rec-call-args') applicability condition."))
   (b* ((rec-call-args
         (isodata-get-rec-call-args-transformed
          rec-call old$ args$ wrld)))
@@ -1263,7 +1263,7 @@
   :returns (oldp-of-rec-call-args-under-contexts "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the conjunction of the implications,
-          in the @(':oldp-of-rec-calls') applicability condition,
+          in the @(':oldp-of-rec-call-args') applicability condition,
           that correspond to the recursive calls of @('old')."
   :long
   (xdoc::topstring
@@ -1280,7 +1280,7 @@
     "                   ..."
     "                   (oldp updatem-yp<x1,...,xn>))))")
    (xdoc::p
-    "of the @(':oldp-of-rec-calls') applicability condition."))
+    "of the @(':oldp-of-rec-call-args') applicability condition."))
   (if (endp rec-calls-with-tests)
       *t*
     (b* ((tests-and-call (car rec-calls-with-tests))
@@ -1320,7 +1320,7 @@
         (implicate `(,old$ ,@(formals old$ wrld))
                    (conjoin (apply-unary-to-terms oldp$ args$)))
         t wrld))
-      (:oldp-of-rec-calls
+      (:oldp-of-rec-call-args
        (untranslate
         (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
              (oldp-of-args (apply-unary-to-terms oldp$ args$)))
@@ -2168,8 +2168,8 @@
      while the design notes only assume one."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
-                                 app-cond-thm-names)))
+       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
+                                     app-cond-thm-names)))
        (instance-termination-thm-old
         (isodata-gen-lemma-instance-back/forth-args `(:termination-theorem ,old$)
                                                     args$
@@ -2178,8 +2178,8 @@
         (isodata-gen-lemma-instances-of-var back-image
                                             b
                                             args$))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
+       (instance-oldp-of-rec-call-args
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-call-args
                                                     args$
                                                     back$))
        (instances-back-of-forth
@@ -2194,7 +2194,7 @@
        :in-theory nil
        :use (,instance-termination-thm-old
              ,@instances-back-image
-             ,instance-oldp-of-rec-calls
+             ,instance-oldp-of-rec-call-args
              ,@instances-back-of-forth)))))
 
 (define isodata-gen-new-fn ((old$ symbolp)
@@ -2350,10 +2350,10 @@
           and @('args/res') does not include @(':result')."
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
-                                 app-cond-thm-names)))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
+       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
+                                     app-cond-thm-names)))
+       (instance-oldp-of-rec-call-args
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-call-args
                                                     args$
                                                     back$))
        (instances-back-image
@@ -2381,7 +2381,7 @@
                     ,new-fn-unnorm-name
                     (:induction ,new-name$))
        :induct (,new-name$ ,@(formals old$ wrld)))
-      '(:use (,instance-oldp-of-rec-calls
+      '(:use (,instance-oldp-of-rec-call-args
               ,@instances-back-image
               ,@instances-forth-image
               ,@instances-back-of-forth)))))
@@ -2407,11 +2407,11 @@
           and @('args/res') includes @(':result')."
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-rec-calls (cdr
-                           (assoc-eq :oldp-of-rec-calls app-cond-thm-names)))
+       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
+                                     app-cond-thm-names)))
        (oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
+       (instance-oldp-of-rec-call-args
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-call-args
                                                     args$
                                                     back$))
        (instances-oldp-of-old
@@ -2452,7 +2452,7 @@
                     ,new-fn-unnorm-name
                     (:induction ,new-name$))
        :induct (,new-name$ ,@(formals old$ wrld)))
-      '(:use (,instance-oldp-of-rec-calls
+      '(:use (,instance-oldp-of-rec-call-args
               ,@instances-oldp-of-old
               ,@instances-back-image
               ,@instances-forth-image
@@ -2905,8 +2905,8 @@
      while the design notes only assume one."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
-                                 app-cond-thm-names)))
+       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
+                                     app-cond-thm-names)))
        (old-guard-pred (cdr (assoc-eq :old-guard-pred
                               app-cond-thm-names)))
        (instance-guard-thm-old
@@ -2953,8 +2953,8 @@
         (isodata-gen-lemma-instance-back/forth-args old-guard-pred
                                                     args$
                                                     back$))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
+       (instance-oldp-of-rec-call-args
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-call-args
                                                     args$
                                                     back$))
        (instances-new-to-old
@@ -2976,7 +2976,7 @@
              ,@instances-back-of-forth
              ,instance-guard-thm-old
              ,instance-old-guard-pred
-             ,instance-oldp-of-rec-calls
+             ,instance-oldp-of-rec-call-args
              ,@instances-new-to-old)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-pred
@@ -3139,8 +3139,8 @@
      while the design notes only assume one."))
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
-       (oldp-of-rec-calls (cdr (assoc-eq :oldp-of-rec-calls
-                                 app-cond-thm-names)))
+       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
+                                     app-cond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-back/forth-args `(:guard-theorem ,old$)
                                                     args$
@@ -3181,8 +3181,8 @@
                                                args$
                                                back$
                                                wrld))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
+       (instance-oldp-of-rec-call-args
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-call-args
                                                     args$
                                                     back$))
        (instances-old-to-new
@@ -3202,7 +3202,7 @@
              ,@instances-back-image
              ,@instances-back-of-forth
              ,instance-guard-thm-old
-             ,instance-oldp-of-rec-calls
+             ,instance-oldp-of-rec-call-args
              ,@instances-old-to-new)))))
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
@@ -3237,8 +3237,8 @@
   (b* ((a (isodata-gen-var-a forth$ wrld))
        (b (isodata-gen-var-b back$ wrld))
        (oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
-       (oldp-of-rec-calls (cdr
-                           (assoc-eq :oldp-of-rec-calls app-cond-thm-names)))
+       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
+                                     app-cond-thm-names)))
        (rec-calls (recursive-calls old$ wrld))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-back/forth-args `(:guard-theorem ,old$)
@@ -3280,8 +3280,8 @@
                                                args$
                                                back$
                                                wrld))
-       (instance-oldp-of-rec-calls
-        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-calls
+       (instance-oldp-of-rec-call-args
+        (isodata-gen-lemma-instance-back/forth-args oldp-of-rec-call-args
                                                     args$
                                                     back$))
        (instances-old-to-new
@@ -3332,7 +3332,7 @@
              ,@instances-back-image
              ,@instances-back-of-forth
              ,instance-guard-thm-old
-             ,instance-oldp-of-rec-calls
+             ,instance-oldp-of-rec-call-args
              ,@instances-old-to-new
              ,instance-oldp-of-old
              ,instance-old-fn-unnorm-name
