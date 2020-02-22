@@ -12,8 +12,8 @@
 
 (include-book "function-symbol-listp")
 
-(include-book "misc/assert" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

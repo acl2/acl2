@@ -12,7 +12,7 @@
 
 (include-book "apply-terms-same-args")
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -12,7 +12,7 @@
 
 (include-book "dumb-occur-var-open")
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
