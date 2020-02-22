@@ -11479,13 +11479,15 @@
 ; This function determines if variable var occurs free in the given term.  This
 ; is the same as dumb-occur, but optimized for the case that var is a variable.
 
+  (declare (xargs :guard (and (symbolp var) (pseudo-termp term))))
   (cond ((eq var term) t)
         ((variablep term) nil)
         ((fquotep term) nil)
         (t (dumb-occur-var-lst var (fargs term)))))
 
 (defun dumb-occur-var-lst (var lst)
-  (cond ((null lst) nil)
+  (declare (xargs :guard (and (symbolp var) (pseudo-term-listp lst))))
+  (cond ((endp lst) nil)
         (t (or (dumb-occur-var var (car lst))
                (dumb-occur-var-lst var (cdr lst))))))
 )
