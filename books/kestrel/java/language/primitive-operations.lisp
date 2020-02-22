@@ -534,15 +534,15 @@
      but those operate on variables, not just values,
      and therefore must be formalized elsewhere.")
    (xdoc::p
-    "[JLS:4.2.5] also lists the conditional operator @('? :'),
+    "[JLS:4.2.2] also lists the conditional operator @('? :'),
      but that one is non-strict,
      and therefore must be formalized as part of expression evaluation.")
    (xdoc::p
-    "[JLS:4.2.5] also lists the string concatenation operator @('+'),
+    "[JLS:4.2.2] also lists the string concatenation operator @('+'),
      but that is best formalized in terms of integral-to-string conversions,
      elsewhere.")
    (xdoc::p
-    "[JLS:4.2.5] also lists the cast operator, which involves conversions,
+    "[JLS:4.2.2] also lists the cast operator, which involves conversions,
      which, as mentioned above, are best formalized separately."))
   :order-subtopics t
   :default-parent t)
