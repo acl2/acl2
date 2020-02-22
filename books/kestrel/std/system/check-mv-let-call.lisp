@@ -166,12 +166,26 @@
                                                       (1+ index)
                                                       mv-var))
           ((unless yes/no) (mv nil nil)))
-       (mv t (cons index indices))))
+       (mv t (cons index indices)))
+     ///
+     (defret len-of-check-mv-let-call-aux.indices
+       (implies yes/no
+                (equal (len indices)
+                       (len terms)))))
 
    (local (include-book "std/typed-lists/symbol-listp" :dir :system))
    (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system)))
 
   ///
+
+  (defret len-of-check-mv-let-call.indices/vars
+    (implies yes/no
+             (equal (len indices)
+                    (len vars)))
+    :hyp :guard
+    :hints (("Goal" :in-theory (enable remove-trivial-vars-aux-same-len))))
+
+  (in-theory (disable len-of-check-mv-let-call.indices/vars))
 
   (local
    (defthm acl2-count-of-check-mv-let-call.mv-term-lemma
