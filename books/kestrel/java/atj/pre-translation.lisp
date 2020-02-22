@@ -328,8 +328,9 @@
   (define atj-restore-mv-calls-in-term ((term pseudo-termp)
                                         (numres posp)
                                         (wrld plist-worldp))
-    :returns (new-term pseudo-termp :hyp (pseudo-termp term))
-    (b* (((when (variablep term))
+    :returns (new-term pseudo-termp)
+    (b* (((unless (mbt (pseudo-termp term))) nil)
+         ((when (variablep term))
           (if (= numres 1)
               term
             (raise "Internal error: ~
