@@ -44,12 +44,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee acl2::check-mv-let-call),
+    "This is similar to @(tsee check-mv-let-call),
      except that it allows some of the @(tsee mv-nth) calls to be missing.
      Initially a translated @(tsee mv-let) has all those calls,
      but ATJ's pre-translation step that removes unused variables
      may remove some of them.
-     Thus, we cannot use @(tsee acl2::check-mv-let-call) here,
+     Thus, we cannot use @(tsee check-mv-let-call) here,
      and instead create a custom version here
      (which may be moved to a more general library at some point,
      since it is not really ATJ-specific).
