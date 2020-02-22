@@ -267,7 +267,7 @@
      and in that case we leave the variable unchanged.
      This would not be true for the @('mv') variable
      that results from a translated @(tsee mv-let)
-     (see @(tsee atj-check-mv-let-call)),
+     (see @(tsee check-mv-let-call)),
      but as explained below we process translated @(tsee mv-let)s specially:
      when we reach a variable, it is never that @('mv') variable,
      and so it is always single-valued.")
@@ -277,7 +277,7 @@
      and in that case we leave the quoted constant unchanged.")
    (xdoc::p
     "Before processing a call,
-     we use @(tsee atj-check-mv-let-call) to see if
+     we use @(tsee check-mv-let-call) to see if
      the term may be a translated @(tsee mv-let).
      If the term has that form, it is possible, but unlikely,
      that it is not actually a translated @(tsee mv-let).
@@ -341,8 +341,8 @@
               term
             (raise "Internal error: ~
                     the quoted constant ~x0 cannot return ~x1 results")))
-         ((mv mv-let-callp indices vars mv-term body-term)
-          (atj-check-mv-let-call term))
+         ((mv mv-let-callp & vars indices mv-term body-term)
+          (check-mv-let-call term))
          ((when mv-let-callp)
           (b* ((mv-term-numres-list
                 (term-possible-numbers-of-results mv-term wrld))
@@ -394,6 +394,10 @@
     (cond ((endp args) nil)
           (t (cons (atj-restore-mv-calls-in-term (car args) 1 wrld)
                    (atj-restore-mv-calls-in-args (cdr args) wrld)))))
+
+  :prepwork ((local
+              (in-theory
+               (enable acl2::len-of-check-mv-let-call.indices/vars))))
 
   :verify-guards nil ; done below
 
@@ -939,7 +943,7 @@
      @('var-types') assigns single types to variables.
      The only variables annotated with lists of two or more types
      are the @('mv') vars that arise in the translation of @(tsee mv-let)
-     (see @(tsee atj-check-mv-let-call)).
+     (see @(tsee fty-check-mv-let-call)).
      These @('mv') variables are treated specially
      by the type annotation process,
      without a need to add them to @('var-types').")
@@ -1066,7 +1070,7 @@
      as described above,
      we first check whether the term is a translated @(tsee mv-let).
      For this to be the case,
-     not only @(tsee atj-check-mv-let-call) must succeed,
+     not only @(tsee fty-check-mv-let-call) must succeed,
      yielding variables @('var1'), ..., @('varn')
      and subterms @('mv-term') and @('body-term'),
      but also the term assigned to the @('mv') variable
@@ -1115,11 +1119,11 @@
      and we update @('var-types') with the @(tsee mv-let) variables
      associated to the types for the term to which @('mv') is bound;
      we do not need to update @('var-types') with @('mv')
-     because @(tsee atj-check-mv-let-call) ensures that
+     because @(tsee fty-check-mv-let-call) ensures that
      the variable @('mv') does not occur free in the body term.
      Note that, in general, some variables bound to @(tsee mv-nth) calls
      may have been removed by a previous pre-translation step,
-     the one that removes unused variables (see @(tsee atj-check-mv-let-call));
+     the one that removes unused variables (see @(tsee fty-check-mv-let-call));
      thus, in order to extend @('var-types'),
      we select the types for which there are actually variables.")
    (xdoc::p
@@ -1426,15 +1430,15 @@
          ((unless (mbt (and (atj-type-list-listp mv-typess)
                             (cons-listp mv-typess))))
           (mv nil nil (list :avalue) nil))
-         ((mv mv-let-p indices vars mv-term body-term)
-          (atj-check-mv-let-call term))
+         ((mv mv-let-p mv-var vars indices mv-term body-term)
+          (fty-check-mv-let-call term))
          ((unless mv-let-p)
           (mv (pseudo-term-null) nil (list :avalue) mv-typess))
          ((mv annotated-mv-term mv-term-types mv-typess)
           (atj-type-annotate-term mv-term nil var-types mv-typess guards$ wrld))
          ((when (= (len mv-term-types) 1))
           (mv nil (pseudo-term-null) (list :avalue) mv-typess))
-         (annotated-mv (atj-type-annotate-var 'mv mv-term-types))
+         (annotated-mv (atj-type-annotate-var mv-var mv-term-types))
          (sel-types (atj-select-mv-term-types indices mv-term-types))
          (annotated-vars (atj-type-annotate-vars vars sel-types))
          (var-types (append (pairlis$ vars sel-types) var-types))
@@ -1592,8 +1596,10 @@
     :enable pseudo-termp)
 
   (verify-guards atj-type-annotate-term
-    :hints (("Goal" :in-theory (enable pseudo-fn-args-p
-                                       pseudo-var-p)))))
+    :hints (("Goal"
+             :in-theory (enable pseudo-fn-args-p
+                                pseudo-var-p
+                                len-of-fty-check-mv-let-call.indices/vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
