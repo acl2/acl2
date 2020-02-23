@@ -170,7 +170,7 @@
      as is common with fixtypes.
      In order to prove that the FTY term count decreases,
      we first prove lemmas saying that,
-     under the assumption @(tsee pseudo-temp),
+     under the assumption @(tsee pseudo-termp),
      the results of @(tsee check-mv-let-call) are smaller.
      Note that, under that assumpion,
      the wrapper and the original utility return the same result
