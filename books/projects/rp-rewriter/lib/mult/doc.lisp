@@ -38,7 +38,7 @@
 
 (in-package "RP")
 
-(include-book "svl-top")
+;(include-book "svl-top")
 
 (xdoc::defxdoc
  multiplier-proofs
