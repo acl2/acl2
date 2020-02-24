@@ -31,15 +31,15 @@
 
  parteval
 
+ :state-item t
+
+ :wrld-item t
+
+ :ctx-item t
+
  :items
 
- ("@('state') is the ACL2 @(see state)."
-
-  "@('wrld') is the ACL2 @(see world)."
-
-  "@('ctx') is the context used for errors."
-
-  "@('old'),
+ ("@('old'),
    @('static'),
    @('new-name'),
    @('new-enable'),

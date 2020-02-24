@@ -350,7 +350,14 @@
 
     (xdoc::evmac-input-print isodata)
 
-    (xdoc::evmac-input-show-only isodata))
+    (xdoc::evmac-input-show-only isodata)
+
+    (xdoc::desc
+     "@(':compatibility') &mdash; default @('nil')"
+     (xdoc::p
+      "This is a temporary option that is not documented
+       because it should not be used
+       (except in very specific transitional situations).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -393,10 +400,10 @@
      :presence "@(':predicate') is @('t')")
 
     (xdoc::evmac-appcond
-     ":oldp-of-rec-calls"
+     ":oldp-of-rec-call-args"
      (xdoc::&&
       (xdoc::p
-       "@('oldp') is preserved on @('y1'), ..., @('yp')
+       "@('oldp') is preserved on the arguments @('y1'), ..., @('yp')
         in the recursive calls of @('old'):")
       (xdoc::codeblock
        "(implies (and (oldp y1)"
@@ -469,11 +476,19 @@
      (xdoc::codeblock
       ";; when old is not recursive and args/res-iso does not include :result:"
       "(defun new (x1 ... xn)"
-      "  old-body<...,(back y1),...,(back yp),...>)"
+      "  (if (and (newp y1)"
+      "           ..."
+      "           (newp yp))"
+      "      old-body<...,(back y1),...,(back yp),...>"
+      "    nil)) ; or (mv nil ... nil)"
       ""
       ";; when old is not recursive and args/res-iso includes :result:"
       "(defun new (x1 ... xn)"
-      "  (forth old-body<...,(back y1),...,(back yp),...>))"
+      "  (if (and (newp y1)"
+      "           ..."
+      "           (newp yp))"
+      "      (forth old-body<...,(back y1),...,(back yp),...>)"
+      "    nil))"
       ""
       ";; when old is recursive,"
       ";; the :predicate input is nil,"

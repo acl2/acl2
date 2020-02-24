@@ -970,7 +970,8 @@
                                       (mv ans pathcond logicman aignet::mark aignet::copy))))
                :otherwise (b* (((mv ans pathcond) (fgl-object-pathcond-fix-impl x pathcond logicman)))
                             (mv ans pathcond logicman)))
-             (mv t ans interp-st))
+             (mv ans interp-st))
+  :returns (mv ans interp-st)
   :formula-check fgl-pathcond-fix-formula-checks)
 
                

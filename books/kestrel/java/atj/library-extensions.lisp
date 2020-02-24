@@ -17,6 +17,7 @@
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/strings/strtok-bang" :dir :system)
+(include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/dumb-occur-var-open" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/ubody-plus" :dir :system)
@@ -33,119 +34,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-check-mv-let-call ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (indices nat-listp)
-               (vars symbol-listp)
-               (mv-term pseudo-termp)
-               (body-term pseudo-termp))
-  :short "Check if a term is a (translated) call of @(tsee mv-let)
-          with some possibly missing @(tsee mv-nth) calls."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is similar to @(tsee acl2::check-mv-let-call),
-     except that it allows some of the @(tsee mv-nth) calls to be missing.
-     Initially a translated @(tsee mv-let) has all those calls,
-     but ATJ's pre-translation step that removes unused variables
-     may remove some of them.
-     Thus, we cannot use @(tsee acl2::check-mv-let-call) here,
-     and instead create a custom version here
-     (which may be moved to a more general library at some point,
-     since it is not really ATJ-specific).
-     This version also returns the indices of the @(tsee mv-nth) calls
-     that are present, in increasing order
-     (if they appear in a different order,
-     this function returns @('nil') as first result)."))
-  (b* ((term (if (mbt (pseudo-termp term)) term nil))
-       ((when (variablep term)) (mv nil nil nil nil nil))
-       ((when (fquotep term)) (mv nil nil nil nil nil))
-       (lambda-mv (ffn-symb term))
-       ((unless (flambdap lambda-mv)) (mv nil nil nil nil nil))
-       (list-mv (lambda-formals lambda-mv))
-       ((unless (equal list-mv (list 'mv))) (mv nil nil nil nil nil))
-       (mv-term (fargn term 1))
-       (lambda-vars-of-mv-nths (lambda-body lambda-mv))
-       ((when (variablep lambda-vars-of-mv-nths)) (mv nil nil nil nil nil))
-       ((when (fquotep lambda-vars-of-mv-nths)) (mv nil nil nil nil nil))
-       (lambda-vars (ffn-symb lambda-vars-of-mv-nths))
-       ((unless (flambdap lambda-vars)) (mv nil nil nil nil nil))
-       (vars (lambda-formals lambda-vars))
-       (body-term (lambda-body lambda-vars))
-       ((when (dumb-occur-var-open 'mv body-term)) (mv nil nil nil nil nil))
-       (mv-nths (fargs lambda-vars-of-mv-nths))
-       ((mv mv-nths-okp indices) (atj-check-mv-let-call-aux mv-nths 0))
-       ((unless mv-nths-okp) (mv nil nil nil nil nil)))
-    (mv t indices vars mv-term body-term))
-
-  :prepwork
-  ((define atj-check-mv-let-call-aux ((terms pseudo-term-listp)
-                                      (min-next-index natp))
-     :returns (mv (yes/no booleanp)
-                  (indices nat-listp))
-     (b* (((when (endp terms)) (mv t nil))
-          (term (car terms))
-          ((unless (and (ffn-symb-p term 'mv-nth)
-                        (= (len (fargs term)) 2))) (mv nil nil))
-          ((unless (quotep (fargn term 1))) (mv nil nil))
-          (index (cadr (fargn term 1)))
-          ((unless (and (natp index)
-                        (>= index min-next-index))) (mv nil nil))
-          ((unless (eq (fargn term 2) 'mv)) (mv nil nil))
-          ((mv rest-okp rest-indices)
-           (atj-check-mv-let-call-aux (cdr terms) (1+ index)))
-          ((unless rest-okp) (mv nil nil)))
-       (mv t (cons index rest-indices)))
-     ///
-     (defret len-of-atj-check-mv-let-call-aux.indices
-       (implies yes/no
-                (equal (len indices)
-                       (len terms))))))
-
-  ///
-
-  (defret len-of-atj-check-mv-let-call.indices/vars
-    (implies yes/no
-             (equal (len indices)
-                    (len vars)))
-    :hyp :guard)
-
-  (defret atj-check-mv-let-call-mv-term-smaller-acl2-count
-    (implies yes/no
-             (< (acl2-count mv-term)
-                (acl2-count term)))
-    :rule-classes :linear)
-
-  (defret atj-check-mv-let-call-body-term-smaller-acl2-count
-    (implies yes/no
-             (< (acl2-count body-term)
-                (acl2-count term)))
-    :rule-classes :linear)
-
-  (defret atj-check-mv-let-call-mv-term-smaller-pseudo-term-count
-    (implies yes/no
-             (< (pseudo-term-count mv-term)
-                (pseudo-term-count term)))
-    :rule-classes :linear
-    :hints (("Goal"
-             :in-theory (enable pseudo-term-count
-                                pseudo-term-call->args
-                                pseudo-term-lambda->body
-                                pseudo-term-kind))))
-
-  (defret atj-check-mv-let-call-body-term-smaller-pseudo-term-count
-    (implies yes/no
-             (< (pseudo-term-count body-term)
-                (pseudo-term-count term)))
-    :rule-classes :linear
-    :hints (("Goal"
-             :in-theory (enable pseudo-term-count
-                                pseudo-term-call->args
-                                pseudo-term-lambda->body
-                                pseudo-term-kind)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-make-mv-let-call ((indices nat-listp)
                               (vars symbol-listp)
                               (mv-term pseudo-termp)
@@ -157,8 +45,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is somewhat the opposite of @(tsee atj-check-mv-let-call).
-     It is similar to @(tsee acl2::make-mv-let-call),
+    "This is similar to @(tsee acl2::make-mv-let-call),
      which we cannot quite use here because in ATJ
      the unused variable removal pre-translation step
      may remove some @(tsee mv-nth) calls from a translated @(tsee mv-let).
@@ -248,6 +135,119 @@
                (pseudo-lambda->body (pseudo-term-call->fn term)))
               (pseudo-term-count term)))
   :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fty-check-mv-let-call ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (mv-var symbolp)
+               (vars symbol-listp)
+               (indices nat-listp)
+               (mv-term pseudo-termp)
+               (body-term pseudo-termp))
+  :short "An FTY variant of @(tsee check-mv-let-call)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Like many other system utilities,
+     @(tsee check-mv-let-call) is written to use the built-in ACL2 term API.
+     When using this kind of system utilities
+     in code that is written to use the "
+    (xdoc::seetopic "acl2::pseudo-term-fty" "FTY term API")
+    ", there may be a slight ``mismatch'',
+     e.g. in the way the two APIs fix non-terms,
+     or in the fact that, for termination,
+     the ACL2 API is based on @(tsee acl2-count)
+     while the FTY API is based on @(tsee pseudo-term-count).")
+   (xdoc::p
+    "The mismatch can be often bridged by introducing
+     simple wrappers of those system utilities
+     that fix the term (in the FTY way) and then call the wrapped utilities.
+     This utility, @('fty-check-mv-let-call') demonstrates this,
+     for the @(tsee check-mv-let-call) system utility.")
+   (xdoc::p
+    "Note that the retun type theorems readily become unconditional,
+     as is common with fixtypes.
+     In order to prove that the FTY term count decreases,
+     we first prove lemmas saying that,
+     under the assumption @(tsee pseudo-termp),
+     the results of @(tsee check-mv-let-call) are smaller.
+     Note that, under that assumpion,
+     the wrapper and the original utility return the same result
+     (the only possibly differ on non-terms).
+     In proving those lemmas, we need to break the FTY abstraction
+     so that we can reduce the FTY term API operations
+     to the ACL2 term API operations."))
+  (check-mv-let-call (acl2::pseudo-term-fix term))
+  ///
+
+  (defret len-of-fty-check-mv-let-call.indices/vars
+    (implies yes/no
+             (equal (len indices)
+                    (len vars)))
+    :hyp :guard
+    :hints (("Goal"
+             :in-theory (enable acl2::len-of-check-mv-let-call.indices/vars))))
+
+  (in-theory (disable len-of-fty-check-mv-let-call.indices/vars))
+
+  (defrulel remove-trivial-vars-aux-lemma
+    (<= (pseudo-term-list-count
+         (mv-nth 1 (acl2::remove-trivial-vars-aux formals actuals)))
+        (pseudo-term-list-count actuals))
+    :rule-classes :linear
+    :enable (acl2::remove-trivial-vars-aux pseudo-term-list-count))
+
+  (defrulel pseudo-term-count-of-fty-check-mv-let-call.mv-term-lemma
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no & & & mv-term &) (check-mv-let-call term)))
+               (implies yes/no
+                        (< (pseudo-term-count mv-term)
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable (check-mv-let-call
+             pseudo-term-kind)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (pseudo-termp term)
+                     (not (pseudo-term-case term :quote)))
+                (<= (pseudo-term-list-count (cdr term))
+                    (pseudo-term-count term)))
+       :rule-classes :linear
+       :expand (pseudo-term-count term)
+       :enable (pseudo-term-call->args
+                pseudo-term-kind))))
+
+  (defret pseudo-term-count-of-fty-check-mv-let-call.mv-term
+    (implies yes/no
+             (< (pseudo-term-count mv-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear)
+
+  (defrulel pseudo-term-count-of-fty-check-mv-let-call.body-term-lemma
+    (implies (pseudo-termp term)
+             (b* (((mv yes/no & & & & body-term) (check-mv-let-call term)))
+               (implies yes/no
+                        (< (pseudo-term-count body-term)
+                           (pseudo-term-count term)))))
+    :rule-classes :linear
+    :enable check-mv-let-call
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (pseudo-termp term)
+                     (consp (car term)))
+                (< (pseudo-term-count (caddr (car term)))
+                   (pseudo-term-count term)))
+       :rule-classes :linear
+       :expand (pseudo-term-count term)
+       :enable (pseudo-term-lambda->body
+                pseudo-term-kind))))
+
+  (defret pseudo-term-count-of-fty-check-mv-let-call.body-term
+    (implies yes/no
+             (< (pseudo-term-count body-term)
+                (pseudo-term-count term)))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

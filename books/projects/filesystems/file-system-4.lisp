@@ -413,47 +413,47 @@
   :hints (("Goal" :in-theory (enable not-intersectp-list))))
 
 (defthm l4-wrchs-returns-stricter-fs-lemma-15
-  (implies (and (boolean-listp alv)
-                (indices-marked-p l alv)
-                (natp n))
+  (implies (indices-marked-p l alv)
            (not (intersectp-equal l (find-n-free-blocks alv n)))))
 
 (defthm l4-wrchs-returns-stricter-fs-lemma-16
-  (implies (and (natp n)
-                (l3-fs-p fs)
-                (boolean-listp alv)
-                (indices-marked-listp (l4-collect-all-index-lists fs)
-                                      alv))
+  (implies (indices-marked-listp (l4-collect-all-index-lists fs)
+                                 alv)
            (not-intersectp-list (find-n-free-blocks alv n)
                                 (l4-collect-all-index-lists fs)))
-  :hints (("Goal" :in-theory (enable not-intersectp-list))))
+  :hints (("goal" :in-theory (enable not-intersectp-list))))
 
 (encapsulate ()
-  (local (include-book "std/basic/inductions" :dir :system))
 
-  (defcong list-equiv equal (indices-marked-p index-list alv) 1
-    :hints
-    (("goal"
-      :induct (cdr-cdr-induct index-list index-list-equiv))))
+  (set-default-hints
+   '(("goal"
+      :in-theory (enable fast-list-equiv)
+      :induct (fast-list-equiv index-list index-list-equiv))))
 
-  (defcong list-equiv equal (fetch-blocks-by-indices block-list index-list) 2
-    :hints
-    (("goal"
-      :induct (cdr-cdr-induct index-list index-list-equiv))))
+  (defcong
+    list-equiv
+    equal (indices-marked-p index-list alv)
+    1)
 
+  (defcong
+    list-equiv equal
+    (fetch-blocks-by-indices block-list index-list)
+    2)
+
+  (set-default-hints
+   '(("goal"
+      :in-theory (enable fast-list-equiv)
+      :induct (fast-list-equiv fs fs-equiv))))
 
   (defcong list-equiv equal (l4-list-all-indices fs) 1
-    :hints (("Goal" :in-theory (enable l4-list-all-indices)
-             :induct (cdr-cdr-induct fs fs-equiv))
-            ("Subgoal *1/2''" :expand ((l4-list-all-indices fs)
-                                       (l4-list-all-indices fs-equiv)))))
+    :hints (("subgoal *1/4" :expand ((l4-list-all-indices fs)
+                                     (l4-list-all-indices fs-equiv)))
+            ("subgoal *1/1" :expand ((l4-list-all-indices fs)
+                                     (l4-list-all-indices fs-equiv)))))
 
   (defcong list-equiv equal (l3-to-l2-fs fs disk) 1
-    :hints (("goal" :induct (cdr-cdr-induct fs fs-equiv))
-            ("Subgoal *1/2''" :expand ((l3-to-l2-fs fs disk)
-                                       (l3-to-l2-fs fs-equiv disk)))))
-
-  )
+    :hints (("subgoal *1/1" :expand ((l3-to-l2-fs fs disk)
+                                     (l3-to-l2-fs fs-equiv disk))))))
 
 (defcong list-equiv equal (indices-marked-p index-list alv) 2)
 

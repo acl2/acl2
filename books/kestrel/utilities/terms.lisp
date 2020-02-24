@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/utilities/forms" :dir :system) ;for farg1, etc.
+(include-book "forms") ;for farg1, etc.
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "substitution")
 (include-book "tools/flag" :dir :system)

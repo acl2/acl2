@@ -43,6 +43,7 @@
                          chars=>nats
                          check-lambda-call
                          check-list-call
+                         check-mv-let-call
                          check-unary-lambda-call
                          conjoin
                          cons-listp

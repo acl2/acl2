@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/utilities/doublets" :dir :system)
+(include-book "doublets")
 
 ;; A book about "doublets" and lists of doublets (which are similar to alists).
 

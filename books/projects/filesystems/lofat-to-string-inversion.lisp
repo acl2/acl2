@@ -13,7 +13,7 @@
 (local
  (in-theory (disable take-of-too-many make-list-ac-removal
                      revappend-removal str::hex-digit-listp-of-cons
-                     loghead logtail)))
+                     loghead logtail nth-when->=-n-len-l)))
 
 (local
  (in-theory (disable nth update-nth ceiling floor mod true-listp)))
@@ -439,7 +439,8 @@
   (("goal"
     :in-theory (e/d (read-reserved-area get-initial-bytes
                                         fat-entry-count count-of-clusters
-                                        cluster-size take-of-nthcdr)
+                                        cluster-size take-of-nthcdr
+                                        nth-when->=-n-len-l)
                     (read-reserved-area-correctness-1-lemma-1
                      read-reserved-area-correctness-1-lemma-2))
     :use (read-reserved-area-correctness-1-lemma-1
@@ -550,7 +551,8 @@
                 (equal (length str)
                        (* (fat-length fat32-in-memory) 4))
                 (fat32-in-memoryp fat32-in-memory))
-           (fat32-in-memoryp (update-fat fat32-in-memory str pos))))
+           (fat32-in-memoryp (update-fat fat32-in-memory str pos)))
+  :hints (("Goal" :in-theory (enable nth-when->=-n-len-l))))
 
 (defthm
   fat-entry-count-of-update-fat
@@ -571,7 +573,8 @@
                 (equal (length str)
                        (* (fat-length fat32-in-memory) 4)))
            (equal (fat-length (update-fat fat32-in-memory str pos))
-                  (fat-length fat32-in-memory))))
+                  (fat-length fat32-in-memory)))
+  :hints (("Goal" :in-theory (enable nth-when->=-n-len-l))))
 
 (defthm
   bpb_secperclus-of-read-reserved-area
@@ -821,7 +824,8 @@
                 (read-reserved-area fat32-in-memory str))))))
     :hints
     (("goal"
-      :in-theory (e/d (cluster-size read-reserved-area)
+      :in-theory (e/d (cluster-size read-reserved-area
+                                    nth-when->=-n-len-l)
                       (bpb_bytspersec-of-read-reserved-area
                        bpb_secperclus-of-read-reserved-area))
       :use (bpb_bytspersec-of-read-reserved-area
@@ -845,7 +849,7 @@
     :rule-classes :linear
     :hints
     (("goal"
-      :in-theory (e/d (fat-entry-count read-reserved-area)
+      :in-theory (e/d (fat-entry-count read-reserved-area nth-when->=-n-len-l)
                       ((:rewrite combine16u-unsigned-byte)
                        (:rewrite combine32u-unsigned-byte)))
       :use
@@ -1540,7 +1544,7 @@
                         (read-file-into-string2 image-path 0 nil state))))
   :hints
   (("goal"
-    :in-theory (e/d (read-reserved-area)
+    :in-theory (e/d (read-reserved-area nth-when->=-n-len-l)
                     (disk-image-to-lofat-guard-lemma-13))
     :use disk-image-to-lofat-guard-lemma-13)))
 
@@ -2253,7 +2257,7 @@
          1
          (update-bpb_secperclus 1 fat32-in-memory)))))
      *eio*)))
-  :hints (("goal" :in-theory (enable read-reserved-area))))
+  :hints (("goal" :in-theory (enable read-reserved-area nth-when->=-n-len-l))))
 
 (defun
     disk-image-to-lofat
@@ -3843,7 +3847,7 @@
       (explode
        (stobj-fa-table-to-string fat32-in-memory)))
      (code-char (loghead 8 (fati (- pos 1) fat32-in-memory))))))
-  :hints (("goal" :in-theory (enable stobj-fa-table-to-string))))
+  :hints (("goal" :in-theory (enable stobj-fa-table-to-string nth-when->=-n-len-l))))
 
 (defthm
   lofat-to-string-inversion-lemma-41
@@ -4412,7 +4416,8 @@
                                      fat-entry-count read-reserved-area
                                      lofat-fs-p painful-debugging-lemma-1
                                      painful-debugging-lemma-2
-                                     painful-debugging-lemma-3))))
+                                     painful-debugging-lemma-3
+                                     nth-when->=-n-len-l))))
 
 (defthm
   lofat-fs-p-of-string-to-lofat-nx

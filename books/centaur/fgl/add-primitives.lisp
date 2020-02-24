@@ -267,123 +267,203 @@
 ;;            (equal (meta-extract-global-fact+ obj st new)
 ;;                   (meta-extract-global-fact+ obj st old)))
 ;;   :hints(("Goal" :in-theory (enable w-state-equal-forward))))
+(defun symbol-list-names (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (if (atom x)
+      nil
+    (cons (symbol-name (car x))
+          (symbol-list-names (cdr x)))))
 
+(defun intern-list (x pkg)
+  (declare (xargs :guard (and (string-listp x)
+                              (symbolp pkg))))
+  (if (atom x)
+      nil
+    (cons (intern-in-package-of-symbol (car x) pkg)
+          (intern-list (cdr x) pkg))))
 
+(defun returns-or-defaults (alist returns)
+  (if (atom alist)
+      nil
+    (cons (if (member (caar alist) returns)
+              (caar alist)
+            (cdar alist))
+          (returns-or-defaults (cdr alist) returns))))
 
-(defun def-fgl-meta-base (name body formula-check-fn prepwork)
+(defun def-fgl-meta-process-returns (returns full-returns-and-defaults)
+  ;; returns (mv defaultp bind-returns return-returns)
+  (b* ((returns (cond ((not returns) nil)
+                      ((atom returns) (list returns))
+                      ((eq (car returns) 'mv) (cdr returns))
+                      (t returns)))
+       ((unless (symbol-listp returns))
+        (er hard? 'def-fgl-meta-process-returns
+            "Returns must be a symbol-list.")
+        (mv nil nil nil))
+       (return-names (symbol-list-names returns))
+       (full-returns (Strip-cars full-returns-and-defaults))
+       ((unless (and (no-duplicatesp-equal return-names)
+                     (subsetp-equal return-names (symbol-list-names full-returns))))
+        (er hard? 'def-fgl-meta-process-returns
+            "Returns must be a symbol-list without duplicates and with names among: ~x0"
+            full-returns)
+        (mv nil nil nil))
+       (canonical-returns (intern-list return-names 'fgl-fgl))
+       (returns-with-defaults (returns-or-defaults full-returns-and-defaults canonical-returns))
+       (bind-returns (if (consp (cdr canonical-returns))
+                         `(mv . ,canonical-returns)
+                       (car canonical-returns)))
+       (return-returns (if (consp (cdr returns-with-defaults))
+                           `(mv . ,returns-with-defaults)
+                         (car returns-with-defaults))))
+    (mv (or (not returns) (equal canonical-returns full-returns))
+        bind-returns return-returns)))
+
+(defun def-fgl-meta-base (name body returns formula-check-fn prepwork)
   (declare (Xargs :mode :program))
-  (acl2::template-subst
-   '(define <metafn> ((origfn pseudo-fnsym-p)
-                      (args fgl-objectlist-p)
-                      (interp-st interp-st-bfrs-ok)
-                      state)
-      :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
-      :returns (mv successp
-                   rhs
-                   bindings
-                   new-interp-st
-                   new-state)
-      :prepwork (<prepwork>
-                 (local (in-theory (disable w))))
-      :hooks (:fix)
-      <body>
-      ///
-      ;; <thms>
+  (b* (((mv default-returns bind-returns return-returns)
+        (def-fgl-meta-process-returns returns '((successp . t)
+                                                (rhs . nil)
+                                                (bindings . nil)
+                                                (interp-st . interp-st)
+                                                (state . state)))))
+    (acl2::template-subst
+     '(define <metafn> ((origfn pseudo-fnsym-p)
+                        (args fgl-objectlist-p)
+                        (interp-st interp-st-bfrs-ok)
+                        state)
+        :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+        :returns (mv successp
+                     rhs
+                     bindings
+                     new-interp-st
+                     new-state)
+        :prepwork (<prepwork>
+                   (local (in-theory (disable w))))
+        :hooks (:fix)
+        (:@ :default-returns <body>)
+        (:@ (not :default-returns)
+         (b* ((<bind-returns> <body>))
+           <return-returns>))
+        ///
+        ;; <thms>
 
-      ;; (defret eval-of-<metafn>
-      ;;   (implies (and successp
-      ;;                 (equal contexts (interp-st->equiv-contexts interp-st))
-      ;;                 (fgl-ev-meta-extract-global-facts :state st)
-      ;;                 <formula-check>
-      ;;                 (equal (w st) (w state))
-      ;;                 (interp-st-bfrs-ok interp-st)
-      ;;                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
-      ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-      ;;                                         (interp-st->constraint interp-st)
-      ;;                                         (interp-st->logicman interp-st))
-      ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-      ;;                                         (interp-st->pathcond interp-st)
-      ;;                                         (interp-st->logicman interp-st))
-      ;;                 (pseudo-fnsym-p origfn))
-      ;;            (fgl-ev-context-equiv-forall-extensions
-      ;;             contexts
-      ;;             (fgl-ev (cons origfn (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st)))) nil)
-      ;;             rhs
-      ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
-      
-      (defret fgl-meta-constraint-of-<fn>-lemma
-        (fgl-meta-constraint successp rhs bindings new-interp-st new-state
-                             origfn args interp-st state
-                             <formula-check-arg>)
-        :hints (("goal" :in-theory '(fgl-meta-constraint))
-                (and stable-under-simplificationp
-                     (let ((witness (acl2::find-call-lst 'fgl-meta-constraint-witness clause)))
-                       `(:computed-hint-replacement
-                         ('(:in-theory (e/d (w-state-equal-forward and* implies* not* or*)
-                                            (fgl-meta-constraint-necc w))))
-                         :clause-processor
-                         (acl2::simple-generalize-cp
-                          clause
-                          '(((mv-nth '0 ,witness) . mode)
-                            ((mv-nth '1 ,witness) . env)
-                            ((mv-nth '2 ,witness) . n)
-                            ((mv-nth '3 ,witness) . contexts)
-                            ((mv-nth '4 ,witness) . st)))
-                         ;;        :in-theory '(fgl-meta-constraint-base)))
-                         ;; (and stable-under-simplificationp
-                         ;;      '(
-                         )))))
+        ;; (defret eval-of-<metafn>
+        ;;   (implies (and successp
+        ;;                 (equal contexts (interp-st->equiv-contexts interp-st))
+        ;;                 (fgl-ev-meta-extract-global-facts :state st)
+        ;;                 <formula-check>
+        ;;                 (equal (w st) (w state))
+        ;;                 (interp-st-bfrs-ok interp-st)
+        ;;                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+        ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
+        ;;                                         (interp-st->constraint interp-st)
+        ;;                                         (interp-st->logicman interp-st))
+        ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
+        ;;                                         (interp-st->pathcond interp-st)
+        ;;                                         (interp-st->logicman interp-st))
+        ;;                 (pseudo-fnsym-p origfn))
+        ;;            (fgl-ev-context-equiv-forall-extensions
+        ;;             contexts
+        ;;             (fgl-ev (cons origfn (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st)))) nil)
+        ;;             rhs
+        ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
+        
+        (defret fgl-meta-constraint-of-<fn>-lemma
+          (fgl-meta-constraint successp rhs bindings new-interp-st new-state
+                               origfn args interp-st state
+                               <formula-check-arg>)
+          :hints (("goal" :in-theory '(fgl-meta-constraint))
+                  (and stable-under-simplificationp
+                       (let ((witness (acl2::find-call-lst 'fgl-meta-constraint-witness clause)))
+                         `(:computed-hint-replacement
+                           ('(:in-theory (e/d (w-state-equal-forward and* implies* not* or*)
+                                              (fgl-meta-constraint-necc w))))
+                           :clause-processor
+                           (acl2::simple-generalize-cp
+                            clause
+                            '(((mv-nth '0 ,witness) . mode)
+                              ((mv-nth '1 ,witness) . env)
+                              ((mv-nth '2 ,witness) . n)
+                              ((mv-nth '3 ,witness) . contexts)
+                              ((mv-nth '4 ,witness) . st)))
+                           ;;        :in-theory '(fgl-meta-constraint-base)))
+                           ;; (and stable-under-simplificationp
+                           ;;      '(
+                           )))))
 
-      (defret fgl-meta-constraint-of-<fn>
-        (implies (case-split (implies formula-check <formula-check-arg>))
-                 (fgl-meta-constraint successp rhs bindings new-interp-st new-state
-                                      origfn args interp-st state
-                                      formula-check))
-        :hints (("goal" :use fgl-meta-constraint-of-<fn>-lemma
-                 :in-theory (disable fgl-meta-constraint <fn> fgl-meta-constraint-of-<fn>-lemma)
-                 :cases (formula-check))))
+        (defret fgl-meta-constraint-of-<fn>
+          (implies (case-split (implies formula-check <formula-check-arg>))
+                   (fgl-meta-constraint successp rhs bindings new-interp-st new-state
+                                        origfn args interp-st state
+                                        formula-check))
+          :hints (("goal" :use fgl-meta-constraint-of-<fn>-lemma
+                   :in-theory (disable fgl-meta-constraint <fn> fgl-meta-constraint-of-<fn>-lemma)
+                   :cases (formula-check))))
 
-      (table fgl-metafns '<metafn> t))
-   :splice-alist `((<thms> . ,*fgl-meta-rule-thms*)
-                   (<formula-check> . 
-                                    ,(and formula-check-fn
-                                          `((,formula-check-fn st))))
-                   (<prepwork> . ,prepwork))
-   :atom-alist `((<metafn> . ,name)
-                 (<body> . ,body)
-                 (<formula-check-arg> . ,(if formula-check-fn
-                                             `(,formula-check-fn state)
-                                           ''t)))
-   :str-alist `(("<METAFN>" . ,(symbol-name name)))))
+        (table fgl-metafns '<metafn> t))
+     :splice-alist `((<thms> . ,*fgl-meta-rule-thms*)
+                     (<formula-check> . 
+                                      ,(and formula-check-fn
+                                            `((,formula-check-fn st))))
+                     (<prepwork> . ,prepwork))
+     :atom-alist `((<metafn> . ,name)
+                   (<body> . ,body)
+                   (<bind-returns> . ,bind-returns)
+                   (<return-returns> . ,return-returns)
+                   (<formula-check-arg> . ,(if formula-check-fn
+                                               `(,formula-check-fn state)
+                                             ''t)))
+     :features (and default-returns '(:default-returns))
+     :str-alist `(("<METAFN>" . ,(symbol-name name))))))
 
-(defun def-fgl-meta-fn (name fn formals body formula-check-fn prepwork)
+
+
+
+
+(defun def-fgl-meta-fn (name fn formals body returns formula-check-fn prepwork)
   (declare (Xargs :mode :program))
-  `(progn
-     ,(def-fgl-meta-base name
-        `(if (and (eq (pseudo-fnsym-fix origfn) ',fn)
-                  (eql (len args) ,(len formals)))
-             (b* (((list . ,formals) (fgl-objectlist-fix args)))
-               ,body)
-           (mv nil nil nil interp-st state))
-        formula-check-fn prepwork)
-     (add-fgl-meta ,fn ,name)))
+  (b* (((mv default-returns bind-returns return-returns)
+        (def-fgl-meta-process-returns returns '((successp . t)
+                                                (rhs . nil)
+                                                (bindings . nil)
+                                                (interp-st . interp-st)
+                                                (state . state)))))
+    `(progn
+       ,(def-fgl-meta-base name
+          `(if (and (eq (pseudo-fnsym-fix origfn) ',fn)
+                    (eql (len args) ,(len formals)))
+               ,(if default-returns
+                    `(b* (((list . ,formals) (fgl-objectlist-fix args)))
+                       ,body)
+                  `(b* (((list . ,formals) (fgl-objectlist-fix args))
+                        (,bind-returns ,body))
+                     ,return-returns))
+             (mv nil nil nil interp-st state))
+          nil formula-check-fn prepwork)
+       (add-fgl-meta ,fn ,name))))
 
 
-(defmacro def-fgl-meta (name body &key (formula-check) (prepwork) (origfn) (formals ':none))
+(defmacro def-fgl-meta (name body &key (formula-check) (prepwork) (origfn) (formals ':none) (returns))
   (if origfn
       (if (eq formals :none)
           `(make-event
             (b* ((formals (getpropc ',origfn 'formals nil (w state))))
-              (def-fgl-meta-fn ',name ',origfn formals ',body ',formula-check ',prepwork)))
-        (def-fgl-meta-fn name origfn formals body formula-check prepwork))
-    (def-fgl-meta-base name body formula-check prepwork)))
+              (def-fgl-meta-fn ',name ',origfn formals ',body ',returns ',formula-check ',prepwork)))
+        (def-fgl-meta-fn name origfn formals body returns formula-check prepwork))
+    (def-fgl-meta-base name body returns formula-check prepwork)))
 
-(defun def-fgl-primitive-fn (fn formals body name-override formula-check-fn updates-state prepwork)
+(defun def-fgl-primitive-fn (fn formals body name-override returns formula-check-fn prepwork)
   (declare (Xargs :mode :program))
   (b* ((primfn (or name-override
                    (intern-in-package-of-symbol
                     (concatenate 'string "FGL-" (symbol-name fn) "-PRIMITIVE")
-                    'fgl-package))))
+                    'fgl-package)))
+       ((mv default-returns bind-returns return-returns)
+        (def-fgl-meta-process-returns returns '((successp . t)
+                                                (ans . nil)
+                                                (interp-st . interp-st)
+                                                (state . state)))))
     (acl2::template-subst
      '(define <primfn> ((origfn pseudo-fnsym-p)
                         (args fgl-objectlist-p)
@@ -400,10 +480,10 @@
         (if (and (eq (pseudo-fnsym-fix origfn) '<fn>)
                  (eql (len args) <arity>))
             (b* (((list <formals>) (fgl-objectlist-fix args)))
-              (:@ (not :updates-state)
-               (b* (((mv successp ans interp-st) <body>))
-                 (mv successp ans interp-st state)))
-              (:@ :updates-state <body>))
+              (:@ (not :default-returns)
+               (b* ((<bind-returns> <body>))
+                 <return-returns>))
+              (:@ :default-returns <body>))
           (mv nil nil interp-st state))
         ///
         ;; <thms>
@@ -469,26 +549,31 @@
                      (<prepwork> . ,prepwork))
      :atom-alist `((<primfn> . ,primfn)
                    (<fn> . ,fn)
+                   (<bind-returns> . ,bind-returns)
+                   (<return-returns> . ,return-returns)
                    (<arity> . ,(len formals))
                    (<body> . ,body)
                    (<formula-check-arg> . ,(if formula-check-fn
                                                `(,formula-check-fn state)
                                              ''t)))
      :str-alist `(("<FN>" . ,(symbol-name fn)))
-     :features (and updates-state '(:updates-state)))))
+     :features (and default-returns '(:default-returns)))))
 
-(defun def-fgl-primitive-as-metafn (fn formals body name-override formula-check-fn updates-state prepwork)
+(defun def-fgl-primitive-as-metafn (fn formals body name-override returns formula-check-fn prepwork)
   (declare (Xargs :mode :program))
   (b* ((primfn (or name-override
                    (intern-in-package-of-symbol
                     (concatenate 'string "FGL-" (symbol-name fn) "-PRIMITIVE")
-                    'fgl-package))))
+                    'fgl-package)))
+       
+       ((mv default-returns bind-returns return-returns)
+        (def-fgl-meta-process-returns returns '((successp . t)
+                                                (ans . nil)
+                                                (interp-st . interp-st)
+                                                (state . state)))))
     (acl2::template-subst
      '(def-fgl-meta <primfn>
-        (b* ((:@ (not :updates-state)
-              ((mv successp ans interp-st) <body>))
-             (:@ :updates-state
-              ((mv successp ans interp-st state) <body>)))
+        (b* ((<bind-returns> <body>))
           (mv successp 'x `((x . ,ans)) interp-st state))
         :origfn <fn> :formals <formals>
         :prepwork (<prepwork>
@@ -501,134 +586,160 @@
                      (<prepwork> . ,prepwork))
      :atom-alist `((<primfn> . ,primfn)
                    (<fn> . ,fn)
+                   (<bind-returns> . ,bind-returns)
+                   (<return-returns> . ,return-returns)
                    (<arity> . ,(len formals))
                    (<body> . ,body))
      :str-alist `(("<FN>" . ,(symbol-name fn)))
-     :features (and updates-state '(:updates-state))
+     :features (and default-returns '(:default-returns))
      :pkg-sym primfn)))
 
 
-(defmacro def-fgl-primitive (fn formals body &key (fnname) (formula-check) (prepwork) (updates-state))
+(defmacro def-fgl-primitive (fn formals body &key (fnname) (formula-check) (prepwork) (returns '(successp ans interp-st)))
   `(make-event
-    (def-fgl-primitive-fn ',fn ',formals ',body ',fnname ',formula-check ',updates-state ',prepwork)))
+    (def-fgl-primitive-fn ',fn ',formals ',body ',fnname ',returns ',formula-check ',prepwork)))
 
 
-(defun def-fgl-binder-meta-base (name body formula-check-fn prepwork)
+(defun def-fgl-binder-meta-base (name body returns formula-check-fn prepwork)
   (declare (Xargs :mode :program))
-  (acl2::template-subst
-   '(define <metafn> ((fn pseudo-fnsym-p)
-                      (args fgl-objectlist-p)
-                      (interp-st interp-st-bfrs-ok)
-                      state)
-      :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
-      :returns (mv successp
-                   rhs
-                   bindings
-                   rhs-contexts
-                   new-interp-st
-                   new-state)
-      :prepwork (<prepwork>
-                 (local (in-theory (disable w))))
-      :hooks (:fix)
-      <body>
-      ///
-      ;; <thms>
+  (b* (((mv default-returns bind-returns return-returns)
+        (def-fgl-meta-process-returns returns '((successp . t)
+                                                (rhs . nil)
+                                                (bindings . nil)
+                                                (rhs-contexts . nil)
+                                                (interp-st . interp-st)
+                                                (state . state)))))
+    (acl2::template-subst
+     '(define <metafn> ((fn pseudo-fnsym-p)
+                        (args fgl-objectlist-p)
+                        (interp-st interp-st-bfrs-ok)
+                        state)
+        :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+        :returns (mv successp
+                     rhs
+                     bindings
+                     rhs-contexts
+                     new-interp-st
+                     new-state)
+        :prepwork (<prepwork>
+                   (local (in-theory (disable w))))
+        :hooks (:fix)
+        (:@ :default-returns <body>)
+        (:@ (not :default-returns)
+         (b* ((<bind-returns> <body>))
+           <return-returns>))
+        ///
+        ;; <thms>
 
-      ;; (defret eval-of-<metafn>
-      ;;   (implies (and successp
-      ;;                 (equal contexts (interp-st->equiv-contexts interp-st))
-      ;;                 (fgl-ev-meta-extract-global-facts :state st)
-      ;;                 <formula-check>
-      ;;                 (equal (w st) (w state))
-      ;;                 (interp-st-bfrs-ok interp-st)
-      ;;                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
-      ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-      ;;                                         (interp-st->constraint interp-st)
-      ;;                                         (interp-st->logicman interp-st))
-      ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-      ;;                                         (interp-st->pathcond interp-st)
-      ;;                                         (interp-st->logicman interp-st))
-      ;;                 (fgl-ev-context-equiv-forall-extensions
-      ;;                  rhs-contexts
-      ;;                  rhs-val
-      ;;                  rhs eval-alist)
-      ;;                 (eval-alist-extension-p eval-alist (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
-      ;;                 (pseudo-fnsym-p fn))
-      ;;            (equal (fgl-ev-context-fix contexts (fgl-ev (cons fn
-      ;;                                                              (cons (pseudo-term-quote rhs-val)
-      ;;                                                                    (kwote-lst
-      ;;                                                                     (fgl-objectlist-eval
-      ;;                                                                      args env
-      ;;                                                                      (interp-st->logicman interp-st)))))
-      ;;                                                        nil))
-      ;;                   (fgl-ev-context-fix contexts rhs-val))))
-      (defret fgl-binder-constraint-of-<fn>-lemma
-        (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
-                               fn args interp-st state
-                               <formula-check-arg>)
-        :hints (("goal" :in-theory '(fgl-binder-constraint))
-                (and stable-under-simplificationp
-                     (let ((witness (acl2::find-call-lst 'fgl-binder-constraint-witness clause)))
-                       `(:computed-hint-replacement
-                       ('(:in-theory (e/d (w-state-equal-forward and* implies* not* or*)
-                                       (fgl-binder-constraint-necc w))))
-                       :clause-processor
-                       (acl2::simple-generalize-cp
-                        clause
-                        '(((mv-nth '0 ,witness) . mode)
-                          ((mv-nth '1 ,witness) . env)
-                          ((mv-nth '2 ,witness) . n)
-                          ((mv-nth '3 ,witness) . contexts)
-                          ((mv-nth '4 ,witness) . st)
-                          ((mv-nth '5 ,witness) . rhs-val)
-                          ((mv-nth '6 ,witness) . eval-alist)))
-                ;;        :in-theory '(fgl-binder-constraint-base)))
-                ;; (and stable-under-simplificationp
-                ;;      '(
-                       )))))
+        ;; (defret eval-of-<metafn>
+        ;;   (implies (and successp
+        ;;                 (equal contexts (interp-st->equiv-contexts interp-st))
+        ;;                 (fgl-ev-meta-extract-global-facts :state st)
+        ;;                 <formula-check>
+        ;;                 (equal (w st) (w state))
+        ;;                 (interp-st-bfrs-ok interp-st)
+        ;;                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
+        ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
+        ;;                                         (interp-st->constraint interp-st)
+        ;;                                         (interp-st->logicman interp-st))
+        ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
+        ;;                                         (interp-st->pathcond interp-st)
+        ;;                                         (interp-st->logicman interp-st))
+        ;;                 (fgl-ev-context-equiv-forall-extensions
+        ;;                  rhs-contexts
+        ;;                  rhs-val
+        ;;                  rhs eval-alist)
+        ;;                 (eval-alist-extension-p eval-alist (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
+        ;;                 (pseudo-fnsym-p fn))
+        ;;            (equal (fgl-ev-context-fix contexts (fgl-ev (cons fn
+        ;;                                                              (cons (pseudo-term-quote rhs-val)
+        ;;                                                                    (kwote-lst
+        ;;                                                                     (fgl-objectlist-eval
+        ;;                                                                      args env
+        ;;                                                                      (interp-st->logicman interp-st)))))
+        ;;                                                        nil))
+        ;;                   (fgl-ev-context-fix contexts rhs-val))))
+        (defret fgl-binder-constraint-of-<fn>-lemma
+          (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
+                                 fn args interp-st state
+                                 <formula-check-arg>)
+          :hints (("goal" :in-theory '(fgl-binder-constraint))
+                  (and stable-under-simplificationp
+                       (let ((witness (acl2::find-call-lst 'fgl-binder-constraint-witness clause)))
+                         `(:computed-hint-replacement
+                           ('(:in-theory (e/d (w-state-equal-forward and* implies* not* or*)
+                                              (fgl-binder-constraint-necc w))))
+                           :clause-processor
+                           (acl2::simple-generalize-cp
+                            clause
+                            '(((mv-nth '0 ,witness) . mode)
+                              ((mv-nth '1 ,witness) . env)
+                              ((mv-nth '2 ,witness) . n)
+                              ((mv-nth '3 ,witness) . contexts)
+                              ((mv-nth '4 ,witness) . st)
+                              ((mv-nth '5 ,witness) . rhs-val)
+                              ((mv-nth '6 ,witness) . eval-alist)))
+                           ;;        :in-theory '(fgl-binder-constraint-base)))
+                           ;; (and stable-under-simplificationp
+                           ;;      '(
+                           )))))
 
-      (defret fgl-binder-constraint-of-<fn>
-        (implies (case-split (implies formula-check <formula-check-arg>))
-                 (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
-                                        fn args interp-st state
-                                        formula-check))
-        :hints (("goal" :use fgl-binder-constraint-of-<fn>-lemma
-                 :in-theory (disable fgl-binder-constraint <fn> fgl-binder-constraint-of-<fn>-lemma)
-                 :cases (formula-check))))
+        (defret fgl-binder-constraint-of-<fn>
+          (implies (case-split (implies formula-check <formula-check-arg>))
+                   (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
+                                          fn args interp-st state
+                                          formula-check))
+          :hints (("goal" :use fgl-binder-constraint-of-<fn>-lemma
+                   :in-theory (disable fgl-binder-constraint <fn> fgl-binder-constraint-of-<fn>-lemma)
+                   :cases (formula-check))))
 
-      (table fgl-binderfns '<metafn> t))
-   :splice-alist `((<thms> . ,*fgl-binder-rule-thms*)
-                   (<formula-check> . 
-                                    ,(and formula-check-fn
-                                          `((,formula-check-fn st))))
-                 (<prepwork> . ,prepwork))
-   :atom-alist `((<metafn> . ,name)
-                 (<body> . ,body)
-                 (<formula-check-arg> . ,(if formula-check-fn
-                                             `(,formula-check-fn state)
-                                           ''t)))
-   :str-alist `(("<METAFN>" . ,(symbol-name name)))))
+        (table fgl-binderfns '<metafn> t))
+     :splice-alist `((<thms> . ,*fgl-binder-rule-thms*)
+                     (<formula-check> . 
+                                      ,(and formula-check-fn
+                                            `((,formula-check-fn st))))
+                     (<prepwork> . ,prepwork))
+     :atom-alist `((<metafn> . ,name)
+                   (<body> . ,body)
+                   (<bind-returns> . ,bind-returns)
+                   (<return-returns> . ,return-returns)
+                   (<formula-check-arg> . ,(if formula-check-fn
+                                               `(,formula-check-fn state)
+                                             ''t)))
+     :features (and default-returns '(:default-returns))
+     :str-alist `(("<METAFN>" . ,(symbol-name name))))))
 
-(defun def-fgl-binder-meta-fn (name fn formals body formula-check-fn prepwork)
+(defun def-fgl-binder-meta-fn (name fn formals body returns formula-check-fn prepwork)
   (declare (xargs :mode :program))
-  `(progn
-     ,(def-fgl-binder-meta-base name
-        `(if (and (eq (pseudo-fnsym-fix fn) ',fn)
-                  (eql (len args) ,(len formals)))
-             (b* (((list . ,formals) (fgl-objectlist-fix args)))
-               ,body)
-           (mv nil nil nil nil interp-st state))
-        formula-check-fn prepwork)
-     (add-fgl-binder-meta ,fn ,name)))
+  (b* (((mv default-returns bind-returns return-returns)
+        (def-fgl-meta-process-returns returns '((successp . t)
+                                                (rhs . nil)
+                                                (bindings . nil)
+                                                (rhs-contexts . nil)
+                                                (interp-st . interp-st)
+                                                (state . state)))))
+    `(progn
+       ,(def-fgl-binder-meta-base name
+          `(if (and (eq (pseudo-fnsym-fix fn) ',fn)
+                    (eql (len args) ,(len formals)))
+               ,(if default-returns
+                    `(b* (((list . ,formals) (fgl-objectlist-fix args)))
+                       ,body)
+                  `(b* (((list . ,formals) (fgl-objectlist-fix args))
+                        (,bind-returns ,body))
+                     ,return-returns))
+             (mv nil nil nil nil interp-st state))
+          nil formula-check-fn prepwork)
+       (add-fgl-binder-meta ,fn ,name))))
 
-(defmacro def-fgl-binder-meta (name body &key (formula-check) (prepwork) (origfn) (formals ':none))
+(defmacro def-fgl-binder-meta (name body &key (formula-check) (prepwork) (origfn) (returns) (formals ':none))
   (if origfn
       (if (eq formals :none)
           `(make-event
             (b* ((formals (cdr (getpropc ',origfn 'formals nil (w state)))))
               (def-fgl-binder-meta-fn ',name ',origfn formals ',body ',formula-check ',prepwork)))
-        (def-fgl-binder-meta-fn name origfn formals body formula-check prepwork))
-    (def-fgl-binder-meta-base name body formula-check prepwork)))
+        (def-fgl-binder-meta-fn name origfn formals body returns formula-check prepwork))
+    (def-fgl-binder-meta-base name body returns formula-check prepwork)))
 
 
 

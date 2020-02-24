@@ -90,8 +90,9 @@
 (enable-split-ifs ifix)
 (def-fgl-primitive ifix (x)
   (b* (((mv ok fix) (gobj-syntactic-integer-fix x))
-       ((unless ok) (mv nil nil interp-st)))
-    (mv t fix interp-st))
+       ((unless ok) (mv nil nil)))
+    (mv t fix))
+  :returns (mv successp ans)
   :formula-check primitives-formula-checks)
 
 (def-fgl-rewrite ifix-when-integerp
@@ -121,19 +122,21 @@
 (enable-split-ifs integerp)
 (def-fgl-primitive integerp (x)
   (fgl-object-case x
-    :g-concrete (mv t (integerp x.val) interp-st)
-    :g-integer (mv t t interp-st)
-    :g-boolean (mv t nil interp-st)
-    :g-cons (mv t nil interp-st)
-    :g-map (mv t (integerp x.alist) interp-st)
+    :g-concrete (mv t (integerp x.val))
+    :g-integer (mv t t)
+    :g-boolean (mv t nil)
+    :g-cons (mv t nil)
+    :g-map (mv t (integerp x.alist))
     :g-apply (if (or (and** (eq x.fn 'ifix) (eql (len x.args) 1))
                      (and** (eq x.fn 'intcons) (eql (len x.args) 2))
                      (and** (eq x.fn 'intcdr) (eql (len x.args) 1))
                      (and** (eq x.fn 'endint) (eql (len x.args) 1)))
-                 (mv t t interp-st)
-               (mv nil nil interp-st))
-    :otherwise (mv nil nil interp-st))
+                 (mv t t)
+               (mv nil nil))
+    :otherwise (mv nil nil))
+  :returns (successp ans)
   :formula-check primitives-formula-checks)
+
 
 
 (local (defthm fgl-object-alist-eval-under-iff
@@ -151,24 +154,25 @@
 (enable-split-ifs endint)
 (def-fgl-primitive endint (x)
   (fgl-object-case x
-    :g-concrete (mv t (if x.val -1 0) interp-st)
-    :g-boolean (mv t (mk-g-integer (list x.bool)) interp-st)
-    :g-cons (mv t -1 interp-st)
-    :g-integer (mv t -1 interp-st)
-    :g-map (mv t (endint (and x.alist t)) interp-st)
-    :otherwise (mv nil nil interp-st)))
+    :g-concrete (mv t (if x.val -1 0))
+    :g-boolean (mv t (mk-g-integer (list x.bool)))
+    :g-cons (mv t -1)
+    :g-integer (mv t -1)
+    :g-map (mv t (endint (and x.alist t)))
+    :otherwise (mv nil nil))
+  :returns (mv successp ans))
 
 
 
 (enable-split-ifs intcons)
 (def-fgl-primitive intcons (car cdr)
   (b* (((mv ok car-fix) (gobj-syntactic-boolean-fix car))
-       ((unless ok) (mv nil nil interp-st))
+       ((unless ok) (mv nil nil))
        ((mv ok cdr-fix) (gobj-syntactic-integer-fix cdr))
-       ((unless ok) (mv nil nil interp-st)))
+       ((unless ok) (mv nil nil)))
     (mv t (mk-g-integer (scons (gobj-syntactic-boolean->bool car-fix)
-                               (gobj-syntactic-integer->bits cdr-fix)))
-        interp-st)))
+                               (gobj-syntactic-integer->bits cdr-fix)))))
+  :returns (mv successp ans))
 
 (def-fgl-rewrite intcons-of-ifix
   (equal (intcons car (ifix cdr))
@@ -212,15 +216,14 @@
 (def-fgl-primitive intcar (x)
   (fgl-object-case x
     :g-concrete (mv t (and (integerp x.val)
-                           (intcar x.val))
-                    interp-st)
-    :g-integer (mv t (mk-g-boolean (car x.bits)) interp-st)
-    :g-boolean (mv t nil interp-st)
-    :g-cons (mv t nil interp-st)
+                           (intcar x.val)))
+    :g-integer (mv t (mk-g-boolean (car x.bits)))
+    :g-boolean (mv t nil)
+    :g-cons (mv t nil)
     :g-map (mv t (and (integerp x.alist)
-                      (intcar x.alist))
-               interp-st)
-    :otherwise (mv nil nil interp-st)))
+                      (intcar x.alist)))
+    :otherwise (mv nil nil))
+  :returns (mv successp ans))
 
 (def-fgl-rewrite intcar-of-ifix
   (equal (intcar (ifix x)) (intcar x)))
@@ -239,17 +242,15 @@
 (def-fgl-primitive int-endp (x)
   (fgl-object-case x
     :g-concrete (mv t (or (not (integerp x.val))
-                          (int-endp x.val))
-                    interp-st)
+                          (int-endp x.val)))
     :g-integer (mv (atom (cdr x.bits))
-                   (atom (cdr x.bits))
-                   interp-st)
-    :g-boolean (mv t t interp-st)
-    :g-cons (mv t t interp-st)
+                   (atom (cdr x.bits)))
+    :g-boolean (mv t t)
+    :g-cons (mv t t)
     :g-map (mv t (or (not (integerp x.alist))
-                     (int-endp x.alist))
-               interp-st)
-    :otherwise (mv nil nil interp-st)))
+                     (int-endp x.alist)))
+    :otherwise (mv nil nil))
+  :returns (mv successp ans))
 
 (def-fgl-rewrite int-endp-of-ifix
   (equal (int-endp (ifix x)) (int-endp x)))
@@ -269,16 +270,15 @@
   (fgl-object-case x
     :g-concrete (mv t (if (integerp x.val)
                           (intcdr x.val)
-                        0)
-                    interp-st)
-    :g-integer (mv t (mk-g-integer (scdr x.bits)) interp-st)
-    :g-boolean (mv t 0 interp-st)
-    :g-cons (mv t 0 interp-st)
+                        0))
+    :g-integer (mv t (mk-g-integer (scdr x.bits)))
+    :g-boolean (mv t 0)
+    :g-cons (mv t 0)
     :g-map (mv t (if (integerp x.alist)
                      (intcdr x.alist)
-                   0)
-               interp-st)
-    :otherwise (mv nil nil interp-st)))
+                   0))
+    :otherwise (mv nil nil))
+  :returns (mv successp ans))
 
 (def-fgl-rewrite intcdr-of-ifix
   (equal (intcdr (ifix x)) (intcdr x)))
@@ -298,16 +298,16 @@
     :g-cons (mv t t interp-st)
     :g-map (mv t (bool-fix x.alist) interp-st)
     :otherwise (mv nil nil interp-st))
+  :returns (mv successp ans interp-st)
   :formula-check primitives-formula-checks)
 
 (def-fgl-primitive cons (car cdr)
-  (mv t
-      (if (and (fgl-object-case car :g-concrete)
-               (fgl-object-case cdr :g-concrete))
-          (g-concrete (cons (g-concrete->val car)
-                            (g-concrete->val cdr)))
-        (g-cons car cdr))
-      interp-st))
+  (if (and (fgl-object-case car :g-concrete)
+           (fgl-object-case cdr :g-concrete))
+      (g-concrete (cons (g-concrete->val car)
+                        (g-concrete->val cdr)))
+    (g-cons car cdr))
+  :returns ans)
 
 (set-ignore-ok t)
 
@@ -319,7 +319,8 @@
     :g-boolean (mv t nil interp-st)
     :g-cons (mv t t interp-st)
     :g-map (mv t (consp x.alist) interp-st)
-    :otherwise (mv nil nil interp-st)))
+    :otherwise (mv nil nil interp-st))
+  :returns (mv successp ans interp-st))
 
 (enable-split-ifs atom)
 (def-fgl-primitive atom (x)
@@ -330,6 +331,7 @@
     :g-cons (mv t nil interp-st)
     :g-map (mv t (atom x.alist) interp-st)
     :otherwise (mv nil nil interp-st))
+  :returns (mv successp ans interp-st)
   :formula-check primitives-formula-checks)
 
 (local (defthm consp-car-when-fgl-object-alist-p
@@ -357,7 +359,8 @@
                       (g-cons (g-concrete (caar x.alist))
                               (cdar x.alist)))
                interp-st)
-    :otherwise (mv nil nil interp-st)))
+    :otherwise (mv nil nil interp-st))
+  :returns (mv successp ans interp-st))
 
 (enable-split-ifs cdr)
 (def-fgl-primitive cdr (x)
@@ -371,7 +374,8 @@
     :g-map (mv t (and (consp x.alist)
                       (g-map '(:g-map) (cdr x.alist)))
                interp-st)
-    :otherwise (mv nil nil interp-st)))
+    :otherwise (mv nil nil interp-st))
+  :returns (mv successp ans interp-st))
 
 
 (encapsulate nil
@@ -397,10 +401,11 @@
 
   (def-fgl-primitive if! (x y z)
     (b* (((mv ok x-fix) (gobj-syntactic-boolean-fix x))
-         ((unless ok) (mv t (g-ite x y z) interp-st))
+         ((unless ok) (g-ite x y z))
          ((when (fgl-object-case x-fix :g-concrete))
-          (mv t (if (g-concrete->val x-fix) y z) interp-st)))
-      (mv t (g-ite x-fix y z) interp-st))
+          (if (g-concrete->val x-fix) y z)))
+      (g-ite x-fix y z))
+    :returns ans
     :formula-check primitives-formula-checks))
 
 
@@ -555,6 +560,7 @@
        (n (nfix (g-concrete->val n)))
        ((mv ok ans) (fgl-object-mv-nth n x)))
     (mv ok ans interp-st))
+  :returns (mv successp ans interp-st)
   :formula-check primitives-formula-checks)
     
        

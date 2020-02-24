@@ -751,7 +751,7 @@
         (b* ((interp-st (interp-st-set-error :unreachable interp-st)))
           (mv t nil interp-st state))))
     (mv t nil interp-st state))
-  :updates-state t
+  :returns (mv successp ans interp-st state)
   :formula-check global-trans-formula-checks)
 
 

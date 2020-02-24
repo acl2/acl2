@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -111,6 +111,7 @@
                                :hyp (pseudo-term-listp actuals)))
      :parents (remove-trivial-vars)
      (b* (((when (endp formals)) (mv nil nil))
+          ((unless (mbt (consp actuals))) (mv nil nil))
           (formal (car formals))
           (actual (car actuals))
           ((when (eq formal actual))
@@ -129,7 +130,6 @@
       (new-formals true-listp :rule-classes :type-prescription))
 
      (defret remove-trivial-vars-termination-lemma
-       :hyp (equal (len formals) (len actuals))
        (<= (acl2-count new-actuals)
            (acl2-count actuals))
        :rule-classes :linear))))

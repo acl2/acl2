@@ -16,8 +16,8 @@
 ;; This book contains various utilities relating to conjunctions
 ;; (represented as ANDs or IF nests).
 
-(include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/utilities/make-and" :dir :system)
+(include-book "forms")
+(include-book "make-and")
 
 ;fixme see the built-in function conjoin! that one handles t's and nil's better..
 (defun make-conjunction-from-list (lst)

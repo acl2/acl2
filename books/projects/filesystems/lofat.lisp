@@ -13,7 +13,7 @@
 (local
  (in-theory (disable take-of-too-many make-list-ac-removal
                      revappend-removal str::hex-digit-listp-of-cons
-                     loghead logtail)))
+                     loghead logtail nth-when->=-n-len-l)))
 
 (local
  (in-theory (disable nth update-nth ceiling floor mod true-listp take member-equal)))
@@ -2402,7 +2402,8 @@ Some (rather awful) testing forms are
   (("goal"
     :in-theory
     (e/d
-     (useful-dir-ent-list-p dir-ent-filename len-when-dir-ent-p)
+     (useful-dir-ent-list-p dir-ent-filename len-when-dir-ent-p
+                            nth-when->=-n-len-l)
      ((:rewrite dir-ent-filename-of-dir-ent-set-filename)
       (:rewrite string=>nats-of-nats=>string)
       (:rewrite nth-update-nth)))
@@ -15656,7 +15657,8 @@ Some (rather awful) testing forms are
                           (dir-ent-clusterchain fat32-in-memory dir-ent)))))
   :hints
   (("goal"
-    :in-theory (disable non-free-index-listp-correctness-2)
+    :in-theory (e/d (nth-when->=-n-len-l)
+                    (non-free-index-listp-correctness-2))
     :use
     (:instance non-free-index-listp-correctness-2
                (fa-table (effective-fat fat32-in-memory))

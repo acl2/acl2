@@ -1,4 +1,4 @@
-;; Copyright (C) 2015, University of British Columbia
+; Copyright (C) 2015, University of British Columbia
 ;; Written by Yan Peng (August 2nd 2016)
 ;;
 ;; License: A 3-clause BSD license.
@@ -725,6 +725,7 @@
     '((:functions . function-lst-syntax-p)
       (:hypotheses . hypothesis-lst-syntax-p)
       (:main-hint . hints-syntax-p)
+      (:abstract . symbol-listp)
       (:fty . symbol-listp)
       (:int-to-rat . booleanp)
       (:smt-fname . stringp)
@@ -1291,6 +1292,15 @@
          (new-hint (change-smtlink-hint hint :main-hint content)))
       new-hint))
 
+  (define set-abstract-types ((content symbol-listp)
+                              (hint smtlink-hint-p))
+    :parents (process-smtlink-hints)
+    :returns (new-hint smtlink-hint-p)
+    :short "set fty types"
+    (b* ((hint (smtlink-hint-fix hint))
+         (new-hint (change-smtlink-hint hint :abs content)))
+      new-hint))
+
   (define set-fty-types ((content symbol-listp)
                          (hint smtlink-hint-p))
     :parents (process-smtlink-hints)
@@ -1393,6 +1403,7 @@
                                                      :fast-functions fast-funcs))))
                      (:hypotheses (merge-hypothesis second hint))
                      (:main-hint (merge-main-hint second hint))
+                     (:abstract (set-abstract-types second hint))
                      (:fty (set-fty-types second hint))
                      (:int-to-rat (set-int-to-rat second hint))
                      (:smt-fname (set-fname second hint))
@@ -1412,7 +1423,6 @@
     syntax error in the hints: ~q0Therefore proceed without Smtlink...~%" user-hint)
                   (list cl)))
          (combined-hint (combine-hints user-hint (smt-hint)))
-         ;; (- (cw "combined-hint: ~q0" combined-hint))
          (next-cp (cdr (assoc-equal 'process-hint *SMT-architecture*)))
          ((if (null next-cp)) (list cl))
          (cp-hint `(:clause-processor (,next-cp clause ',combined-hint)))
@@ -1466,15 +1476,15 @@
     (b* (((unless (and (true-listp val)
                        (car val) (cadr val)))
           val)
-         ((list name type) val)
+         ((list* name type rest) val)
          (to-be-trans `(,type ,name))
          ((mv err term)
           (acl2::translate-cmp to-be-trans t t nil 'Smtlink-process-user-hint->trans-hypothesis
                                (w state) (acl2::default-state-vars t)))
          ((when err)
           (er hard? 'Smtlink-process-user-hint->trans-argument "Error ~
-    translating form: ~@0" to-be-trans)))
-      `(,name ,(car term))))
+    translating form: ~q0" to-be-trans)))
+      `(,name ,(car term) ,@rest)))
 
   (define trans-formals ((val t) (state))
     :parents (translate-cmp-smtlink)

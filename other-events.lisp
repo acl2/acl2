@@ -13287,18 +13287,14 @@
                                                       'include-book ctx state
                                                       suspect-book-action-alist
                                                       t)))))
-                     (cert-data
+                     (cert-data-prelim
                       (value
-
-; This should override the superior value of cert-data, even if the book is
-; uncertified.  The process-embedded-events call below will guarantee this.
-
                        (if cert-obj ; hence not behalf-of-certify-flg
                            (access cert-obj cert-obj
                                    :cert-data)
                          (cdr expansion-alist/cert-data)))))
              (fast-alist-free-cert-data-on-exit
-              cert-data
+              cert-data-prelim
               (er-let*
                   ((redef (chk-new-stringp-name 'include-book full-book-name
                                                 ctx wrld1 state))
@@ -13357,7 +13353,7 @@
                                                :cmds)
                                        (access cert-obj cert-obj
                                                :expansion-alist)
-                                       cert-data ; from cert-obj
+                                       cert-data-prelim
                                        ev-lst
                                        state)
                           (value nil)))
@@ -13418,6 +13414,10 @@
                          (t (value t)))))
                     (let* ((certified-p
                             (and cert-obj no-errp-1 no-errp-2))
+                           (cert-data
+                            (and (or certified-p
+                                     behalf-of-certify-flg)
+                                 cert-data-prelim))
                            (expansion-alist
                             (cond (behalf-of-certify-flg
                                    (car expansion-alist/cert-data))

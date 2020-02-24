@@ -419,10 +419,9 @@
                            (jblock-locvar *aij-type-term*
                                           jvar-body
                                           body-expr)))
-       (def-block (jblock-imethod (jexpr-name jvar-function)
-                                  "define"
-                                  (list (jexpr-name jvar-formals)
-                                        (jexpr-name jvar-body))))
+       (def-block (jblock-method (str::cat jvar-function ".define")
+                                 (list (jexpr-name jvar-formals)
+                                       (jexpr-name jvar-body))))
        (method-body (append fn-block
                             formals-block
                             body-block

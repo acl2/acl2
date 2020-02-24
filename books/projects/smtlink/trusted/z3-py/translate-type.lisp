@@ -310,3 +310,19 @@
     :returns (translated paragraphp)
     (translate-fty-types-recur fty-types int-to-rat))
   )
+
+(defsection SMT-translate-abstract-sort
+  :parents (z3-py)
+  :short "Translating abstract sorts."
+
+  (define translate-abstract-types ((abs symbol-listp))
+    :returns (translated paragraphp)
+    :measure (len (symbol-list-fix abs))
+    (b* ((abs (symbol-list-fix abs))
+         ((unless (consp abs)) nil)
+         ((cons abs-hd abs-tl) abs)
+         (name (translate-symbol abs-hd))
+         (first-abs
+          `(,name " = z3.DeclareSort('", name "')" #\Newline)))
+      `(,first-abs ,@(translate-abstract-types abs-tl))))
+  )
