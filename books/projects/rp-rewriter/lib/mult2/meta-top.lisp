@@ -38,10 +38,10 @@
 
 (include-book "fnc-defs")
 
-(include-book "meta-fncs")
+(include-book "summation-tree-meta-fncs")
 
 (local
- (include-book "meta-fnc-eval-correct"))
+ (include-book "summation-tree-meta-fncs-correct"))
 
 (include-book "equal-meta")
 

@@ -50,7 +50,7 @@
 (local
  (include-book "lemmas"))
 
-(include-book "meta-fncs")
+(include-book "summation-tree-meta-fncs")
 
 (include-book "pp-flatten-meta-correct")
 

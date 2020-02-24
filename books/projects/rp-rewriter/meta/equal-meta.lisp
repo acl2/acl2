@@ -56,53 +56,6 @@
 (local
  (include-book "../proofs/rp-equal-lemmas"))
 
-#|(defun rp-equal-iter1 (x y)
-  ;; returns (mv order equal-x-y)
-  (declare (xargs :guard t
-                  :measure (+ (cons-count x) (cons-count y))))
-  (let ((x (ex-from-rp-loose x))
-        (y (ex-from-rp-loose y)))
-    (cond ((or (atom x)
-               (atom y)
-               (quotep x)
-               (quotep y))
-           (equal x y))
-          ((rp-equal-iter1 (car x) (car y))
-           (rp-equal-iter1 (cdr x) (cdr y)))
-          (t nil))))||#
-#|
-(define rp-eq (term1 term2)
-  (rp-equal-cnt term1 term2 0))
-
-(mutual-recursion
- (defun
-   rp-equal4 (term1 term2)
-   (declare (xargs :mode :logic
-                   :verify-guards t
-                   :guard t))
-   "check syntactic equivalance of two terms by ignoring all the rp terms"
-   (let* ((term1 (ex-from-rp-loose term1))
-          (term2 (ex-from-rp-loose term2)))
-         (cond ((or (atom term1)
-                    (atom term2)
-                    (acl2::fquotep term1)
-                    ;(acl2::fquotep term2)
-                    )
-                (equal term1 term2))
-               ((eq (car term1) 'pp+)
-                (rp-eq term1 term2))
-               (t (and (eq (car term1) (car term2))
-                       (rp-equal4-subterms (cdr term1)
-                                          (cdr term2)))))))
- (defun rp-equal4-subterms (subterm1 subterm2)
-   (declare (xargs :mode :logic
-                   :guard t))
-   (if (or (atom subterm1) (atom subterm2))
-       (equal subterm1 subterm2)
-       (and (rp-equal4 (car subterm1) (car subterm2))
-            (rp-equal4-subterms (cdr subterm1)
-                               (cdr subterm2))))))||#
-
 (defund rp-equal-meta (term)
   (declare (xargs :guard t))
   (case-match term

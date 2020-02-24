@@ -36,7 +36,7 @@
 
 (in-package "RP")
 
-(include-book "meta-fncs")
+(include-book "summation-tree-meta-fncs")
 
 (local
  (include-book "lemmas"))

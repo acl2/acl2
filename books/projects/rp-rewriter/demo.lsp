@@ -40,140 +40,72 @@
 (include-book "misc/eval" :dir :system)
 
 (encapsulate
-  nil
-  (local
-   (include-book "arithmetic-5/top" :dir :system))
+  (((d2 *) => *) ((f2 *) => *) ((neg-m2 *) => *))
+  (local (include-book "arithmetic-5/top" :dir :system))
 
-  (encapsulate
-    nil
-    ;; my+ is the same as + but with fewer rules
-    ;; Define my+ and basic rules:
-    (defun my-binary-+ (a b)
-      (binary-+ a b))
+  (local (defun d2 (x) (/ x 2)))
+  (local (defun f2 (x) (floor x 2)))
+  (local (defun neg-m2 (x) (- (mod x 2))))
 
-    (defmacro my+ (&rest rest)
-      (if rest
-          (if (cdr rest)
-              (xxxjoin 'my-binary-+ rest)
-            (cons 'my-binary-+
-                  (cons 0 (cons (car rest) nil))))
-        0))
+  ;; syntaxp is necessary because rp-rewriter does not support "loop stoppers."
+  (def-rp-rule +-comm
+    (implies (syntaxp (and (not (lexorder y x))
+                           (or (atom x)
+                               (not (equal (car x) 'binary-+)))))
+             (and (equal (+ y x) (+ x y))
+                  (equal (+ y x z) (+ x y z)))))
 
-    (add-macro-fn my+ my-binary-+ t)
-
-    ;; syntaxp is necessary because rp-rewriter does not support "loop stoppers."
-    (defthm my+-comm-1
-      (implies (syntaxp (not (lexorder y x)))
-               (equal (my+ y x)
-                      (my+ x y))))
-
-    (defthm my+-comm-2
-      (implies (syntaxp (not (lexorder y x)))
-               (equal (my+ y (my+ x z))
-                      (my+ x (my+ y z)))))
-
-    (defthm my+-reorder
-      (equal (my+ (my+ a b) c)
-             (my+ a b c))))
+  (def-rp-rule my+-assoc
+    (equal (+ (+ a b) c) (+ a b c)))
 
   (progn
-    (defun /2 (x)
-      (/ x 2))
+    ;; a lemma for rp-rewriter to maintain even-ness
+    (def-rp-rule my+-assoc-for-evens
+      (implies (and (evenp (+ a b)) (evenp c))
+               (equal (+ (+ a b) c) (+ a b c))))
 
-    (defun floor-2 (x)
-      (floor x 2))
+    (defthmd my+-assoc-for-evens-side-cond
+      (implies (and (evenp (+ a b)) (evenp c))
+               (evenp (+ a b c))))
 
-    (defun --mod-2 (x)
-      (- (mod x 2))))
+    (rp-attach-sc my+-assoc-for-evens
+                  my+-assoc-for-evens-side-cond))
 
-  (defthm /2-is-floor-2-when-even
+  (def-rp-rule d2-is-f-2-when-even
     (implies (evenp x)
-             (equal (/2 x)
-                    (floor-2 x))))
-
-  (local
-   (defthm sum-of-two-evens-is-even
-     (implies (and (evenp a)
-                   (evenp b))
-              (evenp (my+ a b)))))
+             (equal (d2 x) (f2 x))))
 
   ;; a function that rounds down a number to an even value
   ;; e.g., (round-to-even 93/10) = 8
-  (defun round-to-even (a)
-    (my+ a (--mod-2 a)))
+  (progn
+    (defun round-to-even (a)
+      (+ a (neg-m2 a)))
 
-  (defthmd round-to-even-is-even
-    (evenp (my+ a (--mod-2 a))))
+    ;; add definition rule to rp-rewriter's rule-set
+    (add-rp-rule round-to-even)
 
-  (rp-attach-sc round-to-even
-                round-to-even-is-even)
+    ;; rhs of the definition rule
+    (defthmd round-to-even-is-even
+      (evenp (+ a (neg-m2 a))))
 
-  ;; a lemma for rp-rewriter to maintain even-ness
-  (defthm my+-reorder-for-evens
-    (implies (and (evenp (my+ a b))
-                  (evenp c))
-             (equal (my+ (my+ a b) c)
-                    (my+ a b c))))
-
-  (defthmd my+-reorder-for-evens-side-cond
-    (implies (and (evenp (my+ a b))
-                  (evenp c))
-             (evenp (my+ a b c))))
-
-  (rp-attach-sc my+-reorder-for-evens
-                my+-reorder-for-evens-side-cond))
-
-;; enabling only the useful functions gives a speed up.
-;; (in-theory '((:REWRITE /2-IS-FLOOR-2-WHEN-EVEN)
-;;              (:REWRITE MY+-COMM-1)
-;;              (:REWRITE MY+-COMM-2)
-;;              (:REWRITE MY+-REORDER-FOR-EVENS)
-;;              (:definition round-to-even)))
+    (rp-attach-sc round-to-even
+                  round-to-even-is-even)))
 
 ;; This should fail
 ;; could be proven with more lemmas
 ;; but not as flexible and as easy as below.
 (acl2::must-fail
- (defthm example3
-   (equal (/2 (my+ (round-to-even a)
-                   (round-to-even b)
-                   (round-to-even c)))
-          (floor-2 (my+ (--mod-2 a)
-                        (--mod-2 b)
-                        (--mod-2 c)
-                        a b c)))
-   :hints (("Goal"
-            :in-theory (e/d () ())))))
-
-
-;; we disable these functions because rp-rewriter is  too eager to open
-;; definitions.
-(in-theory (disable --mod-2
-                    my-binary-+
-                    floor
-                    mod
-                    evenp
-                    floor-2
-                    /2))
+ (defthm three-round-to-evens
+   (equal (d2 (+ (round-to-even a) (round-to-even b) (round-to-even c)))
+          (f2 (+ (neg-m2 a) (neg-m2 b) (neg-m2 c) a b c)))))
 
 (acl2::must-succeed
- (defthmrp example3-l1
-   (equal (/2 (my+ (round-to-even a)
-                   (round-to-even b)
-                   (round-to-even c)))
-          (floor-2 (my+ (--mod-2 a)
-                        (--mod-2 b)
-                        (--mod-2 c)
-                        a b c)))))
+ (defthmrp three-round-to-evens-2 ;; use rp-rewriter as a clause-processor
+   (equal (d2 (+ (round-to-even a) (round-to-even b) (round-to-even c)))
+          (f2 (+ (neg-m2 a) (neg-m2 b) (neg-m2 c) a b c)))))
 
 (acl2::must-succeed
- (defthmrp example3-l2
-   (equal (/2 (my+ (round-to-even a)
-                   (round-to-even b)
-                   (round-to-even c)
-                   (round-to-even d)))
-          (floor-2 (my+ (--mod-2 a)
-                        (--mod-2 b)
-                        (--mod-2 c)
-                        (--mod-2 d)
-                        a b c d)))))
+ (defthmrp four-round-to-evens ;; use rp-rewriter as a clause-processor
+   (equal (d2 (+ (round-to-even a) (round-to-even b)
+                 (round-to-even c) (round-to-even d)))
+          (f2 (+ (neg-m2 a) (neg-m2 b) (neg-m2 c) (neg-m2 d) a b c d)))))

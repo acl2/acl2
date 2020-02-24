@@ -287,6 +287,19 @@
   ;; (table rp-rw 'eval-and-all-fnc 'eval-and-all)
   )
 
+(xdoc::defxdoc
+ valid-sc
+ :parents (rp-utilities)
+ :short "A function that checks the side-conditions in a term is correct"
+ :long "<p> (valid-sc term a) traverses the term and evaluates the
+ side-conditions. Whenever it encounters a term of the form (rp ''prop x), it
+ calls (rp-evlt `(prop ,x) a). Whenever it encounters a term of the form (if
+ test then else), it recursively calls valid-sc for the test; and 'then' and
+ 'else' cases under the context of (rp-evlt test a)</p>
+<p> For every step that RP-Rewriter takes, we prove that valid-sc on terms are
+ maintained. Therefore, users have to prove that meta-rules also retains this invariance.</p>")
+
+
 (encapsulate
   nil
   (local

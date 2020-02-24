@@ -65,7 +65,6 @@
        (rp-state (update-rule-frame-cnts nil rp-state)))
     rp-state))
 
-
 (progn
   (defun rule-result-comperator (x y)
     (declare (xargs :mode :logic))
@@ -74,11 +73,38 @@
 
   (defwarrant rule-result-comperator))
 
-
 (defmacro set-rw-step-limit (new-rw-limit)
   `(make-event
     (b* ((rp-state (rp::update-rw-step-limit ,new-rw-limit rp-state)))
       (mv nil `(value-triple `(rw-step-limit ,',,new-rw-limit)) state rp-state))))
+
+
+(xdoc::defxdoc
+ set-rw-step-limit
+ :parents (rp-utilities)
+ :short "Number of steps RP-Rewriter can take when rewriting a conjecture."
+ :long "<p> Similar to the built-in rewriter (see @(see REWRITE-STACK-LIMIT)),
+ RP-Rewriter has a rewrite step limit. This can be changed with
+ <code> @('(set-rw-step-limit <number>)') </code>
+which submits an event.
+</p>")
+
+
+(xdoc::defxdoc
+ show-rules
+ :parents (rp-rewriter/debugging rp-utilities)
+ :short "Sets whether or not RP-Rewriter should print used rules when rewriting
+ a conjecture."
+ :long
+ "<p>(show-rules @('<nil-OR-t-OR-:cnt>')) submits an event that changes
+ RP-Rewriter's behaviour on saving and printing used rules. For best
+ performance, it is set to nil by default. When set to t, it prints rule in a
+ fashion similar to the built-in rewriter but only differently for
+ meta-rules. When set to :cnt, it also attaches a number to each rune showing
+ how many times they are used, and how many times they failed due to unrelieved
+ hypotheses. These entries are saved in rules-used field of stobj rp::rp-state. </p>"
+ )
+
 
 (encapsulate
   nil
@@ -192,10 +218,10 @@
                         (alist (if (true-listp alist) alist nil)))
                      alist)
                    'rule-result-comperator)
-                  #|(acl2::merge-sort-lexorder
-                   (b* ((alist (fast-alist-clean alist))
-                        (alist (if (true-listp alist) alist nil)))
-                     alist))||#
+                #|(acl2::merge-sort-lexorder
+                (b* ((alist (fast-alist-clean alist))
+                (alist (if (true-listp alist) alist nil)))
+                alist))||#
                 (acl2::merge-sort-lexorder
                  (strip-cars alist)))))
       nil)))
@@ -431,6 +457,49 @@
     (declare (xargs :stobjs (rp-state state)
                     :mode :program))
     :verify-guards nil
+    :short "Pretty printing of rewrite stack."
+    :parents (rp-rewriter/debugging)
+    :long "
+<p>
+Rewrite stack for RP-Rewriter can be enabled with
+(rp::update-rp-brr t rp::rp-state) or disabled with (rp::update-rp-brr t
+rp::rp-state).  Then users may print the stack with program-mode function
+pp-rw-stack. </p>
+
+<code>
+@('
+ (pp-rw-stack :frames <number>
+              :frames-offset <number>
+              :omit <list-of-names>
+              :only <list-of-names>
+              :evisc-tuple <quoted-evisc-tuple>
+              :untranslate <t-or-nil>)
+')
+</code>
+
+<p>
+frames: Number of rewriter steps to print. Default value is -1, that is all the
+frames.
+</p>
+<p>
+frames-offset: Number of frames to skip. Defualt value = 0.
+</p>
+<p>
+omit: List of runes or entries in a frame to omit. For example, it can have:
+(:rewrite some-rule), :context, a-meta-fnc-name etc.. Default value is nil.
+</p>
+<p>
+only: Similar to only, print only the given entries.
+</p>
+<p>
+evisc-tuple: See @(see evisc-tuple). Used in order to shorten long terms.
+Default value: '(NIL 3 4 NIL)
+</p>
+<p>
+untranslate: whether or not to untranslate the term. See @(see
+untranslate). Default value = t.
+</p>
+"
     (b* ((rw-stack (rw-stack rp-state))
          ((unless rw-stack)
           (progn$
@@ -440,7 +509,6 @@
          (rw-stack (if (natp frames) (take$ frames rw-stack) rw-stack)))
       (pp-rw-stack-aux rw-stack omit only evisc-tuple untranslate search-source state))))
 
-
 (defmacro show-rule-frames ()
   `(merge-comperator-sort (fast-alist-clean (rule-frame-cnts rp-state))
                           'rule-result-comperator))
@@ -449,5 +517,10 @@
   (declare (xargs :stobjs (rp-state)))
   (update-rw-stack-size (1+ (rw-stack-size rp-state)) rp-state))
 
-
 (in-theory (disable rp-statep))
+
+(xdoc::defxdoc
+ rp-rewriter/debugging
+ :parents (rp-rewriter)
+ :short "Tools that may be used while debugging RP-Rewriter.")
+
