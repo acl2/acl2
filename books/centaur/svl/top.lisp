@@ -63,7 +63,7 @@
  circuits but it fails in case of combinational loops. 
 </p>
 
-You need @(see VL) and @(see SV) designs to create SVL designs. You can use
+<p> You need @(see VL) and @(see SV) designs to create SVL designs. You can use
 functions svl::svl-flatten-design to create SVL design, and svl::svl-run to run
 the generated design.</p>
 "
