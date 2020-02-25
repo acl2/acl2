@@ -450,7 +450,7 @@ RP-Rewriter will throw an eligible error.</p>"
 
 (xdoc::defxdoc
  def-rp-thm
- :short "Same as @(see rp::defthrmp)")
+ :short "Same as @(see rp::defthmrp)")
 
 (xdoc::defxdoc
  defthmrp
