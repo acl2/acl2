@@ -38,7 +38,7 @@
 
 (in-package "RP")
 
-(include-book "svl-top")
+(include-book "centaur/svl/top" :dir :system)
 
 (xdoc::defxdoc
  multiplier-proofs-2
@@ -62,14 +62,14 @@ for multiplier proofs:
 </p>
 
 <p>
-2. Include the books to convert Verilog designs to @(see SVL) format.
+2. Include the books to convert Verilog designs to SVL format.
 <code>
 (include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
 (include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
 (include-book \"oslib/ls\" :dir :system)
 (include-book \"centaur/svl/top\" :dir :system)
 </code>
-SVL system uses @(see SV) and @(see VL) packages.
+SVL system uses @(see acl2::SV) and @(see acl2::VL) packages.
 </p>
 <p>
 3. Load VL design for the modules in DT_SB4_HC_64_64_multgen.sv. This file is
