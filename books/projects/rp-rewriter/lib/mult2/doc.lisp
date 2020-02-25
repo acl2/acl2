@@ -62,7 +62,7 @@ for multiplier proofs:
 </p>
 
 <p>
-2. Include the books to convert Verilog designs to @(see acl2::SVL) format.
+2. Include the books to convert Verilog designs to SVL format.
 <code>
 (include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
 (include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
