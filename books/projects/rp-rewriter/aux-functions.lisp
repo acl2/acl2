@@ -369,30 +369,32 @@
                       is-lambda-strict
                       is-rp-soft)))
 
-  (acl2::defines rp-termp
-                 (define rp-termp (term)
-                   ;; same as pseudo-termp but does not allow nil as a symbol
-                   :enabled t
-                   :short "Similarly to pseudo-termp, defines the syntax for terms. "
-                   (cond ((atom term) (and (symbolp term) term))
-                         ((eq (car term) 'quote)
-                          (and (consp (cdr term))
-                               (null (cdr (cdr term)))))
-                         ((eq (car term) 'rp)
-                          (and (is-rp term)
-                               (rp-termp (caddr term))))
-                         ((eq (car term) 'falist)
-                          (and (falist-consistent term)
-                               (rp-termp (caddr term))))
-                         (t (and (symbolp (car term))
-                                 (car term)
-                                 (rp-term-listp (cdr term))))))
+  (acl2::defines
+   rp-termp
+   (define rp-termp (term)
+     ;; same as pseudo-termp but does not allow nil as a symbol
+     :enabled t
+     :parents (rp-utilities)
+     :short "Similarly to pseudo-termp, defines the syntax for terms. "
+     (cond ((atom term) (and (symbolp term) term))
+           ((eq (car term) 'quote)
+            (and (consp (cdr term))
+                 (null (cdr (cdr term)))))
+           ((eq (car term) 'rp)
+            (and (is-rp term)
+                 (rp-termp (caddr term))))
+           ((eq (car term) 'falist)
+            (and (falist-consistent term)
+                 (rp-termp (caddr term))))
+           (t (and (symbolp (car term))
+                   (car term)
+                   (rp-term-listp (cdr term))))))
 
-                 (define rp-term-listp (lst)
-                   :enabled t
-                   (cond ((atom lst) (eq lst nil))
-                         (t (and (rp-termp (car lst))
-                                 (rp-term-listp (cdr lst)))))))
+   (define rp-term-listp (lst)
+     :enabled t
+     (cond ((atom lst) (eq lst nil))
+           (t (and (rp-termp (car lst))
+                   (rp-term-listp (cdr lst)))))))
 
   (defun rp-term-list-listp (lst)
     (declare (xargs :guard t))

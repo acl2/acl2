@@ -38,7 +38,7 @@
 
 (in-package "RP")
 
-(include-book "svl-top")
+(include-book "centaur/svl/top" :dir :system)
 
 (xdoc::defxdoc
  multiplier-proofs-2

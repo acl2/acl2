@@ -262,7 +262,7 @@
  priority. </p>
  
 <code>
-(def-rw-opener-error 
+@('(def-rw-opener-error 
   <name> ;; a unique name for the opener error rule
   <pattern> ;; a pattern to match/unify
   ;;optional keys
@@ -273,7 +273,7 @@
                               ;; disabled.
   :message \"...\"            ;; A user defined message if user wants to
                               ;; override the original.
-  )
+  )')
 </code>
 
 <p> A def-rw-opener-error event will submit a disabled rewrite rule with
