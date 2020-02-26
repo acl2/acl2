@@ -10,11 +10,12 @@
 
 (in-package "APT")
 
-(include-book "print-specifiers")
-(include-book "untranslate-specifiers")
-(include-book "transformation-table")
+(include-book "input-processing")
 (include-book "pattern-matching")
 (include-book "pattern-matching-ext")
+(include-book "print-specifiers")
+(include-book "transformation-table")
+(include-book "untranslate-specifiers")
 (include-book "xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
