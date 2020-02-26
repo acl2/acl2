@@ -35,7 +35,6 @@
 (include-book "std/lists/rev" :dir :system)
 (include-book "std/lists/append" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (in-theory (disable floor mod truncate)))
 
@@ -869,7 +868,4 @@ non-decimal digit characters or is empty, we return @('nil').</p>"
               (eql len xl)
               val)))
   ///
-  (defcong istreqv equal (strval x) 1)
-  (local (assert! (equal (strval "") nil)))
-  (local (assert! (equal (strval "0") 0)))
-  (local (assert! (equal (strval "1234") 1234))))
+  (defcong istreqv equal (strval x) 1))

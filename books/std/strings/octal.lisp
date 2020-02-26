@@ -34,7 +34,6 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 (local (defthm unsigned-byte-p-8-of-char-code
@@ -191,14 +190,6 @@ FX-8350.</p>
   :prepwork
   ((local (in-theory (enable octal-digitp char-fix))))
   ///
-  (local (assert! (and (equal (octal-digit-val #\0) #x0)
-                       (equal (octal-digit-val #\1) #x1)
-                       (equal (octal-digit-val #\2) #x2)
-                       (equal (octal-digit-val #\3) #x3)
-                       (equal (octal-digit-val #\4) #x4)
-                       (equal (octal-digit-val #\5) #x5)
-                       (equal (octal-digit-val #\6) #x6)
-                       (equal (octal-digit-val #\7) #x7))))
   (defcong ichareqv equal (octal-digit-val x) 1
     :hints(("Goal" :in-theory (enable ichareqv downcase-char))))
   (defthm octal-digit-val-upper-bound
@@ -290,11 +281,7 @@ FX-8350.</p>
   (defthm octal-digit-list-value-of-append
     (equal (octal-digit-list-value (append x (list a)))
            (+ (ash (octal-digit-list-value x) 3)
-              (octal-digit-val a))))
-  (local (assert! (and (equal (octal-digit-list-value (coerce "0" 'list)) #o0)
-                       (equal (octal-digit-list-value (coerce "6" 'list)) #o6)
-                       (equal (octal-digit-list-value (coerce "12" 'list)) #o12)
-                       (equal (octal-digit-list-value (coerce "1234" 'list)) #o1234)))))
+              (octal-digit-val a)))))
 
 (define skip-leading-octal-digits (x)
   :short "Skip over any leading octal digit characters at the start of a character list."
@@ -850,7 +837,4 @@ or has any non octal digit characters (0-7), we return @('nil').</p>"
               (eql len xl)
               val)))
   ///
-  (defcong istreqv equal (strval8 x) 1)
-  (local (assert! (equal (strval8 "") nil)))
-  (local (assert! (equal (strval8 "0") 0)))
-  (local (assert! (equal (strval8 "1234") #o1234))))
+  (defcong istreqv equal (strval8 x) 1))

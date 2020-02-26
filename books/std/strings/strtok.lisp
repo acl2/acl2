@@ -32,7 +32,6 @@
 (include-book "cat")
 (include-book "eqv")
 (include-book "misc/definline" :dir :system)  ;; bozo
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "std/lists/revappend" :dir :system))
 
@@ -129,13 +128,4 @@ strings are ever found in @('strtok')'s output.</p>"
   (defthm string-listp-of-strtok
     (string-listp (strtok x delimiters)))
 
-  (defcong streqv equal (strtok x delimiters) 1)
-
-  (local
-   (acl2::assert!
-    (equal (strtok "foo bar
-baz,
- heyo,
-    beyo"
-                   (list #\Space #\, #\Newline))
-           (list "foo" "bar" "baz" "heyo" "beyo")))))
+  (defcong streqv equal (strtok x delimiters) 1))

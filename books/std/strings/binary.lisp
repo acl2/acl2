@@ -34,7 +34,6 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable unsigned-byte-p)))
 (local (in-theory (acl2::enable* acl2::arith-equiv-forwarding)))
@@ -245,12 +244,7 @@ tolerate non-bit digits after the number.</p>"
   (defthm bit-digit-list-value-of-append
     (equal (bit-digit-list-value (append x (list a)))
            (+ (ash (bit-digit-list-value x) 1)
-              (bit-digit-val a))))
-  (local
-   (assert! (and (equal (bit-digit-list-value (explode "0")) #b0)
-                 (equal (bit-digit-list-value (explode "1")) #b1)
-                 (equal (bit-digit-list-value (explode "01")) #b01)
-                 (equal (bit-digit-list-value (explode "0101011101")) #b0101011101)))))
+              (bit-digit-val a)))))
 
 (define skip-leading-bit-digits
   :short "Skip over any leading 0-1 characters at the start of a character list."
@@ -734,7 +728,4 @@ characters other than 0 or 1, or is empty, we return @('nil').</p>"
               (eql len xl)
               val)))
   ///
-  (defcong istreqv equal (strval2 x) 1)
-  (local (assert! (equal (strval2 "") nil)))
-  (local (assert! (equal (strval2 "0") 0)))
-  (local (assert! (equal (strval2 "0101") #b0101))))
+  (defcong istreqv equal (strval2 x) 1))
