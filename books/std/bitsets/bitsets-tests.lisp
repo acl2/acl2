@@ -28,15 +28,15 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-
-; Optimized version of bitset-members that requires a ttag.
-
 (in-package "BITSETS")
-(include-book "bignum-extract")
-(include-book "tools/include-raw" :dir :system)
-; (depends-on "bignum-extract-opt-raw.lsp")
+(include-book "bitsets")
+(include-book "std/testing/assert" :dir :system)
 
-(defttag bignum-extract)
-(include-raw "bignum-extract-opt-raw.lsp"
-             :host-readtable t)
-(defttag nil)
+(assert! (equal (bitset-union #b1 #b10 #b100) #b111))
+(assert! (equal (bitset-union #b1 #b10 #b1000 #ub1100_0001) #ub1100_1011))
+
+(assert! (equal (bitset-intersect #b111 #b110 #b100) #b100))
+(assert! (equal (bitset-intersect #ub1111_1111
+                                  #ub1010_1010
+                                  #ub1010_0000)
+                #ub1010_0000))
