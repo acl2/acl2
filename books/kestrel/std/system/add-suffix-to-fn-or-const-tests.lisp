@@ -25,3 +25,6 @@
 (assert-equal (add-suffix-to-fn-or-const 'std::*const* "MORE") 'std::*constmore*)
 
 (assert-equal (add-suffix-to-fn-or-const 'common-lisp::fn "MORE") 'acl2::fnmore)
+
+(assert-equal (add-suffix-to-fn-or-const 'common-lisp::*const* "MORE")
+              'acl2::*constmore*)

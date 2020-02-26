@@ -42,7 +42,11 @@
      ((and (not (= len 0))
            (eql (char s 0) #\*)
            (eql (char s (1- len)) #\*))
-      (intern-in-package-of-symbol
-       (concatenate 'string (subseq s 0 (1- len)) suffix "*")
-       name))
+      (if (equal (symbol-package-name name)
+                 *main-lisp-package-name*)
+          (intern (concatenate 'string (subseq s 0 (1- len)) suffix "*")
+                  "ACL2")
+        (intern-in-package-of-symbol
+         (concatenate 'string (subseq s 0 (1- len)) suffix "*")
+         name)))
      (t (add-suffix-to-fn name suffix)))))
