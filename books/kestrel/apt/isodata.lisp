@@ -10,7 +10,6 @@
 
 (in-package "APT")
 
-(include-book "kestrel/apt/utilities/transformation-table" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
@@ -22,10 +21,13 @@
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
-(include-book "utilities/untranslate-specifiers")
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
+
+(include-book "utilities/input-processing")
+(include-book "utilities/untranslate-specifiers")
+(include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -775,27 +777,6 @@
                  iso-hints
                  names-to-avoid))))
 
-(define isodata-process-new-name (new-name (old$ symbolp) ctx state)
-  :returns (mv erp
-               (new-name$ "A @(tsee symbolp) to use as
-                           the name of the new function.")
-               state)
-  :mode :program
-  :short "Process the @(':new-name') input."
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
-       (name (case new-name
-               (:auto (next-numbered-name old$ (w state)))
-               (t new-name)))
-       (description (msg "The name ~x0 of the new function, ~@1,"
-                         name
-                         (if (eq new-name :auto)
-                             "automatically generated ~
-                              since the :NEW-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil)))
-    (value name)))
-
 (define isodata-process-thm-name (thm-name
                                   (old$ symbolp)
                                   (new-name$ symbolp)
@@ -1004,7 +985,7 @@
   :short "Process all the inputs."
   (b* ((wrld (w state))
        ((er old$) (isodata-process-old old predicate verify-guards ctx state))
-       ((er new-name$) (isodata-process-new-name new-name old$ ctx state))
+       ((er new-name$) (process-input-new-name new-name old$ ctx state))
        ((er thm-name$) (isodata-process-thm-name
                         thm-name old$ new-name$ ctx state))
        ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$

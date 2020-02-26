@@ -19,8 +19,10 @@
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "utilities/transformation-table")
 (include-book "xdoc/defxdoc-plus" :dir :system)
+
+(include-book "utilities/input-processing")
+(include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,30 +593,6 @@
                                              description t nil))))
     (value fn/lambda)))
 
-(define tailrec-process-new-name (new-name
-                                  (old$ symbolp)
-                                  ctx
-                                  state)
-  :returns (mv erp
-               (new-name$ "A @(tsee symbolp)
-                           to use as the name for the new function.")
-               state)
-  :mode :program
-  :short "Process the @(':new-name') input."
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
-       (name (if (eq new-name :auto)
-                 (next-numbered-name old$ (w state))
-               new-name))
-       (description (msg "The name ~x0 of the new function, ~@1,"
-                         name
-                         (if (eq new-name :auto)
-                             "automatically generated ~
-                              since the :NEW-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil)))
-    (value name)))
-
 (define tailrec-process-wrapper-name (wrapper-name
                                       (wrapper-name-present booleanp)
                                       (new-name$ symbolp)
@@ -864,7 +842,7 @@
                         @('domain$') is
                         the result of @(tsee tailrec-process-domain),
                         @('new-name$') is
-                        the result of @(tsee tailrec-process-new-name),
+                        the result of @(tsee process-input-new-name),
                         @('new-enable$') indicates whether
                         the new function should be enabled or not,
                         @('wrapper-name$') is
@@ -921,8 +899,7 @@
        ((er domain$) (tailrec-process-domain
                       domain old$ combine q r variant verify-guards$
                       verbose ctx state))
-       ((er new-name$) (tailrec-process-new-name
-                        new-name old$ ctx state))
+       ((er new-name$) (process-input-new-name new-name old$ ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old state)

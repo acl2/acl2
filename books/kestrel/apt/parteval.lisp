@@ -21,9 +21,11 @@
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
+
+(include-book "utilities/input-processing")
 (include-book "utilities/transformation-table")
 (include-book "utilities/untranslate-specifiers")
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,30 +184,6 @@
        (static$ (pairlis$ y1...ym c1...cm$)))
     (value static$)))
 
-(define parteval-process-new-name (new-name
-                                   (old$ symbolp)
-                                   ctx
-                                   state)
-  :returns (mv erp
-               (new-name$ "A @(tsee symbolp)
-                           to use as the name for the new function.")
-               state)
-  :mode :program
-  :short "Process the @(':new-name') input."
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
-       (name (if (eq new-name :auto)
-                 (next-numbered-name old$ (w state))
-               new-name))
-       (description (msg "The name ~x0 of the new function, ~@1,"
-                         name
-                         (if (eq new-name :auto)
-                             "automatically generated ~
-                              since the :NEW-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil)))
-    (value name)))
-
 (define parteval-process-thm-name (thm-name
                                    (old$ symbolp)
                                    (new-name$ symbolp)
@@ -354,8 +332,7 @@
        ((er static$) (parteval-process-static
                       static old$ verify-guards$ ctx state))
        (case (parteval-case-of-old old$ static$ wrld))
-       ((er new-name$) (parteval-process-new-name
-                        new-name old$ ctx state))
+       ((er new-name$) (process-input-new-name new-name old$ ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old$ state)
