@@ -1,6 +1,6 @@
 ; System Utilities -- Fresh Names
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,29 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "std/util/define" :dir :system)
+(include-book "kestrel/std/system/add-suffix-to-fn-or-const" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Added by Matt K. and used below in fresh-name-in-world-with-$s:
-(define add-suffix-to-fn-or-const ((name (and (symbolp name)
-                                              (not (keywordp name))))
-                                   (suffix stringp))
-  (let* ((s (symbol-name name))
-         (len (length s)))
-    (cond
-
-; The following test is essentially from legal-variable-or-constant-namep.  We
-; could simply call legal-variable-or-constant-namep, but this is a bit more
-; efficient.
-
-     ((and (not (= len 0))
-           (eql (char s 0) #\*)
-           (eql (char s (1- len)) #\*))
-      (intern-in-package-of-symbol
-       (concatenate 'string (subseq s 0 (1- len)) suffix "*")
-       name))
-     (t (add-suffix-to-fn name suffix)))))
 
 (define fresh-name-in-world-with-$s ((name (and (symbolp name)
                                                 (not (keywordp name))))
