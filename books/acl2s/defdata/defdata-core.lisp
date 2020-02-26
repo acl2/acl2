@@ -157,13 +157,15 @@ Does not seem to be used.
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
 
+       ; Make sure D is not imported into your package; otherwise we
+       ; will generate symbols from the package of D
        (pkg (get1 :current-package kwd-alist))
-       (v (acl2s::fix-intern$ "V" pkg))
+       (d (acl2s::fix-intern$ "D" pkg))
 
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (xvar (if (member-eq v avoid-lst)
-                 v
-               (acl2::generate-variable v avoid-lst nil nil wrld)))
+       (xvar (if (member-eq d avoid-lst)
+                 d
+               (acl2::generate-variable d avoid-lst nil nil wrld)))
        (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld))
        (pred-decls (make-pred-declare-forms xvar kwd-alist))
        (pred-name (predicate-name name A M))
@@ -200,11 +202,11 @@ Does not seem to be used.
        (B (table-alist 'builtin-combinator-table wrld))
        (kwd-alist (append kwd-alist top-kwd-alist))
        (avoid-lst (append (forbidden-names) (strip-cars N)))
-       (v (acl2s::fix-intern$ "V" curr-pkg))
+       (d (acl2s::fix-intern$ "D" curr-pkg))
 
-       (xvar (if (member-eq v avoid-lst)
-                 v
-               (acl2::generate-variable v avoid-lst nil nil wrld)))
+       (xvar (if (member-eq d avoid-lst)
+                 d
+               (acl2::generate-variable d avoid-lst nil nil wrld)))
        (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld)))
     `((defthm ,(s+ name "P-TESTTHM" :pkg curr-pkg)
         (equal (,pred-name ,xvar)
@@ -921,12 +923,12 @@ Example use
       (theory-name (s+ (car tnames) "-THEORY" :pkg curr-pkg))
       (kwd-alist (put-assoc-eq :theory-name theory-name kwd-alist))
       (kwd-alist (put-assoc-eq :clique tnames kwd-alist))
+      (kwd-alist (put-assoc-eq :current-package curr-pkg kwd-alist))
       (preds (make-predicate-symbol-lst tnames curr-pkg))
       ;;these are not yet defined, so we choose the predicate naming convention
       (kwd-alist (put-assoc-eq :post-pred-events
                                `((acl2::def-ruleset! ,theory-name ',preds)) ;definitions
                                kwd-alist))
-      (kwd-alist (put-assoc-eq :current-package curr-pkg kwd-alist))
 
       ((unless (and (consp ds)
                      (true-listp ds)))
