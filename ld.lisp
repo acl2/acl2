@@ -933,7 +933,7 @@
              (evisc-alist (world-evisceration-alist state (car evisc-tuple)))
              (print-level (cadr evisc-tuple))
              (print-length (caddr evisc-tuple))
-	     (hiding-cars (cadddr evisc-tuple)))
+             (hiding-cars (cadddr evisc-tuple)))
         (mv-let
          (eviscerated-valx state)
          (eviscerate-stobjs-top (evisceration-stobj-marks stobjs-out nil)

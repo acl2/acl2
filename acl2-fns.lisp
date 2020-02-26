@@ -54,12 +54,12 @@
 (defparameter *find-package-cache* nil)
 (defun-one-output find-package-fast (string)
     (if (equal string (car *find-package-cache*))
-	(cdr *find-package-cache*)
+        (cdr *find-package-cache*)
       (let ((pair (assoc string *package-alist* :test 'equal)))
-	(cond (pair (setq *find-package-cache* pair) (cdr pair))
-	      (t (let ((pkg (find-package string)))
-		   (push (cons string pkg) *package-alist*)
-		   pkg))))))
+        (cond (pair (setq *find-package-cache* pair) (cdr pair))
+              (t (let ((pkg (find-package string)))
+                   (push (cons string pkg) *package-alist*)
+                   pkg))))))
 
 (defvar *global-symbol-key* (make-symbol "*GLOBAL-SYMBOL-KEY*"))
 
