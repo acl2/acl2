@@ -95,6 +95,7 @@
 (assert-event (equal (symbol-package-name 'bad-atom<=) "ACL2"))
 (assert-event (equal (symbol-package-name 'nonnegative-integer-quotient) "ACL2"))
 (assert-event (equal (symbol-package-name 'string-append) "ACL2"))
+(assert-event (equal (symbol-package-name 'len) "ACL2"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

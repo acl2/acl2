@@ -135,7 +135,8 @@
     plus @(tsee nonnegative-integer-quotient) and @(tsee string-append).")
   (append (strip-cars *primitive-formals-and-guards*)
           (list 'nonnegative-integer-quotient
-                'string-append)))
+                'string-append
+                'len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,7 +191,8 @@
     (bad-atom<= . "BAD_ATOM_LESS_THAN_OR_EQUAL_TO")
     (or . "OR")
     (nonnegative-integer-quotient . "NONNEGATIVE_INTEGER_QUOTIENT")
-    (string-append . "STRING_APPEND"))
+    (string-append . "STRING_APPEND")
+    (len . "LEN"))
   ///
   (assert-event (symbol-string-alistp *aij-symbol-constants*))
   (assert-event (no-duplicatesp-equal (strip-cdrs *aij-symbol-constants*))))

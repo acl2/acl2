@@ -959,6 +959,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *len-tests*
+  '(("Len0" (len nil))
+    ("Len1" (len '(a)))
+    ("Len2" (len '(a b)))
+    ("Len3" (len '(a b c)))
+    ("Len4" (len '(a b c d)))
+    ("Len5" (len '(a b c d e f g h i j k l m n o p q r s t u v w x y z)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *all-tests*
   (append *characterp-tests*
           *stringp-tests*
@@ -992,4 +1002,5 @@
           *equal-tests*
           *if-tests*
           *nonnegative-integer-quotient-tests*
-          *string-append-tests*))
+          *string-append-tests*
+          *len-tests*))

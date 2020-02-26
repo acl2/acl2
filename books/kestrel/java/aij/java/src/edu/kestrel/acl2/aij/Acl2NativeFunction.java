@@ -46,6 +46,10 @@ import java.util.Map;
  *     By implementing {@code string-append} natively,
  *     the infinite loop is avoided,
  *     and the implementation is more efficient anyhow.</li>
+ * <li>The ACL2 built-in function {@code len}.
+ *     This function has an {@code unnormalized-body} property,
+ *     but is implemented natively in Java for efficiency.
+ *     Note that it is actually implemented by raw Lisp code in ACL2.</li>
  * </ul>
  * More native functions could be added here in the future,
  * e.g. as optimized implementations of other ACL2 built-in functions.
@@ -164,6 +168,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         functions.put(Acl2Symbol.NONNEGATIVE_INTEGER_QUOTIENT,
                 new NonnegativeIntegerQuotient());
         functions.put(Acl2Symbol.STRING_APPEND, new StringAppend());
+        functions.put(Acl2Symbol.LEN, new Len());
     }
 
     /**
@@ -1117,6 +1122,32 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         @Override
         Acl2Value apply(Acl2Value[] values) {
             return execStringAppend(values[0], values[1]);
+        }
+    }
+
+    /**
+     * Representation of the {@code len}
+     * ACL2 built-in function.
+     */
+    private static final class Len extends Acl2NativeFunction {
+
+        /**
+         * Constructs this native function.
+         */
+        private Len() {
+            super(Acl2Symbol.LEN, 1);
+        }
+
+        /**
+         * Applies this native function to the given ACL2 values.
+         *
+         * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
+         * @return The result of the function on the given arguments.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
+            return execLen(values[0]);
         }
     }
 
@@ -2148,6 +2179,38 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     public static Acl2String execStringAppend(Acl2String str1,
                                               Acl2String str2) {
         return str2.stringAppendStringLeft(str1);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code len} ACL2 built-in function.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static Acl2Integer execLen(Acl2Value x) {
+        // we scan the list until we reach the end or the maximum int value:
+        int len = 0;
+        while (x instanceof Acl2ConsPair && len >= 0) {
+            ++len;
+            x = x.cdr();
+        }
+        // if still len >= 0, it we have reached the end of the list:
+        if (len >= 0) return Acl2Integer.make(len);
+        // if instead len < 0,
+        // the length is 2^31 or more
+        // (because int wrapped around,
+        // so it was 2^31 - 1 just before scanning the last scanned element),
+        // so we keep counting with Acl2Integer objects,
+        // starting with 2^31:
+        Acl2Integer lenObj = Acl2Integer.make(Integer.MAX_VALUE); // 2^31 - 1
+        lenObj = lenObj.addInteger(Acl2Integer.ONE); // 2^31
+        while (x instanceof Acl2ConsPair) {
+            lenObj = lenObj.addInteger(Acl2Integer.ONE);
+            x = x.cdr();
+        }
+        return lenObj;
     }
 
 }
