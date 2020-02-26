@@ -1976,13 +1976,13 @@
   :short "Generate the guard of the new function."
   (b* ((newp-of-args (apply-unary-to-terms newp$ args$)))
     (if predicate$
-        `(and ,@newp-of-args)
+        (conjoin newp-of-args)
       (b* ((old-guard (guard old$ nil wrld))
            (back-of-args (apply-unary-to-terms back$ args$))
            (old-guard-with-back-of-args
             (subcor-var args$ back-of-args old-guard)))
-        `(and ,@newp-of-args
-              ,old-guard-with-back-of-args)))))
+        (conjoin (append newp-of-args
+                         (list old-guard-with-back-of-args)))))))
 
 (define isodata-gen-new-fn-body-pred ((old$ symbolp)
                                       (args$ symbol-listp)
@@ -2020,8 +2020,8 @@
        (old-body-with-back-of-args
         (subcor-var args$ back-of-args old-body-with-new-rec-calls))
        (newp-of-args (apply-unary-to-terms newp$ args$)))
-    `(and ,@newp-of-args
-          ,old-body-with-back-of-args)))
+    (conjoin (append newp-of-args
+                     (list old-body-with-back-of-args)))))
 
 (define isodata-gen-new-fn-body-nonpred-nonrec ((old$ symbolp)
                                                 (args$ symbol-listp)
