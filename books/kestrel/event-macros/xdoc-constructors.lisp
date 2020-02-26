@@ -952,9 +952,9 @@
   (defmacro xdoc::evmac-topic-implementation (macro
                                               &key
                                               items
-                                              state-item
-                                              wrld-item
-                                              ctx-item)
+                                              item-state
+                                              item-wrld
+                                              item-ctx)
     (declare (xargs :guard (symbolp macro)))
     (b* ((macro-name (string-downcase (symbol-name macro)))
          (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
@@ -962,17 +962,17 @@
          (parent-topic macro)
          (short (concatenate 'string "Implementation of " macro-ref "."))
          (all-items
-          (append (and state-item
+          (append (and item-state
                        '((xdoc::&&
                           "@('state') is the ACL2 "
                           (xdoc::seetopic "acl2::state" "state")
                           ".")))
-                  (and wrld-item
+                  (and item-wrld
                        '((xdoc::&&
                           "@('wrld') is the ACL2 "
                           (xdoc::seetopic "acl2::world" "world")
                           ".")))
-                  (and ctx-item
+                  (and item-ctx
                        '("@('ctx') is the context used for errors."))
                   items))
          (long `(xdoc::topstring

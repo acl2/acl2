@@ -31,7 +31,7 @@
 
  deffixequiv
 
- :wrld-item t
+ :item-wrld t
 
  :items
 

@@ -31,11 +31,11 @@
 
  parteval
 
- :state-item t
+ :item-state t
 
- :wrld-item t
+ :item-wrld t
 
- :ctx-item t
+ :item-ctx t
 
  :items
 
