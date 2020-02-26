@@ -5522,85 +5522,92 @@
                                           ans)))
    (t (constraints-introduced1 (cdr thms) fns ans))))
 
-(defun new-trips (wrld3 proto-wrld3 seen acc)
+(defun new-trips-rec (wrld3 proto-wrld3 seen acc)
 
-; Important:  This function returns those triples in wrld3 that are after
+; See new-trips.
+
+; Note on this recursion: The recursion below is potentially disastrously slow.
+; Imagine that proto-wrld3 is a list of 10,000 repetitions of the element e.
+; Imagine that wrld3 is the extension produced by adding 1000 more copies of e.
+; Then the equal below will fail the first 1000 times, but it will only fail
+; after confirming that the first 10,000 e's in wrld3 are the same as the
+; corresponding ones in proto-wrld3, i.e., the equal will do a root-and-branch
+; walk through proto-wrld3 1000 times.  When finally the equal succeeds it
+; potentially does another root-and-branch exploration of proto-wrld3.
+; However, this worst-case scenario is not likely.  More likely, if wrld3 is an
+; extension of proto-wrld3 then the first element of wrld3 differs from that of
+; proto-wrld3 -- because either wrld3 begins with a putprop of a new name or a
+; new list of lemmas or some other property.  Therefore, most of the time the
+; equal below will fail immediately when the two worlds are not equal.  When
+; the two worlds are in fact equal, they will be eq, because wrld3 was actually
+; constructed by adding triples to proto-wrld3.  So the equal will succeed on
+; its initial eq test and avoid a root-and-branch exploration.  This analysis
+; is crucial to the practicality of this recursive scheme.  Our worlds are so
+; large we simply cannot afford root-and-branch explorations.
+
+; In fact, we did see performance issues when seen was kept as a list of
+; triples.  So, we have restructured it as an alist, whose values are alists,
+; in which triple (key1 key2 . val) is found in the alist associated with key1.
+; After Version_8.2 we changed seen to be a fast-alist.  With that change we
+; saw a reduction in time by 4.7% and a reduction in bytes allocated by 34% for
+; including the community book, centaur/sv/top.
+
+  (cond ((equal wrld3 proto-wrld3)
+         (prog2$ (fast-alist-free seen)
+                 (reverse acc)))
+        ((let ((key-alist (hons-get (caar wrld3) seen)))
+           (and key-alist ; optimization
+                (assoc-eq (cadar wrld3) (cdr key-alist))))
+         (new-trips-rec (cdr wrld3) proto-wrld3 seen acc))
+        ((eq (cddr (car wrld3)) *acl2-property-unbound*)
+         (new-trips-rec (cdr wrld3) proto-wrld3
+                        (hons-acons (caar wrld3)
+                                    (cons (cdar wrld3)
+                                          (cdr (hons-get (caar wrld3) seen)))
+                                    seen)
+                        acc))
+        (t
+         (new-trips-rec (cdr wrld3) proto-wrld3
+                        (hons-acons (caar wrld3)
+                                    (cons (cdar wrld3)
+                                          (cdr (hons-get (caar wrld3) seen)))
+                                    seen)
+                        (cons (car wrld3) acc)))))
+
+(defun new-trips (wrld3 proto-wrld3)
+
+; Important: This function returns those triples in wrld3 that are after
 ; proto-wrld3, in the same order they have in wrld3. See the comment labeled
 ; "Important" in the definition of constrained-functions.
 
-; As with the function actual-props, we are only interested in triples
-; that aren't superseded by *acl2-property-unbound*.  We therefore do
-; not copy to our answer any *acl2-property-unbound* triple or any
-; chronologically earlier bindings of the relevant symbol and key!
-; That is, the list of triples returned by this function contains no
-; *acl2-property-unbound* values and makes it appear as though the
-; property list was really erased when that value was stored.
+; As with the function actual-props, we are only interested in triples that
+; aren't superseded by *acl2-property-unbound*.  We therefore do not copy to
+; our answer any *acl2-property-unbound* triple or any chronologically earlier
+; bindings of the relevant symbol and key!  That is, the list of triples
+; returned by this function contains no *acl2-property-unbound* values and
+; makes it appear as though the property list was really erased when that value
+; was stored.
 
-; Note therefore that the list of triples returned by this function
-; will not indicate when a property bound in proto-wrld3 becomes
-; unbound in wrld3.  However, if a property was stored during the
-; production of wrld3 and the subsequently in the production of wrld3
-; that property was set to *acl2-property-unbound*, then the property
-; is gone from the new-trips returned here.
+; Note therefore that the list of triples returned by this function will not
+; indicate when a property bound in proto-wrld3 becomes unbound in wrld3.
+; However, if a property was stored during the production of wrld3 and the
+; subsequently in the production of wrld3 that property was set to
+; *acl2-property-unbound*, then the property is gone from the new-trips
+; returned here.
 
-; Warning: The value of this function is sometimes used as though it
-; were the 'current-acl2-world!  It is a legal property list world.
-; If it gets into a getprop on 'current-acl2-world the answer is
-; correct but slow.  Among other things, we use new-trips to compute
-; the ancestors of a definition defined within an encapsulate --
-; knowing that functions used in those definitions but defined outside
-; of the encapsulate (and hence, outside of new-trips) will be treated
-; as primitive.  That way we do not explore all the way back to ground
-; zero when we are really just looking for the subfunctions defined
-; within the encapsulate.
+; Warning: The value of this function is sometimes used as though it were the
+; 'current-acl2-world!  It is a legal property list world.  If it gets into a
+; getprop on 'current-acl2-world the answer is correct but slow.  Among other
+; things, we use new-trips to compute the ancestors of a definition defined
+; within an encapsulate -- knowing that functions used in those definitions but
+; defined outside of the encapsulate (and hence, outside of new-trips) will be
+; treated as primitive.  That way we do not explore all the way back to ground
+; zero when we are really just looking for the subfunctions defined within the
+; encapsulate.
 
-; Note on this recursion: The recursion below is potentially
-; disastrously slow.  Imagine that proto-wrld3 is a list of 10,000
-; repetitions of the element e.  Imagine that wrld3 is the extension
-; produced by adding 1000 more copies of e.  Then the equal below will
-; fail the first 1000 times, but it will only fail after confirming
-; that the first 10,000 e's in wrld3 are the same as the corresponding
-; ones in proto-wrld3, i.e., the equal will do a root-and-branch walk
-; through proto-wrld3 1000 times.  When finally the equal succeeds it
-; potentially does another root-and-branch exploration of proto-wrld3.
-; However, this worst-case scenario is not likely.  More likely, if
-; wrld3 is an extension of proto-wrld3 then the first element of wrld3
-; differs from that of proto-wrld3 -- because either wrld3 begins with
-; a putprop of a new name or a new list of lemmas or some other
-; property.  Therefore, most of the time the equal below will fail
-; immediately when the two worlds are not equal.  When the two worlds
-; are in fact equal, they will be eq, because wrld3 was actually
-; constructed by adding triples to proto-wrld3.  So the equal will
-; succeed on its initial eq test and avoid a root-and-branch
-; exploration.  This analysis is crucial to the practicality of this
-; recursive scheme.  Our worlds are so large we simply cannot afford
-; root-and-branch explorations.
+; See new-trips-rec for further comments.
 
-; In fact, we did see performance issues when seen was kept as a list
-; of triples.  So, we have restructured it as an alist, whose values
-; are alists, in which triple (key1 key2 . val) is found in the alist
-; associated with key1.
-
-  (cond ((equal wrld3 proto-wrld3)
-         (reverse acc))
-        ((let ((key-alist (assoc-eq (caar wrld3) seen)))
-            (and key-alist ; optimization
-                 (assoc-eq (cadar wrld3) (cdr key-alist))))
-         (new-trips (cdr wrld3) proto-wrld3 seen acc))
-        ((eq (cddr (car wrld3)) *acl2-property-unbound*)
-         (new-trips (cdr wrld3) proto-wrld3
-                    (put-assoc-eq (caar wrld3)
-                                  (cons (cdar wrld3)
-                                        (cdr (assoc-eq (caar wrld3) seen)))
-                                  seen)
-                    acc))
-        (t
-         (new-trips (cdr wrld3) proto-wrld3
-                    (put-assoc-eq (caar wrld3)
-                                  (cons (cdar wrld3)
-                                        (cdr (assoc-eq (caar wrld3) seen)))
-                                  seen)
-                    (cons (car wrld3) acc)))))
+  (new-trips-rec wrld3 proto-wrld3 nil nil))
 
 (defun constraints-introduced (new-trips fns ans)
 
@@ -6516,7 +6523,7 @@
       (let* ((expansion-alist (car expansion-alist-and-proto-wrld3))
              (proto-wrld3 (cdr expansion-alist-and-proto-wrld3))
              (wrld (w state))
-             (new-trips (new-trips wrld proto-wrld3 nil nil)))
+             (new-trips (new-trips wrld proto-wrld3)))
         (cond
          ((and (null insigs)
                (not (assoc-eq 'event-landmark new-trips)))
@@ -6635,7 +6642,7 @@
 ; point is moot if this encapsulate has an empty signature -- there will be no
 ; constraints anyway.
 
-                (let* ((new-trips (new-trips wrld wrld1 nil nil))
+                (let* ((new-trips (new-trips wrld wrld1))
                        (sig-fns (strip-cars insigs)))
                   (mv-let
                     (constraints constrained-fns subversive-fns infectious-fns
