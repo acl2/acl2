@@ -564,7 +564,7 @@
                           (in prefix paths))))
        ///
        (fty::deffixequiv-sk bip32-path-set-closedp
-                            :args ((paths bip32-path-setp)))))
+         :args ((paths bip32-path-setp)))))
 
     (defruled bip32-path-set-closedp-definition
       (equal (bip32-path-set-closedp paths)
@@ -1850,10 +1850,10 @@
   ///
 
   (fty::deffixequiv-sk bip32-compliant-addresses-for-limit-p
-                       :args ((tree bip32-key-treep)
-                              (account-index ubyte32p)
-                              (chain-index ubyte32p)
-                              (address-index-limit natp))))
+    :args ((tree bip32-key-treep)
+           (account-index ubyte32p)
+           (chain-index ubyte32p)
+           (address-index-limit natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
