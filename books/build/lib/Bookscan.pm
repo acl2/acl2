@@ -211,7 +211,7 @@ sub scan_depends_on {
 	    STDERR->print("a scan of the target's dependencies.\n");
 	    STDERR->print("***************************************************************************\n");
 	}
-	my $ans = [depends_on_event, $res[0], uc($res[1])];
+	my $ans = [depends_on_event, $res[0], uc($res[1] || "")];
 	debug_print_event($base, $ans);
 	return $ans;
     }
@@ -223,7 +223,7 @@ sub scan_depends_rec {
     my $regexp = "\\([\\s]*depends-rec[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	my $ans = [depends_rec_event, $res[0], uc($res[1])];
+	my $ans = [depends_rec_event, $res[0], uc($res[1] || "")];
 	debug_print_event($base, $ans);
 	return $ans;
     }
@@ -236,7 +236,7 @@ sub scan_loads {
     my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	my $ans = [loads_event, $res[0], uc($res[1])];
+	my $ans = [loads_event, $res[0], uc($res[1] || "")];
 	debug_print_event($base, $ans);
 	return $ans;
     }
