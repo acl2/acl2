@@ -50,6 +50,8 @@
 
 (include-book "centaur/svl/top" :dir :system)
 
+(include-book "doc")
+
 (local
  (include-book "lemmas"))
 

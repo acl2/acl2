@@ -38,8 +38,6 @@
 
 (in-package "RP")
 
-(include-book "centaur/svl/top" :dir :system)
-
 (xdoc::defxdoc
  multiplier-proofs-2
  :parents (rp-rewriter/applications)
@@ -245,6 +243,14 @@ This program is tested for multipliers up to 1024x1024 with simple partial
 products, and 512x512 with Booth Encoded partial products; and they finished in
 5-10 minutes each. 
 </p> 
+
+<p>
+For large multipliers, users may need to increase the stack size in ACL2 image
+(e.g., saved_acl2 under you ACL2 directory) and run the proofs again. In our
+tests, we have observed SBCL to be faster than CCL; however, for large
+multipliers garbage collector of CCL does a better job with @(see
+acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memory
+errors.  </p>
 "
 
  )
