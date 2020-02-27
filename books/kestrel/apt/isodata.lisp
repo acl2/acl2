@@ -1960,12 +1960,13 @@
        (else-branch (b* ((n (number-of-results old$ wrld)))
                       (if (> n 1)
                           (cons 'mv (repeat n nil))
-                        nil))))
-    (if compatibility
-        then-branch
-      `(if ,(conjoin newp-of-args)
-           ,then-branch
-         ,else-branch))))
+                        nil)))
+       (newp-of-args-conj (conjoin newp-of-args)))
+    (cond (compatibility then-branch)
+          ((equal newp-of-args-conj *t*) then-branch)
+          (t `(if ,newp-of-args-conj
+                  ,then-branch
+                ,else-branch)))))
 
 (define isodata-gen-new-fn-body-nonpred-rec ((old$ symbolp)
                                              (args$ symbol-listp)
@@ -2015,10 +2016,12 @@
        (else-branch (b* ((n (number-of-results old$ wrld)))
                       (if (> n 1)
                           (cons 'mv (repeat n nil))
-                        nil))))
-    `(if ,(conjoin newp-of-args)
-         ,then-branch
-       ,else-branch)))
+                        nil)))
+       (newp-of-args-conj (conjoin newp-of-args)))
+    (cond ((equal newp-of-args-conj *t*) then-branch)
+          (t `(if ,newp-of-args-conj
+                  ,then-branch
+                ,else-branch)))))
 
 (define isodata-gen-new-fn-body ((old$ symbolp)
                                  (args$ symbol-listp)

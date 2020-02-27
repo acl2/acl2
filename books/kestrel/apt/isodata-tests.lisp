@@ -976,7 +976,7 @@
      (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1009,7 +1009,7 @@
      (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1068,7 +1068,7 @@
      (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1101,7 +1101,7 @@
      (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1159,7 +1159,7 @@
      (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1189,7 +1189,7 @@
      (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
 
