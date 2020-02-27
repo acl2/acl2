@@ -54,6 +54,9 @@
 (defconst *atj-tutorial-native*
   "Native Java Implementations of ACL2 Functions")
 
+(defconst *atj-tutorial-evaluator*
+  "ACL2 Evaluator Written in Java")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Create the :SHORT string for a tutorial page with the given subtitle.
@@ -683,9 +686,10 @@
     ". AIJ also includes a "
     (xdoc::seetopic "atj-tutorial-native-functions"
                     "Java implementation of the ACL2 primitive functions")
-    ", and an ACL2 "
-    (xdoc::seetopic "atj-tutorial-background" "evaluator")
-    " written in Java.")
+    ", and an "
+    (xdoc::seetopic "atj-tutorial-evaluator"
+                    "ACL2 evaluator written in Java")
+    ".")
 
    (xdoc::p
     "Besides an "
@@ -890,7 +894,7 @@
      a proper path to the AIJ jar file
      (see the documentation of "
     (xdoc::seetopic "aij" "AIJ")
-    "for instructions on how to obtain that jar file.")
+    " for instructions on how to obtain that jar file.")
 
    (xdoc::p
     "After compiling, the code can be run via")
@@ -1345,3 +1349,133 @@
      they are presumably realized efficiently in Java implementations.
      In any case, the dynamic dispatch approach looks elegant
      and is appropriate to Java's object-oriented paradigm.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-evaluator
+
+  :short (atj-tutorial-short *atj-tutorial-evaluator*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "For the "
+    (xdoc::seetopic "atj-tutorial-deep" "deep embedding approach")
+    ", "
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
+    " provides an ACL2 evaluator written in Java.
+     This evaluator is realized via
+     the implementing methods of the abstract methods
+     @('Acl2Term.eval(Acl2Value[])') and @('Acl2Function.eval(Acl2Value[])';
+     The implementing methods are
+     in subclasses of @('Acl2Term') and @('Acl2Function').
+     Recall that all these classes provide "
+    (xdoc::seetopic "atj-tutorial-acl2-terms"
+                    "the Java representation of ACL2 terms")
+    ".")
+
+   (xdoc::p
+    "In early versions of AIJ,
+     the @('eval') methods in @('Acl2Term') and subclasses
+     took a @('java.lang.Map<Acl2Symbol, Acl2Value>') as argument,
+     instead of an @('Acl2Value[]') as in the current version of AIJ.
+     Such a map was a binding of variables (i.e. symbols) to values,
+     with respect to which quoted constants, variables, and function calls
+     were evaluated:")
+   (xdoc::ul
+    (xdoc::li
+     "Evaluating a quoted constant returned its value,
+      independently from the binding of variables to values.")
+    (xdoc::li
+     "Evaluating a variable returned the value associated to the variable,
+      which was looked up in the binding.")
+    (xdoc::li
+     "Evaluating a function call caused
+      first the recursive evaluation of all the arguments of the call,
+      and then the application of the function to the resulting values.
+      (See below.)"))
+   (xdoc::p
+    "The @('apply') methods in @('Acl2Function') and subclasses
+     took an @('Acl2Value[]') argument in all versions of AIJ.
+     The array is the sequence of values to apply the function to.
+     Function application proceeded as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "Applying a lambda expression returned the result of
+      recursively evaluating the body of the lambda expression
+      with a binding of the parameters of the lambda expressions
+      to the argument values.
+      (Recall that lambda expressions are always closed
+      in ACL2 " (xdoc::seetopic "acl2::term" "translated terms") ",
+      so each lambda expression body is evaluated in a new binding.)")
+    (xdoc::li
+     "Applying a "
+     (xdoc::seetopic "atj-tutorial-native-functions"
+                     "natively implemented function")
+     " returned the result of executing the native Java implementation
+      on the argument values.")
+    (xdoc::li
+     "Applying a function with an ACL2 definition returned the result of
+      recursively evaluating the body of the function
+      with a binding of the parameters of the function
+      to the argument values."))
+   (xdoc::p
+    "This simple and typical evaluation algorithm worked,
+     but the evaluation of each variable involved a map lookup.
+     The use of hash maps made this lookup essentially constant-time,
+     but still a relatively large constant.
+     Thus, the current version of AIJ uses a more optimized approach,
+     described as follows.")
+
+   (xdoc::p
+    "Each @('Acl2Variable') instance includes
+     a numeric index, in a private field.
+     The index is initially -1 (when the object is created),
+     which means that it is not set yet.
+     When AIJ's public API is used to provide a function definition
+     (which is added to the Java representation of the ACL2 environment),
+     AIJ sets all the indices in the @('Acl2Variable')s
+     that occur the definiens of the function.
+     The setting of indices starts with the parameters and body of the function:
+     the 0-based position of each parameter in the parameter list
+     is the value to which all the occurrences of that variables are set;
+     when a lambda expression is encountered,
+     the variables in its body are given indices
+     based on the parameters of the lambda expression,
+     ignoring the outer indices
+     (recall that lambda expressions are always closed
+     in ACL2 " (xdoc::seetopic "acl2::term" "translated terms") ").
+     In assigning these indices,
+     AIJ ensures that the definiens of the function is well-formed,
+     e.g. that it does not include variables that are not parameters.
+     Because the same ACL2 variable
+     may have different indices in different contexts,
+     generally the @('Acl2Term') instances passed to AIJ to define functions
+     must not share any @('Acl2Variable') instances;
+     AIJ throws an exception if, during the index setting recursion,
+     it encounters an @('Acl2Variable') whose index is already set.")
+
+   (xdoc::p
+    "Given these variable indices, a binding or variables to values
+     can be represented as a map from indices (i.e. natural numbers) to values
+     instead of a map from symbols to values.
+     But a map from indices to values can be represented as an array,
+     and that is why the @('eval') methods of @('Acl2Term') and subclasses
+     take an @('Acl2Value[]') as argument:
+     that argument is still a binding of variables to values,
+     but the variables are represented by indices.
+     An array access is much faster than a hash map access.")
+
+   (xdoc::p
+    "The evaluation algorithm on terms is still the one described above,
+     except that the bindings are represented as arrays instead of maps.
+     The evaluation of terms is mutually recursive with
+     the application of functions to values.
+     This ACL2 evaluation is ``in the logic'':
+     guards are completely ignored,
+     and in fact not even currently represented in AIJ.")
+
+   (xdoc::p
+    "See the AIJ code and Javadoc for more details on the ACL2 evaluator.")))
