@@ -51,6 +51,9 @@
 (defconst *atj-tutorial-acl2-environment*
   "Java Representation of the ACL2 Environment")
 
+(defconst *atj-tutorial-native*
+  "Native Java Implementations of ACL2 Functions")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Create the :SHORT string for a tutorial page with the given subtitle.
@@ -677,9 +680,9 @@
     (xdoc::seetopic "defun" "function definitions")
     " and "
     (xdoc::seetopic "defpkg" "package definitions")
-    ". AIJ also includes
-     a Java implementation of the ACL2 "
-    (xdoc::seetopic "acl2::primitive" "primitive functions")
+    ". AIJ also includes a "
+    (xdoc::seetopic "atj-tutorial-native-functions"
+                    "Java implementation of the ACL2 primitive functions")
     ", and an ACL2 "
     (xdoc::seetopic "atj-tutorial-background" "evaluator")
     " written in Java.")
@@ -1034,8 +1037,10 @@
      which are put together into a lambda expression
      (as in a higher-order equality @('(equal fn (lambda ...))')).
      An @('Acl2NativeFunction') represents an ACL2 function
-     that is implemented natively via Java code,
-     not via (a Java representation of) an ACL2 definiens.
+     that is "
+    (xdoc::seetopic "atj-tutorial-native-functions"
+                    "implemented natively via Java code")
+    ", not via (a Java representation of) an ACL2 definiens.
      Here `native' is with respect to ACL2, not Java;
      it has nothing to do with "
     (xdoc::ahref "https://docs.oracle.com/javase/10/docs/specs/jni" "JNI")
@@ -1218,3 +1223,125 @@
      (the implementing method in @('Acl2NativeFunction')
      of @('Acl2NamedFunction.define(Acl2Symbol[], Acl2Term)')
      throws an exception.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-native-functions
+
+  :short (atj-tutorial-short *atj-tutorial-native*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "The "
+    (xdoc::seetopic "acl2::primitive" "ACL2 primitive functions")
+    " have no definition.
+     Thus, they cannot be translated to Java
+     in the same way as functions with defining bodies can. "
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
+    " provides native Java implementations
+     of the ACL2 primitive functions,
+     i.e. implementations of the ACL2 primitive functions
+     written directly in Java.
+     (Here `native' is with respect to ACL2, not Java;
+     it has nothing to do with "
+    (xdoc::ahref "https://docs.oracle.com/javase/10/docs/specs/jni" "JNI")
+    ".)
+     These native implementations are used in both "
+    (xdoc::seetopic "atj-tutorial-deep-shallow"
+                    "the deep and shallow embedding approaches")
+    ".")
+
+   (xdoc::p
+    "These native implementations are run via
+     the public static methods @('Acl2NativeFunction.exec...(...)');
+     this class is part of "
+    (xdoc::seetopic "atj-tutorial-acl2-terms"
+                    "the Java representation of ACL2 terms")
+    ". For instance, @('Acl2NativeFunction.execStringp(Acl2Value)')
+     natively implements @(tsee stringp).
+     Some of these methods have overloaded variants,
+     whose purpose is explained elsewhere;
+     for now, just consider the ones with all @('Acl2Value') arguments.")
+
+   (xdoc::p
+    "Besides native implementations of the ACL2 primitive functions,
+     there are also native implementations of other built-in ACL2 functions,
+     e.g. @('Acl2NativeFunction.execStringAppend(Acl2Value, Acl2Value)')
+     for @(tsee string-append).
+     The main motivation is efficiency:
+     a native Java implementation can be faster than
+     mimicking ACL2's execution (in either the deep or shallow embedding).
+     In fact, this is also why some built-in ACL2 functions have "
+    (xdoc::seetopic "atj-tutorial-background" "raw Lisp code")
+    ", i.e. native Lisp implementations.
+     Another motivation is to avoid "
+    (xdoc::seetopic "atj-tutorial-background" "circularities")
+    " that exist in the ACL2 definitions
+     unless the raw Lisp code is taken into account.
+     More native Java implementations can be added to AIJ as needed;
+     it could be argued that all the ACL2 functions with raw Lisp code
+     should be implemented natively in Java in AIJ, for symmetry.
+     The only drawback, besides the effort to do that,
+     is a weakening of the assurance argument;
+     however, for true assurance,
+     the primitive function implementations will have to be formally verified,
+     and if the machinery to do that is in place,
+     formally verifying the non-primitive function implementations
+     may not entail significantly more effort,
+     or at least not ``superlinear'' effort.")
+
+   (xdoc::p
+    "Generally, AIJ's native Java implementations of ACL2 functions
+     are realized by methods in @('Acl2Value') and its subclasses,
+     called by the @('Acl2NativeFunction.exec...(...)') methods.
+     This takes advantage of Java's dynamic dispatch
+     to avoid checking types at run time.
+     For example, to implement @(tsee stringp),
+     the @('Acl2Value.stringp()') method returns
+     (the Java representation of) @('nil');
+     this default implementation is inherited
+     by all the @('Acl2Value') subclasses except for @('Acl2String'),
+     which overrides it to return @('t') instead.
+     @('Acl2NativeFunction.execStringp(Acl2Value)')
+     invokes @('stringp()') on its argument:
+     this selects, in constant time,
+     either the default implementation or the overriding one,
+     based on the run-time type type of the argument @('Acl2Value').
+     As another example, to implement @(tsee char-code),
+     the @('Acl2Value.charCode()') method returns 0,
+     because this function's completion axiom says that
+     this function returns 0 on non-characters;
+     this default implementation is inherited
+     by all the @('Acl2Value') subclasses except for @('Acl2Character'),
+     which overrides it to return the character's code instead.
+     @('Acl2NativeFunction.execCharCode(Acl2Value)')
+     invokes @('charCode()') on its argument:
+     this selects, in constant time,
+     either the default implementation or the overriding one,
+     based on the run-time type type of the argument @('Acl2Value').
+     The ACL2 primitive functions for arithmetic (e.g. @(tsee binary-+))
+     are implemented by methods in @('Acl2Value') and subclasses
+     that exhibit interesting patterns of dynamic dispatch
+     and interplay among the methods for different operations;
+     see AIJ's code and Javadoc for details.")
+
+   (xdoc::p
+    "Instead of taking advantage of dynamic dispatch,
+     an alternative implementation strategy could use
+     run-time type checks and casts.
+     For example, @('Acl2NativeFunction.execStringp(Acl2Value)')
+     could test whether the argument is an instance of @('Acl2String'),
+     and return @('t') or @('nil') accordingly.
+     As another example, @('Acl2NativeFunction.execCharCode(Acl2Value)')
+     could test whether the argument is an instance of @('Acl2Character'),
+     and return the character's code or 0 accordingly.
+     It is not clear which approach is more efficient
+     (dynamic dispatch or type checks/casts):
+     on the one hand, it seems that dynamic dispatch should be more efficient;
+     on the other hand, since type checks/casts are relatively frequent in Java,
+     they are presumably realized efficiently in Java implementations.
+     In any case, the dynamic dispatch approach looks elegant
+     and is appropriate to Java's object-oriented paradigm.")))

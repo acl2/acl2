@@ -36,7 +36,6 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "arithmetic-3/bind-free/top" :dir :system))
-(local (include-book "std/testing/assert" :dir :system))
 
 (local (in-theory (acl2::enable* set::definitions set::expensive-rules
                                  bitops::ash-1-removal)))
@@ -629,9 +628,6 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
           (t
            (xxxjoin 'bitset-binary-union args))))
 
-  (local (assert! (equal (bitset-union #b1 #b10 #b100) #b111)))
-  (local (assert! (equal (bitset-union #b1 #b10 #b1000 #ub1100_0001) #ub1100_1011)))
-
   (add-macro-alias bitset-union bitset-binary-union$inline)
   (add-macro-fn    bitset-union bitset-binary-union$inline t)
 
@@ -696,12 +692,6 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
            (car args))
           (t
            (xxxjoin 'bitset-binary-intersect args))))
-
-  (local (assert! (equal (bitset-intersect #b111 #b110 #b100) #b100)))
-  (local (assert! (equal (bitset-intersect #ub1111_1111
-                                           #ub1010_1010
-                                           #ub1010_0000)
-                         #ub1010_0000)))
 
   (add-macro-alias bitset-intersect bitset-binary-intersect$inline)
   (add-macro-fn    bitset-intersect bitset-binary-intersect$inline t)

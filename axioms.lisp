@@ -6048,7 +6048,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun pairlis$-tailrec (x y acc)
   (declare (xargs :guard (and (true-listp x)
                               (true-listp y)
-			      (true-listp acc))))
+                              (true-listp acc))))
   (cond ((endp x) (reverse acc))
         (t (pairlis$-tailrec (cdr x) (cdr y) (cons (cons (car x) (car y)) acc)))))
 

@@ -94,6 +94,8 @@
 
 (def-atj-main-function-type string-append (:astring :astring) :astring)
 
+(def-atj-main-function-type len (:avalue) :ainteger)
+
 ; secondary types:
 
 (def-atj-other-function-type binary-+ (:arational :arational) :arational)

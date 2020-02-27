@@ -1256,15 +1256,15 @@
           (t x)))
    ((eq (car x) 'quote)
     (cond ((and ; (consp (cdr x)) ; always true
-		  (consp (cadr x))
-		  (eq (car (cadr x)) 'lambda))
+                  (consp (cadr x))
+                  (eq (car (cadr x)) 'lambda))
 
 ; Just as we apply hons-copy when translating lambda objects in
 ; translate11-lambda-object, we hons-copy here as well, to support fast lookup
 ; by fetch-cl-cache-line.
 
-	   (hons-copy x))
-	  (t x)))
+           (hons-copy x))
+          (t x)))
    ((eq (car x) 'lambda$)
     (mv-let (flg tx bindings)
       (translate11-lambda-object x

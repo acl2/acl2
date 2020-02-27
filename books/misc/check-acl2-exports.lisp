@@ -200,6 +200,8 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    ADD-SUFFIX
+    ADD-SUFFIX-TO-FN
     STANDARD-CHAR-P+
     SUBSEQUENCEP
 

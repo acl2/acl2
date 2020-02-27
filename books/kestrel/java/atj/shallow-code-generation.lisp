@@ -3619,6 +3619,7 @@
           (if "execIf")
           (nonnegative-integer-quotient "execNonnegativeIntegerQuotient")
           (string-append "execStringAppend")
+          (len "execLen")
           (t (impossible))))
        (jcall-arg-exprs (jexpr-name-list method-param-names))
        (jcall (jexpr-smethod *aij-type-native-fn*
