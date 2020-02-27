@@ -112,8 +112,8 @@
                        :short 'short-value->int
                        :int 'int-value->int
                        :long 'long-value->int
-                       :float 'second
-                       :double 'second))
+                       :float 'float-value->float
+                       :double 'double-value->double))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
