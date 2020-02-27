@@ -1107,8 +1107,8 @@
             user-stobj-alist
             (cdr lst)
             (cons (cond ((live-state-symbolp (car lst))
-			 'state)
-			((bad-atom (car lst))
+                         'state)
+                        ((bad-atom (car lst))
                          (let ((pair (rassoc-eq (car lst)
                                                 user-stobj-alist)))
                            (cond (pair (car pair))
@@ -6445,7 +6445,7 @@
 
 ; '(lambda (x)
 ;    (declare (type integer x)           ; TYPE, IGNORE, IGNOREABLE allowed
-;  	      (xargs :guard (if (integerp x) (natp x) 'nil) ; guard must be
+;             (xargs :guard (if (integerp x) (natp x) 'nil) ; guard must be
 ;                    :split-types t))                       ; translated and
 ;   (binary-+ '1 x))                                        ; include types
 
@@ -7136,7 +7136,7 @@
 ; (defun test-type-spec (lst)
 ;    (loop for x of-type (satisfies my-typep) on lst
 ;          until (> (car x) 5)
-; 	   when (<= (car x) 3) collect x))
+;          when (<= (car x) 3) collect x))
 ; (test-type-spec '(1 2 3 4 5))
 ; Next: (1 2 3 4 5)
 ; Next: (2 3 4 5)
@@ -13217,7 +13217,7 @@
 
 ;   (defun sum-doubles (lst)
 ;     (declare (xargs :guard (integer-listp lst)
-;   		   :verify-guards nil))
+;                  :verify-guards nil))
 ;     (loop$ for x of-type integer in lst sum (+ x x)))
 ;   (make-event `(defconst *m* ',(loop$ for i from 1 to 10000000 collect i)))
 ;   ; The following reports:

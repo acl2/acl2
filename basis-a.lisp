@@ -2755,7 +2755,7 @@
            (xargs :guard (and (<= maximum (length s)) ; typically, =
                               (<= (+ i j) maximum)
                               (or (null err-flg)
-				  (not (= (+ i j) maximum))))))
+                                  (not (= (+ i j) maximum))))))
   (the character
        (cond ((< (+f i j) maximum)
 

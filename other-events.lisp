@@ -6556,7 +6556,7 @@
 ; example in October, 2019 that turned out to show this expectation to be
 ; incorrect.  Here is a slightly simplified version of his example.
 
-;   (make-event 
+;   (make-event
 ;    '(encapsulate
 ;       nil
 ;       (defun f (x) x)
@@ -6567,7 +6567,7 @@
 ;   (encapsulate
 ;     nil
 ;     (defun g (x) x) ; probably any non-redundant event here is OK
-;     (make-event 
+;     (make-event
 ;      '(encapsulate
 ;         nil
 ;         (defun f (x) x)
@@ -6581,29 +6581,27 @@
 ; can see the redundancy with the first top-level encapsulate by tracing
 ; redundant-encapsulatep:
 
-#||
-1> (REDUNDANT-ENCAPSULATEP
-        NIL
-        ((DEFUN F (X) X)
-         (RECORD-EXPANSION
-              (MAKE-EVENT (PPROGN (PRINC$ 2 (STANDARD-CO STATE) STATE)
-                                  (VALUE '(VALUE-TRIPLE NIL))))
-              (VALUE-TRIPLE NIL)))
-        (ENCAPSULATE
-             NIL (DEFUN F (X) X)
-             (RECORD-EXPANSION
-                  (MAKE-EVENT (PPROGN (PRINC$ 2 (STANDARD-CO STATE) STATE)
-                                      (VALUE '(VALUE-TRIPLE NIL))))
-                  (VALUE-TRIPLE NIL)))
-        |current-acl2-world|)
-<1 (REDUNDANT-ENCAPSULATEP
-        (ENCAPSULATE
-             NIL (DEFUN F (X) X)
-             (RECORD-EXPANSION
-                  (MAKE-EVENT (PPROGN (PRINC$ 1 (STANDARD-CO STATE) STATE)
-                                      (VALUE '(VALUE-TRIPLE NIL))))
-                  (VALUE-TRIPLE NIL))))
-||#
+;   1> (REDUNDANT-ENCAPSULATEP
+;           NIL
+;           ((DEFUN F (X) X)
+;            (RECORD-EXPANSION
+;                 (MAKE-EVENT (PPROGN (PRINC$ 2 (STANDARD-CO STATE) STATE)
+;                                     (VALUE '(VALUE-TRIPLE NIL))))
+;                 (VALUE-TRIPLE NIL)))
+;           (ENCAPSULATE
+;                NIL (DEFUN F (X) X)
+;                (RECORD-EXPANSION
+;                     (MAKE-EVENT (PPROGN (PRINC$ 2 (STANDARD-CO STATE) STATE)
+;                                         (VALUE '(VALUE-TRIPLE NIL))))
+;                     (VALUE-TRIPLE NIL)))
+;           |current-acl2-world|)
+;   <1 (REDUNDANT-ENCAPSULATEP
+;           (ENCAPSULATE
+;                NIL (DEFUN F (X) X)
+;                (RECORD-EXPANSION
+;                     (MAKE-EVENT (PPROGN (PRINC$ 1 (STANDARD-CO STATE) STATE)
+;                                         (VALUE '(VALUE-TRIPLE NIL))))
+;                     (VALUE-TRIPLE NIL))))
 
 ; That redundancy is stored in the expansion-alist produced by the second pass
 ; of the inner encapsulate.
@@ -13703,7 +13701,7 @@
                               ctx state)
                              (let* ((cert-full-book-name
                                      (cond (certified-p
-                                            cert-full-book-name-prelim) 
+                                            cert-full-book-name-prelim)
                                            (t full-book-name)))
                                     (certification-tuple
                                      (cond
@@ -14609,21 +14607,21 @@
 ; Old code:
 
 ; ; See pkg-names.
-; 
+;
 ; ; For the following book we get a stack overflow in pkg-names-memoize in Step 3
 ; ; of certification.
-; 
+;
 ; ; (in-package "ACL2")
 ; ; (include-book "projects/apply/top" :dir :system)
 ; ; (make-event `(defconst *m* ',(make-list 10000000)))
-; 
+;
 ; ; Before trying to fix pkg-names-memoize, however, note that if we comment out
 ; ; the include-book form above, then instead we get a stack overflow in
 ; ; ser-encode-conses in Step 4.  So it might not be worth trying to improve
 ; ; pkg-names-memoize unless we also try to improve ser-encode-conses.  Both
 ; ; might be difficult fixes that aren't necessary; see the workaround using
 ; ; LOCAL near the end of community book books/projects/apply/loop-tests.lisp.
-; 
+;
 ;   (cond ((consp x)
 ;          (hons-union-ordered-string-lists
 ;           (pkg-names-memoize (car x))
@@ -14656,13 +14654,13 @@
 ; The following is obsolete; see commented-out code for pkg-names-memoize.
 
 ;     #+(and hons (not acl2-loop-only))
-; 
+;
 ; ; Here we use a more efficient but equivalent version of this function that
 ; ; memoizes, contributed initially by Sol Swords.  This version is only more
 ; ; efficient when fast alists are available; otherwise the memo table will be a
 ; ; linear list ultimately containing every cons visited, resulting in quadratic
 ; ; behavior because of the membership tests against it.
-; 
+;
 ;     (return-from
 ;      pkg-names
 ;      (loop for name in (pkg-names-memoize x)
@@ -19134,7 +19132,7 @@
 ; that the 'stobj property laid down below puts each updater immediately after
 ; the corresponding accessor, as assumed by function chk-stobj-let/updaters1.
 
-		  (strip-cars ax-def-lst))
+                  (strip-cars ax-def-lst))
                  (the-live-var (the-live-var name))
                  (congruent-to (access defstobj-template template
                                        :congruent-to))
