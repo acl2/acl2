@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "add-suffix-to-fn-or-const")
 (include-book "arglistp")
 (include-book "enhanced-utilities")
 (include-book "event-landmark-names")

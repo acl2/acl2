@@ -110,13 +110,11 @@
        (or (not (not-intersectp-list (car x) y))
            (member-intersectp-equal (cdr x) y))))
 
-(encapsulate ()
-  (local (include-book "std/basic/inductions" :dir :system))
-
-  (defcong list-equiv equal (member-intersectp-equal x y) 1
-    :hints
-    (("goal"
-      :induct (cdr-cdr-induct x x-equiv)))))
+(defcong list-equiv
+  equal (member-intersectp-equal x y)
+  1
+  :hints (("goal" :in-theory (enable fast-list-equiv)
+           :induct (fast-list-equiv x x-equiv))))
 
 (defthm when-append-is-disjoint-list-listp
   (equal (disjoint-list-listp (binary-append x y))

@@ -1,6 +1,6 @@
 ; Bitcoin Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "kestrel/crypto/interfaces/hmac-sha-512" :dir :system)
 (include-book "kestrel/crypto/ecurve/secp256k1-interface" :dir :system)
 (include-book "kestrel/fty/defbytelist-standard-instances" :dir :system)
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
@@ -562,21 +563,8 @@
                                (prefixp prefix path))
                           (in prefix paths))))
        ///
-       ;; boilerplate:
-       (fty::deffixequiv bip32-path-set-closedp
-         :args ((paths bip32-path-setp))
-         :hints
-         (("Goal"
-           :in-theory (disable bip32-path-set-closedp-necc)
-           :use ((:instance bip32-path-set-closedp-necc
-                  (paths (bip32-path-sfix paths))
-                  (path (mv-nth 0 (bip32-path-set-closedp-witness paths)))
-                  (prefix (mv-nth 1 (bip32-path-set-closedp-witness paths))))
-                 (:instance bip32-path-set-closedp-necc
-                  (path (mv-nth 0 (bip32-path-set-closedp-witness
-                                   (bip32-path-sfix paths))))
-                  (prefix (mv-nth 1 (bip32-path-set-closedp-witness
-                                     (bip32-path-sfix paths)))))))))))
+       (fty::deffixequiv-sk bip32-path-set-closedp
+         :args ((paths bip32-path-setp)))))
 
     (defruled bip32-path-set-closedp-definition
       (equal (bip32-path-set-closedp paths)
@@ -747,25 +735,8 @@
                (implies (in path (bip32-path-sfix paths))
                         (not (mv-nth 0 (bip32-ckd* root path)))))
        ///
-       ;; boilerplate:
-       (fty::deffixequiv bip32-valid-keys-p
-         :args ((root bip32-ext-key-p) (paths bip32-path-setp))
-         :hints (("Goal"
-                  :in-theory (disable bip32-valid-keys-p-necc)
-                  :use (;; for ROOT:
-                        (:instance bip32-valid-keys-p-necc
-                         (root (bip32-ext-key-fix root))
-                         (path (bip32-valid-keys-p-witness root paths)))
-                        (:instance bip32-valid-keys-p-necc
-                         (path (bip32-valid-keys-p-witness
-                                (bip32-ext-key-fix root) paths)))
-                        ;; for PATHS:
-                        (:instance bip32-valid-keys-p-necc
-                         (paths (bip32-path-sfix paths))
-                         (path (bip32-valid-keys-p-witness root paths)))
-                        (:instance bip32-valid-keys-p-necc
-                         (path (bip32-valid-keys-p-witness
-                                root (bip32-path-sfix paths))))))))))
+       (fty::deffixequiv-sk bip32-valid-keys-p
+         :args ((root bip32-ext-key-p) (paths bip32-path-setp)))))
 
     (defruled bip32-valid-keys-p-definition
       (equal (bip32-valid-keys-p root paths)
@@ -878,25 +849,8 @@
                (implies (in path (bip32-path-sfix paths))
                         (bytep (+ (byte-fix init) (len path)))))
        ///
-       ;; boilerplate:
-       (fty::deffixequiv bip32-valid-depths-p
-         :args ((init bytep) (paths bip32-path-setp))
-         :hints
-         (("Goal"
-           :in-theory (disable bip32-valid-depths-p-necc)
-           :use (;; for INIT:
-                 (:instance bip32-valid-depths-p-necc
-                  (init (byte-fix init))
-                  (path (bip32-valid-depths-p-witness init paths)))
-                 (:instance bip32-valid-depths-p-necc
-                  (path (bip32-valid-depths-p-witness (byte-fix init) paths)))
-                 ;; for PATHS:
-                 (:instance bip32-valid-depths-p-necc
-                  (paths (bip32-path-sfix paths))
-                  (path (bip32-valid-depths-p-witness init paths)))
-                 (:instance bip32-valid-depths-p-necc
-                  (path (bip32-valid-depths-p-witness
-                         init (bip32-path-sfix paths))))))))))
+       (fty::deffixequiv-sk bip32-valid-depths-p
+         :args ((init bytep) (paths bip32-path-setp)))))
 
     (defruled bip32-valid-depths-p-definition
       (equal (bip32-valid-depths-p init paths)
@@ -1415,29 +1369,8 @@
   :skolem-name bip32-serialized-key-witness
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-serialized-key-p
-    :args ((bytes byte-listp))
-    :hints (("Goal"
-             :in-theory (disable bip32-serialized-key-p-suff)
-             :use ((:instance bip32-serialized-key-p-suff
-                    (key (mv-nth 0 (bip32-serialized-key-witness
-                                    (byte-list-fix bytes))))
-                    (depth (mv-nth 1 (bip32-serialized-key-witness
-                                      (byte-list-fix bytes))))
-                    (index (mv-nth 2 (bip32-serialized-key-witness
-                                      (byte-list-fix bytes))))
-                    (parent (mv-nth 3 (bip32-serialized-key-witness
-                                       (byte-list-fix bytes))))
-                    (mainnet? (mv-nth 4 (bip32-serialized-key-witness
-                                         (byte-list-fix bytes)))))
-                   (:instance bip32-serialized-key-p-suff
-                    (key (mv-nth 0 (bip32-serialized-key-witness bytes)))
-                    (depth (mv-nth 1 (bip32-serialized-key-witness bytes)))
-                    (index (mv-nth 2 (bip32-serialized-key-witness bytes)))
-                    (parent (mv-nth 3 (bip32-serialized-key-witness bytes)))
-                    (mainnet? (mv-nth 4 (bip32-serialized-key-witness bytes)))
-                    (bytes (byte-list-fix bytes)))))))
+  (fty::deffixequiv-sk bip32-serialized-key-p
+    :args ((bytes byte-listp)))
 
   (defrule bip32-ext-key-p-of-mv-nth-0-of-bip32-serialized-key-witness
     (implies (bip32-serialized-key-p bytes)
@@ -1846,17 +1779,8 @@
                    (< (len path) 4)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-compliant-depth-p
-    :args ((tree bip32-key-treep))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-depth-p-necc)
-             :use ((:instance bip32-compliant-depth-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (path (bip32-compliant-depth-p-witness tree)))
-                   (:instance bip32-compliant-depth-p-necc
-                    (path (bip32-compliant-depth-p-witness
-                           (bip32-key-tree-fix tree)))))))))
+  (fty::deffixequiv-sk bip32-compliant-depth-p
+    :args ((tree bip32-key-treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1925,75 +1849,11 @@
                        (not (bip32-path-in-tree-p path tree))))))
   ///
 
-  ;; boilerplate:
-
-  (fty::deffixequiv bip32-compliant-addresses-for-limit-p
-    :args ((tree bip32-key-treep))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip32-compliant-addresses-for-limit-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      tree account-index chain-index address-index-limit)))
-                   (:instance bip32-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      (bip32-key-tree-fix tree)
-                      account-index
-                      chain-index
-                      address-index-limit)))))))
-
-  (fty::deffixequiv bip32-compliant-addresses-for-limit-p
-    :args ((account-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip32-compliant-addresses-for-limit-p-necc
-                    (account-index (ubyte32-fix account-index))
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      tree account-index chain-index address-index-limit)))
-                   (:instance bip32-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      tree
-                      (ubyte32-fix account-index)
-                      chain-index
-                      address-index-limit)))))))
-
-  (fty::deffixequiv bip32-compliant-addresses-for-limit-p
-    :args ((chain-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip32-compliant-addresses-for-limit-p-necc
-                    (chain-index (ubyte32-fix chain-index))
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      tree account-index chain-index address-index-limit)))
-                   (:instance bip32-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      tree
-                      account-index
-                      (ubyte32-fix chain-index)
-                      address-index-limit)))))))
-
-  (fty::deffixequiv bip32-compliant-addresses-for-limit-p
-    :args ((address-index-limit natp))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip32-compliant-addresses-for-limit-p-necc
-                    (address-index-limit (nfix address-index-limit))
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      tree account-index chain-index address-index-limit)))
-                   (:instance bip32-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip32-compliant-addresses-for-limit-p-witness
-                      tree
-                      account-index
-                      chain-index
-                      (nfix address-index-limit)))))))))
+  (fty::deffixequiv-sk bip32-compliant-addresses-for-limit-p
+    :args ((tree bip32-key-treep)
+           (account-index ubyte32p)
+           (chain-index ubyte32p)
+           (address-index-limit natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2015,49 +1875,10 @@
                 tree account-index chain-index address-index-limit)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-compliant-addresses-p
+  (fty::deffixequiv-sk bip32-compliant-addresses-p
     :args ((tree bip32-key-treep)
            (account-index ubyte32p)
-           (chain-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-addresses-p-suff)
-             :use (;; for TREE:
-                   (:instance bip32-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip32-compliant-addresses-p-witness
-                      (bip32-key-tree-fix tree)
-                      account-index
-                      chain-index)))
-                   (:instance bip32-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip32-compliant-addresses-p-witness
-                      tree account-index chain-index))
-                    (tree (bip32-key-tree-fix tree)))
-                   ;; for ACCOUNT-INDEX:
-                   (:instance bip32-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip32-compliant-addresses-p-witness
-                      tree
-                      (ubyte32-fix account-index)
-                      chain-index)))
-                   (:instance bip32-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip32-compliant-addresses-p-witness
-                      tree account-index chain-index))
-                    (account-index (ubyte32-fix account-index)))
-                   ;; for CHAIN-INDEX:
-                   (:instance bip32-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip32-compliant-addresses-p-witness
-                      tree
-                      account-index
-                      (ubyte32-fix chain-index))))
-                   (:instance bip32-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip32-compliant-addresses-p-witness
-                      tree account-index chain-index))
-                    (chain-index (ubyte32-fix chain-index))))))))
+           (chain-index ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2102,29 +1923,8 @@
                        (t (not (bip32-path-in-tree-p path tree)))))))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-compliant-chains-p
-    :args ((tree bip32-key-treep) (account-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-chains-p-necc)
-             :use (;; for TREE:
-                   (:instance bip32-compliant-chains-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (chain-index
-                     (bip32-compliant-chains-p-witness tree account-index)))
-                   (:instance bip32-compliant-chains-p-necc
-                    (chain-index
-                     (bip32-compliant-chains-p-witness
-                      (bip32-key-tree-fix tree) account-index)))
-                   ;; for ACCOUNT-INDEX:
-                   (:instance bip32-compliant-chains-p-necc
-                    (account-index (ubyte32-fix account-index))
-                    (chain-index
-                     (bip32-compliant-chains-p-witness tree account-index)))
-                   (:instance bip32-compliant-chains-p-necc
-                    (chain-index
-                     (bip32-compliant-chains-p-witness
-                      tree (ubyte32-fix account-index)))))))))
+  (fty::deffixequiv-sk bip32-compliant-chains-p
+    :args ((tree bip32-key-treep) (account-index ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2176,31 +1976,8 @@
                            (t (not (bip32-path-in-tree-p path tree)))))))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-compliant-accounts-for-limit-p
-    :args ((tree bip32-key-treep) (account-index-limit natp))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-accounts-for-limit-p-necc)
-             :use (;; for TREE:
-                   (:instance bip32-compliant-accounts-for-limit-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (account-index
-                     (bip32-compliant-accounts-for-limit-p-witness
-                      tree account-index-limit)))
-                   (:instance bip32-compliant-accounts-for-limit-p-necc
-                    (account-index
-                     (bip32-compliant-accounts-for-limit-p-witness
-                      (bip32-key-tree-fix tree) account-index-limit)))
-                   ;; for ACCOUNT-INDEX-LIMIT:
-                   (:instance bip32-compliant-accounts-for-limit-p-necc
-                    (account-index-limit (nfix account-index-limit))
-                    (account-index
-                     (bip32-compliant-accounts-for-limit-p-witness
-                      tree account-index-limit)))
-                   (:instance bip32-compliant-accounts-for-limit-p-necc
-                    (account-index
-                     (bip32-compliant-accounts-for-limit-p-witness
-                      tree (nfix account-index-limit)))))))))
+  (fty::deffixequiv-sk bip32-compliant-accounts-for-limit-p
+    :args ((tree bip32-key-treep) (account-index-limit natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2217,19 +1994,8 @@
                (bip32-compliant-accounts-for-limit-p tree account-index-limit)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip32-compliant-accounts-p
-    :args ((tree bip32-key-treep))
-    :hints (("Goal"
-             :in-theory (disable bip32-compliant-accounts-p-suff)
-             :use ((:instance bip32-compliant-accounts-p-suff
-                    (account-index-limit
-                     (bip32-compliant-accounts-p-witness
-                      (bip32-key-tree-fix tree))))
-                   (:instance bip32-compliant-accounts-p-suff
-                    (account-index-limit
-                     (bip32-compliant-accounts-p-witness tree))
-                    (tree (bip32-key-tree-fix tree))))))))
+  (fty::deffixequiv-sk bip32-compliant-accounts-p
+    :args ((tree bip32-key-treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

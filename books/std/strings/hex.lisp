@@ -34,7 +34,6 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 (local (defthm unsigned-byte-p-8-of-char-code
@@ -212,28 +211,6 @@ FX-8350.</p>
   :prepwork
   ((local (in-theory (enable hex-digitp char-fix))))
   ///
-  (local (assert! (and (equal (hex-digit-val #\A) #xA)
-                       (equal (hex-digit-val #\B) #xB)
-                       (equal (hex-digit-val #\C) #xC)
-                       (equal (hex-digit-val #\D) #xD)
-                       (equal (hex-digit-val #\E) #xE)
-                       (equal (hex-digit-val #\F) #xF)
-                       (equal (hex-digit-val #\a) #xa)
-                       (equal (hex-digit-val #\b) #xb)
-                       (equal (hex-digit-val #\c) #xc)
-                       (equal (hex-digit-val #\d) #xd)
-                       (equal (hex-digit-val #\e) #xe)
-                       (equal (hex-digit-val #\f) #xf)
-                       (equal (hex-digit-val #\0) #x0)
-                       (equal (hex-digit-val #\1) #x1)
-                       (equal (hex-digit-val #\2) #x2)
-                       (equal (hex-digit-val #\3) #x3)
-                       (equal (hex-digit-val #\4) #x4)
-                       (equal (hex-digit-val #\5) #x5)
-                       (equal (hex-digit-val #\6) #x6)
-                       (equal (hex-digit-val #\7) #x7)
-                       (equal (hex-digit-val #\8) #x8)
-                       (equal (hex-digit-val #\9) #x9))))
   (defcong ichareqv equal (hex-digit-val x) 1
     :hints(("Goal" :in-theory (enable ichareqv downcase-char))))
   (defthm hex-digit-val-upper-bound
@@ -325,11 +302,7 @@ FX-8350.</p>
   (defthm hex-digit-list-value-of-append
     (equal (hex-digit-list-value (append x (list a)))
            (+ (ash (hex-digit-list-value x) 4)
-              (hex-digit-val a))))
-  (local (assert! (and (equal (hex-digit-list-value (coerce "0" 'list)) #x0)
-                       (equal (hex-digit-list-value (coerce "6" 'list)) #x6)
-                       (equal (hex-digit-list-value (coerce "12" 'list)) #x12)
-                       (equal (hex-digit-list-value (coerce "1234" 'list)) #x1234)))))
+              (hex-digit-val a)))))
 
 (define skip-leading-hex-digits (x)
   :short "Skip over any leading hex digit characters at the start of a character list."
@@ -935,7 +908,4 @@ or has any non hexadecimal digit characters (0-9, A-F, a-f), we return
               (eql len xl)
               val)))
   ///
-  (defcong istreqv equal (strval16 x) 1)
-  (local (assert! (equal (strval16 "") nil)))
-  (local (assert! (equal (strval16 "0") 0)))
-  (local (assert! (equal (strval16 "1234") #x1234))))
+  (defcong istreqv equal (strval16 x) 1))

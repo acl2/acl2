@@ -19,8 +19,10 @@
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "utilities/transformation-table")
 (include-book "xdoc/defxdoc-plus" :dir :system)
+
+(include-book "utilities/input-processing")
+(include-book "utilities/transformation-table")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,15 +30,15 @@
 
  casesplit
 
+ :item-state t
+
+ :item-wrld t
+
+ :item-ctx t
+
  :items
 
- ("@('state') is the ACL2 @(see state)."
-
-  "@('wrld') is the ACL2 @(see world)."
-
-  "@('ctx') is the context used for errors."
-
-  "@('old'),
+ ("@('old'),
    @('conditions'),
    @('theorems'),
    @('new-name'),
@@ -322,29 +324,6 @@
                 (value (list (cons hyp hyps)
                              (cons new news)))))))))
 
-(define casesplit-process-new-name (new-name
-                                    (old$ symbolp)
-                                    ctx
-                                    state)
-  :returns (mv erp
-               (new-name$ "A @(tsee symbolp).")
-               state)
-  :mode :program
-  :short "Process the @(':new-name') input."
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
-       (name (if (eq new-name :auto)
-                 (next-numbered-name old$ (w state))
-               new-name))
-       (description (msg "The name ~x0 of the new function, ~@1,"
-                         name
-                         (if (eq new-name :auto)
-                             "automatically generated ~
-                              since the :NEW-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil)))
-    (value name)))
-
 (define casesplit-process-thm-name (thm-name
                                     (old$ symbolp)
                                     (new-name$ symbolp)
@@ -434,7 +413,7 @@
                         @('hyps') and @('news') are
                         the result of @(tsee casesplit-process-theorems),
                         @('new-name$') is
-                        the result of @(tsee casesplit-process-new-name),
+                        the result of @(tsee process-input-new-name),
                         @('new-enable$') indicates whether
                         the new function should be enabled or not,
                         @('thm-name$') is
@@ -469,8 +448,7 @@
                           conditions old$ verify-guards$ ctx state))
        ((er (list hyps news)) (casesplit-process-theorems
                                theorems old$ conditions$ ctx state))
-       ((er new-name$) (casesplit-process-new-name
-                        new-name old$ ctx state))
+       ((er new-name$) (process-input-new-name new-name old$ ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old state)

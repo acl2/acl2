@@ -1073,3 +1073,18 @@
   remove-assoc-of-remove-assoc
   (equal (remove-assoc x1 (remove-assoc x2 alist))
          (remove-assoc x2 (remove-assoc x1 alist))))
+
+(defthm strip-cars-of-remove1-assoc
+  (equal (strip-cars (remove1-assoc-equal key alist))
+         (remove1-equal key (strip-cars alist))))
+
+(defthm
+  intersectp-equal-of-strip-cars-of-remove-equal
+  (implies
+   (not (intersectp-equal x1 (remove-equal nil (strip-cars lst))))
+   (not (intersectp-equal
+         x1
+         (remove-equal nil
+                       (strip-cars (remove-equal x2 lst))))))
+  :hints (("goal" :in-theory (e/d (intersectp-equal)
+                                  (intersectp-is-commutative)))))

@@ -12,7 +12,7 @@
 
 (include-book "remove-unused-vars")
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

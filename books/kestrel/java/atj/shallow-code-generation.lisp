@@ -3206,7 +3206,8 @@
        is a marked and annotated @(tsee mv-let);
        see @(tsee atj-check-marked-annotated-mv-let-call).
        If it is, we proceed as follows.
-       We recursive translate to Java the term assigned to the @('mv') variable;
+       We recursively translate to Java
+       the term assigned to the @('mv') variable;
        this must have multiple types.
        Then we translate the @(tsee let) binding itself to Java,
        obtaining a local variable declaration or assignment
@@ -3619,6 +3620,7 @@
           (if "execIf")
           (nonnegative-integer-quotient "execNonnegativeIntegerQuotient")
           (string-append "execStringAppend")
+          (len "execLen")
           (t (impossible))))
        (jcall-arg-exprs (jexpr-name-list method-param-names))
        (jcall (jexpr-smethod *aij-type-native-fn*

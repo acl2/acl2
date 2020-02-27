@@ -41,7 +41,6 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
-(local (include-book "std/testing/assert" :dir :system))
 
 (local (defthm unsigned-byte-p-5-when-print-base-p
          (implies (print-base-p x)
@@ -884,7 +883,7 @@ parts.</p>"
 ;
 ; I hard-code *evisceration-mark* to avoid a special lookup everywhere.
 
-(local (assert! (equal acl2::*evisceration-mark* :EVISCERATION-MARK)))
+(local (assert-event (equal acl2::*evisceration-mark* :EVISCERATION-MARK)))
 
 (define evisceratedp (x)
   :inline t
@@ -1909,10 +1908,10 @@ revappend-chars).</p>"
 (defmacro evisceration-hiding-mark ()
   ''(:evisceration-mark . "<hidden>"))
 
-(local (assert! (equal acl2::*evisceration-hash-mark* (evisceration-hash-mark))))
-(local (assert! (equal (list acl2::*evisceration-ellipsis-mark*) (list-of-evisceration-ellipsis-mark))))
-(local (assert! (equal acl2::*anti-evisceration-mark* (anti-evisceration-mark))))
-(local (assert! (equal acl2::*evisceration-hiding-mark* (evisceration-hiding-mark))))
+(local (assert-event (equal acl2::*evisceration-hash-mark* (evisceration-hash-mark))))
+(local (assert-event (equal (list acl2::*evisceration-ellipsis-mark*) (list-of-evisceration-ellipsis-mark))))
+(local (assert-event (equal acl2::*anti-evisceration-mark* (anti-evisceration-mark))))
+(local (assert-event (equal acl2::*evisceration-hiding-mark* (evisceration-hiding-mark))))
 
 
 (defines eviscerate1

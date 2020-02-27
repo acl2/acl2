@@ -703,6 +703,11 @@ public final class Acl2Symbol extends Acl2Value {
      */
     public static final Acl2Symbol STRING_APPEND;
 
+    /**
+     * The symbol denoted by {@code acl2::len}.
+     */
+    public static final Acl2Symbol LEN;
+
     static { // builds the pre-created symbols
         // names of the symbols:
         Acl2String stringT = Acl2String.imake("T");
@@ -748,6 +753,7 @@ public final class Acl2Symbol extends Acl2Value {
         Acl2String stringNonnegativeIntegerQuotient =
                 Acl2String.imake("NONNEGATIVE-INTEGER-QUOTIENT");
         Acl2String stringStringAppend = Acl2String.make("STRING-APPEND");
+        Acl2String stringLen = Acl2String.make("LEN");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);
@@ -796,6 +802,7 @@ public final class Acl2Symbol extends Acl2Value {
                         stringNonnegativeIntegerQuotient);
         STRING_APPEND =
                 new Acl2Symbol(Acl2PackageName.ACL2, stringStringAppend);
+        LEN = new Acl2Symbol(Acl2PackageName.ACL2, stringLen);
         // initial inner map for the "COMMON-LISP" package:
         Map<Acl2String, Acl2Symbol> initialLispMap = new HashMap<>();
         initialLispMap.put(stringT, T);
@@ -841,6 +848,7 @@ public final class Acl2Symbol extends Acl2Value {
         initialAcl2Map.put(stringNonnegativeIntegerQuotient,
                 NONNEGATIVE_INTEGER_QUOTIENT);
         initialAcl2Map.put(stringStringAppend, STRING_APPEND);
+        initialAcl2Map.put(stringLen, LEN);
         // initial outer map:
         symbols.put(Acl2PackageName.LISP, initialLispMap);
         symbols.put(Acl2PackageName.ACL2, initialAcl2Map);

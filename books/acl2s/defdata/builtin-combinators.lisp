@@ -85,7 +85,6 @@ data last modified: [2017-06-22 Thu]
 (defun range-pred-I (x s) `(AND . ,(make-acl2-range-constraints x (cadr s) (third s))))
 
 
-
 (defun make-enum-body-for-range (r domain lo hi lo-rel hi-rel)
     (case domain
       (acl2s::integer (let ((lo (and lo (if lo-rel (1+ lo) lo))) ;make both inclusive bounds
@@ -130,9 +129,7 @@ data last modified: [2017-06-22 Thu]
        (hi (tau-interval-hi tau-interval))
        (lo-rel (tau-interval-lo-rel tau-interval))
        (hi-rel (tau-interval-hi-rel tau-interval)))
-
-  (make-enum-body-for-range i (cadr s) lo hi lo-rel hi-rel)))
-
+    (make-enum-body-for-range i (cadr s) lo hi lo-rel hi-rel)))
 
 
 (defun minimum-range-lo-builtin ()
@@ -213,7 +210,6 @@ data last modified: [2017-06-22 Thu]
 (defun sampling-dist-lo (min max mid1 mid2)
   (b* ((small-low (if (< min -100) -100 min))
        (small-hi (if (> max 100) 100 max)))
-
     `((1 :eq ,min)
       (1 :eq ,max)
       (1 :eq ,mid1)
@@ -277,7 +273,6 @@ data last modified: [2017-06-22 Thu]
          ((':geometric ':geq x)     (mv (+ x (,nth-pos-fn ,ivar)) ,seedvar))
          ((':uniform x1 x2)         (,between-fn x1 x2 ,seedvar))
          (& (mv (er hard ',ctx "~| Impossible case ~x0.~%" sp) ,seedvar))))))
-
 
 
 (defun make-enum/acc-body-for-range (ivar seedvar domain lo hi lo-rel hi-rel)

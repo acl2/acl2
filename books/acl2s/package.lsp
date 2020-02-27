@@ -228,6 +228,8 @@
       acl2s-defaults acl2s-defaults-table
 
       clear-memo-table
+
+      induction-machine
       
       begin-book
       rev ;why do we need to add this??

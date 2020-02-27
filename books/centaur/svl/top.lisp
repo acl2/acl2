@@ -51,3 +51,25 @@
 (include-book "svl-openers")
 
 (include-book "svl-flatten")
+
+
+(xdoc::defxdoc
+ acl2::svl
+ :short "A framework to simulate Verilog designs with retained design hiearchy"
+ :long "
+<p>Similar to @(see sv::svtv), SVL semantics is converted from @(see acl2::sv)
+ to simulate Verilog designs but it can retain design hierarchy by not
+ flattening and composing selected modules. It supports combinational and
+ sequential circuits but it fails in case of combinational loops.
+</p>
+
+<p> You need @(see acl2::VL) and @(see acl2::SV) designs to create SVL
+designs. You can use functions svl::svl-flatten-design to create SVL design,
+and svl::svl-run to run the generated design.</p>
+"
+ )
+
+
+(xdoc::defxdoc
+ svl
+ :long "See @(see acl2::svl)")

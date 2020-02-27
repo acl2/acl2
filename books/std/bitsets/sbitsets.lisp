@@ -37,7 +37,6 @@
 (local (include-book "std/lists/rev" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-(local (include-book "std/testing/assert" :dir :system))
 
 (local (in-theory (acl2::enable* set::definitions set::expensive-rules
                                  bitops::ash-1-removal)))
@@ -1234,8 +1233,6 @@ only member is @('a')."
           (t
            (xxxjoin 'sbitset-binary-union args))))
 
-  (local (assert! (sbitsetp (sbitset-union))))
-
   (add-macro-alias sbitset-union sbitset-binary-union$inline)
   (add-macro-fn    sbitset-union sbitset-binary-union$inline t)
 
@@ -1394,8 +1391,6 @@ only member is @('a')."
 
   (add-macro-alias sbitset-intersect sbitset-binary-intersect$inline)
   (add-macro-fn    sbitset-intersect sbitset-binary-intersect$inline t)
-
-  (local (assert! (sbitsetp (sbitset-intersect))))
 
   (local (in-theory (enable sbitset-intersect-exec
                             sbitset-intersect)))

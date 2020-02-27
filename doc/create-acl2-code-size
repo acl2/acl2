@@ -41,11 +41,21 @@ echo '; Code lines (whitespace followed by non-whitespace other than ; ):' >> do
 # we haven't done so.  For now, one can do something like the
 # following, manually:
 
-#  ~/acl2/acl2$ grep -a '^[^;]*#|' *.lisp
+#  % grep -a '^[^;]*#|' *.lisp
 #  doc.lisp:      including books, for example in multi-line comments (#|..|#).
-#  ~/acl2/acl2$
+#  %
 
-# Note the use of the -a option below.  Without it, the results can be
+# Similarly we can check for tabs as follows; never mind the ones in doc.lisp.
+
+#  % grep -aP "^[^;]*\t" *.lisp
+#  doc.lisp:    Declaration	|  Type-Spec	|
+#  doc.lisp:    (type string x y z)	|  string	|
+#  doc.lisp:    (type (integer 0 7) x)	|  (integer 0 7)	|
+#  doc.lisp:    (type rational x)	|  rational	|
+#  doc.lisp:    (type (rational 1 *) x)	|  (rational 1 *)	|
+#  %
+
+# Note the use of the -a option.  Without it, the results can be
 # way off, at least on Linux, because of the line
 # ;   Francisco J. Martín Mateos
 # under "PRINTING and READING" in axioms.lisp -- the accented "i" is the culprit.

@@ -36,7 +36,6 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
-(local (include-book "std/testing/assert" :dir :system))
 
 (defsection base64
   :parents (std/strings)
@@ -1157,32 +1156,3 @@ an accumulator."
          (mv okp (revappend-chars str acc)))
        :exec
        (b64-decode-str-impl x 0 (length x) acc)))
-
-
-
-;; Test vectors from RFC 4648, Section 10.
-
-(local
- (progn
-   (assert! (equal (base64-encode "") ""))
-   (assert! (equal (base64-encode "f") "Zg=="))
-   (assert! (equal (base64-encode "fo") "Zm8="))
-   (assert! (equal (base64-encode "foo") "Zm9v"))
-   (assert! (equal (base64-encode "foob") "Zm9vYg=="))
-   (assert! (equal (base64-encode "fooba") "Zm9vYmE="))
-   (assert! (equal (base64-encode "foobar") "Zm9vYmFy"))
-
-   (define base64-decode-easy ((x stringp))
-     (b* (((mv ok orig) (base64-decode x))
-          ((unless ok)
-           (raise "Whoops")
-           ""))
-       orig))
-
-   (assert! (equal "" (base64-decode-easy "")))
-   (assert! (equal "f" (base64-decode-easy "Zg==")))
-   (assert! (equal "fo" (base64-decode-easy "Zm8=")))
-   (assert! (equal "foo" (base64-decode-easy "Zm9v")))
-   (assert! (equal "foob" (base64-decode-easy "Zm9vYg==")))
-   (assert! (equal "fooba" (base64-decode-easy "Zm9vYmE=")))
-   (assert! (equal "foobar" (base64-decode-easy "Zm9vYmFy")))))

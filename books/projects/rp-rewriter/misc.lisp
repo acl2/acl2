@@ -159,6 +159,22 @@
              ',hints)
             state)))))
 
+
+(xdoc::defxdoc
+ defthm-lambda
+ :parents (rp-utilities)
+ :short "A useful utility to use rewrite rules that has lambda expression on
+ RHS for RP-Rewriter."
+ :long "<p>RP-Rewriter does not work with terms that has lambda expressions. Every
+ rewrite rule and conjectures are beta-reduced. However, for some cases, doing
+ beta-reduction without rewriting subterms first can cause performance issues
+ due to repetition.</p>
+<p> To mitigate this issue, we use a macro defthm-lambda that can retain the
+ functionality of lambda expressions for RHS of rewrite rules. defthm-lambda
+ has the same signature as defthm. </p>
+
+")
+
 (encapsulate
   nil
 
@@ -234,6 +250,40 @@
 
   #|(defmacro enable-opener-error-rule (rule-name)
     `(table 'rw-opener-error-rules ',rule-name t))||#)
+
+
+(xdoc::defxdoc
+ def-rw-opener-error
+ :short "A macro that causes RP-Rewriter to throw a readable error when a
+ certain pattern occurs."
+ :long "<p>
+ In cases where users want to make sure that a term of a certain pattern
+ does not occur, or it is taken care of by a rewrite rule with higher
+ priority. </p>
+ 
+<code>
+@('(def-rw-opener-error 
+  <name> ;; a unique name for the opener error rule
+  <pattern> ;; a pattern to match/unify
+  ;;optional keys
+  :do-not-print (a b c ...)   ;; a list of variables not to print when
+                              ;; RP-Rewriter encounters the term and
+                              ;; unifies with variables. Default: nil.
+  :disabled <t-or-nil>        ;; whether or not opener error rule should be
+                              ;; disabled.
+  :message \"...\"            ;; A user defined message if user wants to
+                              ;; override the original.
+  )')
+</code>
+
+<p> A def-rw-opener-error event will submit a disabled rewrite rule with
+defthm, but it will be enabled in RP-Rewriter's rule-set by default. Such rules
+might be useful if you are using some rewrite rules with hypotheses and want to
+make sure that hypotheses are relieved, otherwise this rule will be used and
+RP-Rewriter will throw an eligible error.</p>"
+
+ :parents (rp-utilities))
+
 
 (defun translate1-vals-in-alist (alist state)
   (declare (xargs :guard (alistp alist)
@@ -397,6 +447,50 @@
 (defmacro defthmrp (&rest rest)
   `(def-rp-thm ,@rest))
 
+
+(xdoc::defxdoc
+ def-rp-thm
+ :short "Same as @(see rp::defthmrp)")
+
+(xdoc::defxdoc
+ defthmrp
+ :short "A defthm macro that calls RP-Rewriter as a clause processor with some
+ capabilities."
+ :parents (rp-utilities rp-rewriter)
+ :long "<p>RP::Defthmrp is a macro that calls defthm with RP-Rewriter as a
+ clause-processor. It may also take some of the following parameters:
+
+<code>
+@('
+ (rp::defthmrp
+  <new-rule-name>
+  <conjecture>
+  ;; optional keys:
+  :rule-classes <...>   ;; default: :rewrite
+  :new-synps <...>      ;; for advanced users; can attach syntaxp to some existing
+                        ;; rewrite rules. Default: nil
+  :enable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; an unquoted list of names
+                                               ;; of meta functions that users
+                                               ;; wants to enable.  
+  :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above 
+  :enable-rules (append '(rule1 rule2)
+                        *rules3*
+                        ...) ;; List of rule-names that users wants enabled in
+      ;; RP-Rewriter's rule-set. The macro will execute the expressions first to
+      ;; generate the names.
+  :disable-rules <...>      ;; Same as above
+  :runes '(rule1 rule2 ...) ;; When nil, the macro uses the existing rule-set of
+      ;; RP-rewriter. Otherwise, it will overrride everything else regarding rules
+      ;; and use only the rules given in this list. 
+  )
+')
+</code>
+</p>
+"
+ )
+      
+
+
 (encapsulate
   nil
 
@@ -443,6 +537,59 @@
                `((,macro-name nil))
              nil)))))
 
+
+(xdoc::defxdoc
+ fetch-new-events
+ :short "A macro that detects the changes in the theory when a book is
+ included, and creates a macro to enable users to enable and disable the new events."
+ :parents (rp-utilities)
+ :long "<p>Gives users the ability to undo and redo the changes an event, such
+ as include-book, makes to current theory.
+
+<code>
+@('
+ (fetch-new-events 
+  <event>               ;; e.g., (include-book \"arithmetic-5\" :dir :system)
+  <macro-name>          ;; e.g., use-aritmetic-5 
+  ;;optional key
+  :disabled <disabled> ;; When non-nil, the event does not change the current
+  theory. Default: nil.
+  )
+')
+</code>
+</p>
+
+<p>
+After including the arithmetic library as given below, users can enable and
+disable the library as given.
+
+<code>
+@('
+ (fetch-new-events 
+  (include-book \"arithmetic-5\" :dir :system)
+  use-aritmetic-5)
+')
+</code>
+
+<code>
+(use-aritmetic-5 t)
+</code>
+
+<code>
+(use-aritmetic-5 nil)
+</code>
+
+</p>
+
+<p>
+Note that when current theory contains many events, this utility may work very
+slowly. If you do not wish to generate a macro, you may also use @(see
+rp::preserve-current-theory). This utility will work with current theory of any size.
+</p>
+"
+ )
+
+
 (encapsulate
   nil
 
@@ -466,3 +613,12 @@
        (progn
          ,(preserve-current-theory-step1 event)
          ,(preserve-current-theory-step2)))))
+
+
+(xdoc::defxdoc
+ preserve-current-theory
+ :short "A macro that detects the changes in the theory when a book is
+ included, and retains the current theory"
+ :parents (rp-utilities)
+ :long "See @(see rp::fetch-new-events)"
+ )

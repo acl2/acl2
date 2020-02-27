@@ -32,7 +32,6 @@
 (include-book "cat")
 (include-book "strprefixp")
 
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "arithmetic"))
 
 (defsection strsubst-aux
@@ -130,13 +129,7 @@ individual characters, whereas @('strsubst') works on substrings.</p>"
 
   (defthm stringp-of-strsubst
     (stringp (strsubst old new x))
-    :rule-classes :type-prescription)
-
-  (local (assert! (equal (strsubst "World" "Star" "Hello, World!")
-                         "Hello, Star!")))
-
-  (local (assert! (equal (strsubst "oo" "aa" "xoooyoo")
-                         "xaaoyaa"))))
+    :rule-classes :type-prescription))
 
 
 

@@ -10,9 +10,12 @@
 
 (in-package "ACL2")
 
-(include-book "misc/assert" :dir :system)
-(include-book "misc/eval" :dir :system)
 (include-book "isodata")
+
+(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/eval" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (set-verify-guards-eagerness 2)
 
@@ -687,14 +690,14 @@
 
  (defiso nat-id natp natp identity identity)
 
- ;; hints for :OLDP-OF-REC-CALLS allowed only if OLD is recursive:
+ ;; hints for :OLDP-OF-REC-CALL-ARGS allowed only if OLD is recursive:
  (must-fail (isodata p ((x (natp natp identity identity)))
                      :predicate t
-                     :hints (:oldp-of-rec-calls-hints
+                     :hints (:oldp-of-rec-call-args-hints
                              (("Goal" :in-theory nil)))))
  (must-fail (isodata p ((x nat-id))
                      :predicate t
-                     :hints (:oldp-of-rec-calls-hints
+                     :hints (:oldp-of-rec-call-args-hints
                              (("Goal" :in-theory nil)))))
 
  ;; hints for :OLD-GUARD disallowed if VERIFY-GUARDS is NIL or PREDICATE is T:
@@ -970,10 +973,10 @@
   (isodata f ((:result (acl2-numberp acl2-numberp identity identity))))
   (must-be-redundant
    (DEFUN F{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X))
+     (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1003,10 +1006,10 @@
   (isodata f ((:result acl2-number-id)))
   (must-be-redundant
    (DEFUN F{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X))
+     (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1016,9 +1019,10 @@
   (isodata p ((x (natp natp identity identity))) :predicate t)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
-          (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
+          (NATP (IDENTITY X))
+          (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((p . (1))))))
@@ -1026,9 +1030,10 @@
   (isodata p ((x nat-id)) :predicate t)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
-          (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
+          (NATP (IDENTITY X))
+          (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((p . (1))))))
@@ -1060,10 +1065,10 @@
   (isodata f ((:result (acl2-numberp acl2-numberp identity identity))))
   (must-be-redundant
    (DEFUN F{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X))
+     (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1093,10 +1098,10 @@
   (isodata f ((:result acl2-number-id)))
   (must-be-redundant
    (DEFUN F{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X))
+     (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1106,9 +1111,10 @@
   (isodata p ((x (natp natp identity identity))) :predicate t :new-name :auto)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
-          (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
+          (NATP (IDENTITY X))
+          (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((p . (1))))))
@@ -1116,9 +1122,10 @@
   (isodata p ((x nat-id)) :predicate t :new-name :auto)
   (must-be-redundant
    (DEFUN P{1} (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
-          (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
+          (NATP (IDENTITY X))
+          (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((p . (1))))))
@@ -1149,10 +1156,10 @@
            :new-name g)
   (must-be-redundant
    (DEFUN G (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X))
+     (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1179,10 +1186,10 @@
   (isodata f ((:result acl2-number-id)) :new-name g)
   (must-be-redundant
    (DEFUN G (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X))
+     (DECLARE (XARGS :GUARD (NATP X)
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF T (IDENTITY (+ 1 X)) NIL)))
+     (IDENTITY (+ 1 X))))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
 
@@ -1191,18 +1198,20 @@
   (isodata p ((x (natp natp identity identity))) :predicate t :new-name q)
   (must-be-redundant
    (DEFUN Q (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
-          (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
+          (NATP (IDENTITY X))
+          (< 10 (IDENTITY X)))))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
   (isodata p ((x nat-id)) :predicate t :new-name q)
   (must-be-redundant
    (DEFUN Q (X)
-     (DECLARE (XARGS :GUARD (AND (NATP X)) :VERIFY-GUARDS T :MODE :LOGIC))
+     (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
      (AND (NATP X)
-          (AND (NATP (IDENTITY X)) (< 10 (IDENTITY X))))))
+          (NATP (IDENTITY X))
+          (< 10 (IDENTITY X)))))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil))))
 

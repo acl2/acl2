@@ -34,7 +34,6 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -71,13 +70,7 @@ character lists and strings.</p>")
        (hex-code (if (eql (len hex-code) 1)
                      (cons #\0 hex-code)
                    hex-code)))
-    (cons #\% hex-code))
-  ///
-  (local
-   (progn
-     (assert! (equal (implode (url-encode-char #\a))           "a"))
-     (assert! (equal (implode (url-encode-char #\Space))       "%20"))
-     (assert! (equal (implode (url-encode-char (code-char 0))) "%00")))))
+    (cons #\% hex-code)))
 
 
 (define make-url-encode-array ((n natp))
@@ -205,9 +198,4 @@ character lists and strings.</p>")
   :inline t
   (let ((x (mbe :logic (str-fix x) :exec x)))
     (str::rchars-to-string
-     (url-encode-string-aux x 0 (length x) nil)))
-  ///
-  (local (assert!
-          (let ((x "foo123$%20 blah !==[]{}7&*^!@&*^&*)($"))
-            (equal (url-encode-string x)
-                   (implode (url-encode-chars (explode x))))))))
+     (url-encode-string-aux x 0 (length x) nil))))

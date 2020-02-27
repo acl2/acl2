@@ -112,30 +112,3 @@
 (defthm string-listp-of-strsplit
   (string-listp (strsplit x del))
   :hints(("Goal" :in-theory (enable strsplit))))
-
-
-
-
-(local (include-book "std/testing/assert" :dir :system))
-
-(local
- (encapsulate
-  ()
-  (ACL2::assert! (equal (strsplit "foo:bar" #\:)
-                        (list "foo" "bar")))
-
-  (ACL2::assert! (equal (strsplit "foo:bar:" #\:)
-                        (list "foo" "bar")))
-
-  (ACL2::assert! (equal (strsplit ":foo:bar" #\:)
-                        (list "foo" "bar")))
-
-  (ACL2::assert! (equal (strsplit "foo::bar" #\:)
-                        (list "foo" "bar")))
-
-  (ACL2::assert! (equal (strsplit "foo::bar" #\:)
-                        (list "foo" "bar")))
-
-  (ACL2::assert! (not (strsplit "" #\:)))
-
-  (ACL2::assert! (not (strsplit ":::::" #\:)))))

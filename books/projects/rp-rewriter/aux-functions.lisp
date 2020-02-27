@@ -41,7 +41,7 @@
 (include-book "std/lists/remove-duplicates" :dir :system)
 (include-book "misc/beta-reduce" :dir :system)
 (include-book "tools/flag" :dir :system)
-
+(include-book "std/util/defines" :dir :system)
 ;; Functions and lemmas used by both correctness proofs (rp-correct.lisp) and
 ;; guards (rp-rewriter.lisp)
 
@@ -298,16 +298,16 @@
                                         `',rest1)))
            (& nil))))))
 
-  (defun falist-consistent (falist-term)
-    ;; given a falist term (falist & &), checks the consistence.
-    (declare (xargs :guard t))
+  (define falist-consistent (falist-term)
+    :parents (rp-utilities)
+    :enabled t
+    :short "Given a falist term \(falist \* \*\), checks consistence of arguments."
     (case-match falist-term
       (('falist ('quote falist) term)
        (falist-consistent-aux falist term))
       (('falist ''nil ''nil)
        t)
       (& nil)))
-
 
   (defun is-falist (term)
     ;; checks if it is a falist statement?
@@ -369,10 +369,13 @@
                       is-lambda-strict
                       is-rp-soft)))
 
-  (mutual-recursion
-   (defun rp-termp (term)
+  (acl2::defines
+   rp-termp
+   (define rp-termp (term)
      ;; same as pseudo-termp but does not allow nil as a symbol
-     (declare (xargs :guard t :mode :logic))
+     :enabled t
+     :parents (rp-utilities)
+     :short "Similarly to pseudo-termp, defines the syntax for terms. "
      (cond ((atom term) (and (symbolp term) term))
            ((eq (car term) 'quote)
             (and (consp (cdr term))
@@ -387,8 +390,8 @@
                    (car term)
                    (rp-term-listp (cdr term))))))
 
-   (defun rp-term-listp (lst)
-     (declare (xargs :guard t))
+   (define rp-term-listp (lst)
+     :enabled t
      (cond ((atom lst) (eq lst nil))
            (t (and (rp-termp (car lst))
                    (rp-term-listp (cdr lst)))))))
@@ -399,7 +402,6 @@
         (equal lst nil)
       (and (rp-term-listp (car lst))
            (rp-term-list-listp (cdr lst))))))
-
 
 (defun falist-syntaxp (unquoted-falist)
   ;; on the unquoted fast-alist (which is the first parameter of (falist & &)
@@ -495,22 +497,25 @@
          (not (quotep (car lst)))
          (cons-consp (cdr lst)))))
 
-(mutual-recursion
- (defun include-fnc (term fnc)
-   (declare (xargs :guard (and #|(rp-termp term)||#
-                           (symbolp fnc))))
+(acl2::defines
+ include-fnc
+ (define include-fnc (term fnc)
+   :enabled t
+   :guard (symbolp fnc)
+   :parents (rp-utilities)
+   :short "Searches a term for an instance of fnc. Returns t or nil."
    (if (or (atom term)
            (quotep term))
        nil
      (if (eq (car term) fnc)
          t
-       (or
-        #|(include-fnc (car term) fnc)||#
-        (include-fnc-subterms (cdr term) fnc)))))
+       (include-fnc-subterms (cdr term) fnc))))
 
- (defun include-fnc-subterms (subterms fnc)
-   (declare (xargs :guard (and #|(rp-term-listp subterms)||#
-                           (symbolp fnc))))
+ (define include-fnc-subterms (subterms fnc)
+   :guard (symbolp fnc)
+   :enabled t
+   :parents (rp-utilities)
+   :short "Searches a list of terms for an instance of fnc. Returns t or nil."
    (if (atom subterms)
        nil
      (or (include-fnc (car subterms) fnc)
@@ -543,8 +548,10 @@
        x)
       (& term)))
 
-  (defun ex-from-rp (term)
-    (declare (xargs :guard t))
+  (define ex-from-rp (term)
+    :enabled t
+    :parents (rp-utilities)
+    :short "Extracts a term if it is wrapped in an rp instance."
     (if (is-rp term)
         (ex-from-rp (caddr term))
       term))
@@ -552,8 +559,10 @@
   (local
    (in-theory (enable IS-RP-LOOSE)))
 
-  (defund ex-from-rp-loose (term)
-    (declare (xargs :guard t))
+  (define ex-from-rp-loose (term)
+    :parents (rp-utilities)
+    :short "Same as @(see rp::ex-from-rp) when term is @(see rp::rp-termp) but
+    a little faster."
     (mbe :logic (if (is-rp-loose term)
                     (ex-from-rp-loose (caddr term))
                   term)
@@ -610,7 +619,9 @@
     `(cons ',(car (unquote term))
            ',(cdr (unquote term))))
 
-  (defund context-from-rp (term context)
+  (define context-from-rp (term context)
+    :short "Expands the context with the side-conditions from the term"
+    :parents (rp-utilities)
     (if (is-rp term)
         (let ((type (car (cdr (car (cdr term)))))
               (x (car (cdr (cdr term)))))
@@ -619,8 +630,9 @@
                   rcontext)))
       context)))
 
-(defun-inline dumb-negate-lit2 (term)
-  (declare (xargs :guard t #|(rp-termp term)||#))
+(define dumb-negate-lit2 (term)
+  :enabled t
+  :inline t
   (cond ((atom term)
          (acl2::fcons-term* 'not term))
         ((acl2::fquotep term)
@@ -745,50 +757,6 @@
   (defmacro rp-iff-flagm (rule)
     `(access custom-rewrite-rule ,rule :flg)))
 
-#|(encapsulate
-  nil
-  (defstobj rp-stat
-    (rules-used :type t :initially nil)
-    (save-rules-used :type t :initially nil))
-
-  (defun add-to-rules-used (rule rp-stat)
-    (declare (xargs
-              :guard (and (weak-custom-rewrite-rule-p rule)
-                          (RP-STATP RP-STAT))
-              :stobjs rp-stat))
-    (if (save-rules-used rp-stat)
-        (update-rules-used (cons (rp-rule-name rule)
-                                 (rules-used rp-stat))
-                           rp-stat)
-      rp-stat))
-
-  (defun add-to-rules-used-with-rule-name (rule-name rp-stat)
-    (declare (xargs
-              :GUARD (rp-statp rp-stat)
-              :stobjs rp-stat))
-    (if (save-rules-used rp-stat)
-        (update-rules-used (cons rule-name
-                                 (rules-used rp-stat))
-                           rp-stat)
-      rp-stat))
-
-  (defun finalize-rules-used (rp-stat)
-    (declare (xargs
-              :GUARD (RP-STATP RP-STAT)
-              :stobjs rp-stat))
-    (if (save-rules-used rp-stat)
-        (update-rules-used
-         (acl2::hons-remove-duplicates (rules-used rp-stat) )
-         rp-stat)
-      rp-stat))
-
-  (defun reset-rp-stat (rp-stat)
-    (declare (xargs
-              :GUARD (RP-STATP RP-STAT)
-              :stobjs rp-stat))
-    (b* ((rp-stat (update-rules-used nil rp-stat)))
-      rp-stat)))||#
-
 (defun remove-from-alist (alist key)
   (declare (xargs :guard t))
   (if (atom alist)
@@ -832,22 +800,12 @@
     (if (atom dont-rw)
         t
       (and (or (atom (car dont-rw))
-;(strict-quotep (car dont-rw))
                (dont-rw-syntaxp-aux (car dont-rw)))
            (dont-rw-syntaxp-aux (cdr dont-rw)))))
-
-  #|(defun dont-rw-syntaxp-aux (dont-rw)
-  (declare (xargs :guard t))
-  (if (atom dont-rw)
-  (equal dont-rw nil)
-  (and (or (booleanp (car dont-rw))
-  (dont-rw-syntaxp-aux (car dont-rw)))
-  (dont-rw-syntaxp-aux (cdr dont-rw)))))||#
 
   (defund dont-rw-syntaxp (dont-rw)
     (declare (xargs :guard t))
     (or (atom dont-rw)
-        ;;(strict-quotep dont-rw)
         (dont-rw-syntaxp-aux dont-rw)))
 
   (define should-not-rw (dont-rw)
@@ -865,19 +823,14 @@
                           (list (cons #\0 dont-rw)))
               t))))
 
-
 (defun context-syntaxp (context)
   (declare (xargs :guard t))
-  (and ;(cons-consp context) ;; may not be necessary anymore.
-;(not (member nil context))
-   (rp-term-listp context)
-   #|(rp-syntaxp-lst context)||#
-   #|(all-falist-consistent-lst context)||#))
+  (rp-term-listp context))
 
 (mutual-recursion
 
  (defun remove-return-last (term)
-   (declare (xargs :guard t #|(rp-termp term)||#))
+   (declare (xargs :guard t))
    (cond
     ((or (atom term)
          (quotep term)
@@ -922,17 +875,6 @@
      (or (search-term (car subterms) seq)
          (search-subterms (cdr subterms) seq)))))
 
-;; (defmacro rp-valid-termp (term)
-;;   `(and (rp-termp ,term)
-;;         (rp-syntaxp ,term)
-;;         (all-falist-consistent ,term)))
-
-;; (defun rp-valid-term-listp (terms)
-;;   (if (atom terms)
-;;       (equal terms nil)
-;;     (and (rp-valid-termp (car terms))
-;;          (rp-valid-term-listp (cdr terms)))))
-
 (encapsulate
   nil
 
@@ -947,7 +889,8 @@
               (consp term))
      :hints (("Goal"
               :in-theory (e/d (ex-from-rp-loose
-                               is-rp-loose) ())))))
+                               is-rp-loose)
+                              ())))))
 
   (local
    (defthm extract-from-rp-acl2-count
@@ -964,13 +907,15 @@
               :in-theory (e/d (ex-from-rp-loose
                                is-rp-loose) ())))))
 
-  (mutual-recursion
-   ;; check if two terms are equivalent by discarding rp terms
-   (defun rp-equal (term1 term2)
+  (acl2::defines
+   rp-equal
+   :parents (rp-utilities)
+   :short "Check if two terms are equivalent by discarding rp terms"
+   (define rp-equal (term1 term2)
+     :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard t #|(and (rp-termp term1)
-                     (rp-termp term2))||#))
+                     :guard t))
      "Check syntactic equivalance of two terms by ignoring all the rp terms"
      (let* ((term1 (ex-from-rp term1))
             (term2 (ex-from-rp term2)))
@@ -983,7 +928,8 @@
         (t (and (equal (car term1) (car term2))
                 (rp-equal-subterms (cdr term1) (cdr term2)))))))
 
-   (defun rp-equal-subterms (subterm1 subterm2)
+   (define rp-equal-subterms (subterm1 subterm2)
+     :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
                      :guard t #|(and (rp-term-listp subterm1)
@@ -994,9 +940,12 @@
        (and (rp-equal (car subterm1) (car subterm2))
             (rp-equal-subterms (cdr subterm1) (cdr subterm2))))))
 
-  (mutual-recursion
-   ;; same as rp-equal but prints a mismatch.
-   (defun rp-equal-cw (term1 term2)
+  (acl2::defines
+   rp-equal-cw
+   :parents (rp-utilities)
+   :short "Same as @(see rp::rp-equal) but prints a mismatch."
+   (define rp-equal-cw (term1 term2)
+     :enabled t
      (declare (xargs :mode :logic
                      :guard t #|(and (rp-termp term1)
                      (rp-termp term2))||#))
@@ -1014,7 +963,8 @@
                     (cw "Mismatch: term1=~p0, term2=~p1 ~%" term1 term2))
                 (rp-equal-cw-subterms (cdr term1) (cdr term2)))))))
 
-   (defun rp-equal-cw-subterms (subterm1 subterm2)
+   (define rp-equal-cw-subterms (subterm1 subterm2)
+     :enabled t
      (declare (xargs :mode :logic
                      :guard t #|(and (rp-term-listp subterm1)
                      (rp-term-listp subterm2))||#))
@@ -1055,30 +1005,14 @@
        (and (rp-equal-loose (car subterm1) (car subterm2))
             (rp-equal-loose-subterms (cdr subterm1) (cdr subterm2))))))
 
-  #|(defun rp-equal3 (terms1 terms2)
-  (declare (xargs :mode :logic
-  :verify-guards t
-  :measure (cons-count terms1)
-  :guard t #|(and (rp-term-listp subterm1)
-  (rp-term-listp subterm2))||#))
-  (if (or (atom terms1)
-  (atom terms2))
-  (equal terms1 terms2)
-  (b* ((first1 (ex-from-rp-loose (car terms1)))
-  (first2 (ex-from-rp-loose (car terms2))))
-  (cond ((or (atom first1)
-  (atom first2)
-  (eq (car first1) 'quote)
-  (eq (car first2) 'quote))
-  (and (equal first1 first2)
-  (rp-equal3 (cdr terms1) (cdr terms2))))
-  (t (and (equal (car first1) (car first2))
-  (rp-equal3 (cdr first1) (cdr first2))
-  (rp-equal3 (cdr terms1) (cdr terms2))))))))||#
-
-  (mutual-recursion
+  (acl2::defines
+   rp-equal-cnt
+   :parents (rp-utilities)
+   :short "Same as @(see rp::rp-equal) but when counts down from cnt and starts ~
+   using 'equal' when it hits 0."
    ;; check if two terms are equivalent by discarding rp terms
-   (defun rp-equal-cnt (term1 term2 cnt)
+   (define rp-equal-cnt (term1 term2 cnt)
+     :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
                      :guard (and (integerp cnt)
@@ -1099,7 +1033,8 @@
              (and (equal (car term1) (car term2))
                   (rp-equal-cnt-subterms (cdr term1) (cdr term2) (1- cnt))))))))
 
-   (defun rp-equal-cnt-subterms (subterm1 subterm2 cnt)
+   (define rp-equal-cnt-subterms (subterm1 subterm2 cnt)
+     :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
                      :guard (and (integerp cnt)
@@ -1159,7 +1094,9 @@
     (in-theory (disable (:type-prescription no-free-variablep))))
 
   (define rule-syntaxp (rule &key warning)
-    (declare (xargs :guard t))
+    :parents (rp-utilities)
+    :short "Syntax check for a 'rule' defined with rp::custom-rewrite-rule. If
+    warning key is set to non-nil, a warning is issued for failures. "
     (and
      (or (weak-custom-rewrite-rule-p rule)
          (and warning
@@ -1167,6 +1104,22 @@
                'rule-syntaxp
                "ATTENTION! weak-custom-rewrite-rule-p failed! ~p0 ~%"
                (list (cons #\0 rule)))))
+     (or (not (include-fnc (rp-lhs rule) 'rp))
+         (and warning
+              (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
+    failed! LHS cannot contain an instance of rp. ~%")))
+     (or (not (include-fnc (rp-hyp rule) 'rp))
+         (and warning
+              (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp))
+    failed! HYP cannot contain an instance of rp. ~%")))
+     (or (not (include-fnc (rp-rhs rule) 'falist))
+         (and warning
+              (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
+    failed! RHS cannot contain an instance of falist ~%")))
+     (or (not (include-fnc (rp-hyp rule) 'falist))
+         (and warning
+              (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
+    failed! HYP cannot contain an instance of falist ~%")))
      (or (and
           (or (rp-termp (rp-hyp rule))
               (and warning
@@ -1180,22 +1133,7 @@
               (and warning
                    (cw "ATTENTION! (rp-termp (rp-rhs rule)) failed! RHS of the ~
     rule does not satisfy rp::rp-termp. ~%")))
-          (or (not (include-fnc (rp-lhs rule) 'rp))
-              (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
-    failed! LHS cannot contain an instance of rp. ~%")))
-          (or (not (include-fnc (rp-hyp rule) 'rp))
-              (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp))
-    failed! HYP cannot contain an instance of rp. ~%")))
-          (or (not (include-fnc (rp-rhs rule) 'falist))
-              (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
-    failed! RHS cannot contain an instance of falist ~%")))
-          (or (not (include-fnc (rp-hyp rule) 'falist))
-              (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
-    failed! HYP cannot contain an instance of falist ~%")))
+
           (or (not (include-fnc (rp-lhs rule) 'if))
               (and warning
                    (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'if))
@@ -1262,8 +1200,11 @@
        (not (include-fnc term 'falist))
        (rp-termp term)))
 
-(mutual-recursion
- (defun ex-from-rp-all (term)
+(acl2::defines
+ ex-from-rp-all
+ :parents (rp-utilities)
+ :short "Removes all instances of 'rp' from a term"
+ (define ex-from-rp-all (term)
    (b* ((term (ex-from-rp term)))
      (cond ((atom term)
             term)
@@ -1273,7 +1214,7 @@
             (cons (car term)
                   (ex-from-rp-all-lst (cdr term)))))))
 
- (defun ex-from-rp-all-lst (lst)
+ (define ex-from-rp-all-lst (lst)
    (if (atom lst)
        lst
      (cons (ex-from-rp-all (car lst))
@@ -1406,14 +1347,6 @@
 (encapsulate
   nil
 
-  #|(defun lambda-pairs (keys vals)
-  (declare (xargs :guard t))
-  (if (or (atom keys)
-  (atom vals))
-  nil
-  (acons (car keys) (car vals)
-  (lambda-pairs (cdr keys) (cdr vals)))))||#
-
   (defun rp-beta-reduce-get-val (key keys vals)
     (declare (xargs :guard t))
     (cond ((atom keys)
@@ -1515,12 +1448,10 @@
 
   (verify-guards merge-comperator-sort))
 
-
-
 (define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
                                     (disabled-meta-rules ))
   :guard-hints (("Goal"
-                 :in-theory (e/d (WEAK-RP-META-RULE-REC-P) ())))
+                 :in-theory (e/d (weak-rp-meta-rule-rec-p) ())))
   (cond ((atom disabled-meta-rules)
          meta-rules)
         ((atom meta-rules)
@@ -1534,8 +1465,6 @@
                (cons (car meta-rules)
                      (remove-disabled-meta-rules (cdr meta-rules)
                                                  disabled-meta-rules)))))))
-
-
 
 
 (progn
@@ -1565,9 +1494,6 @@
            (table rp-rules-inorder ',rune nil)
            (table rp-rules ',rune ,,(not disabled))))))
 
-  #|(defmacro add-rp-exc-counterpart (fnc-name)
-  `(add-rp-rule '(:executable-counterpart ,fnc-name)))||#
-
   (defmacro def-rp-rule (rule-name rule &rest hints)
     `(progn
        (defthm
@@ -1582,6 +1508,9 @@
 
 
 
+ 
+
+
 (defun trans-list (lst)
   (declare (xargs :guard t))
   (if (atom lst)
@@ -1589,8 +1518,6 @@
     (if (atom (cdr lst))
         `(cons ,(car lst) 'nil)
       `(cons ,(car lst) ,(trans-list (cdr lst))))))
-      
-    
 
 (progn
   (mutual-recursion
@@ -1649,5 +1576,3 @@
        nil
      (cons (rp-untrans (car lst))
            (rp-untrans-lst (cdr lst))))))
-
-

@@ -6048,7 +6048,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun pairlis$-tailrec (x y acc)
   (declare (xargs :guard (and (true-listp x)
                               (true-listp y)
-			      (true-listp acc))))
+                              (true-listp acc))))
   (cond ((endp x) (reverse acc))
         (t (pairlis$-tailrec (cdr x) (cdr y) (cons (cons (car x) (car y)) acc)))))
 
@@ -26399,6 +26399,7 @@ Lisp definition."
 ; Skipped on first pass of the build:
 (verify-termination-boot-strap cpu-core-count)
 (verify-termination-boot-strap get-in-theory-redundant-okp)
+(verify-termination-boot-strap dumb-occur-var)
 
 ; We need for sharp-atsign-alist to be compiled before it is called in
 ; *sharp-atsign-ar*, file basis.lisp.  So we put its definition here, along

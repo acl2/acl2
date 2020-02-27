@@ -31,7 +31,6 @@
 (in-package "STR")
 (include-book "coerce")
 (include-book "std/basic/defs" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "arithmetic"))
 
 
@@ -172,23 +171,7 @@ is returned.</p>"
 
   (defthm stringp-of-strline
     (stringp (strline n x))
-    :rule-classes :type-prescription)
-
-  (local (acl2::assert! (equal "foo" (strline 1 "foo
-bar
-baz"))))
-
-  (local (acl2::assert! (equal "bar" (strline 2 "foo
-bar
-baz"))))
-
-  (local (acl2::assert! (equal "baz" (strline 3 "foo
-bar
-baz"))))
-
-  (local (acl2::assert! (equal "" (strline 4 "foo
-bar
-baz")))))
+    :rule-classes :type-prescription))
 
 
 (defsection strlines
@@ -248,50 +231,4 @@ single chunk.</p>"
 
   (defthm stringp-of-strlines
     (stringp (strlines a b x))
-    :rule-classes :type-prescription)
-
-  (local (defconst *txt* "Line 1
-Line 2
-Line 3
-Line 4
-Line 5
-Line 6"))
-
-  (local (assert! (equal (strlines 1 1 *txt*) "Line 1
-")))
-
-  (local (assert! (equal (strlines 1 2 *txt*) "Line 1
-Line 2
-")))
-
-  (local (assert! (equal (strlines 1 3 *txt*) "Line 1
-Line 2
-Line 3
-")))
-
-  (local (assert! (equal (strlines 1 100 *txt*) *txt*)))
-
-  (local (assert! (equal (strlines 2 2 *txt*) "Line 2
-")))
-
-  (local (assert! (equal (strlines 2 3 *txt*) "Line 2
-Line 3
-")))
-
-  (local (assert! (equal (strlines 5 6 *txt*) "Line 5
-Line 6"))) ;; Note: no newline after line 6, so none is returned here
-
-  (local (assert! (equal (strlines 5 1000 *txt*) "Line 5
-Line 6"))) ;; Note: no newline after line 6, so none is returned here
-
-  (local (assert! (equal (strlines 5 6 (concatenate 'string *txt* "
-")) "Line 5
-Line 6
-"))) ;; Newline, so it's returned
-
-  (local (assert! (equal (strlines 5 1000 (concatenate 'string *txt* "
-")) "Line 5
-Line 6
-"))) ;; Newline, so it's returned
-
-  (local (assert! (equal (strlines 7 1000 *txt*) ""))))
+    :rule-classes :type-prescription))

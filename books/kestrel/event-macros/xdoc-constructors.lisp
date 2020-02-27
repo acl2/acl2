@@ -937,6 +937,10 @@
      The @(':items') argument must be a list of XDOC trees,
      each of which is wrapped into an @(tsee xdoc::li),
      and the so-wrapped items are put into an @(tsee xdoc::ul).")
+   (xdoc::p
+    "Certain common items, like the @('state') variable,
+     can be included among the items just by setting
+     the corresponding keyword options to @('t').")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -945,13 +949,32 @@
           (t (cons `(xdoc::li ,(car items))
                    (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
 
-  (defmacro xdoc::evmac-topic-implementation (macro &key items)
+  (defmacro xdoc::evmac-topic-implementation (macro
+                                              &key
+                                              items
+                                              item-state
+                                              item-wrld
+                                              item-ctx)
     (declare (xargs :guard (symbolp macro)))
     (b* ((macro-name (string-downcase (symbol-name macro)))
          (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
          (this-topic (add-suffix macro "-IMPLEMENTATION"))
          (parent-topic macro)
          (short (concatenate 'string "Implementation of " macro-ref "."))
+         (all-items
+          (append (and item-state
+                       '((xdoc::&&
+                          "@('state') is the ACL2 "
+                          (xdoc::seetopic "acl2::state" "state")
+                          ".")))
+                  (and item-wrld
+                       '((xdoc::&&
+                          "@('wrld') is the ACL2 "
+                          (xdoc::seetopic "acl2::world" "world")
+                          ".")))
+                  (and item-ctx
+                       '("@('ctx') is the context used for errors."))
+                  items))
          (long `(xdoc::topstring
                  (xdoc::p
                   "The implementation functions have arguments,
@@ -960,7 +983,7 @@
                                   "@(':returns') specifiers")
                   "), consistently named as follows:")
                  (xdoc::ul
-                  ,@(xdoc::evmac-topic-implementation-li-wrap items))
+                  ,@(xdoc::evmac-topic-implementation-li-wrap all-items))
                  (xdoc::p
                   "Implementation functions' arguments and results
                    that are not listed above

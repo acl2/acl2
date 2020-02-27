@@ -60,17 +60,8 @@
                    (< (len path) 6)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip44-compliant-depth-p
-    :args ((tree bip32-key-treep))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-depth-p-necc)
-             :use ((:instance bip44-compliant-depth-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (path (bip44-compliant-depth-p-witness tree)))
-                   (:instance bip44-compliant-depth-p-necc
-                    (path (bip44-compliant-depth-p-witness
-                           (bip32-key-tree-fix tree)))))))))
+  (fty::deffixequiv-sk bip44-compliant-depth-p
+    :args ((tree bip32-key-treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,117 +127,78 @@
                        (not (bip32-path-in-tree-p path tree))))))
   ///
 
-  ;; boilerplate:
+  ;; Calling FTY::DEFFIXEQUIV-SK directly with all arguments is too slow.
+  ;; So we manually split the arguments and call FTY::DEFFIXEQUIV,
+  ;; since FTY::DEFFIXEQUIV-SK does not support
+  ;; generating hints for only some arguments yet.
+  ;; The following hints are the ones generated via FTY::DEFFIXEQUIV-SK.
 
   (fty::deffixequiv bip44-compliant-addresses-for-limit-p
-    :args ((tree bip32-key-treep))
+    :args ((tree bip32-key-treep)
+           (coin-index ubyte32p)
+           (address-index-limit natp))
     :hints (("Goal"
-             :in-theory (disable bip44-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip44-compliant-addresses-for-limit-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      chain-index
-                      address-index-limit)))
-                   (:instance bip44-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      (bip32-key-tree-fix tree)
-                      coin-index
-                      account-index
-                      chain-index
-                      address-index-limit)))))))
+             :in-theory (e/d (bip44-compliant-addresses-for-limit-p)
+                             (bip44-compliant-addresses-for-limit-p-necc))
+             :use
+             ((:instance bip44-compliant-addresses-for-limit-p-necc
+               (tree (bip32-key-tree-fix tree))
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree coin-index account-index
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               (bip32-key-tree-fix tree)
+                               coin-index account-index
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (coin-index (ubyte32-fix coin-index))
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree coin-index account-index
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree (ubyte32-fix coin-index)
+                               account-index
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (address-index-limit (nfix address-index-limit))
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree coin-index account-index
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree
+                               coin-index account-index chain-index
+                               (nfix address-index-limit))))))))
 
   (fty::deffixequiv bip44-compliant-addresses-for-limit-p
-    :args ((coin-index ubyte32p))
+    :args ((account-index ubyte32p)
+           (chain-index ubyte32p))
     :hints (("Goal"
-             :in-theory (disable bip44-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip44-compliant-addresses-for-limit-p-necc
-                    (coin-index (ubyte32-fix coin-index))
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      chain-index
-                      address-index-limit)))
-                   (:instance bip44-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      (ubyte32-fix coin-index)
-                      account-index
-                      chain-index
-                      address-index-limit)))))))
-
-  (fty::deffixequiv bip44-compliant-addresses-for-limit-p
-    :args ((account-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip44-compliant-addresses-for-limit-p-necc
-                    (account-index (ubyte32-fix account-index))
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      chain-index
-                      address-index-limit)))
-                   (:instance bip44-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      (ubyte32-fix account-index)
-                      chain-index
-                      address-index-limit)))))))
-
-  (fty::deffixequiv bip44-compliant-addresses-for-limit-p
-    :args ((chain-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip44-compliant-addresses-for-limit-p-necc
-                    (chain-index (ubyte32-fix chain-index))
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      chain-index
-                      address-index-limit)))
-                   (:instance bip44-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      (ubyte32-fix chain-index)
-                      address-index-limit)))))))
-
-  (fty::deffixequiv bip44-compliant-addresses-for-limit-p
-    :args ((address-index-limit natp))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-addresses-for-limit-p-necc)
-             :use ((:instance bip44-compliant-addresses-for-limit-p-necc
-                    (address-index-limit (nfix address-index-limit))
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      chain-index
-                      address-index-limit)))
-                   (:instance bip44-compliant-addresses-for-limit-p-necc
-                    (address-index
-                     (bip44-compliant-addresses-for-limit-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      chain-index
-                      (nfix address-index-limit)))))))))
+             :in-theory (e/d (bip44-compliant-addresses-for-limit-p)
+                             (bip44-compliant-addresses-for-limit-p-necc))
+             :use
+             ((:instance bip44-compliant-addresses-for-limit-p-necc
+               (account-index (ubyte32-fix account-index))
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree coin-index account-index
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree
+                               coin-index (ubyte32-fix account-index)
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (chain-index (ubyte32-fix chain-index))
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree coin-index account-index
+                               chain-index address-index-limit)))
+              (:instance bip44-compliant-addresses-for-limit-p-necc
+               (address-index (bip44-compliant-addresses-for-limit-p-witness
+                               tree coin-index
+                               account-index (ubyte32-fix chain-index)
+                               address-index-limit))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,66 +233,11 @@
                                                       address-index-limit)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip44-compliant-addresses-p
+  (fty::deffixequiv-sk bip44-compliant-addresses-p
     :args ((tree bip32-key-treep)
            (coin-index ubyte32p)
            (account-index ubyte32p)
-           (chain-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-addresses-p-suff)
-             :use (;; for TREE:
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      (bip32-key-tree-fix tree)
-                      coin-index
-                      account-index
-                      chain-index)))
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      tree coin-index account-index chain-index))
-                    (tree (bip32-key-tree-fix tree)))
-                   ;; for COIN INDEX:
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      tree
-                      (ubyte32-fix coin-index)
-                      account-index
-                      chain-index)))
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      tree coin-index account-index chain-index))
-                    (coin-index (ubyte32-fix coin-index)))
-                   ;; for ACCOUNT-INDEX:
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      tree
-                      coin-index
-                      (ubyte32-fix account-index)
-                      chain-index)))
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      tree coin-index account-index chain-index))
-                    (account-index (ubyte32-fix account-index)))
-                   ;; for CHAIN-INDEX:
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      tree
-                      coin-index
-                      account-index
-                      (ubyte32-fix chain-index))))
-                   (:instance bip44-compliant-addresses-p-suff
-                    (address-index-limit
-                     (bip44-compliant-addresses-p-witness
-                      tree coin-index account-index chain-index))
-                    (chain-index (ubyte32-fix chain-index))))))))
+           (chain-index ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -392,43 +289,10 @@
                        (t (not (bip32-path-in-tree-p path tree)))))))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip44-compliant-chains-p
+  (fty::deffixequiv-sk bip44-compliant-chains-p
     :args ((tree bip32-key-treep)
            (coin-index ubyte32p)
-           (account-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-chains-p-necc)
-             :use (;; for TREE:
-                   (:instance bip44-compliant-chains-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (chain-index
-                     (bip44-compliant-chains-p-witness
-                      tree coin-index account-index)))
-                   (:instance bip44-compliant-chains-p-necc
-                    (chain-index
-                     (bip44-compliant-chains-p-witness
-                      (bip32-key-tree-fix tree) coin-index account-index)))
-                   ;; for COIN-INDEX:
-                   (:instance bip44-compliant-chains-p-necc
-                    (coin-index (ubyte32-fix coin-index))
-                    (chain-index
-                     (bip44-compliant-chains-p-witness
-                      tree coin-index account-index)))
-                   (:instance bip44-compliant-chains-p-necc
-                    (chain-index
-                     (bip44-compliant-chains-p-witness
-                      tree (ubyte32-fix coin-index) account-index)))
-                   ;; for ACCOUNT-INDEX:
-                   (:instance bip44-compliant-chains-p-necc
-                    (account-index (ubyte32-fix account-index))
-                    (chain-index
-                     (bip44-compliant-chains-p-witness
-                      tree coin-index account-index)))
-                   (:instance bip44-compliant-chains-p-necc
-                    (chain-index
-                     (bip44-compliant-chains-p-witness
-                      tree coin-index (ubyte32-fix account-index)))))))))
+           (account-index ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

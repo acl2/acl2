@@ -49,6 +49,7 @@
            if
            nonnegative-integer-quotient
            string-append
+           len
            :deep nil
            :guards nil
            :java-class "NativesShallowUnguarded"
