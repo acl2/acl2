@@ -187,7 +187,7 @@ sub scan_include_book {
             (?<noport>no[_-]port))? # optional no-port comment
        /xi;
     if (@res) {
-	my $ans = [include_book_event, $+{book}, uc($+{dirname}), $+{noport} ? 1 : 0, $+{local} ? 1 : 0 ];
+	my $ans = [include_book_event, $+{book}, uc($+{dirname} || ""), $+{noport} ? 1 : 0, $+{local} ? 1 : 0 ];
 	debug_print_event($base, $ans);
 	return $ans;
     }

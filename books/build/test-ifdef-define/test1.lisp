@@ -2,7 +2,6 @@
 (in-package "ACL2")
 
 (include-book "build/ifdef" :dir :system)
-(include-book "build/ifdef-plus" :dir :system)
 
 (ifdef "A0"
   (ifdef-define "B0")
