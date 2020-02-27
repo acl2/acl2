@@ -64,6 +64,12 @@
 (defmacro ifdef-undefine (x)
   `(value-triple (setenv$ ,x "")))
 
+(defmacro ifdef-define! (x)
+  `(value-triple (setenv$ ,x "1") :on-skip-proofs t))
+
+(defmacro ifdef-undefine! (x)
+  `(value-triple (setenv$ ,x "") :on-skip-proofs t))
+
 (defun process-ifdefs-fn (form state)
   (declare (xargs :stobjs state :mode :program))
   (cond ((atom form) (value form))

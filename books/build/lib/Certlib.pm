@@ -91,7 +91,7 @@ collect_all_up_to_date
 # 				rec_visited => '%' ];   # already seen files for depends_rec
 
 # database:
-my $cache_version_code = 7;
+my $cache_version_code = 8;
 
 # Note: for debugging you can enable this use and then print an error message
 # using
@@ -865,7 +865,7 @@ sub to_basename {
 sub lookup_colon_dir {
     my $name = uc(shift);
     my $local_dirs = shift;
-
+    print "lookup_colon_dir $name\n" if $debugging;
     my $dirpath;
     if ($local_dirs && exists $local_dirs->{$name}) {
 	$dirpath = $local_dirs->{$name};
@@ -1055,7 +1055,6 @@ sub src_deps {
 	$certinfo,          # certinfo accumulator
         $ldp,               # allow following LD commands
 	$portp,             # Add books to port rather than bookdeps
-        $defines,           # Hash of names that have been defined or undefined, overriding environment
 	$seen,              # seen table for detecting circular dependencies
 	$parent)            # file that required this one
 	= @_;
@@ -1090,6 +1089,10 @@ sub src_deps {
     my $ifdef_level = 0;           # nesting depth
     my $ifdef_skipping_level = 0;  # min level of a false ifdef (0 means all surrounding ifdefs were true)
 
+
+    my $defines = $certinfo->local_defines;
+    my $incdirs = $certinfo->local_include_dirs;
+
     foreach my $event (@$events) {
 	my $type = $event->[0];
 	if ($type eq ifdef_event) {
@@ -1118,10 +1121,9 @@ sub src_deps {
 	} elsif ($ifdef_skipping_level == 0) {
 	    # Only pay attention to other events if we're not skipping due to ifdefs.
 	    if ($type eq add_dir_event) {
-		my $name = $event->[1];
-		my $dir = $event->[2];
+		my (undef, $name, $dir, $localp) = @$event;
 
-		print "add_dir_event: name=$name, dir=$dir\n" if $debugging;
+		print "add_dir_event: name=$name, dir=$dir, localp=$localp\n" if $debugging;
 		my $newdir;
 		if (File::Spec->file_name_is_absolute($dir)) {
 		    $newdir = canonical_path($dir);
@@ -1140,12 +1142,16 @@ sub src_deps {
 		if (! $newdir) {
 		    print STDERR "Bad path processing (add-include-book-dir :$name \"$dir\") in $fname\n";
 		}
-		$certinfo->include_dirs->{$name} = $newdir;
-		print "src_deps: add_dir $name " . $certinfo->include_dirs->{$name} . "\n" if $debugging;
+		$incdirs->{$name} = $newdir;
+		if ($portp || ! $localp) {
+		    print "add_dir: adding nonlocal incdir $name -> $newdir\n" if $debugging;
+		    $certinfo->include_dirs->{$name} = $newdir;
+		}
+		print "src_deps: add_dir $name " . $newdir . "\n" if $debugging;
 	    } elsif ($type eq include_book_event) {
 		my (undef, $bookname, $dir, $noport, $localp) = @$event;
 		my $fullname = expand_dirname_cmd($bookname, $fname, $dir,
-						  $certinfo->include_dirs,
+						  $incdirs,
 						  "include-book",
 						  ".cert");
 		if (! $fullname) {
@@ -1164,7 +1170,16 @@ sub src_deps {
 		    my $book_certinfo = $depdb->certdeps->{$fullname};
 		    if ($book_certinfo) {
 			while (my ($kwd, $path) = each(%{$book_certinfo->include_dirs})) {
-			    $certinfo->include_dirs->{$kwd} = $path;
+			    $incdirs->{$kwd} = $path;
+			    if ($portp || ! $localp) {
+				$certinfo->include_dirs->{$kwd} = $path;
+			    }
+			}
+			while (my ($kwd, $val) = each(%{$book_certinfo->defines})) {
+			    $defines->{$kwd} = $val;
+			    if ($portp || ! $localp) {
+				$certinfo->defines->{$kwd} = $val;
+			    }
 			}
 		    } else {
 			# Presumably we've printed an error message already?
@@ -1206,7 +1221,7 @@ sub src_deps {
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 						  $certinfo->include_dirs, "loads", "");
 		if ($fullname) {
-		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $defines, $seen, $fname);
+		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
 		} else {
 		    print STDERR "Bad path in (loads \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
@@ -1223,7 +1238,7 @@ sub src_deps {
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 						  $certinfo->include_dirs, "ld", "");
 		if ($fullname) {
-		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $defines, $seen, $fname);
+		    src_deps($fullname, $depdb, $certinfo, $ldp, $portp, $seen, $fname);
 		} else {
 		    print STDERR "Bad path in (ld \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
@@ -1234,9 +1249,12 @@ sub src_deps {
 		    print STDERR "\n";
 		}
 	    } elsif ($type eq ifdef_define_event) {
-		my $negate = $event->[1];
-		my $var = $event->[2];
-		$defines->{$var} = $negate ? "" : "1";
+		my (undef, $negate, $var, $localp) = @$event;
+		my $val = $negate ? "" : "1";
+		$defines->{$var} = $val;
+		if ($portp || ! $localp) {
+		    $certinfo->defines->{$var} = $val;
+		}
 	    } elsif (! ($type eq set_max_mem_event || $type eq set_max_time_event || $type eq pbs_event)) {
 		print STDERR "unknown event type: $type\n";
 	    }
@@ -1302,12 +1320,12 @@ sub find_deps {
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
 	if ($acl2file) {
-	    src_deps($acl2file, $depdb, $certinfo, 1, 1, {}, {}, $lispfile);
+	    src_deps($acl2file, $depdb, $certinfo, 1, 1, {}, $lispfile);
 	}
     }
 
     # Scan the lisp file for include-books.
-    src_deps($lispfile, $depdb, $certinfo, (! $certifiable), 0, {}, {}, $parent);
+    src_deps($lispfile, $depdb, $certinfo, (! $certifiable), 0, {}, $parent);
 
     if ($debugging) {
 	print "find_deps $lispfile: bookdeps:\n";

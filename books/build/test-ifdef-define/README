@@ -1,0 +1,2 @@
+This tests whether ifdef-(un)define(!) forms are correctly tracked by
+the build system across books.  Run test.sh to do the test.

@@ -41,7 +41,10 @@ use Class::Struct Certinfo => [ bookdeps => '@',        # books included by this
 				otherdeps => '@',       # from depends_on forms
 				image => '$',           # acl2, or from book.image/cert.image
 				params => '%',          # cert_param entries
-				include_dirs => '%',    # add-include-book-dir(!) forms
+				include_dirs => '%',    # add-include-book-dir! forms
+				local_include_dirs => '%', # all add-include-book-dir(!) forms
+				defines => '%',         # exported ifdef-defines/undefines, strings mapped to "1"/""
+				local_defines => '%',   # all ifdef-defines/undefines, strings mapped to "1"/""
 				rec_visited => '%' ];   # already seen files for depends_rec
 
 1;
