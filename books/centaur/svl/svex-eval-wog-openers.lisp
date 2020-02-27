@@ -215,3 +215,26 @@
                  (svexlist-list-eval-wog rest env)))
     :hints (("Goal"
              :in-theory (e/d (svexlist-list-eval-wog) ())))))
+
+
+(rp::def-rp-rule$
+ t nil
+ svex-alist-eval-opener-nil
+ (implies t
+          (equal (sv::svex-alist-eval nil env)
+                 nil))
+ :hints (("Goal"
+          :Expand (sv::svex-alist-eval nil env)
+          :in-theory (e/d () ()))))
+
+(rp::def-rp-rule$
+ t nil
+ svex-alist-eval-opener-cons
+ (implies (force (sv::svar-p key))
+          (equal (sv::svex-alist-eval (cons (cons key svex) rest) env)
+                 (cons (cons key
+                             (sv::svex-eval svex env))
+                       (sv::svex-alist-eval rest env))))
+ :hints (("Goal"
+          :Expand (sv::svex-alist-eval (cons (cons key svex) rest) env)
+          :in-theory (e/d () ()))))

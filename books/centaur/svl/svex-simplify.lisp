@@ -65,7 +65,7 @@
           (if runes
               (mv runes
                   (rp::get-disabled-exc-rules-from-table
-                   (table-alist 'rp-exc-rules world)))
+                   (table-alist 'rp::rp-exc-rules world)))
             (rp::get-enabled-rules-from-table state)))
          (rules-alist (rp::get-rules runes state :warning :err))
          (meta-rules-entry (hons-assoc-equal 'rp::meta-rules-list
