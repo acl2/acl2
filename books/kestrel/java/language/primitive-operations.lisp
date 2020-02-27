@@ -39,14 +39,14 @@
    (xdoc::p
     "We formalize the Java boolean and integer operations
      [JLS:4.2.5] [JLS:4.2.2].
-     Floating-point operations [JLS:4.2.4]
-     will be formalized eventually.
+     We also provide abstract notions of the Java floating-point operations,
+     as a placeholder for a more precise formalization of them.
      Primitive conversions [JLS:5.1.2-4] are formalized "
     (xdoc::seetopic "primitive-conversions" "here")
     ".")
    (xdoc::p
-    "We formalize the primitive operations
-     as ACL2 functions over the ACL2 types of primitive values.
+    "We formalize the Java primitive operations
+     as ACL2 functions over the ACL2 types of Java primitive values.
      We use macros to more concisely define these functions,
      since they share some common structure."))
   :order-subtopics t)
@@ -333,6 +333,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection def-float-unary-op
+  :short "Specialization of @(tsee def-primitive-unary-op) to
+          the case in which input and output types are @('float')."
+  :long (xdoc::topstring-@def "def-float-unary-op")
+
+  (defmacro def-float-unary-op (name
+                                &key
+                                operation
+                                (parents 'nil parents-suppliedp)
+                                (short 'nil short-suppliedp)
+                                (long 'nil long-suppliedp))
+    `(def-primitive-unary-op ,name
+       :in-type (primitive-type-float)
+       :out-type (primitive-type-float)
+       :operation ,operation
+       ,@(and parents-suppliedp (list :parents parents))
+       ,@(and short-suppliedp (list :short short))
+       ,@(and long-suppliedp (list :long long)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-double-unary-op
+  :short "Specialization of @(tsee def-primitive-unary-op) to
+          the case in which input and output types are @('double')."
+  :long (xdoc::topstring-@def "def-double-unary-op")
+
+  (defmacro def-double-unary-op (name
+                                &key
+                                operation
+                                (parents 'nil parents-suppliedp)
+                                (short 'nil short-suppliedp)
+                                (long 'nil long-suppliedp))
+    `(def-primitive-unary-op ,name
+       :in-type (primitive-type-double)
+       :out-type (primitive-type-double)
+       :operation ,operation
+       ,@(and parents-suppliedp (list :parents parents))
+       ,@(and short-suppliedp (list :short short))
+       ,@(and long-suppliedp (list :long long)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection def-boolean-binary-op
   :short "Specialization of @(tsee def-primitive-binary-op) to
           the case in which input and output types are @('boolean')."
@@ -403,6 +445,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection def-float-binary-op
+  :short "Specialization of @(tsee def-primitive-binary-op) to
+          the case in which input and output types are @('float')."
+  :long (xdoc::topstring-@def "def-float-binary-op")
+
+  (defmacro def-float-binary-op (name
+                                 &key
+                                 operation
+                                 (parents 'nil parents-suppliedp)
+                                 (short 'nil short-suppliedp)
+                                 (long 'nil long-suppliedp))
+    `(def-primitive-binary-op ,name
+       :in-type-left (primitive-type-float)
+       :in-type-right (primitive-type-float)
+       :out-type (primitive-type-float)
+       :operation ,operation
+       ,@(and parents-suppliedp (list :parents parents))
+       ,@(and short-suppliedp (list :short short))
+       ,@(and long-suppliedp (list :long long)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-double-binary-op
+  :short "Specialization of @(tsee def-primitive-binary-op) to
+          the case in which input and output types are @('double')."
+  :long (xdoc::topstring-@def "def-double-binary-op")
+
+  (defmacro def-double-binary-op (name
+                                  &key
+                                  operation
+                                  (parents 'nil parents-suppliedp)
+                                  (short 'nil short-suppliedp)
+                                  (long 'nil long-suppliedp))
+    `(def-primitive-binary-op ,name
+       :in-type-left (primitive-type-double)
+       :in-type-right (primitive-type-double)
+       :out-type (primitive-type-double)
+       :operation ,operation
+       ,@(and parents-suppliedp (list :parents parents))
+       ,@(and short-suppliedp (list :short short))
+       ,@(and long-suppliedp (list :long long)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection def-int=>boolean-binary-op
   :short "Specialization of @(tsee def-primitive-binary-op) to
           the case in which the input types are @('int')
@@ -441,6 +527,52 @@
     `(def-primitive-binary-op ,name
        :in-type-left (primitive-type-long)
        :in-type-right (primitive-type-long)
+       :out-type (primitive-type-boolean)
+       :operation ,operation
+       ,@(and parents-suppliedp (list :parents parents))
+       ,@(and short-suppliedp (list :short short))
+       ,@(and long-suppliedp (list :long long)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-float=>boolean-binary-op
+  :short "Specialization of @(tsee def-primitive-binary-op) to
+          the case in which the input types are @('float')
+          and the output type is @('boolean')."
+  :long (xdoc::topstring-@def "def-float=>boolean-binary-op")
+
+  (defmacro def-float=>boolean-binary-op (name
+                                          &key
+                                          operation
+                                          (parents 'nil parents-suppliedp)
+                                          (short 'nil short-suppliedp)
+                                          (long 'nil long-suppliedp))
+    `(def-primitive-binary-op ,name
+       :in-type-left (primitive-type-float)
+       :in-type-right (primitive-type-float)
+       :out-type (primitive-type-boolean)
+       :operation ,operation
+       ,@(and parents-suppliedp (list :parents parents))
+       ,@(and short-suppliedp (list :short short))
+       ,@(and long-suppliedp (list :long long)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-double=>boolean-binary-op
+  :short "Specialization of @(tsee def-primitive-binary-op) to
+          the case in which the input types are @('double')
+          and the output type is @('boolean')."
+  :long (xdoc::topstring-@def "def-double=>boolean-binary-op")
+
+  (defmacro def-double=>boolean-binary-op (name
+                                           &key
+                                           operation
+                                           (parents 'nil parents-suppliedp)
+                                           (short 'nil short-suppliedp)
+                                           (long 'nil long-suppliedp))
+    `(def-primitive-binary-op ,name
+       :in-type-left (primitive-type-double)
+       :in-type-right (primitive-type-double)
        :out-type (primitive-type-boolean)
        :operation ,operation
        ,@(and parents-suppliedp (list :parents parents))
@@ -930,3 +1062,309 @@
     "We first convert the left operand to unsigned.")
    (xdoc::p
     "Only the low 5 bits of the distance are used [JLS:15.19].")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ floating-point-operations
+  :parents (primitive-operations)
+  :short "Java floating-point operations [JLS:4.2.4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we provide abstract notions for
+     all the unary and binary operations on floating-point values
+     that are not conversions (those are best formalized separately).
+     To provide these abstract notions,
+     we introduce constrained functions
+     on the constrained recognizers used to introduce the fixtypes
+     (via the macros
+     @(tsee def-floating-point-unary-op-aux) and
+     @(tsee def-floating-point-binary-op-aux)),
+     and then we use the same kind of macros
+     used to formalize the boolean and integer operations.")
+   (xdoc::p
+    "Some floating-point operations have boolean results.")
+   (xdoc::p
+    "[JLS:4.2.4] also lists the prefix and posfix @('++') and @('--') operators,
+     but those operate on variables, not just values,
+     and therefore must be formalized elsewhere.")
+   (xdoc::p
+    "[JLS:4.2.4] also lists the conditional operator @('? :'),
+     but that one is non-strict,
+     and therefore must be formalized as part of expression evaluation.")
+   (xdoc::p
+    "[JLS:4.2.4] also lists the string concatenation operator @('+'),
+     but that is best formalized in terms of integral-to-string conversions,
+     elsewhere.")
+   (xdoc::p
+    "[JLS:4.2.4] also lists the cast operator, which involves conversions,
+     which, as mentioned above, are best formalized separately."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-floating-point-unary-op-aux
+  :short "Macro to introduce a constrained function
+          to use in the definition of a floating-point unary operation."
+  :long (xdoc::topstring-@def "def-floating-point-unary-op-aux")
+
+  (defmacro def-floating-point-unary-op-aux (type name)
+    (declare (xargs :guard (and (member-eq type '(:float :double))
+                                (symbolp name))))
+    (b* ((op-name (packn-pos (list (symbol-name type) '- name '-aux)
+                             (pkg-witness "JAVA")))
+         (witness-name (packn-pos (list (symbol-name type) '-value-aux-witness)
+                                  (pkg-witness "JAVA")))
+         (pred-name (packn-pos (list (symbol-name type) '-value-aux-p)
+                               (pkg-witness "JAVA")))
+         (thm-name (packn-pos (list pred-name '-of- op-name)
+                              (pkg-witness "JAVA"))))
+      `(encapsulate
+         (((,op-name *) => *))
+         (local (defun ,op-name (x) (declare (ignore x)) (,witness-name)))
+         (defrule ,thm-name
+           (implies (,pred-name x)
+                    (,pred-name (,op-name x))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-floating-point-binary-op-aux
+  :short "Macro to introduce a constrained function
+          to use in the definition of a floating-point binary operation."
+  :long (xdoc::topstring-@def "def-floating-point-binary-op-aux")
+
+  (defmacro def-floating-point-binary-op-aux (in-type out-type name)
+    (declare (xargs :guard (and (member-eq in-type '(:float :double))
+                                (member-eq out-type '(:float :double :boolean))
+                                (symbolp name))))
+    (b* ((op-name (packn-pos (list (symbol-name in-type) '- name '-aux)
+                             (pkg-witness "JAVA")))
+         (witness-name (packn-pos (list (symbol-name in-type) '-value-aux-witness)
+                                  (pkg-witness "JAVA")))
+         (in-pred-name (packn-pos (list (symbol-name in-type) '-value-aux-p)
+                                  (pkg-witness "JAVA")))
+         (out-pred-name (if (eq out-type :boolean)
+                            'booleanp
+                          (packn-pos (list (symbol-name out-type) '-value-aux-p)
+                                     (pkg-witness "JAVA"))))
+         (thm-name (packn-pos (list out-pred-name '-of- op-name)
+                              (pkg-witness "JAVA"))))
+      `(encapsulate
+         (((,op-name * *) => *))
+         (local (defun ,op-name (x y)
+                  (declare (ignore x y))
+                  ,(if (eq out-type :boolean)
+                       t
+                     (list witness-name))))
+         (defrule ,thm-name
+           (implies (and (,in-pred-name x) (,in-pred-name y))
+                    (,out-pred-name (,op-name x y))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection floating-point-constrained-ops
+  :short "Constrained functions used to define the floating-point operations."
+
+  (def-floating-point-unary-op-aux :float plus)
+  (def-floating-point-unary-op-aux :double plus)
+
+  (def-floating-point-unary-op-aux :float minus)
+  (def-floating-point-unary-op-aux :double minus)
+
+  (def-floating-point-binary-op-aux :float :float add)
+  (def-floating-point-binary-op-aux :double :double add)
+
+  (def-floating-point-binary-op-aux :float :float sub)
+  (def-floating-point-binary-op-aux :double :double sub)
+
+  (def-floating-point-binary-op-aux :float :float mul)
+  (def-floating-point-binary-op-aux :double :double mul)
+
+  (def-floating-point-binary-op-aux :float :float div)
+  (def-floating-point-binary-op-aux :double :double div)
+
+  (def-floating-point-binary-op-aux :float :float rem)
+  (def-floating-point-binary-op-aux :double :double rem)
+
+  (def-floating-point-binary-op-aux :float :boolean eq)
+  (def-floating-point-binary-op-aux :double :boolean eq)
+
+  (def-floating-point-binary-op-aux :float :boolean neq)
+  (def-floating-point-binary-op-aux :double :boolean neq)
+
+  (def-floating-point-binary-op-aux :float :boolean less)
+  (def-floating-point-binary-op-aux :double :boolean less)
+
+  (def-floating-point-binary-op-aux :float :boolean lesseq)
+  (def-floating-point-binary-op-aux :double :boolean lesseq)
+
+  (def-floating-point-binary-op-aux :float :boolean great)
+  (def-floating-point-binary-op-aux :double :boolean great)
+
+  (def-floating-point-binary-op-aux :float :boolean greateq)
+  (def-floating-point-binary-op-aux :double :boolean greateq))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float-unary-op float-plus
+  :operation (float-plus-aux x)
+  :short "Unary plus @('+') on @('float')s [JLS:4.2.4] [JLS:15.15.3].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double-unary-op double-plus
+  :operation (double-plus-aux x)
+  :short "Unary plus @('+') on @('double')s [JLS:4.2.4] [JLS:15.15.3].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float-unary-op float-minus
+  :operation (float-minus-aux x)
+  :short "Unary minus @('-') on @('float')s [JLS:4.2.4] [JLS:15.15.4].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double-unary-op double-minus
+  :operation (double-minus-aux x)
+  :short "Unary minus @('-') on @('double')s [JLS:4.2.4] [JLS:15.15.4].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float-binary-op float-add
+  :operation (float-add-aux x y)
+  :short "Addition @('+') on @('float')s [JLS:4.2.4] [JLS:15.18.2].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double-binary-op double-add
+  :operation (double-add-aux x y)
+  :short "Addition @('+') on @('double')s [JLS:4.2.4] [JLS:15.18.2].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float-binary-op float-sub
+  :operation (float-sub-aux x y)
+  :short "Subtraction @('-') on @('float')s [JLS:4.2.4] [JLS:15.18.2].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double-binary-op double-sub
+  :operation (double-sub-aux x y)
+  :short "Subtraction @('-') on @('double')s [JLS:4.2.4] [JLS:15.18.2].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float-binary-op float-mul
+  :operation (float-mul-aux x y)
+  :short "Multiplication @('*') on @('float')s [JLS:4.2.4] [JLS:15.17.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double-binary-op double-mul
+  :operation (double-mul-aux x y)
+  :short "Multiplication @('*') on @('double')s [JLS:4.2.4] [JLS:15.17.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float-binary-op float-div
+  :operation (float-div-aux x y)
+  :short "Division @('/') on @('float')s [JLS:4.2.4] [JLS:15.17.2].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double-binary-op double-div
+  :operation (double-div-aux x y)
+  :short "Division @('/') on @('double')s [JLS:4.2.4] [JLS:15.17.2].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float-binary-op float-rem
+  :operation (float-rem-aux x y)
+  :short "Remainder @('%') on @('float')s [JLS:4.2.4] [JLS:15.17.3].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double-binary-op double-rem
+  :operation (double-rem-aux x y)
+  :short "Remainder @('%') on @('double')s [JLS:4.2.4] [JLS:15.17.3].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float=>boolean-binary-op float-eq
+  :operation (float-eq-aux x y)
+  :short "Equality @('==') on @('float')s [JLS:4.2.4] [JLS:15.21.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double=>boolean-binary-op double-eq
+  :operation (double-eq-aux x y)
+  :short "Equality @('==') on @('double')s [JLS:4.2.4] [JLS:15.21.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float=>boolean-binary-op float-neq
+  :operation (float-neq-aux x y)
+  :short "Non-equality @('!=') on @('float')s [JLS:4.2.4] [JLS:15.21.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double=>boolean-binary-op double-neq
+  :operation (double-neq-aux x y)
+  :short "Non-equality @('!=') on @('double')s [JLS:4.2.4] [JLS:15.21.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float=>boolean-binary-op float-less
+  :operation (float-less-aux x y)
+  :short "Less-than comparison @('<') on @('float')s
+          [JLS:4.2.4] [JLS:15.20.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double=>boolean-binary-op double-less
+  :operation (double-less-aux x y)
+  :short "Less-than comparison @('<') on @('double')s
+          [JLS:4.2.4] [JLS:15.20.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float=>boolean-binary-op float-lesseq
+  :operation (float-lesseq-aux x y)
+  :short "Less-than-or-equal-to comparison @('<=') on @('float')s
+          [JLS:4.2.4] [JLS:15.20.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double=>boolean-binary-op double-lesseq
+  :operation (double-lesseq-aux x y)
+  :short "Less-than-or-equal-to comparison @('<=') on @('double')s
+          [JLS:4.2.4] [JLS:15.20.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float=>boolean-binary-op float-great
+  :operation (float-great-aux x y)
+  :short "Greater-than comparison @('>') on @('float')s
+          [JLS:4.2.4] [JLS:15.20.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double=>boolean-binary-op double-great
+  :operation (double-great-aux x y)
+  :short "Greater-than-or-equal-to comparison @('>') on @('double')s
+          [JLS:4.2.4] [JLS:15.20.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-float=>boolean-binary-op float-greateq
+  :operation (float-greateq-aux x y)
+  :short "Greater-than-or-equal-to comparison @('>=') on @('float')s
+          [JLS:4.2.4] [JLS:15.20.1].")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-double=>boolean-binary-op double-greateq
+  :operation (double-greateq-aux x y)
+  :short "Greater-than-or-equal-to comparison @('>=') on @('double')s
+          [JLS:4.2.4] [JLS:15.20.1].")
