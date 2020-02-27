@@ -30,7 +30,6 @@
 
 (in-package "STD")
 (include-book "support")
-(include-book "std/testing/assert" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -365,13 +364,6 @@ copying and pasting code.")
         (list alias)))
     nil))
 
-(assert!
- (equal (let ((world (w state)))
-          (find-macro-aliases-for-defun (acl2::access-event-tuple-form
-                                         (get-event-tuple 'binary-append world))
-                                        world))
-        '(append)))
-
 (defun find-macro-aliases-for-defuns (forms world)
   ;; Returns a list of macro-alias names (NIL if there are no aliases)
   (if (atom forms)
@@ -406,14 +398,6 @@ copying and pasting code.")
     (raise "Expected macro alias for ~x0 to be a mutual-recursion or defun, ~
             but found ~x1." name defun-form)
     (mv nil nil)))
-
-(assert! (b* ((world (w state))
-              ((mv macros fns)
-               (find-defun-aliases-for-macro (acl2::access-event-tuple-form
-                                              (get-event-tuple 'append world))
-                                             world)))
-           (and (equal macros '(append))
-                (equal fns '(binary-append)))))
 
 
 (defun redundant-event (name force-programp state)

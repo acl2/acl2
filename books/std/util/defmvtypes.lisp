@@ -31,7 +31,6 @@
 (in-package "STD")
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/bstar" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
 
 (defxdoc defmvtypes
   :parents (std/util)
@@ -110,15 +109,6 @@ by giving any @(':hints').</p>")
 (defun inducting-p (clause-id)
   (declare (xargs :mode :program))
   (consp (acl2::access acl2::clause-id clause-id :pool-lst)))
-
-(local
- (progn
-   (assert! (not (inducting-p (acl2::parse-clause-id "Goal"))))
-   (assert! (not (inducting-p (acl2::parse-clause-id "Goal''"))))
-   (assert! (not (inducting-p (acl2::parse-clause-id "Subgoal 2''"))))
-   (assert! (acl2::parse-clause-id "Subgoal *1/3"))
-   (assert! (acl2::parse-clause-id "Subgoal *1/3''"))
-   (assert! (acl2::parse-clause-id "[1]Subgoal *1/3''"))))
 
 (defun defmvtypes-nonrecursive-hint (id stable-under-simplificationp)
   ;; Hint to use for defmvtypes of non-recursive functions.  Allow forcing

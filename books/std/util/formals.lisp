@@ -31,7 +31,6 @@
 (in-package "STD")
 (include-book "look-up")
 (include-book "da-base")
-(local (include-book "std/testing/assert" :dir :system))
 (program)
 
 (defxdoc extended-formals
@@ -392,31 +391,6 @@ occasionally improve efficiency.</p>")
     ;; Else, it doesn't match (foo 'value), so leave it alone.
     (cons arg1 (remove-macro-args ctx rest seenp))))
 
-(local
- (progn
-   (assert! (equal (remove-macro-args 'f '(a b c) nil)
-                   '(a b c)))
-   (assert! (equal (remove-macro-args 'f '(a b c &key d e) nil)
-                   '(a b c d e)))
-   (assert! (equal (remove-macro-args 'f '(a b c &key d &optional e) nil)
-                   '(a b c d e)))
-   (assert! (equal (remove-macro-args 'f '(a b c &optional d e) nil)
-                   '(a b c d e)))
-   (assert! (equal (remove-macro-args 'f '(a b c &key (d true-listp) e) nil)
-                   ;; true-listp is unquoted so it's a guard
-                   '(a b c (d true-listp) e)))
-   (assert! (equal (remove-macro-args 'f '(a b c &key (d 'true-listp) e) nil)
-                   ;; 'true-listp is quoted so it's a default value
-                   '(a b c d e)))
-   (assert! (equal (remove-macro-args 'f '(a b c &key (d "foo") e) nil)
-                   ;; "foo" is unquoted so it's an xdoc string
-                   '(a b c (d "foo") e)))
-   (assert! (equal (remove-macro-args 'f '(a b c &key (d '"foo") e) nil)
-                   ;; '"foo" is quoted so it's a default value
-                   '(a b c d e)))
-   (assert! (equal (remove-macro-args 'f '(a b c &key ((d atom) '3) (e true-listp)) nil)
-                   '(a b c (d atom) (e true-listp))))))
-
 
 (defun formals-for-macro
   ;; Remove extended formal stuff (guards, documentation) and just get down to
@@ -465,31 +439,6 @@ occasionally improve efficiency.</p>")
     (cons (if (atom arg1) arg1 (car arg1))
           (formals-for-macro ctx rest seenp))))
 
-(local
- (progn
-   (assert! (equal (formals-for-macro 'f '(a b c) nil)
-                   '(a b c)))
-   (assert! (equal (formals-for-macro 'f '(a b c &key d e) nil)
-                   '(a b c &key d e)))
-   (assert! (equal (formals-for-macro 'f '(a b c &key d &optional e) nil)
-                   '(a b c &key d &optional e)))
-   (assert! (equal (formals-for-macro 'f '(a b c &optional d e) nil)
-                   '(a b c &optional d e)))
-   (assert! (equal (formals-for-macro 'f '(a b c &key (d true-listp) e) nil)
-                   ;; true-listp is unquoted so it's a guard
-                   '(a b c &key d e)))
-   (assert! (equal (formals-for-macro 'f '(a b c &key (d 'true-listp) e) nil)
-                   ;; 'true-listp is quoted so it's a default value
-                   '(a b c &key (d 'true-listp) e)))
-   (assert! (equal (formals-for-macro 'f '(a b c &key (d "foo") e) nil)
-                   ;; "foo" is unquoted so it's an xdoc string
-                   '(a b c &key d e)))
-   (assert! (equal (formals-for-macro 'f '(a b c &key (d '"foo") e) nil)
-                   ;; '"foo" is quoted so it's a default value
-                   '(a b c &key (d '"foo") e)))
-   (assert! (equal (formals-for-macro 'f '(a b c &key ((d atom) '3) (e true-listp)) nil)
-                   '(a b c &key (d '3) e)))))
-
 
 (defun remove-macro-default-values (args)
   ;; Args might be, e.g., (a b c (d '3) (e '4))
@@ -510,21 +459,3 @@ occasionally improve efficiency.</p>")
                         (set-difference-equal macro-formals '(&key &optional)))))
     `(defmacro ,fnname ,macro-formals
        (list ',fnname-fn . ,fn-arg-names))))
-
-(local
- (progn
-   (assert! (equal (make-wrapper-macro 'foo 'foo-fn '(x y z))
-                   `(defmacro foo (x y z)
-                      (list 'foo-fn x y z))))
-   (assert! (equal (make-wrapper-macro 'foo 'foo-fn '(x y &optional z))
-                   `(defmacro foo (x y &optional z)
-                      (list 'foo-fn x y z))))
-   (assert! (equal (make-wrapper-macro 'foo 'foo-fn '(x y &optional (z '3)))
-                   `(defmacro foo (x y &optional (z '3))
-                      (list 'foo-fn x y z))))
-   (assert! (equal (make-wrapper-macro 'foo 'foo-fn '(x y &key (z '3)))
-                   `(defmacro foo (x y &key (z '3))
-                      (list 'foo-fn x y z))))
-   (assert! (equal (make-wrapper-macro 'foo 'foo-fn '(x y &optional (a '5) &key (z '3)))
-                   `(defmacro foo (x y &optional (a '5) &key (z '3))
-                      (list 'foo-fn x y a z))))))
