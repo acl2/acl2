@@ -986,13 +986,14 @@ for each usertype is stored in the res field.</p>"
 
        (elabindex (vl-elabindex-push mod))
 
-       ((mv ok warnings elabindex final-paramdecls)
+       ((mv ok scope-warnings elabindex final-paramdecls)
         (vl-scope-finalize-params mod.paramdecls
                                   inst.paramargs
-                                  warnings
+                                  nil ;; warnings
                                   elabindex
                                   ss
                                   (rev (vl-elabscopes->elabtraversal scopes))))
+       (warnings (append (vl-warninglist-add-ctx scope-warnings (vl-modinst-fix inst)) warnings)) 
 
        (inside-mod-ss (vl-elabindex->ss))
        (elabindex (vl-elabindex-undo)) ;; back at global scope
@@ -1965,12 +1966,14 @@ for each usertype is stored in the res field.</p>"
             elabindex ledger))
        ((vl-elabindex elabindex) (vl-elabindex-push x))
        (paramdecls (vl-interface->paramdecls x))
-       ((mv ok warnings elabindex final-paramdecls)
+       ((mv ok scope-warnings elabindex final-paramdecls)
         (vl-scope-finalize-params paramdecls
                                   (make-vl-paramargs-named)
-                                  warnings
+                                  nil ;; warnings
                                   elabindex elabindex.ss
                                   (caar (vl-elabindex->undostack))))
+       (warnings (append (vl-warninglist-add-ctx scope-warnings (vl-interfaceport-fix port))
+                         (vl-warninglist-fix warnings)))
        (inside-mod-ss (vl-elabindex->ss))
        (elabindex (vl-elabindex-undo))
        ((unless ok) (mv nil nil warnings elabindex ledger))
