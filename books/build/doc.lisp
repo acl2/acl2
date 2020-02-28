@@ -1370,14 +1370,19 @@ as expected:</p>
 @('\"1\"'), affecting subsequent uses of @(see ifdef) and @(see ifndef).  The
 cert.pl build system tracks uses of this macro in order to determine which
 forms in the file are really used, so as to correctly compute the dependencies
-between files.  In order to be correctly scannable by the build system, the @('ifdef-define') form must occur all on one line:</p>
+between files.  In order to be correctly scannable by the build system, the
+@('ifdef-define') form must occur all on one line:</p>
 @({
   (ifdef-define \"FOO\")
  })
 <p>or</p>
 @({
   (acl2::ifdef-define \"FOO\")
- }) "
+ })
+
+<p>Note that the effects of this form are local to the current book; see @(see
+ifdef-define!) for a version that persists across include-books.  Also see
+@(see ifdef-undefine) and @(see ifdef-undefine!). </p>"
   :pkg "ACL2")
 
 (defxdoc acl2::ifdef-undefine
@@ -1385,5 +1390,29 @@ between files.  In order to be correctly scannable by the build system, the @('i
   :short "Undefine an environment variable for use with @(see ifdef) and @(see ifndef)."
   :long "<p>Analogous to @(see ifdef-define), but sets the environment variable
 to the empty string instead of to @('\"1\"'), so that it will be unset for the
-purposes of @(see ifdef) and @(see ifndef).</p>"
+purposes of @(see ifdef) and @(see ifndef).</p>
+
+<p>Similarly to @(see ifdef-define), the effects of @('ifdef-undefine') are
+book-local.  See @(see ifdef-undefine!) for a version that persists across
+include-books.</p>"
+  :pkg "ACL2")
+
+(defxdoc acl2::ifdef-define!
+  :parents (cert.pl)
+  :short "Define an environment variable for use with @(see ifdef) and @(see
+ifndef), whose effect persists across include-books."
+  :long "<p>This does the same as @(see ifdef-define), but the environment
+setting also happens when the book in which this form occurs is included
+elsewhere.  The build system attempts to accurately track which variables are
+defined where, for use by @(see ifdef) and @(see ifndef).</p>"
+  :pkg "ACL2")
+
+(defxdoc acl2::ifdef-undefine!
+  :parents (cert.pl)
+  :short "Undefine an environment variable for use with @(see ifdef) and @(see
+ifndef), persistent across include-book."
+  :long "<p>This does the same as @(see ifdef-undefine), but the environment
+setting also happens when the book in which this form occurs is included in
+another book.  The build system attempts to accurately track which variables
+are defined where, for use by @(see ifdef) and @(see ifndef).</p>"
   :pkg "ACL2")

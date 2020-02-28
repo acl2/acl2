@@ -52,6 +52,8 @@
 
 (include-book "svl-flatten")
 
+(include-book "svl-run-to-svex-alist")
+
 
 (xdoc::defxdoc
  acl2::svl

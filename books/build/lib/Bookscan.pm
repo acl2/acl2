@@ -77,8 +77,8 @@ sub set_max_time_event () { return 'set-max-time'; }
 sub pbs_event () { return 'pbs'; }
 
 sub print_scanevent {
-    my ($fname,$cmd,$args) = @_;    
-    print "$fname: $cmd ";
+    my ($fname,$args) = @_;    
+    print "$fname: ";
     foreach my $arg (@$args) {
 	$arg && print " $arg";
     }
@@ -87,9 +87,9 @@ sub print_scanevent {
 
 
 sub debug_print_event {
-    my ($fname,$cmd,$args) = @_;
+    my ($fname,$args) = @_;
     if ($debugging) {
-	print_scanevent($fname, $cmd, $args);
+	print_scanevent($fname, $args);
     }
 }
 
@@ -127,11 +127,13 @@ sub scan_ifdef_define {
     my @res = $the_line =~ m/^[^;]* # not commented
                              \(\s*
                              (?:[^\s():]*::)? # package prefix
-                             ifdef-(?<negate>un)?define \s+
+                             ifdef-(?<negate>un)?define(?<nonloc>!?) \s+
                              "(?<var>\w*)"
                              /xi;
     if (@res) {
-	return [ifdef_define_event, $+{negate} ? 1 : 0, $+{var}];
+	my $ans = [ifdef_define_event, $+{negate} ? 1 : 0, $+{var}, ($+{nonloc} eq "!") ? 0 : 1 ];
+	debug_print_event($base, $ans);
+	return $ans;
     }
     return 0;
 }
@@ -141,12 +143,23 @@ sub scan_add_dir {
     my ($base,$the_line) = @_;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
-    my $regexp = "^[^;]*\\([\\s]*add-include-book-dir!?[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
-    my @res = $the_line =~ m/$regexp/i;
-    if (@res) {
-	my $name = uc($res[0]);
-	print "$base: add_dir $name $res[1]\n" if $debugging;
-	return [add_dir_event, $name, $res[1]];
+    # my $regexp = "^[^;]*\\([\\s]*add-include-book-dir!?[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
+    my $res = $the_line =~
+	m/^[^;]* # not commented
+          \(\s*
+            (?:[^\s():]*::)?   # package prefix
+            add-include-book-dir
+            (?<nonloc>!?)
+            \s+
+            :(?<name>[^\s]*)
+            \s+
+            "(?<dir>[^"]*[^"\/])  # dir string except for possible trailing slash
+            \/?"
+         /xi;
+    if ($res) {
+	my $ans = [add_dir_event, uc($+{name}), $+{dir}, ($+{nonloc} eq "!") ? 0 : 1 ];
+	debug_print_event($base, $ans);
+	return $ans;
     }
     return 0;
 }
@@ -174,8 +187,9 @@ sub scan_include_book {
             (?<noport>no[_-]port))? # optional no-port comment
        /xi;
     if (@res) {
-	debug_print_event($base, "include_book", \@res);
-	return [include_book_event, $+{book}, $+{dirname}, $+{noport} ? 1 : 0, $+{local} ? 1 : 0 ];
+	my $ans = [include_book_event, $+{book}, uc($+{dirname} || ""), $+{noport} ? 1 : 0, $+{local} ? 1 : 0 ];
+	debug_print_event($base, $ans);
+	return $ans;
     }
     return 0;
 }
@@ -197,7 +211,9 @@ sub scan_depends_on {
 	    STDERR->print("a scan of the target's dependencies.\n");
 	    STDERR->print("***************************************************************************\n");
 	}
-	return [depends_on_event, $res[0], $res[1]];
+	my $ans = [depends_on_event, $res[0], uc($res[1] || "")];
+	debug_print_event($base, $ans);
+	return $ans;
     }
 }
 
@@ -207,8 +223,9 @@ sub scan_depends_rec {
     my $regexp = "\\([\\s]*depends-rec[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	debug_print_event($base, "depends_rec", \@res);
-	return [depends_rec_event, $res[0], $res[1]];
+	my $ans = [depends_rec_event, $res[0], uc($res[1] || "")];
+	debug_print_event($base, $ans);
+	return $ans;
     }
     return 0;
 }
@@ -219,8 +236,9 @@ sub scan_loads {
     my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	debug_print_event($base, "loads", \@res);
-	return [loads_event, $res[0], $res[1]];
+	my $ans = [loads_event, $res[0], uc($res[1] || "")];
+	debug_print_event($base, $ans);
+	return $ans;
     }
     return 0;
 }
@@ -289,8 +307,9 @@ sub scan_ld {
     my $regexp = "^[^;]*\\([\\s]*ld[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	debug_print_event($base, "ld", \@res);
-	return [ld_event, $res[0], $res[1]];
+	my $ans = [ld_event, $res[0], $res[1]];
+	debug_print_event($base, $ans);
+	return $ans;
     }
     return 0;
 }
