@@ -1033,29 +1033,97 @@
      which are added at the end of the generated @(':long').")
    (xdoc::@def "xdoc::evmac-topic-input-processing"))
 
-(defmacro xdoc::evmac-topic-input-processing (macro &rest additional)
-  (declare (xargs :guard (symbolp macro)))
-  (b* ((macro-name (string-downcase (symbol-name macro)))
-       (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
-       (this-topic (add-suffix macro "-INPUT-PROCESSING"))
-       (parent-topic (add-suffix macro "-IMPLEMENTATION"))
-       (short (concatenate 'string
-                           "Input processing performed by "
-                           macro-ref
-                           "."))
-       (long `(xdoc::topstring
-               (xdoc::p
-                "This involves validating the inputs.
+  (defmacro xdoc::evmac-topic-input-processing (macro &rest additional)
+    (declare (xargs :guard (symbolp macro)))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+         (this-topic (add-suffix macro "-INPUT-PROCESSING"))
+         (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+         (short (concatenate 'string
+                             "Input processing performed by "
+                             macro-ref
+                             "."))
+         (long `(xdoc::topstring
+                 (xdoc::p
+                  "This involves validating the inputs.
                  When validation fails, "
-                (xdoc::seetopic "acl2::er" "soft errors")
-                " occur.
+                  (xdoc::seetopic "acl2::er" "soft errors")
+                  " occur.
                  Thus, generally the input processing functions return "
-                (xdoc::seetopic "acl2::error-triple" "error triples")
-                ".")
-               ,@additional)))
-    `(defxdoc+ ,this-topic
-       :parents (,parent-topic)
-       :short ,short
-       :long ,long
-       :order-subtopics t
-       :default-parent t))))
+                  (xdoc::seetopic "acl2::error-triple" "error triples")
+                  ".")
+                 ,@additional)))
+      `(defxdoc+ ,this-topic
+         :parents (,parent-topic)
+         :short ,short
+         :long ,long
+         :order-subtopics t
+         :default-parent t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xdoc::evmac-topic-event-generation
+  :short "Generate an XDOC topic for the event generation
+          that is part of the implementation of an event macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An event macro may generate some events only locally;
+     in this case, the @(':some-local-p') argument must be @('t').
+     An event macro may generate some events both locally and non-locally,
+     where the local variant has proof hints and the non-local variant does not;
+     in this case, the @(':some-local-nonlocal-p') argument must be @('t').
+     These arguments are used to customize the generated @(':long')."))
+
+  (defmacro xdoc::evmac-topic-event-generation (macro
+                                                &key
+                                                some-local-p
+                                                some-local-nonlocal-p)
+    (declare (xargs :guard (and (symbolp macro)
+                                (booleanp some-local-p)
+                                (booleanp some-local-nonlocal-p))))
+    (b* ((macro-name (string-downcase (symbol-name macro)))
+         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+         (this-topic (add-suffix macro "-EVENT-GENERATION"))
+         (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+         (short (concatenate 'string
+                             "Event generation performed by "
+                             macro-ref
+                             "."))
+         (para-local-nonlocal?
+          (and some-local-nonlocal-p
+               '((xdoc::p
+                  "Some events are generated in two slightly different variants:
+                   one that is local to the generated "
+                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                  ", and one that is exported from the "
+                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                  ". Proof hints are in the former but not in the latter,
+                   thus keeping the ACL2 history ``clean'';
+                   some proof hints may refer to events
+                   that are generated only locally to the "
+                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                  "."))))
+         (para-local?
+          (and some-local-p
+               '((xdoc::p
+                  "Some events are generated only locally to the generated "
+                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                  ". These are auxiliary events
+                   needed to introduce the non-local (i.e. exported) events,
+                   but whose presence in the ACL2 history is no longer needed
+                   once the exported events have been introduced.
+                   These only-local events have generated fresh names.
+                   In contrast, exported events have names
+                   that are user-controlled, directly or indirectly."))))
+         (long? (and (or some-local-nonlocal-p
+                         some-local-p)
+                     `(xdoc::topstring
+                       ,@para-local-nonlocal?
+                       ,@para-local?))))
+      `(defxdoc+ ,this-topic
+         :parents (,parent-topic)
+         :short ,short
+         ,@(and long? (list :long long?))
+         :order-subtopics t
+         :default-parent t))))
