@@ -187,7 +187,7 @@
              (difference (mergesort actual-names) (mergesort formal-names)))
             (warnings (if illegal-names
                           (warn :type :vl-bad-instance
-                                :msg "parameter~s1 ~&2 ~s2."
+                                :msg "parameter~s1 ~&2 ~s3."
                                 :args (list nil
                                             (if (vl-plural-p illegal-names) "s" "")
                                             illegal-names
