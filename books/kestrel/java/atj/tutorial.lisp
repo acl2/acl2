@@ -115,11 +115,20 @@
      that will likely be moved to this tutorial.")
 
    (xdoc::p
-    "The main subtopics of this manual page
-     may be navigated sequentially,
-     using the `Start', `Next', and `Previous' links.
-     The auxiliary subtopics of this manual page
-     are referenced from other subtopics when needed.")
+    "This tutorial consists of this top-level page,
+     a set of <i>main</i> pages,
+     and a set of <i>auxiliary</i> pages.
+     Both main and auxiliary pages are subtopics of this top-level page.
+     The main pages may be navigated sequentially,
+     using the `Start', `Next', and `Previous' links;
+     these pages should contain all the user-level information
+     that is necessary to use ATJ effecively.
+     The auxiliary pages are referenced from the main pages as needed;
+     they contain additional information
+     that may not be strictly necessary to ATJ users,
+     such as implementation details;
+     however, this information may be useful,
+     and thus users are encouraged to read the auxiliary pages as well.")
 
    (xdoc::p
     (xdoc::a :href "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1"
