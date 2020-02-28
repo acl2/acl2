@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/apply-fn-into-ifs" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
@@ -1973,9 +1974,12 @@
        (back-of-args (apply-unary-to-terms back$ args$))
        (old-body-with-back-of-args
         (subcor-var args$ back-of-args old-body-with-new-rec-calls))
-       (newp-of-args (apply-unary-to-terms newp$ args$)))
-    (conjoin (append newp-of-args
-                     (list old-body-with-back-of-args)))))
+       (newp-of-args (apply-unary-to-terms newp$ args$))
+       (newp-of-args-conj (conjoin newp-of-args)))
+    (if (equal newp-of-args-conj *t*)
+        old-body-with-back-of-args
+      (conjoin2 `(mbt$ ,newp-of-args-conj)
+                old-body-with-back-of-args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2013,7 +2017,7 @@
        (newp-of-args-conj (conjoin newp-of-args)))
     (cond (compatibility then-branch)
           ((equal newp-of-args-conj *t*) then-branch)
-          (t `(if ,newp-of-args-conj
+          (t `(if (mbt$ ,newp-of-args-conj)
                   ,then-branch
                 ,else-branch)))))
 
@@ -2070,7 +2074,7 @@
                         nil)))
        (newp-of-args-conj (conjoin newp-of-args)))
     (cond ((equal newp-of-args-conj *t*) then-branch)
-          (t `(if ,newp-of-args-conj
+          (t `(if (mbt$ ,newp-of-args-conj)
                   ,then-branch
                 ,else-branch)))))
 

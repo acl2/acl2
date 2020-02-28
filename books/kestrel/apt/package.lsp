@@ -201,6 +201,7 @@
                          make-lambda-term
                          make-paired-name
                          maybe-pseudo-event-formp
+                         mbt$
                          measure
                          merge-sort-lexorder
                          msg-downcase-first

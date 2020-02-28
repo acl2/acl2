@@ -954,7 +954,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -965,7 +965,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -987,7 +987,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -998,7 +998,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1020,7 +1020,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1031,7 +1031,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1046,7 +1046,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1057,7 +1057,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1079,7 +1079,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1090,7 +1090,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1112,7 +1112,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1123,7 +1123,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1138,7 +1138,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1148,7 +1148,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1169,7 +1169,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1179,7 +1179,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1199,7 +1199,7 @@
   (must-be-redundant
    (DEFUN Q (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; no numbered name has been recorded
@@ -1209,7 +1209,7 @@
   (must-be-redundant
    (DEFUN Q (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; no numbered name has been recorded
