@@ -241,6 +241,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-restore-mv-calls-in-term
   :short "Restore @(tsee mv) calls in a translated term."
   :long
