@@ -900,11 +900,36 @@
     "After compiling, the code can be run via")
    (xdoc::codeblock
     "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
-    "      Test")
+    "     Test")
    (xdoc::p
     "where again @('[books]/...') must be replaced with a proper path.
      A fairly large number will be printed on the screen.
      Some ACL2 has just been run in Java.")
+
+   (xdoc::p
+    "If the @('100') passed to the factorial function call
+     is increased to a sufficiently large value,
+     the execution of the Java code will result in a stack overflow
+     (this is just the JVM running out of stack memory;
+     it has nothing to do with type unsafety and security exploits).
+     This is unavoidable, because in the deep embedding approach
+     the ACL2 functions are evaluated via "
+    (xdoc::seetopic "atj-tutorial-evaluator" "AIJ's recursive interpreter")
+    ". Note also that recursive method calls in the JVM
+     may not be as efficiently implemented as recursive function calls in Lisp,
+     given that Java is an imperative language
+     and thus loops are the preferred way to repeat computations.
+     This stack overflow issue may be mitigated
+     by passing a larger stack size to the JVM,
+     via the @('-Xss) option to the @('java') command.
+     For example,")
+   (xdoc::codeblock
+    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
+    "     -Xss1G \\"
+    "     Test")
+   (xdoc::p
+    "runs the factorial program with 1 GiB of stack space,
+     which should be larger than the defaut.")
 
    (atj-tutorial-previous "atj-tutorial-deep-shallow"
                           *atj-tutorial-deep-shallow*)))
