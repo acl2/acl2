@@ -470,3 +470,36 @@
            (equal (neg 0 p)
                   0))
   :hints (("Goal" :in-theory (enable neg sub))))
+
+(defthm mul-of-mod-arg1
+  (implies (and (posp p)
+                (integerp x)
+                (integerp y))
+           (equal (mul (mod x p) y p)
+                  (mul x y p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-of-mod-arg2
+  (implies (and (posp p)
+                (integerp x)
+                (integerp y))
+           (equal (mul x (mod y p) p)
+                  (mul x y p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+;; x=y/z becomes xz=y.
+(defthmd equal-of-div
+  (implies (and (syntaxp (not (equal z ''0))) ;prevent loops
+                (fep z p)
+                (fep y p)
+                (rtl::primep p))
+           (equal (equal x (div y z p))
+                  (if (equal 0 z)
+                      ;; odd case:
+                      (equal x (div y 0 p))
+                    (and (fep x p)
+                         (equal (mul x z p)
+                                (mod y p))))))
+  :hints (("Goal"
+           :use (:instance mul-of-inv-mul-of-inv (a z) (x y) (p p))
+           :in-theory (e/d (div) (mul-of-inv-mul-of-inv)))))
