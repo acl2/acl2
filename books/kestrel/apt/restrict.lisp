@@ -422,26 +422,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ restrict-event-generation
-  :parents (restrict-implementation)
-  :short "Event generation performed by @(tsee restrict)."
-  :long
-  "<p>
-   Some events are generated in two slightly different forms:
-   a form that is local to the generated @(tsee encapsulate),
-   and a form that is exported from the @(tsee encapsulate).
-   Proof hints are in the former but not in the latter,
-   thus keeping the ACL2 history ``clean''.
-   </p>
-   <p>
-   Other events are generated only locally in the @(tsee encapsulate),
-   without any exported counterparts.
-   These have automatically generated fresh names:
-   the names used so far
-   are threaded through the event generation functions below.
-   </p>"
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-event-generation restrict
+                                    :some-local-nonlocal-p t
+                                    :some-local-p t)
 
 (define restrict-gen-restriction-of-rec-calls-consequent-term
   ((old$ symbolp)

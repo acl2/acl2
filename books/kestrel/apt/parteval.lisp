@@ -366,19 +366,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parteval-event-generation
-  :parents (parteval-implementation)
-  :short "Event generation performed by @(tsee parteval)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Some events are generated in two slightly different forms:
-     a form that is local to the generated @(tsee encapsulate),
-     and a form that is exported from the @(tsee encapsulate).
-     Proof hints are in the former but not in the latter,
-     thus keeping the ACL2 history ``clean''."))
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-event-generation parteval
+                                    :some-local-nonlocal-p t)
 
 (define parteval-transform-rec-args
   ((rec-args pseudo-term-listp "Arguments of a recursive call of @('old').")

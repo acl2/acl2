@@ -1067,28 +1067,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ isodata-event-generation
-  :parents (isodata-implementation)
-  :short "Event generation performed by @(tsee isodata)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Some events are generated in two slightly different forms:
-     a form that is local to the generated @(tsee encapsulate),
-     and a form that is exported from the @(tsee encapsulate).
-     Proof hints are in the former but not in the latter,
-     thus keeping the ACL2 history ``clean''.")
-   (xdoc::p
-    "Other events are generated only locally in the @(tsee encapsulate),
-     without any exported counterparts.
-     These have automatically generated fresh names:
-     the names used so far
-     are threaded through the event generation functions below.")
-   (xdoc::p
-    "Other events are only exported from the @(tsee encapsulate),
-     without any local counterparts."))
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-event-generation isodata
+                                    :some-local-nonlocal-p t
+                                    :some-local-p t)
 
 (define isodata-gen-defiso ((iso$ symbolp)
                             (oldp$ pseudo-termfnp)
