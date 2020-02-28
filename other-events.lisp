@@ -25064,9 +25064,9 @@
 
 (defun add-suffix-to-fn (sym suffix)
 
-; We add a suffix to sym to create a legal function symbol.  Thus, we avoid
-; creating a name in the "COMMON-LISP" package, since ACL2 won't allow such a
-; name to be a function symbol.
+; We add a suffix to sym, which is a legal function symbol, to create a new
+; legal function symbol.  Thus, we avoid creating a name in the "COMMON-LISP"
+; package, since ACL2 won't allow such a name to be a function symbol.
 
   (declare (xargs :guard (and (symbolp sym)
                               (stringp suffix))))
