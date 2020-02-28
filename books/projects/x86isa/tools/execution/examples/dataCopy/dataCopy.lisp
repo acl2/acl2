@@ -41,6 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "../../top" :ttags :all)
+(include-book "std/testing/assert" :dir :system)
 
 (defsection dataCopy-cosim
   :parents (concrete-simulation-examples)

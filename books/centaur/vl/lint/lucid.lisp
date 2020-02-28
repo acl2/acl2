@@ -44,6 +44,7 @@
 (include-book "typo-detect")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
+(include-book "std/testing/assert" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 

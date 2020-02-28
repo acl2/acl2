@@ -34,6 +34,7 @@
 (include-book "../util/cwtime")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
+(local (include-book "std/testing/assert" :dir :system))
 
 (defsection check-case
   :parents (vl-lint)

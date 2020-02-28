@@ -33,6 +33,7 @@
 (include-book "../mlib/stmt-tools")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
+(local (include-book "std/testing/assert" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 
@@ -157,7 +158,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
                                                        (mashed-warning-type stringp))
   (str::istrprefixp mashed-att mashed-warning-type))
 
-(defattach vl-lint-suppress-warnings-att-compare vl-lint-suppress-warnings-att-compare-default) 
+(defattach vl-lint-suppress-warnings-att-compare vl-lint-suppress-warnings-att-compare-default)
 
 (define vl-lint-attname-says-ignore ((attname stringp)
                                      (mashed-warning-type stringp))
@@ -213,7 +214,7 @@ either upper or lower case, treating - and _ as equivalent, and with or without
 (fty::defvisitors vl-lint-scan-for-ignore-genelement
   :template vl-lint-scan-for-ignore
   :types (vl-genelement vl-context1))
-  
+
 
 
 ; So, where do we look for these attributes?  Most VL warnings include a

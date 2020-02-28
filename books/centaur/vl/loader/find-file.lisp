@@ -33,6 +33,7 @@
 (include-book "oslib/ls-logic" :dir :system)
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "../util/arithmetic"))
+(include-book "std/testing/assert" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 (set-state-ok t)
 
@@ -452,4 +453,3 @@
        ((when realfile)
         (mv realfile warnings)))
     (vl-find-basename/extension filename extensions (cdr searchcache) warnings)))
-

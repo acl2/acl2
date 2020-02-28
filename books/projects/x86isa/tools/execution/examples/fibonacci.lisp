@@ -39,6 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "../top" :ttags :all)
+(include-book "std/testing/assert" :dir :system)
 
 (defsection fibonacci-cosim
   :parents (concrete-simulation-examples)
