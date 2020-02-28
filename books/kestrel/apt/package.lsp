@@ -34,6 +34,7 @@
                          append-lst
                          append?
                          apply-fn-if-known
+                         apply-fn-into-ifs
                          apply-term
                          apply-term*
                          apply-unary-to-terms

@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/std/system/apply-fn-into-ifs" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/util/defiso" :dir :system)
@@ -2000,11 +2001,10 @@
                      (unwrapped-nonexec-body old$ wrld)
                    (ubody old$ wrld)))
        (back-of-args (apply-unary-to-terms back$ args$))
-       (old-body-with-back-of-args
-        (subcor-var args$ back-of-args old-body))
+       (old-body-with-back-of-args (subcor-var args$ back-of-args old-body))
        (newp-of-args (apply-unary-to-terms newp$ args$))
        (then-branch (if res$
-                        (apply-term* forth$ old-body-with-back-of-args)
+                        (apply-fn-into-ifs forth$ old-body-with-back-of-args)
                       old-body-with-back-of-args))
        (else-branch (b* ((n (number-of-results old$ wrld)))
                       (if (> n 1)
@@ -2062,7 +2062,7 @@
         (subcor-var args$ back-of-args old-body-with-new-rec-calls))
        (newp-of-args (apply-unary-to-terms newp$ args$))
        (then-branch (if res$
-                        (apply-term* forth$ old-body-with-back-of-args)
+                        (apply-fn-into-ifs forth$ old-body-with-back-of-args)
                       old-body-with-back-of-args))
        (else-branch (b* ((n (number-of-results old$ wrld)))
                       (if (> n 1)
