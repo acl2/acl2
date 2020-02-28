@@ -98,6 +98,8 @@
 
 (xdoc::evmac-topic-input-processing restrict)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-process-old (old verify-guards ctx state)
   :returns (mv erp
                (old$ "A @(tsee symbolp) that is
@@ -134,6 +136,8 @@
                     t nil)
                  (value nil))))
     (value old$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-restriction (restriction
                                       (old$ symbolp)
@@ -172,6 +176,8 @@
                                            description t nil)))
     (value term)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-process-undefined (undefined
                                     (old$ symbolp)
                                     ctx
@@ -198,6 +204,8 @@
        ((er &) (ensure-term-does-not-call$ term old$
                                            description t nil)))
     (value term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-thm-name (thm-name
                                    (old$ symbolp)
@@ -234,6 +242,8 @@
                 t nil)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *restrict-app-cond-names*
   :short "Names of all the applicability conditions."
   '(:restriction-of-rec-calls
@@ -247,16 +257,22 @@
   (defruled no-duplicatesp-eq-of-*restrict-app-cond-names*
     (no-duplicatesp-eq *restrict-app-cond-names*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-app-cond-namep (x)
   :returns (yes/no booleanp)
   :short "Recognize names of the applicability conditions."
   (and (member-eq x *restrict-app-cond-names*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist restrict-app-cond-name-listp (x)
   (restrict-app-cond-namep x)
   :short "Recognize true lists of names of the applicability conditions."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-app-cond-present-p ((name restrict-app-cond-namep)
                                      (old$ symbolp)
@@ -270,6 +286,8 @@
     (:restriction-boolean t)
     (t (impossible)))
   :guard-hints (("Goal" :in-theory (enable restrict-app-cond-namep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-app-cond-present-names ((old$ symbolp)
                                          (verify-guards$ booleanp)
@@ -305,6 +323,8 @@
                                               old$
                                               verify-guards$
                                               wrld))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-inputs (old
                                  restriction
@@ -426,6 +446,8 @@
                                     :some-local-nonlocal-p t
                                     :some-local-p t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-gen-restriction-of-rec-calls-consequent-term
   ((old$ symbolp)
    (rec-calls-with-tests pseudo-tests-and-call-listp
@@ -496,6 +518,8 @@
                 rev-conjuncts)
           wrld))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-gen-app-cond-formula ((name restrict-app-cond-namep)
                                        (old$ symbolp)
                                        (restriction$ pseudo-termp)
@@ -521,6 +545,8 @@
        (b* ((formula-trans (apply-term* 'acl2::booleanp restriction$)))
          (untranslate formula-trans t wrld)))
       (t (impossible)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-app-cond ((name restrict-app-cond-namep)
                                (old$ symbolp)
@@ -581,6 +607,8 @@
                              ,try-defthm
                              ,@progress-end?))))
     (mv event thm-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-app-conds
   ((old$ symbolp)
@@ -649,6 +677,8 @@
                                                              state)))
        (mv (cons event events)
            (acons name thm-name thm-names))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-new-fn ((old$ symbolp)
                              (restriction$ pseudo-termp)
@@ -751,6 +781,8 @@
                  ,new-body)))
     (mv local-event exported-event)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-gen-old-to-new-thm ((old$ symbolp)
                                      (restriction$ pseudo-termp)
                                      (new-name$ symbolp)
@@ -821,6 +853,8 @@
        (exported-event `(,macro ,thm-name$
                                 ,formula)))
     (mv local-event exported-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-new-fn-verify-guards
   ((old$ symbolp)
@@ -901,6 +935,8 @@
                                  app-cond-thm-names)))))))
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
     event))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-everything
   ((old$ symbolp)
@@ -1172,6 +1208,8 @@
                                        ctx
                                        state)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection restrict-macro-definition
   :parents (restrict-implementation)

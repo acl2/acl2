@@ -168,6 +168,8 @@
 
 (xdoc::evmac-topic-input-processing tailrec)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-check-nonrec-conditions
   ((combine-nonrec pseudo-termp)
    (nonrec? pseudo-termp "Candidate @('nonrec<x1,...,xn>') to check.")
@@ -196,6 +198,8 @@
       (if (set-equiv (all-vars combine) (list q r))
           (mv t combine)
         (mv nil nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines tailrec-find-nonrec-term-in-term/terms
   :short "Decompose @('combine<nonrec<x1,...,xn>,r>') into
@@ -269,6 +273,8 @@
                (tailrec-find-nonrec-terms
                 combine-nonrec (cdr terms-to-try) r q))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-decompose-recursive-branch ((old$ symbolp)
                                             (rec-branch pseudo-termp)
                                             ctx
@@ -326,6 +332,8 @@
                   "Unable to decompose the recursive branch ~x0 ~
                    of the target function ~x1." rec-branch old$)))
     (value (list nonrec updates combine q r))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-old (old
                              variant
@@ -438,14 +446,20 @@
         (cw "- Fresh variable for recursive call: ~x0.~%" r)))
     (value (list old$ test base nonrec updates combine q r))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defenum tailrec-variantp (:assoc :monoid :monoid-alt)
   :short "Variants of the tail recursion transformation.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker tailrec-process-variant
   (variant)
   "Process the @('variant') input."
   (((tailrec-variantp variant)
     "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-infer-domain ((combine pseudo-termp)
                               (q symbolp)
@@ -484,6 +498,8 @@
         (cw "~%")
         (cw "Inferred domain for the applicability conditions: ~x0.~%" domain)))
     domain))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-domain (domain
                                 (old$ symbolp)
@@ -593,6 +609,8 @@
                                              description t nil))))
     (value fn/lambda)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-process-wrapper-name (wrapper-name
                                       (wrapper-name-present booleanp)
                                       (new-name$ symbolp)
@@ -633,6 +651,8 @@
                    no :WRAPPER-NAME input may be supplied.")
       (value nil))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-process-wrapper-enable (wrapper-enable
                                         (wrapper-enable-present booleanp)
                                         (wrapper$ booleanp)
@@ -649,6 +669,8 @@
                   "Since the :WRAPPER input is NIL, ~
                    no :WRAPPER-enable input may be supplied.")
       (value nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-thm-name (thm-name
                                   (old$ symbolp)
@@ -698,6 +720,8 @@
                 t nil)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *tailrec-app-cond-names*
   :short "Names of all the applicability conditions."
   '(:domain-of-base
@@ -719,16 +743,22 @@
   (defruled no-duplicatesp-eq-of-*tailrec-app-cond-names*
     (no-duplicatesp-eq *tailrec-app-cond-names*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-app-cond-namep (x)
   :returns (yes/no booleanp)
   :short "Recognize names of the applicability conditions."
   (and (member-eq x *tailrec-app-cond-names*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist tailrec-app-cond-name-listp (x)
   (tailrec-app-cond-namep x)
   :short "Recognize true lists of names of the applicability conditions."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-app-cond-present-p ((name tailrec-app-cond-namep)
                                     (variant$ tailrec-variantp)
@@ -751,6 +781,8 @@
                                        verify-guards$))
     (t (impossible)))
   :guard-hints (("Goal" :in-theory (enable tailrec-app-cond-namep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-app-cond-present-names ((variant$ tailrec-variantp)
                                         (verify-guards$ booleanp))
@@ -780,6 +812,8 @@
          (tailrec-app-cond-present-names-aux (cdr names)
                                              variant$
                                              verify-guards$))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-inputs (old
                                 variant
@@ -949,6 +983,8 @@
                                     :some-local-nonlocal-p t
                                     :some-local-p t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-var-u ((old$ symbolp))
   :returns (u "A @(tsee symbolp).")
   :mode :program
@@ -959,6 +995,8 @@
           @(':combine-associativity-uncond')
           applicability conditions."
   (genvar old$ "U" nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-var-v ((old$ symbolp))
   :returns (v "A @(tsee symbolp).")
@@ -971,6 +1009,8 @@
           applicability conditions."
   (genvar old$ "V" nil nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-var-w ((old$ symbolp))
   :returns (w "A @(tsee symbolp).")
   :mode :program
@@ -979,6 +1019,8 @@
           @(':combine-associativity-uncond')
           applicability conditions."
   (genvar old$ "W" nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-id-var-u ((old$ symbolp) (wrld plist-worldp))
   :returns (u "A @(tsee symbolp).")
@@ -993,6 +1035,8 @@
    </p>"
   (genvar old$ "U" nil (formals old$ wrld)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-combine-op ((combine pseudo-termp)
                                 (q symbolp)
                                 (r symbolp))
@@ -1005,6 +1049,8 @@
    This is obtained by abstracting @('combine<q,r>') over @('q') and @('r').
    </p>"
   (make-lambda (list q r) combine))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-app-cond-formula ((name tailrec-app-cond-namep)
                                       (old$ symbolp)
@@ -1094,6 +1140,8 @@
                     t wrld))
       (t (impossible)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-app-cond ((name tailrec-app-cond-namep)
                               (old$ symbolp)
                               (test pseudo-termp)
@@ -1166,6 +1214,8 @@
                              ,try-defthm
                              ,@progress-end?))))
     (mv event thm-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-app-conds
   ((old$ symbolp)
@@ -1265,6 +1315,8 @@
        (mv (cons event events)
            (acons name thm-name thm-names))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-domain-of-old-thm ((old$ symbolp)
                                        (test pseudo-termp)
                                        (nonrec pseudo-termp)
@@ -1345,6 +1397,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-new-fn ((old$ symbolp)
                             (test pseudo-termp)
@@ -1540,6 +1594,8 @@
                  ,body)))
     (mv local-event exported-event formals)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-new-to-old-thm ((old$ symbolp)
                                     (nonrec pseudo-termp)
                                     (updates pseudo-term-listp)
@@ -1683,6 +1739,8 @@
                         :hints ,hints))))
     (mv event name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-alpha-fn ((old$ symbolp)
                               (test pseudo-termp)
                               (updates pseudo-term-listp)
@@ -1725,6 +1783,8 @@
                   ,body))))
     (mv event name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-alpha-component-terms ((alpha-name symbolp)
                                            (old$ symbolp)
                                            (wrld plist-worldp))
@@ -1759,6 +1819,8 @@
                                                 alpha-name
                                                 formals
                                                 (cons term terms)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-test-of-alpha-thm ((old$ symbolp)
                                        (test pseudo-termp)
@@ -1801,6 +1863,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-old-guard-of-alpha-thm ((old$ symbolp)
                                             (alpha-name symbolp)
@@ -1850,6 +1914,8 @@
                         :hints ,hints))))
     (mv event name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-domain-of-ground-base-thm
   ((old$ symbolp)
    (base pseudo-termp)
@@ -1895,6 +1961,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-combine-left-identity-ground-thm
   ((old$ symbolp)
@@ -1950,6 +2018,8 @@
                         :hints ,hints))))
     (mv event name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-base-guard-thm ((old$ symbolp)
                                     (base pseudo-termp)
                                     (alpha-name symbolp)
@@ -1994,6 +2064,8 @@
                         :hints ,hints))))
     (mv event name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-old-as-new-term ((old$ symbolp)
                                      (test pseudo-termp)
                                      (base pseudo-termp)
@@ -2033,6 +2105,8 @@
                   (subst-var base r (apply-term new-name$ new-formals)))
                  (t (impossible)))
                nil wrld))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-old-to-new-thm ((old$ symbolp)
                                     (test pseudo-termp)
@@ -2136,6 +2210,8 @@
                                 ,formula))))
     (mv local-event exported-event? name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-wrapper-fn ((old$ symbolp)
                                 (test pseudo-termp)
                                 (base pseudo-termp)
@@ -2220,6 +2296,8 @@
                  ,body)))
     (mv local-event exported-event)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-old-to-wrapper-thm ((old$ symbolp)
                                         (wrapper-name$ symbolp)
                                         (thm-name$ symbolp)
@@ -2264,6 +2342,8 @@
        (exported-event `(,macro ,thm-name$
                                 ,formula)))
     (mv local-event exported-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-everything
   ((old$ symbolp)
@@ -2715,6 +2795,8 @@
                                       ctx
                                       state)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection tailrec-macro-definition
   :parents (tailrec-implementation)

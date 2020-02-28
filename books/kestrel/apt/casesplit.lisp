@@ -103,6 +103,8 @@
 
 (xdoc::evmac-topic-input-processing casesplit)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-process-old (old verify-guards ctx state)
   :returns (mv erp
                (old$ "A @(tsee symbolp) that is
@@ -127,6 +129,8 @@
                     t nil)
                  (value nil))))
     (value old$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-process-condition
   ((cond "An element of @('conditions').")
@@ -166,6 +170,8 @@
        ((er &) (ensure-term-does-not-call$ term old$
                                            description t nil)))
     (value term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-process-conditions (conditions
                                       (old$ symbolp)
@@ -214,6 +220,8 @@
                                       old$ verify-guards$
                                       ctx state)))
                 (value (cons cond$ conditions$))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-process-theorem
   ((thm "An element of @('theorems').")
@@ -275,6 +283,8 @@
        (new (fargn concl 2)))
     (value (list hyp new))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-process-theorems (theorems
                                     (old$ symbolp)
                                     (conditions$ pseudo-term-listp)
@@ -324,6 +334,8 @@
                 (value (list (cons hyp hyps)
                              (cons new news)))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-process-thm-name (thm-name
                                     (old$ symbolp)
                                     (new-name$ symbolp)
@@ -357,6 +369,8 @@
                 t nil)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-process-hints (hints ctx state)
   :returns (mv erp (hints$ symbol-alistp) state)
   :short "Process the @(':hints') input."
@@ -371,6 +385,8 @@
     (value alist))
   ;; for guard verification and return type proofs:
   :prepwork ((local (in-theory (enable ensure-keyword-value-list)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-process-inputs (old
                                   conditions
@@ -469,6 +485,8 @@
                  verify-guards$
                  hints$))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-ensure-no-extra-hints ((hints$ symbol-alistp)
                                          (names+formulas symbol-alistp)
                                          ctx
@@ -498,6 +516,8 @@
                                     :some-local-nonlocal-p t
                                     :some-local-p t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-app-cond-name-from-parts ((prefix stringp)
                                                 (k natp)
                                                 (suffix stringp))
@@ -512,20 +532,28 @@
     and a suffix (@('-hyp') or @('-guard')).")
   (intern (str::cat prefix (str::natstr k) suffix) "KEYWORD"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-app-cond-thm-hyp-name ((k natp))
   :returns (name symbolp "A keyword.")
   :short "Name of the applicability condition @(':thmk-hyp')."
   (casesplit-gen-app-cond-name-from-parts "THM" k "-HYP"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-app-cond-cond-guard-name ((k posp))
   :returns (name symbolp "A keyword.")
   :short "Name of the applicability condition @(':condk-guard')."
   (casesplit-gen-app-cond-name-from-parts "COND" k "-GUARD"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-app-cond-new-guard-name ((k natp))
   :returns (name symbolp "A keyword.")
   :short "Name of the applicability condition @(':newk-guard')."
   (casesplit-gen-app-cond-name-from-parts "NEW" k "-GUARD"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-app-cond-thm-hyp-name+formula
   ((k natp)
@@ -555,6 +583,8 @@
        (formula (untranslate formula t wrld)))
     (cons name formula)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-app-cond-cond-guard-name+formula
   ((k posp)
    (old$ symbolp)
@@ -576,6 +606,8 @@
        (formula (implicate antecedent consequent))
        (formula (untranslate formula t wrld)))
     (cons name formula)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-app-cond-new-guard-name+formula
   ((k natp)
@@ -610,6 +642,8 @@
        (formula (implicate antecedent consequent))
        (formula (untranslate formula t wrld)))
     (cons name formula)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-app-cond-thm-hyp-names+formulas
   ((conditions$ pseudo-term-listp)
@@ -648,6 +682,8 @@
        (casesplit-gen-app-cond-thm-hyp-names+formulas-aux
         (1- k) conditions$ hyps wrld acc)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-app-cond-cond-guard-names+formulas
   ((old$ symbolp)
    (conditions$ pseudo-term-listp)
@@ -680,6 +716,8 @@
           (acc (cons name+formula acc)))
        (casesplit-gen-app-cond-cond-guard-names+formulas-aux
         (1- k) old$ conditions$ state acc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-app-cond-new-guard-names+formulas
   ((old$ symbolp)
@@ -721,6 +759,8 @@
        (casesplit-gen-app-cond-new-guard-names+formulas-aux
         (1- k) old$ conditions$ news state acc)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-app-cond-names+formulas ((old$ symbolp)
                                                (conditions$ pseudo-term-listp)
                                                (hyps pseudo-term-listp)
@@ -743,6 +783,8 @@
               (casesplit-gen-app-cond-new-guard-names+formulas
                old$ conditions$ news state))
     (casesplit-gen-app-cond-thm-hyp-names+formulas conditions$ hyps (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-app-cond ((name keywordp)
                                 (formula "An untranslated term.")
@@ -800,6 +842,8 @@
                              ,@progress-end?))))
     (mv event thm)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-app-conds ((names+formulas symbol-alistp)
                                  (hints$ symbol-alistp)
                                  (print$ evmac-input-print-p)
@@ -827,6 +871,8 @@
                                                   names-to-avoid
                                                   ctx state)))
     (mv (cons event events) (acons name thm thms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-new-fn ((old$ symbolp)
                               (conditions$ pseudo-term-listp)
@@ -916,6 +962,8 @@
           (acc `(if ,condk ,newk ,acc)))
        (casesplit-gen-new-fn-body (1- k) conditions$ news acc)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define casesplit-gen-old-to-new-thm ((old$ symbolp)
                                       (theorems$ symbol-listp)
                                       (new-name$ symbolp)
@@ -963,6 +1011,8 @@
        (exported-event `(,macro ,thm-name$
                                 ,formula)))
     (mv local-event exported-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define casesplit-gen-everything ((old$ symbolp)
                                   (conditions$ pseudo-term-listp)
@@ -1186,6 +1236,8 @@
                                              ctx
                                              state)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection casesplit-macro-definition
   :parents (casesplit-implementation)

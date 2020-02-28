@@ -86,6 +86,8 @@
 
 (xdoc::evmac-topic-input-processing parteval)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-process-old (old verify-guards ctx state)
   :returns (mv erp
                (old$ symbolp "The name of the target function
@@ -110,6 +112,8 @@
                     t nil)
                  (value :this-is-irrelevant))))
     (value old$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-process-static-terms
   ((cj...cm true-listp "List @('(c1 ... cm)') initially,
@@ -154,6 +158,8 @@
                          cj+1...cm yj+1...ym old$ verify-guards$ ctx state)))
     (value (cons cj$ cj+1...cm$))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-process-static (static
                                  (old$ symbolp)
                                  (verify-guards$ booleanp)
@@ -183,6 +189,8 @@
                                                      ctx state))
        (static$ (pairlis$ y1...ym c1...cm$)))
     (value static$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-process-thm-name (thm-name
                                    (old$ symbolp)
@@ -219,6 +227,8 @@
                 t nil)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-unchanging-static-in-rec-args-p
   ((rec-args pseudo-term-listp "Arguments of a recursive call of @('old').")
    (old$ symbolp)
@@ -240,6 +250,8 @@
                                                        old$
                                                        (cdr yj...ym)
                                                        wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-unchanging-static-in-rec-calls-p
   ((rec-calls-with-tests pseudo-tests-and-call-listp
@@ -264,6 +276,8 @@
              (parteval-unchanging-static-in-rec-calls-p
               (cdr rec-calls-with-tests) old$ y1...ym wrld)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-case-of-old ((old$ symbolp)
                               (static$ symbol-alistp)
                               (wrld plist-worldp))
@@ -277,6 +291,8 @@
        ((when (parteval-unchanging-static-in-rec-calls-p
                (recursive-calls old$ wrld) old$ (strip-cars static$) wrld)) 2))
     3))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-process-inputs (old
                                  static
@@ -369,6 +385,8 @@
 (xdoc::evmac-topic-event-generation parteval
                                     :some-local-nonlocal-p t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-transform-rec-args
   ((rec-args pseudo-term-listp "Arguments of a recursive call of @('old').")
    (old$ symbolp)
@@ -389,6 +407,8 @@
                 (rec-args (append (take pos rec-args)
                                   (nthcdr (1+ pos) rec-args))))
              (parteval-transform-rec-args rec-args old$ (cdr yj...ym) wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines parteval-transform-rec-calls-in-term
   :short "Transform the recursive calls in the body of @('old')."
@@ -438,6 +458,8 @@
                    (parteval-transform-rec-calls-in-terms
                     (cdr body-terms) old$ new-name$ y1...ym wrld))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-gen-new-fn-body ((old$ symbolp)
                                   (static$ symbol-alistp)
                                   (new-name$ symbolp)
@@ -468,6 +490,8 @@
          body))
     (3 (fsublis-var static$ `(,old$ ,@(formals old$ wrld))))
     (t (impossible))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-gen-new-fn ((old$ symbolp)
                              (static$ symbol-alistp)
@@ -554,6 +578,8 @@
                  ,body)))
     (mv local-event exported-event formals)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-gen-static-equalities ((static$ symbol-alistp))
   :returns (equalities "A @(tsee pseudo-term-listp).")
   :short "Generate the equalities whose conjunction forms
@@ -566,6 +592,8 @@
        (equality `(equal ,(car arg$) ,(cdr arg$)))
        (equalities (parteval-gen-static-equalities static$)))
     (cons equality equalities)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-gen-old-to-new-thm ((old$ symbolp)
                                      (static$ symbol-alistp)
@@ -609,6 +637,8 @@
        (local-event `(local (,macro ,thm-name$ ,formula :hints ,hints)))
        (exported-event `(,macro ,thm-name$ ,formula)))
     (mv local-event exported-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-gen-old-to-new-thm-instances
   ((rec-calls-with-tests pseudo-tests-and-call-listp
@@ -660,6 +690,8 @@
                          old$ static$ thm-name$ wrld)))
     (cons lemma-instance lemma-instances)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parteval-gen-new-fn-verify-guards ((old$ symbolp)
                                            (static$ symbol-alistp)
                                            (new-name$ symbolp)
@@ -688,6 +720,8 @@
     `(local (verify-guards ,new-name$
               :hints ,hints
               :guard-simplify nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parteval-gen-everything ((old$ symbolp)
                                  (static$ symbol-alistp)
@@ -879,6 +913,8 @@
                                        call
                                        (w state))))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection parteval-macro-definition
   :parents (parteval-implementation)
