@@ -736,6 +736,11 @@
      has been moved to the Std extensions in the Kestrel Books,
      under @('[books]/kestrel/std/basic/').")
 
+   (xdoc::p
+    "A variant @(tsee mbt$) of @(tsee mbt) has been introduced,
+     which requires the argument to be just non-@('nil')
+     instead of exactly @('t').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/lists" "Standard Lists Library"))
