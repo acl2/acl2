@@ -416,7 +416,7 @@
                                          result)').")
                state)
   :mode :program
-  :short "Process the @('iso') component of the @('args-iso') input."
+  :short "Process the @('iso') component of the @('args/res-iso') input."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -906,7 +906,7 @@
                                                 wrld))))))
 
 (define isodata-process-inputs (old
-                                args-iso
+                                args/res-iso
                                 predicate
                                 new-name
                                 new-enable
@@ -1014,7 +1014,7 @@
                   iso-hints
                   names-to-avoid))
         (isodata-process-args/res-iso
-         args-iso old$ verify-guards$ names-to-avoid ctx state))
+         args/res-iso old$ verify-guards$ names-to-avoid ctx state))
        ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
@@ -3723,7 +3723,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-fn (old
-                    args-iso
+                    args/res-iso
                     predicate
                     new-name
                     new-enable
@@ -3789,7 +3789,7 @@
                   app-cond-keywords
                   names-to-avoid))
         (isodata-process-inputs old
-                                args-iso
+                                args/res-iso
                                 predicate
                                 new-name
                                 new-enable
@@ -3856,7 +3856,7 @@
                      call
                      ;; mandatory inputs:
                      old
-                     args-iso
+                     args/res-iso
                      ;; optional inputs:
                      &key
                      (predicate 'nil)
@@ -3873,7 +3873,7 @@
                      (show-only 'nil)
                      (compatibility 'nil))
     `(make-event-terse (isodata-fn ',old
-                                   ',args-iso
+                                   ',args/res-iso
                                    ',predicate
                                    ',new-name
                                    ',new-enable
