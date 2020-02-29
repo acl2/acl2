@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "fresh-names")
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/prove-interface" :dir :system)
@@ -171,14 +171,17 @@
    Otherwise, it is made fresh by appending @('$') signs.
    If the initial name is a keyword,
    it is interned into the \"ACL2\" package
-   before calling @(tsee fresh-name-in-world-with-$s),
+   before calling @(tsee fresh-logical-name-with-$s-suffix),
    whose guard forbids keywords.
    </p>"
   (b* ((defthm/defthmd (theorem-intro-macro enabled))
        (name (if (keywordp name)
                  (intern (symbol-name name) "ACL2")
                name))
-       (thm-name (fresh-name-in-world-with-$s name names-to-avoid wrld))
+       (thm-name (fresh-logical-name-with-$s-suffix name
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld))
        (thm-event `(,defthm/defthmd ,thm-name
                      ,formula
                      :hints ,hints
