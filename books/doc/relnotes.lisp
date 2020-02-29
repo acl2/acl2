@@ -659,7 +659,10 @@
 
    (xdoc::p
     "Models have been added of all the boolean and integer operations,
-     as well as of all the primitive conversions on integral values.")
+     as well as of all the primitive conversions on integral values.
+     Abstract models have also been added of all the floating-point operations,
+     as well as of all the primitive conversions
+     involving floating-point values.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
