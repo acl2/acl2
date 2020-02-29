@@ -161,6 +161,7 @@
                          formals
                          formals+
                          fquotep
+                         fresh-logical-name-with-$s-suffix
                          fresh-name-in-world-with-$s
                          fsublis-fn-lst-simple
                          fsublis-fn-simple

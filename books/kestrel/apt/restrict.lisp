@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -582,11 +583,12 @@
    and adding @('$') as needed to avoid name clashes.
    </p>"
   (b* ((wrld (w state))
-       (thm-name (fresh-name-in-world-with-$s (intern-in-package-of-symbol
-                                               (symbol-name name)
-                                               (pkg-witness "APT"))
-                                              names-to-avoid
-                                              wrld))
+       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
+                                                     (symbol-name name)
+                                                     (pkg-witness "APT"))
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld))
        (formula
         (restrict-gen-app-cond-formula name old$ restriction$ stub? state))
        (hints (cdr (assoc-eq name hints$)))
@@ -1030,9 +1032,10 @@
                         (all-ffn-symbs (termination-theorem old$ (w state))
                                        nil))))
        (stub? (and reflexivep
-                   (fresh-name-in-world-with-$s
+                   (fresh-logical-name-with-$s-suffix
                     (intern-in-package-of-symbol
                      "?F" (pkg-witness (symbol-package-name old$)))
+                    'constrained-function
                     names-to-avoid
                     wrld)))
        (names-to-avoid (if stub? (rcons stub? names-to-avoid) names-to-avoid))

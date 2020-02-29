@@ -14,6 +14,7 @@
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/apply-fn-into-ifs" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/util/defiso" :dir :system)
@@ -306,65 +307,75 @@
      if guards must not be verified, since
      those theorems are not generated or used in that case."))
   (b* ((iso$ (add-suffix iso$ "-"))
-       (forth-image (fresh-name-in-world-with-$s
+       (forth-image (fresh-logical-name-with-$s-suffix
                      (add-suffix iso$ (symbol-name :alpha-image))
+                     nil
                      names-to-avoid
                      wrld))
        (names-to-avoid (cons forth-image names-to-avoid))
-       (back-image (fresh-name-in-world-with-$s
+       (back-image (fresh-logical-name-with-$s-suffix
                     (add-suffix iso$ (symbol-name :beta-image))
+                    nil
                     names-to-avoid
                     wrld))
        (names-to-avoid (cons back-image names-to-avoid))
-       (back-of-forth (fresh-name-in-world-with-$s
+       (back-of-forth (fresh-logical-name-with-$s-suffix
                        (add-suffix iso$ (symbol-name :beta-of-alpha))
+                       nil
                        names-to-avoid
                        wrld))
        (names-to-avoid (cons back-of-forth names-to-avoid))
-       (forth-of-back (fresh-name-in-world-with-$s
+       (forth-of-back (fresh-logical-name-with-$s-suffix
                        (add-suffix iso$ (symbol-name :alpha-of-beta))
+                       nil
                        names-to-avoid
                        wrld))
        (names-to-avoid (cons forth-of-back names-to-avoid))
        (oldp-guard (and verify-guards$
-                        (fresh-name-in-world-with-$s
+                        (fresh-logical-name-with-$s-suffix
                          (add-suffix iso$ (symbol-name :doma-guard))
+                         nil
                          names-to-avoid
                          wrld)))
        (names-to-avoid (if verify-guards$
                            (cons oldp-guard names-to-avoid)
                          names-to-avoid))
        (newp-guard (and verify-guards$
-                        (fresh-name-in-world-with-$s
+                        (fresh-logical-name-with-$s-suffix
                          (add-suffix iso$ (symbol-name :domb-guard))
+                         nil
                          names-to-avoid
                          wrld)))
        (names-to-avoid (if verify-guards$
                            (cons newp-guard names-to-avoid)
                          names-to-avoid))
        (forth-guard (and verify-guards$
-                         (fresh-name-in-world-with-$s
+                         (fresh-logical-name-with-$s-suffix
                           (add-suffix iso$ (symbol-name :alpha-guard))
+                          nil
                           names-to-avoid
                           wrld)))
        (names-to-avoid (if verify-guards$
                            (cons forth-guard names-to-avoid)
                          names-to-avoid))
        (back-guard (and verify-guards$
-                        (fresh-name-in-world-with-$s
+                        (fresh-logical-name-with-$s-suffix
                          (add-suffix iso$ (symbol-name :beta-guard))
+                         nil
                          names-to-avoid
                          wrld)))
        (names-to-avoid (if verify-guards$
                            (cons back-guard names-to-avoid)
                          names-to-avoid))
-       (forth-injective (fresh-name-in-world-with-$s
+       (forth-injective (fresh-logical-name-with-$s-suffix
                          (add-suffix iso$ (symbol-name :alpha-injective))
+                         nil
                          names-to-avoid
                          wrld))
        (names-to-avoid (cons forth-injective names-to-avoid))
-       (back-injective (fresh-name-in-world-with-$s
+       (back-injective (fresh-logical-name-with-$s-suffix
                         (add-suffix iso$ (symbol-name :beta-injective))
+                        nil
                         names-to-avoid
                         wrld)))
     (mv forth-image
@@ -1389,11 +1400,12 @@
      However, if the applicability condition is a @(tsee defiso) one,
      its name is supplied by the caller."))
   (b* ((wrld (w state))
-       (thm-name (fresh-name-in-world-with-$s (intern-in-package-of-symbol
-                                               (symbol-name app-cond)
-                                               (pkg-witness "APT"))
-                                              names-to-avoid
-                                              wrld))
+       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
+                                                     (symbol-name app-cond)
+                                                     (pkg-witness "APT"))
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld))
        (formula (isodata-gen-app-cond-formula app-cond
                                               old$
                                               args$
@@ -2518,7 +2530,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is generated only locally for now."))
-  (b* ((name (fresh-name-in-world-with-$s 'new-to-old names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'new-to-old
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (isodata-gen-new-to-old-thm-formula old$
                                                     args$
                                                     res$
@@ -2814,7 +2829,10 @@
   (xdoc::topstring-p
    "This is the theorem @($f'A'B'$) in the design notes.
     It is generated only if @('args/res') includes @(':result').")
-  (b* ((name (fresh-name-in-world-with-$s 'newp-of-new names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'newp-of-new
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (isodata-gen-newp-of-new-thm-formula old$
                                                      args$
                                                      newp$

@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -818,11 +819,12 @@
      into the \"APT\" package
      and adding @('$') as needed to avoid name clashes."))
   (b* ((wrld (w state))
-       (thm (fresh-name-in-world-with-$s (intern-in-package-of-symbol
-                                          (symbol-name name)
-                                          (pkg-witness "APT"))
-                                         names-to-avoid
-                                         wrld))
+       (thm (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
+                                                (symbol-name name)
+                                                (pkg-witness "APT"))
+                                               nil
+                                               names-to-avoid
+                                               wrld))
        (hints (cdr (assoc-eq name hints$)))
        (defthm `(defthm ,thm ,formula :hints ,hints :rule-classes nil))
        (error-msg (msg

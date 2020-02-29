@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -1181,11 +1182,12 @@
    and adding @('$') as needed to avoid name clashes.
    </p>"
   (b* ((wrld (w state))
-       (thm-name (fresh-name-in-world-with-$s (intern-in-package-of-symbol
-                                               (symbol-name name)
-                                               (pkg-witness "APT"))
-                                              names-to-avoid
-                                              wrld))
+       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
+                                                     (symbol-name name)
+                                                     (pkg-witness "APT"))
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld))
        (formula (tailrec-gen-app-cond-formula name
                                               old$
                                               test
@@ -1345,7 +1347,10 @@
    This theorem event is local,
    because it is a lemma used to prove the exported main theorem.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'domain-of-old names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'domain-of-old
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (untranslate (apply-term* domain$
                                           (apply-term old$
                                                       (formals old$
@@ -1644,7 +1649,10 @@
    This theorem event is local,
    because it is a lemma used to prove the exported main theorem.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'new-to-old names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'new-to-old
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula
         (untranslate (implicate
                       (apply-term* domain$ r)
@@ -1765,7 +1773,10 @@
    <p>
    The name used for @($\\alpha$) is returned, along with the event.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'alpha names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'alpha
+                                                'function
+                                                names-to-avoid
+                                                wrld))
        (formals (formals old$ wrld))
        (body `(if ,test (list ,@formals) (,name ,@updates)))
        (wfrel (well-founded-relation old$ wrld))
@@ -1849,7 +1860,10 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'test-of-alpha names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'test-of-alpha
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-gen-alpha-component-terms alpha-name
                                                                  old$
@@ -1893,9 +1907,10 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'old-guard-of-alpha
-                                          names-to-avoid
-                                          wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'old-guard-of-alpha
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-gen-alpha-component-terms alpha-name
                                                                  old$
@@ -1939,9 +1954,10 @@
    This theorem event is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'domain-of-ground-base
-                                          names-to-avoid
-                                          wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'domain-of-ground-base
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (apply-term* domain$ base))
        (domain-of-base-thm
         (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
@@ -1991,9 +2007,10 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'combine-left-identity-ground
-                                          names-to-avoid
-                                          wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'combine-left-identity-ground
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (u (tailrec-gen-var-u old$))
        (combine-op (tailrec-gen-combine-op combine q r))
        (formula (implicate (apply-term* domain$ u)
@@ -2043,7 +2060,10 @@
    because it is just a lemma used to prove other theorems.
    </p>"
   (b* ((wrld (w state))
-       (name (fresh-name-in-world-with-$s 'base-guard names-to-avoid wrld))
+       (name (fresh-logical-name-with-$s-suffix 'base-guard
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (implicate (guard old$ nil wrld)
                            (term-guard-obligation base state)))
        (formals (formals old$ wrld))
@@ -2162,7 +2182,10 @@
    there is no wrapper an no old-to-wrapper theorem.
    </p>"
   (b* ((name (if wrapper$
-                 (fresh-name-in-world-with-$s 'old-to-new names-to-avoid wrld)
+                 (fresh-logical-name-with-$s-suffix 'old-to-new
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld)
                thm-name$))
        (formula `(equal ,(apply-term old$ (formals old$ wrld))
                         ,(tailrec-gen-old-as-new-term
