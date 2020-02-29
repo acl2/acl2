@@ -10,15 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "floating-point-value-set-parameters")
-
-(include-book "kestrel/fty/ubyte16" :dir :system)
-(include-book "kestrel/fty/sbyte8" :dir :system)
-(include-book "kestrel/fty/sbyte16" :dir :system)
-(include-book "kestrel/fty/sbyte32" :dir :system)
-(include-book "kestrel/fty/sbyte64" :dir :system)
-(include-book "kestrel/std/util/defconstrained-recognizer" :dir :system)
-(include-book "kestrel/std/util/deffixer" :dir :system)
+(include-book "floating-point-placeholders")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -170,148 +162,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection float-value-aux
-  :short "Auxiliary fixtype for @(tsee float-value)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a constrained predicate for the underlying values
-     of Java @('float') values in the float value set.
-     The latter are defined by tagging the underlying values,
-     in the same way that our model of the Java @('int') values (for instance)
-     is defined by tagging 32-bit signed integers as the underlying values.")
-   (xdoc::p
-    "The predicate is constrained to be non-empty:
-     this is expressed via a constrained nullary witness function.
-     These constraints enable the definition of a fixer and fixtype.")
-   (xdoc::@def "float-value-aux-p")
-   (xdoc::@def "float-value-aux-witness"))
-
-  (std::defconstrained-recognizer float-value-aux-p
-    :nonempty float-value-aux-witness)
-
-  (std::deffixer float-value-aux-fix
-    :pred float-value-aux-p
-    :body-fix (float-value-aux-witness)
-    :parents (float-value-aux)
-    :short "Fixer for @(tsee float-value-aux).")
-
-  (in-theory (disable (:e float-value-aux-fix)))
-
-  (fty::deffixtype float-value-aux
-    :pred float-value-aux-p
-    :fix float-value-aux-fix
-    :equiv float-value-aux-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod float-value
   :short "Fixtype of Java @('float') values
           in the float value set [JLS:4.2.3]."
-  ((float float-value-aux))
+  ((float float-value-abs))
   :tag :float
   :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection double-value-aux
-  :short "Auxiliary fixtype for @(tsee double-value)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a constrained predicate for the underlying values
-     of Java @('double') values in the double value set.
-     The latter are defined by tagging the underlying values,
-     in the same way that our model of the Java @('int') values (for instance)
-     is defined by tagging 32-bit signed integers as the underlying values.")
-   (xdoc::p
-    "The predicate is constrained to be non-empty:
-     this is expressed via a constrained nullary witness function.
-     These constraints enable the definition of a fixer and fixtype.")
-   (xdoc::@def "double-value-aux-p")
-   (xdoc::@def "double-value-aux-witness"))
-
-  (std::defconstrained-recognizer double-value-aux-p
-    :nonempty double-value-aux-witness)
-
-  (std::deffixer double-value-aux-fix
-    :pred double-value-aux-p
-    :body-fix (double-value-aux-witness)
-    :parents (double-value-aux)
-    :short "Fixer for @(tsee double-value-aux).")
-
-  (in-theory (disable (:e double-value-aux-fix)))
-
-  (fty::deffixtype double-value-aux
-    :pred double-value-aux-p
-    :fix double-value-aux-fix
-    :equiv double-value-aux-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod double-value
   :short "Fixtype of Java @('double') values
           in the double value set [JLS:4.2.3]."
-  ((double double-value-aux))
+  ((double double-value-abs))
   :tag :double
   :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection floatx-value-aux
-  :short "Auxiliary recognizer and fixer
-          for @(tsee floatx-value-p) and @('floatx-value-fix')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a constrained predicate for the underlying values
-     of Java @('float') values in the float-extended-exponent value set.
-     The latter are defined by tagging the underlying values,
-     in the same way that our model of the Java @('int') values (for instance)
-     is defined by tagging 32-bit signed integers as the underlying values.")
-   (xdoc::p
-    "The predicate is constrained to be empty
-     if and only if @(tsee floatx-param) is @('nil'),
-     i.e. if there are no extended-exponent @('float') values.
-     Non-emptiness is expressed via a constrained nullary witness function.
-     Since the predicate may be empty,
-     we cannot define a fixtype,
-     but we define a conditional fixer.")
-   (xdoc::@def "floatx-value-aux-p")
-   (xdoc::@def "floatx-value-aux-witness"))
-
-  (encapsulate
-    (((floatx-value-aux-p *) => *)
-     ((floatx-value-aux-witness) => *))
-    (local (defun floatx-value-aux-p (x) (if (floatx-param) (natp x) nil)))
-    (local (defun floatx-value-aux-witness () 0))
-    (local (in-theory (disable (:e floatx-value-aux-p))))
-    (defthm booleanp-of-floatx-value-aux-p
-      (booleanp (floatx-value-aux-p x))
-      :rule-classes (:rewrite :type-prescription))
-    (defrule not-floatx-value-aux-p-when-not-floatx-param
-      (implies (not (floatx-param))
-               (not (floatx-value-aux-p x))))
-    (defrule floatx-value-aux-p-of-floatx-value-aux-witness-when-floatx-param
-      (implies (floatx-param)
-               (floatx-value-aux-p (floatx-value-aux-witness)))))
-
-  (define floatx-value-aux-fix ((x floatx-value-aux-p))
-    :returns (fixed-x floatx-value-aux-p :hyp (floatx-param))
-    (mbe :logic (if (floatx-value-aux-p x)
-                    x
-                  (floatx-value-aux-witness))
-         :exec x)
-    ///
-    (defrule floatx-value-aux-fix-when-floatx-value-aux-p
-      (implies (floatx-value-aux-p x)
-               (equal (floatx-value-aux-fix x) x)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection floatx-value-fns
   :short "Recognizer, fixer, constructor, and destructor of
@@ -322,7 +189,7 @@
    (xdoc::p
     "We define the recognizer analogously to the one of
      the fixtypes of other Java primitive values,
-     by tagging the underlying values introduced in @(tsee floatx-value-aux).
+     by tagging the underlying values introduced in @(tsee floatx-value-abs).
      The recognizer is non-empty if and only if
      @(tsee floatx-param) is non-@('nil').
      We define a conditional fixer,
@@ -337,7 +204,7 @@
             in the float-extended-exponent value set."
     (and (tuplep 2 x)
          (eq (first x) :floatx)
-         (floatx-value-aux-p (second x)))
+         (floatx-value-abs-p (second x)))
     ///
     (defrule no-floatx-value-when-unsupported
       (implies (not (floatx-param))
@@ -352,7 +219,7 @@
             in the float-extended-exponent value set."
     (mbe :logic (if (floatx-value-p x)
                     x
-                  (list :floatx (floatx-value-aux-witness)))
+                  (list :floatx (floatx-value-abs-witness)))
          :exec x)
     ///
     (defrule floatx-value-fix-when-floatx-value-p
@@ -361,15 +228,15 @@
 
   (local (in-theory (enable floatx-value-fix)))
 
-  (define floatx-value ((x floatx-value-aux-p))
+  (define floatx-value ((x floatx-value-abs-p))
     :returns (value floatx-value-p :hyp (floatx-param))
     :parents (floatx-value-fns)
     :short "Constructor of Java @('float') values
             in the float-extended-exponent value set."
-    (list :floatx (floatx-value-aux-fix x)))
+    (list :floatx (floatx-value-abs-fix x)))
 
   (define floatx-value->floatx ((value floatx-value-p))
-    :returns (x floatx-value-aux-p :hyp (floatx-param))
+    :returns (x floatx-value-abs-p :hyp (floatx-param))
     :parents (floatx-value-fns)
     :short "Destructor of Java @('float') values
             in the float-extended-exponent value set."
@@ -378,61 +245,10 @@
     (defrule floatx-value->floatx-of-floatx-value
       (implies (floatx-param)
                (equal (floatx-value->floatx (floatx-value x))
-                      (floatx-value-aux-fix x)))
+                      (floatx-value-abs-fix x)))
       :enable floatx-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection doublex-value-aux
-  :short "Auxiliary recognizer and fixer
-          for @(tsee doublex-value-p) and @('doublex-value-fix')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a constrained predicate for the underlying values
-     of Java @('double') values in the double-extended-exponent value set.
-     The latter are defined by tagging the underlying values,
-     in the same way that our model of the Java @('int') values (for instance)
-     is defined by tagging 32-bit signed integers as the underlying values.")
-   (xdoc::p
-    "The predicate is constrained to be empty
-     if and only if @(tsee doublex-param) is @('nil'),
-     i.e. if there are no extended-exponent @('double') values.
-     Non-emptiness is expressed via a constrained nullary witness function.
-     Since the predicate may be empty,
-     we cannot define a fixtype,
-     but we define a conditional fixer.")
-   (xdoc::@def "doublex-value-aux-p")
-   (xdoc::@def "doublex-value-aux-witness"))
-
-  (encapsulate
-    (((doublex-value-aux-p *) => *)
-     ((doublex-value-aux-witness) => *))
-    (local (defun doublex-value-aux-p (x) (if (doublex-param) (natp x) nil)))
-    (local (defun doublex-value-aux-witness () 0))
-    (local (in-theory (disable (:e doublex-value-aux-p))))
-    (defthm booleanp-of-doublex-value-aux-p
-      (booleanp (doublex-value-aux-p x))
-      :rule-classes (:rewrite :type-prescription))
-    (defrule not-doublex-value-aux-p-when-not-doublex-param
-      (implies (not (doublex-param))
-               (not (doublex-value-aux-p x))))
-    (defrule doublex-value-aux-p-of-doublex-value-aux-witness-when-doublex-param
-      (implies (doublex-param)
-               (doublex-value-aux-p (doublex-value-aux-witness)))))
-
-  (define doublex-value-aux-fix ((x doublex-value-aux-p))
-    :returns (fixed-x doublex-value-aux-p :hyp (doublex-param))
-    (mbe :logic (if (doublex-value-aux-p x)
-                    x
-                  (doublex-value-aux-witness))
-         :exec x)
-    ///
-    (defrule doublex-value-aux-fix-when-doublex-value-aux-p
-      (implies (doublex-value-aux-p x)
-               (equal (doublex-value-aux-fix x) x)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection doublex-value-fns
   :short "Recognizer, fixer, constructor, and destructor of
@@ -443,7 +259,7 @@
    (xdoc::p
     "We define the recognizer analogously to the one of
      the fixtypes of other Java primitive values,
-     by tagging the underlying values introduced in @(tsee doublex-value-aux).
+     by tagging the underlying values introduced in @(tsee doublex-value-abs).
      The recognizer is non-empty if and only if
      @(tsee doublex-param) is non-@('nil').
      We define a conditional fixer,
@@ -458,7 +274,7 @@
             in the double-extended-exponent value set."
     (and (tuplep 2 x)
          (eq (first x) :doublex)
-         (doublex-value-aux-p (second x)))
+         (doublex-value-abs-p (second x)))
     ///
     (defrule no-doublex-value-when-unsupported
       (implies (not (doublex-param))
@@ -473,7 +289,7 @@
             in the double-extended-exponent value set."
     (mbe :logic (if (doublex-value-p x)
                     x
-                  (list :doublex (doublex-value-aux-witness)))
+                  (list :doublex (doublex-value-abs-witness)))
          :exec x)
     ///
     (defrule doublex-value-fix-when-doublex-value-p
@@ -482,15 +298,15 @@
 
   (local (in-theory (enable doublex-value-fix)))
 
-  (define doublex-value ((x doublex-value-aux-p))
+  (define doublex-value ((x doublex-value-abs-p))
     :returns (value doublex-value-p :hyp (doublex-param))
     :parents (doublex-value-fns)
     :short "Constructor of Java @('double') values
             in the double-extended-exponent value set."
-    (list :doublex (doublex-value-aux-fix x)))
+    (list :doublex (doublex-value-abs-fix x)))
 
   (define doublex-value->doublex ((value doublex-value-p))
-    :returns (x doublex-value-aux-p :hyp (doublex-param))
+    :returns (x doublex-value-abs-p :hyp (doublex-param))
     :parents (doublex-value-fns)
     :short "Destructor of Java @('double') values
             in the double-extended-exponent value set."
@@ -499,7 +315,7 @@
     (defrule doublex-value->doublex-of-doublex-value
       (implies (doublex-param)
                (equal (doublex-value->doublex (doublex-value x))
-                      (doublex-value-aux-fix x)))
+                      (doublex-value-abs-fix x)))
       :enable doublex-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -616,7 +432,8 @@
 
   (std::deffixer floating-pointx-value-fix
     :pred floating-pointx-value-p
-    :body-fix (float-value (float-value-aux-witness)))
+    :body-fix (float-value (float-value-abs-witness))
+    :parents nil)
 
   (fty::deffixtype floating-pointx-value
     :pred floating-pointx-value-p
@@ -717,7 +534,8 @@
 
   (std::deffixer numericx-value-fix
     :pred numericx-value-p
-    :body-fix (char-value 0))
+    :body-fix (char-value 0)
+    :parents nil)
 
   (fty::deffixtype numericx-value
     :pred numericx-value-p

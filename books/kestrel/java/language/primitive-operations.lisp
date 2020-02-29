@@ -113,7 +113,7 @@
   (xdoc::topstring
    (xdoc::p
     "Here we formalize all the unary and binary operations on integral values
-     that are not conversions (those are best formalized separately).
+     that are not conversions (those are formalized separately).
      The term `integer operations', as opposed to `integral operations',
      is used in the title of [JLS:4.2.2].")
    (xdoc::p
@@ -142,7 +142,7 @@
      elsewhere.")
    (xdoc::p
     "[JLS:4.2.2] also lists the cast operator, which involves conversions,
-     which, as mentioned above, are best formalized separately."))
+     which, as mentioned above, are formalized separately."))
   :order-subtopics t
   :default-parent t)
 
@@ -540,17 +540,7 @@
    (xdoc::p
     "Here we provide abstract notions for
      all the unary and binary operations on floating-point values
-     that are not conversions (those are best formalized separately).
-     To provide these abstract notions,
-     we introduce constrained functions
-     on the constrained recognizers used to introduce the fixtypes
-     (via the macros
-     @(tsee def-floating-point-unary-aux) and
-     @(tsee def-floating-point-binary-aux)),
-     and then we use the same kind of macros
-     used to formalize the boolean and integer operations.")
-   (xdoc::p
-    "Some floating-point operations have boolean results.")
+     that are not conversions (those are formalized separately).")
    (xdoc::p
     "[JLS:4.2.4] also lists the prefix and posfix @('++') and @('--') operators,
      but those operate on variables, not just values,
@@ -565,273 +555,170 @@
      elsewhere.")
    (xdoc::p
     "[JLS:4.2.4] also lists the cast operator, which involves conversions,
-     which, as mentioned above, are best formalized separately."))
+     which, as mentioned above, are formalized separately."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-floating-point-unary-aux
-  :short "Macro to introduce a constrained function
-          to use in the definition of a floating-point unary operation."
-  :long (xdoc::topstring-@def "def-floating-point-unary-aux")
-
-  (defmacro def-floating-point-unary-aux (type name)
-    (declare (xargs :guard (and (member-eq type '(:float :double))
-                                (symbolp name))))
-    (b* ((op-name (packn-pos (list (symbol-name type) '- name '-aux)
-                             (pkg-witness "JAVA")))
-         (witness-name (packn-pos (list (symbol-name type) '-value-aux-witness)
-                                  (pkg-witness "JAVA")))
-         (pred-name (packn-pos (list (symbol-name type) '-value-aux-p)
-                               (pkg-witness "JAVA")))
-         (thm-name (packn-pos (list pred-name '-of- op-name)
-                              (pkg-witness "JAVA"))))
-      `(encapsulate
-         (((,op-name *) => *))
-         (local (defun ,op-name (x) (declare (ignore x)) (,witness-name)))
-         (defrule ,thm-name
-           (implies (,pred-name x)
-                    (,pred-name (,op-name x))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-floating-point-binary-aux
-  :short "Macro to introduce a constrained function
-          to use in the definition of a floating-point binary operation."
-  :long (xdoc::topstring-@def "def-floating-point-binary-aux")
-
-  (defmacro def-floating-point-binary-aux (in-type out-type name)
-    (declare (xargs :guard (and (member-eq in-type '(:float :double))
-                                (member-eq out-type '(:float :double :boolean))
-                                (symbolp name))))
-    (b* ((op-name (packn-pos (list (symbol-name in-type) '- name '-aux)
-                             (pkg-witness "JAVA")))
-         (witness-name (packn-pos (list (symbol-name in-type) '-value-aux-witness)
-                                  (pkg-witness "JAVA")))
-         (in-pred-name (packn-pos (list (symbol-name in-type) '-value-aux-p)
-                                  (pkg-witness "JAVA")))
-         (out-pred-name (if (eq out-type :boolean)
-                            'booleanp
-                          (packn-pos (list (symbol-name out-type) '-value-aux-p)
-                                     (pkg-witness "JAVA"))))
-         (thm-name (packn-pos (list out-pred-name '-of- op-name)
-                              (pkg-witness "JAVA"))))
-      `(encapsulate
-         (((,op-name * *) => *))
-         (local (defun ,op-name (x y)
-                  (declare (ignore x y))
-                  ,(if (eq out-type :boolean)
-                       t
-                     (list witness-name))))
-         (defrule ,thm-name
-           (implies (and (,in-pred-name x) (,in-pred-name y))
-                    (,out-pred-name (,op-name x y))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection floating-point-constrained-ops
-  :short "Constrained functions used to define the floating-point operations."
-
-  (def-floating-point-unary-aux :float plus)
-  (def-floating-point-unary-aux :double plus)
-
-  (def-floating-point-unary-aux :float minus)
-  (def-floating-point-unary-aux :double minus)
-
-  (def-floating-point-binary-aux :float :float add)
-  (def-floating-point-binary-aux :double :double add)
-
-  (def-floating-point-binary-aux :float :float sub)
-  (def-floating-point-binary-aux :double :double sub)
-
-  (def-floating-point-binary-aux :float :float mul)
-  (def-floating-point-binary-aux :double :double mul)
-
-  (def-floating-point-binary-aux :float :float div)
-  (def-floating-point-binary-aux :double :double div)
-
-  (def-floating-point-binary-aux :float :float rem)
-  (def-floating-point-binary-aux :double :double rem)
-
-  (def-floating-point-binary-aux :float :boolean eq)
-  (def-floating-point-binary-aux :double :boolean eq)
-
-  (def-floating-point-binary-aux :float :boolean neq)
-  (def-floating-point-binary-aux :double :boolean neq)
-
-  (def-floating-point-binary-aux :float :boolean less)
-  (def-floating-point-binary-aux :double :boolean less)
-
-  (def-floating-point-binary-aux :float :boolean lesseq)
-  (def-floating-point-binary-aux :double :boolean lesseq)
-
-  (def-floating-point-binary-aux :float :boolean great)
-  (def-floating-point-binary-aux :double :boolean great)
-
-  (def-floating-point-binary-aux :float :boolean greateq)
-  (def-floating-point-binary-aux :double :boolean greateq))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (def-float-unary float-plus
-  :operation (float-plus-aux x)
+  :operation (float-plus-abs x)
   :short "Unary plus @('+') on @('float')s [JLS:4.2.4] [JLS:15.15.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-unary double-plus
-  :operation (double-plus-aux x)
+  :operation (double-plus-abs x)
   :short "Unary plus @('+') on @('double')s [JLS:4.2.4] [JLS:15.15.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-unary float-minus
-  :operation (float-minus-aux x)
+  :operation (float-minus-abs x)
   :short "Unary minus @('-') on @('float')s [JLS:4.2.4] [JLS:15.15.4].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-unary double-minus
-  :operation (double-minus-aux x)
+  :operation (double-minus-abs x)
   :short "Unary minus @('-') on @('double')s [JLS:4.2.4] [JLS:15.15.4].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-add
-  :operation (float-add-aux x y)
+  :operation (float-add-abs x y)
   :short "Addition @('+') on @('float')s [JLS:4.2.4] [JLS:15.18.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-add
-  :operation (double-add-aux x y)
+  :operation (double-add-abs x y)
   :short "Addition @('+') on @('double')s [JLS:4.2.4] [JLS:15.18.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-sub
-  :operation (float-sub-aux x y)
+  :operation (float-sub-abs x y)
   :short "Subtraction @('-') on @('float')s [JLS:4.2.4] [JLS:15.18.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-sub
-  :operation (double-sub-aux x y)
+  :operation (double-sub-abs x y)
   :short "Subtraction @('-') on @('double')s [JLS:4.2.4] [JLS:15.18.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-mul
-  :operation (float-mul-aux x y)
+  :operation (float-mul-abs x y)
   :short "Multiplication @('*') on @('float')s [JLS:4.2.4] [JLS:15.17.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-mul
-  :operation (double-mul-aux x y)
+  :operation (double-mul-abs x y)
   :short "Multiplication @('*') on @('double')s [JLS:4.2.4] [JLS:15.17.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-div
-  :operation (float-div-aux x y)
+  :operation (float-div-abs x y)
   :short "Division @('/') on @('float')s [JLS:4.2.4] [JLS:15.17.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-div
-  :operation (double-div-aux x y)
+  :operation (double-div-abs x y)
   :short "Division @('/') on @('double')s [JLS:4.2.4] [JLS:15.17.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-rem
-  :operation (float-rem-aux x y)
+  :operation (float-rem-abs x y)
   :short "Remainder @('%') on @('float')s [JLS:4.2.4] [JLS:15.17.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-rem
-  :operation (double-rem-aux x y)
+  :operation (double-rem-abs x y)
   :short "Remainder @('%') on @('double')s [JLS:4.2.4] [JLS:15.17.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-eq
-  :operation (float-eq-aux x y)
+  :operation (float-eq-abs x y)
   :short "Equality @('==') on @('float')s [JLS:4.2.4] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-eq
-  :operation (double-eq-aux x y)
+  :operation (double-eq-abs x y)
   :short "Equality @('==') on @('double')s [JLS:4.2.4] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-neq
-  :operation (float-neq-aux x y)
+  :operation (float-neq-abs x y)
   :short "Non-equality @('!=') on @('float')s [JLS:4.2.4] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-neq
-  :operation (double-neq-aux x y)
+  :operation (double-neq-abs x y)
   :short "Non-equality @('!=') on @('double')s [JLS:4.2.4] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-less
-  :operation (float-less-aux x y)
+  :operation (float-less-abs x y)
   :short "Less-than comparison @('<') on @('float')s
           [JLS:4.2.4] [JLS:15.20.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-less
-  :operation (double-less-aux x y)
+  :operation (double-less-abs x y)
   :short "Less-than comparison @('<') on @('double')s
           [JLS:4.2.4] [JLS:15.20.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-lesseq
-  :operation (float-lesseq-aux x y)
+  :operation (float-lesseq-abs x y)
   :short "Less-than-or-equal-to comparison @('<=') on @('float')s
           [JLS:4.2.4] [JLS:15.20.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-lesseq
-  :operation (double-lesseq-aux x y)
+  :operation (double-lesseq-abs x y)
   :short "Less-than-or-equal-to comparison @('<=') on @('double')s
           [JLS:4.2.4] [JLS:15.20.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-great
-  :operation (float-great-aux x y)
+  :operation (float-great-abs x y)
   :short "Greater-than comparison @('>') on @('float')s
           [JLS:4.2.4] [JLS:15.20.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-great
-  :operation (double-great-aux x y)
+  :operation (double-great-abs x y)
   :short "Greater-than-or-equal-to comparison @('>') on @('double')s
           [JLS:4.2.4] [JLS:15.20.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-greateq
-  :operation (float-greateq-aux x y)
+  :operation (float-greateq-abs x y)
   :short "Greater-than-or-equal-to comparison @('>=') on @('float')s
           [JLS:4.2.4] [JLS:15.20.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-greateq
-  :operation (double-greateq-aux x y)
+  :operation (double-greateq-abs x y)
   :short "Greater-than-or-equal-to comparison @('>=') on @('double')s
           [JLS:4.2.4] [JLS:15.20.1].")
