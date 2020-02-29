@@ -86,8 +86,8 @@
 
     (xdoc::p
      "These " *isodata-design-notes* ", which use "
-     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
-     ", provide the mathematical concepts and (meta) proofs
+     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
+     ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
       These notes should be read alongside this reference documentation,
       which refers to the them in numerous places.")
