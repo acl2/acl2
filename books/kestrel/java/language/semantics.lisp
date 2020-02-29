@@ -13,6 +13,7 @@
 ; the order of the following INCLUDE-BOOKs determines
 ; the order of the subtopics of the SEMANTICS topic below:
 (include-book "primitive-values")
+(include-book "primitive-function-macros")
 (include-book "primitive-operations")
 (include-book "primitive-conversions")
 (include-book "pointers")

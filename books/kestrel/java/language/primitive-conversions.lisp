@@ -96,7 +96,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op byte-to-short
+(def-primitive-unary byte-to-short
   :in-type (primitive-type-byte)
   :out-type (primitive-type-short)
   :operation x
@@ -104,7 +104,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op byte-to-int
+(def-primitive-unary byte-to-int
   :in-type (primitive-type-byte)
   :out-type (primitive-type-int)
   :operation x
@@ -112,7 +112,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op byte-to-long
+(def-primitive-unary byte-to-long
   :in-type (primitive-type-byte)
   :out-type (primitive-type-long)
   :operation x
@@ -120,7 +120,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op short-to-int
+(def-primitive-unary short-to-int
   :in-type (primitive-type-short)
   :out-type (primitive-type-int)
   :operation x
@@ -128,7 +128,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op short-to-long
+(def-primitive-unary short-to-long
   :in-type (primitive-type-short)
   :out-type (primitive-type-long)
   :operation x
@@ -136,7 +136,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op int-to-long
+(def-primitive-unary int-to-long
   :in-type (primitive-type-int)
   :out-type (primitive-type-long)
   :operation x
@@ -144,7 +144,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op char-to-int
+(def-primitive-unary char-to-int
   :in-type (primitive-type-char)
   :out-type (primitive-type-int)
   :operation x
@@ -152,7 +152,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op char-to-long
+(def-primitive-unary char-to-long
   :in-type (primitive-type-char)
   :out-type (primitive-type-long)
   :operation x
@@ -168,7 +168,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op short-to-byte
+(def-primitive-unary short-to-byte
   :in-type (primitive-type-short)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
@@ -176,7 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op int-to-byte
+(def-primitive-unary int-to-byte
   :in-type (primitive-type-int)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
@@ -184,7 +184,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op long-to-byte
+(def-primitive-unary long-to-byte
   :in-type (primitive-type-long)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
@@ -192,7 +192,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op char-to-byte
+(def-primitive-unary char-to-byte
   :in-type (primitive-type-char)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
@@ -200,7 +200,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op int-to-short
+(def-primitive-unary int-to-short
   :in-type (primitive-type-int)
   :out-type (primitive-type-short)
   :operation (logext 16 x)
@@ -208,7 +208,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op long-to-short
+(def-primitive-unary long-to-short
   :in-type (primitive-type-long)
   :out-type (primitive-type-short)
   :operation (logext 16 x)
@@ -216,7 +216,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op char-to-short
+(def-primitive-unary char-to-short
   :in-type (primitive-type-char)
   :out-type (primitive-type-short)
   :operation (logext 16 x)
@@ -224,7 +224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op long-to-int
+(def-primitive-unary long-to-int
   :in-type (primitive-type-long)
   :out-type (primitive-type-int)
   :operation (logext 32 x)
@@ -232,7 +232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op short-to-char
+(def-primitive-unary short-to-char
   :in-type (primitive-type-short)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
@@ -240,7 +240,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op int-to-char
+(def-primitive-unary int-to-char
   :in-type (primitive-type-int)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
@@ -248,7 +248,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op long-to-char
+(def-primitive-unary long-to-char
   :in-type (primitive-type-long)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
@@ -264,7 +264,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-primitive-unary-op byte-to-char
+(def-primitive-unary byte-to-char
   :in-type (primitive-type-byte)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
