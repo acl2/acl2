@@ -255,12 +255,6 @@
  ;; name that already exists:
  (must-fail (restrict nfix (natp x) :new-name car-cdr-elim))
 
- ;; determining a name in the main Lisp package:
- (must-fail (restrict atom (natp x) :new-name :auto))
-
- ;; determining, by default, a name in the main Lisp package:
- (must-fail (restrict atom (natp x)))
-
  ;; default:
  (must-succeed*
   (restrict nfix (natp x))
