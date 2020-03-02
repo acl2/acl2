@@ -784,6 +784,7 @@
     "As conveyed by the message shown on the screen by ATJ,
      a single Java file @('Acl2Code.java') is generated,
      in the current directory.
+     (If the file already exists, it is overridden.)
      Opening the file reveals that it contains
      a single Java public class called @('Acl2Code').
      The file imports all the (public) AIJ classes,
