@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -195,7 +195,14 @@
 
 (java::def-atj-main-function-type h-long (:jlong) :jlong)
 
+(java::def-atj-main-function-type f-float (:jfloat :jfloat :jfloat) :jfloat)
+
+(java::def-atj-main-function-type f-double (:jdouble :jdouble :jdouble)
+                                  :jdouble)
+
 (java::def-atj-main-function-type f-conv (:jbyte :jshort :jlong) :jint)
+
+(java::def-atj-main-function-type g-conv (:jfloat :jdouble) :jdouble)
 
 ;; factorial:
 
@@ -287,7 +294,10 @@
            f-long
            g-long
            h-long
+           f-float
+           f-double
            f-conv
+           g-conv
            factorial-int
            factorial-long
            :deep nil

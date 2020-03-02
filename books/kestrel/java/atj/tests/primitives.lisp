@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -429,6 +429,18 @@
   (java::long-xor (java::long-div x (java::long-value 119))
                   (java::long-rem x (java::long-value -373))))
 
+(defun f-float (x y z)
+  (declare (xargs :guard (and (java::float-value-p x)
+                              (java::float-value-p y)
+                              (java::float-value-p z))))
+  (java::float-add (java::float-mul x y) z))
+
+(defun f-double (x y z)
+  (declare (xargs :guard (and (java::double-value-p x)
+                              (java::double-value-p y)
+                              (java::double-value-p z))))
+  (java::double-sub (java::double-div x y) z))
+
 (defun f-conv (x y z)
   (declare (xargs :guard (and (java::byte-value-p x)
                               (java::short-value-p y)
@@ -436,6 +448,13 @@
   (java::int-mul (java::int-add (java::byte-to-int x)
                                 (java::short-to-int y))
                  (java::long-to-int z)))
+
+(defun g-conv (x y)
+  (declare (xargs :guard (and (java::float-value-p x)
+                              (java::double-value-p y))))
+  (java::double-mul (java::float-to-double x)
+                    (java::double-add (java::int-to-double (java::int-value 2))
+                                      y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -501,7 +520,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests for the functions above, when :DEEP is NIL and :GUARDS is T.
+; Tests for the functions above (except the ones involving floating-point),
+; when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
   '(;; boolean negation:
