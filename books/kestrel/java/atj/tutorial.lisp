@@ -42,6 +42,9 @@
 (defconst *atj-tutorial-deep*
   "Deep Embedding Approach")
 
+(defconst *atj-tutorial-customization*
+  "Customization Options for Generated Code")
+
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
@@ -942,7 +945,163 @@
      which should be larger than the defaut.")
 
    (atj-tutorial-previous "atj-tutorial-deep-shallow"
-                          *atj-tutorial-deep-shallow*)))
+                          *atj-tutorial-deep-shallow*)
+
+   (atj-tutorial-next "atj-tutorial-customization"
+                      *atj-tutorial-customization*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-customization
+
+  :short (atj-tutorial-short *atj-tutorial-customization*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "ATJ provides some options to customize the generated Java code,
+     in the form of keyword inputs, which are listed in "
+    (xdoc::seetopic "atj" "the reference documentation")
+    ". This tutorial page covers the simpler options,
+     which apply to both "
+    (xdoc::seetopic "atj-tutorial-deep-shallow"
+                    "deep and shallow embedding approaches")
+    ". The more complex options are covered elsewhere in this tutorial.")
+
+   (xdoc::h3 "Java Package")
+
+   (xdoc::p
+    "The Java code generated for the factorial function in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " has no @('package') declaration [JLS:7.4],
+     which means that the generated class is in an unnamed package [JLS:7.4.2].
+     This (i.e. the absence of a @('package') declaration) is the default,
+     which can be overridden via ATJ's @(':java-package') option.")
+
+   (xdoc::p
+    "For the example in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    ", the ATJ call")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :java-package \"mypkg\")")
+   (xdoc::p
+    "generates a file @('Acl2Code.java') that is the same as before
+     but with the package declaration")
+   (xdoc::codeblock
+    "package mypkg;")
+   (xdoc::p
+    "at the beginning.")
+
+   (xdoc::p
+    "Now that the generated code is in the @('mypkg') package,
+     the external Java code exemplified in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " must be adapted, e.g. by putting it into @('mypkg') as well,
+     or by referencing the generated Java class
+     via the fully qualified name @('mypkg.Acl2Code'),
+     or by importing the class via a declaration @('import mypkg.Acl2Code;').")
+
+   (xdoc::p
+    "The string passed as the @(':java-package') option
+     must be not only a valid Java package name,
+     but also consist only of ASCII characters.
+     ATJ does not support the generation of
+     package names with non-ASCII characters.")
+
+   (xdoc::p
+    "Note that the file is generated in the current directory,
+     not in a @('mypkg') directory,
+     as may be expected based on Java's typical source file organization.
+     The directory where the file is generated
+     can be customized via the @(':output-dir') option, described below.")
+
+   (xdoc::h3 "Java Class")
+
+   (xdoc::p
+    "The Java class generated for the factorial function in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " is called @('Acl2Code');
+     the generated file is called @('Acl2Code.java'),
+     thus satisfying the constraint that a public class resides in a file
+     whose name is obtained by adding the @('.java') extension
+     to the class name [JLS:7.6].
+     This class (and thus file) name is the default,
+     which can be overridden via ATJ's @(':java-class') option.")
+
+   (xdoc::p
+    "For the example in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    ", the ATJ call")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :java-class \"Fact\")")
+   (xdoc::p
+    "generates a file @('Fact.java') that is the same as before
+     but with @('Fact') as the name of the class.")
+
+   (xdoc::p
+    "Now that the generated class is called @('Fact'),
+     the external Java code exemplified in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " must be adapted, by referencing the generated Java class as @('Fact').")
+
+   (xdoc::p
+    "The string passed as the @(':java-class') option
+     must be not only a valid Java class name,
+     but also consist only of ASCII characters.
+     ATJ does not support the generation of
+     class names with non-ASCII characters.")
+
+   (xdoc::h3 "Output Directory")
+
+   (xdoc::p
+    "The Java file generated for the factorial function in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " resides in the current directory.
+     This is the default,
+     which can be overridden via ATJ's @(':output-dir') option.")
+
+   (xdoc::p
+    "For the example in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    ", the ATJ call")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :output-dir \"java\")")
+   (xdoc::p
+    "generates the same file @('Acl2Code.java') as before
+     but in a subdirectory @('java') of the current directory.
+     The subdirectory must already exist; ATJ does not create it.")
+
+   (xdoc::p
+    "Needless to say, the invocations of the @('javac') and @('java') commands
+     must be adapted to the local of the @('.java') and @('.class') files.")
+
+   (xdoc::p
+    "The string must be a valid absolute or relative path
+     in the file system of the underlying operating system.
+     If it is a relative path, it is relative to the current directory.
+     When running ATJ interactively from the ACL2 shell,
+     the current directory is the one returned by @(':cbd').
+     When running ATJ as part of book certification,
+     the current directory should be the same one
+     where the @('.lisp') file with the ATJ call resides.")
+
+   (xdoc::p
+    "If the @(':java-package') option is also used (see above),
+     the @(':output-dir') option can be used to generate the file
+     in a subdirectory consistent with the package name,
+     according to the typical organization of Java source files.
+     For example, if @(':java-package') is @('\"mypkg\"'),
+     @(':output-dir') can be set to @('\"mypkg\"') as well.
+     As another example, if @(':java-package') is @('\"my.new.pkg\"'),
+     @(':output-dir') can be set to @('\"my/new/pkg\"\'),
+     assuming a Unix-like operating system
+     with forward slashes that separate file path elements.
+     As already noted above, all these directories must exist;
+     ATJ does not create them.")
+
+   (atj-tutorial-previous "atj-tutorial-deep" *atj-tutorial-deep*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
