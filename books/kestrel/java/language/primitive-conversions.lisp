@@ -129,6 +129,8 @@
   :operation (byte-to-float-abs x)
   :short "Widening conversion from @('byte') to @('float') [JLS:5.1.2].")
 
+(in-theory (disable (:e byte-to-float)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary byte-to-double
@@ -136,6 +138,8 @@
   :out-type (primitive-type-double)
   :operation (byte-to-double-abs x)
   :short "Widening conversion from @('byte') to @('double') [JLS:5.1.2].")
+
+(in-theory (disable (:e byte-to-double)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,6 +165,8 @@
   :operation (short-to-float-abs x)
   :short "Widening conversion from @('short') to @('float') [JLS:5.1.2].")
 
+(in-theory (disable (:e short-to-float)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary short-to-double
@@ -168,6 +174,8 @@
   :out-type (primitive-type-double)
   :operation (short-to-double-abs x)
   :short "Widening conversion from @('short') to @('double') [JLS:5.1.2].")
+
+(in-theory (disable (:e short-to-double)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,6 +201,8 @@
   :operation (char-to-float-abs x)
   :short "Widening conversion from @('char') to @('float') [JLS:5.1.2].")
 
+(in-theory (disable (:e char-to-float)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary char-to-double
@@ -200,6 +210,8 @@
   :out-type (primitive-type-double)
   :operation (char-to-double-abs x)
   :short "Widening conversion from @('char') to @('double') [JLS:5.1.2].")
+
+(in-theory (disable (:e char-to-double)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,6 +229,8 @@
   :operation (int-to-float-abs x)
   :short "Widening conversion from @('int') to @('float') [JLS:5.1.2].")
 
+(in-theory (disable (:e int-to-float)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary int-to-double
@@ -224,6 +238,8 @@
   :out-type (primitive-type-double)
   :operation (int-to-double-abs x)
   :short "Widening conversion from @('int') to @('double') [JLS:5.1.2].")
+
+(in-theory (disable (:e int-to-double)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,6 +249,8 @@
   :operation (long-to-float-abs x)
   :short "Widening conversion from @('long') to @('float') [JLS:5.1.2].")
 
+(in-theory (disable (:e long-to-float)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary long-to-double
@@ -241,6 +259,8 @@
   :operation (long-to-double-abs x)
   :short "Widening conversion from @('long') to @('double') [JLS:5.1.2].")
 
+(in-theory (disable (:e long-to-double)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary float-to-double
@@ -248,6 +268,8 @@
   :out-type (primitive-type-double)
   :operation (float-to-double-abs x)
   :short "Widening conversion from @('float') to @('double') [JLS:5.1.2].")
+
+(in-theory (disable (:e float-to-double)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -353,6 +375,8 @@
   :operation (float-to-byte-abs x)
   :short "Narrowing conversion from @('float') to @('byte') [JLS:5.1.3].")
 
+(in-theory (disable (:e float-to-byte)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary float-to-short
@@ -360,6 +384,8 @@
   :out-type (primitive-type-short)
   :operation (float-to-short-abs x)
   :short "Narrowing conversion from @('float') to @('short') [JLS:5.1.3].")
+
+(in-theory (disable (:e float-to-short)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,6 +395,8 @@
   :operation (float-to-char-abs x)
   :short "Narrowing conversion from @('float') to @('char') [JLS:5.1.3].")
 
+(in-theory (disable (:e float-to-char)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary float-to-int
@@ -376,6 +404,8 @@
   :out-type (primitive-type-int)
   :operation (float-to-int-abs x)
   :short "Narrowing conversion from @('float') to @('int') [JLS:5.1.3].")
+
+(in-theory (disable (:e float-to-int)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -385,6 +415,8 @@
   :operation (float-to-long-abs x)
   :short "Narrowing conversion from @('float') to @('long') [JLS:5.1.3].")
 
+(in-theory (disable (:e float-to-long)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary double-to-byte
@@ -392,6 +424,8 @@
   :out-type (primitive-type-byte)
   :operation (double-to-byte-abs x)
   :short "Narrowing conversion from @('double') to @('byte') [JLS:5.1.3].")
+
+(in-theory (disable (:e double-to-byte)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -401,6 +435,8 @@
   :operation (double-to-short-abs x)
   :short "Narrowing conversion from @('double') to @('short') [JLS:5.1.3].")
 
+(in-theory (disable (:e double-to-short)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary double-to-char
@@ -408,6 +444,8 @@
   :out-type (primitive-type-char)
   :operation (double-to-char-abs x)
   :short "Narrowing conversion from @('double') to @('char') [JLS:5.1.3].")
+
+(in-theory (disable (:e double-to-char)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -417,6 +455,8 @@
   :operation (double-to-int-abs x)
   :short "Narrowing conversion from @('double') to @('int') [JLS:5.1.3].")
 
+(in-theory (disable (:e double-to-int)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary double-to-long
@@ -425,6 +465,8 @@
   :operation (double-to-long-abs x)
   :short "Narrowing conversion from @('double') to @('long') [JLS:5.1.3].")
 
+(in-theory (disable (:e double-to-long)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-unary double-to-float
@@ -432,6 +474,8 @@
   :out-type (primitive-type-float)
   :operation (double-to-float-abs x)
   :short "Narrowing conversion from @('double') to @('float') [JLS:5.1.3].")
+
+(in-theory (disable (:e double-to-float)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
