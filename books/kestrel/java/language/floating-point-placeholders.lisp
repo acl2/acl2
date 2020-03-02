@@ -91,7 +91,12 @@
      their non-emptiness constraints is also expressed via
      companion nullary witness functions.
      Since the non-emptiness is conditional (to the parameter's value),
-     we define conditional fixers, but cannot define fixtypes."))
+     we define conditional fixers, but cannot define fixtypes.
+     The nullary witness function for each value sets
+     is regarded as returning the positive 0 for that value set,
+     which is the default value for floating-point variables [JLS:4.12.5];
+     this is just reflected in the name of the witness function,
+     not in any constraint property of it."))
   :order-subtopics t
   :default-parent t)
 
@@ -109,17 +114,18 @@
      is defined by tagging 32-bit signed integers as the underlying values.")
    (xdoc::p
     "The predicate is constrained to be non-empty:
-     this is expressed via a constrained nullary witness function.
+     this is expressed via a constrained nullary function
+     that returns the positive 0 of the float value set.
      These constraints enable the definition of a fixer and fixtype.")
    (xdoc::@def "float-value-abs-p")
-   (xdoc::@def "float-value-abs-witness"))
+   (xdoc::@def "float-value-abs-pos-zero"))
 
   (std::defconstrained-recognizer float-value-abs-p
-    :nonempty float-value-abs-witness)
+    :nonempty float-value-abs-pos-zero)
 
   (std::deffixer float-value-abs-fix
     :pred float-value-abs-p
-    :body-fix (float-value-abs-witness)
+    :body-fix (float-value-abs-pos-zero)
     :parents (float-value-abs)
     :short "Fixer for @(tsee float-value-abs).")
 
@@ -146,17 +152,18 @@
      is defined by tagging 32-bit signed integers as the underlying values.")
    (xdoc::p
     "The predicate is constrained to be non-empty:
-     this is expressed via a constrained nullary witness function.
+     this is expressed via a constrained nullary function
+     that returns the positive 0 of the double value set.
      These constraints enable the definition of a fixer and fixtype.")
    (xdoc::@def "double-value-abs-p")
-   (xdoc::@def "double-value-abs-witness"))
+   (xdoc::@def "double-value-abs-pos-zero"))
 
   (std::defconstrained-recognizer double-value-abs-p
-    :nonempty double-value-abs-witness)
+    :nonempty double-value-abs-pos-zero)
 
   (std::deffixer double-value-abs-fix
     :pred double-value-abs-p
-    :body-fix (double-value-abs-witness)
+    :body-fix (double-value-abs-pos-zero)
     :parents (double-value-abs)
     :short "Fixer for @(tsee double-value-abs).")
 
@@ -186,18 +193,19 @@
     "The predicate is constrained to be empty
      if and only if @(tsee floatx-param) is @('nil'),
      i.e. if there are no extended-exponent @('float') values.
-     Non-emptiness is expressed via a constrained nullary witness function.
+     Non-emptiness is expressed via a constrained nullary function
+     that returns the positive 0 of the float-extended-exponent value set.
      Since the predicate may be empty,
      we cannot define a fixtype,
      but we define a conditional fixer.")
    (xdoc::@def "floatx-value-abs-p")
-   (xdoc::@def "floatx-value-abs-witness"))
+   (xdoc::@def "floatx-value-abs-pos-zero"))
 
   (encapsulate
     (((floatx-value-abs-p *) => *)
-     ((floatx-value-abs-witness) => *))
+     ((floatx-value-abs-pos-zero) => *))
     (local (defun floatx-value-abs-p (x) (if (floatx-param) (natp x) nil)))
-    (local (defun floatx-value-abs-witness () 0))
+    (local (defun floatx-value-abs-pos-zero () 0))
     (local (in-theory (disable (:e floatx-value-abs-p))))
     (defthm booleanp-of-floatx-value-abs-p
       (booleanp (floatx-value-abs-p x))
@@ -205,16 +213,16 @@
     (defrule not-floatx-value-abs-p-when-not-floatx-param
       (implies (not (floatx-param))
                (not (floatx-value-abs-p x))))
-    (defrule floatx-value-abs-p-of-floatx-value-abs-witness-when-floatx-param
+    (defrule floatx-value-abs-p-of-floatx-value-abs-pos-zero-when-floatx-param
       (implies (floatx-param)
-               (floatx-value-abs-p (floatx-value-abs-witness)))))
+               (floatx-value-abs-p (floatx-value-abs-pos-zero)))))
 
   (define floatx-value-abs-fix ((x floatx-value-abs-p))
     :returns (fixed-x floatx-value-abs-p :hyp (floatx-param))
     :parents nil
     (mbe :logic (if (floatx-value-abs-p x)
                     x
-                  (floatx-value-abs-witness))
+                  (floatx-value-abs-pos-zero))
          :exec x)
     ///
     (defrule floatx-value-abs-fix-when-floatx-value-abs-p
@@ -238,18 +246,19 @@
     "The predicate is constrained to be empty
      if and only if @(tsee doublex-param) is @('nil'),
      i.e. if there are no extended-exponent @('double') values.
-     Non-emptiness is expressed via a constrained nullary witness function.
+     Non-emptiness is expressed via a constrained nullary function
+     that returns the positive 0 of the double-extended-exponent value set.
      Since the predicate may be empty,
      we cannot define a fixtype,
      but we define a conditional fixer.")
    (xdoc::@def "doublex-value-abs-p")
-   (xdoc::@def "doublex-value-abs-witness"))
+   (xdoc::@def "doublex-value-abs-pos-zero"))
 
   (encapsulate
     (((doublex-value-abs-p *) => *)
-     ((doublex-value-abs-witness) => *))
+     ((doublex-value-abs-pos-zero) => *))
     (local (defun doublex-value-abs-p (x) (if (doublex-param) (natp x) nil)))
-    (local (defun doublex-value-abs-witness () 0))
+    (local (defun doublex-value-abs-pos-zero () 0))
     (local (in-theory (disable (:e doublex-value-abs-p))))
     (defthm booleanp-of-doublex-value-abs-p
       (booleanp (doublex-value-abs-p x))
@@ -257,16 +266,16 @@
     (defrule not-doublex-value-abs-p-when-not-doublex-param
       (implies (not (doublex-param))
                (not (doublex-value-abs-p x))))
-    (defrule doublex-value-abs-p-of-doublex-value-abs-witness-when-doublex-param
+    (defrule doublex-value-abs-p-of-doublex-value-abs-pos-zero-when-doublex-param
       (implies (doublex-param)
-               (doublex-value-abs-p (doublex-value-abs-witness)))))
+               (doublex-value-abs-p (doublex-value-abs-pos-zero)))))
 
   (define doublex-value-abs-fix ((x doublex-value-abs-p))
     :returns (fixed-x doublex-value-abs-p :hyp (doublex-param))
     :parents nil
     (mbe :logic (if (doublex-value-abs-p x)
                     x
-                  (doublex-value-abs-witness))
+                  (doublex-value-abs-pos-zero))
          :exec x)
     ///
     (defrule doublex-value-abs-fix-when-doublex-value-abs-p
@@ -310,8 +319,8 @@
                        :short 0
                        :int 0
                        :long 0
-                       :float '(float-value-abs-witness)
-                       :double '(double-value-abs-witness))
+                       :float '(float-value-abs-pos-zero)
+                       :double '(double-value-abs-pos-zero))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

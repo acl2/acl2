@@ -219,7 +219,7 @@
             in the float-extended-exponent value set."
     (mbe :logic (if (floatx-value-p x)
                     x
-                  (list :floatx (floatx-value-abs-witness)))
+                  (list :floatx (floatx-value-abs-pos-zero)))
          :exec x)
     ///
     (defrule floatx-value-fix-when-floatx-value-p
@@ -289,7 +289,7 @@
             in the double-extended-exponent value set."
     (mbe :logic (if (doublex-value-p x)
                     x
-                  (list :doublex (doublex-value-abs-witness)))
+                  (list :doublex (doublex-value-abs-pos-zero)))
          :exec x)
     ///
     (defrule doublex-value-fix-when-doublex-value-p
@@ -432,7 +432,7 @@
 
   (std::deffixer floating-pointx-value-fix
     :pred floating-pointx-value-p
-    :body-fix (float-value (float-value-abs-witness))
+    :body-fix (float-value (float-value-abs-pos-zero))
     :parents nil)
 
   (fty::deffixtype floating-pointx-value
