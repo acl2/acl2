@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -142,6 +142,8 @@
 
 (java::def-atj-main-function-type h (:jbyte) :jchar[])
 
+(java::def-atj-main-function-type i (:jfloat[] :jdouble[] :jint :jint) :jdouble)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the tested functions.
@@ -192,6 +194,7 @@
            f
            g
            h
+           i
            :deep nil
            :guards t
            :java-class "PrimarraysShallowGuarded"
