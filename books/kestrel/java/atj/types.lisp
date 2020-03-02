@@ -194,12 +194,16 @@
    :jshort
    :jint
    :jlong
+   :jfloat
+   :jdouble
    :jboolean[]
    :jchar[]
    :jbyte[]
    :jshort[]
    :jint[]
-   :jlong[])
+   :jlong[]
+   :jfloat[]
+   :jdouble[])
   :short "Recognize ATJ types."
   :long
   (xdoc::topstring
@@ -214,10 +218,8 @@
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
      whose names start with @('a') for `ACL2',
-     as well as types for the Java primitive types
-     except @('float') and @('double'),
-     and types for Java primitive array types
-     except @('float[]') and @('double[]').
+     as well as types for the Java primitive types,
+     and types for Java primitive array types.
      More types may be added in the future.")
    (xdoc::p
     "Each ATJ type denotes
@@ -307,12 +309,16 @@
     (:jshort 'short-value-p)
     (:jint 'int-value-p)
     (:jlong 'long-value-p)
+    (:jfloat 'float-value-p)
+    (:jdouble 'double-value-p)
     (:jboolean[] 'boolean-array-p)
     (:jchar[] 'char-array-p)
     (:jbyte[] 'byte-array-p)
     (:jshort[] 'short-array-p)
     (:jint[] 'int-array-p)
     (:jlong[] 'long-array-p)
+    (:jfloat[] 'float-array-p)
+    (:jdouble[] 'double-array-p)
     (otherwise (impossible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -376,12 +382,16 @@
     (:jshort (and (member-eq sup '(:jshort :acons :avalue)) t))
     (:jint (and (member-eq sup '(:jint :acons :avalue)) t))
     (:jlong (and (member-eq sup '(:jlong :acons :avalue)) t))
+    (:jfloat (and (member-eq sup '(:jfloat :acons :avalue)) t))
+    (:jdouble (and (member-eq sup '(:jdouble :acons :avalue)) t))
     (:jboolean[] (and (member-eq sup '(:jboolean[] :avalue)) t))
     (:jchar[] (and (member-eq sup '(:jchar[] :avalue)) t))
     (:jbyte[] (and (member-eq sup '(:jbyte[] :avalue)) t))
     (:jshort[] (and (member-eq sup '(:jshort[] :avalue)) t))
     (:jint[] (and (member-eq sup '(:jint[] :avalue)) t))
     (:jlong[] (and (member-eq sup '(:jlong[] :avalue)) t))
+    (:jfloat[] (and (member-eq sup '(:jfloat[] :avalue)) t))
+    (:jdouble[] (and (member-eq sup '(:jdouble[] :avalue)) t))
     (otherwise (impossible)))
   ///
 
@@ -445,12 +455,16 @@
                   :jshort
                   :jint
                   :jlong
+                  :jfloat
+                  :jdouble
                   :jboolean[]
                   :jchar[]
                   :jbyte[]
                   :jshort[]
                   :jint[]
-                  :jlong[])))
+                  :jlong[]
+                  :jfloat[]
+                  :jdouble[])))
       `(encapsulate
          ()
          (set-ignore-ok t)
@@ -520,33 +534,57 @@
                   ((:ainteger :arational :anumber) :anumber)
                   (t :avalue)))
       (:acons (case y
-                ((:acons :jboolean :jchar :jbyte :jshort :jint :jlong) :acons)
+                ((:acons
+                  :jboolean
+                  :jchar
+                  :jbyte
+                  :jshort
+                  :jint
+                  :jlong
+                  :jfloat
+                  :jdouble) :acons)
                 (t :avalue)))
       (:avalue :avalue)
       (:jboolean (case y
                    (:jboolean :jboolean)
-                   ((:jchar :jbyte :jshort :jint :jlong :acons) :acons)
+                   ((:jchar :jbyte :jshort :jint :jlong :jfloat :jdouble :acons)
+                    :acons)
                    (t :avalue)))
       (:jchar (case y
                 (:jchar :jchar)
-                ((:jboolean :jbyte :jshort :jint :jlong :acons) :acons)
+                ((:jboolean :jbyte :jshort :jint :jlong :jfloat :jdouble :acons)
+                 :acons)
                 (t :avalue)))
       (:jbyte (case y
                 (:jbyte :jbyte)
-                ((:jboolean :jchar :jshort :jint :jlong :acons) :acons)
+                ((:jboolean :jchar :jshort :jint :jlong :jfloat :jdouble :acons)
+                 :acons)
                 (t :avalue)))
       (:jshort (case y
                  (:jshort :jshort)
-                 ((:jboolean :jchar :jbyte :jint :jlong :acons) :acons)
+                 ((:jboolean :jchar :jbyte :jint :jlong :jfloat :jdouble :acons)
+                  :acons)
                  (t :avalue)))
       (:jint (case y
                (:jint :jint)
-               ((:jboolean :jchar :jbyte :jshort :jlong :acons) :acons)
+               ((:jboolean :jchar :jbyte :jshort :jlong :jfloat :jdouble :acons)
+                :acons)
                (t :avalue)))
       (:jlong (case y
                 (:jlong :jlong)
-                ((:jboolean :jchar :jbyte :jshort :jint :acons) :acons)
+                ((:jboolean :jchar :jbyte :jshort :jint :jfloat :jdouble :acons)
+                 :acons)
                 (t :avalue)))
+      (:jfloat (case y
+                 (:jfloat :jfloat)
+                 ((:jboolean :jchar :jbyte :jshort :jint :jlong :jdouble :acons)
+                  :acons)
+                 (t :avalue)))
+      (:jdouble (case y
+                  (:jdouble :jdouble)
+                  ((:jboolean :jchar :jbyte :jshort :jint :jlong :jfloat :acons)
+                   :acons)
+                  (t :avalue)))
       (:jboolean[] (case y
                      (:jboolean[] :jboolean[])
                      (t :avalue)))
@@ -565,6 +603,12 @@
       (:jlong[] (case y
                   (:jlong[] :jlong[])
                   (t :avalue)))
+      (:jfloat[] (case y
+                   (:jfloat[] :jfloat[])
+                   (t :avalue)))
+      (:jdouble[] (case y
+                    (:jdouble[] :jdouble[])
+                    (t :avalue)))
       (otherwise (impossible))))
   ///
 
@@ -713,12 +757,16 @@
     (:jshort (jtype-short))
     (:jint (jtype-int))
     (:jlong (jtype-long))
+    (:jfloat (jtype-float))
+    (:jdouble (jtype-double))
     (:jboolean[] (jtype-array (jtype-boolean)))
     (:jchar[] (jtype-array (jtype-char)))
     (:jbyte[] (jtype-array (jtype-byte)))
     (:jshort[] (jtype-array (jtype-short)))
     (:jint[] (jtype-array (jtype-int)))
     (:jlong[] (jtype-array (jtype-long)))
+    (:jfloat[] (jtype-array (jtype-float)))
+    (:jdouble[] (jtype-array (jtype-double)))
     (otherwise (prog2$ (impossible) *aij-type-value*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

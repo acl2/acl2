@@ -53,7 +53,11 @@
      with each of the last two kinds having six sub-kinds each.
      The @('a') values may be anything,
      while the @('j') values are restricted to (our model of)
-     Java primitive values and Java primitive arrays."))
+     Java primitive values and Java primitive arrays,
+     excluding @('float') and @('double') values and arrays,
+     because we only have an abstract model of those for now
+     and thus ATJ does not support
+     the generation of tests involving @('float') and @('double')."))
   (:avalue ((get acl2::any)))
   (:jvalue-boolean ((get boolean-value)))
   (:jvalue-char ((get char-value)))

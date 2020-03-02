@@ -605,7 +605,8 @@
                                                  pkg-class-names
                                                  curr-pkg))
         ((consp value) (atj-gen-shallow-cons value qpairs))
-        (t (prog2$ (raise "Internal error: ~x0 is not a recognized value" value)
+        (t (prog2$ (raise "Internal error: ~x0 is not a recognized value."
+                          value)
                    (jexpr-name "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -700,12 +701,16 @@
                   ((equal jtype (jtype-short)) "_short")
                   ((equal jtype (jtype-int)) "_int")
                   ((equal jtype (jtype-long)) "_long")
+                  ((equal jtype (jtype-float)) "_float")
+                  ((equal jtype (jtype-double)) "_double")
                   ((equal jtype (jtype-array (jtype-boolean))) "_booleanarray")
                   ((equal jtype (jtype-array (jtype-char))) "_chararray")
                   ((equal jtype (jtype-array (jtype-byte))) "_bytearray")
                   ((equal jtype (jtype-array (jtype-short))) "_shortarray")
                   ((equal jtype (jtype-array (jtype-int))) "_intarray")
                   ((equal jtype (jtype-array (jtype-long))) "_longarray")
+                  ((equal jtype (jtype-array (jtype-float))) "_floatarray")
+                  ((equal jtype (jtype-array (jtype-double))) "_doublearray")
                   (t (str::cat "_" (jtype-class->name jtype)))))
           (rest (atj-gen-shallow-mv-class-name-aux (cdr types))))
        (str::cat first rest))
@@ -823,7 +828,14 @@
 
 (define atj-adapt-expr-from-jprim-to-cons
   ((expr jexprp)
-   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+   (type (member-eq type '(:jboolean
+                           :jchar
+                           :jbyte
+                           :jshort
+                           :jint
+                           :jlong
+                           :jfloat
+                           :jdouble))))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from a Java primitive type to type @('Acl2ConsValue')."
@@ -850,7 +862,11 @@
      whose first element is the @('Acl2Symbol')
      for the keyword for the primitive type,
      and whose second element is the aforementioned core expression."))
-  (b* ((acl2-symbol-t-expr (atj-gen-symbol t))
+  (b* (((when (or (eq type :jfloat)
+                  (eq type :jdouble)))
+        (prog2$ (raise "Conversion from ~x0 not supported." type)
+                (ec-call (jexpr-fix :this-is-irrelevant))))
+       (acl2-symbol-t-expr (atj-gen-symbol t))
        (acl2-symbol-nil-expr (atj-gen-symbol nil))
        (acl2-core-expr (case type
                          (:jboolean (jexpr-cond expr
@@ -886,7 +902,15 @@
 
 (define atj-adapt-expr-from-value-to-jprim
   ((expr jexprp)
-   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+   (type (member-eq type
+                    '(:jboolean
+                      :jchar
+                      :jbyte
+                      :jshort
+                      :jint
+                      :jlong
+                      :jfloat
+                      :jdouble))))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from type @('Acl2Value') to a Java primitive type."
@@ -926,7 +950,11 @@
      for @(':jlong'),
      we cast it to @('Acl2Integer'),
      and get its numeric value as @('long')."))
-  (b* ((acl2-symbol-nil-expr (atj-gen-symbol nil))
+  (b* (((when (or (eq type :jfloat)
+                  (eq type :jdouble)))
+        (prog2$ (raise "Conversion to ~x0 not supported." type)
+                (ec-call (jexpr-fix :this-is-irrelevant))))
+       (acl2-symbol-nil-expr (atj-gen-symbol nil))
        (acl2-outer-cons-expr (jexpr-cast *aij-type-cons* expr))
        (acl2-cdr-expr (jexpr-imethod acl2-outer-cons-expr "getCdr" nil))
        (acl2-inner-cons-expr (jexpr-cast *aij-type-cons* acl2-cdr-expr))
@@ -1214,7 +1242,14 @@
 
 (define atj-adapt-expr-from-jprimarray-to-list
   ((expr jexprp)
-   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+   (type (member-eq type '(:jboolean
+                           :jchar
+                           :jbyte
+                           :jshort
+                           :jint
+                           :jlong
+                           :jfloat
+                           :jdouble))))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from a Java primitive array type to type @('Acl2Value')."
@@ -1231,14 +1266,25 @@
      which is either a @('nil') symbol or a @(tsee cons) pair:
      this is why the only possible ATJ destination types here
      are the ones mentioned above."))
-  (b* ((method-name (convert-from-primarray-method-name type)))
+  (b* (((when (or (eq type :jfloat)
+                  (eq type :jdouble)))
+        (prog2$ (raise "Conversion from ~x0 array not supported." type)
+                (ec-call (jexpr-fix :this-is-irrelevant))))
+       (method-name (convert-from-primarray-method-name type)))
     (jexpr-method method-name (list expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-adapt-expr-from-value-to-jprimarray
   ((expr jexprp)
-   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+   (type (member-eq type '(:jboolean
+                           :jchar
+                           :jbyte
+                           :jshort
+                           :jint
+                           :jlong
+                           :jfloat
+                           :jdouble))))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from type @('Acl2Value') to a Java primitive array type."
@@ -1251,7 +1297,11 @@
      and the destination ATJ type is a @(':j...[]') type.
      We call the method generated by
      @(tsee atj-gen-shallow-value-to-primarray-method)."))
-  (b* ((method-name (convert-to-primarray-method-name type)))
+  (b* (((when (or (eq type :jfloat)
+                  (eq type :jdouble)))
+        (prog2$ (raise "Conversion to ~x0 array not supported." type)
+                (ec-call (jexpr-fix :this-is-irrelevant))))
+       (method-name (convert-to-primarray-method-name type)))
     (jexpr-method method-name (list expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1293,7 +1343,14 @@
      which is expected to always succeed
      under the assumption of guard verification."))
   (cond ((eq src-type dst-type) expr)
-        ((member-eq src-type '(:jboolean :jchar :jbyte :jshort :jint :jlong))
+        ((member-eq src-type '(:jboolean
+                               :jchar
+                               :jbyte
+                               :jshort
+                               :jint
+                               :jlong
+                               :jfloat
+                               :jdouble))
          (if (member-eq dst-type '(:acons :avalue))
              (atj-adapt-expr-from-jprim-to-cons expr src-type)
            (prog2$ (raise "Internal error: ~
@@ -1301,8 +1358,14 @@
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq src-type
-                    '(:jboolean[] :jchar[] :jbyte[] :jshort[] :jint[] :jlong[]))
+        ((member-eq src-type '(:jboolean[]
+                               :jchar[]
+                               :jbyte[]
+                               :jshort[]
+                               :jint[]
+                               :jlong[]
+                               :jfloat[]
+                               :jdouble[]))
          (if (member-eq dst-type '(:asymbol :acons :avalue))
              (atj-adapt-expr-from-jprimarray-to-list expr
                                                      (case src-type
@@ -1311,13 +1374,22 @@
                                                        (:jbyte[] :jbyte)
                                                        (:jshort[] :jshort)
                                                        (:jint[] :jint)
-                                                       (:jlong[] :jlong)))
+                                                       (:jlong[] :jlong)
+                                                       (:jfloat[] :jfloat)
+                                                       (:jdouble[] :jdouble)))
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq dst-type '(:jboolean :jchar :jbyte :jshort :jint :jlong))
+        ((member-eq dst-type '(:jboolean
+                               :jchar
+                               :jbyte
+                               :jshort
+                               :jint
+                               :jlong
+                               :jfloat
+                               :jdouble))
          (if (member-eq src-type '(:acons :avalue))
              (atj-adapt-expr-from-value-to-jprim expr dst-type)
            (prog2$ (raise "Internal error: ~
@@ -1325,8 +1397,14 @@
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq dst-type
-                    '(:jboolean[] :jchar[] :jbyte[] :jshort[] :jint[] :jlong[]))
+        ((member-eq dst-type '(:jboolean[]
+                               :jchar[]
+                               :jbyte[]
+                               :jshort[]
+                               :jint[]
+                               :jlong[]
+                               :jfloat[]
+                               :jdouble[]))
          (if (member-eq src-type '(:asymbol :acons :avalue))
              (atj-adapt-expr-from-value-to-jprimarray expr
                                                       (case dst-type
@@ -1335,7 +1413,9 @@
                                                         (:jbyte[] :jbyte)
                                                         (:jshort[] :jshort)
                                                         (:jint[] :jint)
-                                                        (:jlong[] :jlong)))
+                                                        (:jlong[] :jlong)
+                                                        (:jfloat[] :jfloat)
+                                                        (:jdouble[] :jdouble)))
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
@@ -1521,8 +1601,14 @@
 
 (define atj-type-rewrap-array-initializer-elements
   ((terms pseudo-term-listp)
-   (new-dst-type (member-eq new-dst-type
-                            '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+   (new-dst-type (member-eq new-dst-type '(:jboolean
+                                           :jchar
+                                           :jbyte
+                                           :jshort
+                                           :jint
+                                           :jlong
+                                           :jfloat
+                                           :jdouble))))
   :returns (new-terms pseudo-term-listp :hyp :guard)
   :short "Adjust the type conversion functions of the terms
           to use for a Java array creation expression with initializer."
@@ -1547,7 +1633,10 @@
      which must all be wrapped with a type conversion function,
      and we re-wrap them with a type conversion function
      with a modified destination type."))
-  (b* (((when (endp terms)) nil)
+  (b* (((when (or (eq new-dst-type :jfloat)
+                  (eq new-dst-type :jdouble)))
+        (raise "Type ~x0 nor supported." new-dst-type))
+       ((when (endp terms)) nil)
        (term (car terms))
        ((mv term src-types dst-types) (atj-type-unwrap-term term))
        ((unless term) nil) ; to prove ACL2-COUNT theorem below
@@ -2305,7 +2394,11 @@
                                    int-minus
                                    long-minus
                                    int-not
-                                   long-not))
+                                   long-not
+                                   float-plus
+                                   double-plus
+                                   float-minus
+                                   double-minus))
                    (b* ((unop (case fn
                                 (boolean-not (junop-logcompl))
                                 (int-plus (junop-uplus))
@@ -2313,28 +2406,54 @@
                                 (int-minus (junop-uminus))
                                 (long-minus (junop-uminus))
                                 (int-not (junop-bitcompl))
-                                (long-not (junop-bitcompl)))))
+                                (long-not (junop-bitcompl))
+                                (float-plus (junop-uplus))
+                                (double-plus (junop-uplus))
+                                (float-minus (junop-uminus))
+                                (double-minus (junop-uminus)))))
                      (jexpr-unary unop operand-expr))
                  (b* ((jtype (case fn
                                (byte-to-short (jtype-short))
                                (byte-to-int (jtype-int))
                                (byte-to-long (jtype-long))
+                               (byte-to-float (jtype-float))
+                               (byte-to-double (jtype-double))
                                (short-to-int (jtype-int))
                                (short-to-long (jtype-long))
-                               (int-to-long (jtype-long))
+                               (short-to-float (jtype-float))
+                               (short-to-double (jtype-double))
                                (char-to-int (jtype-int))
                                (char-to-long (jtype-long))
+                               (char-to-float (jtype-float))
+                               (char-to-double (jtype-double))
+                               (int-to-long (jtype-long))
+                               (int-to-float (jtype-float))
+                               (int-to-double (jtype-double))
+                               (long-to-float (jtype-float))
+                               (long-to-double (jtype-double))
+                               (float-to-double (jtype-double))
                                (short-to-byte (jtype-byte))
-                               (int-to-byte (jtype-byte))
-                               (long-to-byte (jtype-byte))
-                               (char-to-byte (jtype-byte))
-                               (int-to-short (jtype-short))
-                               (long-to-short (jtype-short))
-                               (char-to-short (jtype-short))
-                               (long-to-int (jtype-int))
                                (short-to-char (jtype-char))
+                               (char-to-byte (jtype-byte))
+                               (char-to-short (jtype-short))
+                               (int-to-byte (jtype-byte))
+                               (int-to-short (jtype-short))
                                (int-to-char (jtype-char))
+                               (long-to-byte (jtype-byte))
+                               (long-to-short (jtype-short))
                                (long-to-char (jtype-char))
+                               (long-to-int (jtype-int))
+                               (float-to-byte (jtype-byte))
+                               (float-to-short (jtype-short))
+                               (float-to-char (jtype-char))
+                               (float-to-int (jtype-int))
+                               (float-to-long (jtype-long))
+                               (double-to-byte (jtype-byte))
+                               (double-to-short (jtype-short))
+                               (double-to-char (jtype-char))
+                               (double-to-int (jtype-int))
+                               (double-to-long (jtype-long))
+                               (double-to-float (jtype-float))
                                (byte-to-char (jtype-char)))))
                    (jexpr-cast jtype operand-expr))))
          (block operand-block))
@@ -2450,7 +2569,29 @@
                   (int-int-ushiftr (jbinop-ushr))
                   (long-long-ushiftr (jbinop-ushr))
                   (long-int-ushiftr (jbinop-ushr))
-                  (int-long-ushiftr (jbinop-ushr))))
+                  (int-long-ushiftr (jbinop-ushr))
+                  (float-add (jbinop-add))
+                  (double-add (jbinop-add))
+                  (float-sub (jbinop-sub))
+                  (double-sub (jbinop-sub))
+                  (float-mul (jbinop-mul))
+                  (double-mul (jbinop-mul))
+                  (float-div (jbinop-div))
+                  (double-div (jbinop-div))
+                  (float-rem (jbinop-rem))
+                  (double-rem (jbinop-rem))
+                  (float-eq (jbinop-eq))
+                  (double-eq (jbinop-eq))
+                  (float-neq (jbinop-ne))
+                  (double-neq (jbinop-ne))
+                  (float-less (jbinop-lt))
+                  (double-less (jbinop-lt))
+                  (float-lesseq (jbinop-le))
+                  (double-lesseq (jbinop-le))
+                  (float-great (jbinop-gt))
+                  (double-great (jbinop-gt))
+                  (float-greateq (jbinop-ge))
+                  (double-greateq (jbinop-ge))))
          (expr (jexpr-binary binop left-expr right-expr))
          (block (append left-block right-block)))
       (mv block
@@ -2651,6 +2792,8 @@
                   (short-array-of-length (jtype-short))
                   (int-array-of-length (jtype-int))
                   (long-array-of-length (jtype-long))
+                  (float-array-of-length (jtype-float))
+                  (double-array-of-length (jtype-double))
                   (otherwise (impossible))))
          (expr (jexpr-newarray jtype length-expr)))
       (mv block
@@ -2720,6 +2863,8 @@
                        (short-array-with-comps :jshort)
                        (int-array-with-comps :jint)
                        (long-array-with-comps :jlong)
+                       (float-array-with-comps :jfloat)
+                       (double-array-with-comps :jdouble)
                        (otherwise (impossible))))
                (elements
                 (atj-type-rewrap-array-initializer-elements elements type))
@@ -2743,6 +2888,8 @@
                         (short-array-with-comps (jtype-short))
                         (int-array-with-comps (jtype-int))
                         (long-array-with-comps (jtype-long))
+                        (float-array-with-comps (jtype-float))
+                        (double-array-with-comps (jtype-double))
                         (otherwise (impossible))))
                (expr (jexpr-newarray-init jtype exprs)))
             (mv block
@@ -2769,6 +2916,8 @@
                      (short-array-with-comps :jshort[])
                      (int-array-with-comps :jint[])
                      (long-array-with-comps :jlong[])
+                     (float-array-with-comps :jfloat[])
+                     (double-array-with-comps :jdouble[])
                      (otherwise (impossible))))
              (expr (atj-adapt-expr-to-type expr :avalue type)))
           (mv block
@@ -3420,7 +3569,6 @@
   (verify-guards atj-gen-shallow-term
     :hints
     (("Goal"
-      :do-not-induct t
       :in-theory
       (enable atj-type-unwrap-term
               acl2::member-of-cons
@@ -5127,7 +5275,9 @@
                                   :jbyte
                                   :jshort
                                   :jint
-                                  :jlong)
+                                  :jlong
+                                  :jfloat
+                                  :jdouble)
                                  (jexpr-binary (jbinop-eq)
                                                (jexpr-name ares-var)
                                                (jexpr-name jres-var)))
@@ -5136,7 +5286,9 @@
                                   :jbyte[]
                                   :jshort[]
                                   :jint[]
-                                  :jlong[])
+                                  :jlong[]
+                                  :jfloat[]
+                                  :jdouble[])
                                  (jexpr-smethod (jtype-class "Arrays")
                                                 "equals"
                                                 (list (jexpr-name ares-var)

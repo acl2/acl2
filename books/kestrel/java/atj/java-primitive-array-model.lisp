@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -84,9 +84,6 @@
       and with every component the default value for the component type,
       i.e. @('false') for @('boolean') and 0 for the integral types
       [JLS:4.12.5].
-      We omit operations for @('float') and @('double') arrays for now,
-      because currently our abstract model of these two types
-      does not provide a way to denote the 0 values of these types.
       The size is (our ACL2 model of) a Java @('int').
       These operations can be recognized by ATJ
       and translated to array creation expressions without initializers.")))
@@ -770,7 +767,7 @@
   :returns (array char-array-p
                   :hints (("Goal" :in-theory (enable char-array-p))))
   :short "Construct a Java @('char') array with the given size
-          and with @('false') as every component."
+          and with 0 as every component."
   (repeat (int-value->int length) (char-value 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -780,7 +777,7 @@
   :returns (array byte-array-p
                   :hints (("Goal" :in-theory (enable byte-array-p))))
   :short "Construct a Java @('byte') array with the given size
-          and with @('false') as every component."
+          and with 0 as every component."
   (repeat (int-value->int length) (byte-value 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -790,7 +787,7 @@
   :returns (array short-array-p
                   :hints (("Goal" :in-theory (enable short-array-p))))
   :short "Construct a Java @('short') array with the given size
-          and with @('false') as every component."
+          and with 0 as every component."
   (repeat (int-value->int length) (short-value 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -800,7 +797,7 @@
   :returns (array int-array-p
                   :hints (("Goal" :in-theory (enable int-array-p))))
   :short "Construct a Java @('int') array with the given size
-          and with @('false') as every component."
+          and with 0 as every component."
   (repeat (int-value->int length) (int-value 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -810,5 +807,25 @@
   :returns (array long-array-p
                   :hints (("Goal" :in-theory (enable long-array-p))))
   :short "Construct a Java @('long') array with the given size
-          and with @('false') as every component."
+          and with 0 as every component."
   (repeat (int-value->int length) (long-value 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define float-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array float-array-p
+                  :hints (("Goal" :in-theory (enable float-array-p))))
+  :short "Construct a Java @('float') array with the given size
+          and with positive 0 as every component."
+  (repeat (int-value->int length) (float-value (float-value-abs-pos-zero))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define double-array-of-length ((length int-value-p))
+  :guard (>= (int-value->int length) 0)
+  :returns (array double-array-p
+                  :hints (("Goal" :in-theory (enable double-array-p))))
+  :short "Construct a Java @('double') array with the given size
+          and with positive 0 as every component."
+  (repeat (int-value->int length) (double-value (double-value-abs-pos-zero))))
