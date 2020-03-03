@@ -2370,12 +2370,7 @@
        (i.e. @(tsee int-minus) etc.) are treated specially.
        We generate Java code to compute the operand,
        and generate a Java unary expression
-       whose operator corresponds to the function.
-       For the primitive conversions, we generate a cast to the target type:
-       for widening conversions, this is unnecessary,
-       but for now we use this simple scheme
-       that may also emphasize clarity in the code;
-       we may revisit this decision in the future."))
+       whose operator corresponds to the function."))
     (b* (((mv operand-block
               operand-expr
               jvar-tmp-index)
@@ -2388,74 +2383,19 @@
                                 qpairs
                                 t ; GUARDS$
                                 wrld))
-         (expr (if (member-eq fn '(boolean-not
-                                   int-plus
-                                   long-plus
-                                   int-minus
-                                   long-minus
-                                   int-not
-                                   long-not
-                                   float-plus
-                                   double-plus
-                                   float-minus
-                                   double-minus))
-                   (b* ((unop (case fn
-                                (boolean-not (junop-logcompl))
-                                (int-plus (junop-uplus))
-                                (long-plus (junop-uplus))
-                                (int-minus (junop-uminus))
-                                (long-minus (junop-uminus))
-                                (int-not (junop-bitcompl))
-                                (long-not (junop-bitcompl))
-                                (float-plus (junop-uplus))
-                                (double-plus (junop-uplus))
-                                (float-minus (junop-uminus))
-                                (double-minus (junop-uminus)))))
-                     (jexpr-unary unop operand-expr))
-                 (b* ((jtype (case fn
-                               (byte-to-short (jtype-short))
-                               (byte-to-int (jtype-int))
-                               (byte-to-long (jtype-long))
-                               (byte-to-float (jtype-float))
-                               (byte-to-double (jtype-double))
-                               (short-to-int (jtype-int))
-                               (short-to-long (jtype-long))
-                               (short-to-float (jtype-float))
-                               (short-to-double (jtype-double))
-                               (char-to-int (jtype-int))
-                               (char-to-long (jtype-long))
-                               (char-to-float (jtype-float))
-                               (char-to-double (jtype-double))
-                               (int-to-long (jtype-long))
-                               (int-to-float (jtype-float))
-                               (int-to-double (jtype-double))
-                               (long-to-float (jtype-float))
-                               (long-to-double (jtype-double))
-                               (float-to-double (jtype-double))
-                               (short-to-byte (jtype-byte))
-                               (short-to-char (jtype-char))
-                               (char-to-byte (jtype-byte))
-                               (char-to-short (jtype-short))
-                               (int-to-byte (jtype-byte))
-                               (int-to-short (jtype-short))
-                               (int-to-char (jtype-char))
-                               (long-to-byte (jtype-byte))
-                               (long-to-short (jtype-short))
-                               (long-to-char (jtype-char))
-                               (long-to-int (jtype-int))
-                               (float-to-byte (jtype-byte))
-                               (float-to-short (jtype-short))
-                               (float-to-char (jtype-char))
-                               (float-to-int (jtype-int))
-                               (float-to-long (jtype-long))
-                               (double-to-byte (jtype-byte))
-                               (double-to-short (jtype-short))
-                               (double-to-char (jtype-char))
-                               (double-to-int (jtype-int))
-                               (double-to-long (jtype-long))
-                               (double-to-float (jtype-float))
-                               (byte-to-char (jtype-char)))))
-                   (jexpr-cast jtype operand-expr))))
+         (unop (case fn
+                 (boolean-not (junop-logcompl))
+                 (int-plus (junop-uplus))
+                 (long-plus (junop-uplus))
+                 (int-minus (junop-uminus))
+                 (long-minus (junop-uminus))
+                 (int-not (junop-bitcompl))
+                 (long-not (junop-bitcompl))
+                 (float-plus (junop-uplus))
+                 (double-plus (junop-uplus))
+                 (float-minus (junop-uminus))
+                 (double-minus (junop-uminus))))
+         (expr (jexpr-unary unop operand-expr))
          (block operand-block))
       (mv block
           (atj-adapt-expr-to-type expr
@@ -2605,6 +2545,107 @@
     :measure (two-nats-measure (+ (acl2-count left)
                                   (acl2-count right))
                                2))
+
+  (define atj-gen-shallow-jprim-conv-call
+    ((fn (member-eq fn *atj-java-primitive-conversions*))
+     (operand pseudo-termp)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded
+            ACL2 call of a Java primitive conversion."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t').")
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions that model Java primitive conversions
+       are treated specially.
+       We generate a cast to the target type:
+       for widening conversions, this is unnecessary,
+       but for now we use this simple scheme
+       that may also emphasize clarity in the code;
+       we may revisit this decision in the future."))
+    (b* (((mv operand-block
+              operand-expr
+              jvar-tmp-index)
+          (atj-gen-shallow-term operand
+                                jvar-tmp-base
+                                jvar-tmp-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
+         (jtype (case fn
+                  (byte-to-short (jtype-short))
+                  (byte-to-int (jtype-int))
+                  (byte-to-long (jtype-long))
+                  (byte-to-float (jtype-float))
+                  (byte-to-double (jtype-double))
+                  (short-to-int (jtype-int))
+                  (short-to-long (jtype-long))
+                  (short-to-float (jtype-float))
+                  (short-to-double (jtype-double))
+                  (char-to-int (jtype-int))
+                  (char-to-long (jtype-long))
+                  (char-to-float (jtype-float))
+                  (char-to-double (jtype-double))
+                  (int-to-long (jtype-long))
+                  (int-to-float (jtype-float))
+                  (int-to-double (jtype-double))
+                  (long-to-float (jtype-float))
+                  (long-to-double (jtype-double))
+                  (float-to-double (jtype-double))
+                  (short-to-byte (jtype-byte))
+                  (short-to-char (jtype-char))
+                  (char-to-byte (jtype-byte))
+                  (char-to-short (jtype-short))
+                  (int-to-byte (jtype-byte))
+                  (int-to-short (jtype-short))
+                  (int-to-char (jtype-char))
+                  (long-to-byte (jtype-byte))
+                  (long-to-short (jtype-short))
+                  (long-to-char (jtype-char))
+                  (long-to-int (jtype-int))
+                  (float-to-byte (jtype-byte))
+                  (float-to-short (jtype-short))
+                  (float-to-char (jtype-char))
+                  (float-to-int (jtype-int))
+                  (float-to-long (jtype-long))
+                  (double-to-byte (jtype-byte))
+                  (double-to-short (jtype-short))
+                  (double-to-char (jtype-char))
+                  (double-to-int (jtype-int))
+                  (double-to-long (jtype-long))
+                  (double-to-float (jtype-float))
+                  (byte-to-char (jtype-char))))
+         (expr (jexpr-cast jtype operand-expr))
+         (block operand-block))
+      (mv block
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
+          jvar-tmp-index))
+    ;; 2nd component is greater than 1
+    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
+    :measure (two-nats-measure (acl2-count operand) 2))
 
   (define atj-gen-shallow-jprimarr-read-call
     ((array pseudo-termp)
@@ -3130,6 +3171,20 @@
                                             curr-pkg
                                             qpairs
                                             wrld))
+         ((when (and guards$
+                     (member-eq fn *atj-java-primitive-conversions*)
+                     (int= (len args) 1))) ; should be always true
+          (atj-gen-shallow-jprim-conv-call fn
+                                           (car args)
+                                           src-types
+                                           dst-types
+                                           jvar-tmp-base
+                                           jvar-tmp-index
+                                           pkg-class-names
+                                           fn-method-names
+                                           curr-pkg
+                                           qpairs
+                                           wrld))
          ((when (and guards$
                      (member-eq fn *atj-java-primarray-reads*)
                      (int= (len args) 2))) ; should be always true

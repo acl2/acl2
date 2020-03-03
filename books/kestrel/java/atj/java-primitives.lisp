@@ -30,7 +30,7 @@
      we use ACL2 functions that correspond to
      the Java primitive values and operations:
      when ATJ encounters these specific ACL2 functions,
-     it translate them to corresponding Java constructs
+     it translates them to corresponding Java constructs
      that operate on primitive types;
      this happens only when @(':deep') is @('nil') and @(':guards') is @('t').")
    (xdoc::p
@@ -168,8 +168,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are all the unary boolean, integer, and floating-point operations,
-     and all the conversions between primitive types."))
+    "These are all the unary
+     boolean, integer, and floating-point operations."))
   '(;; unary boolean operations:
     boolean-not
     ;; unary integer operations:
@@ -183,52 +183,7 @@
     float-plus
     double-plus
     float-minus
-    double-minus
-    ;; widening conversions:
-    byte-to-short
-    byte-to-int
-    byte-to-long
-    byte-to-float
-    byte-to-double
-    short-to-int
-    short-to-long
-    short-to-float
-    short-to-double
-    char-to-int
-    char-to-long
-    char-to-float
-    char-to-double
-    int-to-long
-    int-to-float
-    int-to-double
-    long-to-float
-    long-to-double
-    float-to-double
-    ;; narrowing conversions:
-    short-to-byte
-    short-to-char
-    char-to-byte
-    char-to-short
-    int-to-byte
-    int-to-short
-    int-to-char
-    long-to-byte
-    long-to-short
-    long-to-char
-    long-to-int
-    float-to-byte
-    float-to-short
-    float-to-char
-    float-to-int
-    float-to-long
-    double-to-byte
-    double-to-short
-    double-to-char
-    double-to-int
-    double-to-long
-    double-to-float
-    ;; widening and narrowing conversions:
-    byte-to-char))
+    double-minus))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -313,12 +268,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-java-primitive-conversions*
+  :short "List of (the names of) the ACL2 functions that model
+          Java primitive conversions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the conversions between primitive types."))
+  '(;; widening conversions:
+    byte-to-short
+    byte-to-int
+    byte-to-long
+    byte-to-float
+    byte-to-double
+    short-to-int
+    short-to-long
+    short-to-float
+    short-to-double
+    char-to-int
+    char-to-long
+    char-to-float
+    char-to-double
+    int-to-long
+    int-to-float
+    int-to-double
+    long-to-float
+    long-to-double
+    float-to-double
+    ;; narrowing conversions:
+    short-to-byte
+    short-to-char
+    char-to-byte
+    char-to-short
+    int-to-byte
+    int-to-short
+    int-to-char
+    long-to-byte
+    long-to-short
+    long-to-char
+    long-to-int
+    float-to-byte
+    float-to-short
+    float-to-char
+    float-to-int
+    float-to-long
+    double-to-byte
+    double-to-short
+    double-to-char
+    double-to-int
+    double-to-long
+    double-to-float
+    ;; widening and narrowing conversions:
+    byte-to-char))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primitive-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
   (append *atj-java-primitive-constructors*
           *atj-java-primitive-unops*
-          *atj-java-primitive-binops*)
+          *atj-java-primitive-binops*
+          *atj-java-primitive-conversions*)
   ///
   (assert-event (function-name-listp *atj-java-primitive-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primitive-fns*)))
@@ -336,7 +347,7 @@
 (defsection atj-types-for-java-primitives
   :short "ATJ types for the Java primitive constructors and operations."
 
-  ;; primitive constructors:
+  ;; constructors:
 
   (def-atj-main-function-type boolean-value (:asymbol) :jboolean)
 
@@ -457,6 +468,8 @@
   (def-atj-main-function-type long-int-ushiftr (:jlong :jint) :jlong)
 
   (def-atj-main-function-type int-long-ushiftr (:jint :jlong) :jint)
+
+  ;; floating-point operations:
 
   (def-atj-main-function-type float-plus (:jfloat) :jfloat)
 
