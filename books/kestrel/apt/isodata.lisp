@@ -1648,7 +1648,8 @@
    "The result is either
     @('(:instance lemma (y1 (back y1)) ... (yp (back yp)))') or
     @('(:instance lemma (y1 (forth y1)) ... (yp (forth yp)))').
-    Note that if @('lemma') is a guard or termination theorem.")
+    Note that if @('lemma') is a guard or termination theorem,
+    it is a list of symbols, not a single symbol.")
   (b* ((back/forth-of-args (apply-unary-to-terms back$/forth$ args$))
        (instantiation (alist-to-doublets (pairlis$ args$ back/forth-of-args))))
     `(:instance ,lemma :extra-bindings-ok ,@instantiation)))
