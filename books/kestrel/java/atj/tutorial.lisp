@@ -95,6 +95,14 @@
   :returns (start xdoc::treep :hyp :guard)
   (xdoc::p "<b>Next:</b> " (xdoc::seetopic topic subtitle)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Create a title for a section of a tutorial page.
+
+(define atj-tutorial-section ((section stringp))
+  :returns (title xdoc::treep :hyp :guard)
+  (xdoc::p (xdoc::b section)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-tutorial
@@ -117,6 +125,8 @@
     ", along with some additional information
      that will likely be moved to this tutorial.")
 
+   (atj-tutorial-section "Structure of the Tutorial")
+
    (xdoc::p
     "This tutorial consists of this top-level page,
      a set of <i>main</i> pages,
@@ -132,6 +142,8 @@
      such as implementation details;
      however, this information may be useful,
      and thus users are encouraged to read the auxiliary pages as well.")
+
+   (atj-tutorial-section "Relationship with the ACL2-2018 Workshop Paper")
 
    (xdoc::p
     (xdoc::a :href "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1"
@@ -163,6 +175,8 @@
 
   (xdoc::topstring
 
+   (atj-tutorial-section "Code Generation in Theorem Provers")
+
    (xdoc::p
     "A benefit of writing code in a theorem prover like ACL2
      is the ability to prove properties about it,
@@ -176,6 +190,8 @@
      akin to compilation verification)
      the properties proved about the original code
      carry over to the generated code.")
+
+   (atj-tutorial-section "Code Generation in ACL2")
 
    (xdoc::p
     "ACL2's tight integration with the underlying Lisp platform
