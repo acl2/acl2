@@ -59,9 +59,11 @@
 (define bin-digit-value ((x bin-digitp))
   :returns (val bitp :rule-classes (:rewrite :type-prescription))
   :short "Numeric value of a Java binary digit."
-  (if (eql x (char-code #\0))
+  (if (eql (bin-digit-fix x)
+           (char-code #\0))
       0
-    1))
+    1)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

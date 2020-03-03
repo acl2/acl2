@@ -67,6 +67,7 @@
     (abnf::tree-nonleaf (abnf::rulename "boolean-literal")
                         (list (list (abnf::tree-leafterm literal)))))
   :guard-hints (("Goal" :in-theory (enable boolean-literal-p)))
+  :hooks (:fix)
   ///
 
   (defrule tree->string-of-boolean-literal-tree

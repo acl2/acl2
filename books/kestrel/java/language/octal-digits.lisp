@@ -66,6 +66,7 @@
   (b* ((x (mbe :logic (oct-digit-fix x) :exec x)))
     (- x (char-code #\0)))
   :guard-hints (("Goal" :in-theory (enable oct-digitp)))
+  :hooks (:fix)
   ///
 
   (defret oct-digit-value-upper-bound

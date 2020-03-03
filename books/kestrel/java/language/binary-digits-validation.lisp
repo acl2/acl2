@@ -100,6 +100,7 @@
                        (list
                         (abnf::tree-leafterm (list (bin-digit-fix digit))))))
   :guard-hints (("Goal" :in-theory (enable bin-digitp)))
+  :hooks (:fix)
   ///
 
   (defrule tree->string-of-bin-digit-tree

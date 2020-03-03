@@ -78,6 +78,7 @@
                 (<= x (char-code #\f))) (+ 10 (- x (char-code #\a))))
           (t (impossible))))
   :guard-hints (("Goal" :in-theory (enable hex-digitp)))
+  :hooks (:fix)
   ///
 
   (defret hex-digit-value-upper-bound
