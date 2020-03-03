@@ -259,6 +259,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defiso-process-functions (doma domb alpha beta guard-thms$ ctx state)
+  :returns (mv erp
+               (result "A tuple @('(doma$ domb$ alpha$ beta$)')
+                        satisfying @('(typed-tuplep pseudo-termfnp
+                                                    pseudo-termfnp
+                                                    pseudo-termfnp
+                                                    pseudo-termfnp
+                                                    result)').")
+               state)
+  :mode :program
+  :short "Process the @('doma'), @('domb'), @('alpha'), and @('beta') inputs."
+  :long
+  (xdoc::topstring-p
+   "We call @(tsee defiso-process-function) on each
+    and then we check the constraints on the arities and numbers of results.")
+  (b* (((er (list doma$ doma-arity doma-numres))
+        (defiso-process-function doma 2 guard-thms$ ctx state))
+       ((er (list domb$ domb-arity domb-numres))
+        (defiso-process-function domb 3 guard-thms$ ctx state))
+       ((er (list alpha$ alpha-arity alpha-numres))
+        (defiso-process-function alpha 4 guard-thms$ ctx state))
+       ((er (list beta$ beta-arity beta-numres))
+        (defiso-process-function beta 5 guard-thms$ ctx state))
+       ((unless (= doma-numres 1))
+        (er-soft+ ctx t nil
+                  "The number of results returned by the domain ~x0 ~
+                   must be 1, but it is ~x1 instead."
+                  doma doma-numres))
+       ((unless (= domb-numres 1))
+        (er-soft+ ctx t nil
+                  "The number of results returned by the domain ~x0 ~
+                   must be 1, but it is ~x1 instead."
+                  domb domb-numres))
+       ((unless (= alpha-arity doma-arity))
+        (er-soft+ ctx t nil
+                  "The arity of the isomorphism ~x0 ~
+                   must equal the arity ~x1 of the domain ~x2, ~
+                   but it is ~x3 instead."
+                  alpha doma-arity doma alpha-arity))
+       ((unless (= alpha-numres domb-arity))
+        (er-soft+ ctx t nil
+                  "The number of results of the isomorphism ~x0 ~
+                   must equal the arity ~x1 of the domain ~x2, ~
+                   but it is ~x3 instead."
+                  alpha domb-arity domb alpha-numres))
+       ((unless (= beta-arity domb-arity))
+        (er-soft+ ctx t nil
+                  "The arity of the isomorphism ~x0 ~
+                   must equal the arity ~x1 of the domain ~x2, ~
+                   but it is ~x3 instead."
+                  beta domb-arity domb beta-arity))
+       ((unless (= beta-numres doma-arity))
+        (er-soft+ ctx t nil
+                  "The number of results of the isomorphism ~x0 ~
+                   must equal the arity ~x1 of the domain ~x2, ~
+                   but it is ~x3 instead."
+                  beta doma-arity doma beta-numres)))
+    (value (list doma$ domb$ alpha$ beta$))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *defiso-required-app-cond-keywords*
   :short "Keywords that identify the required applicability conditions,
           i.e. the ones that are always present."
@@ -427,7 +488,7 @@
                                          symbol-truelist-alistp
                                          result)'),
                         where the first 4 components are
-                        results of @(tsee defiso-process-function),
+                        results of @(tsee defiso-process-functions),
                         @('thm-names$') is
                         the result of @(tsee defiso-process-thm-names), and
                         @('hints$') is
@@ -437,48 +498,8 @@
   :short "Process all the inputs."
   (b* (((er &) (defiso-process-name name ctx state))
        ((er &) (ensure-boolean$ guard-thms "The :GUARD-THMS input" t nil))
-       ((er (list doma$ doma-arity doma-numres))
-        (defiso-process-function doma 2 guard-thms ctx state))
-       ((er (list domb$ domb-arity domb-numres))
-        (defiso-process-function domb 3 guard-thms ctx state))
-       ((er (list alpha$ alpha-arity alpha-numres))
-        (defiso-process-function alpha 4 guard-thms ctx state))
-       ((er (list beta$ beta-arity beta-numres))
-        (defiso-process-function beta 5 guard-thms ctx state))
-       ((unless (= doma-numres 1))
-        (er-soft+ ctx t nil
-                  "The number of results returned by the domain ~x0 ~
-                   must be 1, but it is ~x1 instead."
-                  doma doma-numres))
-       ((unless (= domb-numres 1))
-        (er-soft+ ctx t nil
-                  "The number of results returned by the domain ~x0 ~
-                   must be 1, but it is ~x1 instead."
-                  domb domb-numres))
-       ((unless (= alpha-arity doma-arity))
-        (er-soft+ ctx t nil
-                  "The arity of the isomorphism ~x0 ~
-                   must equal the arity ~x1 of the domain ~x2, ~
-                   but it is ~x3 instead."
-                  alpha doma-arity doma alpha-arity))
-       ((unless (= alpha-numres domb-arity))
-        (er-soft+ ctx t nil
-                  "The number of results of the isomorphism ~x0 ~
-                   must equal the arity ~x1 of the domain ~x2, ~
-                   but it is ~x3 instead."
-                  alpha domb-arity domb alpha-numres))
-       ((unless (= beta-arity domb-arity))
-        (er-soft+ ctx t nil
-                  "The arity of the isomorphism ~x0 ~
-                   must equal the arity ~x1 of the domain ~x2, ~
-                   but it is ~x3 instead."
-                  beta domb-arity domb beta-arity))
-       ((unless (= beta-numres doma-arity))
-        (er-soft+ ctx t nil
-                  "The number of results of the isomorphism ~x0 ~
-                   must equal the arity ~x1 of the domain ~x2, ~
-                   but it is ~x3 instead."
-                  beta doma-arity doma beta-numres))
+       ((er (list doma$ domb$ alpha$ beta$))
+        (defiso-process-functions doma domb alpha beta guard-thms ctx state))
        ((er &) (ensure-boolean$ unconditional "The :UNCONDITIONAL input" t nil))
        ((er thm-names$) (defiso-process-thm-names
                           thm-names name guard-thms ctx state))
@@ -495,8 +516,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-event-generation defiso
-                                    :some-local-nonlocal-p t)
+(xdoc::evmac-topic-event-generation defiso :some-local-nonlocal-p t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
