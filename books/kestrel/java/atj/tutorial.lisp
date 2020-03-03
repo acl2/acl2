@@ -797,7 +797,7 @@
    (xdoc::p
     "where @(':deep t') specifies the deep embedding approach
      and @(':guards nil') specifies not to assume the guards' satisfaction
-     (more on this later).")
+     (more on this in subsequent tutorial pages).")
 
    (xdoc::p
     "As conveyed by the message shown on the screen by ATJ,
