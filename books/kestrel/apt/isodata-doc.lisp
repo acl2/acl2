@@ -332,16 +332,6 @@
 
     (xdoc::desc-apt-input-non-executable :never)
 
-    (xdoc::desc
-     "@(':normalize') &mdash; default @('t')"
-     (xdoc::p
-      "Determines whether @('new') is normalized:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to normalize it.")
-      (xdoc::li
-       "@('nil'), to not normalize it.")))
-
     (xdoc::desc-apt-input-verify-guards :never)
 
     (xdoc::desc-apt-input-untranslate)

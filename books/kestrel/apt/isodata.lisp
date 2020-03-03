@@ -54,7 +54,6 @@
    @('thm-name'),
    @('thm-enable'),
    @('non-executable'),
-   @('normalize'),
    @('verify-guards'),
    @('untranslate'),
    @('hints'),
@@ -71,7 +70,6 @@
    @('thm-name$'),
    @('thm-enable$'),
    @('non-executable'),
-   @('normalize'),
    @('verify-guards$'),
    @('untranslate$'),
    @('hints$'),
@@ -952,7 +950,6 @@
                                 thm-name
                                 thm-enable
                                 non-executable
-                                normalize
                                 verify-guards
                                 untranslate
                                 hints
@@ -1065,7 +1062,6 @@
                               non-executable
                               (non-executablep old$ wrld)
                               "The :NON-EXECUTABLE input" t nil))
-       ((er &) (ensure-boolean$ normalize "The :NORMALIZE input" t nil))
        (app-cond-keywords (isodata-app-cond-present-keywords
                            old$ res$ predicate verify-guards$ wrld))
        ((er &) (ensure-is-untranslate-specifier$ untranslate
@@ -2195,7 +2191,6 @@
                             (new-name$ symbolp)
                             (new-enable$ booleanp)
                             (non-executable$ booleanp)
-                            (normalize$ booleanp)
                             (verify-guards$ booleanp)
                             (untranslate$ untranslate-specifier-p)
                             compatibility
@@ -2266,8 +2261,6 @@
                                                :measure measure?
                                                :hints termination-hints?
                                                :ruler-extenders :all))
-                                  ,@(and (not normalize$)
-                                         (list :normalize nil))
                                   :guard ,guard
                                   :verify-guards nil))
                   ,body)))
@@ -2277,8 +2270,6 @@
                                         (list :well-founded-relation wfrel?
                                               :measure measure?
                                               :ruler-extenders :all))
-                                 ,@(and (not normalize$)
-                                        (list :normalize nil))
                                  :guard ,guard
                                  :verify-guards ,verify-guards$))
                  ,body)))
@@ -3610,7 +3601,6 @@
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
    (non-executable$ booleanp)
-   (normalize$ booleanp)
    (verify-guards$ booleanp)
    (untranslate$ untranslate-specifier-p)
    (hints$ symbol-truelist-alistp)
@@ -3729,7 +3719,6 @@
                             new-name$
                             new-enable$
                             non-executable$
-                            normalize$
                             verify-guards$
                             untranslate$
                             compatibility
@@ -3861,7 +3850,6 @@
                     thm-name
                     thm-enable
                     non-executable
-                    normalize
                     verify-guards
                     untranslate
                     hints
@@ -3927,7 +3915,6 @@
                                 thm-name
                                 thm-enable
                                 non-executable
-                                normalize
                                 verify-guards
                                 untranslate
                                 hints
@@ -3961,7 +3948,6 @@
                                       thm-name$
                                       thm-enable
                                       non-executable$
-                                      normalize
                                       verify-guards$
                                       untranslate
                                       hints$
@@ -3998,7 +3984,6 @@
                      (thm-name ':auto)
                      (thm-enable 't)
                      (non-executable ':auto)
-                     (normalize 't)
                      (verify-guards ':auto)
                      (untranslate ':nice)
                      (hints 'nil)
@@ -4013,7 +3998,6 @@
                                    ',thm-name
                                    ',thm-enable
                                    ',non-executable
-                                   ',normalize
                                    ',verify-guards
                                    ',untranslate
                                    ',hints

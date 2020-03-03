@@ -666,10 +666,6 @@
  (must-fail (isodata f ((x (natp natp identity identity))) :non-executable #\t))
  (must-fail (isodata f ((x nat-id)) :non-executable #\t))
 
- ;; NORMALIZE is not a boolean:
- (must-fail (isodata f ((x (natp natp identity identity))) :normalize :auto))
- (must-fail (isodata f ((x nat-id)) :normalize :auto))
-
  ;; VERIFY-GUARDS is not in (T NIL :AUTO):
  (must-fail
   (isodata f ((x (natp natp identity identity))) :verify-guards :nil))
@@ -1645,58 +1641,6 @@
     (isodata p ((x nat-id))
              :predicate t :non-executable nil)
     (assert-event (not (non-executablep 'p{1} (w state))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
-
- (test-title "Normalization of NEW.")
-
- (defun f (x) ; OLD when :PREDICATE is NIL
-   (declare (xargs :guard (natp x) :normalize nil))
-   (if (natp x) (1+ x) (1+ x)))
-
- (defun p (x) ; OLD when :PREDICATE is T
-   (declare (xargs :normalize nil))
-   (and (natp x) (integerp x)))
-
- (defiso nat-id natp natp identity identity)
-
- ;; by default, NEW is normalized:
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x (natp natp identity identity)))))
-  (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t)))
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x nat-id))))
-  (must-succeed*
-   (isodata p ((x nat-id)) :predicate t)))
-
- ;; normalize NEW:
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x (natp natp identity identity))) :normalize t))
-  (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t :normalize t)))
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x nat-id)) :normalize t))
-  (must-succeed*
-   (isodata p ((x nat-id)) :predicate t :normalize t)))
-
- ;; do not normalize NEW:
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x (natp natp identity identity))) :normalize nil))
-  (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t :normalize nil)))
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x nat-id)) :normalize nil))
-  (must-succeed*
-   (isodata p ((x nat-id)) :predicate t :normalize nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
