@@ -1,6 +1,6 @@
 ; Bitcoin Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -346,56 +346,12 @@
                            (t (not (bip32-path-in-tree-p path tree)))))))
   ///
 
-  ;; boilerplate:
+  (local (in-theory (enable rcons)))
 
-  (fty::deffixequiv bip44-compliant-accounts-for-limit-p
-    :args ((tree bip32-key-treep))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-accounts-for-limit-p-necc)
-             :use ((:instance bip44-compliant-accounts-for-limit-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (account-index
-                     (bip44-compliant-accounts-for-limit-p-witness
-                      tree coin-index account-index-limit)))
-                   (:instance bip44-compliant-accounts-for-limit-p-necc
-                    (account-index
-                     (bip44-compliant-accounts-for-limit-p-witness
-                      (bip32-key-tree-fix tree)
-                      coin-index
-                      account-index-limit)))))))
-
-  (fty::deffixequiv bip44-compliant-accounts-for-limit-p
-    :args ((coin-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (e/d (rcons)
-                             (bip44-compliant-accounts-for-limit-p-necc))
-             :use ((:instance bip44-compliant-accounts-for-limit-p-necc
-                    (coin-index (ubyte32-fix coin-index))
-                    (account-index
-                     (bip44-compliant-accounts-for-limit-p-witness
-                      tree coin-index account-index-limit)))
-                   (:instance bip44-compliant-accounts-for-limit-p-necc
-                    (account-index
-                     (bip44-compliant-accounts-for-limit-p-witness
-                      tree
-                      (ubyte32-fix coin-index)
-                      account-index-limit)))))))
-
-  (fty::deffixequiv bip44-compliant-accounts-for-limit-p
-    :args ((account-index-limit natp))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-accounts-for-limit-p-necc)
-             :use ((:instance bip44-compliant-accounts-for-limit-p-necc
-                    (account-index-limit (nfix account-index-limit))
-                    (account-index
-                     (bip44-compliant-accounts-for-limit-p-witness
-                      tree coin-index account-index-limit)))
-                   (:instance bip44-compliant-accounts-for-limit-p-necc
-                    (account-index
-                     (bip44-compliant-accounts-for-limit-p-witness
-                      tree
-                      coin-index
-                      (nfix account-index-limit)))))))))
+  (fty::deffixequiv-sk bip44-compliant-accounts-for-limit-p
+    :args ((tree bip32-key-treep)
+           (coin-index ubyte32p)
+           (account-index-limit natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -417,29 +373,8 @@
                 tree coin-index account-index-limit)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip44-compliant-accounts-p
-    :args ((tree bip32-key-treep) (coin-index ubyte32p))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-accounts-p-suff)
-             :use (;; for TREE:
-                   (:instance bip44-compliant-accounts-p-suff
-                    (account-index-limit
-                     (bip44-compliant-accounts-p-witness
-                      (bip32-key-tree-fix tree) coin-index)))
-                   (:instance bip44-compliant-accounts-p-suff
-                    (account-index-limit
-                     (bip44-compliant-accounts-p-witness tree coin-index))
-                    (tree (bip32-key-tree-fix tree)))
-                   ;; for COIN-INDEX:
-                   (:instance bip44-compliant-accounts-p-suff
-                    (account-index-limit
-                     (bip44-compliant-accounts-p-witness
-                      tree (ubyte32-fix coin-index))))
-                   (:instance bip44-compliant-accounts-p-suff
-                    (account-index-limit
-                     (bip44-compliant-accounts-p-witness tree coin-index))
-                    (coin-index (ubyte32-fix coin-index))))))))
+  (fty::deffixequiv-sk bip44-compliant-accounts-p
+    :args ((tree bip32-key-treep) (coin-index ubyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -497,28 +432,8 @@
                            (t (not (bip32-path-in-tree-p path tree)))))))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv bip44-compliant-coins-for-set-p
-    :args ((tree bip32-key-treep) (coins bip44-coin-type-setp))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-coins-for-set-p-necc)
-             :use (;; for TREE:
-                   (:instance bip44-compliant-coins-for-set-p-necc
-                    (tree (bip32-key-tree-fix tree))
-                    (coin-index (bip44-compliant-coins-for-set-p-witness
-                                 tree coins)))
-                   (:instance bip44-compliant-coins-for-set-p-necc
-                    (coin-index (bip44-compliant-coins-for-set-p-witness
-                                 (bip32-key-tree-fix tree)
-                                 coins)))
-                   ;; for COINS:
-                   (:instance bip44-compliant-coins-for-set-p-necc
-                    (coins (bip44-coin-type-set-fix coins))
-                    (coin-index (bip44-compliant-coins-for-set-p-witness
-                                 tree coins)))
-                   (:instance bip44-compliant-coins-for-set-p-necc
-                    (coin-index (bip44-compliant-coins-for-set-p-witness
-                                 tree (bip44-coin-type-set-fix coins)))))))))
+  (fty::deffixequiv-sk bip44-compliant-coins-for-set-p
+    :args ((tree bip32-key-treep) (coins bip44-coin-type-setp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -544,17 +459,8 @@
     (implies (bip44-compliant-coins-p tree)
              (bip44-coin-type-setp (bip44-supported-coin-types tree))))
 
-  ;; boilerplate:
-  (fty::deffixequiv bip44-compliant-coins-p
-    :args ((tree bip32-key-treep))
-    :hints (("Goal"
-             :in-theory (disable bip44-compliant-coins-p-suff)
-             :use ((:instance bip44-compliant-coins-p-suff
-                    (coins (bip44-supported-coin-types
-                            (bip32-key-tree-fix tree))))
-                   (:instance bip44-compliant-coins-p-suff
-                    (coins (bip44-supported-coin-types tree))
-                    (tree (bip32-key-tree-fix tree))))))))
+  (fty::deffixequiv-sk bip44-compliant-coins-p
+    :args ((tree bip32-key-treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
