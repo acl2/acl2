@@ -14,6 +14,7 @@
 (in-package "ACL2")
 
 (include-book "assert-bang")
+(include-book "assert-equal")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,12 +89,3 @@
      :off summary
      (make-event ,(assert!-stobj-body assertion st form)
                  :on-behalf-of ,whole-form)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection assert-equal
-  :parents (std/testing errors)
-  :short "Abbreviation for calling @(tsee assert!) on an equality."
-  :long "@(def assert-equal)"
-  (defmacro assert-equal (x y)
-    `(assert! (equal ,x ,y))))
