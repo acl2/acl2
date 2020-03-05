@@ -191,6 +191,23 @@
      the properties proved about the original code
      carry over to the generated code.")
 
+   (xdoc::p
+    "For instance, the "
+    (xdoc::ahref "http://isabelle.in.tum.de" "Isabelle") ", "
+    (xdoc::ahref "https://coq.inria.fr" "Coq") ", and "
+    (xdoc::ahref "http://pvs.csl.sri.com" "PVS") ", and "
+    (xdoc::ahref "https://hol-theorem-prover.org" "HOL")
+    " theorem provers include facilities to generate code
+     in various programming languages, such as "
+    (xdoc::ahref "http://sml-family.org" "Standard ML") ", "
+    (xdoc::ahref "https://ocaml.org" "Ocaml") ", "
+    (xdoc::ahref "https://www.haskell.org" "Haskell") ", "
+    (xdoc::ahref "https://scala-lang.org" "Scala") ", "
+    (xdoc::ahref
+     "https://en.wikipedia.org/wiki/C_%28programming_language%29" "C")
+    ", and "
+    (xdoc::ahref "http://www.scheme-reports.org" "Scheme") ".")
+
    (atj-tutorial-section "Code Generation in ACL2")
 
    (xdoc::p
