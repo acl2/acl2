@@ -36,6 +36,7 @@
 (include-book "misc/eval" :dir :system)
 (value-triple (acl2::tshell-ensure))
 
+; cert_param: (uses-glucose)
 (local
  (progn
    (defun my-glucose-config ()
@@ -1006,3 +1007,82 @@
        (unsigned-byte-p 64 (u32-fix x))))))
 
 
+
+
+;; (local (defun my-fgl-satlink-config ()
+;;          (declare (xargs :guard t))
+;;          (make-fgl-satlink-monolithic-sat-config :transform t)))
+
+;; (local (defattach fgl-toplevel-sat-check-config my-fgl-satlink-config))
+
+
+
+(define simd-mult-spec ((lane natp)
+                        (src1 integerp)
+                        (src2 integerp)
+                        (mask integerp))
+  (let* ((maskbit (logbitp lane mask))
+         (src1-lane (bitops::nth-slice32 lane src1))
+         (src2-lane (bitops::nth-slice32 lane src2)))
+    (if maskbit (* src1-lane src2-lane) 0)))
+
+(define simd-mult-impl ((lane natp)
+                        (src1 integerp)
+                        (src2 integerp)
+                        (mask integerp))
+  (let* ((maskbit (logbitp lane mask))
+         (src1-lane (if maskbit (bitops::nth-slice32 lane src1) 0))
+         (src2-lane (if maskbit (bitops::nth-slice32 lane src2) 0)))
+    (if maskbit (* src1-lane src2-lane) 0)))
+
+(include-book "std/testing/eval" :dir :system)
+
+
+(local
+ (progn
+   (defun glucose-config-10sec ()
+     (declare (xargs :guard t))
+     (satlink::make-config :cmdline "glucose -cpu-lim=10"
+                           :verbose t
+                           :mintime 1/2
+                           :remove-temps t))
+
+   (defattach fgl-satlink-config glucose-config-10sec)))
+
+(acl2::must-fail
+ (def-fgl-thm simd-multiply-correct
+   (implies (and (unsigned-byte-p 128 src1)
+                 (unsigned-byte-p 128 src2)
+                 (unsigned-byte-p 4 writemask))
+            (let ((spec (bitops::merge-4-u32s (simd-mult-spec 3 src1 src2 writemask)
+                                              (simd-mult-spec 2 src1 src2 writemask)
+                                              (simd-mult-spec 1 src1 src2 writemask)
+                                              (simd-mult-spec 0 src1 src2 writemask)))
+                  (impl (bitops::merge-4-u32s (simd-mult-impl 3 src1 src2 writemask)
+                                              (simd-mult-impl 2 src1 src2 writemask)
+                                              (simd-mult-impl 1 src1 src2 writemask)
+                                              (simd-mult-impl 0 src1 src2 writemask))))
+              (equal impl spec)))))
+
+(encapsulate nil
+  (local (def-fgl-rewrite top-level-equal-solve-lane-by-lane-masked
+           (equal (top-level-equal x y)
+                  (solve-lane-by-lane-masked
+                   x y
+                   (syntax-bind mask (lookup-previous-stack-frame-binding 'writemask 'interp-st))
+                   32))))
+
+  (def-fgl-thm simd-multiply-correct
+    (implies (and (unsigned-byte-p 128 src1)
+                  (unsigned-byte-p 128 src2)
+                  (unsigned-byte-p 4 writemask))
+             (let ((spec (bitops::merge-4-u32s (simd-mult-spec 3 src1 src2 writemask)
+                                               (simd-mult-spec 2 src1 src2 writemask)
+                                               (simd-mult-spec 1 src1 src2 writemask)
+                                               (simd-mult-spec 0 src1 src2 writemask)))
+                   (impl (bitops::merge-4-u32s (simd-mult-impl 3 src1 src2 writemask)
+                                               (simd-mult-impl 2 src1 src2 writemask)
+                                               (simd-mult-impl 1 src1 src2 writemask)
+                                               (simd-mult-impl 0 src1 src2 writemask))))
+               (equal impl spec)))
+    :hints ('(:clause-processor replace-equal-with-top-level-equal))))

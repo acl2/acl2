@@ -39,10 +39,12 @@
 (include-book "transform")
 (include-book "gatecount")
 (include-book "sat-binder")
+(include-book "equivcheck")
 
 (local (in-theory (disable w)))
 
 (install-fgl-metafns top)
+(def-fancy-ev-primitives top-fancy-ev-primitives)
 
 #||
 (include-book
