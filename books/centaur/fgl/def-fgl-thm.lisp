@@ -50,10 +50,12 @@
                    concl)))
          (rule-classes (let ((look (assoc-keyword :rule-classes args)))
                          (and look
-                              `(:rule-classes ,(cadr look))))))
+                              `(:rule-classes ,(cadr look)))))
+         (hints (cadr (assoc-keyword :hints args))))
     `(thm
       ,body
-      :hints (("goal" :clause-processor expand-an-implies-cp)
+      :hints (,@hints
+              '(:clause-processor expand-an-implies-cp)
               '(:clause-processor (fgl-interp-cp clause (default-fgl-config . ,args) interp-st state)))
       ,@rule-classes)))
 
@@ -79,6 +81,7 @@
                    ,param-hyp))
           (fgl-param-thm-cases (cdr param-bindings) param-hyp))))
 
+
 (defun fgl-param-thm-fn (args)
   (declare (xargs :mode :program))
   (let* ((concl (if (keywordp (car args))
@@ -93,10 +96,12 @@
                    concl)))
          (rule-classes (let ((look (assoc-keyword :rule-classes args)))
                          (and look
-                              `(:rule-classes ,(cadr look))))))
+                              `(:rule-classes ,(cadr look)))))
+         (hints (cadr (assoc-keyword :hints args))))
     `(thm
       ,body
-      :hints ((fgl-casesplit :cases
+      :hints (,@hints
+              (fgl-casesplit :cases
                              (fgl-param-thm-cases
                               ,(cadr (assoc-keyword :param-bindings args))
                               ',(cadr (assoc-keyword :param-hyp args)))

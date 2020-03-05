@@ -948,5 +948,61 @@
  (implies (and (unsigned-byte-p 5 width)
                (unsigned-byte-p 64 x)
                (unsigned-byte-p 64 y))
-          (equal (logtail width (logapp width x y))
+          (equal (time$ (logtail width (logapp width x y)))
                  y)))
+
+(fgl-thm
+ (implies (and (unsigned-byte-p 5 width)
+               (unsigned-byte-p 64 x)
+               (unsigned-byte-p 64 y))
+          (equal (fgl-time (time$ (logtail width (logapp width x y))))
+                 y)))
+
+
+
+
+(encapsulate nil
+  (local
+   (progn
+     (fgl::disable-definition unsigned-byte-p)
+     (fgl::remove-fgl-rewrite UNSIGNED-BYTE-P-CONST-WIDTH)
+     (define unsigned-width (x)
+       (declare (ignore x))
+       nil
+       ///
+       (fgl::disable-definition unsigned-width))
+
+
+     (define u32-fix (x)
+       :verify-guards nil
+       (loghead 32 x)
+       ///
+       (fgl::disable-definition u32-fix)
+
+       (fgl::def-fgl-rewrite u32-fix-unsigned-width
+         (unequiv (unsigned-width (u32-fix x)) 32))
+       (in-theory (enable u32-fix-unsigned-width))
+
+       (fgl::def-fgl-rewrite u32-fix-unsigned-byte-p
+         (unsigned-byte-p 32 (u32-fix x)))
+
+       (in-theory (enable u32-fix-unsigned-byte-p)))
+
+     (fgl::def-fgl-rewrite unsigned-byte-p-by-unsigned-width
+       (implies (and (unequiv width (double-rewrite (unsigned-width x)))
+                     (syntaxp (not (equal width width2)))
+                     (unsigned-byte-p width x)
+                     (natp width2)
+                     (<= width width2))
+                (unsigned-byte-p width2 x))
+       :hints(("Goal" :in-theory (disable unsigned-byte-p))))
+
+     (in-theory (enable unsigned-byte-p-by-unsigned-width))
+
+     (defthm unsigned-byte-p-64-of-u32-fix-acl2
+       (unsigned-byte-p 64 (u32-fix x)))
+
+     (fgl::def-fgl-thm unsigned-byte-p-64-of-u32-fix
+       (unsigned-byte-p 64 (u32-fix x))))))
+
+
