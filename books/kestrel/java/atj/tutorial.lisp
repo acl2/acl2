@@ -70,37 +70,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Create the 'start' link for a tutorial page,
-; with the given topic and and subtitle.
-
-(define atj-tutorial-start ((topic stringp) (subtitle stringp))
-  :returns (start xdoc::treep :hyp :guard)
-  (xdoc::p "<b>Start:</b> " (xdoc::seetopic topic subtitle)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Create the 'previous' link for a tutorial page,
-; with the given topic and and subtitle.
-
-(define atj-tutorial-previous ((topic stringp) (subtitle stringp))
-  :returns (start xdoc::treep :hyp :guard)
-  (xdoc::p "<b>Previous:</b> " (xdoc::seetopic topic subtitle)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Create the 'next' link for a tutorial page,
-; with the given topic and and subtitle.
+; Create the 'next' and/or 'previous' links for a tutorial page,
+; preceded by a line (an empty box) for separation with the preceding text.
 
 (define atj-tutorial-next ((topic stringp) (subtitle stringp))
-  :returns (start xdoc::treep :hyp :guard)
-  (xdoc::p "<b>Next:</b> " (xdoc::seetopic topic subtitle)))
+  :returns (text xdoc::treep :hyp :guard)
+  (xdoc::&&
+   (xdoc::box)
+   (xdoc::p "<b>Next:</b> " (xdoc::seetopic topic subtitle))))
+
+(define atj-tutorial-previous ((topic stringp) (subtitle stringp))
+  :returns (text xdoc::treep :hyp :guard)
+  (xdoc::&&
+   (xdoc::box)
+   (xdoc::p "<b>Previous:</b> " (xdoc::seetopic topic subtitle))))
+
+(define atj-tutorial-next-and-previous ((next-topic stringp)
+                                        (next-subtitle stringp)
+                                        (previous-topic stringp)
+                                        (previous-subtitle stringp))
+  :returns (text xdoc::treep :hyp :guard)
+  (xdoc::&&
+   (xdoc::box)
+   (xdoc::p "<b>Next:</b> " (xdoc::seetopic next-topic
+                                            next-subtitle))
+   (xdoc::p "<b>Previous:</b> " (xdoc::seetopic previous-topic
+                                                previous-subtitle))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Create a title for a section of a tutorial page.
 
 (define atj-tutorial-section ((section stringp))
-  :returns (title xdoc::treep :hyp :guard)
+  :returns (text xdoc::treep :hyp :guard)
   (xdoc::p (xdoc::b section)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +135,7 @@
      and a set of <i>auxiliary</i> pages.
      Both main and auxiliary pages are subtopics of this top-level page.
      The main pages may be navigated sequentially,
-     using the `Start', `Next', and `Previous' links;
+     using the `Next' and `Previous' links;
      these pages should contain all the user-level information
      that is necessary to use ATJ effecively.
      The auxiliary pages are referenced from the main pages as needed;
@@ -155,7 +157,7 @@
      it is possible that the paper will be completely subsumed by this tutorial
      once the latter is completed.")
 
-   (atj-tutorial-start "atj-tutorial-motivation" *atj-tutorial-motivation*))
+   (atj-tutorial-next "atj-tutorial-motivation" *atj-tutorial-motivation*))
 
   :order-subtopics t
 
@@ -431,9 +433,9 @@
      Thus, macros with raw Lisp code may also need to be taken into account
      when translating ACL2 code to Java or other programming languages.")
 
-   (atj-tutorial-previous "atj-tutorial-motivation" *atj-tutorial-motivation*)
-
-   (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-aij" *atj-tutorial-aij*
+    "atj-tutorial-motivation" *atj-tutorial-motivation*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -463,9 +465,9 @@
      However, this ATJ tutorial will describe many aspects of AIJ
      that are necessary or useful to understand and use ATJ.")
 
-   (atj-tutorial-previous "atj-tutorial-background" *atj-tutorial-background*)
-
-   (atj-tutorial-next "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*
+    "atj-tutorial-background" *atj-tutorial-background*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -620,9 +622,9 @@
     "For more details on AIJ's implementation and API of ACL2 values,
      see the Javadoc in AIJ's Java code.")
 
-   (atj-tutorial-previous "atj-tutorial-aij" *atj-tutorial-aij*)
-
-   (atj-tutorial-next "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*
+    "atj-tutorial-aij" *atj-tutorial-aij*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -684,10 +686,9 @@
      and because some of the concepts also apply
      to the shallow embedding approach.")
 
-   (atj-tutorial-previous "atj-tutorial-acl2-values"
-                          *atj-tutorial-acl2-values*)
-
-   (atj-tutorial-next "atj-tutorial-deep" *atj-tutorial-deep*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-deep" *atj-tutorial-deep*
+     "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -977,11 +978,9 @@
     "runs the factorial program with 1 GiB of stack space,
      which should be larger than the defaut.")
 
-   (atj-tutorial-previous "atj-tutorial-deep-shallow"
-                          *atj-tutorial-deep-shallow*)
-
-   (atj-tutorial-next "atj-tutorial-customization"
-                      *atj-tutorial-customization*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-customization" *atj-tutorial-customization*
+    "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
