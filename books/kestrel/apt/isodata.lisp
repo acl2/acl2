@@ -290,34 +290,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-fresh-defiso-name ((old$ symbolp) (wrld plist-worldp))
-  :returns (fresh-defiso-name "A @(tsee symbolp).")
+(define isodata-fresh-defiso-name-with-*s-suffix ((name symbolp)
+                                                  (wrld plist-worldp))
+  :returns (fresh-name "A @(tsee symbolp).")
   :mode :program
-  :short "Return a fresh @(tsee defiso) name."
+  :short "Suffix a name with as many @('*')s as needed
+          to make it a valid name for a new @(tsee defiso)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, one that is not a key in the @(tsee defiso) table.
-     This will be eventually used as the name of a @(tsee defiso)
-     that @(tsee isodata) will generate locally,
-     when the @('iso') input is not a name.")
+    "A name is valid for a new @(tsee defiso)
+     if it is not already a key in the @(tsee defiso) table.")
    (xdoc::p
-    "We start with a name of the form @('defiso-isodata-<old>'),
-     where @('<old>') is the @('old') input of @(tsee isodata),
-     and we add as many @('*') characters at the end to make it fresh.
-     We expect that it will be rarely necessary to add @('*') characters.
-     The name is in the package of @('old')."))
-  (b* ((name (packn-pos (list 'defiso-isodata- old$) old$))
-       (table (table-alist *defiso-table-name* wrld)))
-    (isodata-fresh-defiso-name-aux name table))
+    "We use this function for generating local @(tsee defiso)s.")
+   (xdoc::p
+    "If the input name is already valid, no @('*')s are added."))
+  (b* ((table (table-alist *defiso-table-name* wrld)))
+    (isodata-fresh-defiso-name-with-*s-suffix-aux name table))
 
   :prepwork
-  ((define isodata-fresh-defiso-name-aux ((name symbolp) (table alistp))
-     :returns name-with-possibly-added-suffix ; SYMBOLP
+  ((define isodata-fresh-defiso-name-with-*s-suffix-aux ((name symbolp)
+                                                         (table alistp))
+     :returns fresh-name ; SYMBOLP
      :mode :program
      (if (consp (assoc-eq name table))
-         (isodata-fresh-defiso-name-aux (packn-pos (list name '*) name)
-                                        table)
+         (isodata-fresh-defiso-name-with-*s-suffix-aux (packn-pos (list name '*)
+                                                                  name)
+                                                       table)
        name))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -545,7 +544,8 @@
                     :back-guard info.beta-guard
                     :hints nil)))
         (value (list isomap names-to-avoid)))
-    (b* ((iso$ (isodata-fresh-defiso-name old$ (w state)))
+    (b* ((iso$ (packn-pos (list 'defiso-isodata- old$) old$))
+         (iso$ (isodata-fresh-defiso-name-with-*s-suffix iso$ (w state)))
          ((mv forth-image
               back-image
               back-of-forth
