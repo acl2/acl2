@@ -100,6 +100,7 @@
                        (list
                         (abnf::tree-leafterm (list (hex-digit-fix digit))))))
   :guard-hints (("Goal" :in-theory (enable hex-digitp)))
+  :hooks (:fix)
   ///
 
   (defrule tree->string-of-hex-digit-tree

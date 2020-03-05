@@ -666,10 +666,6 @@
  (must-fail (isodata f ((x (natp natp identity identity))) :non-executable #\t))
  (must-fail (isodata f ((x nat-id)) :non-executable #\t))
 
- ;; NORMALIZE is not a boolean:
- (must-fail (isodata f ((x (natp natp identity identity))) :normalize :auto))
- (must-fail (isodata f ((x nat-id)) :normalize :auto))
-
  ;; VERIFY-GUARDS is not in (T NIL :AUTO):
  (must-fail
   (isodata f ((x (natp natp identity identity))) :verify-guards :nil))
@@ -954,7 +950,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -965,7 +961,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -987,7 +983,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -998,7 +994,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1020,7 +1016,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1031,7 +1027,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1046,7 +1042,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1057,7 +1053,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1079,7 +1075,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1090,7 +1086,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state))
           '((f . (1))))))
@@ -1112,7 +1108,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1123,7 +1119,7 @@
   (must-be-redundant
    (DEFUN P{1} (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; numbered name has been recorded
@@ -1138,7 +1134,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1148,7 +1144,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1169,7 +1165,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (+ 1 (IDENTITY X)) NIL)))
+     (IF (MBT$ (NATP X)) (+ 1 (IDENTITY X)) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1179,7 +1175,7 @@
      (DECLARE (XARGS :GUARD (AND (NATP X) (NATP (IDENTITY X)))
                      :VERIFY-GUARDS T
                      :MODE :LOGIC))
-     (IF (NATP X) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
+     (IF (MBT$ (NATP X)) (IDENTITY (+ 1 (IDENTITY X))) NIL)))
   (assert-event ; no numbered name has been recorded
    (equal (table-alist 'numbered-names-in-use (w state)) nil)))
  (must-succeed*
@@ -1199,7 +1195,7 @@
   (must-be-redundant
    (DEFUN Q (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; no numbered name has been recorded
@@ -1209,7 +1205,7 @@
   (must-be-redundant
    (DEFUN Q (X)
      (DECLARE (XARGS :GUARD (NATP X) :VERIFY-GUARDS T :MODE :LOGIC))
-     (AND (NATP X)
+     (AND (MBT$ (NATP X))
           (NATP (IDENTITY X))
           (< 10 (IDENTITY X)))))
   (assert-event ; no numbered name has been recorded
@@ -1645,58 +1641,6 @@
     (isodata p ((x nat-id))
              :predicate t :non-executable nil)
     (assert-event (not (non-executablep 'p{1} (w state))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
-
- (test-title "Normalization of NEW.")
-
- (defun f (x) ; OLD when :PREDICATE is NIL
-   (declare (xargs :guard (natp x) :normalize nil))
-   (if (natp x) (1+ x) (1+ x)))
-
- (defun p (x) ; OLD when :PREDICATE is T
-   (declare (xargs :normalize nil))
-   (and (natp x) (integerp x)))
-
- (defiso nat-id natp natp identity identity)
-
- ;; by default, NEW is normalized:
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x (natp natp identity identity)))))
-  (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t)))
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x nat-id))))
-  (must-succeed*
-   (isodata p ((x nat-id)) :predicate t)))
-
- ;; normalize NEW:
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x (natp natp identity identity))) :normalize t))
-  (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t :normalize t)))
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x nat-id)) :normalize t))
-  (must-succeed*
-   (isodata p ((x nat-id)) :predicate t :normalize t)))
-
- ;; do not normalize NEW:
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x (natp natp identity identity))) :normalize nil))
-  (must-succeed*
-   (isodata p ((x (natp natp identity identity))) :predicate t :normalize nil)))
- (must-succeed*
-  (must-succeed*
-   (isodata f ((x nat-id)) :normalize nil))
-  (must-succeed*
-   (isodata p ((x nat-id)) :predicate t :normalize nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

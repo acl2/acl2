@@ -56,7 +56,7 @@
 
     (xdoc::p
      "These " *casesplit-design-notes* ", which use "
-     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
+     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
       These notes should be read alongside this reference documentation,

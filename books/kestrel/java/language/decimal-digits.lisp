@@ -65,6 +65,7 @@
   (b* ((x (mbe :logic (dec-digit-fix x) :exec x)))
     (- x (char-code #\0)))
   :guard-hints (("Goal" :in-theory (enable dec-digitp)))
+  :hooks (:fix)
   ///
 
   (defret dec-digit-value-upper-bound

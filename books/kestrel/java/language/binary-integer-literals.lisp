@@ -88,7 +88,12 @@
       if the binary numeral is just @('0b0') or @('0B0').)")))
   (and (consp dus)
        (bindig/uscore-case (car dus) :digit)
-       (bindig/uscore-case (car (last dus)) :digit)))
+       (bindig/uscore-case (car (last dus)) :digit))
+  :hooks (:fix)
+  :prepwork
+  ((defrulel hooks-fix-lemma
+     (equal (last (bindig/uscore-list-fix x))
+            (bindig/uscore-list-fix (last x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

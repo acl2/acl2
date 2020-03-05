@@ -241,6 +241,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-restore-mv-calls-in-term
   :short "Restore @(tsee mv) calls in a translated term."
   :long
@@ -522,12 +524,16 @@
     (:jshort "JS")
     (:jint "JI")
     (:jlong "JJ")
+    (:jfloat "JF")
+    (:jdouble "JD")
     (:jboolean[] "YZ")
     (:jchar[] "YC")
     (:jbyte[] "YB")
     (:jshort[] "YS")
     (:jint[] "YI")
     (:jlong[] "YJ")
+    (:jfloat[] "YF")
+    (:jdouble[] "YD")
     (otherwise (prog2$ (impossible) "")))
   ///
 
@@ -560,12 +566,16 @@
         ((equal id "JS") :jshort)
         ((equal id "JI") :jint)
         ((equal id "JJ") :jlong)
+        ((equal id "JF") :jfloat)
+        ((equal id "JD") :jdouble)
         ((equal id "YZ") :jboolean[])
         ((equal id "YC") :jchar[])
         ((equal id "YB") :jbyte[])
         ((equal id "YS") :jshort[])
         ((equal id "YI") :jint[])
         ((equal id "YJ") :jlong[])
+        ((equal id "YF") :jfloat[])
+        ((equal id "YD") :jdouble[])
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
             :avalue))) ; irrelevant

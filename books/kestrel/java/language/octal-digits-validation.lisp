@@ -100,6 +100,7 @@
                        (list
                         (abnf::tree-leafterm (list (oct-digit-fix digit))))))
   :guard-hints (("Goal" :in-theory (enable oct-digitp)))
+  :hooks (:fix)
   ///
 
   (defrule tree->string-of-oct-digit-tree

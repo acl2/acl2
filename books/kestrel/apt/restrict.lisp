@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -98,6 +99,8 @@
 
 (xdoc::evmac-topic-input-processing restrict)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-process-old (old verify-guards ctx state)
   :returns (mv erp
                (old$ "A @(tsee symbolp) that is
@@ -134,6 +137,8 @@
                     t nil)
                  (value nil))))
     (value old$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-restriction (restriction
                                       (old$ symbolp)
@@ -172,6 +177,8 @@
                                            description t nil)))
     (value term)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-process-undefined (undefined
                                     (old$ symbolp)
                                     ctx
@@ -198,6 +205,8 @@
        ((er &) (ensure-term-does-not-call$ term old$
                                            description t nil)))
     (value term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-thm-name (thm-name
                                    (old$ symbolp)
@@ -234,6 +243,8 @@
                 t nil)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *restrict-app-cond-names*
   :short "Names of all the applicability conditions."
   '(:restriction-of-rec-calls
@@ -247,16 +258,22 @@
   (defruled no-duplicatesp-eq-of-*restrict-app-cond-names*
     (no-duplicatesp-eq *restrict-app-cond-names*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-app-cond-namep (x)
   :returns (yes/no booleanp)
   :short "Recognize names of the applicability conditions."
   (and (member-eq x *restrict-app-cond-names*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist restrict-app-cond-name-listp (x)
   (restrict-app-cond-namep x)
   :short "Recognize true lists of names of the applicability conditions."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-app-cond-present-p ((name restrict-app-cond-namep)
                                      (old$ symbolp)
@@ -270,6 +287,8 @@
     (:restriction-boolean t)
     (t (impossible)))
   :guard-hints (("Goal" :in-theory (enable restrict-app-cond-namep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-app-cond-present-names ((old$ symbolp)
                                          (verify-guards$ booleanp)
@@ -305,6 +324,8 @@
                                               old$
                                               verify-guards$
                                               wrld))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-process-inputs (old
                                  restriction
@@ -422,26 +443,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ restrict-event-generation
-  :parents (restrict-implementation)
-  :short "Event generation performed by @(tsee restrict)."
-  :long
-  "<p>
-   Some events are generated in two slightly different forms:
-   a form that is local to the generated @(tsee encapsulate),
-   and a form that is exported from the @(tsee encapsulate).
-   Proof hints are in the former but not in the latter,
-   thus keeping the ACL2 history ``clean''.
-   </p>
-   <p>
-   Other events are generated only locally in the @(tsee encapsulate),
-   without any exported counterparts.
-   These have automatically generated fresh names:
-   the names used so far
-   are threaded through the event generation functions below.
-   </p>"
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-event-generation restrict
+                                    :some-local-nonlocal-p t
+                                    :some-local-p t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-restriction-of-rec-calls-consequent-term
   ((old$ symbolp)
@@ -513,6 +519,8 @@
                 rev-conjuncts)
           wrld))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-gen-app-cond-formula ((name restrict-app-cond-namep)
                                        (old$ symbolp)
                                        (restriction$ pseudo-termp)
@@ -538,6 +546,8 @@
        (b* ((formula-trans (apply-term* 'acl2::booleanp restriction$)))
          (untranslate formula-trans t wrld)))
       (t (impossible)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-app-cond ((name restrict-app-cond-namep)
                                (old$ symbolp)
@@ -573,11 +583,12 @@
    and adding @('$') as needed to avoid name clashes.
    </p>"
   (b* ((wrld (w state))
-       (thm-name (fresh-name-in-world-with-$s (intern-in-package-of-symbol
-                                               (symbol-name name)
-                                               (pkg-witness "APT"))
-                                              names-to-avoid
-                                              wrld))
+       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
+                                                     (symbol-name name)
+                                                     (pkg-witness "APT"))
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld))
        (formula
         (restrict-gen-app-cond-formula name old$ restriction$ stub? state))
        (hints (cdr (assoc-eq name hints$)))
@@ -598,6 +609,8 @@
                              ,try-defthm
                              ,@progress-end?))))
     (mv event thm-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-app-conds
   ((old$ symbolp)
@@ -666,6 +679,8 @@
                                                              state)))
        (mv (cons event events)
            (acons name thm-name thm-names))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-new-fn ((old$ symbolp)
                              (restriction$ pseudo-termp)
@@ -768,6 +783,8 @@
                  ,new-body)))
     (mv local-event exported-event)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-gen-old-to-new-thm ((old$ symbolp)
                                      (restriction$ pseudo-termp)
                                      (new-name$ symbolp)
@@ -838,6 +855,8 @@
        (exported-event `(,macro ,thm-name$
                                 ,formula)))
     (mv local-event exported-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-new-fn-verify-guards
   ((old$ symbolp)
@@ -918,6 +937,8 @@
                                  app-cond-thm-names)))))))
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
     event))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-everything
   ((old$ symbolp)
@@ -1011,9 +1032,10 @@
                         (all-ffn-symbs (termination-theorem old$ (w state))
                                        nil))))
        (stub? (and reflexivep
-                   (fresh-name-in-world-with-$s
+                   (fresh-logical-name-with-$s-suffix
                     (intern-in-package-of-symbol
                      "?F" (pkg-witness (symbol-package-name old$)))
+                    'constrained-function
                     names-to-avoid
                     wrld)))
        (names-to-avoid (if stub? (rcons stub? names-to-avoid) names-to-avoid))
@@ -1189,6 +1211,8 @@
                                        ctx
                                        state)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection restrict-macro-definition
   :parents (restrict-implementation)

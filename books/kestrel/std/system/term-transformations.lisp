@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "apply-fn-into-ifs")
 (include-book "apply-term")
 (include-book "apply-terms-same-args")
 (include-book "apply-unary-to-terms")

@@ -31,6 +31,7 @@
 (in-package "VL")
 (include-book "../../util/defs")
 (local (include-book "../../util/arithmetic"))
+(include-book "std/testing/assert" :dir :system)
 
 (defsection lex-keywords
   :parents (lexer)

@@ -659,7 +659,10 @@
 
    (xdoc::p
     "Models have been added of all the boolean and integer operations,
-     as well as of all the primitive conversions on integral values.")
+     as well as of all the primitive conversions on integral values.
+     Abstract models have also been added of all the floating-point operations,
+     as well as of all the primitive conversions
+     involving floating-point values.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -735,6 +738,11 @@
      and @(tsee organize-symbols-by-pkg)
      has been moved to the Std extensions in the Kestrel Books,
      under @('[books]/kestrel/std/basic/').")
+
+   (xdoc::p
+    "A variant @(tsee mbt$) of @(tsee mbt) has been introduced,
+     which requires the argument to be just non-@('nil')
+     instead of exactly @('t').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -87,9 +87,15 @@
       (which implies that it cannot be confused
       with the decimal numeral @('0')).")))
   (and (consp dus)
-       (equal (car dus) (octdig/uscore-digit (char-code #\0)))
+       (equal (octdig/uscore-fix (car dus))
+              (octdig/uscore-digit (char-code #\0)))
        (octdig/uscore-case (car (last dus)) :digit)
-       (> (len (octdig/uscores-to-digits dus)) 1)))
+       (> (len (octdig/uscores-to-digits dus)) 1))
+  :hooks (:fix)
+  :prepwork
+  ((defrulel hooks-fix-lemma
+     (equal (last (octdig/uscore-list-fix x))
+            (octdig/uscore-list-fix (last x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

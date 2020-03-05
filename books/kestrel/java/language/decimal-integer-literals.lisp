@@ -91,8 +91,14 @@
   (and (consp dus)
        (decdig/uscore-case (car dus) :digit)
        (decdig/uscore-case (car (last dus)) :digit)
-       (implies (equal (car dus) (decdig/uscore-digit (char-code #\0)))
-                (= (len dus) 1))))
+       (implies (equal (decdig/uscore-fix (car dus))
+                       (decdig/uscore-digit (char-code #\0)))
+                (= (len dus) 1)))
+  :hooks (:fix)
+  :prepwork
+  ((defrulel hooks-fix-lemma
+     (equal (last (decdig/uscore-list-fix x))
+            (decdig/uscore-list-fix (last x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -31,7 +31,6 @@
 (in-package "STD")
 (include-book "da-base")
 (include-book "look-up")
-(local (include-book "std/testing/assert" :dir :system))
 (program)
 
 (defxdoc returns-specifiers
@@ -419,16 +418,7 @@ For example, @('natp-of-foo').</dd>
            (cons (second x)
                  (untranslate-and (third x))))
           (t
-           (list x))))
-
-  (local
-   (progn
-     (assert! (equal (untranslate-and 'x) '(x)))
-     (assert! (equal (untranslate-and 't) '(t)))
-     (assert! (equal (untranslate-and '(if x y z)) '((if x y z))))
-     (assert! (equal (untranslate-and '(if x y 'nil)) '(x y)))
-     (assert! (equal (untranslate-and '(if x (if a b c) 'nil)) '(x (if a b c))))
-     (assert! (equal (untranslate-and '(if x (if a b 'nil) 'nil)) '(x a b))))))
+           (list x)))))
 
 (defun force-each (x)
   (declare (xargs :guard t))

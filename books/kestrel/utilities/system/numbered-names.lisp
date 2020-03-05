@@ -376,7 +376,9 @@
                            index-start-chars
                            index-or-wildcard-chars
                            index-end-chars)))
-    (intern-in-package-of-symbol (implode name-chars) base)))
+    (if (equal (symbol-package-name base) *main-lisp-package-name*)
+        (intern (implode name-chars) "ACL2")
+      (intern-in-package-of-symbol (implode name-chars) base))))
 
 (define set-numbered-name-index
   ((name symbolp) (index posp) (wrld plist-worldp))

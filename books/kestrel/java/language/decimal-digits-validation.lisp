@@ -111,6 +111,7 @@
                               (list
                                (abnf::tree-leafterm (list digit))))))))))
   :guard-hints (("Goal" :in-theory (enable dec-digitp)))
+  :hooks (:fix)
   ///
 
   (defrule tree->string-of-dec-digit-tree

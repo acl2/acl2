@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -277,9 +277,25 @@
        (length (java::short-to-int length)))
     (java::char-array-of-length length)))
 
+(defun i (floatarray doublearray i j)
+  (declare (xargs :guard (and (java::float-array-p floatarray)
+                              (java::double-array-p doublearray)
+                              (java::int-value-p i)
+                              (java::int-value-p j)
+                              (integer-range-p 0
+                                               (len floatarray)
+                                               (java::int-value->int i))
+                              (integer-range-p 0
+                                               (len doublearray)
+                                               (java::int-value->int j)))))
+  (java::double-rem (java::float-to-double
+                     (java::float-array-read floatarray i))
+                    (java::double-array-read doublearray j)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests for the functions above, when :DEEP is NIL and :GUARDS is T.
+; Tests for the functions above (except the ones involving floating-point),
+; when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
   '(;; array read operations:

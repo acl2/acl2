@@ -30,7 +30,6 @@
 
 (in-package "STD")
 (include-book "support")
-(local (include-book "std/testing/assert" :dir :system))
 
 (defsection var-is-stobj-p
   :parents (support)
@@ -40,14 +39,7 @@ of a @(see acl2::stobj)."
   (defund var-is-stobj-p (var world)
     (declare (xargs :guard (and (symbolp var)
                                 (plist-worldp world))))
-    (consp (getprop var 'acl2::stobj nil 'acl2::current-acl2-world world)))
-
-  (local
-   (progn
-     (assert! (not (var-is-stobj-p 'foo (w state))))
-     (assert! (var-is-stobj-p 'state (w state)))
-     (defstobj foo (field1 :initially 0))
-     (assert! (var-is-stobj-p 'foo (w state))))))
+    (consp (getprop var 'acl2::stobj nil 'acl2::current-acl2-world world))))
 
 (defsection look-up-formals
   :parents (support)
@@ -68,12 +60,7 @@ function @('fn'), or causes a hard error if @('fn') isn't a function."
   (local (in-theory (enable look-up-formals)))
 
   (defthm symbol-listp-of-look-up-formals
-    (symbol-listp (look-up-formals fn world)))
-
-  (local
-   (progn
-    (assert! (equal (look-up-formals 'look-up-formals (w state))
-                    '(fn world))))))
+    (symbol-listp (look-up-formals fn world))))
 
 (defsection look-up-guard
   :parents (support)
@@ -87,22 +74,7 @@ causes a hard error if @('fn') isn't a function."
           ;; Silly... make sure the function exists, causing an error
           ;; otherwise.
           (look-up-formals fn world)))
-      (getprop fn 'acl2::guard t 'acl2::current-acl2-world world)))
-
-  (local
-   (progn
-   (defun f1 (x) x)
-   (defun f2 (x) (declare (xargs :guard (natp x))) x)
-   (defun f3 (x) (declare (xargs :guard (and (integerp x)
-                                             (<= 3 x)
-                                             (<= x 13))))
-     x)
-   (assert! (equal (look-up-guard 'f1 (w state)) 't))
-   (assert! (equal (look-up-guard 'f2 (w state)) '(natp x)))
-   (assert! (equal (look-up-guard 'f3 (w state))
-                   '(IF (INTEGERP X)
-                        (IF (NOT (< X '3)) (NOT (< '13 X)) 'NIL)
-                        'NIL))))))
+      (getprop fn 'acl2::guard t 'acl2::current-acl2-world world))))
 
 (defsection look-up-return-vals
   :parents (support)
@@ -130,16 +102,7 @@ with the same length as the number of return vals for @('fn')."
   (local (in-theory (enable look-up-return-vals)))
 
   (defthm symbol-listp-of-look-up-return-vals
-    (symbol-listp (look-up-return-vals fn world)))
-
-  (local
-   (progn
-     (defun f1 (x) x)
-     (defun f2 (x) (mv x x))
-     (defun f3 (x state) (declare (xargs :stobjs state)) (mv x state))
-     (assert! (equal (look-up-return-vals 'f1 (w state)) '(nil)))
-     (assert! (equal (look-up-return-vals 'f2 (w state)) '(nil nil)))
-     (assert! (equal (look-up-return-vals 'f3 (w state)) '(nil state))))))
+    (symbol-listp (look-up-return-vals fn world))))
 
 
 (defsection look-up-wrapper-args
@@ -161,17 +124,7 @@ macro-args)."
                         'acl2::current-acl2-world world))
          ((unless (eq look :bad))
           look))
-      (raise "Failed to find formals or macro-args for ~x0!" wrapper)))
-
-  (local
-   (progn
-     (defun f1 (x) x)
-     (defmacro f2 (x) x)
-     (defmacro f3 (x y &key (c '5) (d '7)) (list x y c d))
-     (assert! (equal (look-up-wrapper-args 'f1 (w state)) '(x)))
-     (assert! (equal (look-up-wrapper-args 'f2 (w state)) '(x)))
-     (assert! (equal (look-up-wrapper-args 'f3 (w state))
-                     '(x y &key (c '5) (d '7)))))))
+      (raise "Failed to find formals or macro-args for ~x0!" wrapper))))
 
 
 
@@ -200,13 +153,4 @@ hard error if @('fn') isn't a function."
   (defthm booleanp-of-look-up-formals
     (or (equal (logic-mode-p fn world) t)
         (equal (logic-mode-p fn world) nil))
-    :rule-classes :type-prescription)
-
-  (local
-   (progn
-     (defun f (x) (declare (xargs :mode :program)) x)
-     (defun g (x) x)
-     (defun h (x) (declare (xargs :verify-guards t)) x)
-     (assert! (logic-mode-p 'g (w state)))
-     (assert! (logic-mode-p 'h (w state)))
-     (assert! (not (logic-mode-p 'f (w state)))))))
+    :rule-classes :type-prescription))

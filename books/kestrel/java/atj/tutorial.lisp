@@ -42,6 +42,9 @@
 (defconst *atj-tutorial-deep*
   "Deep Embedding Approach")
 
+(defconst *atj-tutorial-customization*
+  "Customization Options for Generated Code")
+
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
@@ -92,6 +95,14 @@
   :returns (start xdoc::treep :hyp :guard)
   (xdoc::p "<b>Next:</b> " (xdoc::seetopic topic subtitle)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Create a title for a section of a tutorial page.
+
+(define atj-tutorial-section ((section stringp))
+  :returns (title xdoc::treep :hyp :guard)
+  (xdoc::p (xdoc::b section)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-tutorial
@@ -114,12 +125,25 @@
     ", along with some additional information
      that will likely be moved to this tutorial.")
 
+   (atj-tutorial-section "Structure of the Tutorial")
+
    (xdoc::p
-    "The main subtopics of this manual page
-     may be navigated sequentially,
-     using the `Start', `Next', and `Previous' links.
-     The auxiliary subtopics of this manual page
-     are referenced from other subtopics when needed.")
+    "This tutorial consists of this top-level page,
+     a set of <i>main</i> pages,
+     and a set of <i>auxiliary</i> pages.
+     Both main and auxiliary pages are subtopics of this top-level page.
+     The main pages may be navigated sequentially,
+     using the `Start', `Next', and `Previous' links;
+     these pages should contain all the user-level information
+     that is necessary to use ATJ effecively.
+     The auxiliary pages are referenced from the main pages as needed;
+     they contain additional information
+     that may not be strictly necessary to ATJ users,
+     such as implementation details;
+     however, this information may be useful,
+     and thus users are encouraged to read the auxiliary pages as well.")
+
+   (atj-tutorial-section "Relationship with the ACL2-2018 Workshop Paper")
 
    (xdoc::p
     (xdoc::a :href "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22018.1"
@@ -151,6 +175,8 @@
 
   (xdoc::topstring
 
+   (atj-tutorial-section "Code Generation in Theorem Provers")
+
    (xdoc::p
     "A benefit of writing code in a theorem prover like ACL2
      is the ability to prove properties about it,
@@ -164,6 +190,8 @@
      akin to compilation verification)
      the properties proved about the original code
      carry over to the generated code.")
+
+   (atj-tutorial-section "Code Generation in ACL2")
 
    (xdoc::p
     "ACL2's tight integration with the underlying Lisp platform
@@ -769,12 +797,13 @@
    (xdoc::p
     "where @(':deep t') specifies the deep embedding approach
      and @(':guards nil') specifies not to assume the guards' satisfaction
-     (more on this later).")
+     (more on this in subsequent tutorial pages).")
 
    (xdoc::p
     "As conveyed by the message shown on the screen by ATJ,
      a single Java file @('Acl2Code.java') is generated,
      in the current directory.
+     (If the file already exists, it is overridden.)
      Opening the file reveals that it contains
      a single Java public class called @('Acl2Code').
      The file imports all the (public) AIJ classes,
@@ -900,14 +929,195 @@
     "After compiling, the code can be run via")
    (xdoc::codeblock
     "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
-    "      Test")
+    "     Test")
    (xdoc::p
     "where again @('[books]/...') must be replaced with a proper path.
      A fairly large number will be printed on the screen.
      Some ACL2 has just been run in Java.")
 
+   (xdoc::p
+    "If the @('100') passed to the factorial function call
+     is increased to a sufficiently large value,
+     the execution of the Java code will result in a stack overflow
+     (this is just the JVM running out of stack memory;
+     it has nothing to do with type unsafety and security exploits).
+     This is unavoidable, because in the deep embedding approach
+     the ACL2 functions are evaluated via "
+    (xdoc::seetopic "atj-tutorial-evaluator" "AIJ's recursive interpreter")
+    ". Note also that recursive method calls in the JVM
+     may not be as efficiently implemented as recursive function calls in Lisp,
+     given that Java is an imperative language
+     and thus loops are the preferred way to repeat computations.
+     This stack overflow issue may be mitigated
+     by passing a larger stack size to the JVM,
+     via the @('-Xss) option to the @('java') command.
+     For example,")
+   (xdoc::codeblock
+    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
+    "     -Xss1G \\"
+    "     Test")
+   (xdoc::p
+    "runs the factorial program with 1 GiB of stack space,
+     which should be larger than the defaut.")
+
    (atj-tutorial-previous "atj-tutorial-deep-shallow"
-                          *atj-tutorial-deep-shallow*)))
+                          *atj-tutorial-deep-shallow*)
+
+   (atj-tutorial-next "atj-tutorial-customization"
+                      *atj-tutorial-customization*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-customization
+
+  :short (atj-tutorial-short *atj-tutorial-customization*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "ATJ provides some options to customize the generated Java code,
+     in the form of keyword inputs, which are listed in "
+    (xdoc::seetopic "atj" "the reference documentation")
+    ". This tutorial page covers the simpler options,
+     which apply to both "
+    (xdoc::seetopic "atj-tutorial-deep-shallow"
+                    "deep and shallow embedding approaches")
+    ". The more complex options are covered elsewhere in this tutorial.")
+
+   (xdoc::h3 "Java Package")
+
+   (xdoc::p
+    "The Java code generated for the factorial function in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " has no @('package') declaration [JLS:7.4],
+     which means that the generated class is in an unnamed package [JLS:7.4.2].
+     This (i.e. the absence of a @('package') declaration) is the default,
+     which can be overridden via ATJ's @(':java-package') option.")
+
+   (xdoc::p
+    "For the example in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    ", the ATJ call")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :java-package \"mypkg\")")
+   (xdoc::p
+    "generates a file @('Acl2Code.java') that is the same as before
+     but with the package declaration")
+   (xdoc::codeblock
+    "package mypkg;")
+   (xdoc::p
+    "at the beginning.")
+
+   (xdoc::p
+    "Now that the generated code is in the @('mypkg') package,
+     the external Java code exemplified in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " must be adapted, e.g. by putting it into @('mypkg') as well,
+     or by referencing the generated Java class
+     via the fully qualified name @('mypkg.Acl2Code'),
+     or by importing the class via a declaration @('import mypkg.Acl2Code;').")
+
+   (xdoc::p
+    "The string passed as the @(':java-package') option
+     must be not only a valid Java package name,
+     but also consist only of ASCII characters.
+     ATJ does not support the generation of
+     package names with non-ASCII characters.")
+
+   (xdoc::p
+    "Note that the file is generated in the current directory,
+     not in a @('mypkg') directory,
+     as may be expected based on Java's typical source file organization.
+     The directory where the file is generated
+     can be customized via the @(':output-dir') option, described below.")
+
+   (xdoc::h3 "Java Class")
+
+   (xdoc::p
+    "The Java class generated for the factorial function in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " is called @('Acl2Code');
+     the generated file is called @('Acl2Code.java'),
+     thus satisfying the constraint that a public class resides in a file
+     whose name is obtained by adding the @('.java') extension
+     to the class name [JLS:7.6].
+     This class (and thus file) name is the default,
+     which can be overridden via ATJ's @(':java-class') option.")
+
+   (xdoc::p
+    "For the example in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    ", the ATJ call")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :java-class \"Fact\")")
+   (xdoc::p
+    "generates a file @('Fact.java') that is the same as before
+     but with @('Fact') as the name of the class.")
+
+   (xdoc::p
+    "Now that the generated class is called @('Fact'),
+     the external Java code exemplified in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " must be adapted, by referencing the generated Java class as @('Fact').")
+
+   (xdoc::p
+    "The string passed as the @(':java-class') option
+     must be not only a valid Java class name,
+     but also consist only of ASCII characters.
+     ATJ does not support the generation of
+     class names with non-ASCII characters.")
+
+   (xdoc::h3 "Output Directory")
+
+   (xdoc::p
+    "The Java file generated for the factorial function in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    " resides in the current directory.
+     This is the default,
+     which can be overridden via ATJ's @(':output-dir') option.")
+
+   (xdoc::p
+    "For the example in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    ", the ATJ call")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :output-dir \"java\")")
+   (xdoc::p
+    "generates the same file @('Acl2Code.java') as before
+     but in a subdirectory @('java') of the current directory.
+     The subdirectory must already exist; ATJ does not create it.")
+
+   (xdoc::p
+    "Needless to say, the invocations of the @('javac') and @('java') commands
+     must be adapted to the local of the @('.java') and @('.class') files.")
+
+   (xdoc::p
+    "The string must be a valid absolute or relative path
+     in the file system of the underlying operating system.
+     If it is a relative path, it is relative to the current directory.
+     When running ATJ interactively from the ACL2 shell,
+     the current directory is the one returned by @(':cbd').
+     When running ATJ as part of book certification,
+     the current directory should be the same one
+     where the @('.lisp') file with the ATJ call resides.")
+
+   (xdoc::p
+    "If the @(':java-package') option is also used (see above),
+     the @(':output-dir') option can be used to generate the file
+     in a subdirectory consistent with the package name,
+     according to the typical organization of Java source files.
+     For example, if @(':java-package') is @('\"mypkg\"'),
+     @(':output-dir') can be set to @('\"mypkg\"') as well.
+     As another example, if @(':java-package') is @('\"my.new.pkg\"'),
+     @(':output-dir') can be set to @('\"my/new/pkg\"\'),
+     assuming a Unix-like operating system
+     with forward slashes that separate file path elements.
+     As already noted above, all these directories must exist;
+     ATJ does not create them.")
+
+   (atj-tutorial-previous "atj-tutorial-deep" *atj-tutorial-deep*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

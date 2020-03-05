@@ -12,8 +12,8 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
-(include-book "fresh-names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,10 +38,10 @@
    Start with the default name
    (i.e. the concatenation of
    the name of @('fn') with @('$not-normalized'))
-   and ensure its uniqueness via @(tsee fresh-name-in-world-with-$s).
+   and ensure its uniqueness via @(tsee fresh-logical-name-with-$s-suffix).
    </p>"
   (b* ((name (install-not-normalized-name fn))
-       (name (fresh-name-in-world-with-$s name names-to-avoid wrld))
+       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (event
         (if local
             `(local (install-not-normalized ,fn :defthm-name ',name :allp nil))
@@ -69,7 +69,7 @@
    Start with the default names
    (i.e. the concatenation of
    the names of each function suffixed with @('$not-normalized'))
-   and ensure their uniqueness via @(tsee fresh-name-in-world-with-$s).
+   and ensure their uniqueness via @(tsee fresh-logical-name-with-$s-suffix).
    </p>"
   (cond ((endp fns) (mv nil nil))
         (t (mv-let (event name)

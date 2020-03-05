@@ -86,8 +86,8 @@
 
     (xdoc::p
      "These " *isodata-design-notes* ", which use "
-     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
-     ", provide the mathematical concepts and (meta) proofs
+     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
+     ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
       These notes should be read alongside this reference documentation,
       which refers to the them in numerous places.")
@@ -332,16 +332,6 @@
 
     (xdoc::desc-apt-input-non-executable :never)
 
-    (xdoc::desc
-     "@(':normalize') &mdash; default @('t')"
-     (xdoc::p
-      "Determines whether @('new') is normalized:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to normalize it.")
-      (xdoc::li
-       "@('nil'), to not normalize it.")))
-
     (xdoc::desc-apt-input-verify-guards :never)
 
     (xdoc::desc-apt-input-untranslate)
@@ -476,17 +466,17 @@
      (xdoc::codeblock
       ";; when old is not recursive and args/res-iso does not include :result:"
       "(defun new (x1 ... xn)"
-      "  (if (and (newp y1)"
-      "           ..."
-      "           (newp yp))"
+      "  (if (mbt$ (and (newp y1)"
+      "                 ..."
+      "                 (newp yp)))"
       "      old-body<...,(back y1),...,(back yp),...>"
       "    nil)) ; or (mv nil ... nil)"
       ""
       ";; when old is not recursive and args/res-iso includes :result:"
       "(defun new (x1 ... xn)"
-      "  (if (and (newp y1)"
-      "           ..."
-      "           (newp yp))"
+      "  (if (mbt$ (and (newp y1)"
+      "                 ..."
+      "                 (newp yp)))"
       "      (forth old-body<...,(back y1),...,(back yp),...>)"
       "    nil))"
       ""
@@ -494,9 +484,9 @@
       ";; the :predicate input is nil,"
       ";; and args/res-iso does not include :result:"
       "(defun new (x1 ... xn)"
-      "  (if (and (newp y1)"
-      "           ..."
-      "           (newp yp))"
+      "  (if (mbt$ (and (newp y1)"
+      "                 ..."
+      "                 (newp yp)))"
       "      old-body<...,(back y1),...,(back yp),...,"
       "               (new ..."
       "                    (forth update1-y1<...,"
@@ -532,9 +522,9 @@
       ";; and args/res-iso includes :result"
       ";; (in which case the function returns a single result):"
       "(defun new (x1 ... xn)"
-      "  (if (and (newp y1)"
-      "           ..."
-      "           (newp yp))"
+      "  (if (mbt$ (and (newp y1)"
+      "                 ..."
+      "                 (newp yp)))"
       "      (forth old-body<...,(back y1),...,(back yp),...,"
       "                      (new ..."
       "                           (forth update1-y1<...,"
@@ -568,34 +558,38 @@
       ";; when old is recursive and the :predicate input is t"
       ";; (in which case args/res-iso does not include :result):"
       "(defun new (x1 ... xn)"
-      "  old-body<...,(back y1),...,(back yp),...,"
-      "           (new ..."
-      "                (forth update1-y1<...,"
-      "                                  (back y1),"
-      "                                  ...,"
-      "                                  (back yp),"
-      "                                  ...>)"
-      "                ..."
-      "                (forth update1-yp<...,"
-      "                                  (back y1),"
-      "                                  ...,"
-      "                                  (back yp),"
-      "                                  ...>),"
-      "                ...),"
-      "           ..."
-      "           (new ..."
-      "                (forth updatem-y1<...,"
-      "                                  (back y1),"
-      "                                  ...,"
-      "                                  (back yp),"
-      "                                  ...>)"
-      "                ..."
-      "                (forth updatem-yp<...,"
-      "                                  (back y1),"
-      "                                  ...,"
-      "                                  (back yp),"
-      "                                  ...>),"
-      "                ...)>)")
+      "  (if (mbt$ (and (newp y1)"
+      "                 ..."
+      "                 (newp yp)))"
+      "      old-body<...,(back y1),...,(back yp),...,"
+      "               (new ..."
+      "                    (forth update1-y1<...,"
+      "                                      (back y1),"
+      "                                      ...,"
+      "                                      (back yp),"
+      "                                      ...>)"
+      "                    ..."
+      "                    (forth update1-yp<...,"
+      "                                      (back y1),"
+      "                                      ...,"
+      "                                      (back yp),"
+      "                                      ...>),"
+      "                    ...),"
+      "               ..."
+      "               (new ..."
+      "                    (forth updatem-y1<...,"
+      "                                      (back y1),"
+      "                                      ...,"
+      "                                      (back yp),"
+      "                                      ...>)"
+      "                    ..."
+      "                    (forth updatem-yp<...,"
+      "                                      (back y1),"
+      "                                      ...,"
+      "                                      (back yp),"
+      "                                      ...>),"
+      "                    ...)>"
+      "    nil))")
      (xdoc::p
       "Note that:")
      (xdoc::ul

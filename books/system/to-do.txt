@@ -541,3 +541,31 @@ behavior, but it is undesirable.
 
 > shows that the guard is t if we use :constrain t, but the guard is
 > (consp x) if we don't.  That disparity seems goofy.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Name the free variables of each rule in the output of :pr.}}
+
+A user may need to know the free variables for a given rule in cases
+where this information is not lexically visible, for instance, when
+the event generating the rule has let-bindings. Currently, :pr
+writes out the LHS (for :rewrite rules)/typed term
+(for :type-prescription rules)/trigger terms (for
+:forward-chaining/:linear rules) without syntactic sugar; it may be
+desirable for :pr to also list the free variables. Note, free
+variables may arise in rule classes other than the ones mentioned above.
+
+A developer taking on this task may find Matt Kaufmann's example,
+below, helpful.
+
+ACL2 !>(let ((rule (car (find-rules-of-rune
+			 '(:rewrite symbol-<-transitive)
+			 (w state)))))
+	 (set-difference-eq
+	  (union-eq (all-vars (access rewrite-rule rule :rhs))
+		    (all-vars1-lst (access rewrite-rule rule :hyps) nil))
+	  (all-vars (access rewrite-rule rule :lhs))))
+(Y)
+ACL2 !>
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>

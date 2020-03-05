@@ -15,6 +15,7 @@
 (include-book "enhanced-utilities")
 (include-book "event-landmark-names")
 (include-book "event-name-queries")
+(include-book "fresh-logical-name-with-dollars-suffix")
 (include-book "function-queries")
 (include-book "getprops")
 (include-book "included-books")

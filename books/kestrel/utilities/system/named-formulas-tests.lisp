@@ -241,10 +241,10 @@
                                       nil ; named-to-avoid
                                       (w state))))
       event))
-   (assert! (runep '(:type-prescription cons$) (w state)))
-   (assert! (rune-disabledp '(:type-prescription cons$) state)))
- (assert! (runep '(:type-prescription cons$) (w state)))
- (assert! (rune-disabledp '(:type-prescription cons$) state)))
+   (assert! (runep '(:type-prescription common-lisp::cons$) (w state)))
+   (assert! (rune-disabledp '(:type-prescription common-lisp::cons$) state)))
+ (assert! (runep '(:type-prescription common-lisp::cons$) (w state)))
+ (assert! (rune-disabledp '(:type-prescription common-lisp::cons$) state)))
 
 (must-succeed*
  (encapsulate
@@ -300,11 +300,11 @@
       `(progn ,@events)))
    (assert! (runep '(:type-prescription mythm) (w state)))
    (assert! (runep '(:rewrite mythm) (w state)))
-   (assert! (runep '(:rewrite cons$) (w state)))
+   (assert! (runep '(:rewrite common-lisp::cons$) (w state)))
    (assert! (runep '(:rewrite th$) (w state)))
    (assert! (rune-enabledp '(:type-prescription mythm) state))
    (assert! (rune-enabledp '(:rewrite mythm) state))
-   (assert! (rune-enabledp '(:rewrite cons$) state))
+   (assert! (rune-enabledp '(:rewrite common-lisp::cons$) state))
    (assert! (rune-disabledp '(:rewrite th$) state)))
  (assert! (runep '(:type-prescription mythm) (w state)))
  (assert! (runep '(:rewrite mythm) (w state)))

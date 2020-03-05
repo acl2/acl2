@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/system/install-not-norm-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -168,6 +169,8 @@
 
 (xdoc::evmac-topic-input-processing tailrec)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-check-nonrec-conditions
   ((combine-nonrec pseudo-termp)
    (nonrec? pseudo-termp "Candidate @('nonrec<x1,...,xn>') to check.")
@@ -196,6 +199,8 @@
       (if (set-equiv (all-vars combine) (list q r))
           (mv t combine)
         (mv nil nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines tailrec-find-nonrec-term-in-term/terms
   :short "Decompose @('combine<nonrec<x1,...,xn>,r>') into
@@ -269,6 +274,8 @@
                (tailrec-find-nonrec-terms
                 combine-nonrec (cdr terms-to-try) r q))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-decompose-recursive-branch ((old$ symbolp)
                                             (rec-branch pseudo-termp)
                                             ctx
@@ -326,6 +333,8 @@
                   "Unable to decompose the recursive branch ~x0 ~
                    of the target function ~x1." rec-branch old$)))
     (value (list nonrec updates combine q r))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-old (old
                              variant
@@ -438,14 +447,20 @@
         (cw "- Fresh variable for recursive call: ~x0.~%" r)))
     (value (list old$ test base nonrec updates combine q r))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defenum tailrec-variantp (:assoc :monoid :monoid-alt)
   :short "Variants of the tail recursion transformation.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker tailrec-process-variant
   (variant)
   "Process the @('variant') input."
   (((tailrec-variantp variant)
     "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-infer-domain ((combine pseudo-termp)
                               (q symbolp)
@@ -484,6 +499,8 @@
         (cw "~%")
         (cw "Inferred domain for the applicability conditions: ~x0.~%" domain)))
     domain))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-domain (domain
                                 (old$ symbolp)
@@ -593,6 +610,8 @@
                                              description t nil))))
     (value fn/lambda)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-process-wrapper-name (wrapper-name
                                       (wrapper-name-present booleanp)
                                       (new-name$ symbolp)
@@ -633,6 +652,8 @@
                    no :WRAPPER-NAME input may be supplied.")
       (value nil))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-process-wrapper-enable (wrapper-enable
                                         (wrapper-enable-present booleanp)
                                         (wrapper$ booleanp)
@@ -649,6 +670,8 @@
                   "Since the :WRAPPER input is NIL, ~
                    no :WRAPPER-enable input may be supplied.")
       (value nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-thm-name (thm-name
                                   (old$ symbolp)
@@ -698,6 +721,8 @@
                 t nil)))
     (value name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *tailrec-app-cond-names*
   :short "Names of all the applicability conditions."
   '(:domain-of-base
@@ -719,16 +744,22 @@
   (defruled no-duplicatesp-eq-of-*tailrec-app-cond-names*
     (no-duplicatesp-eq *tailrec-app-cond-names*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-app-cond-namep (x)
   :returns (yes/no booleanp)
   :short "Recognize names of the applicability conditions."
   (and (member-eq x *tailrec-app-cond-names*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist tailrec-app-cond-name-listp (x)
   (tailrec-app-cond-namep x)
   :short "Recognize true lists of names of the applicability conditions."
   :true-listp t
   :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-app-cond-present-p ((name tailrec-app-cond-namep)
                                     (variant$ tailrec-variantp)
@@ -751,6 +782,8 @@
                                        verify-guards$))
     (t (impossible)))
   :guard-hints (("Goal" :in-theory (enable tailrec-app-cond-namep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-app-cond-present-names ((variant$ tailrec-variantp)
                                         (verify-guards$ booleanp))
@@ -780,6 +813,8 @@
          (tailrec-app-cond-present-names-aux (cdr names)
                                              variant$
                                              verify-guards$))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-inputs (old
                                 variant
@@ -945,30 +980,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ tailrec-event-generation
-  :parents (tailrec-implementation)
-  :short "Event generation performed by @(tsee tailrec)."
-  :long
-  "<p>
-   Some events are generated in two slightly different forms:
-   a form that is local to the generated @(tsee encapsulate),
-   and a form that is exported from the @(tsee encapsulate).
-   Proof hints are in the former but not in the latter,
-   thus keeping the ACL2 history ``clean''.
-   </p>
-   <p>
-   Other events are generated only locally in the @(tsee encapsulate),
-   without any exported counterparts.
-   These have automatically generated fresh names:
-   the names used so far
-   are threaded through the event generation functions below.
-   </p>
-   <p>
-   Other events are only exported from the @(tsee encapsulate),
-   without any local counterparts.
-   </p>"
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-event-generation tailrec
+                                    :some-local-nonlocal-p t
+                                    :some-local-p t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-var-u ((old$ symbolp))
   :returns (u "A @(tsee symbolp).")
@@ -981,6 +997,8 @@
           applicability conditions."
   (genvar old$ "U" nil nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-var-v ((old$ symbolp))
   :returns (v "A @(tsee symbolp).")
   :mode :program
@@ -992,6 +1010,8 @@
           applicability conditions."
   (genvar old$ "V" nil nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-var-w ((old$ symbolp))
   :returns (w "A @(tsee symbolp).")
   :mode :program
@@ -1000,6 +1020,8 @@
           @(':combine-associativity-uncond')
           applicability conditions."
   (genvar old$ "W" nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-id-var-u ((old$ symbolp) (wrld plist-worldp))
   :returns (u "A @(tsee symbolp).")
@@ -1014,6 +1036,8 @@
    </p>"
   (genvar old$ "U" nil (formals old$ wrld)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-combine-op ((combine pseudo-termp)
                                 (q symbolp)
                                 (r symbolp))
@@ -1026,6 +1050,8 @@
    This is obtained by abstracting @('combine<q,r>') over @('q') and @('r').
    </p>"
   (make-lambda (list q r) combine))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-app-cond-formula ((name tailrec-app-cond-namep)
                                       (old$ symbolp)
@@ -1115,6 +1141,8 @@
                     t wrld))
       (t (impossible)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-app-cond ((name tailrec-app-cond-namep)
                               (old$ symbolp)
                               (test pseudo-termp)
@@ -1154,11 +1182,12 @@
    and adding @('$') as needed to avoid name clashes.
    </p>"
   (b* ((wrld (w state))
-       (thm-name (fresh-name-in-world-with-$s (intern-in-package-of-symbol
-                                               (symbol-name name)
-                                               (pkg-witness "APT"))
-                                              names-to-avoid
-                                              wrld))
+       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
+                                                     (symbol-name name)
+                                                     (pkg-witness "APT"))
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld))
        (formula (tailrec-gen-app-cond-formula name
                                               old$
                                               test
@@ -1187,6 +1216,8 @@
                              ,try-defthm
                              ,@progress-end?))))
     (mv event thm-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-app-conds
   ((old$ symbolp)
@@ -1286,6 +1317,8 @@
        (mv (cons event events)
            (acons name thm-name thm-names))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-domain-of-old-thm ((old$ symbolp)
                                        (test pseudo-termp)
                                        (nonrec pseudo-termp)
@@ -1314,7 +1347,10 @@
    This theorem event is local,
    because it is a lemma used to prove the exported main theorem.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'domain-of-old names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'domain-of-old
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (untranslate (apply-term* domain$
                                           (apply-term old$
                                                       (formals old$
@@ -1366,6 +1402,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-new-fn ((old$ symbolp)
                             (test pseudo-termp)
@@ -1561,6 +1599,8 @@
                  ,body)))
     (mv local-event exported-event formals)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-new-to-old-thm ((old$ symbolp)
                                     (nonrec pseudo-termp)
                                     (updates pseudo-term-listp)
@@ -1609,7 +1649,10 @@
    This theorem event is local,
    because it is a lemma used to prove the exported main theorem.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'new-to-old names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'new-to-old
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula
         (untranslate (implicate
                       (apply-term* domain$ r)
@@ -1704,6 +1747,8 @@
                         :hints ,hints))))
     (mv event name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-alpha-fn ((old$ symbolp)
                               (test pseudo-termp)
                               (updates pseudo-term-listp)
@@ -1728,7 +1773,10 @@
    <p>
    The name used for @($\\alpha$) is returned, along with the event.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'alpha names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'alpha
+                                                'function
+                                                names-to-avoid
+                                                wrld))
        (formals (formals old$ wrld))
        (body `(if ,test (list ,@formals) (,name ,@updates)))
        (wfrel (well-founded-relation old$ wrld))
@@ -1745,6 +1793,8 @@
                                   :normalize nil))
                   ,body))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-alpha-component-terms ((alpha-name symbolp)
                                            (old$ symbolp)
@@ -1781,6 +1831,8 @@
                                                 formals
                                                 (cons term terms)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-test-of-alpha-thm ((old$ symbolp)
                                        (test pseudo-termp)
                                        (alpha-name symbolp)
@@ -1808,7 +1860,10 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'test-of-alpha names-to-avoid wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'test-of-alpha
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-gen-alpha-component-terms alpha-name
                                                                  old$
@@ -1822,6 +1877,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-old-guard-of-alpha-thm ((old$ symbolp)
                                             (alpha-name symbolp)
@@ -1850,9 +1907,10 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'old-guard-of-alpha
-                                          names-to-avoid
-                                          wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'old-guard-of-alpha
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-gen-alpha-component-terms alpha-name
                                                                  old$
@@ -1870,6 +1928,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-domain-of-ground-base-thm
   ((old$ symbolp)
@@ -1894,9 +1954,10 @@
    This theorem event is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'domain-of-ground-base
-                                          names-to-avoid
-                                          wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'domain-of-ground-base
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (apply-term* domain$ base))
        (domain-of-base-thm
         (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
@@ -1916,6 +1977,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-combine-left-identity-ground-thm
   ((old$ symbolp)
@@ -1944,9 +2007,10 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-name-in-world-with-$s 'combine-left-identity-ground
-                                          names-to-avoid
-                                          wrld))
+  (b* ((name (fresh-logical-name-with-$s-suffix 'combine-left-identity-ground
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (u (tailrec-gen-var-u old$))
        (combine-op (tailrec-gen-combine-op combine q r))
        (formula (implicate (apply-term* domain$ u)
@@ -1971,6 +2035,8 @@
                         :hints ,hints))))
     (mv event name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-base-guard-thm ((old$ symbolp)
                                     (base pseudo-termp)
                                     (alpha-name symbolp)
@@ -1994,7 +2060,10 @@
    because it is just a lemma used to prove other theorems.
    </p>"
   (b* ((wrld (w state))
-       (name (fresh-name-in-world-with-$s 'base-guard names-to-avoid wrld))
+       (name (fresh-logical-name-with-$s-suffix 'base-guard
+                                                nil
+                                                names-to-avoid
+                                                wrld))
        (formula (implicate (guard old$ nil wrld)
                            (term-guard-obligation base state)))
        (formals (formals old$ wrld))
@@ -2014,6 +2083,8 @@
                         :rule-classes nil
                         :hints ,hints))))
     (mv event name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-old-as-new-term ((old$ symbolp)
                                      (test pseudo-termp)
@@ -2054,6 +2125,8 @@
                   (subst-var base r (apply-term new-name$ new-formals)))
                  (t (impossible)))
                nil wrld))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-old-to-new-thm ((old$ symbolp)
                                     (test pseudo-termp)
@@ -2109,7 +2182,10 @@
    there is no wrapper an no old-to-wrapper theorem.
    </p>"
   (b* ((name (if wrapper$
-                 (fresh-name-in-world-with-$s 'old-to-new names-to-avoid wrld)
+                 (fresh-logical-name-with-$s-suffix 'old-to-new
+                                                    nil
+                                                    names-to-avoid
+                                                    wrld)
                thm-name$))
        (formula `(equal ,(apply-term old$ (formals old$ wrld))
                         ,(tailrec-gen-old-as-new-term
@@ -2156,6 +2232,8 @@
                              `(defthm ,name
                                 ,formula))))
     (mv local-event exported-event? name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-wrapper-fn ((old$ symbolp)
                                 (test pseudo-termp)
@@ -2241,6 +2319,8 @@
                  ,body)))
     (mv local-event exported-event)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-gen-old-to-wrapper-thm ((old$ symbolp)
                                         (wrapper-name$ symbolp)
                                         (thm-name$ symbolp)
@@ -2285,6 +2365,8 @@
        (exported-event `(,macro ,thm-name$
                                 ,formula)))
     (mv local-event exported-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-gen-everything
   ((old$ symbolp)
@@ -2736,6 +2818,8 @@
                                       ctx
                                       state)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection tailrec-macro-definition
   :parents (tailrec-implementation)

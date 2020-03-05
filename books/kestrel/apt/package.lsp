@@ -34,6 +34,7 @@
                          append-lst
                          append?
                          apply-fn-if-known
+                         apply-fn-into-ifs
                          apply-term
                          apply-term*
                          apply-unary-to-terms
@@ -160,6 +161,7 @@
                          formals
                          formals+
                          fquotep
+                         fresh-logical-name-with-$s-suffix
                          fresh-name-in-world-with-$s
                          fsublis-fn-lst-simple
                          fsublis-fn-simple
@@ -200,6 +202,7 @@
                          make-lambda-term
                          make-paired-name
                          maybe-pseudo-event-formp
+                         mbt$
                          measure
                          merge-sort-lexorder
                          msg-downcase-first

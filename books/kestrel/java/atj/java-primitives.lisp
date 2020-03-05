@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "types")
 
+(include-book "../language/primitive-operations")
 (include-book "../language/primitive-conversions")
 
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
@@ -29,7 +30,7 @@
      we use ACL2 functions that correspond to
      the Java primitive values and operations:
      when ATJ encounters these specific ACL2 functions,
-     it translate them to corresponding Java constructs
+     it translates them to corresponding Java constructs
      that operate on primitive types;
      this happens only when @(':deep') is @('nil') and @(':guards') is @('t').")
    (xdoc::p
@@ -124,7 +125,23 @@
                 (eq (first x) :long)
                 (sbyte64p (second x))))
     :rule-classes nil
-    :enable long-value-p))
+    :enable long-value-p)
+
+  (defrule atj-java-float-value-representation-check
+    (equal (float-value-p x)
+           (and (tuplep 2 x)
+                (eq (first x) :float)
+                (float-value-abs-p (second x))))
+    :rule-classes nil
+    :enable float-value-p)
+
+  (defrule atj-java-double-value-representation-check
+    (equal (double-value-p x)
+           (and (tuplep 2 x)
+                (eq (first x) :double)
+                (double-value-abs-p (second x))))
+    :rule-classes nil
+    :enable double-value-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,11 +149,10 @@
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive types."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "The list only consists of the constructors for the Java primitive types
-     that ATJ currently supports,
-     namely all the primitive types except @('float') and @('double')."))
+  (xdoc::topstring-p
+   "We exclude the functions that model
+    the construction of @('float') and @('double') values,
+    because we only have abstract models of those values for now.")
   '(boolean-value
     char-value
     byte-value
@@ -152,9 +168,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are all the unary boolean and integer operations,
-     and all the conversions between primitive types.
-     Only unary operations involving floating-point values are not here."))
+    "These are all the unary
+     boolean, integer, and floating-point operations."))
   '(;; unary boolean operations:
     boolean-not
     ;; unary integer operations:
@@ -164,29 +179,11 @@
     long-minus
     int-not
     long-not
-    ;; widening conversions:
-    byte-to-short
-    byte-to-int
-    byte-to-long
-    short-to-int
-    short-to-long
-    int-to-long
-    char-to-int
-    char-to-long
-    ;; narrowing conversions:
-    short-to-byte
-    int-to-byte
-    long-to-byte
-    char-to-byte
-    int-to-short
-    long-to-short
-    char-to-short
-    long-to-int
-    short-to-char
-    int-to-char
-    long-to-char
-    ;; widening and narrowing conversions:
-    byte-to-char))
+    ;; unary floating-point operations:
+    float-plus
+    double-plus
+    float-minus
+    double-minus))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,8 +193,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are all the binary boolean and integer operations.
-     Only binary operations involving floating-point values are not here."))
+    "These are all the binary
+     boolean, integer, and floating-point operations."))
   '(;; binary boolean operations:
     boolean-and
     boolean-xor
@@ -244,7 +241,85 @@
     int-int-ushiftr
     long-long-ushiftr
     long-int-ushiftr
-    int-long-ushiftr))
+    int-long-ushiftr
+    ;; binary floating-point operations:
+    float-add
+    double-add
+    float-sub
+    double-sub
+    float-mul
+    double-mul
+    float-div
+    double-div
+    float-rem
+    double-rem
+    float-eq
+    double-eq
+    float-neq
+    double-neq
+    float-less
+    double-less
+    float-lesseq
+    double-lesseq
+    float-great
+    double-great
+    float-greateq
+    double-greateq))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-java-primitive-conversions*
+  :short "List of (the names of) the ACL2 functions that model
+          Java primitive conversions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all the conversions between primitive types."))
+  '(;; widening conversions:
+    byte-to-short
+    byte-to-int
+    byte-to-long
+    byte-to-float
+    byte-to-double
+    short-to-int
+    short-to-long
+    short-to-float
+    short-to-double
+    char-to-int
+    char-to-long
+    char-to-float
+    char-to-double
+    int-to-long
+    int-to-float
+    int-to-double
+    long-to-float
+    long-to-double
+    float-to-double
+    ;; narrowing conversions:
+    short-to-byte
+    short-to-char
+    char-to-byte
+    char-to-short
+    int-to-byte
+    int-to-short
+    int-to-char
+    long-to-byte
+    long-to-short
+    long-to-char
+    long-to-int
+    float-to-byte
+    float-to-short
+    float-to-char
+    float-to-int
+    float-to-long
+    double-to-byte
+    double-to-short
+    double-to-char
+    double-to-int
+    double-to-long
+    double-to-float
+    ;; widening and narrowing conversions:
+    byte-to-char))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -253,7 +328,8 @@
           Java primitive value constructions and operations."
   (append *atj-java-primitive-constructors*
           *atj-java-primitive-unops*
-          *atj-java-primitive-binops*)
+          *atj-java-primitive-binops*
+          *atj-java-primitive-conversions*)
   ///
   (assert-event (function-name-listp *atj-java-primitive-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primitive-fns*)))
@@ -271,7 +347,7 @@
 (defsection atj-types-for-java-primitives
   :short "ATJ types for the Java primitive constructors and operations."
 
-  ;; primitive constructors:
+  ;; constructors:
 
   (def-atj-main-function-type boolean-value (:asymbol) :jboolean)
 
@@ -393,6 +469,60 @@
 
   (def-atj-main-function-type int-long-ushiftr (:jint :jlong) :jint)
 
+  ;; floating-point operations:
+
+  (def-atj-main-function-type float-plus (:jfloat) :jfloat)
+
+  (def-atj-main-function-type double-plus (:jdouble) :jdouble)
+
+  (def-atj-main-function-type float-minus (:jfloat) :jfloat)
+
+  (def-atj-main-function-type double-minus (:jdouble) :jdouble)
+
+  (def-atj-main-function-type float-add (:jfloat :jfloat) :jfloat)
+
+  (def-atj-main-function-type double-add (:jdouble :jdouble) :jdouble)
+
+  (def-atj-main-function-type float-sub (:jfloat :jfloat) :jfloat)
+
+  (def-atj-main-function-type double-sub (:jdouble :jdouble) :jdouble)
+
+  (def-atj-main-function-type float-mul (:jfloat :jfloat) :jfloat)
+
+  (def-atj-main-function-type double-mul (:jdouble :jdouble) :jdouble)
+
+  (def-atj-main-function-type float-div (:jfloat :jfloat) :jfloat)
+
+  (def-atj-main-function-type double-div (:jdouble :jdouble) :jdouble)
+
+  (def-atj-main-function-type float-rem (:jfloat :jfloat) :jfloat)
+
+  (def-atj-main-function-type double-rem (:jdouble :jdouble) :jdouble)
+
+  (def-atj-main-function-type float-eq (:jfloat :jfloat) :jboolean)
+
+  (def-atj-main-function-type double-eq (:jdouble :jdouble) :jboolean)
+
+  (def-atj-main-function-type float-neq (:jfloat :jfloat) :jboolean)
+
+  (def-atj-main-function-type double-neq (:jdouble :jdouble) :jboolean)
+
+  (def-atj-main-function-type float-less (:jfloat :jfloat) :jboolean)
+
+  (def-atj-main-function-type double-less (:jdouble :jdouble) :jboolean)
+
+  (def-atj-main-function-type float-lesseq (:jfloat :jfloat) :jboolean)
+
+  (def-atj-main-function-type double-lesseq (:jdouble :jdouble) :jboolean)
+
+  (def-atj-main-function-type float-great (:jfloat :jfloat) :jboolean)
+
+  (def-atj-main-function-type double-great (:jdouble :jdouble) :jboolean)
+
+  (def-atj-main-function-type float-greateq (:jfloat :jfloat) :jboolean)
+
+  (def-atj-main-function-type double-greateq (:jdouble :jdouble) :jboolean)
+
   ;; widening conversions:
 
   (def-atj-main-function-type byte-to-short (:jbyte) :jshort)
@@ -401,39 +531,83 @@
 
   (def-atj-main-function-type byte-to-long (:jbyte) :jlong)
 
+  (def-atj-main-function-type byte-to-float (:jbyte) :jfloat)
+
+  (def-atj-main-function-type byte-to-double (:jbyte) :jdouble)
+
   (def-atj-main-function-type short-to-int (:jshort) :jint)
 
   (def-atj-main-function-type short-to-long (:jshort) :jlong)
 
-  (def-atj-main-function-type int-to-long (:jint) :jlong)
+  (def-atj-main-function-type short-to-float (:jshort) :jfloat)
+
+  (def-atj-main-function-type short-to-double (:jshort) :jdouble)
 
   (def-atj-main-function-type char-to-int (:jchar) :jint)
 
   (def-atj-main-function-type char-to-long (:jchar) :jlong)
 
+  (def-atj-main-function-type char-to-float (:jchar) :jfloat)
+
+  (def-atj-main-function-type char-to-double (:jchar) :jdouble)
+
+  (def-atj-main-function-type int-to-long (:jint) :jlong)
+
+  (def-atj-main-function-type int-to-float (:jint) :jfloat)
+
+  (def-atj-main-function-type int-to-double (:jint) :jdouble)
+
+  (def-atj-main-function-type long-to-float (:jlong) :jfloat)
+
+  (def-atj-main-function-type long-to-double (:jlong) :jdouble)
+
+  (def-atj-main-function-type float-to-double (:jfloat) :jdouble)
+
   ;; narrowing conversions:
 
   (def-atj-main-function-type short-to-byte (:jshort) :jbyte)
 
-  (def-atj-main-function-type int-to-byte (:jint) :jbyte)
-
-  (def-atj-main-function-type long-to-byte (:jlong) :jbyte)
+  (def-atj-main-function-type short-to-char (:jshort) :jchar)
 
   (def-atj-main-function-type char-to-byte (:jchar) :jbyte)
 
-  (def-atj-main-function-type int-to-short (:jint) :jshort)
-
-  (def-atj-main-function-type long-to-short (:jlong) :jshort)
-
   (def-atj-main-function-type char-to-short (:jchar) :jshort)
 
-  (def-atj-main-function-type long-to-int (:jlong) :jint)
+  (def-atj-main-function-type int-to-byte (:jint) :jbyte)
 
-  (def-atj-main-function-type short-to-char (:jshort) :jchar)
+  (def-atj-main-function-type int-to-short (:jint) :jshort)
 
   (def-atj-main-function-type int-to-char (:jint) :jchar)
 
+  (def-atj-main-function-type long-to-byte (:jlong) :jbyte)
+
+  (def-atj-main-function-type long-to-short (:jlong) :jshort)
+
   (def-atj-main-function-type long-to-char (:jlong) :jchar)
+
+  (def-atj-main-function-type long-to-int (:jlong) :jint)
+
+  (def-atj-main-function-type float-to-byte (:jfloat) :jbyte)
+
+  (def-atj-main-function-type float-to-short (:jfloat) :jshort)
+
+  (def-atj-main-function-type float-to-char (:jfloat) :jchar)
+
+  (def-atj-main-function-type float-to-int (:jfloat) :jint)
+
+  (def-atj-main-function-type float-to-long (:jfloat) :jlong)
+
+  (def-atj-main-function-type double-to-byte (:jdouble) :jbyte)
+
+  (def-atj-main-function-type double-to-short (:jdouble) :jshort)
+
+  (def-atj-main-function-type double-to-char (:jdouble) :jchar)
+
+  (def-atj-main-function-type double-to-int (:jdouble) :jint)
+
+  (def-atj-main-function-type double-to-long (:jdouble) :jlong)
+
+  (def-atj-main-function-type double-to-float (:jdouble) :jfloat)
 
   ;; widening and narrowing conversions:
 
