@@ -272,7 +272,7 @@
   (or (isodata-isomapp x)
       (null x))
   ///
-  (defrule isodata-maybe-isomapp-when-isomap-infop
+  (defrule isodata-maybe-isomapp-when-isomapp
     (implies (isodata-isomapp x)
              (isodata-maybe-isomapp x))))
 
@@ -286,7 +286,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist isodata-symbol-isomap-info-alistp (x)
+(std::defalist isodata-symbol-isomap-alistp (x)
   :short "Recognize alists from symbols to isomorphic mapping records."
   :key (symbolp x)
   :val (isodata-isomapp x)
@@ -676,7 +676,7 @@
                                         (verify-guards$ booleanp)
                                         (names-to-avoid symbol-listp)
                                         (wrld plist-worldp))
-  :returns (mv (arg-isomaps "An @(tsee isodata-symbol-isomap-info-alistp).")
+  :returns (mv (arg-isomaps "An @(tsee isodata-symbol-isomap-alistp).")
                (res-isomap? "An @(tsee isodata-maybe-isomapp).")
                (names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
@@ -749,7 +749,7 @@
                                                (args$ symbol-listp)
                                                (isomap isodata-isomapp)
                                                (isomap-id isodata-isomapp))
-     :returns (arg-isomaps isodata-symbol-isomap-info-alistp
+     :returns (arg-isomaps isodata-symbol-isomap-alistp
                            :hyp (and (symbol-listp formals)
                                      (isodata-isomapp isomap)
                                      (isodata-isomapp isomap-id)))
@@ -945,7 +945,7 @@
                                          symbol-listp
                                          booleanp
                                          isodata-isomapp
-                                         isodata-symbol-isomap-info-alistp
+                                         isodata-symbol-isomap-alistp
                                          isodata-maybe-isomapp
                                          symbolp
                                          booleanp
@@ -1127,7 +1127,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-oldp-of-args
-  ((arg-isomaps isodata-symbol-isomap-info-alistp))
+  ((arg-isomaps isodata-symbol-isomap-alistp))
   :returns (oldp-of-args "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the conjunction of the terms obtained by applying
@@ -1136,7 +1136,7 @@
 
   :prepwork
   ((define isodata-gen-oldp-of-args-aux
-     ((arg-isomaps isodata-symbol-isomap-info-alistp))
+     ((arg-isomaps isodata-symbol-isomap-alistp))
      :returns terms ; PSEUDO-TERM-LISTP
      :verify-guards nil
      (b* (((when (endp arg-isomaps)) nil)
@@ -1180,7 +1180,7 @@
 
 (define isodata-gen-oldp-of-rec-call-args
   ((rec-call pseudo-term-listp "A recursive call of @('old').")
-   (arg-isomaps isodata-symbol-isomap-info-alistp))
+   (arg-isomaps isodata-symbol-isomap-alistp))
   :returns (oldp-of-rec-call-args "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the conjunction of the terms obtained
@@ -1202,7 +1202,7 @@
   :prepwork
   ((define isodata-gen-oldp-of-rec-call-args-aux
      ((args pseudo-term-listp)
-      (arg-isomaps isodata-symbol-isomap-info-alistp))
+      (arg-isomaps isodata-symbol-isomap-alistp))
      :guard (= (len args) (len arg-isomaps))
      :returns oldp-of-args ; PSEUDO-TERM-LISTP
      :verify-guards nil
@@ -1219,7 +1219,7 @@
 
 (define isodata-gen-oldp-of-rec-call-args-under-contexts
   ((rec-calls-with-tests pseudo-tests-and-call-listp)
-   (arg-isomaps isodata-symbol-isomap-info-alistp))
+   (arg-isomaps isodata-symbol-isomap-alistp))
   :returns (oldp-of-rec-call-args-under-contexts "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the conjunction of the implications,
@@ -1262,7 +1262,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
-   (arg-isomaps isodata-symbol-isomap-info-alistp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    state)
   :returns (formula "An untranslated term.")
   :mode :program
@@ -1311,7 +1311,7 @@
                               (old$ symbolp)
                               (args$ symbol-listp)
                               (isomap isodata-isomapp)
-                              (arg-isomaps isodata-symbol-isomap-info-alistp)
+                              (arg-isomaps isodata-symbol-isomap-alistp)
                               (hints$ symbol-alistp)
                               (print$ evmac-input-print-p)
                               (names-to-avoid symbol-listp)
@@ -1381,7 +1381,7 @@
                                (old$ symbolp)
                                (args$ symbol-listp)
                                (isomap isodata-isomapp)
-                               (arg-isomaps isodata-symbol-isomap-info-alistp)
+                               (arg-isomaps isodata-symbol-isomap-alistp)
                                (hints$ symbol-alistp)
                                (print$ evmac-input-print-p)
                                (names-to-avoid symbol-listp)
@@ -3415,7 +3415,7 @@
    (args$ symbol-listp)
    (res$ booleanp)
    (isomap isodata-isomapp)
-   (arg-isomaps isodata-symbol-isomap-info-alistp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
    (predicate$ booleanp)
    (new-name$ symbolp)
