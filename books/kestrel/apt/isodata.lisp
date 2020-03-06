@@ -1101,6 +1101,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-oldp-of-args
+  ((arg-isomaps isodata-symbol-isomap-info-alistp))
+  :returns (oldp-of-args "A @(tsee pseudo-termp).")
+  :verify-guards nil
+  :short "Generate the conjunction of the terms obtained by applying
+          the old representation predicates to the corresponding formals."
+  (conjoin (isodata-gen-oldp-of-args-aux arg-isomaps))
+
+  :prepwork
+  ((define isodata-gen-oldp-of-args-aux
+     ((arg-isomaps isodata-symbol-isomap-info-alistp))
+     :returns terms ; PSEUDO-TERM-LISTP
+     :verify-guards nil
+     (b* (((when (endp arg-isomaps)) nil)
+          (formal (caar arg-isomaps))
+          (isomap (cdar arg-isomaps))
+          (oldp (isodata-isomap-info->oldp isomap))
+          (term (apply-term oldp (list formal)))
+          (terms (isodata-gen-oldp-of-args-aux (cdr arg-isomaps))))
+       (cons term terms)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-get-rec-call-args-transformed
   ((rec-call pseudo-termp "A recursive call of @('old').")
    (old$ symbolp)
@@ -1130,12 +1153,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-oldp-of-rec-call
+(define isodata-gen-oldp-of-rec-call-args
   ((rec-call pseudo-term-listp "A recursive call of @('old').")
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (isomap isodata-isomap-infop)
-   (wrld plist-worldp))
+   (arg-isomaps isodata-symbol-isomap-info-alistp))
   :returns (oldp-of-rec-call-args "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the conjunction of the terms obtained
@@ -1151,20 +1171,30 @@
     "     (oldp updateJ-yp<x1,...,xn>))")
    (xdoc::p
     "of the @(':oldp-of-rec-call-args') applicability condition."))
-  (b* ((oldp$ (isodata-isomap-info->oldp isomap))
-       (rec-call-args
-        (isodata-get-rec-call-args-transformed
-         rec-call old$ args$ wrld)))
-    (conjoin (apply-unary-to-terms oldp$ rec-call-args))))
+  (conjoin
+   (isodata-gen-oldp-of-rec-call-args-aux (fargs rec-call) arg-isomaps))
+
+  :prepwork
+  ((define isodata-gen-oldp-of-rec-call-args-aux
+     ((args pseudo-term-listp)
+      (arg-isomaps isodata-symbol-isomap-info-alistp))
+     :guard (= (len args) (len arg-isomaps))
+     :returns oldp-of-args ; PSEUDO-TERM-LISTP
+     :verify-guards nil
+     (b* (((when (endp args)) nil)
+          (arg (car args))
+          (isomap (cdar arg-isomaps))
+          (oldp (isodata-isomap-info->oldp isomap))
+          (term (apply-term oldp (list arg)))
+          (terms (isodata-gen-oldp-of-rec-call-args-aux (cdr args)
+                                                        (cdr arg-isomaps))))
+       (cons term terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-oldp-of-rec-calls-under-contexts
+(define isodata-gen-oldp-of-rec-call-args-under-contexts
   ((rec-calls-with-tests pseudo-tests-and-call-listp)
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (isomap isodata-isomap-infop)
-   (wrld plist-worldp))
+   (arg-isomaps isodata-symbol-isomap-info-alistp))
   :returns (oldp-of-rec-call-args-under-contexts "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the conjunction of the implications,
@@ -1193,25 +1223,22 @@
          (rec-call (access tests-and-call tests-and-call :call))
          (context (conjoin tests))
          (rest (cdr rec-calls-with-tests)))
-      (conjoin2 (implicate context
-                           (isodata-gen-oldp-of-rec-call rec-call
-                                                         old$
-                                                         args$
-                                                         isomap
-                                                         wrld))
-                (isodata-gen-oldp-of-rec-calls-under-contexts rest
-                                                              old$
-                                                              args$
-                                                              isomap
-                                                              wrld)))))
+      (conjoin2
+       (implicate context
+                  (isodata-gen-oldp-of-rec-call-args rec-call
+                                                     arg-isomaps))
+       (isodata-gen-oldp-of-rec-call-args-under-contexts rest
+                                                         arg-isomaps)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-app-cond-formula ((app-cond isodata-app-cond-keywordp)
-                                      (old$ symbolp)
-                                      (args$ symbol-listp)
-                                      (isomap isodata-isomap-infop)
-                                      state)
+(define isodata-gen-app-cond-formula
+  ((app-cond isodata-app-cond-keywordp)
+   (old$ symbolp)
+   (args$ symbol-listp)
+   (isomap isodata-isomap-infop)
+   (arg-isomaps isodata-symbol-isomap-info-alistp)
+   state)
   :returns (formula "An untranslated term.")
   :mode :program
   :short "Generate the formula of the specified applicability condition."
@@ -1231,14 +1258,11 @@
       (:oldp-of-rec-call-args
        (untranslate
         (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
-             (oldp-of-args (apply-unary-to-terms oldp$ args$)))
-          (implicate (conjoin oldp-of-args)
-                     (isodata-gen-oldp-of-rec-calls-under-contexts
+             (oldp-of-args (isodata-gen-oldp-of-args arg-isomaps)))
+          (implicate oldp-of-args
+                     (isodata-gen-oldp-of-rec-call-args-under-contexts
                       rec-calls-with-tests
-                      old$
-                      args$
-                      isomap
-                      wrld)))
+                      arg-isomaps)))
         t wrld))
       (:old-guard
        (untranslate
@@ -1262,6 +1286,7 @@
                               (old$ symbolp)
                               (args$ symbol-listp)
                               (isomap isodata-isomap-infop)
+                              (arg-isomaps isodata-symbol-isomap-info-alistp)
                               (hints$ symbol-alistp)
                               (print$ evmac-input-print-p)
                               (names-to-avoid symbol-listp)
@@ -1304,6 +1329,7 @@
                                               old$
                                               args$
                                               isomap
+                                              arg-isomaps
                                               state))
        (hints (cdr (assoc-eq app-cond hints$)))
        (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
@@ -1330,6 +1356,7 @@
                                (old$ symbolp)
                                (args$ symbol-listp)
                                (isomap isodata-isomap-infop)
+                               (arg-isomaps isodata-symbol-isomap-info-alistp)
                                (hints$ symbol-alistp)
                                (print$ evmac-input-print-p)
                                (names-to-avoid symbol-listp)
@@ -1347,6 +1374,7 @@
                                                   old$
                                                   args$
                                                   isomap
+                                                  arg-isomaps
                                                   hints$
                                                   print$
                                                   names-to-avoid
@@ -1357,6 +1385,7 @@
                                                      old$
                                                      args$
                                                      isomap
+                                                     arg-isomaps
                                                      hints$
                                                      print$
                                                      names-to-avoid
@@ -3361,6 +3390,7 @@
    (args$ symbol-listp)
    (res$ booleanp)
    (isomap isodata-isomap-infop)
+   (arg-isomaps isodata-symbol-isomap-info-alistp)
    (predicate$ booleanp)
    (new-name$ symbolp)
    (new-enable$ booleanp)
@@ -3445,6 +3475,7 @@
                                old$
                                args$
                                isomap
+                               arg-isomaps
                                hints$
                                print$
                                names-to-avoid
@@ -3610,7 +3641,7 @@
                   args$
                   res$
                   isomap
-                  & ; ARG-ISOMAPS
+                  arg-isomaps
                   & ; RES-ISOMAP?
                   new-name$
                   new-enable$
@@ -3639,6 +3670,7 @@
                                       args$
                                       res$
                                       isomap
+                                      arg-isomaps
                                       predicate
                                       new-name$
                                       new-enable$
