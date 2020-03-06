@@ -1257,50 +1257,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-app-cond-formula
-  ((app-cond isodata-app-cond-keywordp)
-   (old$ symbolp)
-   (args$ symbol-listp)
-   (isomap isodata-isomapp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   state)
+(define isodata-gen-app-cond-formula ((app-cond isodata-app-cond-keywordp)
+                                      (old$ symbolp)
+                                      (arg-isomaps isodata-symbol-isomap-alistp)
+                                      (res-isomap? isodata-maybe-isomapp)
+                                      state)
   :returns (formula "An untranslated term.")
   :mode :program
   :short "Generate the formula of the specified applicability condition."
-  (b* ((wrld (w state))
-       (oldp$ (isodata-isomap->oldp isomap)))
+  (b* ((wrld (w state)))
     (case app-cond
       (:oldp-of-old
        (untranslate
-        (implicate (conjoin (apply-unary-to-terms oldp$ args$))
-                   `(,oldp$ (,old$ ,@(formals old$ wrld))))
+        (b* ((oldp-of-args (isodata-gen-oldp-of-args arg-isomaps))
+             (res-oldp (isodata-isomap->oldp res-isomap?)))
+          (implicate oldp-of-args
+                     `(,res-oldp (,old$ ,@(formals old$ wrld)))))
         t wrld))
       (:oldp-when-old
        (untranslate
-        (implicate `(,old$ ,@(formals old$ wrld))
-                   (conjoin (apply-unary-to-terms oldp$ args$)))
+        (b* ((oldp-of-args (isodata-gen-oldp-of-args arg-isomaps)))
+          (implicate `(,old$ ,@(formals old$ wrld))
+                     oldp-of-args))
         t wrld))
       (:oldp-of-rec-call-args
        (untranslate
-        (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
-             (oldp-of-args (isodata-gen-oldp-of-args arg-isomaps)))
+        (b* ((oldp-of-args (isodata-gen-oldp-of-args arg-isomaps)))
           (implicate oldp-of-args
                      (isodata-gen-oldp-of-rec-call-args-under-contexts
-                      rec-calls-with-tests
+                      (recursive-calls old$ wrld)
                       arg-isomaps)))
         t wrld))
       (:old-guard
        (untranslate
         (b* ((old-guard-formula (uguard old$ wrld))
-             (oldp-of-args (apply-unary-to-terms oldp$ args$)))
+             (oldp-of-args (isodata-gen-oldp-of-args arg-isomaps)))
           (implicate old-guard-formula
-                     (conjoin oldp-of-args)))
+                     oldp-of-args))
         t wrld))
       (:old-guard-pred
        (untranslate
         (b* ((old-guard-formula (uguard old$ wrld))
-             (oldp-of-args (apply-unary-to-terms oldp$ args$)))
-          (implicate (conjoin oldp-of-args)
+             (oldp-of-args (isodata-gen-oldp-of-args arg-isomaps)))
+          (implicate oldp-of-args
                      old-guard-formula))
         t wrld))
       (t (impossible)))))
@@ -1309,9 +1308,8 @@
 
 (define isodata-gen-app-cond ((app-cond isodata-app-cond-keywordp)
                               (old$ symbolp)
-                              (args$ symbol-listp)
-                              (isomap isodata-isomapp)
                               (arg-isomaps isodata-symbol-isomap-alistp)
+                              (res-isomap? isodata-maybe-isomapp)
                               (hints$ symbol-alistp)
                               (print$ evmac-input-print-p)
                               (names-to-avoid symbol-listp)
@@ -1352,9 +1350,8 @@
                                                     wrld))
        (formula (isodata-gen-app-cond-formula app-cond
                                               old$
-                                              args$
-                                              isomap
                                               arg-isomaps
+                                              res-isomap?
                                               state))
        (hints (cdr (assoc-eq app-cond hints$)))
        (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
@@ -1379,9 +1376,8 @@
 
 (define isodata-gen-app-conds ((app-conds isodata-app-cond-keyword-listp)
                                (old$ symbolp)
-                               (args$ symbol-listp)
-                               (isomap isodata-isomapp)
                                (arg-isomaps isodata-symbol-isomap-alistp)
+                               (res-isomap? isodata-maybe-isomapp)
                                (hints$ symbol-alistp)
                                (print$ evmac-input-print-p)
                                (names-to-avoid symbol-listp)
@@ -1397,9 +1393,8 @@
        (app-cond (car app-conds))
        ((mv event thm-name) (isodata-gen-app-cond app-cond
                                                   old$
-                                                  args$
-                                                  isomap
                                                   arg-isomaps
+                                                  res-isomap?
                                                   hints$
                                                   print$
                                                   names-to-avoid
@@ -1408,9 +1403,8 @@
        (names-to-avoid (cons thm-name names-to-avoid))
        ((mv events thm-names) (isodata-gen-app-conds (cdr app-conds)
                                                      old$
-                                                     args$
-                                                     isomap
                                                      arg-isomaps
+                                                     res-isomap?
                                                      hints$
                                                      print$
                                                      names-to-avoid
@@ -3498,9 +3492,8 @@
             app-cond-thm-names)
         (isodata-gen-app-conds app-conds
                                old$
-                               args$
-                               isomap
                                arg-isomaps
+                               res-isomap?
                                hints$
                                print$
                                names-to-avoid
