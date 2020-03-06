@@ -665,6 +665,7 @@
                                         (args$ symbol-listp)
                                         (res$ booleanp)
                                         (isomap isodata-isomap-infop)
+                                        (verify-guards$ booleanp)
                                         (names-to-avoid symbol-listp)
                                         (wrld plist-worldp))
   :returns (mv (arg-isomaps "An @(tsee isodata-symbol-isomap-info-alistp).")
@@ -707,7 +708,8 @@
             forth-injective-id
             back-injective-id
             names-to-avoid)
-        (isodata-fresh-defiso-thm-names iso-id t names-to-avoid wrld))
+        (isodata-fresh-defiso-thm-names
+         iso-id verify-guards$ names-to-avoid wrld))
        (isomap-id (make-isodata-isomap-info
                    :isoname iso-id
                    :localp t
@@ -970,7 +972,7 @@
          args/res-iso old$ verify-guards$ names-to-avoid ctx state))
        ((mv arg-isomaps res-isomap? names-to-avoid)
         (isodata-reprocess-args/res-iso
-         old$ args$ res$ isomap names-to-avoid wrld))
+         old$ args$ res$ isomap verify-guards$ names-to-avoid wrld))
        ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
