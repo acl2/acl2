@@ -23,6 +23,7 @@
 (include-book "fty/top")
 (include-book "java/top")
 (include-book "prime-fields/top")
+(include-book "simpl-imp/top")
 (include-book "soft/top")
 (include-book "std/top")
 (include-book "utilities/top")

@@ -183,8 +183,8 @@
                          induction-machine
                          induction-machine-for-fn
                          install-not-norm
-                         install-not-norm-event
                          install-not-normalized
+                         install-not-normalized-event
                          install-not-normalized-name
                          io?
                          irecursivep

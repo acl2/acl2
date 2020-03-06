@@ -334,12 +334,44 @@
   (assert-event (function-name-listp *atj-java-primitive-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primitive-fns*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primitive-constructor-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 function symbols that model
+          the construction of Java primitive types."
+  (and (member-eq fn *atj-java-primitive-constructors*) t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-fn-p ((fn symbolp))
+(define atj-java-primitive-unop-p (fn)
   :returns (yes/no booleanp)
-  :short "Check if an ACL2 funcion (symbol) is one that models
-          Java primitive value constructions and operations."
+  :short "Recognize the ACL2 function symbols that model
+          the Java primitive unary operations."
+  (and (member-eq fn *atj-java-primitive-unops*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primitive-binop-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 function symbols that model
+          the Java primitive binary operations."
+  (and (member-eq fn *atj-java-primitive-binops*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primitive-conversion-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 function symbols that model
+          the Java primitive conversions."
+  (and (member-eq fn *atj-java-primitive-conversions*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primitive-fn-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 funcion (ymbols that model
+          the Java primitive value constructions, operations, and conversions."
   (and (member-eq fn *atj-java-primitive-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

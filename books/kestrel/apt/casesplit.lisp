@@ -1117,10 +1117,10 @@
                                     app-cond-thm-names
                                     wrld))
        ((mv new-unnorm-event
-            new-unnorm-name) (install-not-norm-event new-name$
-                                                     t
-                                                     names-to-avoid
-                                                     wrld))
+            new-unnorm-name) (install-not-normalized-event new-name$
+                                                           t
+                                                           names-to-avoid
+                                                           wrld))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event) (casesplit-gen-old-to-new-thm
                                             old$

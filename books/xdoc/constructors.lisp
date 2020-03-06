@@ -1147,7 +1147,8 @@
      This XDOC constructor obviates the need to type @(':href'),
      compared to the primitive constructor @(tsee a):
      the first argument is always the URL,
-     and the remaining arguments form the text."))
+     and the remaining arguments form the text.")
+   (xdoc::@def "ahref"))
 
   (defmacro ahref (href &rest text)
     `(a :href ,href ,@text)))

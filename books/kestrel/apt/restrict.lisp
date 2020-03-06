@@ -1044,50 +1044,50 @@
                                   ,(repeat (arity old$ wrld) '*) => *))))
        ((mv app-cond-thm-events
             app-cond-thm-names) (restrict-gen-app-conds old$
-                                                        restriction$
-                                                        verify-guards$
-                                                        hints$
-                                                        print$
-                                                        app-cond-present-names
-                                                        stub?
-                                                        names-to-avoid
-                                                        ctx
-                                                        state))
+            restriction$
+            verify-guards$
+            hints$
+            print$
+            app-cond-present-names
+            stub?
+            names-to-avoid
+            ctx
+            state))
        (names-to-avoid (append names-to-avoid
                                (strip-cdrs app-cond-thm-names)))
        ((mv old-unnorm-event
-            old-unnorm-name) (install-not-norm-event old$
-                                                     t
-                                                     names-to-avoid
-                                                     wrld))
+            old-unnorm-name) (install-not-normalized-event old$
+            t
+            names-to-avoid
+            wrld))
        (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event) (restrict-gen-new-fn
-                                    old$
-                                    restriction$
-                                    undefined$
-                                    new-name$
-                                    new-enable$
-                                    non-executable$
-                                    verify-guards$
-                                    wrld))
+            old$
+            restriction$
+            undefined$
+            new-name$
+            new-enable$
+            non-executable$
+            verify-guards$
+            wrld))
        ((mv new-unnorm-event
-            new-unnorm-name) (install-not-norm-event new-name$
-                                                     t
-                                                     names-to-avoid
-                                                     wrld))
+            new-unnorm-name) (install-not-normalized-event new-name$
+            t
+            names-to-avoid
+            wrld))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event) (restrict-gen-old-to-new-thm
-                                            old$
-                                            restriction$
-                                            new-name$
-                                            thm-name$
-                                            thm-enable$
-                                            app-cond-thm-names
-                                            stub?
-                                            old-unnorm-name
-                                            new-unnorm-name
-                                            wrld))
+            old$
+            restriction$
+            new-name$
+            thm-name$
+            thm-enable$
+            app-cond-thm-names
+            stub?
+            old-unnorm-name
+            new-unnorm-name
+            wrld))
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
                                           (restrict-gen-new-fn-verify-guards

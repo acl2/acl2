@@ -775,7 +775,7 @@
       :combine-associativity-uncond) (eq variant$ :monoid-alt))
     ((:combine-left-identity
       :combine-right-identity) (if (member-eq variant$ '(:monoid :monoid-alt))
-                                   t nil))
+      t nil))
     ((:domain-guard
       :combine-guard) verify-guards$)
     (:domain-of-nonrec-when-guard (and (eq variant$ :monoid-alt)
@@ -1587,8 +1587,8 @@
                                   :hints ,termination-hints
                                   :guard ,guard
                                   :verify-guards ,verify-guards$
-                             ,@(and verify-guards$
-                                    (list :guard-hints guard-hints))))
+                                  ,@(and verify-guards$
+                                         (list :guard-hints guard-hints))))
                   ,body)))
        (exported-event
         `(,macro ,new-name$ (,@formals)
@@ -2309,8 +2309,8 @@
           (,macro ,wrapper-name$ (,@formals)
                   (declare (xargs :guard ,guard
                                   :verify-guards ,verify-guards$
-                             ,@(and verify-guards$
-                                    (list :guard-hints guard-hints))))
+                                  ,@(and verify-guards$
+                                         (list :guard-hints guard-hints))))
                   ,body)))
        (exported-event
         `(,macro ,wrapper-name$ (,@formals)
@@ -2463,84 +2463,84 @@
                                thm-name$)))
        ((mv app-cond-thm-events
             app-cond-thm-names) (tailrec-gen-app-conds old$
-                                                       test
-                                                       base
-                                                       nonrec
-                                                       combine
-                                                       q
-                                                       r
-                                                       variant$
-                                                       domain$
-                                                       verify-guards$
-                                                       hints$
-                                                       print$
-                                                       app-cond-present-names
-                                                       names-to-avoid
-                                                       ctx
-                                                       state))
+            test
+            base
+            nonrec
+            combine
+            q
+            r
+            variant$
+            domain$
+            verify-guards$
+            hints$
+            print$
+            app-cond-present-names
+            names-to-avoid
+            ctx
+            state))
        (names-to-avoid (append names-to-avoid
                                (strip-cdrs app-cond-thm-names)))
        ((mv old-unnorm-event
-            old-unnorm-name) (install-not-norm-event old$
-                                                     t
-                                                     names-to-avoid
-                                                     wrld))
+            old-unnorm-name) (install-not-normalized-event old$
+            t
+            names-to-avoid
+            wrld))
        (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv domain-of-old-event
             domain-of-old-name) (tailrec-gen-domain-of-old-thm
-                                 old$ test nonrec updates
-                                 variant$ domain$
-                                 names-to-avoid
-                                 app-cond-thm-names
-                                 old-unnorm-name
-                                 wrld))
+            old$ test nonrec updates
+            variant$ domain$
+            names-to-avoid
+            app-cond-thm-names
+            old-unnorm-name
+            wrld))
        (names-to-avoid (cons domain-of-old-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event
             new-formals) (tailrec-gen-new-fn
-                          old$
-                          test base nonrec updates combine q r
-                          variant$ domain$
-                          new-name$ new-enable$
-                          non-executable$ verify-guards$
-                          app-cond-thm-names
-                          wrld))
+            old$
+            test base nonrec updates combine q r
+            variant$ domain$
+            new-name$ new-enable$
+            non-executable$ verify-guards$
+            app-cond-thm-names
+            wrld))
        ((mv new-unnorm-event
-            new-unnorm-name) (install-not-norm-event new-name$
-                                                     t
-                                                     names-to-avoid
-                                                     wrld))
+            new-unnorm-name) (install-not-normalized-event new-name$
+            t
+            names-to-avoid
+            wrld))
        (names-to-avoid (cons new-unnorm-name names-to-avoid))
        ((mv new-to-old-event
             new-to-old-name) (tailrec-gen-new-to-old-thm
-                              old$ nonrec updates combine q r
-                              variant$ domain$
-                              new-name$
-                              names-to-avoid
-                              app-cond-thm-names
-                              old-unnorm-name
-                              domain-of-old-name
-                              new-formals
-                              new-unnorm-name
-                              wrld))
+            old$ nonrec updates combine q r
+            variant$ domain$
+            new-name$
+            names-to-avoid
+            app-cond-thm-names
+            old-unnorm-name
+            domain-of-old-name
+            new-formals
+            new-unnorm-name
+            wrld))
        (names-to-avoid (cons new-to-old-name names-to-avoid))
        (gen-alpha (member-eq variant$ '(:monoid :monoid-alt)))
        ((mv alpha-event?
             alpha-name?) (if gen-alpha
-                             (tailrec-gen-alpha-fn
-                              old$ test updates
-                              names-to-avoid wrld)
-                           (mv nil nil)))
+            (tailrec-gen-alpha-fn
+             old$ test updates
+             names-to-avoid wrld)
+            (mv nil nil)))
        (names-to-avoid (if gen-alpha
                            (cons alpha-name? names-to-avoid)
                          names-to-avoid))
        ((mv test-of-alpha-event?
             test-of-alpha-name?) (if gen-alpha
-                                     (tailrec-gen-test-of-alpha-thm
-                                      old$ test
-                                      alpha-name?
-                                      names-to-avoid wrld)
-                                   (mv nil nil)))
+            (tailrec-gen-test-of-alpha-thm
+             old$ test
+             alpha-name?
+             names-to-avoid wrld)
+            (mv nil nil)))
        (names-to-avoid (if gen-alpha
                            (cons test-of-alpha-name? names-to-avoid)
                          names-to-avoid))
@@ -2582,12 +2582,12 @@
        ((mv base-guard-event?
             base-guard-name?) (if (and gen-alpha
                                        verify-guards$)
-                                  (tailrec-gen-base-guard-thm
-                                   old$ base
-                                   alpha-name? test-of-alpha-name?
-                                   old-guard-of-alpha-name?
-                                   names-to-avoid state)
-                                (mv nil nil)))
+            (tailrec-gen-base-guard-thm
+             old$ base
+             alpha-name? test-of-alpha-name?
+             old-guard-of-alpha-name?
+             names-to-avoid state)
+            (mv nil nil)))
        (names-to-avoid (if (and gen-alpha
                                 verify-guards$)
                            (cons base-guard-name? names-to-avoid)
@@ -2595,54 +2595,54 @@
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event?
             old-to-new-name) (tailrec-gen-old-to-new-thm
-                              old$ test base nonrec updates r
-                              variant$
-                              new-name$
-                              wrapper$
-                              thm-name$
-                              names-to-avoid
-                              app-cond-thm-names
-                              domain-of-old-name
-                              domain-of-ground-base-name?
-                              combine-left-identity-ground-name?
-                              new-formals
-                              new-to-old-name
-                              wrld))
+            old$ test base nonrec updates r
+            variant$
+            new-name$
+            wrapper$
+            thm-name$
+            names-to-avoid
+            app-cond-thm-names
+            domain-of-old-name
+            domain-of-ground-base-name?
+            combine-left-identity-ground-name?
+            new-formals
+            new-to-old-name
+            wrld))
        (names-to-avoid (cons old-to-new-name names-to-avoid))
        ((mv wrapper-fn-local-event?
             wrapper-fn-exported-event?) (if wrapper$
-                                            (tailrec-gen-wrapper-fn
-                                             old$
-                                             test base nonrec updates r
-                                             variant$
-                                             new-name$
-                                             wrapper-name$ wrapper-enable$
-                                             non-executable$ verify-guards$
-                                             app-cond-thm-names
-                                             domain-of-ground-base-name?
-                                             base-guard-name?
-                                             new-formals
-                                             wrld)
-                                          (mv nil nil)))
+            (tailrec-gen-wrapper-fn
+             old$
+             test base nonrec updates r
+             variant$
+             new-name$
+             wrapper-name$ wrapper-enable$
+             non-executable$ verify-guards$
+             app-cond-thm-names
+             domain-of-ground-base-name?
+             base-guard-name?
+             new-formals
+             wrld)
+            (mv nil nil)))
        ((mv wrapper-unnorm-event?
             wrapper-unnorm-name?) (if wrapper$
-                                      (install-not-norm-event wrapper-name$
-                                                              t
-                                                              names-to-avoid
-                                                              wrld)
-                                    (mv nil nil)))
+            (install-not-normalized-event wrapper-name$
+                                          t
+                                          names-to-avoid
+                                          wrld)
+            (mv nil nil)))
        ((mv
          old-to-wrapper-thm-local-event?
          old-to-wrapper-thm-exported-event?) (if wrapper$
-                                                 (tailrec-gen-old-to-wrapper-thm
-                                                  old$
-                                                  wrapper-name$
-                                                  thm-name$
-                                                  thm-enable$
-                                                  old-to-new-name
-                                                  wrapper-unnorm-name?
-                                                  wrld)
-                                               (mv nil nil)))
+         (tailrec-gen-old-to-wrapper-thm
+          old$
+          wrapper-name$
+          thm-name$
+          thm-enable$
+          old-to-new-name
+          wrapper-unnorm-name?
+          wrld)
+         (mv nil nil)))
        (new-fn-numbered-name-event `(add-numbered-name-in-use
                                      ,new-name$))
        (wrapper-fn-numbered-name-event? (if wrapper$
