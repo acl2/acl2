@@ -138,6 +138,8 @@ my $cache_read_only = 0;
 my $cache_write_only = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
 my $params_file = 0;
+my $print_relocs = 0;
+
 # Remove trailing slash from and canonicalize bin_dir
 if ($bin_dir) {
     my $cbin_dir = canonical_path(remove_trailing_slash($bin_dir));
@@ -517,6 +519,14 @@ COMMAND LINE OPTIONS
           If this option is set then cert_pl_exclude files are ignored; see the
           section CERT_PL_EXCLUDE FILES above.
 
+   --print-relocs
+          Causes relocation stub warnings to be printed even if --quiet.  By
+          default cert.pl prints warnings about "relocation stubs", which are
+          books containing the \'reloc_stub\' cert_param, signifying that they
+          are placeholders for books that have been refactored away or moved to
+          new locations.  Normally --quiet suppresses these warnings, but this
+          option causes them to print anyway.
+
 USEFUL ENVIRONMENT VARIABLES
 
     TIME_CERT (default: "")
@@ -674,6 +684,7 @@ GetOptions ("help|h"               => sub {
             "pcert-all"            =>\$certlib_opts{"pcert_all"},
             "include-excludes"     =>\$certlib_opts{"include_excludes"},
             "target-ext|e=s"       => \$target_ext,
+            "print-relocs"         => \$print_relocs,
             "<>"                   => sub { push(@user_targets, shift); },
             );
 
@@ -909,20 +920,20 @@ foreach my $cert (@certs) {
         }
     }
 }
-if (%stubs && ! $quiet) {
-    # Print relocation warnings to STDOUT.  Skipped when $quiet.
-    print "Relocation warnings:\n";
-    print "--------------------------\n";
+if (%stubs && (! $quiet || $print_relocs)) {
+    # Print relocation warnings to STDERR.  Skipped when $quiet.
+    print STDERR "Relocation warnings:\n";
+    print STDERR "--------------------------\n";
     my @stubbooks = sort(keys %stubs);
     foreach my $stub (@stubbooks) {
-        print "Stub file:       $stub\n";
+        print STDERR "Stub file:       $stub\n";
         # note: assumes each stub file includes only one book.
-        print "relocated to:    ${$depdb->cert_bookdeps($stub)}[0]\n";
-        print "is included by:\n";
+        print STDERR "relocated to:    ${$depdb->cert_bookdeps($stub)}[0]\n";
+        print STDERR "is included by:\n";
         foreach my $cert (sort(@{$stubs{$stub}})) {
-            print "                 $cert\n";
+            print STDERR "                 $cert\n";
         }
-        print "--------------------------\n";
+        print STDERR "--------------------------\n";
     }
 }
 

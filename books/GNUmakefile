@@ -268,7 +268,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
@@ -286,6 +286,7 @@ REBUILD_MAKEFILE_DEPS := $(shell \
     time ($(EXPORT_SHELL_ENV) \
           $(BUILD_DIR)/cert.pl \
           --quiet \
+          --print-relocs \
           $(PCERT_OPT) \
           --static-makefile $(BUILD_DIR)/Makefile-deps \
           --cache $(BUILD_DIR)/Makefile-cache \
