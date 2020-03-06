@@ -1,6 +1,6 @@
 ; System Utilities -- Non-Normalized Definition Installation Event -- Tests
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "install-not-norm-event")
+(include-book "install-not-normalized-event")
 (include-book "world-queries")
 (include-book "kestrel/utilities/testing" :dir :system)
 
