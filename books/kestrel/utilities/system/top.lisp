@@ -11,7 +11,8 @@
 (in-package "ACL2")
 
 (include-book "fresh-names")
-(include-book "install-not-norm-event")
+(include-book "install-not-normalized-dollar")
+(include-book "install-not-normalized-event")
 (include-book "named-formulas")
 (include-book "numbered-names")
 (include-book "paired-names")
