@@ -1944,7 +1944,10 @@ we've seen before with a mask that overlaps with that one.</p>"
        (updates-vals (svex-alist-vals updates))
        (- (cw "Updates count: ~x0~%" (svexlist-opcount updates-vals)))
        (updates-vals
-        (if rewrite (cwtime (svexlist-rewrite-top updates-vals :verbosep t) :mintime 0) updates-vals))
+        ;; (if rewrite (cwtime (svexlist-rewrite-top updates-vals :verbosep t) :mintime 0) updates-vals)
+        ;; Note: it seems quite important to rewrite here or else
+        ;; svexlist-compose-to-fix-rec2 takes a very long time.
+        (cwtime (svexlist-rewrite-top updates-vals :verbosep t) :mintime 0))
        (- (cw "Updates count after rewrite: ~x0~%" (svexlist-opcount updates-vals)))
        (masks (svexlist-mask-alist updates-vals))
        ;; (updates-vals (cwtime (svexlist-rewrite updates-vals masks) :mintime 1))
