@@ -182,8 +182,8 @@
                          impossible
                          induction-machine
                          induction-machine-for-fn
-                         install-not-norm
                          install-not-normalized
+                         install-not-normalized$
                          install-not-normalized-event
                          install-not-normalized-name
                          io?
