@@ -278,6 +278,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist isodata-isomap-listp (x)
+  :short "Recognize true lists of isomorphic mapping records."
+  (isodata-isomapp x)
+  :true-listp t
+  :elementp-of-nil nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defalist isodata-symbol-isomap-info-alistp (x)
   :short "Recognize alists from symbols to isomorphic mapping records."
   :key (symbolp x)
@@ -1021,7 +1029,7 @@
                             (print$ evmac-input-print-p))
   :guard (isodata-isomap->localp isomap)
   :returns (event pseudo-event-formp)
-  :short "Generate the @(tsee defiso) when @('iso') is not a name."
+  :short "Generate a local @(tsee defiso)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1038,7 +1046,10 @@
      But we want to print errors.
      So we pass @(':error') as the @(':print') input.
      However, if @(tsee isodata)'s @(':print') input is @(':all'),
-     the we use @(':all') for @(tsee defiso)'s @(':print') input as well."))
+     the we use @(':all') for @(tsee defiso)'s @(':print') input as well.")
+   (xdoc::p
+    "This is also used for the identity isomorphic mapping,
+     which is also locally generated."))
   (b* (((isodata-isomap isomap) isomap)
        (name isomap.isoname)
        (doma isomap.oldp)
@@ -1068,6 +1079,20 @@
         :thm-names ,thm-names
         :hints ,hints
         :print ,print))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-defisos ((isomaps isodata-isomap-listp)
+                             (verify-guards$ booleanp)
+                             (print$ evmac-input-print-p))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the local @(tsee defiso)s from a list."
+  (b* (((when (endp isomaps)) nil)
+       (isomap (car isomaps)))
+    (if (isodata-isomap->localp isomap)
+        (cons (isodata-gen-defiso isomap verify-guards$ print$)
+              (isodata-gen-defisos (cdr isomaps) verify-guards$ print$))
+      (isodata-gen-defisos (cdr isomaps) verify-guards$ print$))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3391,6 +3416,7 @@
    (res$ booleanp)
    (isomap isodata-isomapp)
    (arg-isomaps isodata-symbol-isomap-info-alistp)
+   (res-isomap? isodata-maybe-isomapp)
    (predicate$ booleanp)
    (new-name$ symbolp)
    (new-enable$ booleanp)
@@ -3465,10 +3491,9 @@
      a blank line is printed just before the @(tsee encapsulate),
      for visual separation."))
   (b* ((wrld (w state))
-       (defiso-event? (and (isodata-isomap->localp isomap)
-                           (list (isodata-gen-defiso isomap
-                                                     verify-guards$
-                                                     print$))))
+       (isomaps (append (strip-cdrs arg-isomaps)
+                        (and res-isomap? (list res-isomap?))))
+       (defiso-events (isodata-gen-defisos isomaps verify-guards$ print$))
        ((mv app-cond-thm-events
             app-cond-thm-names)
         (isodata-gen-app-conds app-conds
@@ -3563,7 +3588,7 @@
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
-                             ,@defiso-event?
+                             ,@defiso-events
                              ,@app-cond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
@@ -3642,7 +3667,7 @@
                   res$
                   isomap
                   arg-isomaps
-                  & ; RES-ISOMAP?
+                  res-isomap?
                   new-name$
                   new-enable$
                   thm-name$
@@ -3671,6 +3696,7 @@
                                       res$
                                       isomap
                                       arg-isomaps
+                                      res-isomap?
                                       predicate
                                       new-name$
                                       new-enable$
