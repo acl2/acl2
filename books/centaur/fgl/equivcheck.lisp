@@ -276,7 +276,7 @@ equivalence under both cases, produces a formula that is much easier to solve
 than the original, especially using fraiging.</p>
 
 <p>Sometimes this may not work; for a somewhat more aggressive strategy, see
-@(see solve-lane-by-lane-masked+).
+@(see solve-lane-by-lane-masked+).</p>
 "
   :enabled t
   :ignore-ok t
