@@ -327,7 +327,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-fresh-defiso-thm-names ((iso symbolp)
+(define isodata-fresh-defiso-thm-names ((isoname symbolp)
                                         (verify-guards$ booleanp)
                                         (names-to-avoid symbol-listp)
                                         (wrld plist-worldp))
@@ -364,34 +364,34 @@
     "The names of the guard-related theorems are @('nil')
      if guards must not be verified, since
      those theorems are not generated or used in that case."))
-  (b* ((iso (add-suffix iso "-"))
+  (b* ((prefix (add-suffix isoname "-"))
        (forth-image (fresh-logical-name-with-$s-suffix
-                     (add-suffix iso (symbol-name :alpha-image))
+                     (add-suffix prefix (symbol-name :alpha-image))
                      nil
                      names-to-avoid
                      wrld))
        (names-to-avoid (cons forth-image names-to-avoid))
        (back-image (fresh-logical-name-with-$s-suffix
-                    (add-suffix iso (symbol-name :beta-image))
+                    (add-suffix prefix (symbol-name :beta-image))
                     nil
                     names-to-avoid
                     wrld))
        (names-to-avoid (cons back-image names-to-avoid))
        (back-of-forth (fresh-logical-name-with-$s-suffix
-                       (add-suffix iso (symbol-name :beta-of-alpha))
+                       (add-suffix prefix (symbol-name :beta-of-alpha))
                        nil
                        names-to-avoid
                        wrld))
        (names-to-avoid (cons back-of-forth names-to-avoid))
        (forth-of-back (fresh-logical-name-with-$s-suffix
-                       (add-suffix iso (symbol-name :alpha-of-beta))
+                       (add-suffix prefix (symbol-name :alpha-of-beta))
                        nil
                        names-to-avoid
                        wrld))
        (names-to-avoid (cons forth-of-back names-to-avoid))
        (oldp-guard (and verify-guards$
                         (fresh-logical-name-with-$s-suffix
-                         (add-suffix iso (symbol-name :doma-guard))
+                         (add-suffix prefix (symbol-name :doma-guard))
                          nil
                          names-to-avoid
                          wrld)))
@@ -400,7 +400,7 @@
                          names-to-avoid))
        (newp-guard (and verify-guards$
                         (fresh-logical-name-with-$s-suffix
-                         (add-suffix iso (symbol-name :domb-guard))
+                         (add-suffix prefix (symbol-name :domb-guard))
                          nil
                          names-to-avoid
                          wrld)))
@@ -409,7 +409,7 @@
                          names-to-avoid))
        (forth-guard (and verify-guards$
                          (fresh-logical-name-with-$s-suffix
-                          (add-suffix iso (symbol-name :alpha-guard))
+                          (add-suffix prefix (symbol-name :alpha-guard))
                           nil
                           names-to-avoid
                           wrld)))
@@ -418,7 +418,7 @@
                          names-to-avoid))
        (back-guard (and verify-guards$
                         (fresh-logical-name-with-$s-suffix
-                         (add-suffix iso (symbol-name :beta-guard))
+                         (add-suffix prefix (symbol-name :beta-guard))
                          nil
                          names-to-avoid
                          wrld)))
@@ -426,13 +426,13 @@
                            (cons back-guard names-to-avoid)
                          names-to-avoid))
        (forth-injective (fresh-logical-name-with-$s-suffix
-                         (add-suffix iso (symbol-name :alpha-injective))
+                         (add-suffix prefix (symbol-name :alpha-injective))
                          nil
                          names-to-avoid
                          wrld))
        (names-to-avoid (cons forth-injective names-to-avoid))
        (back-injective (fresh-logical-name-with-$s-suffix
-                        (add-suffix iso (symbol-name :beta-injective))
+                        (add-suffix prefix (symbol-name :beta-injective))
                         nil
                         names-to-avoid
                         wrld)))
