@@ -126,11 +126,43 @@
   (assert-event (function-name-listp *atj-java-primarray-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primarray-fns*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primarray-read-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the reading of components from Java primitive arrays."
+  (and (member-eq fn *atj-java-primarray-reads*) t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-fn-p ((fn symbolp))
+(define atj-java-primarray-length-p (fn)
   :returns (yes/no booleanp)
-  :short "Check if an ACL2 funcion (symbol) is one that models
+  :short "Recognizer the ACL2 function symbols that model
+          the retrieval of lengths of Java primitive arrays."
+  (and (member-eq fn *atj-java-primarray-lengths*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primarray-constr-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the construction of Java primitive arrays."
+  (and (member-eq fn *atj-java-primarray-constrs*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primarray-constr-init-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the construction of Java primitive arrays with initializers."
+  (and (member-eq fn *atj-java-primarray-constrs-init*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primarray-fn-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 funcion symbols that model
           Java primitive array operations."
   (and (member-eq fn *atj-java-primarray-fns*) t))
 
