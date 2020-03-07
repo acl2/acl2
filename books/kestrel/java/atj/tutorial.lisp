@@ -272,6 +272,8 @@
 
   (xdoc::topstring
 
+   (atj-tutorial-section "Logical and Evaluation Semantics")
+
    (xdoc::p
     "In the context of translating from the ACL2 language
      to Java or any other programming language,
@@ -305,6 +307,8 @@
      degenerately have an evaluation semantics,
      because they do yield error results when called;
      however, the following discussion focuses on executable functions.")
+
+   (atj-tutorial-section "Logic-Mode, Program-Mode, and Primitive Functions")
 
    (xdoc::p
     "Most logic-mode functions have definitions
@@ -342,6 +346,8 @@
      that specify their evaluation semantics,
      similarly to the non-primitive logic-mode functions discussed above.
      Their definitions specify no logical semantics.")
+
+   (atj-tutorial-section "Functions with Raw Lisp Code and Side Effects")
 
    (xdoc::p
     "The logic-mode functions
@@ -415,6 +421,8 @@
      to turn calls of @(tsee hard-error) into @('nil'),
      while logically correct and within @('simplify')'s stipulations,
      may be undesired or unexpected.")
+
+   (atj-tutorial-section "Macros with Raw Lisp Code")
 
    (xdoc::p
     "Macros are normally expanded
