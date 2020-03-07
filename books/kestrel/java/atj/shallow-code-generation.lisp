@@ -1855,7 +1855,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-expr ((fn atj-java-primitive-constructor-p) arg)
+(define atj-jprim-constr-to-expr ((fn atj-java-primitive-constr-p) arg)
   :returns (expr jexprp)
   :short "Map an ACL2 function that models a Java primitive constructor
           to the Java expression that constructs the primitive value."
@@ -1899,11 +1899,11 @@
                    (ec-call (jexpr-fix :irrelevant)))))
     (t (prog2$ (impossible)
                (ec-call (jexpr-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constructor-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-type ((fn atj-java-primitive-constructor-p))
+(define atj-jprim-constr-to-type ((fn atj-java-primitive-constr-p))
   :returns (type atj-typep)
   :short "Map an ACL2 function that models a Java primitive constructor
           to the ATJ type of the function's argument."
@@ -2413,7 +2413,7 @@
                                2))
 
   (define atj-gen-shallow-jprim-constr-call
-    ((fn atj-java-primitive-constructor-p)
+    ((fn atj-java-primitive-constr-p)
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -3160,7 +3160,7 @@
                                        guards$
                                        wrld))))
          ((when (and guards$
-                     (atj-java-primitive-constructor-p fn)
+                     (atj-java-primitive-constr-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-constr-call fn
                                              (car args)
