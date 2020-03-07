@@ -1163,6 +1163,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-forth-of-terms ((terms pseudo-term-listp)
+                                    (arg-isomaps isodata-symbol-isomap-alistp))
+  :guard (= (len terms) (len arg-isomaps))
+  :returns (new-terms "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :short "Apply the @('forth') function to the corresponding term
+          in a list of terms of length equal to the formals of @('old')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, given @('term1'), ..., @('termn'),
+     generate @('(forth1 term1)'), ..., @('(forthn termn)'),
+     where @('forthi') is the conversion for the argument @('xi').
+     Currently, @('forthi') is
+     either the one specified in @('args/res-iso')
+     or the identity one,
+     but this will generalize when @(tsee isodata) is extended
+     to allow multiple isomorphic mappings.")
+   (xdoc::p
+    "This is used in the generation of the body of the function.
+     The input terms are arguments of a recursive call of @('old'),
+     i.e. the terms @('updatej-xi<x1,...,xn>'),
+     which must be all converted to the new representation (via @('forthi'))
+     in order to be arguments of @('new')."))
+  (b* (((when (endp terms)) nil)
+       (term (car terms))
+       (isomap (cdar arg-isomaps))
+       (forth (isodata-isomap->forth isomap))
+       (new-term (apply-term* forth term))
+       (new-terms (isodata-gen-forth-of-terms (cdr terms) (cdr arg-isomaps))))
+    (cons new-term new-terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-get-rec-call-args-transformed
   ((rec-call pseudo-termp "A recursive call of @('old').")
    (old$ symbolp)
@@ -1426,40 +1460,6 @@
                                                      state)))
     (mv (cons event events)
         (acons app-cond thm-name thm-names))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-forth-of-terms ((terms pseudo-term-listp)
-                                    (arg-isomaps isodata-symbol-isomap-alistp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (new-terms "A @(tsee pseudo-term-listp).")
-  :verify-guards nil
-  :short "Apply the @('forth') function to the corresponding term
-          in a list of terms of length equal to the formals of @('old')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, given @('term1'), ..., @('termn'),
-     generate @('(forth1 term1)'), ..., @('(forthn termn)'),
-     where @('forthi') is the conversion for the argument @('xi').
-     Currently, @('forthi') is
-     either the one specified in @('args/res-iso')
-     or the identity one,
-     but this will generalize when @(tsee isodata) is extended
-     to allow multiple isomorphic mappings.")
-   (xdoc::p
-    "This is used in the generation of the body of the function.
-     The input terms are arguments of a recursive call of @('old'),
-     i.e. the terms @('updatej-xi<x1,...,xn>'),
-     which must be all converted to the new representation (via @('forthi'))
-     in order to be arguments of @('new')."))
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (forth (isodata-isomap->forth isomap))
-       (new-term (apply-term* forth term))
-       (new-terms (isodata-gen-forth-of-terms (cdr terms) (cdr arg-isomaps))))
-    (cons new-term new-terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
