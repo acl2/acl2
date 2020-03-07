@@ -2073,6 +2073,88 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-jprimarr-constr-to-comp-jtype ((fn atj-java-primarray-constr-p))
+  :returns (type jtypep)
+  :short "Map an ACL2 function that models a Java primitive array constructor
+          to the Java array component type."
+  (case fn
+    (boolean-array-of-length (jtype-boolean))
+    (char-array-of-length (jtype-char))
+    (byte-array-of-length (jtype-byte))
+    (short-array-of-length (jtype-short))
+    (int-array-of-length (jtype-int))
+    (long-array-of-length (jtype-long))
+    (float-array-of-length (jtype-float))
+    (double-array-of-length (jtype-double))
+    (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-constr-init-to-comp-jtype
+  ((fn atj-java-primarray-constr-init-p))
+  :returns (type jtypep)
+  :short "Map an ACL2 function that models
+          a Java primitive array constructor with initializer
+          to the Java array component type."
+  (case fn
+    (boolean-array-with-comps (jtype-boolean))
+    (char-array-with-comps (jtype-char))
+    (byte-array-with-comps (jtype-byte))
+    (short-array-with-comps (jtype-short))
+    (int-array-with-comps (jtype-int))
+    (long-array-with-comps (jtype-long))
+    (float-array-with-comps (jtype-float))
+    (double-array-with-comps (jtype-double))
+    (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-init-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-constr-init-to-comp-type
+  ((fn atj-java-primarray-constr-init-p))
+  :returns (type atj-typep)
+  :short "Map an ACL2 function that models
+          a Java primitive array constructor with initializer
+          to the ATJ array component type."
+  (case fn
+    (boolean-array-with-comps :jboolean)
+    (char-array-with-comps :jchar)
+    (byte-array-with-comps :jbyte)
+    (short-array-with-comps :jshort)
+    (int-array-with-comps :jint)
+    (long-array-with-comps :jlong)
+    (float-array-with-comps :jfloat)
+    (double-array-with-comps :jdouble)
+    (otherwise (prog2$ (impossible) :jboolean)))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-init-p)))
+  ///
+  (defrule member-equal-of-atj-jprimarr-constr-init-to-comp-type
+    (member-equal
+     (atj-jprimarr-constr-init-to-comp-type fn)
+     '(:jboolean :jchar :jbyte :jshort :jint :jlong :jfloat :jdouble))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-constr-init-to-type ((fn atj-java-primarray-constr-init-p))
+  :returns (type atj-typep)
+  :short "Map an ACL2 function that models
+          a Java primitive array constructor with initializer
+          to the ATJ array type."
+  (case fn
+    (boolean-array-with-comps :jboolean[])
+    (char-array-with-comps :jchar[])
+    (byte-array-with-comps :jbyte[])
+    (short-array-with-comps :jshort[])
+    (int-array-with-comps :jint[])
+    (long-array-with-comps :jlong[])
+    (float-array-with-comps :jfloat[])
+    (double-array-with-comps :jdouble[])
+    (otherwise (prog2$ (impossible) :avalue)))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-init-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-gen-shallow-term-fns
   :short "Functions to generate shallowly embedded ACL2 terms."
   :long
@@ -2812,7 +2894,7 @@
     :measure (two-nats-measure (acl2-count array) 2))
 
   (define atj-gen-shallow-jprimarr-constr-call
-    ((fn (member-eq fn *atj-java-primarray-constrs*))
+    ((fn atj-java-primarray-constr-p)
      (length pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2857,16 +2939,7 @@
                                 t ; GUARDS$
                                 wrld))
          (block length-block)
-         (jtype (case fn
-                  (boolean-array-of-length (jtype-boolean))
-                  (char-array-of-length (jtype-char))
-                  (byte-array-of-length (jtype-byte))
-                  (short-array-of-length (jtype-short))
-                  (int-array-of-length (jtype-int))
-                  (long-array-of-length (jtype-long))
-                  (float-array-of-length (jtype-float))
-                  (double-array-of-length (jtype-double))
-                  (otherwise (impossible))))
+         (jtype (atj-jprimarr-constr-to-comp-jtype fn))
          (expr (jexpr-newarray jtype length-expr)))
       (mv block
           (atj-adapt-expr-to-type expr
@@ -2878,7 +2951,7 @@
     :measure (two-nats-measure (acl2-count length) 2))
 
   (define atj-gen-shallow-jprimarr-constr-init-call
-    ((fn (member-eq fn *atj-java-primarray-constrs-init*))
+    ((fn atj-java-primarray-constr-init-p)
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2928,16 +3001,7 @@
        to be examined."))
     (b* (((mv list-call? elements) (atj-check-type-annotated-list-call arg)))
       (if list-call?
-          (b* ((type (case fn
-                       (boolean-array-with-comps :jboolean)
-                       (char-array-with-comps :jchar)
-                       (byte-array-with-comps :jbyte)
-                       (short-array-with-comps :jshort)
-                       (int-array-with-comps :jint)
-                       (long-array-with-comps :jlong)
-                       (float-array-with-comps :jfloat)
-                       (double-array-with-comps :jdouble)
-                       (otherwise (impossible))))
+          (b* ((type (atj-jprimarr-constr-init-to-comp-type fn))
                (elements
                 (atj-type-rewrap-array-initializer-elements elements type))
                ((mv blocks
@@ -2953,16 +3017,7 @@
                                        t ; GUARDS$
                                        wrld))
                (block (flatten blocks))
-               (jtype (case fn
-                        (boolean-array-with-comps (jtype-boolean))
-                        (char-array-with-comps (jtype-char))
-                        (byte-array-with-comps (jtype-byte))
-                        (short-array-with-comps (jtype-short))
-                        (int-array-with-comps (jtype-int))
-                        (long-array-with-comps (jtype-long))
-                        (float-array-with-comps (jtype-float))
-                        (double-array-with-comps (jtype-double))
-                        (otherwise (impossible))))
+               (jtype (atj-jprimarr-constr-init-to-comp-jtype fn))
                (expr (jexpr-newarray-init jtype exprs)))
             (mv block
                 (atj-adapt-expr-to-type expr
@@ -2981,16 +3036,7 @@
                                     qpairs
                                     t ; GUARDS$
                                     wrld))
-             (type (case fn
-                     (boolean-array-with-comps :jboolean[])
-                     (char-array-with-comps :jchar[])
-                     (byte-array-with-comps :jbyte[])
-                     (short-array-with-comps :jshort[])
-                     (int-array-with-comps :jint[])
-                     (long-array-with-comps :jlong[])
-                     (float-array-with-comps :jfloat[])
-                     (double-array-with-comps :jdouble[])
-                     (otherwise (impossible))))
+             (type (atj-jprimarr-constr-init-to-type fn))
              (expr (atj-adapt-expr-to-type expr :avalue type)))
           (mv block
               (atj-adapt-expr-to-type expr
@@ -3217,7 +3263,7 @@
                                            qpairs
                                            wrld))
          ((when (and guards$
-                     (member-eq fn *atj-java-primarray-reads*)
+                     (atj-java-primarray-read-p fn)
                      (int= (len args) 2))) ; should be always true
           (atj-gen-shallow-jprimarr-read-call (first args)
                                               (second args)
@@ -3231,7 +3277,7 @@
                                               qpairs
                                               wrld))
          ((when (and guards$
-                     (member-eq fn *atj-java-primarray-lengths*)
+                     (atj-java-primarray-length-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-length-call (car args)
                                                 src-types
@@ -3244,7 +3290,7 @@
                                                 qpairs
                                                 wrld))
          ((when (and guards$
-                     (member-eq fn *atj-java-primarray-constrs*)
+                     (atj-java-primarray-constr-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-call fn
                                                 (car args)
@@ -3258,7 +3304,7 @@
                                                 qpairs
                                                 wrld))
          ((when (and guards$
-                     (member-eq fn *atj-java-primarray-constrs-init*)
+                     (atj-java-primarray-constr-init-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-init-call fn
                                                      (car args)
