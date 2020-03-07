@@ -2021,7 +2021,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-conversion-fn-to-jtype ((fn atj-java-primitive-conversion-p))
+(define atj-jprim-conversion-fn-to-jtype ((fn atj-java-primitive-conv-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models a Java primitive conversion
           to the result Java type of the conversion."
@@ -2069,7 +2069,7 @@
     (double-to-float (jtype-float))
     (byte-to-char (jtype-char))
     (t (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-conversion-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-conv-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2702,7 +2702,7 @@
                                2))
 
   (define atj-gen-shallow-jprim-conv-call
-    ((fn atj-java-primitive-conversion-p)
+    ((fn atj-java-primitive-conv-p)
      (operand pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -3249,7 +3249,7 @@
                                             qpairs
                                             wrld))
          ((when (and guards$
-                     (atj-java-primitive-conversion-p fn)
+                     (atj-java-primitive-conv-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-conv-call fn
                                            (car args)
