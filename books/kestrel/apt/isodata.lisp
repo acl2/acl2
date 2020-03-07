@@ -1126,12 +1126,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-oldp-of-args
-  ((arg-isomaps isodata-symbol-isomap-alistp))
+(define isodata-gen-oldp-of-args ((arg-isomaps isodata-symbol-isomap-alistp))
   :returns (oldp-of-args "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the conjunction of the terms obtained by applying
-          the old representation predicates to the corresponding formals."
+          @('oldp1'), ..., @('oldpn') to the corresponding formals."
   (conjoin (isodata-gen-oldp-of-args-aux arg-isomaps))
 
   :prepwork
@@ -1143,9 +1142,24 @@
           (formal (caar arg-isomaps))
           (isomap (cdar arg-isomaps))
           (oldp (isodata-isomap->oldp isomap))
-          (term (apply-term oldp (list formal)))
+          (term (apply-term* oldp formal))
           (terms (isodata-gen-oldp-of-args-aux (cdr arg-isomaps))))
        (cons term terms)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-newp-of-args ((arg-isomaps isodata-symbol-isomap-alistp))
+  :returns (newp-of-args "A @(tsee pseudo-term-listp).")
+  :verify-guards nil
+  :short "Generate the list of terms obtained by applying
+          @('newp1'), ..., @('newpn') to the corresponding formals."
+  (b* (((when (endp arg-isomaps)) nil)
+       (formal (caar arg-isomaps))
+       (isomap (cdar arg-isomaps))
+       (newp (isodata-isomap->newp isomap))
+       (term (apply-term* newp formal))
+       (terms (isodata-gen-newp-of-args (cdr arg-isomaps))))
+    (cons term terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1847,17 +1861,17 @@
 (define isodata-gen-new-fn-guard ((old$ symbolp)
                                   (args$ symbol-listp)
                                   (isomap isodata-isomapp)
+                                  (arg-isomaps isodata-symbol-isomap-alistp)
                                   (predicate$ booleanp)
                                   (wrld plist-worldp))
   :returns (new-guard "A @(tsee pseudo-termp).")
   :mode :program
   :short "Generate the guard of the new function."
-  (b* ((newp$ (isodata-isomap->newp isomap))
-       (back$ (isodata-isomap->back isomap))
-       (newp-of-args (apply-unary-to-terms newp$ args$)))
+  (b* ((back$ (isodata-isomap->back isomap))
+       (newp-of-args (isodata-gen-newp-of-args arg-isomaps)))
     (if predicate$
         (conjoin newp-of-args)
-      (b* ((old-guard (guard old$ nil wrld))
+      (b* ((old-guard (uguard old$ wrld))
            (back-of-args (apply-unary-to-terms back$ args$))
            (old-guard-with-back-of-args
             (subcor-var args$ back-of-args old-guard)))
@@ -2159,7 +2173,8 @@
                  (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
                (nil body)
                (t (untranslate body nil wrld))))
-       (guard (isodata-gen-new-fn-guard old$ args$ isomap predicate$ wrld))
+       (guard (isodata-gen-new-fn-guard
+               old$ args$ isomap arg-isomaps predicate$ wrld))
        (guard (conjoin (flatten-ands-in-lit guard)))
        (guard (untranslate guard nil wrld))
        (recursive (recursivep old$ nil wrld))
