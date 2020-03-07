@@ -636,14 +636,24 @@
        and the well-founded relation of @('new') is
        the same as @('old').")
      (xdoc::p
-      "The guard of @('new') is @('t') when @(':predicate') is @('t'),
-       otherwise the guard of @('new') consists of the argument tuples
-       that are isomorphic to the ones in the guard of @('old'):")
+      "The guard of @('new') is:")
      (xdoc::codeblock
+      ";; when the :predicate input is nil:"
       "(and (newp y1)"
       "     ..."
       "     (newp yp)"
-      "     old-guard<...,(back y1),...,(back yp),...>)")
+      "     old-guard<...,(back y1),...,(back yp),...>)"
+      ""
+      ";; when the :predicate input is t:"
+      "(and (newp y1)"
+      "     ..."
+      "     (newp yp))")
+     (xdoc::p
+      "That is, when @(':predicate') is @('t')
+       the guard consists of the new representation;
+       when @(':predicate') is @('nil'),
+       the guard consists of the argument tuples
+       that are isomorphic to the ones in the guard of @('old').")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('new') is denoted by
