@@ -2812,7 +2812,7 @@
     :measure (two-nats-measure (acl2-count array) 2))
 
   (define atj-gen-shallow-jprimarr-constr-call
-    ((fn (member-eq fn *atj-java-primarray-constructors*))
+    ((fn (member-eq fn *atj-java-primarray-constrs*))
      (length pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2878,7 +2878,7 @@
     :measure (two-nats-measure (acl2-count length) 2))
 
   (define atj-gen-shallow-jprimarr-constr-init-call
-    ((fn (member-eq fn *atj-java-primarray-constructors-init*))
+    ((fn (member-eq fn *atj-java-primarray-constrs-init*))
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -3244,7 +3244,7 @@
                                                 qpairs
                                                 wrld))
          ((when (and guards$
-                     (member-eq fn *atj-java-primarray-constructors*)
+                     (member-eq fn *atj-java-primarray-constrs*)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-call fn
                                                 (car args)
@@ -3258,7 +3258,7 @@
                                                 qpairs
                                                 wrld))
          ((when (and guards$
-                     (member-eq fn *atj-java-primarray-constructors-init*)
+                     (member-eq fn *atj-java-primarray-constrs-init*)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-constr-init-call fn
                                                      (car args)

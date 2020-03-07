@@ -79,7 +79,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-constructors*
+(defval *atj-java-primarray-constrs*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive arrays."
   '(boolean-array-of-length
@@ -93,7 +93,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-constructors-init*
+(defval *atj-java-primarray-constrs-init*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive arrays with initializers."
   :long
@@ -120,8 +120,8 @@
      The write functions will be added in the future."))
   (append *atj-java-primarray-reads*
           *atj-java-primarray-lengths*
-          *atj-java-primarray-constructors*
-          *atj-java-primarray-constructors-init*)
+          *atj-java-primarray-constrs*
+          *atj-java-primarray-constrs-init*)
   ///
   (assert-event (function-name-listp *atj-java-primarray-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primarray-fns*)))
