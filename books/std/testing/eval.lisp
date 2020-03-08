@@ -14,6 +14,7 @@
 (in-package "ACL2")
 
 (include-book "must-eval-to")
+(include-book "must-eval-to-t")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,37 +23,6 @@
 ; Here we define macros that employ make-event to check evaluations of forms.
 ; See community book make-event/eval-tests.lisp (and many other .lisp files in
 ; that directory) for how these macros may be employed.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc must-eval-to-t
-  :parents (std/testing errors must-eval-to)
-  :short "A specialization of @(tsee must-eval-to) to ensure that
-          a form evaluates to a non-erroneous error triple with value @('t')."
-  :long
-  "<p>
-   This calls @(tsee must-eval-to) with @('t') as the @('expr') argument.
-   @('Form') should evaluate to an error triple @('(mv erp val state)').
-   If @('erp') is @('nil') and @('val') is @('t')
-   then @('(must-eval-to form expr)') expands to @('(value-triple t)');
-   otherwise expansion causes an appropriate soft error.
-   </p>
-   <p>
-   The keyword arguments have the same meaning as in @(tsee must-eval-to).
-   </p>
-   @(def must-eval-to-t)")
-
-(defmacro must-eval-to-t (form &key
-                               (ld-skip-proofsp ':default)
-                               (with-output-off ':all)
-                               (check-expansion 'nil check-expansion-p))
-  (declare (xargs :guard (booleanp check-expansion)))
-  `(must-eval-to ,form t
-                 :with-output-off ,with-output-off
-                 ,@(and check-expansion-p
-                        `(:check-expansion ,check-expansion))
-                 ,@(and (not (eq ld-skip-proofsp :default))
-                        `(:ld-skip-proofsp ,ld-skip-proofsp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
