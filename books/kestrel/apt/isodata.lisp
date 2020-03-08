@@ -1281,45 +1281,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-oldp-of-rec-call-args
-  ((rec-call pseudo-term-listp "A recursive call of @('old').")
-   (arg-isomaps isodata-symbol-isomap-alistp))
-  :returns (oldp-of-rec-call-args "A @(tsee pseudo-termp).")
-  :verify-guards nil
-  :short "Generate the conjunction of the terms obtained
-          by applying @('oldp')
-          to the arguments passed to a recursive call of @('old')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This function generates a subformula")
-   (xdoc::codeblock
-    "(and (oldp updateJ-y1<x1,...,xn>)"
-    "     ..."
-    "     (oldp updateJ-yp<x1,...,xn>))")
-   (xdoc::p
-    "of the @(':oldp-of-rec-call-args') applicability condition."))
-  (conjoin
-   (isodata-gen-oldp-of-rec-call-args-aux (fargs rec-call) arg-isomaps))
-
-  :prepwork
-  ((define isodata-gen-oldp-of-rec-call-args-aux
-     ((args pseudo-term-listp)
-      (arg-isomaps isodata-symbol-isomap-alistp))
-     :guard (= (len args) (len arg-isomaps))
-     :returns oldp-of-args ; PSEUDO-TERM-LISTP
-     :verify-guards nil
-     (b* (((when (endp args)) nil)
-          (arg (car args))
-          (isomap (cdar arg-isomaps))
-          (oldp (isodata-isomap->oldp isomap))
-          (term (apply-term oldp (list arg)))
-          (terms (isodata-gen-oldp-of-rec-call-args-aux (cdr args)
-                                                        (cdr arg-isomaps))))
-       (cons term terms)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define isodata-gen-oldp-of-rec-call-args-under-contexts
   ((rec-calls-with-tests pseudo-tests-and-call-listp)
    (arg-isomaps isodata-symbol-isomap-alistp))
@@ -1353,8 +1314,8 @@
          (rest (cdr rec-calls-with-tests)))
       (conjoin2
        (implicate context
-                  (isodata-gen-oldp-of-rec-call-args rec-call
-                                                     arg-isomaps))
+                  (conjoin (isodata-gen-oldp-of-terms (fargs rec-call)
+                                                      arg-isomaps)))
        (isodata-gen-oldp-of-rec-call-args-under-contexts rest
                                                          arg-isomaps)))))
 
