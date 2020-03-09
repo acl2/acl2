@@ -1591,7 +1591,7 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
   :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (inst "A @(tsee doublet-listp).")
+  :returns (inst "A @('doublet-listp').")
   :verify-guards nil
   :short "Generate a lemma instance where
           the variables @('x1'), ..., @('xn') are instantiated with
@@ -1626,7 +1626,7 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
   :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (inst "A @(tsee doublet-listp).")
+  :returns (inst "A @('doublet-listp').")
   :verify-guards nil
   :short "Generate a lemma instance where
           the variables @('x1'), ..., @('xn') are instantiated with
