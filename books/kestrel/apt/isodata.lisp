@@ -1219,7 +1219,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-back-of-terms ((terms pseudo-term-listp)
-                                    (arg-isomaps isodata-symbol-isomap-alistp))
+                                   (arg-isomaps isodata-symbol-isomap-alistp))
   :guard (= (len terms) (len arg-isomaps))
   :returns (new-terms "A @(tsee pseudo-term-listp).")
   :verify-guards nil
@@ -1597,25 +1597,9 @@
           the variables @('x1'), ..., @('xn') are instantiated with
           @('(back1 x1)'), ..., @('(backn xn)')."
   (b* ((args (formals old$ wrld))
-       (inst (isodata-gen-lemma-instance-args-to-back-of-args-aux
-              args arg-isomaps)))
-    `(:instance ,lemma :extra-bindings-ok ,@inst))
-
-  :prepwork
-  ((define isodata-gen-lemma-instance-args-to-back-of-args-aux
-     ((args symbol-listp)
-      (arg-isomaps isodata-symbol-isomap-alistp))
-     :guard (= (len args) (len arg-isomaps))
-     :returns inst ; DOUBLET-LISTP
-     :verify-guards nil
-     (b* (((when (endp args)) nil)
-          (arg (car args))
-          (isomap (cdar arg-isomaps))
-          (back (isodata-isomap->back isomap))
-          (back-of-arg (apply-term* back arg))
-          (doublets (isodata-gen-lemma-instance-args-to-back-of-args-aux
-                     (cdr args) (cdr arg-isomaps))))
-       (cons (list arg back-of-arg) doublets)))))
+       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
+       (inst (alist-to-doublets (pairlis$ args back-of-args))))
+    `(:instance ,lemma :extra-bindings-ok ,@inst)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1632,25 +1616,9 @@
           the variables @('x1'), ..., @('xn') are instantiated with
           @('(forth1 x1)'), ..., @('(forthn xn)')."
   (b* ((args (formals old$ wrld))
-       (inst (isodata-gen-lemma-instance-args-to-forth-of-args-aux
-              args arg-isomaps)))
-    `(:instance ,lemma :extra-bindings-ok ,@inst))
-
-  :prepwork
-  ((define isodata-gen-lemma-instance-args-to-forth-of-args-aux
-     ((args symbol-listp)
-      (arg-isomaps isodata-symbol-isomap-alistp))
-     :guard (= (len args) (len arg-isomaps))
-     :returns inst ; DOUBLET-LISTP
-     :verify-guards nil
-     (b* (((when (endp args)) nil)
-          (arg (car args))
-          (isomap (cdar arg-isomaps))
-          (forth (isodata-isomap->forth isomap))
-          (forth-of-arg (apply-term* forth arg))
-          (doublets (isodata-gen-lemma-instance-args-to-forth-of-args-aux
-                     (cdr args) (cdr arg-isomaps))))
-       (cons (list arg forth-of-arg) doublets)))))
+       (forth-of-args (isodata-gen-forth-of-terms args arg-isomaps))
+       (inst (alist-to-doublets (pairlis$ args forth-of-args))))
+    `(:instance ,lemma :extra-bindings-ok ,@inst)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1695,20 +1663,35 @@
           is instantiated with a term @('termi')
           in which the formals @('x1'), .., @('xn') of @('old')
           are replaced with @('(back1 x1)'), ..., @('backn xn)')."
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (back-of-forth (isodata-isomap->back-of-forth isomap))
-       (var (isodata-formal-of-forth isomap wrld))
-       (term-with-back (isodata-gen-subst-args-with-back-of-args term
-                                                                 old$
-                                                                 arg-isomaps
-                                                                 wrld))
-       (instance `(:instance ,back-of-forth
-                   :extra-bindings-ok (,var ,term-with-back)))
-       (instances (isodata-gen-back-of-forth-instances-to-terms-back
-                   (cdr terms) old$ (cdr arg-isomaps) wrld)))
-    (cons instance instances)))
+  (b* ((args (formals old$ wrld))
+       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
+    (isodata-gen-back-of-forth-instances-to-terms-back-aux terms
+                                                           arg-isomaps
+                                                           args
+                                                           back-of-args
+                                                           wrld))
+
+  :prepwork
+  ((define isodata-gen-back-of-forth-instances-to-terms-back-aux
+     ((terms pseudo-term-listp)
+      (arg-isomaps isodata-symbol-isomap-alistp)
+      (args symbol-listp)
+      (back-of-args pseudo-term-listp)
+      (wrld plist-worldp))
+     :guard (= (len terms) (len arg-isomaps))
+     :returns (lemma-instances true-list-listp)
+     :verify-guards nil
+     (b* (((when (endp terms)) nil)
+          (term (car terms))
+          (isomap (cdar arg-isomaps))
+          (back-of-forth (isodata-isomap->back-of-forth isomap))
+          (var (isodata-formal-of-forth isomap wrld))
+          (term-with-back (subcor-var args back-of-args term))
+          (instance `(:instance ,back-of-forth
+                      :extra-bindings-ok (,var ,term-with-back)))
+          (instances (isodata-gen-back-of-forth-instances-to-terms-back-aux
+                      (cdr terms) (cdr arg-isomaps) args back-of-args wrld)))
+       (cons instance instances)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1748,20 +1731,35 @@
           is instantiated with a term @('termi')
           in which the formals @('x1'), .., @('xn') of @('old')
           are replaced with @('(back1 x1)'), ..., @('backn xn)')."
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (forth-image (isodata-isomap->forth-image isomap))
-       (var (isodata-formal-of-forth isomap wrld))
-       (term-with-back (isodata-gen-subst-args-with-back-of-args term
-                                                                 old$
-                                                                 arg-isomaps
-                                                                 wrld))
-       (instance `(:instance ,forth-image
-                   :extra-bindings-ok (,var ,term-with-back)))
-       (instances (isodata-gen-forth-image-instances-to-terms-back
-                   (cdr terms) old$ (cdr arg-isomaps) wrld)))
-    (cons instance instances)))
+  (b* ((args (formals old$ wrld))
+       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
+    (isodata-gen-forth-image-instances-to-terms-back-aux terms
+                                                         arg-isomaps
+                                                         args
+                                                         back-of-args
+                                                         wrld))
+
+  :prepwork
+  ((define isodata-gen-forth-image-instances-to-terms-back-aux
+     ((terms pseudo-term-listp)
+      (arg-isomaps isodata-symbol-isomap-alistp)
+      (args symbol-listp)
+      (back-of-args pseudo-term-listp)
+      (wrld plist-worldp))
+     :guard (= (len terms) (len arg-isomaps))
+     :returns (lemma-instances true-list-listp)
+     :verify-guards nil
+     (b* (((when (endp terms)) nil)
+          (term (car terms))
+          (isomap (cdar arg-isomaps))
+          (forth-image (isodata-isomap->forth-image isomap))
+          (var (isodata-formal-of-forth isomap wrld))
+          (term-with-back (subcor-var args back-of-args term))
+          (instance `(:instance ,forth-image
+                      :extra-bindings-ok (,var ,term-with-back)))
+          (instances (isodata-gen-forth-image-instances-to-terms-back-aux
+                      (cdr terms) (cdr arg-isomaps) args back-of-args wrld)))
+       (cons instance instances)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1801,20 +1799,35 @@
           is instantiated with a term @('termi')
           in which the formals @('x1'), .., @('xn') of @('old')
           are replaced with @('(back1 x1)'), ..., @('backn xn)')."
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (forth-guard (isodata-isomap->forth-guard isomap))
-       (var (isodata-formal-of-forth isomap wrld))
-       (term-with-back (isodata-gen-subst-args-with-back-of-args term
-                                                                 old$
-                                                                 arg-isomaps
-                                                                 wrld))
-       (instance `(:instance ,forth-guard
-                   :extra-bindings-ok (,var ,term-with-back)))
-       (instances (isodata-gen-forth-guard-instances-to-terms-back
-                   (cdr terms) old$ (cdr arg-isomaps) wrld)))
-    (cons instance instances)))
+  (b* ((args (formals old$ wrld))
+       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
+    (isodata-gen-forth-guard-instances-to-terms-back-aux terms
+                                                         arg-isomaps
+                                                         args
+                                                         back-of-args
+                                                         wrld))
+
+  :prepwork
+  ((define isodata-gen-forth-guard-instances-to-terms-back-aux
+     ((terms pseudo-term-listp)
+      (arg-isomaps isodata-symbol-isomap-alistp)
+      (args symbol-listp)
+      (back-of-args pseudo-term-listp)
+      (wrld plist-worldp))
+     :guard (= (len terms) (len arg-isomaps))
+     :returns (lemma-instances true-list-listp)
+     :verify-guards nil
+     (b* (((when (endp terms)) nil)
+          (term (car terms))
+          (isomap (cdar arg-isomaps))
+          (forth-guard (isodata-isomap->forth-guard isomap))
+          (var (isodata-formal-of-forth isomap wrld))
+          (term-with-back (subcor-var args back-of-args term))
+          (instance `(:instance ,forth-guard
+                      :extra-bindings-ok (,var ,term-with-back)))
+          (instances (isodata-gen-forth-guard-instances-to-terms-back-aux
+                      (cdr terms) (cdr arg-isomaps) args back-of-args wrld)))
+       (cons instance instances)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
