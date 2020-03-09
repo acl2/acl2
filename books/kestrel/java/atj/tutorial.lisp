@@ -272,13 +272,13 @@
 
   (xdoc::topstring
 
-   (atj-tutorial-section "Logical and Evaluation Semantics")
-
    (xdoc::p
     "In the context of translating from the ACL2 language
      to Java or any other programming language,
      it is important to consider not only ACL2's logical semantics,
      but also ACL2's evaluation semantics.")
+
+   (atj-tutorial-section "Logical and Evaluation Semantics")
 
    (xdoc::p
     "ACL2 has a precisely defined "
@@ -495,6 +495,8 @@
      described in this tutorial page.
      More advanced representations are discussed later.")
 
+   (atj-tutorial-section "ACL2 Values")
+
    (xdoc::p
     "The set of values of the ACL2 evaluation semantics
      is the union of the sets depicted below:
@@ -524,6 +526,8 @@
      however, such values cannot be constructed in evaluation.")
 
    (xdoc::img :src "res/kestrel-java-atj-images/values.png")
+
+   (atj-tutorial-section "Java Classes")
 
    (xdoc::p
     "AIJ represents ACL2 values
@@ -583,6 +587,8 @@
      to overcome the current limits
      (e.g. by using lists of @('java.math.BigInteger')s).")
 
+   (atj-tutorial-section "Java Factory and Getter Methods")
+
    (xdoc::p
     "The public classes for ACL2 values and package names
      in the UML diagram above
@@ -625,6 +631,8 @@
      because in object-oriented programming the latter terms
      may imply object allocation and deallocation,
      which is not necessarily what the AIJ API does.")
+
+   (atj-tutorial-section "More Information")
 
    (xdoc::p
     "For more details on AIJ's implementation and API of ACL2 values,
