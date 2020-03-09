@@ -15,12 +15,12 @@
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/apply-fn-into-ifs" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "kestrel/utilities/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
@@ -1584,27 +1584,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-lemma-instance-y1...yp-to-back/forth
+(define isodata-gen-lemma-instance-args-to-back-of-args
   ((lemma (or (symbolp lemma)
               (symbol-listp lemma)) "Lemma to generate an instance of.")
-   (args$ symbol-listp)
-   (back$/forth$ pseudo-termfnp))
-  :returns (lemma-instance true-listp)
+   (old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (wrld plist-worldp))
+  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
+  :returns (inst "A @(tsee doublet-listp).")
   :verify-guards nil
   :short "Generate a lemma instance where
-          @('y1'), ..., @('yp') are instantiated with
-          either @('(back y1)'), ..., @('(back yp)')
-          or @('(forth y1)'), ..., @('(forth yp)')."
-  :long
-  (xdoc::topstring-p
-   "The result is either
-    @('(:instance lemma (y1 (back y1)) ... (yp (back yp)))') or
-    @('(:instance lemma (y1 (forth y1)) ... (yp (forth yp)))').
-    Note that if @('lemma') is a guard or termination theorem,
-    it is a list of symbols, not a single symbol.")
-  (b* ((back/forth-of-args (apply-unary-to-terms back$/forth$ args$))
-       (instantiation (alist-to-doublets (pairlis$ args$ back/forth-of-args))))
-    `(:instance ,lemma :extra-bindings-ok ,@instantiation)))
+          the variables @('x1'), ..., @('xn') are instantiated with
+          @('(back1 x1)'), ..., @('(backn xn)')."
+  (b* ((args (formals old$ wrld))
+       (inst (isodata-gen-lemma-instance-args-to-back-of-args-aux
+              args arg-isomaps)))
+    `(:instance ,lemma :extra-bindings-ok ,@inst))
+
+  :prepwork
+  ((define isodata-gen-lemma-instance-args-to-back-of-args-aux
+     ((args symbol-listp)
+      (arg-isomaps isodata-symbol-isomap-alistp))
+     :guard (= (len args) (len arg-isomaps))
+     :returns inst ; DOUBLET-LISTP
+     :verify-guards nil
+     (b* (((when (endp args)) nil)
+          (arg (car args))
+          (isomap (cdar arg-isomaps))
+          (back (isodata-isomap->back isomap))
+          (back-of-arg (apply-term* back arg))
+          (doublets (isodata-gen-lemma-instance-args-to-back-of-args-aux
+                     (cdr args) (cdr arg-isomaps))))
+       (cons (list arg back-of-arg) doublets)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-lemma-instance-args-to-forth-of-args
+  ((lemma (or (symbolp lemma)
+              (symbol-listp lemma)) "Lemma to generate an instance of.")
+   (old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (wrld plist-worldp))
+  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
+  :returns (inst "A @(tsee doublet-listp).")
+  :verify-guards nil
+  :short "Generate a lemma instance where
+          the variables @('x1'), ..., @('xn') are instantiated with
+          @('(forth1 x1)'), ..., @('(forthn xn)')."
+  (b* ((args (formals old$ wrld))
+       (inst (isodata-gen-lemma-instance-args-to-forth-of-args-aux
+              args arg-isomaps)))
+    `(:instance ,lemma :extra-bindings-ok ,@inst))
+
+  :prepwork
+  ((define isodata-gen-lemma-instance-args-to-forth-of-args-aux
+     ((args symbol-listp)
+      (arg-isomaps isodata-symbol-isomap-alistp))
+     :guard (= (len args) (len arg-isomaps))
+     :returns inst ; DOUBLET-LISTP
+     :verify-guards nil
+     (b* (((when (endp args)) nil)
+          (arg (car args))
+          (isomap (cdar arg-isomaps))
+          (forth (isodata-isomap->forth isomap))
+          (forth-of-arg (apply-term* forth arg))
+          (doublets (isodata-gen-lemma-instance-args-to-forth-of-args-aux
+                     (cdr args) (cdr arg-isomaps))))
+       (cons (list arg forth-of-arg) doublets)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2074,6 +2120,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2095,18 +2142,15 @@
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
                                      app-cond-thm-names)))
        (instance-termination-thm-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth
-         `(:termination-theorem ,old$)
-         args$
-         back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args
+         `(:termination-theorem ,old$) old$ arg-isomaps wrld))
        (instances-back-image
         (isodata-gen-lemma-instances-var-to-terms back-image
                                                   b
                                                   args$))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-rec-call-args
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args
+         oldp-of-rec-call-args old$ arg-isomaps wrld))
        (instances-back-of-forth
         (isodata-gen-lemma-instances-var-to-update-y1...yp back-of-forth
                                                            a
@@ -2189,7 +2233,8 @@
                    nil))
        (termination-hints? (if recursive
                                (isodata-gen-new-fn-termination-hints
-                                app-cond-thm-names old$ args$ isomap wrld)
+                                app-cond-thm-names old$ args$ isomap
+                                arg-isomaps wrld)
                              nil))
        (local-event
         `(local
@@ -2254,6 +2299,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
@@ -2275,9 +2321,10 @@
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
                                      app-cond-thm-names)))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-rec-call-args
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-back-image
         (isodata-gen-lemma-instances-var-to-terms back-image
                                                   b
@@ -2315,6 +2362,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
@@ -2337,9 +2385,10 @@
                                      app-cond-thm-names)))
        (oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-rec-call-args
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-oldp-of-old
         (isodata-gen-lemma-instances-x1...xn-to-update-x1...xn oldp-of-old
                                                                rec-calls
@@ -2393,6 +2442,7 @@
    (args$ symbol-listp)
    (res$ booleanp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
@@ -2407,6 +2457,7 @@
                                                     old$
                                                     args$
                                                     isomap
+                                                    arg-isomaps
                                                     new-name$
                                                     old-fn-unnorm-name
                                                     new-fn-unnorm-name
@@ -2415,6 +2466,7 @@
                                                      old$
                                                      args$
                                                      isomap
+                                                     arg-isomaps
                                                      new-name$
                                                      old-fn-unnorm-name
                                                      new-fn-unnorm-name
@@ -2461,6 +2513,7 @@
                                                 args$
                                                 res$
                                                 isomap
+                                                arg-isomaps
                                                 new-name$
                                                 old-fn-unnorm-name
                                                 new-fn-unnorm-name
@@ -2497,8 +2550,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm-nonres-hints
-  ((args$ symbol-listp)
+  ((old$ symbolp)
+   (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -2519,9 +2574,10 @@
                                                   a
                                                   args$))
        (instance-new-to-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth new-to-old
-                                                          args$
-                                                          forth$)))
+        (isodata-gen-lemma-instance-args-to-forth-of-args new-to-old
+                                                          old$
+                                                          arg-isomaps
+                                                          wrld)))
     `(("Goal"
        :in-theory nil
        :use (,@instances-forth-image
@@ -2535,6 +2591,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -2556,9 +2613,10 @@
                                                   a
                                                   args$))
        (instance-new-to-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth new-to-old
-                                                          args$
-                                                          forth$))
+        (isodata-gen-lemma-instance-args-to-forth-of-args new-to-old
+                                                          old$
+                                                          arg-isomaps
+                                                          wrld))
        (instance-back-of-forth-res
         `(:instance ,back-of-forth
           :extra-bindings-ok (,a (,old$ ,@(formals old$ wrld))))))
@@ -2578,6 +2636,7 @@
    (args$ symbol-listp)
    (res$ booleanp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -2589,10 +2648,13 @@
                                             old$
                                             args$
                                             isomap
+                                            arg-isomaps
                                             new-to-old
                                             wrld)
-    (isodata-gen-old-to-new-thm-nonres-hints args$
+    (isodata-gen-old-to-new-thm-nonres-hints old$
+                                             args$
                                              isomap
+                                             arg-isomaps
                                              new-to-old
                                              wrld)))
 
@@ -2628,6 +2690,7 @@
                                                 args$
                                                 res$
                                                 isomap
+                                                arg-isomaps
                                                 new-to-old
                                                 wrld))
        (local-event `(local
@@ -2670,6 +2733,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints true-listp)
@@ -2694,9 +2758,10 @@
                                                   b
                                                   args$))
        (instance-oldp-of-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-old
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-old
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (old-call (fcons-term old$ (formals old$ wrld)))
        (old-call-of-back-args
         (subcor-var args$ (apply-unary-to-terms back$ args$) old-call))
@@ -2747,6 +2812,7 @@
                                                  old$
                                                  args$
                                                  isomap
+                                                 arg-isomaps
                                                  new-to-old
                                                  wrld))
        (event `(local
@@ -2762,6 +2828,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
   :returns (hints true-listp)
   :verify-guards nil
@@ -2778,9 +2845,10 @@
        (b (isodata-gen-var-b back$ wrld))
        (old-guard-pred (cdr (assoc-eq :old-guard-pred app-cond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth `(:guard-theorem ,old$)
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-newp-guard
         (isodata-gen-lemma-instances-var-to-terms newp-guard
                                                   b
@@ -2794,9 +2862,10 @@
                                                   b
                                                   args$))
        (instance-old-guard-pred
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth old-guard-pred
-                                                          args$
-                                                          back$)))
+        (isodata-gen-lemma-instance-args-to-back-of-args old-guard-pred
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld)))
     `(("Goal"
        :in-theory nil
        :use (,instance-guard-thm-old
@@ -2812,6 +2881,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -2840,10 +2910,10 @@
        (old-guard-pred (cdr (assoc-eq :old-guard-pred
                               app-cond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth
-         `(:guard-theorem ,old$)
-         args$
-         back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-newp-guard
         (isodata-gen-lemma-instances-var-to-terms newp-guard
                                                   b
@@ -2881,13 +2951,15 @@
                                                            back$
                                                            wrld))
        (instance-old-guard-pred
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth old-guard-pred
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args old-guard-pred
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-rec-call-args
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-new-to-old
         (isodata-gen-lemma-instances-x1...xn-to-forth-update-x1...xn new-to-old
                                                                      rec-calls
@@ -2916,6 +2988,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -2927,12 +3000,14 @@
                                                        old$
                                                        args$
                                                        isomap
+                                                       arg-isomaps
                                                        new-to-old
                                                        wrld)
     (isodata-gen-new-fn-verify-guards-hints-pred-nonrec app-cond-thm-names
                                                         old$
                                                         args$
                                                         isomap
+                                                        arg-isomaps
                                                         wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2941,6 +3016,7 @@
   ((old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
   :returns (hints true-listp)
   :verify-guards nil
@@ -2957,10 +3033,10 @@
        (back-guard (isodata-isomap->back-guard isomap))
        (b (isodata-gen-var-b back$ wrld))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth
-         `(:guard-theorem ,old$)
-         args$
-         back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-newp-guard
         (isodata-gen-lemma-instances-var-to-terms newp-guard
                                                   b
@@ -2982,6 +3058,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (old-fn-unnorm-name symbolp)
    (wrld plist-worldp))
   :returns (hints true-listp)
@@ -3001,10 +3078,10 @@
        (b (isodata-gen-var-b back$ wrld))
        (oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth
-         `(:guard-theorem ,old$)
-         args$
-         back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-newp-guard
         (isodata-gen-lemma-instances-var-to-terms newp-guard
                                                   b
@@ -3018,13 +3095,15 @@
                                                   b
                                                   args$))
        (instance-oldp-of-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-old
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-old
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instance-old-fn-unnorm-name
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth old-fn-unnorm-name
-                                                          args$
-                                                          back$)))
+        (isodata-gen-lemma-instance-args-to-back-of-args old-fn-unnorm-name
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld)))
     `(("Goal"
        :in-theory nil
        :use (,instance-guard-thm-old
@@ -3041,6 +3120,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (thm-name$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
@@ -3069,9 +3149,10 @@
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
                                      app-cond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth `(:guard-theorem ,old$)
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-newp-guard
         (isodata-gen-lemma-instances-var-to-terms newp-guard
                                                   b
@@ -3109,9 +3190,10 @@
                                                            back$
                                                            wrld))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-rec-call-args
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-old-to-new
         (isodata-gen-lemma-instances-x1...xn-to-update-x1...xn thm-name$
                                                                rec-calls
@@ -3138,6 +3220,7 @@
    (old$ symbolp)
    (args$ symbol-listp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (old-fn-unnorm-name symbolp)
@@ -3170,10 +3253,10 @@
                                      app-cond-thm-names)))
        (rec-calls (recursive-calls old$ wrld))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth
-         `(:guard-theorem ,old$)
-         args$
-         back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-newp-guard
         (isodata-gen-lemma-instances-var-to-terms newp-guard
                                                   b
@@ -3211,9 +3294,10 @@
                                                            back$
                                                            wrld))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-rec-call-args
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-old-to-new
         (isodata-gen-lemma-instances-x1...xn-to-update-x1...xn thm-name$
                                                                rec-calls
@@ -3222,13 +3306,15 @@
                                                                back$
                                                                wrld))
        (instance-oldp-of-old
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth oldp-of-old
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-old
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instance-old-fn-unnorm-name
-        (isodata-gen-lemma-instance-y1...yp-to-back/forth old-fn-unnorm-name
-                                                          args$
-                                                          back$))
+        (isodata-gen-lemma-instance-args-to-back-of-args old-fn-unnorm-name
+                                                         old$
+                                                         arg-isomaps
+                                                         wrld))
        (instances-newp-of-new
         (isodata-gen-lemma-instances-x1...xn-to-forth-update-x1...xn newp-of-new
                                                                      rec-calls
@@ -3278,6 +3364,7 @@
    (args$ symbol-listp)
    (res$ booleanp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (old-fn-unnorm-name symbolp)
@@ -3294,6 +3381,7 @@
            old$
            args$
            isomap
+           arg-isomaps
            new-name$
            thm-name$
            old-fn-unnorm-name
@@ -3304,6 +3392,7 @@
          old$
          args$
          isomap
+         arg-isomaps
          thm-name$
          wrld))
     (if res$
@@ -3312,12 +3401,14 @@
          old$
          args$
          isomap
+         arg-isomaps
          old-fn-unnorm-name
          wrld)
       (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-nonres
        old$
        args$
        isomap
+       arg-isomaps
        wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3328,6 +3419,7 @@
    (args$ symbol-listp)
    (res$ booleanp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (predicate$ booleanp)
    (new-to-old symbolp)
    (new-name$ symbolp)
@@ -3343,6 +3435,7 @@
                                                    old$
                                                    args$
                                                    isomap
+                                                   arg-isomaps
                                                    new-to-old
                                                    wrld)
     (isodata-gen-new-fn-verify-guards-hints-nonpred app-cond-thm-names
@@ -3350,6 +3443,7 @@
                                                     args$
                                                     res$
                                                     isomap
+                                                    arg-isomaps
                                                     new-name$
                                                     thm-name$
                                                     old-fn-unnorm-name
@@ -3364,6 +3458,7 @@
    (args$ symbol-listp)
    (res$ booleanp)
    (isomap isodata-isomapp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
    (predicate$ booleanp)
    (new-name$ symbolp)
    (new-to-old symbolp)
@@ -3400,6 +3495,7 @@
                                                       args$
                                                       res$
                                                       isomap
+                                                      arg-isomaps
                                                       predicate$
                                                       new-to-old
                                                       new-name$
@@ -3585,6 +3681,7 @@
                                            args$
                                            res$
                                            isomap
+                                           arg-isomaps
                                            predicate$
                                            new-name$
                                            new-to-old

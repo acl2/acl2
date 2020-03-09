@@ -82,6 +82,7 @@
                          disable*
                          disjoin
                          do-all
+                         doublet-listp
                          doublets-to-alist
                          drop-fake-runes
                          dumb-negate-lit
