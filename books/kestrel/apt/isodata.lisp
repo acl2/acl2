@@ -1654,6 +1654,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-subst-args-with-back-of-args
+  ((term pseudo-termp)
+   (old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (wrld plist-worldp))
+  :returns (new-term "A @(tsee pseudo-termp).")
+  :verify-guards nil
+  :short "Substitute each formal @('xi') of @('old') in a term
+          with the term @('(backi xi)'),
+          where @('backi') is the conversion associated to @('xi')."
+  (b* ((args (formals old$ wrld))
+       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
+    (subcor-var args back-of-args term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-gen-lemma-instances-var-to-update-y1...yp
   ((lemma symbolp "Lemma to generate instances of.")
    (var symbolp "Lemma variable to instantiate.")
@@ -1937,9 +1953,11 @@
     (if predicate$
         (conjoin newp-of-args)
       (b* ((old-guard (uguard old$ wrld))
-           (back-of-args (isodata-gen-back-of-terms x1...xn arg-isomaps))
            (old-guard-with-back-of-args
-            (subcor-var x1...xn back-of-args old-guard)))
+            (isodata-gen-subst-args-with-back-of-args old-guard
+                                                      old$
+                                                      arg-isomaps
+                                                      wrld)))
         (conjoin (append newp-of-args
                          (list old-guard-with-back-of-args)))))))
 
@@ -1974,9 +1992,11 @@
        (old-body-with-new-rec-calls
         (isodata-xform-rec-calls
          old-body old$ arg-isomaps res-isomap? new-name$))
-       (back-of-args (isodata-gen-back-of-terms x1...xn arg-isomaps))
        (old-body-with-back-of-args
-        (subcor-var x1...xn back-of-args old-body-with-new-rec-calls))
+        (isodata-gen-subst-args-with-back-of-args old-body-with-new-rec-calls
+                                                  old$
+                                                  arg-isomaps
+                                                  wrld))
        (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps))
        (newp-of-args-conj (conjoin newp-of-args)))
     (if (equal newp-of-args-conj *t*)
@@ -2006,8 +2026,11 @@
        (old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
                    (ubody old$ wrld)))
-       (back-of-args (isodata-gen-back-of-terms x1...xn arg-isomaps))
-       (old-body-with-back-of-args (subcor-var x1...xn back-of-args old-body))
+       (old-body-with-back-of-args
+        (isodata-gen-subst-args-with-back-of-args old-body
+                                                  old$
+                                                  arg-isomaps
+                                                  wrld))
        (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps))
        (newp-of-args-conj (conjoin newp-of-args))
        (then-branch (if res-isomap?
@@ -2062,9 +2085,11 @@
        (old-body-with-new-rec-calls
         (isodata-xform-rec-calls
          old-body old$ arg-isomaps res-isomap? new-name$))
-       (back-of-args (isodata-gen-back-of-terms x1...xn arg-isomaps))
        (old-body-with-back-of-args
-        (subcor-var x1...xn back-of-args old-body-with-new-rec-calls))
+        (isodata-gen-subst-args-with-back-of-args old-body-with-new-rec-calls
+                                                  old$
+                                                  arg-isomaps
+                                                  wrld))
        (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps))
        (then-branch (if res-isomap?
                         (apply-fn-into-ifs (isodata-isomap->forth res-isomap?)
@@ -2108,10 +2133,11 @@
   :returns (measure "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the measure of the function, if recursive."
-  (b* ((x1...xn (formals old$ wrld))
-       (old-measure (measure old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms x1...xn arg-isomaps)))
-    (subcor-var x1...xn back-of-args old-measure)))
+  (b* ((old-measure (measure old$ wrld)))
+    (isodata-gen-subst-args-with-back-of-args old-measure
+                                              old$
+                                              arg-isomaps
+                                              wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
