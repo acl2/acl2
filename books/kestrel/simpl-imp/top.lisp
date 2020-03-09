@@ -54,7 +54,7 @@
       variables (i.e. symbolic names),
       and a few arithmetic operators like addition multiplication.
       These expressions are always integer-valued,
-      without any size limitat;
+      without any size limitations;
       the arithmetic operators are exact, i.e. not modular.")
     (xdoc::li
      "Boolean expressions,
