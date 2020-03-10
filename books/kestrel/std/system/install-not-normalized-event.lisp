@@ -25,7 +25,7 @@
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp): the name of the theorem."))
   :mode :program
-  :parents (system-utilities-non-built-in install-not-normalized)
+  :parents (std/system install-not-normalized)
   :short "Create an event form to
           <see topic='@(url install-not-normalized)'>install
           the non-normalized definition</see>
@@ -58,7 +58,7 @@
   :returns (mv (events "A list of @(tsee pseudo-event-formp) values.")
                (names "A @(tsee symbol-listp): the names of the theorems."))
   :mode :program
-  :parents (system-utilities-non-built-in install-not-normalized)
+  :parents (std/system install-not-normalized)
   :short "Create a list of event forms to
           <see topic='@(url install-not-normalized)'>install
           the non-normalized definitions</see>
