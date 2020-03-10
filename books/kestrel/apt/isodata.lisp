@@ -1270,25 +1270,24 @@
     "                   ..."
     "                   (oldp update1-yp<x1,...,xn>)))"
     "     ..."
-    "     (implies contextM<x1,...,xn>"
+    "     (implies contextm<x1,...,xn>"
     "              (and (oldp updatem-y1<x1,...,xn>)"
     "                   ..."
     "                   (oldp updatem-yp<x1,...,xn>))))")
    (xdoc::p
     "of the @(':oldp-of-rec-call-args') applicability condition."))
-  (if (endp rec-calls-with-tests)
-      *t*
-    (b* ((tests-and-call (car rec-calls-with-tests))
-         (tests (access tests-and-call tests-and-call :tests))
-         (rec-call (access tests-and-call tests-and-call :call))
-         (context (conjoin tests))
-         (rest (cdr rec-calls-with-tests)))
-      (conjoin2
-       (implicate context
-                  (conjoin (isodata-gen-oldp-of-terms (fargs rec-call)
-                                                      arg-isomaps)))
-       (isodata-gen-oldp-of-rec-call-args-under-contexts rest
-                                                         arg-isomaps)))))
+  (b* (((when (endp rec-calls-with-tests)) *t*)
+       (tests-and-call (car rec-calls-with-tests))
+       (tests (access tests-and-call tests-and-call :tests))
+       (rec-call (access tests-and-call tests-and-call :call))
+       (context (conjoin tests)))
+    (conjoin2
+     (implicate context
+                (conjoin (isodata-gen-oldp-of-terms (fargs rec-call)
+                                                    arg-isomaps)))
+     (isodata-gen-oldp-of-rec-call-args-under-contexts (cdr
+                                                        rec-calls-with-tests)
+                                                       arg-isomaps))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1300,49 +1299,34 @@
   :returns (formula "An untranslated term.")
   :mode :program
   :short "Generate the formula of the specified applicability condition."
-  (b* ((wrld (w state)))
-    (case app-cond
-      (:oldp-of-old
-       (untranslate
-        (b* ((oldp-of-args (isodata-gen-oldp-of-terms (formals old$ wrld)
-                                                      arg-isomaps))
-             (res-oldp (isodata-isomap->oldp res-isomap?)))
-          (implicate (conjoin oldp-of-args)
-                     `(,res-oldp (,old$ ,@(formals old$ wrld)))))
-        t wrld))
-      (:oldp-when-old
-       (untranslate
-        (b* ((oldp-of-args (isodata-gen-oldp-of-terms (formals old$ wrld)
-                                                      arg-isomaps)))
-          (implicate `(,old$ ,@(formals old$ wrld))
-                     (conjoin oldp-of-args)))
-        t wrld))
-      (:oldp-of-rec-call-args
-       (untranslate
-        (b* ((oldp-of-args (isodata-gen-oldp-of-terms (formals old$ wrld)
-                                                      arg-isomaps)))
-          (implicate (conjoin oldp-of-args)
-                     (isodata-gen-oldp-of-rec-call-args-under-contexts
-                      (recursive-calls old$ wrld)
-                      arg-isomaps)))
-        t wrld))
-      (:old-guard
-       (untranslate
-        (b* ((old-guard-formula (uguard old$ wrld))
-             (oldp-of-args (isodata-gen-oldp-of-terms (formals old$ wrld)
-                                                      arg-isomaps)))
-          (implicate old-guard-formula
-                     (conjoin oldp-of-args)))
-        t wrld))
-      (:old-guard-pred
-       (untranslate
-        (b* ((old-guard-formula (uguard old$ wrld))
-             (oldp-of-args (isodata-gen-oldp-of-terms (formals old$ wrld)
-                                                      arg-isomaps)))
-          (implicate (conjoin oldp-of-args)
-                     old-guard-formula))
-        t wrld))
-      (t (impossible)))))
+  (b* ((wrld (w state))
+       (args (formals old$ wrld))
+       (oldp-of-args (isodata-gen-oldp-of-terms args arg-isomaps))
+       (oldp-of-args-conj (conjoin oldp-of-args))
+       (formula
+        (case app-cond
+          (:oldp-of-old
+           (b* ((oldp-res (isodata-isomap->oldp res-isomap?)))
+             (implicate oldp-of-args-conj
+                        `(,oldp-res (,old$ ,@args)))))
+          (:oldp-when-old
+           (implicate `(,old$ ,@args)
+                      oldp-of-args-conj))
+          (:oldp-of-rec-call-args
+           (implicate oldp-of-args-conj
+                      (isodata-gen-oldp-of-rec-call-args-under-contexts
+                       (recursive-calls old$ wrld)
+                       arg-isomaps)))
+          (:old-guard
+           (b* ((old-guard-formula (uguard old$ wrld)))
+             (implicate old-guard-formula
+                        oldp-of-args-conj)))
+          (:old-guard-pred
+           (b* ((old-guard-formula (uguard old$ wrld)))
+             (implicate oldp-of-args-conj
+                        old-guard-formula)))
+          (t (impossible)))))
+    (untranslate formula t wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1462,13 +1446,11 @@
   (xdoc::topstring
    (xdoc::p
     "Turn each call  @('(old updatej-x1 ... updatej-xn)') inside a term
-     into @('(back (new (forth1 updatej-x1) ... (forthn updatej-xn)))')
+     into @('(back-res (new (forth1 updatej-x1) ... (forthn updatej-xn)))')
      or @('(new (forth1 updatej-x1) ... (forthn updatej-xn))'),
      depending on whether @(':result') is in @('args/res-iso') or not.
      where @('forthi') is the conversion for the argument @('xi')
-     (currently either the one in @('args/res-iso') or the identity)
-     and @('res-back') is the conversion for the result
-     (currently either the one in @('args/res-iso') or the identity).
+     and @('back-res') is the conversion for the result.
      This is an intermediate step in the construction of
      the body of the new function from the body of @('old')."))
 
@@ -1562,7 +1544,7 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
   :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (inst "A @('doublet-listp').")
+  :returns (lemma-instance true-listp)
   :verify-guards nil
   :short "Generate a lemma instance where
           the variables @('x1'), ..., @('xn') are instantiated with
@@ -1581,7 +1563,7 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
   :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (inst "A @('doublet-listp').")
+  :returns (lemma-instance true-listp)
   :verify-guards nil
   :short "Generate a lemma instance where
           the variables @('x1'), ..., @('xn') are instantiated with
@@ -2177,19 +2159,21 @@
     "This is according to the design notes,
      taking into account that there may be multiple recursive calls,
      while the design notes only assume one."))
-  (b* ((back$ (isodata-isomap->back isomap))
-       (back-image (isodata-isomap->back-image isomap))
-       (b (isodata-gen-var-b back$ wrld))
-       (rec-calls (recursive-calls old$ wrld))
-       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
-                                     app-cond-thm-names)))
+  (b* ((rec-calls (recursive-calls old$ wrld))
+       (oldp-of-rec-call-args
+        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
        (instance-termination-thm-old
         (isodata-gen-lemma-instance-args-to-back-of-args
          `(:termination-theorem ,old$) old$ arg-isomaps wrld))
+
+       (back$ (isodata-isomap->back isomap))
+       (back-image (isodata-isomap->back-image isomap))
+       (b (isodata-gen-var-b back$ wrld))
        (instances-back-image
         (isodata-gen-lemma-instances-var-to-terms back-image
                                                   b
                                                   args$))
+
        (instance-oldp-of-rec-call-args
         (isodata-gen-lemma-instance-args-to-back-of-args
          oldp-of-rec-call-args old$ arg-isomaps wrld))
