@@ -3579,6 +3579,7 @@
   (b* ((wrld (w state))
        (isomaps (append (strip-cdrs arg-isomaps)
                         (and res-isomap? (list res-isomap?))))
+       (isomaps (remove-duplicates-equal isomaps))
        (defiso-events (isodata-gen-defisos isomaps verify-guards$ print$))
        ((mv app-cond-thm-events
             app-cond-thm-names)
