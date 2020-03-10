@@ -118,6 +118,11 @@
   (xdoc::topstring
 
    (xdoc::p
+    "This is the top page of the ATJ tutorial.")
+
+   (atj-tutorial-section "Scope of the Tutorial")
+
+   (xdoc::p
     "This tutorial is work in progress,
      but it may be already useful in its current incomplete form.
      This tutorial's goal is to provide user-level information
@@ -176,6 +181,11 @@
   :long
 
   (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page provides motivation for ATJ,
+     and more in general for code generators for ACL2,
+     especially in light of ACL2's code ability to run as Common Lisp code.")
 
    (atj-tutorial-section "Code Generation in Theorem Provers")
 
@@ -276,7 +286,9 @@
     "In the context of translating from the ACL2 language
      to Java or any other programming language,
      it is important to consider not only ACL2's logical semantics,
-     but also ACL2's evaluation semantics.")
+     but also ACL2's evaluation semantics.
+     This tutorial page provides some background
+     on ACL2's evaluation semantics.")
 
    (atj-tutorial-section "Logical and Evaluation Semantics")
 
@@ -456,6 +468,11 @@
   (xdoc::topstring
 
    (xdoc::p
+    "This tutorial page clarifies the relationship between ATJ and AIJ.")
+
+   (atj-tutorial-section "Purpose of AIJ")
+
+   (xdoc::p
     (xdoc::seetopic "aij" "AIJ")
     " is related to, but independent from, ATJ.
      ATJ generates Java code that needs at least part of AIJ to run:
@@ -464,6 +481,8 @@
      AIJ does not need or depend on ATJ:
      it can be used independently.
      However, AIJ's main use is as support for ATJ.")
+
+   (atj-tutorial-section "More Information on AIJ")
 
    (xdoc::p
     "See "
@@ -653,6 +672,13 @@
   (xdoc::topstring
 
    (xdoc::p
+    "This tutorial page provides an introduction to
+     the main code generation option provided by ATJ,
+     namely the choice between the deep and shallow embedding approach.")
+
+   (atj-tutorial-section "Comparison between Deep and Shallow Embeddings")
+
+   (xdoc::p
     "Translating ACL2 to Java involves
      not only "
     (xdoc::seetopic "atj-tutorial-acl2-values"
@@ -683,6 +709,8 @@
      of ACL2's syntax and (evaluation) semantics in Java.
      Instead, the ACL2 constructs are mapped to Java constructs
      in a way that Java's semantics corresponds to ACL2's semantics.")
+
+   (atj-tutorial-section "ATJ's Support for Deep and Shallow Embedding")
 
    (xdoc::p
     "Compilers and code generators
@@ -715,6 +743,13 @@
   :long
 
   (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page describes and exemplifies
+     most aspects of using ATJ with the deep embedding approach.
+     Other aspects are described in subsequent pages.")
+
+   (atj-tutorial-section "AIJ's Role")
 
    (xdoc::p
     (xdoc::seetopic "atj-tutorial-aij" "AIJ")
@@ -796,6 +831,8 @@
 
    (xdoc::img :src "res/kestrel-java-atj-images/aij-api.png")
 
+   (atj-tutorial-section "ATJ's Role")
+
    (xdoc::p
     "ATJ automates the first part of the protocol described above,
      namely the building of the ACL2 environment
@@ -809,6 +846,8 @@
      passed to and received from function calls.")
 
    (xdoc::img :src "res/kestrel-java-atj-images/atj-aij-api.png")
+
+   (atj-tutorial-section "Example of Generated Code")
 
    (xdoc::p
     "For example, consider the following factorial function:")
@@ -906,6 +945,8 @@
      evaluates an ACL2 function call,
      by invoking the relevant AIJ method (the details are unimportant here).")
 
+   (atj-tutorial-section "Example of External Code")
+
    (xdoc::p
     "External Java code must call @('initialize()')
      not only before calling @('call(Acl2Symbol, Acl2Value[])'),
@@ -945,6 +986,8 @@
      because @('call(Acl2Symbol, Acl2Value[])') may throw it in general,
      even though it will not in this case.")
 
+   (atj-tutorial-section "Example of Compiling and Running the Code")
+
    (xdoc::p
     "If the code above is in a file @('Test.java')
      in the same directory where @('Acl2Code.java') was generated,
@@ -968,6 +1011,8 @@
     "where again @('[books]/...') must be replaced with a proper path.
      A fairly large number will be printed on the screen.
      Some ACL2 has just been run in Java.")
+
+   (atj-tutorial-section "Java Stack Space Considerations")
 
    (xdoc::p
     "If the @('100') passed to the factorial function call
@@ -1018,7 +1063,7 @@
                     "deep and shallow embedding approaches")
     ". The more complex options are covered elsewhere in this tutorial.")
 
-   (xdoc::h3 "Java Package")
+   (atj-tutorial-section "Java Package")
 
    (xdoc::p
     "The Java code generated for the factorial function in "
@@ -1065,7 +1110,7 @@
      The directory where the file is generated
      can be customized via the @(':output-dir') option, described below.")
 
-   (xdoc::h3 "Java Class")
+   (atj-tutorial-section "Java Class")
 
    (xdoc::p
     "The Java class generated for the factorial function in "
@@ -1101,7 +1146,7 @@
      ATJ does not support the generation of
      class names with non-ASCII characters.")
 
-   (xdoc::h3 "Output Directory")
+   (atj-tutorial-section "Output Directory")
 
    (xdoc::p
     "The Java file generated for the factorial function in "
