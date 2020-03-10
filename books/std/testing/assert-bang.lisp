@@ -14,12 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The macro assert!, defined and illustrated below, allows for assertions
-; within an ACL2 book, as requested by David Rager.
-
-; 2012-03-12: David Rager made the calls to assert! that fail local, so that
-; break-on-error wouldn't break when including this book.  Also, it's nice to
-; have less clutter when including the book.
+; Thanks to David Rager for a request leading to the definition of assert!.
 
 (defxdoc assert!
   :parents (std/testing assert$ errors)
