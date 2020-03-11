@@ -1043,36 +1043,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-var-a ((forth$ pseudo-termfnp)
-                           (wrld plist-worldp))
-  :returns (x "A @(tsee symbolp).")
-  :verify-guards nil
-  :short "Generate the variable @('a') to use in
-          some of the applicability conditions."
-  :long
-  (xdoc::topstring-p
-   "We use the (unique) formal parameter of
-    the conversion from the old representation to the new representation.")
-  (car (cond ((symbolp forth$) (formals forth$ wrld))
-             (t (lambda-formals forth$)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-var-b ((back$ pseudo-termfnp)
-                           (wrld plist-worldp))
-  :returns (b "A @(tsee symbolp).")
-  :verify-guards nil
-  :short "Generate the variable @('b') to use in
-          some of the applicability conditions."
-  :long
-  (xdoc::topstring-p
-   "We use the (unique) formal parameter of
-    the conversion from the new representation to the old representation.")
-  (car (cond ((symbolp back$) (formals back$ wrld))
-             (t (lambda-formals back$)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define isodata-gen-oldp-of-terms ((terms pseudo-term-listp)
                                    (arg-isomaps isodata-symbol-isomap-alistp))
   :guard (= (len terms) (len arg-isomaps))
