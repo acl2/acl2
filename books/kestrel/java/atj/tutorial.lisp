@@ -45,6 +45,9 @@
 (defconst *atj-tutorial-customization*
   "Customization Options for Generated Code")
 
+(defconst *atj-tutorial-translated*
+  "ACL2 Functions Translated To Java")
+
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
@@ -1194,7 +1197,247 @@
      As already noted above, all these directories must exist;
      ATJ does not create them.")
 
-   (atj-tutorial-previous "atj-tutorial-deep" *atj-tutorial-deep*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-translated" *atj-tutorial-translated*
+    "atj-tutorial-deep" *atj-tutorial-deep*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-translated
+
+  :short (atj-tutorial-short *atj-tutorial-translated*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page describes
+     which ACL2 functions are translated to Java when ATJ is called,
+     and which requirements these functions must satisfy.")
+
+   (atj-tutorial-section "Target Functions")
+
+   (xdoc::p
+    "In the factorial function example in "
+    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    ", ATJ is called with a single target ACL2 function, @('fact'), as argument.
+     As noted in that page, ATJ generates a Java representation
+     not only of the @('fact') function,
+     but also of the functions called by it directly or indirectly,
+     except for the ACL2 primitive functions,
+     as detailed in that tutorial page.")
+
+   (xdoc::p
+    "In general, ATJ may be called with more than one target ACL2 function
+     (at least one is required):")
+   (xdoc::codeblock
+    "(java::atj f1 f2 f3 ...)")
+   (xdoc::p
+    "ATJ generates code not only for the functions explicitly given,
+     but also for all the ones called by them directly or indirectly,
+     except for the ACL2 primitive function.
+     Normally, ATJ should be called on the top-level function(s)
+     for which Java code must be generated;
+     it is harmless, but unnecessary,
+     to explicitly include non-top-level functions in the ATJ call.")
+
+   (atj-tutorial-section "Calling Relation")
+
+   (xdoc::p
+    "We need to be more precise about what
+     `called directly or indirectly' means in this context.
+     ATJ looks at the unnormalized body of each function
+     (i.e. the @('unnormalized-body') property of the function),
+     which is the result of "
+    (xdoc::seetopic "acl2::term" "translating")
+    " the body of the @(tsee defun) that has introduced the function,
+     without any "
+    (xdoc::seetopic "acl2::normalize" "normalization")
+    ". As far as ATJ is concerned,
+     a function @('f') directly calls a function @('g')
+     if and only if @('g') occurs in the unnormalized body of @('f').
+     Then the `indirectly calling' relation is
+     the transitive closure of the `directly calling' relation.")
+
+   (xdoc::p
+    "Note that the guard of @('f') is ignored for the `calling' relation;
+     only the unnormalized body is considered.
+     That is, if the guard of @('f') calls @('g')
+     but the unnormalized body of @('f') does not,
+     then @('f') is not considered to directly call @('g').
+     It might still call @('g') indirectly,
+     if the unnormalized body of @('f') calls some other function
+     that calls @('g') directly or indirectly,
+     but that has nothing to do with the guard of @('f').
+     The reason is that currently ATJ does not generate Java code from guards;
+     this may change in the future, and with that the notion of `calling'.")
+
+   (xdoc::p
+    "If @('f') is recursive,
+     the measure of @('f') is also ignored for the `calling' relation.
+     The reason is that measures have really no significance
+     in ACL2's evaluation semantics,
+     other than serving to show that the evaluation of a function terminates.")
+
+   (xdoc::p
+    "If @('f') is a "
+    (xdoc::seetopic "acl2::primitive" "primitive function")
+    ", it has no unnormalized (or normalized) body;
+     it has no definition.
+     Therefore, according to the definition above,
+     @('f') does not call any other function directly, or indirectly.")
+
+   (atj-tutorial-section "Calling Closure")
+
+   (xdoc::p
+    "At a first approximation, we can say that
+     ATJ calculates the closure of
+     the explicitly supplied target functions @('f1'), @('f2'), etc.,
+     with respect to the calling relation defined above.
+     Starting from @('f1'), @('f2'), etc.,
+     ATJ finds all the functions called by these directly or indirectly,
+     using a worklist algorithm.
+     The search stops when primitive functions are encountered.
+     Recursive functions, also mutually recursive ones,
+     are handled appropriately (i.e. they do not cause a circular search).")
+
+   (xdoc::p
+    "While calculating this closure,
+     ATJ checks that all the functions in the closure
+     satisfy certain conditions:")
+   (xdoc::ul
+    (xdoc::li
+     "Each function must either be primitive or have an unnormalized body.
+      The reason is that, unless the function has a definition
+      or a known behavior (like the primitive functions do),
+      ATJ would not know how to translate the function to Java.
+      (There is actually an exception to this, explained later in this page.)")
+    (xdoc::li
+     "Each function must have no input or output stobjs.
+      The reason is that stobjs entail side effects,
+      as explained "
+     (xdoc::seetopic "atj-tutorial-background" "here")
+     ", and side effects are not yet supported by ATJ.")
+    (xdoc::li
+     "Each function must not have raw Lisp code,
+      unless it is in a whitelist of functions with raw Lisp code
+      that are known not to have side effects
+      and are known to behave consistently with their unnormalized body.
+      This whitelist is in the constant @('*pure-raw-p-whitelist*'),
+      used by the @(tsee pure-raw-p) utility.
+      The reason for this restriction is that
+      ATJ does not look at the raw Lisp code of those functions,
+      and therefore could not be properly translate to Java
+      the code responsible for any side effects."))
+   (xdoc::p
+    "If any of this conditions is violated,
+     ATJ stops with an error without generating Java code.")
+
+   (xdoc::p
+    "It should be possible to extend the whitelist as needed,
+     and eventually to extend ATJ to accept functions with known side effects,
+     and to generate Java code that suitably replicates those side effects.
+     This is future work.")
+
+   (atj-tutorial-section "Constrained Functions")
+
+   (xdoc::p
+    "Besides the primitive functions,
+     the ACL2 constrained functions,
+     introduced via @(tsee defchoose) or @(tsee encapsulate),
+     do not have an unnormalized body.
+     As noted above, when ATJ encounters a constrained function,
+     it normally stops with an error without generating any code.")
+
+   (xdoc::p
+    "But there is an exception to this.
+     If a constrained function @('f')
+     with formal parameters @('x1'), ..., @('xn')
+     has an " (xdoc::seetopic "defattach" "attachment") " @('g'),
+     then @('f') is treated as if its unnormalized body were
+     @('(g x1 ... xn)').
+     Thus, @('f') is treated as if it called (directly) @('g').")
+
+   (xdoc::p
+    "The attachment @('g') of @('f') may be defined, primitive, or constrained.
+     If constrained, ATJ stops without generating code,
+     unless @('g') has an attachment @('h'),
+     in which case @('g') is treated like @('f') above,
+     and then ATJ recursively examines @('h').")
+
+   (atj-tutorial-section "Special Treatment of Return-Last")
+
+   (xdoc::p
+    "The @(tsee return-last) function results from translating
+     macros like @(tsee mbe) and @(tsee prog2$).
+     In particular, @('(mbe :logic a :exec b)') is translated to
+     @('(return-last \'acl2::mbe1-raw b a)'),
+     and @('(prog2$ a b)') is translated to
+     @('(return-last \'acl2::progn a b)').
+     The @(tsee return-last) function has raw Lisp code;
+     its unnormalized body is just its last argument,
+     which does not describe its evaluation semantics
+     (just its logical semantics).")
+
+   (xdoc::p
+    "The @(tsee return-last) function
+     is not in the whitelist mentioned earlier.
+     However, ATJ accepts certain uses of @(tsee return-last):
+     these uses have a known behavior and therefore ATJ
+     knows how to generate correct Java code.")
+
+   (xdoc::p
+    "ATJ accepts calls of @(tsee return-last) of the following forms:")
+   (xdoc::ul
+    (xdoc::li
+     "@('(return-last \'acl2::mbe1-raw x y)'),
+      i.e. calls whose first argument is the symbol @('acl2::mbe1-raw').
+      As noted above, these calls result from @('(mbe :logic y :exec x)').
+      If ATJ's @(':guards') input is @('nil'),
+      ATJ treats the call as if it were just @('y');
+      if instead ATJ's @(':guards') input is @('t').
+      ATJ treats the call as if it were just @('x').
+      The reason for this is explained in more detail elsewhere.
+      However, the other subterm
+      (i.e. @('x') if @(':guards') is @('nil'),
+      and @('y') if @(':guards') is @('t'))
+      is not completely ignored:
+      ATJ still checks, recursively,
+      that the functions called directly or indirectly by that subterm
+      are known to be free of side effects.
+      No Java code is generated for these functions
+      (unless they are called directly or indirectly
+      by the subterm of @(tsee return-last) for which code is generated,
+      or more in general by the target functions),
+      but ATJ still checks that they have no side effects,
+      to ensure that the generated Java code, which has no side effects,
+      is consistent with the ACL2 evaluation semantics.
+      Note that, even if guards are verified, it is only known that
+      @('x') and @('y') are logically equal
+      in the context where the @(tsee return-last) call appears,
+      but that says nothing about side effects.")
+    (xdoc::li
+     "@('(return-last \'acl2::progn x y)'),
+      i.e. calls whose first argument is the symbol @('acl2::progn').
+      As noted above, these calls result from @('(prog2$ x y)'),
+      which in turn may result from @(tsee progn$) calls.
+      ATJ treats the call as if it were just @('y'),
+      but also checks that @('x') does not call, directly or indirectly,
+      any function that is not known to be free of side effects.
+      The process and the reason are the same
+      as in the @('acl2::mbe1-raw') case.
+      This is independent form the value of ATJ's @(':guards') input."))
+
+   (xdoc::p
+    "It should be possible to extend ATJ to accept
+     more forms of @(tsee return-last) calls,
+     and to relax the checks on possibly-side-effecting functions,
+     as also mentioned earlier in this tutorial page.
+     This is future work.")
+
+   (atj-tutorial-previous "atj-tutorial-customization"
+                          *atj-tutorial-customization*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
