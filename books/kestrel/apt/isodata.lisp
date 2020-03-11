@@ -81,23 +81,15 @@
    but they have types implied by their successful validation,
    performed when they are processed."
 
-  "@('args$') is the sublist of the @('args/res') part of @('arg/res-iso')
-   that excludes @(':result'), if present."
-
-  "@('res$') is @('t') if @('args/res') includes @(':result'),
-   @('nil') otherwise."
-
-  "@('isomap') is a record containing the information about
-   the isomorphic mapping to use to transform
-   the arguments and result of @('old')
-   (according to @('args$') and @('res$'))."
-
   "@('arg-isomaps') is an alist from the formal arguments of @('old')
    to isomorphic mapping records that specify
    how each formal argument must be transformed."
 
-  "@('res-isomap?') is either @('isomap') (if @('res$') is @('t'))
-   or @('nil') (if @('res$') is @('nil'))."
+  "@('res-isomap?') is the isomorphic mapping record for the function result,
+   or @('nil') if the result is not transformed."
+
+  "@('res-isomap') is the isomorphic mapping record for the function result.
+   This is the same as @('res-isomap?'), when that is not @('nil')."
 
   "@('app-cond-thm-names') is an alist
    from the applicability condition keywords
@@ -636,20 +628,27 @@
                                       ctx
                                       state)
   :returns (mv erp
-               (result "A tuple @('(args$
-                                    res$
-                                    isomap
-                                    names-to-avoid)')
-                        satisfying
-                        @('(typed-tuplep symbol-listp
-                                         booleanp
-                                         isodata-isomapp
-                                         symbol-listp
-                                         result)').")
+               (result "A tuple @('(arg-isomaps res-isomap? names-to-avoid)')
+                        satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
+                                                    isodata-maybe-isomapp
+                                                    symbol-listp
+                                                    result)').")
                state)
   :mode :program
   :short "Process the @('args/res-iso') input."
-  (b* (((er &) (ensure-doublet-list$ args/res-iso "The second input" t nil))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('arg-isomaps') result maps each argument in @('args/res')
+     to the isomorphic mapping specified by @('iso');
+     it maps the remaining arguments to the identity isomorphic mapping,
+     which we build here.
+     The @('res-isomap?') result is
+     the isomorphic mapping specified by @('iso')
+     if @('args/res') includes @(':result'),
+     otherwise it is @('nil')."))
+  (b* ((wrld (w state))
+       ((er &) (ensure-doublet-list$ args/res-iso "The second input" t nil))
        (len (len args/res-iso))
        ((unless (= len 1))
         (er-soft+ ctx t nil
@@ -661,50 +660,11 @@
        (args/res-iso (car args/res-iso))
        (args/res (first args/res-iso))
        (iso (second args/res-iso))
-       ((er (list args$ res$))
+       ((er (list args res))
         (isodata-process-args/res args/res old$ ctx state))
        ((er (list isomap names-to-avoid))
-        (isodata-process-iso iso old$ verify-guards$ names-to-avoid ctx state)))
-    (value (list args$ res$ isomap names-to-avoid))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-reprocess-args/res-iso ((old$ symbolp)
-                                        (args$ symbol-listp)
-                                        (res$ booleanp)
-                                        (isomap isodata-isomapp)
-                                        (verify-guards$ booleanp)
-                                        (names-to-avoid symbol-listp)
-                                        (wrld plist-worldp))
-  :returns (mv (arg-isomaps "An @(tsee isodata-symbol-isomap-alistp).")
-               (res-isomap? "An @(tsee isodata-maybe-isomapp).")
-               (names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
-  :short "Reprocess the @('args/res-iso') input."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This puts the result of processing the @('args/res-iso') input
-     in a more general and extensible form,
-     namely (i) an alist from the target function's formal arguments
-     to isomorphic mapping records
-     and (ii) an optional isomorphic mapping record for the function's result.
-     Currently each such record is
-     either the one specified in the @('args/res-iso') input
-     or one for the identity mapping over all values:
-     the former applies to the arguments in @('args$')
-     and to the result if @('res$') is @('t'),
-     while the latter applied to the other formal arguments
-     and to the result if @('res$') is @('nil').
-     However, this format allows for different isomorphic mappings
-     for different arguments and the result,
-     which will be supported in future versions of @(tsee isodata).")
-   (xdoc::p
-    "We construct the record for the identity isomorphic mapping here.
-     The corresponding @(tsee defiso) is always expected to succeed.
-     We include the guard theorems, regardless of @(':verify-guards'),
-     since those are also expected to alwyas hold."))
-  (b* ((iso-id (isodata-fresh-defiso-name-with-*s-suffix 'defiso-identity wrld))
+        (isodata-process-iso iso old$ verify-guards$ names-to-avoid ctx state))
+       (iso-id (isodata-fresh-defiso-name-with-*s-suffix 'defiso-identity wrld))
        ((mv forth-image-id
             back-image-id
             back-of-forth-id
@@ -716,8 +676,10 @@
             forth-injective-id
             back-injective-id
             names-to-avoid)
-        (isodata-fresh-defiso-thm-names
-         iso-id verify-guards$ names-to-avoid wrld))
+        (isodata-fresh-defiso-thm-names iso-id
+                                        verify-guards$
+                                        names-to-avoid
+                                        wrld))
        (isomap-id (make-isodata-isomap
                    :isoname iso-id
                    :localp t
@@ -737,36 +699,36 @@
                    :back-guard back-guard-id
                    :hints nil))
        (formals (formals old$ wrld))
-       (arg-isomaps (isodata-reprocess-args/res-iso-aux formals
-                                                        args$
-                                                        isomap
-                                                        isomap-id))
-       (res-isomap? (and res$ isomap)))
-    (mv arg-isomaps res-isomap? names-to-avoid))
+       (arg-isomaps (isodata-process-args/res-iso-aux formals
+                                                      args
+                                                      isomap
+                                                      isomap-id))
+       (res-isomap? (and res isomap)))
+    (value (list arg-isomaps res-isomap? names-to-avoid)))
 
   :prepwork
-  ((define isodata-reprocess-args/res-iso-aux ((formals symbol-listp)
-                                               (args$ symbol-listp)
-                                               (isomap isodata-isomapp)
-                                               (isomap-id isodata-isomapp))
+  ((define isodata-process-args/res-iso-aux ((formals symbol-listp)
+                                             (args symbol-listp)
+                                             (isomap isodata-isomapp)
+                                             (isomap-id isodata-isomapp))
      :returns (arg-isomaps isodata-symbol-isomap-alistp
                            :hyp (and (symbol-listp formals)
                                      (isodata-isomapp isomap)
                                      (isodata-isomapp isomap-id)))
      (cond ((endp formals) nil)
-           ((member-eq (car formals) args$)
+           ((member-eq (car formals) args)
             (acons (car formals)
                    isomap
-                   (isodata-reprocess-args/res-iso-aux (cdr formals)
-                                                       args$
-                                                       isomap
-                                                       isomap-id)))
+                   (isodata-process-args/res-iso-aux (cdr formals)
+                                                     args
+                                                     isomap
+                                                     isomap-id)))
            (t (acons (car formals)
                      isomap-id
-                     (isodata-reprocess-args/res-iso-aux (cdr formals)
-                                                         args$
-                                                         isomap
-                                                         isomap-id)))))))
+                     (isodata-process-args/res-iso-aux (cdr formals)
+                                                       args
+                                                       isomap
+                                                       isomap-id)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -842,7 +804,7 @@
 
 (define isodata-app-cond-present-p ((keyword isodata-app-cond-keywordp)
                                     (old$ symbolp)
-                                    (res$ booleanp)
+                                    (res-isomap? isodata-maybe-isomapp)
                                     (predicate$ booleanp)
                                     (verify-guards$ booleanp)
                                     (wrld plist-worldp))
@@ -851,7 +813,7 @@
                                       (booleanp verify-guards$)))
   :short "Check if an applicability condition is present."
   (case keyword
-    (:oldp-of-old res$)
+    (:oldp-of-old (and res-isomap? t))
     (:oldp-when-old predicate$)
     (:oldp-of-rec-call-args (and (irecursivep old$ wrld) t))
     (:old-guard (and verify-guards$ (not predicate$)))
@@ -862,7 +824,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-app-cond-present-keywords ((old$ symbolp)
-                                           (res$ booleanp)
+                                           (res-isomap? isodata-maybe-isomapp)
                                            (predicate$ booleanp)
                                            (verify-guards$ booleanp)
                                            (wrld plist-worldp))
@@ -870,7 +832,7 @@
   :short "Keywords of the applicability conditions that are present."
   (isodata-app-cond-present-keywords-aux *isodata-app-cond-keywords*
                                          old$
-                                         res$
+                                         res-isomap?
                                          predicate$
                                          verify-guards$
                                          wrld)
@@ -879,7 +841,7 @@
   ((define isodata-app-cond-present-keywords-aux
      ((keywords isodata-app-cond-keyword-listp)
       (old$ symbolp)
-      (res$ booleanp)
+      (res-isomap? isodata-maybe-isomapp)
       (predicate$ booleanp)
       (verify-guards$ booleanp)
       (wrld plist-worldp))
@@ -890,20 +852,20 @@
          nil
        (if (isodata-app-cond-present-p (car keywords)
                                        old$
-                                       res$
+                                       res-isomap?
                                        predicate$
                                        verify-guards$
                                        wrld)
            (cons (car keywords)
                  (isodata-app-cond-present-keywords-aux (cdr keywords)
                                                         old$
-                                                        res$
+                                                        res-isomap?
                                                         predicate$
                                                         verify-guards$
                                                         wrld))
          (isodata-app-cond-present-keywords-aux (cdr keywords)
                                                 old$
-                                                res$
+                                                res-isomap?
                                                 predicate$
                                                 verify-guards$
                                                 wrld))))))
@@ -927,9 +889,6 @@
                                 state)
   :returns (mv erp
                (result "A tuple @('(old$
-                                    args$
-                                    res$
-                                    isomap
                                     arg-isomaps
                                     res-isomap?
                                     new-name$
@@ -959,12 +918,6 @@
                state)
   :mode :program
   :short "Process all the inputs."
-  :long
-  (xdoc::topstring-p
-   "As a transitional step towards supporting
-    multiple isomorphic mappings instead of just one,
-    we also return the results of reprocessing the @('args/res-iso') input
-    into the more general form.")
   (b* ((wrld (w state))
        ((er old$) (isodata-process-old old predicate verify-guards ctx state))
        ((er new-name$) (process-input-new-name new-name old$ ctx state))
@@ -975,12 +928,9 @@
                              (guard-verified-p old$ wrld)
                              "The :VERIFY-GUARDS input" t nil))
        (names-to-avoid (list new-name$ thm-name$))
-       ((er (list args$ res$ isomap names-to-avoid))
+       ((er (list arg-isomaps res-isomap? names-to-avoid))
         (isodata-process-args/res-iso
          args/res-iso old$ verify-guards$ names-to-avoid ctx state))
-       ((mv arg-isomaps res-isomap? names-to-avoid)
-        (isodata-reprocess-args/res-iso
-         old$ args$ res$ isomap verify-guards$ names-to-avoid wrld))
        ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
@@ -993,7 +943,7 @@
                               (non-executablep old$ wrld)
                               "The :NON-EXECUTABLE input" t nil))
        (app-cond-keywords (isodata-app-cond-present-keywords
-                           old$ res$ predicate verify-guards$ wrld))
+                           old$ res-isomap? predicate verify-guards$ wrld))
        ((er &) (ensure-is-untranslate-specifier$ untranslate
                                                  "The :UNTRANSLATE input"
                                                  t nil))
@@ -1002,9 +952,6 @@
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
-                 args$
-                 res$
-                 isomap
                  arg-isomaps
                  res-isomap?
                  new-name$
@@ -3662,9 +3609,6 @@
           (cw "~%The transformation ~x0 is redundant.~%" call)
           (value '(value-triple :invisible))))
        ((er (list old$
-                  & ; args$
-                  & ; res$
-                  & ; isomap
                   arg-isomaps
                   res-isomap?
                   new-name$
