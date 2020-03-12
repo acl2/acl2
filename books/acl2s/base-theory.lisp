@@ -820,14 +820,29 @@ I commented out some disabled theorems that seem fine to me.
 (defmacro == (x y)
   `(equal ,x ,y))
 
+; shorthand for not equal
 (defmacro =/= (x y)
   `(not (equal ,x ,y)))
 
+; shorthand for not equal
 (defmacro != (x y)
   `(not (equal ,x ,y)))
 
+; shorthand for implies
 (defmacro => (x y)
   `(implies ,x ,y))
+
+; shorthand for not
+(defmacro ! (x)
+  `(not ,x))
+
+; shorthand for and 
+(defmacro ^ (&rest args)
+  (and-macro args))
+
+; shorthand for or
+(defmacro v (&rest args)
+  (or-macro args))
 
 #|
 
