@@ -52,7 +52,7 @@
 
     (xdoc::p
      "When at least one argument's representation is being changed,
-      then by regarding the remaining arguments
+      then by regarding the arguments whose representation is not changed
       as being changed via an indentity isomorphism,
       we can say that this transformation changes the representation of
       (the tuple of) all the function's arguments
@@ -82,7 +82,9 @@
       via the @(':predicate') input (see below).")
     (xdoc::p
      "If only the representation of some results (and of no arguments)
-      is changed, then there is a single variant of this transformation.")
+      is changed, then there is a single variant of this transformation,
+      namely one that operates on the same tuples as the old function
+      but returns isomorphic results in the new representation.")
 
     (xdoc::p
      "These " *isodata-design-notes* ", which use "
@@ -96,7 +98,7 @@
      "The " *isodata-design-notes* " cover
       isomorphic transformations of both arguments and results,
       compositionally established
-      by partitioning arguments and results of old and new functions
+      by partitioning arguments and results of old and new function
       and by establishing sub-mappings between the partitions
       (see the `Compositional Establishment of Isomorphic Mappings on Tuples'
       section in the design notes).
@@ -104,7 +106,7 @@
       supporting only a limited form of partition of the arguments (see below).
       There are plans to extend the implementation
       to match the coverage of the design notes,
-      mamely allowing arbitrary partiions of arguments and results."))
+      namely allowing arbitrary partiions of arguments and results."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
