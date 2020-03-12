@@ -18,6 +18,7 @@
 (include-book "must-succeed")
 (include-book "must-succeed-star")
 (include-book "must-fail")
+(include-book "must-fail-local")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,20 +27,6 @@
 ; Here we define macros that employ make-event to check evaluations of forms.
 ; See community book make-event/eval-tests.lisp (and many other .lisp files in
 ; that directory) for how these macros may be employed.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-fail-local
-  :parents (std/testing errors must-fail)
-  :short "A @(see local) variant of @(tsee must-fail)."
-  :long
-  "<p>
-   This is useful to overcome the problem discussed in the caveat
-   in the documentation of @(tsee must-fail).
-   </p>
-   @(def must-fail-local)"
-  (defmacro must-fail-local (&rest args)
-    `(local (must-fail ,@args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -34,39 +34,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-make-mv-let-call ((indices nat-listp)
-                              (vars symbol-listp)
-                              (mv-term pseudo-termp)
-                              (body-term pseudo-termp))
-  :guard (= (len indices) (len vars))
-  :returns (term pseudo-termp :hyp :guard)
-  :short "Build a translated call of @(tsee mv-let)
-          with some possibly missing @(tsee mv-nth) calls."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is similar to @(tsee acl2::make-mv-let-call),
-     which we cannot quite use here because in ATJ
-     the unused variable removal pre-translation step
-     may remove some @(tsee mv-nth) calls from a translated @(tsee mv-let).
-     Thus, this function takes the list of indices present as argument."))
-  `((lambda (mv)
-      ((lambda ,vars ,body-term)
-       ,@(atj-make-mv-let-call-aux indices)))
-    ,mv-term)
-
-  :prepwork
-  ((define atj-make-mv-let-call-aux ((indices nat-listp))
-     :returns (terms pseudo-term-listp)
-     (cond ((endp indices) nil)
-           (t (cons `(mv-nth ',(car indices) mv)
-                    (atj-make-mv-let-call-aux (cdr indices)))))
-     ///
-     (defret len-of-atj-make-mv-let-call-aux
-       (equal (len terms) (len indices))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-fn-body ((fn symbolp) (wrld plist-worldp))
   :returns (body pseudo-termp)
   :short "Return the unnormalized body or attachment of a function."

@@ -632,7 +632,9 @@
             (consequent (if (= m 1)
                             (apply-term* domb$
                                          (apply-term alpha$ a1...an))
-                          (make-mv-let-call b1...bm
+                          (make-mv-let-call 'mv
+                                            b1...bm
+                                            :all
                                             (apply-term alpha$ a1...an)
                                             (apply-term domb$ b1...bm))))
             (formula (implicate antecedent consequent)))
@@ -642,7 +644,9 @@
             (consequent (if (= n 1)
                             (apply-term* doma$
                                          (apply-term beta$ b1...bm))
-                          (make-mv-let-call a1...an
+                          (make-mv-let-call 'mv
+                                            a1...an
+                                            :all
                                             (apply-term beta$ b1...bm)
                                             (apply-term doma$ a1...an))))
             (formula (implicate antecedent consequent)))
@@ -661,13 +665,17 @@
                                ,a))
                    (b* ((b1...bm (defiso-differentiate-a/b-vars
                                    b1...bm a1...an)))
-                     (make-mv-let-call b1...bm
+                     (make-mv-let-call 'mv
+                                       b1...bm
+                                       :all
                                        (apply-term* alpha$ (car a1...an))
                                        `(equal ,(apply-term beta$ b1...bm)
                                                ,(car a1...an)))))
                (if (= m 1)
                    (b* ((aa1...aan (defiso-gen-var-aa/bb a1...an)))
-                     (make-mv-let-call aa1...aan
+                     (make-mv-let-call 'mv
+                                       aa1...aan
+                                       :all
                                        (apply-term* beta$
                                                     (apply-term alpha$ a1...an))
                                        (conjoin-equalities aa1...aan a1...an)))
@@ -675,10 +683,14 @@
                       (b1...bm (defiso-differentiate-a/b-vars
                                  b1...bm a1...an)))
                    (make-mv-let-call
+                    'mv
                     b1...bm
+                    :all
                     (apply-term alpha$ a1...an)
                     (make-mv-let-call
+                     'mv
                      aa1...aan
+                     :all
                      (apply-term beta$ b1...bm)
                      (conjoin-equalities aa1...aan a1...an)))))))
             (formula (implicate antecedent consequent)))
@@ -696,7 +708,9 @@
                                                           b))
                                ,b))
                    (b* ((bb1...bbm (defiso-gen-var-aa/bb b1...bm)))
-                     (make-mv-let-call bb1...bbm
+                     (make-mv-let-call 'mv
+                                       bb1...bbm
+                                       :all
                                        (apply-term* alpha$
                                                     (apply-term beta$ b1...bm))
                                        (conjoin-equalities bb1...bbm b1...bm))))
@@ -704,7 +718,9 @@
                    (b* ((b (car b1...bm))
                         (a1...an (defiso-differentiate-a/b-vars
                                    a1...an b1...bm)))
-                     (make-mv-let-call a1...an
+                     (make-mv-let-call 'mv
+                                       a1...an
+                                       :all
                                        (apply-term* beta$ b)
                                        `(equal ,(apply-term alpha$ a1...an)
                                                ,b)))
@@ -712,10 +728,14 @@
                       (a1...an (defiso-differentiate-a/b-vars
                                  a1...an b1...bm)))
                    (make-mv-let-call
+                    'mv
                     a1...an
+                    :all
                     (apply-term beta$ b1...bm)
                     (make-mv-let-call
+                     'mv
                      bb1...bbm
+                     :all
                      (apply-term alpha$ a1...an)
                      (conjoin-equalities bb1...bbm b1...bm)))))))
             (formula (implicate antecedent consequent)))

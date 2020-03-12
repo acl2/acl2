@@ -70,7 +70,7 @@
      and adding actual arguments identical to those variables;
      see @(tsee remove-trivial-vars).
      This means that the lambda expressions above may have extra variables.
-     To ``correct'' for this, before examing the two lambda expressions,
+     To ``correct'' for this, before examining the two lambda expressions,
      we remove all their formal parameters
      that are identical to the corresponding arguments,
      via @(tsee remove-trivial-vars)'s auxiliary function
