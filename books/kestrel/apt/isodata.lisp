@@ -282,7 +282,7 @@
   :short "Recognize alists from symbols to isomorphic mapping records."
   :key (symbolp x)
   :val (isodata-isomapp x)
-  :true-listp nil
+  :true-listp t
   :keyp-of-nil t
   :valp-of-nil nil)
 
