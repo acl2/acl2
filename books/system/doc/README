@@ -23,15 +23,15 @@ rendered-doc.lsp            ; ACL2 manual as ACL2 source file doc.lisp
 Here is how to rebuild manual/, which is the ACL2 XDOC manual, where
 the first step is optional:
 
-  ../../clean.pl
+  ../../build/clean.pl
   rm -rf manual acl2-manual.cert rendered-doc.lsp
-  ../../cert.pl acl2-manual --acl2 <your_acl2>
+  ../../build/cert.pl acl2-manual --acl2 <your_acl2>
 
 To rebuild ACL2 source file doc.lisp to reflect the current contents
 of acl2-doc.lisp:
 
   rm -f rendered-doc.lsp
-  ../../cert.pl render-doc.lisp --acl2 <your_acl2>
+  ../../build/cert.pl render-doc.lisp --acl2 <your_acl2>
   cp -p rendered-doc.lsp ../../../doc.lisp
 
 Alternatively, you may accomplish both of the above by standing in the
