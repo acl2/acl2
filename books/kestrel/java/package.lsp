@@ -97,6 +97,7 @@
                          logicp
                          lower-case-p
                          make-lambda
+                         make-mv-let-call
                          maybe-natp
                          maybe-stringp
                          msg-listp

@@ -52,7 +52,7 @@
 
     (xdoc::p
      "When at least one argument's representation is being changed,
-      then by regarding the remaining arguments
+      then by regarding the arguments whose representation is not changed
       as being changed via an indentity isomorphism,
       we can say that this transformation changes the representation of
       (the tuple of) all the function's arguments
@@ -82,7 +82,9 @@
       via the @(':predicate') input (see below).")
     (xdoc::p
      "If only the representation of some results (and of no arguments)
-      is changed, then there is a single variant of this transformation.")
+      is changed, then there is a single variant of this transformation,
+      namely one that operates on the same tuples as the old function
+      but returns isomorphic results in the new representation.")
 
     (xdoc::p
      "These " *isodata-design-notes* ", which use "
@@ -96,17 +98,15 @@
      "The " *isodata-design-notes* " cover
       isomorphic transformations of both arguments and results,
       compositionally established
-      by partitioning arguments and results of old and new functions
+      by partitioning arguments and results of old and new function
       and by establishing sub-mappings between the partitions
       (see the `Compositional Establishment of Isomorphic Mappings on Tuples'
       section in the design notes).
       The current implementation is more limited,
-      supporting only the transformation of arguments (not results),
-      and only a limited form of partition of the arguments (see below).
+      supporting only a limited form of partition of the arguments (see below).
       There are plans to extend the implementation
       to match the coverage of the design notes,
-      mamely transforming results
-      and allowing arbitrary partiions of arguments and results."))
+      namely allowing arbitrary partiions of arguments and results."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,18 +157,18 @@
                         ...
                         update1-xn<x1,...,xn>)
                    ...
-                   (old updatem-x1<x1,...,xn>
+                   (old updater-x1<x1,...,xn>
                         ...
-                        updatem-xn<x1,...,xn>)>
+                        updater-xn<x1,...,xn>)>
         })
         be the body of @('old'),
-        where @('m') &gt; 0 is the number of recursive calls
+        where @('r') &gt; 0 is the number of recursive calls
         in the body of @('old')
-        and each @('updatej-xi<x1,...,xn>') is
-        the @('i')-th actual argument passed to the @('j')-th recursive call.
+        and each @('updatek-xi<x1,...,xn>') is
+        the @('i')-th actual argument passed to the @('k')-th recursive call.
         Furthermore,
-        let @('contextj<x1,...,xn>') be the context (i.e. controlling tests)
-        in which the @('j')-th recursive call occurs,
+        let @('contextk<x1,...,xn>') be the context (i.e. controlling tests)
+        in which the @('k')-th recursive call occurs,
         and let @('measure<x1,...,xn>') be the measure term of @('old')."))
      (xdoc::p
       "In the " *isodata-design-notes* ",
@@ -199,19 +199,7 @@
           in any order.")
         (xdoc::li
          "A single element among @('x1'), ... @('xn'), and @(':result'),
-          abbreviating the singleton list with that element."))
-       (xdoc::p
-        "In the rest of the documentation page, for expository convenience,
-         it is assumed that @('args/res') is
-         @('(y1 ... yp)') or @('(y1 ... yp :result)'),
-         where @('y1'), ..., @('yp') are arguments of @('old'),
-         in the same order as they appear in @('(x1 ... xn)').")
-       (xdoc::p
-        "Each @('yh') specifies an argument of @('old'),
-         while @(':result') specifies the (only) result of @('old')
-         (future versions of @('isodata') will allow
-         the specification of one or more results
-         when @('old') returns multiple results."))
+          abbreviating the singleton list with that element.")))
       (xdoc::li
        (xdoc::p
         "@('iso') denotes the old and new isomorphic representations
@@ -260,6 +248,25 @@
           and cannot be therefore referenced
           after the call of @('isodata')."))))
      (xdoc::p
+      "In the rest of this documentation page,
+       for each @('i') from 1 to @('n'),
+       let @('oldpi'), @('newpi'), @('forthi'), and @('backi') be either
+       (i) @('oldp'), @('newp'), @('forth'), and @('back') (from @('iso'))
+       if @('xi') is in @('arg/res'), or
+       (ii) @('(lambda (x) t)'), @('(lambda (x) t)'),
+       @('(lambda (x) x)'), and @('(lambda (x) x)')
+       if @('xi') is not in @('arg/res').
+       That is, we associate to each argument of @('old')
+       the recognizers and conversions of the isomorphic mapping
+       that applies to that argument,
+       which is the identity over all values
+       if that argument is not actually transformed.
+       This way, we can treat all the arguments of @('old') uniformly.
+       Furthermore,
+       let @('oldp-res'), @('newp-res'), @('forth-res'), and @('back-res') be
+       @('oldp'), @('newp'), @('forth'), and @('back') (from @('iso'))
+       if @(':result') is in @('arg/res').")
+     (xdoc::p
       "In the " *isodata-design-notes* ", the section
        `Compositional Establishment of Isomorphic Mappings on Tuples'
        describes the compositional establishment of an isomorphic mapping
@@ -278,12 +285,12 @@
        "The results are partitioned into singleton partitions as well.")
       (xdoc::li
        "The (unary) isomorphic mapping specified in @('args/res-iso')
-        is used for each of the @('y1'), ..., @('yp') partitions,
-        and for the result partition if @(':result') is in in @('args/res-iso')
+        is used for each of the partitions of arguments in @('args/res'),
+        and for the result partition if @(':result') is in in @('args/res')
         (in this case, there is just one result).")
       (xdoc::li
        "An implicit identity isomorphism over all ACL2 values
-        is used for the remaining (argument and result) partitions."))
+        is used for the partitions of the remaining arguments and results."))
      (xdoc::p
       "In the design notes,
        the resulting isomorphic mapping over all function arguments
@@ -293,11 +300,7 @@
        and the resulting isomorphic mapping over all function results
        is denoted as consisting of
        the domains @($B$) and @($B'$) and
-       the isomorphisms @($\\beta$) and @($\\beta'$).")
-     (xdoc::p
-      "The transformation of results,
-       and the establishment of isomorphic mappings between results,
-       is not supported yet."))
+       the isomorphisms @($\\beta$) and @($\\beta'$)."))
 
     (xdoc::desc
      "@(':predicate') &mdash; default @('nil')"
@@ -346,8 +349,8 @@
      "@(':compatibility') &mdash; default @('nil')"
      (xdoc::p
       "This is a temporary option that is not documented
-       because it should not be used
-       (except in very specific transitional situations).")))
+       because it should not be used,
+       except in very specific transitional situations.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,10 +369,10 @@
        "@('old') maps arguments in the old representation
         to results in the old representation:")
       (xdoc::codeblock
-       "(implies (and (oldp y1)"
+       "(implies (and (oldp1 x1)"
        "              ..."
-       "              (oldp yp))"
-       "         (oldp (old x1 ... xn)))"))
+       "              (oldpn xn))"
+       "         (oldp-res (old x1 ... xn)))"))
      :design-notes *isodata-design-notes*
      :design-notes-appcond "@($fAB$)"
      :presence "@('args/res-iso') includes @(':result')")
@@ -379,12 +382,12 @@
      (xdoc::&&
       (xdoc::p
        "@('old') holds only on argument tuples
-        such that @('y1'), ..., @('yp') are all in @('oldp'):")
+        such that @('x1'), ..., @('xn') are all in the old representation:")
       (xdoc::codeblock
        "(implies (old x1 ... xn)"
-       "         (and (oldp y1)"
+       "         (and (oldp1 x1)"
        "              ..."
-       "              (oldp yp)))"))
+       "              (oldpn xn)))"))
      :design-notes *isodata-design-notes*
      :design-notes-appcond "@($pA$)"
      :presence "@(':predicate') is @('t')")
@@ -393,21 +396,21 @@
      ":oldp-of-rec-call-args"
      (xdoc::&&
       (xdoc::p
-       "@('oldp') is preserved on the arguments @('y1'), ..., @('yp')
-        in the recursive calls of @('old'):")
+       "The old representation is preserved on
+        the arguments of the recursive calls of @('old'):")
       (xdoc::codeblock
-       "(implies (and (oldp y1)"
+       "(implies (and (oldp1 x1)"
        "              ..."
-       "              (oldp yp))"
+       "              (oldpn xn))"
        "         (and (implies context1<x1,...,xn>"
-       "                       (and (oldp update1-y1<x1,...,xn>)"
+       "                       (and (oldp1 update1-x1<x1,...,xn>)"
        "                            ..."
-       "                            (oldp update1-yp<x1,...,xn>)))"
+       "                            (oldpn update1-xn<x1,...,xn>)))"
        "              ..."
-       "              (implies contextm<x1,...,xn>"
-       "                       (and (oldp updatem-y1<x1,...,xn>)"
+       "              (implies contextr<x1,...,xn>"
+       "                       (and (oldp1 updater-x1<x1,...,xn>)"
        "                            ..."
-       "                            (oldp updatem-yp<x1,...,xn>)))))"))
+       "                            (oldpn updater-xp<x1,...,xn>)))))"))
      :design-notes *isodata-design-notes*
      :design-notes-appcond "@($Ad$)"
      :presence "@('old') is recursive")
@@ -420,9 +423,9 @@
         only on tuples in the old representation:")
       (xdoc::codeblock
        "(implies old-guard<x1,...,xn>"
-       "         (and (oldp y1)"
+       "         (and (oldp1 x1)"
        "              ..."
-       "              (oldp yp)))"))
+       "              (oldpn xn)))"))
      :design-notes *isodata-design-notes*
      :design-notes-appcond "@($Gf$)"
      :presence "the generated function is guard-verified
@@ -437,9 +440,9 @@
        "@('old') is well-defined (according to its guard)
         on all tuples in the old representation:")
       (xdoc::codeblock
-       "(implies (and (oldp y1)"
+       "(implies (and (oldp1 x1)"
        "              ..."
-       "              (oldp yp))"
+       "              (oldpn xn))"
        "         old-guard<x1,...,xn>)"))
      :design-notes *isodata-design-notes*
      :design-notes-appcond "@($Gp$)"
@@ -464,57 +467,46 @@
      (xdoc::p
       "Isomorphic version of @('old'):")
      (xdoc::codeblock
-      ";; when old is not recursive and args/res-iso does not include :result:"
+      ";; when old is not recursive"
+      ";; and args/res-iso does not include :result:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt$ (and (newp y1)"
+      "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
-      "                 (newp yp)))"
-      "      old-body<...,(back y1),...,(back yp),...>"
+      "                 (newpn xn)))"
+      "      old-body<(back1 x1),...,(backn xn)>"
       "    nil)) ; or (mv nil ... nil)"
       ""
       ";; when old is not recursive and args/res-iso includes :result:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt$ (and (newp y1)"
+      "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
-      "                 (newp yp)))"
-      "      (forth old-body<...,(back y1),...,(back yp),...>)"
+      "                 (newpn xn)))"
+      "      (forth old-body<(back1 x1),...,(backn xn)>)"
       "    nil))"
       ""
       ";; when old is recursive,"
       ";; the :predicate input is nil,"
       ";; and args/res-iso does not include :result:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt$ (and (newp y1)"
+      "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
-      "                 (newp yp)))"
-      "      old-body<...,(back y1),...,(back yp),...,"
-      "               (new ..."
-      "                    (forth update1-y1<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>)"
+      "                 (newpn xn)))"
+      "      old-body<(back1 x1),...,(backn xn),"
+      "               (new (forth1 update1-x1<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>)"
       "                    ..."
-      "                    (forth update1-yp<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>),"
-      "                    ...),"
+      "                    (forthn update1-xn<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>)),"
       "               ..."
-      "               (new ..."
-      "                    (forth updatem-y1<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>)"
-      "                  ..."
-      "                  (forth updatem-yp<...,"
-      "                                    (back y1),"
-      "                                    ...,"
-      "                                    (back yp),"
-      "                                    ...>),"
-      "                  ...)>"
+      "               (new (forth1 updater-x1<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>)"
+      "                    ..."
+      "                    (forthn updater-xn<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>))>"
       "    nil)) ; or (mv nil ... nil)"
       ""
       ";; when old is recursive,"
@@ -522,73 +514,50 @@
       ";; and args/res-iso includes :result"
       ";; (in which case the function returns a single result):"
       "(defun new (x1 ... xn)"
-      "  (if (mbt$ (and (newp y1)"
+      "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
-      "                 (newp yp)))"
-      "      (forth old-body<...,(back y1),...,(back yp),...,"
-      "                      (new ..."
-      "                           (forth update1-y1<...,"
-      "                                             (back y1),"
-      "                                             ...,"
-      "                                             (back yp),"
-      "                                             ...>)"
+      "                 (newpn xn)))"
+      "      (forth old-body<(back1 x1),...,(backn xn),"
+      "                      (new (forth1 update1-x1<(back1 x1),"
+      "                                              ...,"
+      "                                              (backn xn)>)"
       "                           ..."
-      "                           (forth update1-yp<...,"
-      "                                             (back y1),"
-      "                                             ...,"
-      "                                             (back yp),"
-      "                                             ...>),"
-      "                           ...),"
+      "                           (forthn update1-xn<(back1 x1),"
+      "                                              ...,"
+      "                                              (backn xn)>)),"
       "                      ..."
-      "                      (new ..."
-      "                           (forth updatem-y1<...,"
-      "                                             (back y1),"
-      "                                             ...,"
-      "                                             (back yp),"
-      "                                             ...>)"
-      "                         ..."
-      "                         (forth updatem-yp<...,"
-      "                                           (back y1),"
-      "                                           ...,"
-      "                                           (back yp),"
-      "                                           ...>),"
-      "                         ...)>)"
+      "                      (new (forth1 updater-x1<(back1 x1),"
+      "                                              ...,"
+      "                                              (backn xn)>)"
+      "                           ..."
+      "                           (forthn updater-xn<(back1 x1),"
+      "                                              ...,"
+      "                                              (backn xn)>))>)"
       "    nil))"
       ""
-      ";; when old is recursive and the :predicate input is t"
+      ";; when old is recursive"
+      ";; and the :predicate input is t"
       ";; (in which case args/res-iso does not include :result):"
       "(defun new (x1 ... xn)"
-      "  (if (mbt$ (and (newp y1)"
+      "  (if (mbt$ (and (newp1 x1)"
       "                 ..."
-      "                 (newp yp)))"
-      "      old-body<...,(back y1),...,(back yp),...,"
-      "               (new ..."
-      "                    (forth update1-y1<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>)"
+      "                 (newpn xn)))"
+      "      old-body<(back1 x1),...,(backn xn),"
+      "               (new (forth1 update1-x1<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>)"
       "                    ..."
-      "                    (forth update1-yp<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>),"
-      "                    ...),"
+      "                    (forthn update1-xn<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>)),"
       "               ..."
-      "               (new ..."
-      "                    (forth updatem-y1<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>)"
+      "               (new (forth1 updater-x1<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>)"
       "                    ..."
-      "                    (forth updatem-yp<...,"
-      "                                      (back y1),"
-      "                                      ...,"
-      "                                      (back yp),"
-      "                                      ...>),"
-      "                    ...)>"
+      "                    (forthn updater-xn<(back1 x1),"
+      "                                       ...,"
+      "                                       (backn xn)>))>"
       "    nil))")
      (xdoc::p
       "Note that:")
@@ -603,18 +572,18 @@
          The following is a theorem:")
        (xdoc::codeblock
         ";; when args/res-iso does not include :result:"
-        "(implies (and (newp y1)"
+        "(implies (and (newp1 x1)"
         "              ..."
-        "              (newp yp))"
+        "              (newpn xn))"
         "         (equal (new x1 ... xn)"
-        "                (old ... (back y1 ... (back yp) ...))))"
+        "                (old (back1 x1) ... (backn xn))))"
         ""
         ";; when args/res-iso includes :result:"
-        "(implies (and (newp y1)"
+        "(implies (and (newp1 x1)"
         "              ..."
-        "              (newp yp))"
+        "              (newp1 xn))"
         "         (equal (new x1 ... xn)"
-        "                (forth (old ... (back y1 ... (back yp) ...)))))"))
+        "                (forth-res (old (back1 x1) ... (backn xn)))))"))
       (xdoc::li
        (xdoc::p
         "When @(':predicate') is @('t'),
@@ -625,29 +594,29 @@
          The following is a theorem:")
        (xdoc::codeblock
         "(equal (new x1 ... xn)"
-        "       (and (newp y1)"
+        "       (and (newp1 x1)"
         "            ..."
-        "            (newp yp)"
-        "            (old ... (back y1) ... (back yp) ...)))")))
+        "            (newpn xn)"
+        "            (old (back1 x1) ... (backn xn))))")))
      (xdoc::p
       "If @('old') is recursive,
        the measure term of @('new') is
-       @('measure<...,(back y1),...,(back yp),...>')
+       @('measure<(back1 x1),...,(backn xn)>')
        and the well-founded relation of @('new') is
        the same as @('old').")
      (xdoc::p
       "The guard of @('new') is:")
      (xdoc::codeblock
       ";; when the :predicate input is nil:"
-      "(and (newp y1)"
+      "(and (newp1 x1)"
       "     ..."
-      "     (newp yp)"
-      "     old-guard<...,(back y1),...,(back yp),...>)"
+      "     (newpn xn)"
+      "     old-guard<(back1 x1),...,(backn xn)>)"
       ""
       ";; when the :predicate input is t:"
-      "(and (newp y1)"
+      "(and (newp1 x1)"
       "     ..."
-      "     (newp yp))")
+      "     (newpn xn))")
      (xdoc::p
       "That is, when @(':predicate') is @('t')
        the guard consists of the new representation;
@@ -668,28 +637,28 @@
       ";; when the :predicate input is nil"
       ";; and args/res-iso does not include :result:"
       "(defthm old-to-new"
-      "  (implies (and (oldp y1)"
+      "  (implies (and (oldp1 x1)"
       "                ..."
-      "                (oldp yp))"
+      "                (oldpn xn))"
       "           (equal (old x1 ... xn)"
-      "                  (new ... (forth y1) ... (forth yp) ...))))"
+      "                  (new (forth1 x1) ... (forthn xn)))))"
       ""
       ";; when the :predicate input is nil"
       ";; and args/res-iso includes :result:"
       "(defthm old-to-new"
-      "  (implies (and (oldp y1)"
+      "  (implies (and (oldp1 x1)"
       "                ..."
-      "                (oldp yp))"
+      "                (oldpn xn))"
       "           (equal (old x1 ... xn)"
-      "                  (back (new ... (forth y1) ... (forth yp) ...)))))"
+      "                  (back-res (new (forth1 x1) ... (forthn xn))))))"
       ""
       ";; whem the :predicate input is t:"
       "(defthm old-to-new"
       "  (equal (old x1 ... xn)"
-      "         (and (oldp y1)"
+      "         (and (oldp1 x1)"
       "              ..."
-      "              (oldp yp)"
-      "              (new ... (forth y1) ... (forth yp) ...))))")
+      "              (oldpn xn)"
+      "              (new (forth1 x1) ... (forthn xn)))))")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('old-to-new') is denoted by

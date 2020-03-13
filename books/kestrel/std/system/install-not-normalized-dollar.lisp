@@ -1,4 +1,4 @@
-; System Utilities -- Non-Normalized Definition Installation Event
+; Standard System Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2018, Regents of the University of Texas
@@ -36,7 +36,7 @@
   `(make-event (install-not-normalized$-fn ',fn ,allp ,names-to-avoid state)))
 
 (defxdoc install-not-normalized$
-  :parents (system-utilities-non-built-in install-not-normalized)
+  :parents (std/system install-not-normalized)
   :short "<see topic='@(url install-not-normalized)'>Install
           the non-normalized definition</see>
           of a function,

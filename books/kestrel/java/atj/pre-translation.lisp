@@ -15,6 +15,7 @@
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
+(include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
 (include-book "kestrel/std/system/remove-dead-if-branches" :dir :system)
 (include-book "kestrel/std/system/remove-mbe" :dir :system)
@@ -360,7 +361,7 @@
                 (atj-restore-mv-calls-in-term mv-term mv-term-numres wrld))
                (new-body-term
                 (atj-restore-mv-calls-in-term body-term numres wrld)))
-            (atj-make-mv-let-call indices vars new-mv-term new-body-term)))
+            (make-mv-let-call 'mv vars indices new-mv-term new-body-term)))
          ((mv list-callp elements) (check-list-call term))
          ((when list-callp)
           (b* (((when (= numres 1)) term)

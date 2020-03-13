@@ -19,6 +19,7 @@
 (include-book "function-queries")
 (include-book "getprops")
 (include-book "included-books")
+(include-book "install-not-normalized-dollar")
 (include-book "install-not-normalized-event")
 (include-book "known-packages")
 (include-book "known-packages-plus")
