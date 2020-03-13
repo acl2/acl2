@@ -19,6 +19,7 @@
 (include-book "must-succeed-star")
 (include-book "must-fail")
 (include-book "must-fail-local")
+(include-book "must-fail-with-error")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,24 +30,6 @@
 ; that directory) for how these macros may be employed.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-fail-with-error
-  :parents (std/testing errors must-fail)
-  :short "A specialization of @(tsee must-fail) to ensure that an error occurs."
-
-  :long "<p>Evaluation of @('(must-fail-with-error <form>)') returns without
- error exactly when evaluation of @('<form>') causes an error.</p>
-
- <p>See @(see must-fail) for more details, as @('must-fail-with-error')
- abbreviates @('must-fail') as follows.</p>
-
- @(def must-fail-with-error)
-
- <p>Also see @(see must-fail-with-soft-error) and
- @(see must-fail-with-hard-error).</p>"
-
-  (defmacro must-fail-with-error (form &rest args)
-    (list* 'must-fail form :expected :any args)))
 
 ;; deprecated:
 
