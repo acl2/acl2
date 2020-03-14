@@ -132,6 +132,7 @@
                          ensure-term-logic-mode$
                          ensure-term-no-stobjs$
                          ensure-term-not-call-of$
+                         ensure-tuple$
                          equivalence-relationp
                          er-soft+
                          evmac-input-print-p

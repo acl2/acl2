@@ -107,99 +107,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-old (old predicate verify-guards ctx state)
-  :returns (mv erp
-               (old$ "A @(tsee symbolp) that is
-                      the name of the target function
-                      of the transformation,
-                      denoted by the @('old') input.")
-               state)
-  :mode :program
-  :short "Process the @('old') input."
-  (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
-                   old "The first input" t nil))
-       (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
-       ((er &) (ensure-function-has-args$ old$ description t nil))
-       ((er &) (ensure-function-no-stobjs$ old$ description t nil))
-       ((er &) (if (eq predicate t)
-                   (ensure-function-number-of-results$ old$ 1
-                                                       description t nil)
-                 (value nil)))
-       (recursive (recursivep old$ nil (w state)))
-       ((er &) (if recursive
-                   (ensure-function-singly-recursive$ old$
-                                                      description t nil)
-                 (value nil)))
-       ((er &) (if recursive
-                   (ensure-function-known-measure$ old$
-                                                   description t nil)
-                 (value nil)))
-       ((er &) (if recursive
-                   (ensure-function-not-in-termination-thm$ old$
-                                                            description t nil)
-                 (value nil)))
-       ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
-                    old$
-                    (msg "Since the :VERIFY-GUARDS input is T, ~
-                          the target function ~x0" old$)
-                    t nil)
-                 (value nil))))
-    (value old$)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-process-args/res (args/res (old$ symbolp) ctx state)
-  :returns (mv erp
-               (result "A tuple @('(args$ res$)') satisfying
-                        @('(typed-tuplep symbol-listp booleanp result)').")
-               state)
-  :mode :program
-  :short "Process the @('args/res') component of the @('args/res-iso') input."
-  (b* ((wrld (w state))
-       (formals (formals old$ wrld)))
-    (cond ((member-eq args/res formals)
-           (value (list (list args/res) nil)))
-          ((eq args/res :result)
-           (value (list nil t)))
-          (t (b* (((er &) (ensure-symbol-list$
-                           args/res
-                           (msg "Since the ARGS/RES component ~
-                                 of the second input is ~
-                                 neither a formal argument of ~x0 ~
-                                 nor the keyword :RESULT, it"
-                                old$)
-                           t nil))
-                  ((er &) (ensure-list-no-duplicates$
-                           args/res
-                           (msg "The list ~x0 that is ~
-                                 the ARGS/RES component of the second input"
-                                args/res)
-                           t nil))
-                  ((mv args$ res$) (if (member-eq :result args/res)
-                                       (mv (remove1-eq :result args/res) t)
-                                     (mv args/res nil)))
-                  ((er &) (ensure-list-subset$
-                           args$
-                           formals
-                           (msg "The list ~x0 that is ~
-                                 the ARGS/RES component of the second input, ~
-                                 except for the keyword :RESULT (if present),"
-                                args/res)
-                           t nil))
-                  ((when (and res$
-                              (> (number-of-results old$ wrld) 1)))
-                   (er-soft+ ctx t nil
-                             "Since the ARGS/RES component ~
-                              of the second input includes :RESULT, ~
-                              the target function ~x0 must be single-valued"
-                             old$)))
-               (value (list args$ res$)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::defaggregate isodata-isomap
   :short "Information about an isomorphic mapping
           according to which the target function's
@@ -282,9 +189,122 @@
   :short "Recognize alists from symbols to isomorphic mapping records."
   :key (symbolp x)
   :val (isodata-isomapp x)
-  :true-listp nil
+  :true-listp t
   :keyp-of-nil t
-  :valp-of-nil nil)
+  :valp-of-nil nil
+  ///
+
+  (defrule isodata-symbolp-of-key-of-symbol-isomap-alist
+    (implies (isodata-symbol-isomap-alistp x)
+             (symbolp (car (assoc-equal k x)))))
+
+  (defrule isodata-isomapp-of-val-of-symbol-isomap-alist
+    (implies (and (isodata-symbol-isomap-alistp x)
+                  (consp (assoc-equal k x)))
+             (isodata-isomapp (cdr (assoc-equal k x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-old (old predicate verify-guards ctx state)
+  :returns (mv erp
+               (old$ "A @(tsee symbolp) that is
+                      the name of the target function
+                      of the transformation,
+                      denoted by the @('old') input.")
+               state)
+  :mode :program
+  :short "Process the @('old') input."
+  (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
+                   old "The first input" t nil))
+       (description (msg "The target function ~x0" old$))
+       ((er &) (ensure-function-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-has-args$ old$ description t nil))
+       ((er &) (ensure-function-no-stobjs$ old$ description t nil))
+       ((er &) (if (eq predicate t)
+                   (ensure-function-number-of-results$ old$ 1
+                                                       description t nil)
+                 (value nil)))
+       (recursive (recursivep old$ nil (w state)))
+       ((er &) (if recursive
+                   (ensure-function-singly-recursive$ old$
+                                                      description t nil)
+                 (value nil)))
+       ((er &) (if recursive
+                   (ensure-function-known-measure$ old$
+                                                   description t nil)
+                 (value nil)))
+       ((er &) (if recursive
+                   (ensure-function-not-in-termination-thm$ old$
+                                                            description t nil)
+                 (value nil)))
+       ((er &) (if (eq verify-guards t)
+                   (ensure-function-guard-verified$
+                    old$
+                    (msg "Since the :VERIFY-GUARDS input is T, ~
+                          the target function ~x0" old$)
+                    t nil)
+                 (value nil))))
+    (value old$)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-arg/res
+  ((arg/res "The @('arg/resk') component of @('isomaps').")
+   (k posp "The @('k') in @('arg/resk').")
+   (old$ symbolp)
+   ctx state)
+  :returns (mv erp
+               (result "A tuple @('(arg res)') satisfying
+                        @('(typed-tuplep symbol-listp booleanp result)').")
+               state)
+  :verify-guards nil
+  :short "Process an @('arg/res') component of the @('isomaps') input."
+  :long
+  (xdoc::topstring-p
+   "If the processing is successful,
+    the @('arg') result is the list of arguments of @('old') in @('arg/res'),
+    and the @('res') result is @('t') iff @(':result') is in @('arg/res').")
+  (b* ((wrld (w state))
+       (formals (formals old$ wrld)))
+    (cond ((member-eq arg/res formals)
+           (value (list (list arg/res) nil)))
+          ((eq arg/res :result)
+           (value (list nil t)))
+          (t (b* (((er &) (ensure-symbol-list$
+                           arg/res
+                           (msg "Since the ~n0 ARG/RES component ~
+                                 of the second input is ~
+                                 neither a formal argument of ~x1 ~
+                                 nor the keyword :RESULT, it"
+                                (list k) old$)
+                           t nil))
+                  ((er &) (ensure-list-no-duplicates$
+                           arg/res
+                           (msg "The list ~x0 that is ~
+                                 the ~n1 ARG/RES component of the second input"
+                                arg/res (list k))
+                           t nil))
+                  ((mv args res) (if (member-eq :result arg/res)
+                                     (mv (remove1-eq :result arg/res) t)
+                                   (mv arg/res nil)))
+                  ((er &) (ensure-list-subset$
+                           args
+                           formals
+                           (msg "The list ~x0 that is ~
+                                 the ~n1 ARG/RES component ~
+                                 of the second input, ~
+                                 except for the keyword :RESULT (if present),"
+                                arg/res (list k))
+                           t nil))
+                  ((when (and res
+                              (> (number-of-results old$ wrld) 1)))
+                   (er-soft+ ctx t nil
+                             "Since the ~n0 ARG/RES component ~
+                              of the second input includes :RESULT, ~
+                              the target function ~x1 must be single-valued"
+                             (list k) old$)))
+               (value (list args res)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -442,7 +462,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-iso (iso
+(define isodata-process-iso ((iso "The @('isok') component of @('isomaps').")
+                             (k posp "The @('k') in @('isok').")
                              (old$ symbolp)
                              (verify-guards$ booleanp)
                              (names-to-avoid symbol-listp)
@@ -455,7 +476,7 @@
                                                     result)').")
                state)
   :mode :program
-  :short "Process the @('iso') component of the @('args/res-iso') input."
+  :short "Process an @('iso') component of the @('isomaps') input."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -466,8 +487,8 @@
     "If instead @('iso') is a list
      @('(oldp newp forth back)') or @('(oldp newp forth back :hints ...)'),
      the @('names-to-avoid') argument is augmented with
-     the names of these theorems,
-     which will be generated by the local @(tsee defiso).")
+     the names of the theorems that
+     will be generated by the local @(tsee defiso).")
    (xdoc::p
     "When @('iso') is the name of an existing @(tsee defiso),
      to check whether its @(':guard-thms') is @('t'),
@@ -484,7 +505,7 @@
      given the constraints already checked
      by the @(tsee defiso) input processing code,
      here it suffices to check that the two domains are unary.
-     We cannot just generate the @(tsee defiso):
+     We cannot just generate the @(tsee defiso) later;
      we need the actual (translated) functions
      to use them in the events generated by @(tsee isodata) proper.
      When we call @(tsee defiso)'s input processing functions,
@@ -493,24 +514,32 @@
      (When the generated @(tsee defiso) call is actually submitted,
      these input processing steps will be repeated,
      but will succeed since they have been already performed here;
-     and they should be quite fast to execute.)"))
+     and they should be quite fast to execute.)
+     The name of this local @(tsee defiso) is a combination
+     that involves @('old') and @('k'),
+     to make the name of the @(tsee defiso) readable
+     (in case of errors due to failed applicability conditions)
+     and unique within the @(tsee encapsulate) generated by @(tsee isodata).")
+   (xdoc::p
+    "If the processing is successful,
+     we return the isomorphic mapping record specified by @('iso')."))
   (if (atom iso)
       (b* (((er &) (ensure-symbol$ iso
-                                   (msg "The ISO component ~x0 ~
+                                   (msg "The ~n0 ISO component ~x1 ~
                                          of the second input ~
                                          must be a symbol or a list. ~
                                          Since it is an atom,"
-                                        iso)
+                                        (list k) iso)
                                    t nil))
            (info (defiso-lookup iso (w state)))
            ((unless info)
             (er-soft+ ctx t nil
-                      "The ISO component of the second input, ~
-                       which is the symbol ~x0, ~
+                      "The ~n0 ISO component of the second input, ~
+                       which is the symbol ~x1, ~
                        must be the name of an existing DEFISO, ~
                        but no DEFISO with this name exists.  ~
                        See :DOC DEFISO."
-                      iso))
+                      (list k) iso))
            ((defiso-info info) info)
            ((when (and verify-guards$
                        (null info.doma-guard)))
@@ -542,8 +571,9 @@
                     :back-guard info.beta-guard
                     :hints nil)))
         (value (list isomap names-to-avoid)))
-    (b* ((iso$ (packn-pos (list 'defiso-isodata- old$) old$))
-         (iso$ (isodata-fresh-defiso-name-with-*s-suffix iso$ (w state)))
+    (b* ((wrld (w state))
+         (isoname (packn-pos (list 'defiso-isodata- old$ '- k) old$))
+         (isoname (isodata-fresh-defiso-name-with-*s-suffix isoname wrld))
          ((mv forth-image
               back-image
               back-of-forth
@@ -555,18 +585,22 @@
               forth-injective
               back-injective
               names-to-avoid)
-          (isodata-fresh-defiso-thm-names
-           iso$ verify-guards$ names-to-avoid (w state)))
+          (isodata-fresh-defiso-thm-names isoname
+                                          verify-guards$
+                                          names-to-avoid
+                                          wrld))
          ((unless (true-listp iso))
           (er-soft+ ctx t nil
-                    "The ISO component ~x0 of the second input ~
+                    "The ~n0 ISO component ~x1 of the second input ~
                      must be a symbol or a list. ~
-                     Since it is not an atom, it must be a list." iso))
+                     Since it is not an atom, it must be a list."
+                    (list k) iso))
          ((unless (or (= (len iso) 4)
                       (= (len iso) 6)))
           (er-soft+ ctx t nil
-                    "The ISO component ~x0 of the second input ~
-                     must be a list of length 4 or 6." iso))
+                    "The ~n0 ISO component ~x1 of the second input ~
+                     must be a list of length 4 or 6."
+                    (list k) iso))
          (oldp (first iso))
          (newp (second iso))
          (forth (third iso))
@@ -575,32 +609,33 @@
                       (eq (fifth iso) :hints)))
           (er-soft+ ctx t nil
                     "The fifth component ~x0 ~
-                     of the ISO component ~x1 ~
+                     of the ~n1 ISO component ~x2 ~
                      of the second input ~
-                     must be the keyword :HINTS." (fifth iso) iso))
+                     must be the keyword :HINTS."
+                    (fifth iso) (list k) iso))
          (hints (and (= (len iso) 6) (sixth iso)))
-         (ctx-defiso (cons 'defiso iso$))
+         (ctx-defiso (cons 'defiso isoname))
          ((er (list oldp$ newp$ forth$ back$))
           (acl2::defiso-process-functions
            oldp newp forth back verify-guards$ ctx-defiso state))
-         (oldp-arity (arity oldp$ (w state)))
+         (oldp-arity (arity oldp$ wrld))
          ((unless (= oldp-arity 1))
           (er-soft+ ctx t nil
                     "The first component ~x0 ~
-                     of the ISO component ~
+                     of the ~n1 ISO component ~
                      of the third input ~
-                     must have one argument, but it has ~x1 arguments instead."
-                    oldp oldp-arity))
-         (newp-arity (arity newp$ (w state)))
+                     must have one argument, but it has ~x2 arguments instead."
+                    oldp (list k) oldp-arity))
+         (newp-arity (arity newp$ wrld))
          ((unless (= newp-arity 1))
           (er-soft+ ctx t nil
                     "The second component ~x0 ~
-                     of the ISO component ~
+                     of the ~n1 ISO component ~
                      of the third input ~
-                     must have one argument, but it has ~x1 arguments instead."
-                    newp newp-arity))
+                     must have one argument, but it has ~x2 arguments instead."
+                    newp (list k) newp-arity))
          (isomap (make-isodata-isomap
-                  :isoname iso$
+                  :isoname isoname
                   :localp t
                   :oldp oldp$
                   :newp newp$
@@ -621,12 +656,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-args/res-iso (args/res-iso
-                                      (old$ symbolp)
-                                      (verify-guards$ booleanp)
-                                      (names-to-avoid symbol-listp)
-                                      ctx
-                                      state)
+(define isodata-process-arg/res-iso
+  ((arg/res-iso "The @('(arg/resk isok)') component of @('isomaps').")
+   (k posp "The @('k') in @('(arg/resk isok)').")
+   (old$ symbolp)
+   (verify-guards$ booleanp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomap? isodata-maybe-isomapp)
+   (names-to-avoid symbol-listp)
+   ctx
+   state)
   :returns (mv erp
                (result "A tuple @('(arg-isomaps res-isomap? names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
@@ -635,36 +674,158 @@
                                                     result)').")
                state)
   :mode :program
-  :short "Process the @('args/res-iso') input."
+  :short "Process an @('(arg/res iso)') component of the @('isomaps') input."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('arg-isomaps') result maps each argument in @('args/res')
-     to the isomorphic mapping specified by @('iso');
-     it maps the remaining arguments to the identity isomorphic mapping,
-     which we build here.
-     The @('res-isomap?') result is
-     the isomorphic mapping specified by @('iso')
-     if @('args/res') includes @(':result'),
-     otherwise it is @('nil')."))
-  (b* ((wrld (w state))
-       ((er &) (ensure-doublet-list$ args/res-iso "The second input" t nil))
-       (len (len args/res-iso))
-       ((unless (= len 1))
+    "The @('arg-isomaps') and @('res-isomap?') inputs
+     are obtained by having previously called this function
+     on @('(arg/res1 iso1)'), ..., @('(arg/resk-1 isok-1)') in turn.
+     When we call this function on @('(arg/resk isok)'),
+     we extend @('arg-isomaps') and @('res-isomap?')
+     with the information in @('(arg/resk isok)').
+     As we do that, we check that
+     the arguments of @('old') in @('arg/resk') are not
+     already keys in @('arg-isomaps'):
+     if any of them did, it would mean that it is already present
+     in one of @('(arg/res1 iso1)'), ..., @('(arg/resk-1 isok-1)'),
+     violating the disjointness requirement.
+     Similarly, it is an error if @('arg/resk') includes @(':result')
+     but the input @('res-isomap?') is not @('nil'),
+     because that means that @('result') was already present
+     in one of @('(arg/res1 iso1)'), ..., @('(arg/resk-1 isok-1)'),
+     again violating the disjointness requirement."))
+  (b* (((er &) (ensure-tuple$ arg/res-iso 2
+                              (msg "The ~n0 component of the second input"
+                                   (list k))
+                              t nil))
+       (arg/res (first arg/res-iso))
+       (iso (second arg/res-iso))
+       ((er (list arg res)) (isodata-process-arg/res arg/res k old$ ctx state))
+       (arg-overlap (intersection-eq arg (strip-cars arg-isomaps)))
+       ((when arg-overlap)
         (er-soft+ ctx t nil
-                  "The list of doublets ~x0 passed as second input ~
-                   must contain exactly one element, ~
-                   but it contains ~x1 elements instead."
-                  args/res-iso
-                  len))
-       (args/res-iso (car args/res-iso))
-       (args/res (first args/res-iso))
-       (iso (second args/res-iso))
-       ((er (list args res))
-        (isodata-process-args/res args/res old$ ctx state))
-       ((er (list isomap names-to-avoid))
-        (isodata-process-iso iso old$ verify-guards$ names-to-avoid ctx state))
-       (iso-id (isodata-fresh-defiso-name-with-*s-suffix 'defiso-identity wrld))
+                  "The ~n0 component of the second input includes ~x1, ~
+                   which are also present in the preceding components. ~
+                   This violates the disjointness requirement."
+                  (list k) arg-overlap))
+       ((when (and res res-isomap?))
+        (er-soft+ ctx t nil
+                  "The ~n0 component of the second input includes :RESULT, ~
+                   which is also present in the preceding components. ~
+                   This violates the disjointness requirement."
+                  (list k)))
+       ((er (list isomap names-to-avoid)) (isodata-process-iso iso
+                                                               k
+                                                               old$
+                                                               verify-guards$
+                                                               names-to-avoid
+                                                               ctx
+                                                               state))
+       (arg-isomaps (isodata-process-arg/res-iso-aux arg isomap arg-isomaps))
+       (res-isomap? (and res isomap)))
+    (value (list arg-isomaps res-isomap? names-to-avoid)))
+
+  :prepwork
+  ((define isodata-process-arg/res-iso-aux
+     ((arg symbol-listp)
+      (isomap isodata-isomapp)
+      (arg-isomaps isodata-symbol-isomap-alistp))
+     :returns (new-arg-isomaps isodata-symbol-isomap-alistp :hyp :guard)
+     (cond ((endp arg) arg-isomaps)
+           (t (isodata-process-arg/res-iso-aux (cdr arg)
+                                               isomap
+                                               (acons (car arg)
+                                                      isomap
+                                                      arg-isomaps)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-arg/res-iso-list
+  ((arg/res-iso-list)
+   (k posp)
+   (old$ symbolp)
+   (verify-guards$ booleanp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomap? isodata-maybe-isomapp)
+   (names-to-avoid symbol-listp)
+   ctx
+   state)
+  :returns (mv erp
+               (result "A tuple @('(arg-isomaps res-isomap? names-to-avoid)')
+                        satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
+                                                    isodata-maybe-isomapp
+                                                    symbol-listp
+                                                    result)').")
+               state)
+  :mode :program
+  :short "Lift @(tsee isodata-process-arg/res-iso) to lists."
+  (b* (((when (endp arg/res-iso-list))
+        (value (list arg-isomaps res-isomap? names-to-avoid)))
+       ((er (list arg-isomaps res-isomap? names-to-avoid))
+        (isodata-process-arg/res-iso (car arg/res-iso-list)
+                                     k
+                                     old$
+                                     verify-guards$
+                                     arg-isomaps
+                                     res-isomap?
+                                     names-to-avoid
+                                     ctx
+                                     state)))
+    (isodata-process-arg/res-iso-list (cdr arg/res-iso-list)
+                                      (1+ k)
+                                      old$
+                                      verify-guards$
+                                      arg-isomaps
+                                      res-isomap?
+                                      names-to-avoid
+                                      ctx
+                                      state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-isomaps (isomaps
+                                 (old$ symbolp)
+                                 (verify-guards$ booleanp)
+                                 (names-to-avoid symbol-listp)
+                                 ctx
+                                 state)
+  :returns (mv erp
+               (result "A tuple @('(arg-isomaps res-isomap? names-to-avoid)')
+                        satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
+                                                    isodata-maybe-isomapp
+                                                    symbol-listp
+                                                    result)').")
+               state)
+  :mode :program
+  :short "Process the @('isomaps') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Starting from the empty alist for @('arg-isomaps')
+     and with @('nil') for @('res-isomap?'),
+     we repeatedly process each @('(arg/resk isok)') element,
+     accumulating the processing results
+     into @('arg-isomaps') and @('res-isomap?').
+     Then we reconstruct a possible larger @('arg-isomaps')
+     by going through the formal parameters of @('old') in order,
+     and associating them, in the new alist, with
+     either the corresponding value in the old alist,
+     or the identity isomorphic mapping."))
+  (b* ((wrld (w state))
+       ((unless (true-listp isomaps))
+        (er-soft+ ctx t nil
+                  "The second input must be a true list, ~
+                   but it is ~x0 instead." isomaps))
+       ((unless (>= (len isomaps) 1))
+        (er-soft+ ctx t nil
+                  "The second input must be a non-empty list, ~
+                   but it is ~x0 instead." isomaps))
+       ((er (list arg-isomaps res-isomap? names-to-avoid))
+        (isodata-process-arg/res-iso-list
+         isomaps 1 old$ verify-guards$ nil nil names-to-avoid ctx state))
+       (isoname-id
+        (isodata-fresh-defiso-name-with-*s-suffix 'defiso-identity wrld))
        ((mv forth-image-id
             back-image-id
             back-of-forth-id
@@ -676,12 +837,12 @@
             forth-injective-id
             back-injective-id
             names-to-avoid)
-        (isodata-fresh-defiso-thm-names iso-id
+        (isodata-fresh-defiso-thm-names isoname-id
                                         verify-guards$
                                         names-to-avoid
                                         wrld))
        (isomap-id (make-isodata-isomap
-                   :isoname iso-id
+                   :isoname isoname-id
                    :localp t
                    :oldp '(lambda (x) 't)
                    :newp '(lambda (x) 't)
@@ -699,36 +860,28 @@
                    :back-guard back-guard-id
                    :hints nil))
        (formals (formals old$ wrld))
-       (arg-isomaps (isodata-process-args/res-iso-aux formals
-                                                      args
-                                                      isomap
-                                                      isomap-id))
-       (res-isomap? (and res isomap)))
+       (arg-isomaps (isodata-process-isomaps-aux formals
+                                                 arg-isomaps
+                                                 isomap-id)))
     (value (list arg-isomaps res-isomap? names-to-avoid)))
 
   :prepwork
-  ((define isodata-process-args/res-iso-aux ((formals symbol-listp)
-                                             (args symbol-listp)
-                                             (isomap isodata-isomapp)
-                                             (isomap-id isodata-isomapp))
-     :returns (arg-isomaps isodata-symbol-isomap-alistp
-                           :hyp (and (symbol-listp formals)
-                                     (isodata-isomapp isomap)
-                                     (isodata-isomapp isomap-id)))
-     (cond ((endp formals) nil)
-           ((member-eq (car formals) args)
-            (acons (car formals)
-                   isomap
-                   (isodata-process-args/res-iso-aux (cdr formals)
-                                                     args
-                                                     isomap
-                                                     isomap-id)))
-           (t (acons (car formals)
-                     isomap-id
-                     (isodata-process-args/res-iso-aux (cdr formals)
-                                                       args
-                                                       isomap
-                                                       isomap-id)))))))
+  ((define isodata-process-isomaps-aux
+     ((formals symbol-listp)
+      (arg-isomaps isodata-symbol-isomap-alistp)
+      (isomap-id isodata-isomapp))
+     :returns (new-arg-isomaps isodata-symbol-isomap-alistp :hyp :guard)
+     (b* (((when (endp formals)) nil)
+          (pair (assoc-eq (car formals) arg-isomaps)))
+       (if (consp pair)
+           (cons pair (isodata-process-isomaps-aux (cdr formals)
+                                                   arg-isomaps
+                                                   isomap-id))
+         (acons (car formals)
+                isomap-id
+                (isodata-process-isomaps-aux (cdr formals)
+                                             arg-isomaps
+                                             isomap-id)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -873,7 +1026,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-process-inputs (old
-                                args/res-iso
+                                isomaps
                                 predicate
                                 new-name
                                 new-enable
@@ -901,9 +1054,6 @@
                                     names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
-                                         symbol-listp
-                                         booleanp
-                                         isodata-isomapp
                                          isodata-symbol-isomap-alistp
                                          isodata-maybe-isomapp
                                          symbolp
@@ -929,8 +1079,8 @@
                              "The :VERIFY-GUARDS input" t nil))
        (names-to-avoid (list new-name$ thm-name$))
        ((er (list arg-isomaps res-isomap? names-to-avoid))
-        (isodata-process-args/res-iso
-         args/res-iso old$ verify-guards$ names-to-avoid ctx state))
+        (isodata-process-isomaps
+         isomaps old$ verify-guards$ names-to-avoid ctx state))
        ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
@@ -3640,7 +3790,7 @@
                      call
                      ;; mandatory inputs:
                      old
-                     args/res-iso
+                     isomaps
                      ;; optional inputs:
                      &key
                      (predicate 'nil)
@@ -3656,7 +3806,7 @@
                      (show-only 'nil)
                      (compatibility 'nil))
     `(make-event-terse (isodata-fn ',old
-                                   ',args/res-iso
+                                   ',isomaps
                                    ',predicate
                                    ',new-name
                                    ',new-enable
