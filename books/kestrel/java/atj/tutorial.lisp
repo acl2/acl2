@@ -1276,6 +1276,13 @@
      ATJ also displays (with verbose screen output),
      messages as it generating Java classes, compilation units, and files.")
 
+   (xdoc::p
+    "In the factorial example "
+    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    ", verbose screen output can be displayed via ")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :verbose t)")
+
    (atj-tutorial-next-and-previous
     "atj-tutorial-translated" *atj-tutorial-translated*
     "atj-tutorial-customization" *atj-tutorial-customization*)))
