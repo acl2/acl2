@@ -109,7 +109,7 @@
 
 (define atj-tutorial-section ((section stringp))
   :returns (text xdoc::treep :hyp :guard)
-  (xdoc::p (xdoc::b section)))
+  (xdoc::h5 section))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
