@@ -170,6 +170,7 @@
 (include-book "tools/defthmg" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 (include-book "tools/without-subsumption" :dir :system)
+(include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
 ;; translate11-call.  This hasn't been much of a problem in doc/top-fast (as

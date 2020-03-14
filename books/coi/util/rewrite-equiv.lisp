@@ -31,6 +31,7 @@
 
 (in-package "ACL2")
 
+(include-book "xdoc/top" :dir :system)
 (include-book "good-rewrite-order")
 (include-book "clause-processor")
 
@@ -182,77 +183,142 @@
  (encapsulate
   ()
 
-(defstub foo (x) nil)
-(defstub goo (x) nil)
-(defstub hoo (x) nil)
+  (defstub foo (x) nil)
+  (defstub goo (x) nil)
+  (defstub hoo (x) nil)
+  
+  (encapsulate
+      (
+       ((fred *) => *)
+       )
+    
+    (local
+     (defun fred (x)
+       (declare (ignore x))
+       t))
+    
+    (defthm fred-goo
+      (fred (+ 3 (goo x))))
+    
+    )
 
-(encapsulate
- (
-  ((fred *) => *)
-  )
+  ;;
+  ;; This theorem does not prove without the rewrite-with-equality hint ..
+  ;;
+  (defthm simple-example
+    (implies
+     (and
+      (integerp x)
+      (equal (foo x) (goo x))
+      (equal (hoo x) (+ 3 (foo x))))
+     (fred (hoo x)))
+    :hints ((rewrite-equiv-hint)))
+  
+  (defun cnt (list)
+    (if (consp list)
+        (1+ (cnt (cdr list)))
+      0))
 
- (local
-  (defun fred (x)
-    (declare (ignore x))
-    t))
+  ;;
+  ;; A bit convoluted, but here we use it to help apply an induction hypothesis.
+  ;;
+  (defthm cnt-reduction
+    (equal (cnt list)
+           (len list))
+    :hints (("Goal" :induct (len list)
+             :in-theory (disable cnt))
+            (rewrite-equiv-hint)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable cnt)))))
+  
+  (encapsulate
+      ()
+    
+    (defun equiv (x y) (equal x y))
+    
+    (defequiv equiv)
+    
+    (defcong equiv equal (fred x) 1)
+    
+    (defcong equiv equal (binary-+ x y) 1)
+    
+    (defcong equiv equal (binary-+ x y) 2)
+    
+    (in-theory (disable equiv))
+    
+    (defthm simple-equiv-example-1
+      (implies
+       (and
+        (integerp x)
+        (equiv (foo x) (goo x))
+        (equiv (hoo x) (+ 3 (foo x))))
+       (fred (hoo x)))
+      :rule-classes nil
+      :hints ((rewrite-equiv-hint equiv)))
+    
+    )
 
- (defthm fred-goo
-   (fred (+ 3 (goo x))))
+  ))
 
- )
+(defxdoc rewrite-equiv-hint
+  :short "A hint to induce ACL2 to perform substitutions using equivalence relations from the hypothesis"
+  :parents (proof-automation)
+  :long "
+<p>
+@('Rewrite-equiv-hint') is a clause-processor hint that leverages @(see rewrite-equiv)
+to induce ACL2 to perform substitution using equivalence relations in the hypothesis.
+@('(rewrite-equiv-hint equiv)') will apply @('rewrite-equiv') to any equivalence relation
+involving @('equiv') appearing in the hypothesis.  Without an argument, @('(rewrite-equiv-hint)'),
+it will apply  @('rewrite-equiv') to any equality in the hypothesis.
+</p>
+<p>
+Example Usage:
+</p>
+@({
+  (include-book \"coi/util/rewrite-equiv\" :dir :system)
 
-;;
-;; This theorem does not prove without the rewrite-with-equality hint ..
-;;
-(defthm simple-example
-  (implies
-   (and
-    (integerp x)
-    (equal (foo x) (goo x))
-    (equal (hoo x) (+ 3 (foo x))))
-   (fred (hoo x)))
-  :hints (("Goal" :do-not '(fertilize))
-	  (rewrite-equiv-hint)))
+  (defstub foo (x) nil)
+  (defstub goo (x) nil)
+  (defstub hoo (x) nil)
 
-(defun cnt (list)
-  (if (consp list)
-      (1+ (cnt (cdr list)))
-    0))
+  (encapsulate
+   (
+    ((fred *) => *)
+    )
 
-;;
-;; Here we use it to help apply an induction hypothesis.
-;;
-(defthm cnt-reduction
-  (equal (cnt list)
-	 (len list))
-  :hints ((rewrite-equiv-hint)))
+   (local
+    (defun fred (x)
+      (declare (ignore x))
+      t))
 
-))
+   (defthm fred-goo
+     (fred (+ 3 (goo x))))
 
-(local
- (encapsulate
-  ()
+   )
 
-  (defun equiv (x y) (equal x y))
+   (defun equiv (x y) (equal x y))
+   
+   (defequiv equiv)
+   
+   (defcong equiv equal (fred x) 1)
+   
+   (defcong equiv equal (binary-+ x y) 1)
+   
+   (defcong equiv equal (binary-+ x y) 2)
+   
+   (in-theory (disable equiv))
 
-  (defequiv equiv)
-
-  (defcong equiv equal (fred x) 1)
-
-  (defcong equiv equal (binary-+ x y) 1)
-
-  (defcong equiv equal (binary-+ x y) 2)
-
-  (in-theory (disable equiv))
-
-  (defthm simple-equiv-example-1
+  ;;
+  ;; This theorem does not prove without rewrite-equiv-hint ..
+  ;;
+  (defthm simple-example
     (implies
      (and
       (integerp x)
       (equiv (foo x) (goo x))
       (equiv (hoo x) (+ 3 (foo x))))
      (fred (hoo x)))
-    :rule-classes nil
     :hints ((rewrite-equiv-hint equiv)))
 
-  ))
+})
+")
