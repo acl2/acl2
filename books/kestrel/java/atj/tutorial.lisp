@@ -1064,7 +1064,8 @@
      which apply to both "
     (xdoc::seetopic "atj-tutorial-deep-shallow"
                     "deep and shallow embedding approaches")
-    ". The more complex options are covered elsewhere in this tutorial.")
+    ". The more complex options are covered elsewhere in this tutorial,
+     each by one or more pages.")
 
    (atj-tutorial-section "Java Package")
 
@@ -1214,7 +1215,11 @@
    (xdoc::p
     "This tutorial page describes
      which ACL2 functions are translated to Java when ATJ is called,
-     and which requirements these functions must satisfy.")
+     and which requirements these functions must satisfy.
+     This applies to both "
+    (xdoc::seetopic "atj-tutorial-deep-shallow"
+                    "deep and shallow embedding approaches")
+    ".")
 
    (atj-tutorial-section "Target Functions")
 
