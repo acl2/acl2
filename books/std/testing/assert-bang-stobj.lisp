@@ -14,7 +14,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; We turn now to developing an extension of assert! that works with stobjs, in
+; The following is an extension of assert! that works with stobjs, in
 ; this case for assertions that return (mv val st) where val is an ordinary
 ; value and st is a stobj.  Our intention is to illustrate how to write other
 ; versions of assert!.  If you understand this extension, you can then write
