@@ -1549,14 +1549,20 @@
     " class diagrams
      to illustrate the "
     (xdoc::seetopic "atj-tutorial-aij" "AIJ")
-    " Java classes.")
+    " Java classes.
+     These simplified UML diagrams are briefly described
+     in this auxiliary tutorial page.")
+
+   (atj-tutorial-section "Diagram Notation")
 
    (xdoc::p
     "Each class is depicted as a box containing its name.
      Abstract classes have italicized names.
      Public classes have names preceded by @('+'),
-     while package-private classes have names preceded by @('~').
-     Inheritance (`is a') relationships
+     while package-private classes have names preceded by @('~').")
+
+   (xdoc::p
+    "Inheritance (`is a') relationships
      are indicated by lines with hollow triangular tips.
      Composition (`part of') relationships
      are indicated by lines with solid rhomboidal tips,
@@ -1568,8 +1574,12 @@
      (@('0..*') means `zero or more').")
 
    (xdoc::p
-    "The dashed boxes are just replicas to avoid clutter.
-     These UML class diagrams are simplified because
+    "The dashed boxes are just replicas to avoid clutter.")
+
+   (atj-tutorial-section "Simplifications")
+
+   (xdoc::p
+    "These UML class diagrams are simplified because
      the class boxes do not contain fields and methods,
      as they should in a full UML class diagram.")))
 
