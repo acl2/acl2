@@ -1817,3 +1817,59 @@ functions) and that it is being given the right number of arguments.</p>
 
 
 
+
+
+(defines svex-compose-rw
+  (define svex-compose-rw ((x svex-p) (a svex-alist-p))
+    :returns (xx svex-p)
+    :measure (svex-count x)
+    :verify-guards nil
+    (svex-case x
+      :quote (svex-fix x)
+      :var (b* ((look (hons-assoc-equal x.name a)))
+             (if look
+                 (svex-fix (cdr look))
+               (svex-fix x)))
+      :call (b* ((args (svexlist-compose-rw x.args a)))
+              (svex-rewrite-fncall 1000 -1 x.fn args t t))))
+  (define svexlist-compose-rw ((x svexlist-p) (a svex-alist-p))
+    :returns (xx svexlist-p)
+    :measure (svexlist-count x)
+    (if (atom x)
+        nil
+      (cons (svex-compose-rw (car x) a)
+            (svexlist-compose-rw (cdr x) a))))
+  ///
+  (verify-guards svex-compose-rw)
+  (local (defthm svex-env-lookup-of-append-1
+           (implies (and (hons-assoc-equal x a)
+                         (svar-p x))
+                    (equal (sv::svex-env-lookup x (append a b))
+                           (sv::svex-env-lookup x a)))
+           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+  (local (defthm svex-env-lookup-of-append-2
+           (implies (and (not (hons-assoc-equal x a))
+                         (svar-p x))
+                    (equal (sv::svex-env-lookup x (append a b))
+                           (sv::svex-env-lookup x b)))
+           :hints(("Goal" :in-theory (enable svex-env-lookup)))))
+  (local (defthm hons-assoc-equal-of-svex-alist-eval
+           (implies (svar-p x)
+                    (iff (hons-assoc-equal x (svex-alist-eval a env))
+                         (hons-assoc-equal x a)))
+           :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+  (local (in-theory (enable sv::svex-lookup)))
+
+  (std::defret-mutual svex-compose-rw-correct
+    (defret svex-compose-rw-correct
+      (equal (svex-eval xx env)
+             (svex-eval (svex-compose x a) env))
+      :hints ('(:expand (<call>))
+              (and stable-under-simplificationp
+                   `(:expand ((:Free (env) (svex-eval x env))))))
+      :fn svex-compose-rw)
+    (defret svexlist-compose-rw-correct
+      (equal (svexlist-eval xx env)
+             (svexlist-eval (svexlist-compose x a) env))
+      :hints ('(:expand (<call>)))
+      :fn svexlist-compose-rw)))

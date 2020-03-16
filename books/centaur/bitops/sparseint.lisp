@@ -3238,7 +3238,27 @@ by redefining the constant.</p>")
                           (w1 (pos-fix width))))))
             ))
 
-  (verify-guards int-to-sparseint$-rec))
+  (verify-guards int-to-sparseint$-rec)
+
+
+  (local (defthm logext-when-gt-integer-length
+           (implies (and (posp width)
+                         (< (integer-length x) width))
+                    (equal (logext width x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                              ihsext-recursive-redefs
+                                              equal-logcons-strong)))))
+
+  (defthmd int-to-sparseint$-rec-unchanged
+    (implies (and (< width (sparseint$-leaf-bitlimit))
+                  (< (integer-length x) width)
+                  (posp width))
+             (equal (mv-nth 0 (int-to-sparseint$-rec x width 0))
+                    (ifix x)))
+    :hints(("Goal" :in-theory (enable int-to-sparseint$-rec
+                                      sparseint$-p
+                                      sparseint$-kind
+                                      sparseint$-leaf->val)))))
 
 (define int-to-sparseint$ ((x integerp))
   :returns (sint sparseint$-p)
@@ -3249,8 +3269,14 @@ by redefining the constant.</p>")
                      (equal (logext n x) (ifix x)))
             :hints(("Goal" :in-theory (enable* ihsext-inductions
                                                ihsext-recursive-redefs))))))
-  (b* (((mv sint ?height ?width) (int-to-sparseint$-rec x (+ 1 (integer-length x)) 0)))
-    sint)
+  :guard-hints (("goal" :in-theory (enable int-to-sparseint$-rec-unchanged)))
+  (mbe :logic
+       (b* (((mv sint ?height ?width) (int-to-sparseint$-rec x (+ 1 (integer-length x)) 0)))
+         sint)
+       :exec (if (< (+ 1 (integer-length x)) (sparseint$-leaf-bitlimit))
+                 x
+               (b* (((mv sint ?height ?width) (int-to-sparseint$-rec x (+ 1 (integer-length x)) 0)))
+                 sint)))
   ///
   (defret sparseint$-height-correctp-of-<fn>
     (sparseint$-height-correctp sint))
@@ -3272,7 +3298,6 @@ by redefining the constant.</p>")
     (equal (sparseint-val sint)
            (ifix x))
     :hints(("Goal" :in-theory (enable sparseint-val)))))
-
 
 (define sparseint$-length-width-rec ((width posp)
                                      (tail integerp)
