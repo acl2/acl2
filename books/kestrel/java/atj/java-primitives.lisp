@@ -145,7 +145,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-constructors*
+(defval *atj-java-primitive-constrs*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive types."
   :long
@@ -268,7 +268,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-conversions*
+(defval *atj-java-primitive-convs*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive conversions."
   :long
@@ -326,21 +326,21 @@
 (defval *atj-java-primitive-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
-  (append *atj-java-primitive-constructors*
+  (append *atj-java-primitive-constrs*
           *atj-java-primitive-unops*
           *atj-java-primitive-binops*
-          *atj-java-primitive-conversions*)
+          *atj-java-primitive-convs*)
   ///
   (assert-event (function-name-listp *atj-java-primitive-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primitive-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-constructor-p (fn)
+(define atj-java-primitive-constr-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the construction of Java primitive types."
-  (and (member-eq fn *atj-java-primitive-constructors*) t))
+  (and (member-eq fn *atj-java-primitive-constrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -360,11 +360,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-conversion-p (fn)
+(define atj-java-primitive-conv-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive conversions."
-  (and (member-eq fn *atj-java-primitive-conversions*) t))
+  (and (member-eq fn *atj-java-primitive-convs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

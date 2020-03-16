@@ -227,6 +227,9 @@
       test? ;for acl2s-hooks query categorization
       acl2s-defaults acl2s-defaults-table
 
+      def-pattern-match-constructor
+      pattern-match
+      
       clear-memo-table
 
       induction-machine

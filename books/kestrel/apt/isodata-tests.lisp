@@ -31,6 +31,198 @@
 
 (must-succeed*
 
+ (test-title "Schematic test 1.")
+
+ (encapsulate
+   (((oldp *) => *) ; old representation
+    ((newp *) => *) ; new representation
+    ((forth *) => *) ; conversion from old to new representation
+    ((back *) => *) ; conversion from new to old representation
+    ((a *) => *)   ; termination test
+    ((b *) => *)   ; base of the recursion
+    ((c * *) => *) ; combination of function argument with recursive call
+    ((d *) => *)   ; decreasing of the function argument
+    ((m *) => *)   ; measure of the function argument
+    ((g *) => *))  ; guard of the function
+
+   (set-ignore-ok t)
+   (set-irrelevant-formals-ok t)
+
+   (set-verify-guards-eagerness 1)
+
+   (local (defun oldp (x) t)) ; all values
+   (local (defun newp (x) t)) ; all values
+   (local (defun forth (x) x)) ; identity conversion
+   (local (defun back (x) x)) ; identity conversion
+
+   (local (defun a (x) (zp x)))   ; 0 or not a natural number
+   (local (defun b (x) nil))      ; anything, irrelevant
+   (local (defun c (x y) nil))    ; anything, irrelevant
+   (local (defun d (x) (1- x)))   ; decrement by 1
+   (local (defun m (x) (nfix x))) ; argument, treated as natural number
+   (local (defun g (x) (oldp x)))  ; all of the old representation
+
+   ;; for the DEFISO applicability conditions:
+   (defthm forth-image (implies (oldp x) (newp (forth x))))
+   (defthm back-image (implies (newp x) (oldp (back x))))
+   (defthm back-of-forth (implies (oldp x) (equal (back (forth x)) x)))
+   (defthm forth-of-back (implies (newp x) (equal (forth (back x)) x)))
+
+   ;; for the termination of F:
+   (defthm o-p-of-m (o-p (m x)))
+   (defthm o<-of-m (implies (not (a x)) (o< (m (d x)) (m x))))
+
+   ;; for the guard verification of F:
+   (defthm g-of-d (implies (and (g x) (not (a x))) (g (d x))))
+
+   ;; for the ISODATA applicability conditions:
+   (defthm oldp-of-d (implies (and (oldp x) (not (a x))) (oldp (d x))))
+   (defthm oldp-of-b (implies (and (oldp x) (a x)) (oldp (b x))))
+   (defthm oldp-of-c (implies (and (oldp x) (oldp y)) (oldp (c x y))))
+   (defthm oldp-when-g (implies (g x) (oldp x))))
+
+ (defun f (x)
+   (declare (xargs :guard (g x) :measure (m x)))
+   (if (a x)
+       (b x)
+     (c x (f (d x)))))
+
+ (defiso isomap oldp newp forth back)
+
+ (apt::isodata f (((x :result) isomap)) :new-name f1)
+
+ (must-be-redundant
+  (defun f1 (x)
+    (declare (xargs :guard (and (newp x) (g (back x)))
+                    :measure (m (back x))
+                    :ruler-extenders :all))
+    (if (mbt$ (newp x))
+        (if (a (back x))
+            (forth (b (back x)))
+          (forth (c (back x)
+                    (back (f1 (forth (d (back x))))))))
+      nil)))
+
+ (must-be-redundant
+  (defthm f-~>-f1
+    (implies (oldp x)
+             (equal (f x)
+                    (back (f1 (forth x))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Schematic test 2.")
+
+ (encapsulate
+   (((in-oldp *) => *) ; old input representation
+    ((in-newp *) => *) ; new input representation
+    ((in-forth *) => *) ; conversion from old to new input representation
+    ((in-back *) => *) ; conversion from new to old input representation
+    ((out-oldp *) => *) ; old output representation
+    ((out-newp *) => *) ; new output representation
+    ((out-forth *) => *) ; conversion from old to new output representation
+    ((out-back *) => *) ; conversion from new to old output representation
+    ((a *) => *)   ; termination test
+    ((b *) => *)   ; base of the recursion
+    ((c * *) => *) ; combination of function argument with recursive call
+    ((d *) => *)   ; decreasing of the function argument
+    ((m *) => *)   ; measure of the function argument
+    ((g *) => *))  ; guard of the function
+
+   (set-ignore-ok t)
+   (set-irrelevant-formals-ok t)
+
+   (set-verify-guards-eagerness 1)
+
+   (local (defun in-oldp (x) t)) ; all values
+   (local (defun in-newp (x) t)) ; all values
+   (local (defun in-forth (x) x)) ; identity conversion
+   (local (defun in-back (x) x)) ; identity conversion
+
+   (local (defun out-oldp (x) t)) ; all values
+   (local (defun out-newp (x) t)) ; all values
+   (local (defun out-forth (x) x)) ; identity conversion
+   (local (defun out-back (x) x)) ; identity conversion
+
+   (local (defun a (x) (zp x)))   ; 0 or not a natural number
+   (local (defun b (x) nil))      ; anything, irrelevant
+   (local (defun c (x y) nil))    ; anything, irrelevant
+   (local (defun d (x) (1- x)))   ; decrement by 1
+   (local (defun m (x) (nfix x))) ; argument, treated as natural number
+   (local (defun g (x) (in-oldp x)))  ; all of the old representation
+
+   ;; for the input DEFISO applicability conditions:
+   (defthm in-forth-image (implies (in-oldp x)
+                                   (in-newp (in-forth x))))
+   (defthm in-back-image (implies (in-newp x)
+                                  (in-oldp (in-back x))))
+   (defthm in-back-of-forth (implies (in-oldp x)
+                                     (equal (in-back (in-forth x)) x)))
+   (defthm in-forth-of-back (implies (in-newp x)
+                                     (equal (in-forth (in-back x)) x)))
+
+   ;; for the output DEFISO applicability conditions:
+   (defthm out-forth-image (implies (out-oldp x)
+                                    (out-newp (out-forth x))))
+   (defthm out-back-image (implies (out-newp x)
+                                   (out-oldp (out-back x))))
+   (defthm out-back-of-forth (implies (out-oldp x)
+                                      (equal (out-back (out-forth x)) x)))
+   (defthm out-forth-of-back (implies (out-newp x)
+                                      (equal (out-forth (out-back x)) x)))
+
+   ;; for the termination of F:
+   (defthm o-p-of-m (o-p (m x)))
+   (defthm o<-of-m (implies (not (a x)) (o< (m (d x)) (m x))))
+
+   ;; for the guard verification of F:
+   (defthm g-of-d (implies (and (g x) (not (a x))) (g (d x))))
+
+   ;; for the ISODATA applicability conditions:
+   (defthm oldp-of-d (implies (and (in-oldp x) (not (a x)))
+                              (in-oldp (d x))))
+   (defthm oldp-of-b (implies (and (in-oldp x) (a x))
+                              (out-oldp (b x))))
+   (defthm oldp-of-c (implies (and (in-oldp x) (out-oldp y))
+                              (out-oldp (c x y))))
+   (defthm oldp-when-g (implies (g x) (in-oldp x))))
+
+ (defun f (x)
+   (declare (xargs :guard (g x) :measure (m x)))
+   (if (a x)
+       (b x)
+     (c x (f (d x)))))
+
+ (defiso in-isomap in-oldp in-newp in-forth in-back)
+
+ (defiso out-isomap out-oldp out-newp out-forth out-back)
+
+ (apt::isodata f ((x in-isomap) (:result out-isomap)) :new-name f1)
+
+ (must-be-redundant
+  (defun f1 (x)
+    (declare (xargs :guard (and (in-newp x) (g (in-back x)))
+                    :measure (m (in-back x))
+                    :ruler-extenders :all))
+    (if (mbt$ (in-newp x))
+        (if (a (in-back x))
+            (out-forth (b (in-back x)))
+          (out-forth (c (in-back x)
+                        (out-back (f1 (in-forth (d (in-back x))))))))
+      nil)))
+
+ (must-be-redundant
+  (defthm f-~>-f1
+    (implies (in-oldp x)
+             (equal (f x)
+                    (out-back (f1 (in-forth x))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
  (test-title "Check OLD input.")
 
  ;; OLD is not a symbol:

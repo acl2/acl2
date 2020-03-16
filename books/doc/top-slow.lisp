@@ -260,6 +260,8 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/oracle-timelimit" :dir :system)
 (include-book "tools/defthmg" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
+(include-book "tools/without-subsumption" :dir :system)
+(include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
 ;; translate11-call, which end up taking a lot of space and causing us to spend

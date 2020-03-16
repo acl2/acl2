@@ -12221,34 +12221,39 @@
 ; satisfied.
 
 (defun eval-ground-subexpressions1-lst-lst (lst-lst ens wrld safe-mode gc-off
-                                                    ttree hands-off-fns)
-  (cond ((null lst-lst) (mv nil nil ttree))
+                                                    ttree hands-off-fns memo)
+  (cond ((null lst-lst) (mv nil nil ttree memo))
         (t (mv-let
-            (flg1 x ttree)
+            (flg1 x ttree memo)
             (eval-ground-subexpressions1-lst (car lst-lst) ens wrld safe-mode
-                                             gc-off ttree hands-off-fns)
+                                             gc-off ttree hands-off-fns memo)
             (mv-let
-             (flg2 y ttree)
+             (flg2 y ttree memo)
              (eval-ground-subexpressions1-lst-lst (cdr lst-lst) ens wrld
                                                   safe-mode gc-off ttree
-                                                  hands-off-fns)
+                                                  hands-off-fns memo)
              (mv (or flg1 flg2)
                  (if (or flg1 flg2)
                      (cons x y)
                    lst-lst)
-                 ttree))))))
+                 ttree
+                 memo))))))
 
 (defun eval-ground-subexpressions-lst-lst (lst-lst ens wrld state ttree)
 
 ; Note: This function does not support hands-off-fns but we could add that as a
 ; new formal and pass it instead of nil below.
 
-  (eval-ground-subexpressions1-lst-lst lst-lst ens wrld
-                                       (f-get-global 'safe-mode state)
-                                       (gc-off state)
-                                       ttree
-                                       nil  ; hands-off-fns
-                                       ))
+  (mv-let (flg x ttree memo)
+    (eval-ground-subexpressions1-lst-lst lst-lst ens wrld
+                                         (f-get-global 'safe-mode state)
+                                         (gc-off state)
+                                         ttree
+                                         nil ; hands-off-fns
+                                         nil ; memo
+                                         )
+    (declare (ignore memo))
+    (mv flg x ttree)))
 
 (defun sublis-var-lst-lst (alist clauses)
   (cond ((null clauses) nil)
@@ -13239,11 +13244,12 @@
           (guard-clauses term debug-info stobj-optp clause wrld ttree newvar)
           (cond ((eq ens :DO-NOT-SIMPLIFY)
                  (mv clause-lst0 ttree))
-                (t (mv-let (flg clause-lst ttree)
+                (t (mv-let (flg clause-lst ttree memo)
                      (eval-ground-subexpressions1-lst-lst
                       clause-lst0 ens wrld safe-mode gc-off ttree
-                      *loop$-special-function-symbols*)
-                     (declare (ignore flg))
+                      *loop$-special-function-symbols*
+                      nil)
+                     (declare (ignore flg memo))
                      (mv clause-lst ttree))))))
 
 (defun guard-clauses-for-body (hyp-segments body debug-info stobj-optp ens
@@ -13355,7 +13361,7 @@
         (guard
          (if (symbolp name)
              (guard name nil wrld)
-             (lambda-object-guard name)))
+           (lambda-object-guard name)))
         (stobj-optp (not (and (symbolp name)
                               (eq (getpropc name 'non-executablep
                                             nil wrld)
@@ -13389,67 +13395,58 @@
                  (getpropc name 'unnormalized-body
                            '(:error "See GUARD-CLAUSES-FOR-FN.")
                            wrld)
-                 (lambda-object-body name))))
+               (lambda-object-body name))))
         (mv-let
           (normal-guard ttree)
           (cond ((eq ens :do-not-simplify)
                  (mv guard nil))
                 (t (normalize guard
-                              t ; iff-flg
+                              t   ; iff-flg
                               nil ; type-alist
                               ens wrld ttree
                               (normalize-ts-backchain-limit-for-defs wrld))))
-          (mv-let
-            (changedp body ttree)
-            (cond ((eq ens :do-not-simplify)
-                   (mv nil unnormalized-body nil))
-                  (t (eval-ground-subexpressions1
-                      unnormalized-body
-                      ens wrld safe-mode gc-off ttree
-                      *loop$-special-function-symbols*)))
-            (declare (ignore changedp))
-            (let ((hyp-segments
+          (let ((hyp-segments
 
 ; Should we expand lambdas here?  I say ``yes,'' but only to be
 ; conservative with old code.  Perhaps we should change the t to nil?
 
-                   (clausify (dumb-negate-lit normal-guard)
-                             nil t (sr-limit wrld))))
-              (mv-let
-                (cl-set2 ttree)
-                (guard-clauses-for-body hyp-segments
-                                        body
-                                        (and debug-p `(:guard (:body ,name)))
+                 (clausify (dumb-negate-lit normal-guard)
+                           nil t (sr-limit wrld))))
+            (mv-let
+              (cl-set2 ttree)
+              (guard-clauses-for-body hyp-segments
+                                      unnormalized-body
+                                      (and debug-p `(:guard (:body ,name)))
 
 ; Observe that when we generate the guard clauses for the body we optimize
 ; the stobj recognizers away, provided the named function is executable.
 
-                                        stobj-optp
-                                        ens wrld safe-mode gc-off ttree newvar)
-                (mv-let (type-clauses ttree)
-                  (guard-clauses-for-body
-                   hyp-segments
-                   (fcons-term* 'insist
-                                (if (symbolp name)
-                                    (getpropc name 'split-types-term *t* wrld)
-                                    *t*))
-                   (and debug-p `(:guard (:type ,name)))
+                                      stobj-optp
+                                      ens wrld safe-mode gc-off ttree newvar)
+              (mv-let (type-clauses ttree)
+                (guard-clauses-for-body
+                 hyp-segments
+                 (fcons-term* 'insist
+                              (if (symbolp name)
+                                  (getpropc name 'split-types-term *t* wrld)
+                                *t*))
+                 (and debug-p `(:guard (:type ,name)))
 
 ; There seems to be no clear reason for setting stobj-optp here to t.  This
 ; decision could easily be reconsidered; we are being conservative here since
 ; as we write this comment in Oct. 2017, stobj-optp = nil has been probably
 ; been used here since the inception of split-types.
 
-                   nil
-                   ens wrld safe-mode gc-off ttree newvar)
-                  (let ((cl-set2
-                         (if type-clauses ; optimization
-                             (conjoin-clause-sets+ debug-p
-                                                   type-clauses cl-set2)
-                             cl-set2)))
-                    (mv (conjoin-clause-sets+ debug-p
-                                              cl-set1 cl-set2)
-                        ttree)))))))))))
+                 nil
+                 ens wrld safe-mode gc-off ttree newvar)
+                (let ((cl-set2
+                       (if type-clauses ; optimization
+                           (conjoin-clause-sets+ debug-p
+                                                 type-clauses cl-set2)
+                         cl-set2)))
+                  (mv (conjoin-clause-sets+ debug-p
+                                            cl-set1 cl-set2)
+                      ttree))))))))))
 
 (defun guard-clauses-for-fn1-lst (fns debug-p ens wrld safe-mode gc-off ttree)
 

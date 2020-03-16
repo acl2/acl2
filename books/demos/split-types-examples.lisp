@@ -88,8 +88,10 @@
         (IMPLIES (AND (EXTRA-INFO '(:GUARD (:BODY F2-GUARD-DEBUG))
                                   '(ILLEGAL 'ASSERT$
                                             "Assertion failed:~%~x0"
-                                            '((#\0 ASSERT$ (< X (* 2 Y))
-                                                   (CONS X Y)))))
+                                            (LIST (CONS #\0
+                                                        '(ASSERT$
+                                                          (< X (* 2 Y))
+                                                          (CONS X Y))))))
                       (NAT-< X Y))
                  (< X (* 2 Y)))))
 

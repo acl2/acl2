@@ -39,3 +39,6 @@
                     (and (equal (realpart x) (realpart y))
                          (< (imagpart x) (imagpart y))))))
   :hints (("Goal" :use (:instance completion-of-<) )))
+
+(defthm not-<-same
+  (not (< x x)))

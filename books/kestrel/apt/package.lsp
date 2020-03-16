@@ -82,6 +82,7 @@
                          disable*
                          disjoin
                          do-all
+                         doublet-listp
                          doublets-to-alist
                          drop-fake-runes
                          dumb-negate-lit
@@ -131,6 +132,7 @@
                          ensure-term-logic-mode$
                          ensure-term-no-stobjs$
                          ensure-term-not-call-of$
+                         ensure-tuple$
                          equivalence-relationp
                          er-soft+
                          evmac-input-print-p
@@ -182,8 +184,8 @@
                          impossible
                          induction-machine
                          induction-machine-for-fn
-                         install-not-norm
                          install-not-normalized
+                         install-not-normalized$
                          install-not-normalized-event
                          install-not-normalized-name
                          io?
