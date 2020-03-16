@@ -14,7 +14,6 @@
 ; cert_param: non-acl2r
 
 (include-book "aij-notions")
-(include-book "types")
 (include-book "test-structures")
 (include-book "java-pretty-printer")
 (include-book "pre-translation")

@@ -826,16 +826,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-adapt-expr-from-jprim-to-cons
-  ((expr jexprp)
-   (type (member-eq type '(:jboolean
-                           :jchar
-                           :jbyte
-                           :jshort
-                           :jint
-                           :jlong
-                           :jfloat
-                           :jdouble))))
+(define atj-adapt-expr-from-jprim-to-cons ((expr jexprp)
+                                           (type primitive-typep))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from a Java primitive type to type @('Acl2ConsValue')."
@@ -843,7 +835,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
-     when the source ATJ type is a @(':j...') type not ending in @('[]')
+     when the source ATJ type is a @(':jprim') type
      and the destination ATJ type is @(':acons') or @(':avalue').
      In our ACL2 model of Java,
      Java primitive values are represented as
@@ -857,36 +849,29 @@
     ". We first create the ``core'' expression from the initial expression:
      this core expression is
      an @('Acl2Symbol') (@('t') or @('nil')) for @(':jboolean'),
-     or an @('Acl2Integer') for the other @(':j...') types.
+     or an @('Acl2Integer') for the other @(':jprim') types.
      Then we create a list of length 2 (as two @('Acl2ConsPair')s)
      whose first element is the @('Acl2Symbol')
      for the keyword for the primitive type,
      and whose second element is the aforementioned core expression."))
-  (b* (((when (or (eq type :jfloat)
-                  (eq type :jdouble)))
+  (b* (((when (or (primitive-type-case type :float)
+                  (primitive-type-case type :double)))
         (prog2$ (raise "Conversion from ~x0 not supported." type)
-                (ec-call (jexpr-fix :this-is-irrelevant))))
+                (ec-call (jexpr-fix :irrelevant))))
        (acl2-symbol-t-expr (atj-gen-symbol t))
        (acl2-symbol-nil-expr (atj-gen-symbol nil))
-       (acl2-core-expr (case type
-                         (:jboolean (jexpr-cond expr
-                                                acl2-symbol-t-expr
-                                                acl2-symbol-nil-expr))
-                         (t (jexpr-smethod *aij-type-int*
-                                           "make"
-                                           (list expr)))))
+       (acl2-core-expr (if (primitive-type-case type :boolean)
+                           (jexpr-cond expr
+                                       acl2-symbol-t-expr
+                                       acl2-symbol-nil-expr)
+                         (jexpr-smethod *aij-type-int*
+                                        "make"
+                                        (list expr))))
        (acl2-inner-cons-expr (jexpr-smethod *aij-type-cons*
                                             "make"
                                             (list acl2-core-expr
                                                   acl2-symbol-nil-expr)))
-       (acl2-keyword-name (case type
-                            (:jboolean "BOOLEAN")
-                            (:jchar "CHAR")
-                            (:jbyte "BYTE")
-                            (:jshort "SHORT")
-                            (:jint "INT")
-                            (:jlong "LONG")
-                            (t (impossible))))
+       (acl2-keyword-name (symbol-name (primitive-type-kind type)))
        (acl2-keyword-boolean-expr (jexpr-smethod *aij-type-symbol*
                                                  "makeKeyword"
                                                  (list
@@ -900,17 +885,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-adapt-expr-from-value-to-jprim
-  ((expr jexprp)
-   (type (member-eq type
-                    '(:jboolean
-                      :jchar
-                      :jbyte
-                      :jshort
-                      :jint
-                      :jlong
-                      :jfloat
-                      :jdouble))))
+(define atj-adapt-expr-from-value-to-jprim ((expr jexprp)
+                                            (type primitive-typep))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from type @('Acl2Value') to a Java primitive type."
@@ -919,7 +895,7 @@
    (xdoc::p
     "This is used by @(tsee atj-adapt-expr-to-type),
      when the source ATJ type is @(':acons') or @(':avalue')
-     and the destination ATJ type is a @(':j...') type not ending in @('[]').
+     and the destination ATJ type is a @(':jprim') type.
      This performs the inverse adaptation
      of the one made by @(tsee atj-adapt-expr-from-jprim-to-cons):
      see that function for a discussion of
@@ -950,62 +926,70 @@
      for @(':jlong'),
      we cast it to @('Acl2Integer'),
      and get its numeric value as @('long')."))
-  (b* (((when (or (eq type :jfloat)
-                  (eq type :jdouble)))
+  (b* (((when (or (primitive-type-case type :float)
+                  (primitive-type-case type :double)))
         (prog2$ (raise "Conversion to ~x0 not supported." type)
-                (ec-call (jexpr-fix :this-is-irrelevant))))
+                (ec-call (jexpr-fix :irrelevant))))
        (acl2-symbol-nil-expr (atj-gen-symbol nil))
        (acl2-outer-cons-expr (jexpr-cast *aij-type-cons* expr))
        (acl2-cdr-expr (jexpr-imethod acl2-outer-cons-expr "getCdr" nil))
        (acl2-inner-cons-expr (jexpr-cast *aij-type-cons* acl2-cdr-expr))
        (acl2-car-expr (jexpr-imethod acl2-inner-cons-expr "getCar" nil)))
-    (case type
-      (:jboolean
-       (b* ((acl2-symbol-expr (jexpr-cast *aij-type-symbol* acl2-car-expr)))
-         (jexpr-binary (jbinop-eq) acl2-symbol-expr acl2-symbol-nil-expr)))
-      (:jchar
-       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
-            (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
-         (jexpr-cast (jtype-char) int-expr)))
-      (:jbyte
-       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
-            (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
-         (jexpr-cast (jtype-byte) int-expr)))
-      (:jshort
-       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
-            (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
-         (jexpr-cast (jtype-short) int-expr)))
-      (:jint
-       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr)))
-         (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
-      (:jlong
-       (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr)))
-         (jexpr-imethod acl2-integer-expr "getJavaLong" nil)))
-      (t (prog2$ (impossible) (jexpr-fix expr))))))
+    (primitive-type-case
+     type
+     :boolean
+      (b* ((acl2-symbol-expr (jexpr-cast *aij-type-symbol* acl2-car-expr)))
+        (jexpr-binary (jbinop-eq) acl2-symbol-expr acl2-symbol-nil-expr))
+      :char
+      (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
+           (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+        (jexpr-cast (jtype-char) int-expr))
+      :byte
+      (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
+           (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+        (jexpr-cast (jtype-byte) int-expr))
+      :short
+      (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr))
+           (int-expr (jexpr-imethod acl2-integer-expr "getJavaInt" nil)))
+        (jexpr-cast (jtype-short) int-expr))
+      :int
+      (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr)))
+        (jexpr-imethod acl2-integer-expr "getJavaInt" nil))
+      :long
+      (b* ((acl2-integer-expr (jexpr-cast *aij-type-int* acl2-car-expr)))
+        (jexpr-imethod acl2-integer-expr "getJavaLong" nil))
+      :float (prog2$ (impossible) (ec-call (jexpr-fix :irrelevant)))
+      :double (prog2$ (impossible) (ec-call (jexpr-fix :irrelevant))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define convert-from-primarray-method-name
-  ((type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+(define convert-from-primarray-method-name ((type primitive-typep))
   :returns (method-name stringp :hyp :guard)
   :short "Name of the method to convert
           from Java primitive arrays to ACL2 lists."
   :long
   (xdoc::topstring-p
    "See @(tsee atj-gen-shallow-primarray-to-list-method).")
-  (case type
-    (:jboolean "$convertBooleanArrayToAcl2List")
-    (:jchar "$convertCharArrayToAcl2List")
-    (:jbyte "$convertByteArrayToAcl2List")
-    (:jshort "$convertShortArrayToAcl2List")
-    (:jint "$convertIntArrayToAcl2List")
-    (:jlong "$convertLongArrayToAcl2List")
-    (otherwise (impossible))))
+  (primitive-type-case type
+                       :boolean "$convertBooleanArrayToAcl2List"
+                       :char "$convertCharArrayToAcl2List"
+                       :byte "$convertByteArrayToAcl2List"
+                       :short "$convertShortArrayToAcl2List"
+                       :int "$convertIntArrayToAcl2List"
+                       :long "$convertLongArrayToAcl2List"
+                       :float (prog2$
+                               (raise "Internal error: type ~x0 not supported."
+                                      type)
+                               "irrelevant")
+                       :double (prog2$
+                                (raise "Internal error: type ~x0 not supported."
+                                       type)
+                                "irrelevant"))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-primarray-to-list-method
-  ((type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+(define atj-gen-shallow-primarray-to-list-method ((type primitive-typep))
   :returns (method jmethodp)
   :short "Generate a Java method to convert
           from a Java array type to type @('Acl2Value')."
@@ -1061,7 +1045,7 @@
      it cannot be generated from the nonterminal @('field-acces');
      it can be generated from the nonterminal @('expression-name')."))
   (b* ((method-name (convert-from-primarray-method-name type))
-       (jtype (atj-type-to-jitype type))
+       (jtype (atj-type-to-jitype (atj-type-jprim type)))
        (array "array")
        (index "index")
        (result "result")
@@ -1104,27 +1088,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define convert-to-primarray-method-name
-  ((type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+(define convert-to-primarray-method-name ((type primitive-typep))
   :returns (method-name stringp :hyp :guard)
   :short "Name of the method to convert
           from ACL2 values to Java primitive arrays."
   :long
   (xdoc::topstring-p
    "See @(tsee atj-gen-shallow-value-to-primarray-method).")
-  (case type
-    (:jboolean "$convertAcl2ListToBooleanArray")
-    (:jchar "$convertAcl2ListToCharArray")
-    (:jbyte "$convertAcl2ListToByteArray")
-    (:jshort "$convertAcl2ListShortArray")
-    (:jint "$convertAcl2ListIntArray")
-    (:jlong "$convertAcl2ListToLongArray")
-    (otherwise (impossible))))
+  (primitive-type-case type
+                       :boolean "$convertAcl2ListToBooleanArray"
+                       :char "$convertAcl2ListToCharArray"
+                       :byte "$convertAcl2ListToByteArray"
+                       :short "$convertAcl2ListShortArray"
+                       :int "$convertAcl2ListIntArray"
+                       :long "$convertAcl2ListToLongArray"
+                       :float (prog2$
+                               (raise "Internal error: type ~x0 not supported."
+                                      type)
+                               "irrelevant")
+                       :double (prog2$
+                                (raise "Internal error: type ~x0 not supported."
+                                       type)
+                                "irrelevant"))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-value-to-primarray-method
-  ((type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong))))
+(define atj-gen-shallow-value-to-primarray-method ((type primitive-typep))
   :returns (method jmethodp)
   :short "Generate a Java method to convert
           from type @('Acl2Value') to a Java primitive array type."
@@ -1173,7 +1163,7 @@
      generated by @(tsee atj-adapt-expr-from-value-to-jprim)
      for that primitive type."))
   (b* ((method-name (convert-to-primarray-method-name type))
-       (jtype (atj-type-to-jitype type))
+       (jtype (atj-type-to-jitype (atj-type-jprim type)))
        (array "array")
        (index "index")
        (length "length")
@@ -1240,16 +1230,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-adapt-expr-from-jprimarray-to-list
-  ((expr jexprp)
-   (type (member-eq type '(:jboolean
-                           :jchar
-                           :jbyte
-                           :jshort
-                           :jint
-                           :jlong
-                           :jfloat
-                           :jdouble))))
+(define atj-adapt-expr-from-jprimarray-to-list ((expr jexprp)
+                                                (type primitive-typep))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from a Java primitive array type to type @('Acl2Value')."
@@ -1266,25 +1248,13 @@
      which is either a @('nil') symbol or a @(tsee cons) pair:
      this is why the only possible ATJ destination types here
      are the ones mentioned above."))
-  (b* (((when (or (eq type :jfloat)
-                  (eq type :jdouble)))
-        (prog2$ (raise "Conversion from ~x0 array not supported." type)
-                (ec-call (jexpr-fix :this-is-irrelevant))))
-       (method-name (convert-from-primarray-method-name type)))
+  (b* ((method-name (convert-from-primarray-method-name type)))
     (jexpr-method method-name (list expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-adapt-expr-from-value-to-jprimarray
-  ((expr jexprp)
-   (type (member-eq type '(:jboolean
-                           :jchar
-                           :jbyte
-                           :jshort
-                           :jint
-                           :jlong
-                           :jfloat
-                           :jdouble))))
+(define atj-adapt-expr-from-value-to-jprimarray ((expr jexprp)
+                                                 (type primitive-typep))
   :returns (new-expr jexprp)
   :short "Adapt a Java expression
           from type @('Acl2Value') to a Java primitive array type."
@@ -1297,11 +1267,7 @@
      and the destination ATJ type is a @(':j...[]') type.
      We call the method generated by
      @(tsee atj-gen-shallow-value-to-primarray-method)."))
-  (b* (((when (or (eq type :jfloat)
-                  (eq type :jdouble)))
-        (prog2$ (raise "Conversion to ~x0 array not supported." type)
-                (ec-call (jexpr-fix :this-is-irrelevant))))
-       (method-name (convert-to-primarray-method-name type)))
+  (b* ((method-name (convert-to-primarray-method-name type)))
     (jexpr-method method-name (list expr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1328,11 +1294,12 @@
      The input @('dst-type') (for `destination type')
      is the type of the corresponding formal argument.")
    (xdoc::p
-    "A conversion from a @(':j...') type to another type
+    "A conversion from/to a @(':jprim') type to/from another type
      is possible only if the other type is @(':acons') or @(':avalue');
      otherwise, the assumption of guard verification must be violated somehow.
-     A conversion to a @(':j...') type from another type
-     is possible only if the other type is @(':acons') or @(':avalue');
+     A conversion from/to a @(':jprimarr') type to/from another type
+     is possible only if the other type is
+     @(':asymbol'), @(':acons'), or @(':avalue');
      otherwise, the assumption of guard verification must be violated somehow.
      To convert between the AIJ class types,
      if the source type is a subtype of or the same type as
@@ -1342,80 +1309,48 @@
      otherwise, we insert a cast to the destination type,
      which is expected to always succeed
      under the assumption of guard verification."))
-  (cond ((eq src-type dst-type) expr)
-        ((member-eq src-type '(:jboolean
-                               :jchar
-                               :jbyte
-                               :jshort
-                               :jint
-                               :jlong
-                               :jfloat
-                               :jdouble))
-         (if (member-eq dst-type '(:acons :avalue))
-             (atj-adapt-expr-from-jprim-to-cons expr src-type)
+  (cond ((equal src-type dst-type) expr)
+        ((atj-type-case src-type :jprim)
+         (if (and (atj-type-case dst-type :acl2)
+                  (member-eq (atj-atype-kind (atj-type-acl2->get dst-type))
+                             '(:cons :value)))
+             (atj-adapt-expr-from-jprim-to-cons expr
+                                                (atj-type-jprim->get src-type))
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq src-type '(:jboolean[]
-                               :jchar[]
-                               :jbyte[]
-                               :jshort[]
-                               :jint[]
-                               :jlong[]
-                               :jfloat[]
-                               :jdouble[]))
-         (if (member-eq dst-type '(:asymbol :acons :avalue))
+        ((atj-type-case src-type :jprimarr)
+         (if (and (atj-type-case dst-type :acl2)
+                  (member-eq (atj-atype-kind (atj-type-acl2->get dst-type))
+                             '(:symbol :cons :value)))
              (atj-adapt-expr-from-jprimarray-to-list expr
-                                                     (case src-type
-                                                       (:jboolean[] :jboolean)
-                                                       (:jchar[] :jchar)
-                                                       (:jbyte[] :jbyte)
-                                                       (:jshort[] :jshort)
-                                                       (:jint[] :jint)
-                                                       (:jlong[] :jlong)
-                                                       (:jfloat[] :jfloat)
-                                                       (:jdouble[] :jdouble)))
+                                                     (atj-type-jprimarr->comp
+                                                      src-type))
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq dst-type '(:jboolean
-                               :jchar
-                               :jbyte
-                               :jshort
-                               :jint
-                               :jlong
-                               :jfloat
-                               :jdouble))
-         (if (member-eq src-type '(:acons :avalue))
-             (atj-adapt-expr-from-value-to-jprim expr dst-type)
+        ((atj-type-case dst-type :jprim)
+         (if (and (atj-type-case src-type :acl2)
+                  (member-eq (atj-atype-kind (atj-type-acl2->get src-type))
+                             '(:cons :value)))
+             (atj-adapt-expr-from-value-to-jprim expr
+                                                 (atj-type-jprim->get dst-type))
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
                           expr src-type dst-type)
                    expr)))
-        ((member-eq dst-type '(:jboolean[]
-                               :jchar[]
-                               :jbyte[]
-                               :jshort[]
-                               :jint[]
-                               :jlong[]
-                               :jfloat[]
-                               :jdouble[]))
-         (if (member-eq src-type '(:asymbol :acons :avalue))
+        ((atj-type-case dst-type :jprimarr)
+         (if (and (atj-type-case src-type :acl2)
+                  (member-eq (atj-atype-kind (atj-type-acl2->get src-type))
+                             '(:symbol :cons :value)))
              (atj-adapt-expr-from-value-to-jprimarray expr
-                                                      (case dst-type
-                                                        (:jboolean[] :jboolean)
-                                                        (:jchar[] :jchar)
-                                                        (:jbyte[] :jbyte)
-                                                        (:jshort[] :jshort)
-                                                        (:jint[] :jint)
-                                                        (:jlong[] :jlong)
-                                                        (:jfloat[] :jfloat)
-                                                        (:jdouble[] :jdouble)))
+                                                      (atj-type-jprimarr->comp
+                                                       dst-type))
            (prog2$ (raise "Internal error: ~
                            attempting to convert the Java expression ~x0 ~
                            from type ~x1 to type ~x2."
@@ -1601,14 +1536,7 @@
 
 (define atj-type-rewrap-array-initializer-elements
   ((terms pseudo-term-listp)
-   (new-dst-type (member-eq new-dst-type '(:jboolean
-                                           :jchar
-                                           :jbyte
-                                           :jshort
-                                           :jint
-                                           :jlong
-                                           :jfloat
-                                           :jdouble))))
+   (new-dst-type primitive-typep))
   :returns (new-terms pseudo-term-listp :hyp :guard)
   :short "Adjust the type conversion functions of the terms
           to use for a Java array creation expression with initializer."
@@ -1633,21 +1561,21 @@
      which must all be wrapped with a type conversion function,
      and we re-wrap them with a type conversion function
      with a modified destination type."))
-  (b* (((when (or (eq new-dst-type :jfloat)
-                  (eq new-dst-type :jdouble)))
+  (b* (((when (or (primitive-type-case new-dst-type :float)
+                  (primitive-type-case new-dst-type :double)))
         (raise "Type ~x0 nor supported." new-dst-type))
        ((when (endp terms)) nil)
        (term (car terms))
        ((mv term src-types dst-types) (atj-type-unwrap-term term))
        ((unless term) nil) ; to prove ACL2-COUNT theorem below
-       ((unless (equal dst-types (list :avalue)))
+       ((unless (equal dst-types (list (atj-type-acl2 (atj-atype-value)))))
         (raise "Internal error: ~
                 the term ~x0 is wrapped with a conversion function ~
                 from types ~x1 to types ~x2."
                term src-types dst-types))
        (new-term (atj-type-wrap-term term
                                      src-types
-                                     (list new-dst-type)))
+                                     (list (atj-type-jprim new-dst-type))))
        (new-terms (atj-type-rewrap-array-initializer-elements (cdr terms)
                                                               new-dst-type)))
     (cons new-term new-terms))
@@ -1768,15 +1696,17 @@
            (repeat (len args) 0))
           ((mv index index-src index-dst) (atj-type-unwrap-term (fargn arg 1)))
           ((unless (and (quotep index)
-                        (equal index-src (list :ainteger))
-                        (equal index-dst (list :ainteger))))
+                        (equal index-src (list (atj-type-acl2
+                                                (atj-atype-integer))))
+                        (equal index-dst (list (atj-type-acl2
+                                                (atj-atype-integer))))))
            (raise "Internal error: malformed term ~x0." (car args))
            (repeat (len args) 0))
           (index (unquote-term index))
           ((unless (integer-range-p 0 (len types) index))
            (raise "Internal error: malformed term ~x0." (car args))
            (repeat (len args) 0))
-          ((unless (and (equal arg-src (list :avalue))
+          ((unless (and (equal arg-src (list (atj-type-acl2 (atj-atype-value))))
                         (equal arg-dst (list (nth index types)))))
            (raise "Internal error: malformed term ~x0." (car args))
            (repeat (len args) 0))
@@ -1918,8 +1848,8 @@
      @(':asymbol') for the @(tsee boolean-value) constructor,
      @(':ainteger') for the other constructors."))
   (if (eq fn 'boolean-value)
-      :asymbol
-    :ainteger))
+      (atj-type-acl2 (atj-atype-symbol))
+    (atj-type-acl2 (atj-atype-integer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2113,44 +2043,21 @@
 
 (define atj-jprimarr-constr-init-to-comp-type
   ((fn atj-java-primarray-constr-init-p))
-  :returns (type atj-typep)
+  :returns (type primitive-typep)
   :short "Map an ACL2 function that models
           a Java primitive array constructor with initializer
-          to the ATJ array component type."
+          to the corresponding primitive type."
   (case fn
-    (boolean-array-with-comps :jboolean)
-    (char-array-with-comps :jchar)
-    (byte-array-with-comps :jbyte)
-    (short-array-with-comps :jshort)
-    (int-array-with-comps :jint)
-    (long-array-with-comps :jlong)
-    (float-array-with-comps :jfloat)
-    (double-array-with-comps :jdouble)
-    (otherwise (prog2$ (impossible) :jboolean)))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-init-p)))
-  ///
-  (defrule member-equal-of-atj-jprimarr-constr-init-to-comp-type
-    (member-equal
-     (atj-jprimarr-constr-init-to-comp-type fn)
-     '(:jboolean :jchar :jbyte :jshort :jint :jlong :jfloat :jdouble))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-jprimarr-constr-init-to-type ((fn atj-java-primarray-constr-init-p))
-  :returns (type atj-typep)
-  :short "Map an ACL2 function that models
-          a Java primitive array constructor with initializer
-          to the ATJ array type."
-  (case fn
-    (boolean-array-with-comps :jboolean[])
-    (char-array-with-comps :jchar[])
-    (byte-array-with-comps :jbyte[])
-    (short-array-with-comps :jshort[])
-    (int-array-with-comps :jint[])
-    (long-array-with-comps :jlong[])
-    (float-array-with-comps :jfloat[])
-    (double-array-with-comps :jdouble[])
-    (otherwise (prog2$ (impossible) :avalue)))
+    (boolean-array-with-comps (primitive-type-boolean))
+    (char-array-with-comps (primitive-type-char))
+    (byte-array-with-comps (primitive-type-byte))
+    (short-array-with-comps (primitive-type-short))
+    (int-array-with-comps (primitive-type-int))
+    (long-array-with-comps (primitive-type-long))
+    (float-array-with-comps (primitive-type-float))
+    (double-array-with-comps (primitive-type-double))
+    (otherwise (prog2$ (impossible)
+                       (ec-call (primitive-type-fix :irrelevant)))))
   :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-init-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2226,8 +2133,10 @@
        (the Java representation of) @('nil')."))
     (b* ((jbool? ; non-NIL iff TEST has the form explained above
           (b* (((mv test src-types dst-types) (atj-type-unwrap-term test))
-               ((unless (and (equal src-types (list :asymbol))
-                             (equal dst-types (list :asymbol))))
+               ((unless (and (equal src-types (list (atj-type-acl2
+                                                     (atj-atype-symbol))))
+                             (equal dst-types (list (atj-type-acl2
+                                                     (atj-atype-symbol))))))
                 nil)
                ((unless (and (consp test)
                              (eq (ffn-symb test)
@@ -2237,8 +2146,12 @@
                (test (fargn test 1))
                ((unless (and (consp test)
                              (eq (ffn-symb test)
-                                 (atj-type-conv (list :jboolean)
-                                                (list :jboolean)))
+                                 (atj-type-conv (list
+                                                 (atj-type-jprim
+                                                  (primitive-type-boolean)))
+                                                (list
+                                                 (atj-type-jprim
+                                                  (primitive-type-boolean)))))
                              (int= (len (fargs test)) 1))) ; always true
                 nil))
             test))
@@ -3036,8 +2949,11 @@
                                     qpairs
                                     t ; GUARDS$
                                     wrld))
-             (type (atj-jprimarr-constr-init-to-type fn))
-             (expr (atj-adapt-expr-to-type expr :avalue type)))
+             (type (atj-type-jprimarr
+                    (atj-jprimarr-constr-init-to-comp-type fn)))
+             (expr (atj-adapt-expr-to-type expr
+                                           (atj-type-acl2 (atj-atype-value))
+                                           type)))
           (mv block
               (atj-adapt-expr-to-type expr
                                       (atj-type-list-to-type src-types)
@@ -3764,14 +3680,14 @@
         (raise "Internal error: ~
                 the function ~x0 has no output types ~x1."
                fn out-types)
-        (ec-call (jmethod-fix :this-is-irrelevant)))
+        (ec-call (jmethod-fix :irrelevant)))
        (out-jtype (atj-gen-shallow-jtype out-types))
        ((unless (= (len in-types) (len method-param-names)))
         (raise "Internal error: ~
                 the number ~x0 of input types for ~x1 ~
                 differs from the number ~x2 of calculated method arguments."
                (len in-types) fn (len method-param-names))
-        (ec-call (jmethod-fix :this-is-irrelevant))))
+        (ec-call (jmethod-fix :irrelevant))))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -3986,10 +3902,10 @@
                 the number ~x0 of parameters of ~x1 ~
                 does not match the number ~x2 of input types of ~x1."
                (len formals) fn (len in-types))
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
+        (mv (ec-call (jmethod-fix :irrelevant)) qconsts nil))
        ((unless (consp out-types))
         (raise "Internal error: no output types ~x0 for ~x1." out-types fn)
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
+        (mv (ec-call (jmethod-fix :irrelevant)) qconsts nil))
        ((mv formals body mv-typess)
         (atj-pre-translate
          fn formals body in-types out-types mv-typess nil guards$ wrld))
@@ -4021,7 +3937,7 @@
         (raise "Internal error: ~
                 the function ~x0 has no output types ~x1."
                fn out-types)
-        (mv (ec-call (jmethod-fix :this-is-irrelevant)) qconsts nil))
+        (mv (ec-call (jmethod-fix :irrelevant)) qconsts nil))
        (out-jtype (atj-gen-shallow-jtype out-types))
        (method (make-jmethod :access (jaccess-public)
                              :abstract? nil
@@ -4333,7 +4249,7 @@
         (raise "Internal error: ~
                 the function ~x0 has no output types ~x1."
                fn out-types)
-        (ec-call (jmethod-fix :this-is-irrelevant)))
+        (ec-call (jmethod-fix :irrelevant)))
        (out-jtype (atj-gen-shallow-jtype out-types))
        (fn-pkg (symbol-package-name fn))
        (method-name (atj-gen-shallow-fnname fn
@@ -4347,7 +4263,7 @@
                 the number ~x0 of input types of ~x1 ~
                 differs from the arity ~x2 of ~x1."
                (len in-types) fn (len method-param-names))
-        (ec-call (jmethod-fix :this-is-irrelevant)))
+        (ec-call (jmethod-fix :irrelevant)))
        (method-params (atj-gen-paramlist
                        method-param-names
                        (atj-type-list-to-jitype-list in-types)))
@@ -5049,7 +4965,7 @@
        ((unless (no-duplicatesp-eq fns+natives))
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates." fns+natives)
-        (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
+        (mv (ec-call (jclass-fix :irrelevant)) nil nil))
        (mv-typess (atj-all-mv-output-types fns-to-translate guards$ wrld))
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
        (fn-method-names (atj-fns-to-methods fns+natives))
@@ -5077,7 +4993,7 @@
         (raise "Internal error: ~
                 not all lists of types in ~x0 have length 2 or more."
                mv-typess)
-        (mv (ec-call (jclass-fix :this-is-irrelevant)) nil nil))
+        (mv (ec-call (jclass-fix :irrelevant)) nil nil))
        (mv-classes (atj-gen-shallow-mv-classes mv-typess))
        ((atj-qconstants qconsts) qconsts)
        (qsymbols qconsts.symbols)
@@ -5401,33 +5317,20 @@
            (t (b* ((ares-var (car ares-vars))
                    (jres-var (car jres-vars))
                    (type (car types))
-                   (comp-expr (case type
-                                ((:jboolean
-                                  :jchar
-                                  :jbyte
-                                  :jshort
-                                  :jint
-                                  :jlong
-                                  :jfloat
-                                  :jdouble)
-                                 (jexpr-binary (jbinop-eq)
-                                               (jexpr-name ares-var)
-                                               (jexpr-name jres-var)))
-                                ((:jboolean[]
-                                  :jchar[]
-                                  :jbyte[]
-                                  :jshort[]
-                                  :jint[]
-                                  :jlong[]
-                                  :jfloat[]
-                                  :jdouble[])
-                                 (jexpr-smethod (jtype-class "Arrays")
-                                                "equals"
-                                                (list (jexpr-name ares-var)
-                                                      (jexpr-name jres-var))))
-                                (otherwise
-                                 (jexpr-method (str::cat ares-var ".equals")
-                                               (list (jexpr-name jres-var))))))
+                   (comp-expr (atj-type-case
+                               type
+                               :jprim
+                                (jexpr-binary (jbinop-eq)
+                                              (jexpr-name ares-var)
+                                              (jexpr-name jres-var))
+                               :jprimarr
+                                (jexpr-smethod (jtype-class "Arrays")
+                                               "equals"
+                                               (list (jexpr-name ares-var)
+                                                     (jexpr-name jres-var)))
+                                :acl2
+                                (jexpr-method (str::cat ares-var ".equals")
+                                              (list (jexpr-name jres-var)))))
                    (comp-block (jblock-expr
                                 (jexpr-binary (jbinop-asg-and)
                                               (jexpr-name comp-var)

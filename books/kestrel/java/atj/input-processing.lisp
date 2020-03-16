@@ -235,7 +235,7 @@
 
 (define atj-process-test-input-jprim-value
   ((input pseudo-termp)
-   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong)))
+   (type primitive-typep)
    (fn symbolp "Just for error messages.")
    (call pseudo-termp "Just for error messages.")
    ctx
@@ -253,22 +253,26 @@
      when that argument of @('fn') has a Java primitive type,
      or it could be a further sub-term of such an @('in') sub-term
      when the latter denotes a Java primitive array."))
-  (b* ((irrelevant (case type
-                     (:jboolean (boolean-value nil))
-                     (:jchar (char-value 0))
-                     (:jbyte (byte-value 0))
-                     (:jshort (short-value 0))
-                     (:jint (int-value 0))
-                     (:jlong (long-value 0))
-                     (otherwise (boolean-value nil))))
-       (constructor (case type
-                      (:jboolean 'boolean-value)
-                      (:jchar 'char-value)
-                      (:jbyte 'byte-value)
-                      (:jshort 'short-value)
-                      (:jint 'int-value)
-                      (:jlong 'long-value)
-                      (otherwise (impossible))))
+  (b* (((when (member-eq (primitive-type-kind type) '(:float :double)))
+        (er-soft+ ctx t nil "Internal error: type ~x0 not supported." type))
+       (irrelevant (primitive-type-case type
+                                        :boolean (boolean-value nil)
+                                        :char (char-value 0)
+                                        :byte (byte-value 0)
+                                        :short (short-value 0)
+                                        :int (int-value 0)
+                                        :long (long-value 0)
+                                        :float (impossible)
+                                        :double (impossible)))
+       (constructor (primitive-type-case type
+                                         :boolean 'boolean-value
+                                         :char 'char-value
+                                         :byte 'byte-value
+                                         :short 'short-value
+                                         :int 'int-value
+                                         :long 'long-value
+                                         :float nil
+                                         :double nil))
        (err-msg (msg "The term ~x0 that is (possibly part of) an argument of ~
                       the function call (~x1 ...) that translates ~
                       the test term ~x2 in the :TESTS input, ~
@@ -277,14 +281,15 @@
                      fn
                      call
                      constructor
-                     (case type
-                       (:jboolean "a boolean")
-                       (:jchar "an unsigned 16-bit integer")
-                       (:jbyte "a signed 8-bit integer")
-                       (:jshort "a signed 16-bit integer")
-                       (:jint "a signed 32-bit integer")
-                       (:jlong "a signed 64-bit integer")
-                       (otherwise (impossible)))))
+                     (primitive-type-case type
+                                          :boolean "a boolean"
+                                          :char "an unsigned 16-bit integer"
+                                          :byte "a signed 8-bit integer"
+                                          :short "a signed 16-bit integer"
+                                          :int "a signed 32-bit integer"
+                                          :long "a signed 64-bit integer"
+                                          :float nil
+                                          :double nil)))
        ((unless (ffn-symb-p input constructor))
         (er-soft+ ctx t irrelevant "~@0" err-msg))
        (args (fargs input))
@@ -294,39 +299,41 @@
        ((unless (quotep arg))
         (er-soft+ ctx t irrelevant "~@0" err-msg))
        (arg (unquote-term arg))
-       ((unless (case type
-                  (:jboolean (booleanp arg))
-                  (:jchar (ubyte16p arg))
-                  (:jbyte (sbyte8p arg))
-                  (:jshort (sbyte16p arg))
-                  (:jint (sbyte32p arg))
-                  (:jlong (sbyte64p arg))
-                  (otherwise (impossible))))
+       ((unless (primitive-type-case type
+                                     :boolean (booleanp arg)
+                                     :char (ubyte16p arg)
+                                     :byte (sbyte8p arg)
+                                     :short (sbyte16p arg)
+                                     :int (sbyte32p arg)
+                                     :long (sbyte64p arg)
+                                     :float nil
+                                     :double nil))
         (er-soft+ ctx t irrelevant "~@0" err-msg)))
     (value
-     (case type
-       (:jboolean (boolean-value arg))
-       (:jchar (char-value arg))
-       (:jbyte (byte-value arg))
-       (:jshort (short-value arg))
-       (:jint (int-value arg))
-       (:jlong (long-value arg))
-       (otherwise (impossible)))))
+     (primitive-type-case type
+                          :boolean (boolean-value arg)
+                          :char (char-value arg)
+                          :byte (byte-value arg)
+                          :short (short-value arg)
+                          :int (int-value arg)
+                          :long (long-value arg)
+                          :float nil
+                          :double nil)))
   ///
 
   (more-returns
-   (value boolean-value-p :hyp (equal type :jboolean))
-   (value char-value-p :hyp (equal type :jchar))
-   (value byte-value-p :hyp (equal type :jbyte))
-   (value short-value-p :hyp (equal type :jshort))
-   (value int-value-p :hyp (equal type :jint))
-   (value long-value-p :hyp (equal type :jlong))))
+   (value boolean-value-p :hyp (primitive-type-case type :boolean))
+   (value char-value-p :hyp (primitive-type-case type :char))
+   (value byte-value-p :hyp (primitive-type-case type :byte))
+   (value short-value-p :hyp (primitive-type-case type :short))
+   (value int-value-p :hyp (primitive-type-case type :int))
+   (value long-value-p :hyp (primitive-type-case type :long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-process-test-input-jprim-values
   ((inputs pseudo-term-listp)
-   (type (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong)))
+   (type primitive-typep)
    (fn symbolp "Just for error messages.")
    (call pseudo-termp "Just for error messages.")
    ctx
@@ -344,12 +351,12 @@
   ///
 
   (more-returns
-   (values boolean-value-listp :hyp (equal type :jboolean))
-   (values char-value-listp :hyp (equal type :jchar))
-   (values byte-value-listp :hyp (equal type :jbyte))
-   (values short-value-listp :hyp (equal type :jshort))
-   (values int-value-listp :hyp (equal type :jint))
-   (values long-value-listp :hyp (equal type :jlong))))
+   (values boolean-value-listp :hyp (primitive-type-case type :boolean))
+   (values char-value-listp :hyp (primitive-type-case type :char))
+   (values byte-value-listp :hyp (primitive-type-case type :byte))
+   (values short-value-listp :hyp (primitive-type-case type :short))
+   (values int-value-listp :hyp (primitive-type-case type :int))
+   (values long-value-listp :hyp (primitive-type-case type :long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,19 +389,7 @@
   (b* ((irrelevant (atj-test-value-avalue :irrelevant))
        ((when (or deep$
                   (not guards$)
-                  (not (member-eq type
-                                  '(:jboolean
-                                    :jchar
-                                    :jbyte
-                                    :jshort
-                                    :jint
-                                    :jlong
-                                    :jboolean[]
-                                    :jchar[]
-                                    :jbyte[]
-                                    :jshort[]
-                                    :jint[]
-                                    :jlong[])))))
+                  (atj-type-case type :acl2)))
         (if (quotep input)
             (value (atj-test-value-avalue (unquote-term input)))
           (er-soft+ ctx t irrelevant
@@ -403,27 +398,36 @@
                      the test term ~x2 in the :TESTS input, ~
                      must be a quoted constant."
                     input fn call)))
-       ((when (member-eq type '(:jboolean :jchar :jbyte :jshort :jint :jlong)))
-        (b* (((mv erp value state)
-              (atj-process-test-input-jprim-value input type fn call ctx state))
+       ((when (atj-type-case type :jprim))
+        (b* ((ptype (atj-type-jprim->get type))
+             ((mv erp value state)
+              (atj-process-test-input-jprim-value
+               input ptype fn call ctx state))
              ((when erp) (mv erp irrelevant state)))
-          (value
-           (case type
-             (:jboolean (atj-test-value-jvalue-boolean value))
-             (:jchar (atj-test-value-jvalue-char value))
-             (:jbyte (atj-test-value-jvalue-byte value))
-             (:jshort (atj-test-value-jvalue-short value))
-             (:jint (atj-test-value-jvalue-int value))
-             (:jlong (atj-test-value-jvalue-long value))
-             (otherwise (impossible))))))
-       (constructor (case type
-                      (:jboolean[] 'boolean-array-with-comps)
-                      (:jchar[] 'char-array-with-comps)
-                      (:jbyte[] 'byte-array-with-comps)
-                      (:jshort[] 'short-array-with-comps)
-                      (:jint[] 'int-array-with-comps)
-                      (:jlong[] 'long-array-with-comps)
-                      (otherwise (impossible))))
+          (value (primitive-type-case
+                  ptype
+                  :boolean (atj-test-value-jvalue-boolean value)
+                  :char (atj-test-value-jvalue-char value)
+                  :byte (atj-test-value-jvalue-byte value)
+                  :short (atj-test-value-jvalue-short value)
+                  :int (atj-test-value-jvalue-int value)
+                  :long (atj-test-value-jvalue-long value)
+                  :float (atj-test-value-avalue :irrelevant)
+                  :double (atj-test-value-avalue :irrelevant)))))
+       (ptype (atj-type-jprimarr->comp type))
+       ((when (or (primitive-type-case ptype :float)
+                  (primitive-type-case ptype :double)))
+        (er-soft+ ctx t irrelevant
+                  "Internal error: type of ~x0 arrays not supported." ptype))
+       (constructor (primitive-type-case ptype
+                                         :boolean 'boolean-array-with-comps
+                                         :char 'char-array-with-comps
+                                         :byte 'byte-array-with-comps
+                                         :short 'short-array-with-comps
+                                         :int 'int-array-with-comps
+                                         :long 'long-array-with-comps
+                                         :float (impossible)
+                                         :double (impossible)))
        (err-msg (msg "The term ~x0 that is an argument of ~
                       the function call (~x1 ...) that translates ~
                       the test term ~x2 in the :TESTS input, ~
@@ -444,34 +448,28 @@
        ((mv okp elements) (check-list-call arg))
        ((unless okp)
         (er-soft+ ctx t irrelevant "~@0" err-msg))
-       (comptype (case type
-                   (:jboolean[] :jboolean)
-                   (:jchar[] :jchar)
-                   (:jbyte[] :jbyte)
-                   (:jshort[] :jshort)
-                   (:jint[] :jint)
-                   (:jlong[] :jlong)
-                   (otherwise (impossible))))
        ((mv erp values state) (atj-process-test-input-jprim-values
-                               elements comptype fn input ctx state))
+                               elements ptype fn input ctx state))
        ((when erp) (mv erp irrelevant state))
        ((unless (< (len values) (expt 2 31)))
         (er-soft+ ctx t irrelevant "~@0" err-msg)))
     (value
-     (case type
-       (:jboolean[]
-        (atj-test-value-jvalue-boolean-array (boolean-array-with-comps values)))
-       (:jchar[]
-        (atj-test-value-jvalue-char-array (char-array-with-comps values)))
-       (:jbyte[]
-        (atj-test-value-jvalue-byte-array (byte-array-with-comps values)))
-       (:jshort[]
-        (atj-test-value-jvalue-short-array (short-array-with-comps values)))
-       (:jint[]
-        (atj-test-value-jvalue-int-array (int-array-with-comps values)))
-       (:jlong[]
-        (atj-test-value-jvalue-long-array (long-array-with-comps values)))
-       (otherwise (impossible))))))
+     (primitive-type-case
+      ptype
+      :boolean (atj-test-value-jvalue-boolean-array
+                (boolean-array-with-comps values))
+      :char (atj-test-value-jvalue-char-array
+             (char-array-with-comps values))
+      :byte (atj-test-value-jvalue-byte-array
+             (byte-array-with-comps values))
+      :short (atj-test-value-jvalue-short-array
+              (short-array-with-comps values))
+      :int (atj-test-value-jvalue-int-array
+            (int-array-with-comps values))
+      :long (atj-test-value-jvalue-long-array
+             (long-array-with-comps values))
+      :float irrelevant
+      :double irrelevant))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

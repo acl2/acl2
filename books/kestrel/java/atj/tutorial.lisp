@@ -45,6 +45,9 @@
 (defconst *atj-tutorial-customization*
   "Customization Options for Generated Code")
 
+(defconst *atj-tutorial-screen-output*
+  "Control of the Screen Output")
+
 (defconst *atj-tutorial-translated*
   "ACL2 Functions Translated To Java")
 
@@ -106,7 +109,7 @@
 
 (define atj-tutorial-section ((section stringp))
   :returns (text xdoc::treep :hyp :guard)
-  (xdoc::p (xdoc::b section)))
+  (xdoc::h5 section))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1064,7 +1067,8 @@
      which apply to both "
     (xdoc::seetopic "atj-tutorial-deep-shallow"
                     "deep and shallow embedding approaches")
-    ". The more complex options are covered elsewhere in this tutorial.")
+    ". The more complex options are covered elsewhere in this tutorial,
+     each by one or more pages.")
 
    (atj-tutorial-section "Java Package")
 
@@ -1198,8 +1202,90 @@
      ATJ does not create them.")
 
    (atj-tutorial-next-and-previous
-    "atj-tutorial-translated" *atj-tutorial-translated*
+    "atj-tutorial-screen-output" *atj-tutorial-screen-output*
     "atj-tutorial-deep" *atj-tutorial-deep*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-screen-output
+
+  :short (atj-tutorial-short *atj-tutorial-screen-output*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page describes the @(':verbose') option of ATJ,
+     which has no effect on the generated Java code
+     but affects the screen output produced by ATJ.
+     This applies to both "
+    (xdoc::seetopic "atj-tutorial-deep-shallow"
+                    "deep and shallow embedding approaches")
+    ".")
+
+   (atj-tutorial-section "Terse Screen Output")
+
+   (xdoc::p
+    "When @(':verbose') is @('nil'), which is the default,
+     ATJ just prints a short completion message
+     about the generated Java file(s).
+     This is mentioned in the factorial function example "
+    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    ", where a single file is generated.
+     (The generation of multiple files is discussed elsewhere.)")
+
+   (atj-tutorial-section "Verbose Screen Output")
+
+   (xdoc::p
+    "When @(':verbose') if @('t'), which must be supplied explicitly,
+     ATJ prints, before the short completion messages mentioned above,
+     also additional information about its internal progress.
+     This may be useful to understand better what ATJ is doing,
+     and also for debugging.")
+
+   (xdoc::p
+    "As discussed in the factorial example "
+    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    ", and more generally and systematically "
+    (xdoc::seetopic "atj-tutorial-translated" "in this page")
+    ", ATJ translates to Java not only
+     the explicitly supplied target function(s),
+     but also the functions that they call directly or indirectly.
+     With the verbose screen output,
+     ATJ displays the list of all such functions.")
+
+   (xdoc::p
+    "As discussed in the factorial example "
+    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    ", ATJ generates Java code to build
+     Java representations of all the ACL2 packages
+     known when ATJ is called.
+     The list of these packages is displayed by ATJ
+     when the screen output is verbose.")
+
+   (xdoc::p
+    "These two lists, of ACL2 functions and packages,
+     are actually printed twice each:
+     once when they are collected,
+     and once when they are translated to Java code.
+     The purpose of this duplication is mainly debugging,
+     and to give an idea of ATJ's progress.
+     (However, ATJ may run, and print the lists, very quickly.)
+     For debugging and for progress indication,
+     ATJ also displays (with verbose screen output),
+     messages as it generating Java classes, compilation units, and files.")
+
+   (xdoc::p
+    "In the factorial example "
+    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    ", verbose screen output can be displayed via ")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :verbose t)")
+
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-translated" *atj-tutorial-translated*
+    "atj-tutorial-customization" *atj-tutorial-customization*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1214,7 +1300,11 @@
    (xdoc::p
     "This tutorial page describes
      which ACL2 functions are translated to Java when ATJ is called,
-     and which requirements these functions must satisfy.")
+     and which requirements these functions must satisfy.
+     This applies to both "
+    (xdoc::seetopic "atj-tutorial-deep-shallow"
+                    "deep and shallow embedding approaches")
+    ".")
 
    (atj-tutorial-section "Target Functions")
 
@@ -1436,8 +1526,8 @@
      as also mentioned earlier in this tutorial page.
      This is future work.")
 
-   (atj-tutorial-previous "atj-tutorial-customization"
-                          *atj-tutorial-customization*)))
+   (atj-tutorial-previous "atj-tutorial-screen-output"
+                          *atj-tutorial-screen-output*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1459,14 +1549,20 @@
     " class diagrams
      to illustrate the "
     (xdoc::seetopic "atj-tutorial-aij" "AIJ")
-    " Java classes.")
+    " Java classes.
+     These simplified UML diagrams are briefly described
+     in this auxiliary tutorial page.")
+
+   (atj-tutorial-section "Diagram Notation")
 
    (xdoc::p
     "Each class is depicted as a box containing its name.
      Abstract classes have italicized names.
      Public classes have names preceded by @('+'),
-     while package-private classes have names preceded by @('~').
-     Inheritance (`is a') relationships
+     while package-private classes have names preceded by @('~').")
+
+   (xdoc::p
+    "Inheritance (`is a') relationships
      are indicated by lines with hollow triangular tips.
      Composition (`part of') relationships
      are indicated by lines with solid rhomboidal tips,
@@ -1478,8 +1574,12 @@
      (@('0..*') means `zero or more').")
 
    (xdoc::p
-    "The dashed boxes are just replicas to avoid clutter.
-     These UML class diagrams are simplified because
+    "The dashed boxes are just replicas to avoid clutter.")
+
+   (atj-tutorial-section "Simplifications")
+
+   (xdoc::p
+    "These UML class diagrams are simplified because
      the class boxes do not contain fields and methods,
      as they should in a full UML class diagram.")))
 

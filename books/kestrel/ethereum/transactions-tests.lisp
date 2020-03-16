@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,7 @@
 (include-book "kestrel/crypto/ecdsa/secp256k1-attachment" :dir :system)
 
 (include-book "kestrel/utilities/strings/hexstrings" :dir :system)
-(include-book "std/testing/assert" :dir :system) ; for assert!
+(include-book "std/testing/assert-bang" :dir :system)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

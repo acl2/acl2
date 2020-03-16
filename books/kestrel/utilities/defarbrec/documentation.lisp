@@ -1,6 +1,6 @@
 ; Arbitrary Recursion Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,15 @@
 (in-package "ACL2")
 
 (include-book "xdoc/constructors" :dir :system)
+
+; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
+; (depends-on "kestrel/utilities/design-notes/defarbrec.pdf" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *defarbrec-design-notes*
+  (xdoc::ahref "res/kestrel-utilities-design-notes/defarbrec.pdf"
+               "design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,6 +115,14 @@
      This ensures that the generated logic-mode function
      satisfies the same well-formedness constraints.")
 
+   (xdoc::p
+    "These " *defarbrec-design-notes* ", which use "
+     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
+     ", provide the mathematical concepts and template proofs
+      upon which this tool is based.
+      These notes should be read alongside this reference documentation,
+      which refers to the them in numerous places.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "General Form")
@@ -130,7 +147,11 @@
     (xdoc::p
      "Name of the function to introduce.")
     (xdoc::p
-     "This is as in @(tsee defun)."))
+     "This is as in @(tsee defun).")
+    (xdoc::p
+     "In the " *defarbrec-design-notes* ",
+      the program-mode @('fn') is denoted by @($f$),
+      while the logic-mode @('fn') is denoted by @($\\hat{f}$)."))
 
    (xdoc::desc
     "@('x1 ... xn')"
@@ -140,7 +161,11 @@
      "These are as in @(tsee defun),
       but in addition they must not include any"
      (xdoc::seetopic "acl2::stobj" "stobjs")
-     "."))
+     ".")
+    (xdoc::p
+     "In the " *defarbrec-design-notes* ",
+      @('x1'), ..., @('xn') are denoted by @($x_1,\\ldots,x_n$),
+      or @($\\overline{x}$) as a whole."))
 
    (xdoc::desc
     "@('body')"
@@ -165,7 +190,14 @@
      "      base<x1,...,xn>"
      "    combine<x1,...,xn,(fn update-x1<x1,...,xn>"
      "                          ..."
-     "                          update-xn<x1,...,xn>)>))"))
+     "                          update-xn<x1,...,xn>)>))")
+    (xdoc::p
+     "In the " *defarbrec-design-notes* ",
+      @('test<x1,...,xn>') is denoted by @($a(\\overline{x})$),
+      @('base<x1,...,xn>') is denoted by @($b(\\overline{x})$),
+      @('combine<x1,...,xn,y>') is denoted by @($c(\\overline{x},y)$), and
+      each @('update-xi<x1,...,xn>') is denoted by @($d_i(\\overline{x})$)
+      for @($1 \\leq i \\leq n$)."))
 
    (xdoc::desc
     "@(':update-names') &mdash; default @('nil')"
@@ -308,7 +340,11 @@
      "    (update*-xi (1- k)"
      "                update-x1<x1,...,xn>"
      "                ..."
-     "                update-xn<x1,...,xn>)))"))
+     "                update-xn<x1,...,xn>)))")
+    (xdoc::p
+     "In the " *defarbrec-design-notes* ",
+      @('(update*-xi k x1 ... xn)') is denoted by @($d_i^{k}(\\overline{x})$)
+      for @($1 \\leq i \\leq n$)."))
 
    (xdoc::desc
     "@('terminates')"
@@ -318,7 +354,11 @@
      "(defun-sk terminates (x1 ... xn)"
      "  (exists k test<(update*-x1 k x1 ... xn),"
      "                 ..."
-     "                 (update*-xn k x1 ... xn)>))"))
+     "                 (update*-xn k x1 ... xn)>))")
+    (xdoc::p
+     "In the " *defarbrec-design-notes* ",
+      @('terminates') is denoted by @($t$),
+      and @('terminates-witness') is denoted by @($\\epsilon_t$)."))
 
    (xdoc::desc
     "@('measure')"
@@ -334,7 +374,11 @@
      "                 (update*-xn k x1 ... xn)>"
      "            (>= k (nfix (terminates-witness x1 ... xn))))"
      "        k"
-     "      (measure x1 ... xn (1+ k)))))"))
+     "      (measure x1 ... xn (1+ k)))))")
+    (xdoc::p
+     "In the " *defarbrec-design-notes* ",
+      @('measure') is denoted by @($\\nu$),
+      and @('nfix') is denoted by @($\\phi$)."))
 
    (xdoc::desc
     "@('fn')"
@@ -350,7 +394,10 @@
      "        combine<x1,...,xn,(fn update-x1<x1,...,xn>"
      "                              ..."
      "                              update-xn<x1,...,xn>)>)"
-     "    nonterminating))"))
+     "    nonterminating))")
+    (xdoc::p
+     "In the " *defarbrec-design-notes* ",
+      this logic-mode function @('fn') is denoted by @($\\hat{f}$)."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

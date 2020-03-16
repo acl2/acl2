@@ -398,8 +398,9 @@
        (jvar-body "body")
        (formals (formals+ fn wrld))
        (body (atj-fn-body fn wrld))
-       (in-types (repeat (len formals) :avalue)) ; actually irrelevant
-       (out-types (list :avalue)) ; actually irrelevant
+       (in-types (repeat (len formals)
+                         (atj-type-acl2 (atj-atype-value)))) ; irrelevant
+       (out-types (list (atj-type-acl2 (atj-atype-value)))) ; irrelevant
        ((mv formals body &)
         (atj-pre-translate
          fn formals body in-types out-types nil t guards$ wrld))

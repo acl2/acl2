@@ -88,6 +88,7 @@
                          index-of
                          integers-from-to
                          irecursivep
+                         keyword-listp
                          known-packages+
                          lambda-body
                          lambda-formals

@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,10 +10,11 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/define-sk" :dir :system)
-
 (include-book "big-endian")
 (include-book "trees")
+
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/utilities/define-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,15 +362,8 @@
   :skolem-name rlp-tree-encoding-witness
   ///
 
-  (fty::deffixequiv rlp-tree-encoding-p
-    :args ((encoding byte-listp))
-    :hints (("Goal"
-             :in-theory (disable rlp-tree-encoding-p-suff)
-             :use ((:instance rlp-tree-encoding-p-suff
-                    (tree (rlp-tree-encoding-witness (byte-list-fix encoding))))
-                   (:instance rlp-tree-encoding-p-suff
-                    (tree (rlp-tree-encoding-witness encoding))
-                    (encoding (byte-list-fix encoding)))))))
+  (fty::deffixequiv-sk rlp-tree-encoding-p
+    :args ((encoding byte-listp)))
 
   (defrule rlp-treep-of-rlp-tree-encoding-witness
     (implies (rlp-tree-encoding-p encoding)
@@ -419,16 +413,8 @@
   :skolem-name rlp-bytes-encoding-witness
   ///
 
-  (fty::deffixequiv rlp-bytes-encoding-p
-    :args ((encoding byte-listp))
-    :hints (("Goal"
-             :in-theory (disable rlp-bytes-encoding-p-suff)
-             :use ((:instance rlp-bytes-encoding-p-suff
-                    (bytes (rlp-bytes-encoding-witness
-                            (byte-list-fix encoding))))
-                   (:instance rlp-bytes-encoding-p-suff
-                    (bytes (rlp-bytes-encoding-witness encoding))
-                    (encoding (byte-list-fix encoding)))))))
+  (fty::deffixequiv-sk rlp-bytes-encoding-p
+    :args ((encoding byte-listp)))
 
   (defrule byte-listp-of-rlp-bytes-encoding-witness
     (implies (rlp-bytes-encoding-p encoding)
@@ -494,16 +480,8 @@
   :skolem-name rlp-scalar-encoding-witness
   ///
 
-  (fty::deffixequiv rlp-scalar-encoding-p
-    :args ((encoding byte-listp))
-    :hints (("Goal"
-             :in-theory (disable rlp-scalar-encoding-p-suff)
-             :use ((:instance rlp-scalar-encoding-p-suff
-                    (scalar (rlp-scalar-encoding-witness
-                             (byte-list-fix encoding))))
-                   (:instance rlp-scalar-encoding-p-suff
-                    (scalar (rlp-scalar-encoding-witness encoding))
-                    (encoding (byte-list-fix encoding)))))))
+  (fty::deffixequiv-sk rlp-scalar-encoding-p
+    :args ((encoding byte-listp)))
 
   (defrule natp-of-rlp-scalar-encoding-witness
     (implies (rlp-scalar-encoding-p encoding)

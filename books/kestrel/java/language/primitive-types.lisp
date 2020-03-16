@@ -121,8 +121,14 @@
   :returns (yes/no booleanp)
   :short "Direct subtype relation over primitive types [JLS:4.10.1]."
   :long
-  (xdoc::topstring-p
-   "This is denoted (for all types) @($<_1$) in [JLS].")
+  (xdoc::topstring
+   (xdoc::p
+    "This is denoted (for all types) @($<_1$) in [JLS].")
+   (xdoc::p
+    "The direct subtype relation is irreflexive.
+     Since this function fixes its arguments,
+     we can express irreflexivity more strongly
+     on equivalent (not necessarily equal) primitive types."))
   (or (and (primitive-type-case sub :byte)
            (primitive-type-case sup :short))
       (and (primitive-type-case sub :short)
@@ -139,4 +145,99 @@
   ///
 
   (defrule primitive-type-<1-irreflexive
-    (not (primitive-type-<1 x x))))
+    (implies (primitive-type-equiv x y)
+             (not (primitive-type-<1 x y)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primitive-type-< ((sub primitive-typep) (sup primitive-typep))
+  :returns (yes/no booleanp)
+  :short "Proper subtype relation over primitive types [JLS:4.10]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is denoted (for all types) @($<1$) in [JLS].")
+   (xdoc::p
+    "It is the transitive closure of
+     the direct subtype relation @(tsee primitive-type-<1)."))
+  (primitive-type-case sub
+                       :boolean nil
+                       :char (or (primitive-type-case sup :int)
+                                 (primitive-type-case sup :long)
+                                 (primitive-type-case sup :float)
+                                 (primitive-type-case sup :double))
+                       :byte (or (primitive-type-case sup :short)
+                                 (primitive-type-case sup :int)
+                                 (primitive-type-case sup :long)
+                                 (primitive-type-case sup :float)
+                                 (primitive-type-case sup :double))
+                       :short (or (primitive-type-case sup :int)
+                                  (primitive-type-case sup :long)
+                                  (primitive-type-case sup :float)
+                                  (primitive-type-case sup :double))
+                       :int (or (primitive-type-case sup :long)
+                                (primitive-type-case sup :float)
+                                (primitive-type-case sup :double))
+                       :long (or (primitive-type-case sup :float)
+                                 (primitive-type-case sup :double))
+                       :float (primitive-type-case sup :double)
+                       :double nil)
+  :hooks (:fix)
+  ///
+
+  (defrule primitive-type-<-when-primitive-type-<1
+    (implies (primitive-type-<1 x y)
+             (primitive-type-< x y))
+    :enable primitive-type-<1)
+
+  (defrule primitive-type-<-transitive
+    (implies (and (primitive-type-< x y)
+                  (primitive-type-< y z))
+             (primitive-type-< x z))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primitive-type-<= ((sub primitive-typep) (sup primitive-typep))
+  :returns (yes/no booleanp)
+  :short "Subtype relation over primitive types [JLS:4.10]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is denoted (for all types) @($<:$) in [JLS].")
+   (xdoc::p
+    "It is the reflexive and transitive closure of
+     the direct subtype relation @(tsee primitive-type-<1),
+     or equivalently the reflexive closure of @(tsee primitive-type-<).")
+   (xdoc::p
+    "The subtype relation is a partial order:
+     reflexive, antisymmetric, and transitive.
+     Antisymmetry must be stated modulo fixing,
+     because this function is defined to fix its arguments.
+     Since this function fixes its arguments,
+     reflexivity can be stated more strongly
+     on equivalent (not necessarily equal) primitive-types."))
+  (or (primitive-type-equiv sub sup)
+      (primitive-type-< sub sup))
+  :hooks (:fix)
+  ///
+
+  (defrule primitive-type-<=-when-primitive-type-<1
+    (implies (primitive-type-<1 x y)
+             (primitive-type-<= x y))
+    :enable (primitive-type-<1 primitive-type-<))
+
+  (defrule primitive-type-<=-reflexive
+    (implies (primitive-type-equiv x y)
+             (primitive-type-<= x y)))
+
+  (defrule primitive-type-<=-antisymmetric
+    (implies (and (primitive-type-<= x y)
+                  (primitive-type-<= y x))
+             (primitive-type-equiv x y))
+    :enable primitive-type-<)
+
+  (defrule primitive-type-<=-transitive
+    (implies (and (primitive-type-<= x y)
+                  (primitive-type-<= y z))
+             (primitive-type-<= x z))
+    :use primitive-type-<-transitive))
