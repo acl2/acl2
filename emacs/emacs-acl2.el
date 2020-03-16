@@ -73,7 +73,9 @@
   ;      "control-h f compare-windows", for more info).
   ; "control-t q" is like "control-t w" above, but ignores whitespace (and case
   ;      too, with a positive prefix argument).
-  ; Lisp mode comes up with auto-fill mode on, right margin set at column 79.
+  ; Lisp mode comes up with auto-fill mode on, right margin set at column 79,
+  ;      tabs interpreted using spaces, and a single ";" comment staying on the
+  ;      left margin (search for lisp-mode-hook below).
   ;      If X Windows is being run, then font-lock-mode is also turned on,
   ;      which causes Emacs to color text in .lisp files.  If you don't want
   ;      colors in .lisp files, put this in your .emacs file after the load of
