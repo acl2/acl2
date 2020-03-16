@@ -12,7 +12,6 @@
 
 (include-book "isodata")
 
-(include-book "std/testing/assert" :dir :system)
 (include-book "std/testing/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
