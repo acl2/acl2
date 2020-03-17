@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "ETHEREUM")
 
 (include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 
 (include-book "basics")
 
@@ -105,19 +106,8 @@
   :skolem-name hp-encoding-witness
   ///
 
-  (fty::deffixequiv hp-encoding-p
-    :args ((encoding byte-listp))
-    :hints (("Goal"
-             :in-theory (disable hp-encoding-p-suff)
-             :use ((:instance hp-encoding-p-suff
-                    (nibbles (mv-nth 0 (hp-encoding-witness
-                                        (byte-list-fix encoding))))
-                    (flag (mv-nth 1 (hp-encoding-witness
-                                     (byte-list-fix encoding)))))
-                   (:instance hp-encoding-p-suff
-                    (nibbles (mv-nth 0 (hp-encoding-witness encoding)))
-                    (flag (mv-nth 1 (hp-encoding-witness encoding)))
-                    (encoding (byte-list-fix encoding))))))))
+  (fty::deffixequiv-sk hp-encoding-p
+    :args ((encoding byte-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
