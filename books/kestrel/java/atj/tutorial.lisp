@@ -147,14 +147,18 @@
      Both main and auxiliary pages are subtopics of this top-level page.
      The main pages may be navigated sequentially,
      using the `Next' and `Previous' links;
-     these pages should contain all the user-level information
+     these pages contain all the user-level information
      that is necessary to use ATJ effecively.
-     The auxiliary pages are referenced from the main pages as needed;
+     The auxiliary pages are referenced from the main pages;
      they contain additional information
      that may not be strictly necessary to ATJ users,
      such as implementation details;
      however, this information may be useful,
-     and thus users are encouraged to read the auxiliary pages as well.")
+     and thus users are encouraged to read the auxiliary pages as well.
+     When reading this tutorial for the first time,
+     it is suggested to read the main pages sequentially,
+     and (optionally) read the auxiliary pages
+     only when they are referenced by the main pages.")
 
    (atj-tutorial-section "Relationship with the ACL2-2018 Workshop Paper")
 
