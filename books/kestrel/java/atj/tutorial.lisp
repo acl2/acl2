@@ -1608,6 +1608,8 @@
      a more specialized representation,
      described in this tutorial page.")
 
+   (atj-tutorial-section "ACL2 Translated Terms")
+
    (xdoc::p
     "The set of ACL2 "
     (xdoc::seetopic "acl2::term" "translated")
@@ -1629,6 +1631,8 @@
      and @('body') is a term,
      whose free variables are all among @('var1'), ..., @('varm')
      (i.e. lambda expressions are always closed).")
+
+   (atj-tutorial-section "Java Classes")
 
    (xdoc::p
     "AIJ represents ACL2 terms in a manner similar to ACL2 values,
@@ -1689,6 +1693,8 @@
      and more may be added in the future,
      particularly for execution efficiency.")
 
+   (atj-tutorial-section "Java Factory and Getter Methods")
+
    (xdoc::p
     "The classes for ACL2 terms (and functions) provide
      public static factory methods to build instances of these classes,
@@ -1715,6 +1721,8 @@
      and to ATJ-generated code,
      may need to unbuild the results obtained by evaluating
      calls of ACL2 functions.")
+
+   (atj-tutorial-section "More Information")
 
    (xdoc::p
     "For more details on AIJ's implementation and API of ACL2 terms,
