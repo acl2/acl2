@@ -11,5 +11,4 @@
 (in-package "ACL2")
 
 (include-book "documentation")
-(include-book "related")
 (include-book "implementation")
