@@ -240,7 +240,7 @@
       
 ;community books
       u::defloop def-ruleset
-      must-fail ;from misc/eval
+      must-fail ;from std/testing/eval
       must-succeed
       must-prove
       must-not-prove
@@ -358,7 +358,7 @@
               ;caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr
               ;cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
               
-              must-fail ;from misc/eval
+              must-fail ;from std/testing/eval
               must-succeed
               must-prove
               must-not-prove
