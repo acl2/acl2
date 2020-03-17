@@ -13,7 +13,7 @@
 (include-book "misc/meta-lemmas" :dir :system)
 
 ; Pete 9/14/2018: Useful for must-fail
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; Pete 9/16/2018: Better range support
 (include-book "tau/bounders/elementary-bounders" :dir :system)
