@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -158,8 +158,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We capture all eight primitive types because it is easy to do that,
-     even though for now we only need some of them.")
+    "We capture all eight primitive types.")
    (xdoc::p
     "We use ACL2 strings to capture not only single type identifiers,
      but also dot-separated sequences with package names and type identifiers:
