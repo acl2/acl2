@@ -18,8 +18,6 @@
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "std/typed-lists/cons-listp" :dir :system)
-(include-book "std/util/defaggregate" :dir :system)
-(include-book "std/util/defenum" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -963,8 +961,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defaggregate atj-function-type
-  :short "Recognize ATJ function types."
+(fty::defprod atj-function-type
+  :short "Fixtype of the ATJ function types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -972,21 +970,23 @@
      (zero or more) types for the arguments (i.e. inputs)
      and (one or more) types for the results (i.e. outputs).
      This is like an arrow type in higher-order languages."))
-  ((inputs atj-type-listp)
-   (outputs atj-type-listp)))
+  ((inputs atj-type-list)
+   (outputs atj-type-list))
+  :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist atj-function-type-listp (x)
+(fty::deflist atj-function-type-list
   :short "Recognize true lists of ATJ function types."
-  (atj-function-type-p x)
+  :elt-type atj-function-type
   :true-listp t
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  :pred atj-function-type-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-function-type-list->inputs ((fn-types atj-function-type-listp))
-  :returns (in-typess atj-type-list-listp :hyp :guard)
+  :returns (in-typess atj-type-list-listp)
   :short "Lift @(tsee atj-function-type->inputs) to lists."
   (cond ((endp fn-types) nil)
         (t (cons (atj-function-type->inputs (car fn-types))
@@ -995,7 +995,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-function-type-list->outputs ((fn-types atj-function-type-listp))
-  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :returns (out-typess atj-type-list-listp)
   :short "Lift @(tsee atj-function-type->outputs) to lists."
   (cond ((endp fn-types) nil)
         (t (cons (atj-function-type->outputs (car fn-types))
@@ -1003,7 +1003,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defaggregate atj-function-type-info
+(fty::defprod atj-function-type-info
   :short "Recognize ATJ function type information."
   :long
   (xdoc::topstring
@@ -1012,13 +1012,14 @@
      a primary (`main') function type
      and zero or more secondary (`other') function types,
      as mentioned in " (xdoc::seetopic "atj-types" "here") "."))
-  ((main atj-function-type-p)
-   (others atj-function-type-listp)))
+  ((main atj-function-type)
+   (others atj-function-type-list))
+  :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-function-type-info->outputs ((info atj-function-type-info-p))
-  :returns (out-typess atj-type-list-listp :hyp :guard)
+  :returns (out-typess atj-type-list-listp)
   :short "Return the list of all the output type lists
           in a function's type information."
   (cons
@@ -1027,16 +1028,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-maybe-function-type-info-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize ATJ function type information and @('nil')."
-  (or (atj-function-type-info-p x)
-      (null x))
-  ///
-
-  (defrule atj-maybe-function-type-info-p-when-atj-function-type-info-p
-    (implies (atj-function-type-info-p x)
-             (atj-maybe-function-type-info-p x))))
+(fty::defoption atj-maybe-function-type-info
+  atj-function-type-info
+  :short "Recognize ATJ function type information and @('nil').")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1773,7 +1767,7 @@
 
 (define atj-output-types-of-min-input-types ((in-types atj-type-listp)
                                              (fn-types atj-function-type-listp))
-  :returns (out-types? atj-type-listp :hyp :guard)
+  :returns (out-types? atj-type-listp)
   :short "Output types for the minimum input types."
   :long
   (xdoc::topstring
@@ -1814,7 +1808,8 @@
       (fn-types atj-function-type-listp)
       (current-min-in-jtypes atj-jitype-listp)
       (current-out-types? atj-type-listp))
-     :returns (out-types? atj-type-listp :hyp :guard)
+     :returns (out-types? atj-type-listp
+                          :hyp (atj-type-listp current-out-types?))
      (b* (((when (endp fn-types)) current-out-types?)
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
