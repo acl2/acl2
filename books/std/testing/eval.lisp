@@ -21,6 +21,7 @@
 (include-book "must-fail-local")
 (include-book "must-fail-with-error")
 (include-book "must-fail-with-soft-error")
+(include-book "must-fail-with-hard-error")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,25 +52,6 @@
     `(must-fail-with-soft-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-fail-with-hard-error
-  :parents (std/testing errors must-fail)
-  :short "A specialization of @(tsee must-fail) to ensure that
-          a hard error occurs."
-
-  :long "<p>Evaluation of @('(must-fail-with-hard-error <form>)') returns
- without error exactly when evaluation of @('<form>') causes a hard error.</p>
-
- <p>See @(see must-fail) for more details, as @('must-fail-with-hard-error')
- abbreviates @('must-fail') as follows.</p>
-
- @(def must-fail-with-hard-error)
-
- <p>Also see @(see must-fail-with-error) and
- @(see must-fail-with-soft-error).</p>"
-
-  (defmacro must-fail-with-hard-error (form &rest args)
-    (list* 'must-fail form :expected :hard args)))
 
 ;; deprecated:
 
