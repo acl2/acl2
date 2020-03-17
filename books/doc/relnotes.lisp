@@ -139,9 +139,8 @@
      There exist similar macros in the community books,
      but the specifics of this new macro are motivated for use with "
     (xdoc::seetopic "apt::apt" "APT")
-    ". See the "
-    (xdoc::seetopic "defarbrec-related" "related tools section")
-    " of the documentation of @(tsee defarbrec) for more information.")
+    ". See the `Related Tools' section
+     of the documentation of @(tsee defarbrec) for more information.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
