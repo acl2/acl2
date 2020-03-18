@@ -22,6 +22,7 @@
 (include-book "must-fail-with-error")
 (include-book "must-fail-with-soft-error")
 (include-book "must-fail-with-hard-error")
+(include-book "must-prove")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,20 +63,6 @@
     `(must-fail-with-hard-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-prove
-  :parents (std/testing errors)
-  :short "A top-level @(tsee assert$)-like command to ensure that
-          a formula gets proved."
-  :long
-  "<p>
-   This takes the same arguments as @(tsee thm).
-   It wraps the @(tsee thm) into a @(tsee must-succeed).
-   </p>
-   @(def must-prove)"
-
-  (defmacro must-prove (&rest args)
-    `(must-succeed (thm ,@args))))
 
 ;; deprecated:
 
