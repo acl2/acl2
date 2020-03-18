@@ -96,8 +96,7 @@
 
     (xdoc::p
      "The " *isodata-design-notes* " cover
-      isomorphic transformations of both arguments and results,
-      compositionally established
+      isomorphic transformations compositionally established
       by partitioning arguments and results of old and new function
       and by establishing sub-mappings between the partitions
       (see the `Compositional Establishment of Isomorphic Mappings on Tuples'
@@ -106,7 +105,7 @@
       supporting only a limited form of partition of the arguments (see below).
       There are plans to extend the implementation
       to match the coverage of the design notes,
-      namely allowing arbitrary partiions of arguments and results."))
+      namely allowing arbitrary partitions of arguments and results."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
