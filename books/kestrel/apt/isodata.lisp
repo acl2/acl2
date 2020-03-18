@@ -1565,14 +1565,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-formal-of-unary ((fn pseudo-termfnp) (wrld plist-worldp))
+  :returns (var "A @(tsee symbolp).")
+  :verify-guards nil
+  :short "Formal argument of an (assumed) unary function."
+  (cond ((symbolp fn) (car (formals fn wrld)))
+        (t (car (lambda-formals fn)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-formal-of-newp ((isomap isodata-isomapp) (wrld plist-worldp))
   :returns (var "A @(tsee symbolp).")
   :verify-guards nil
   :short "Formal argument of the @('newp') predicate
           of an isomorphic mapping."
-  (b* ((newp (isodata-isomap->newp isomap)))
-    (cond ((symbolp newp) (car (formals newp wrld)))
-          (t (car (lambda-formals newp))))))
+  (isodata-formal-of-unary (isodata-isomap->newp isomap) wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1581,9 +1588,7 @@
   :verify-guards nil
   :short "Formal argument of the @('forth') conversion
           of an isomorphic mapping."
-  (b* ((forth (isodata-isomap->forth isomap)))
-    (cond ((symbolp forth) (car (formals forth wrld)))
-          (t (car (lambda-formals forth))))))
+  (isodata-formal-of-unary (isodata-isomap->forth isomap) wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1592,9 +1597,7 @@
   :verify-guards nil
   :short "Formal argument of the @('back') conversion
           of an isomorphic mapping."
-  (b* ((back (isodata-isomap->back isomap)))
-    (cond ((symbolp back) (car (formals back wrld)))
-          (t (car (lambda-formals back))))))
+  (isodata-formal-of-unary (isodata-isomap->back isomap) wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
