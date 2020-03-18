@@ -1197,28 +1197,22 @@
   :short "Macro to generate a function to apply
           each @('oldpi'), @('newpi'), @('forthi'), or @('backi') function
           to each @('termi') term from a list @('(term1 ... termn)')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We need four such functions,
-     which only differ in the choice among
-     @('oldpi'), @('newpi'), @('forthi'), or @('backi').")
-   (xdoc::@def "isodata-gen-oldp/newp/forth/back-of-terms"))
+  :long (xdoc::topstring-@def "isodata-gen-oldp/newp/forth/back-of-terms")
 
   (defmacro isodata-gen-oldp/newp/forth/back-of-terms (oldp/newp/forth/back)
     (declare (xargs :guard (member-eq oldp/newp/forth/back
                                       '(oldp newp forth back))))
-    (b* ((name (packn (list 'isodata-gen- oldp/newp/forth/back '-of-terms)))
+    (b* ((fn (packn (list 'isodata-gen- oldp/newp/forth/back '-of-terms)))
          (string (str::downcase-string (symbol-name oldp/newp/forth/back)))
          (selector (packn (list 'isodata-isomap-> oldp/newp/forth/back))))
-      `(define ,name ((terms pseudo-term-listp)
-                      (arg-isomaps isodata-symbol-isomap-alistp))
+      `(define ,fn ((terms pseudo-term-listp)
+                    (arg-isomaps isodata-symbol-isomap-alistp))
          :guard (= (len terms) (len arg-isomaps))
          :returns (new-terms "A @(tsee pseudo-term-listp).")
          :verify-guards nil
          :short ,(str::cat "Apply the @('"
                            string
-                           "') function to the corresponding term
+                           "i') function to the corresponding term
                             in a list of terms of length equal to
                             the number of formals of @('old').")
          (b* (((when (endp terms)) nil)
@@ -1226,7 +1220,7 @@
               (isomap (cdar arg-isomaps))
               (,oldp/newp/forth/back (,selector isomap))
               (new-term (apply-term* ,oldp/newp/forth/back term))
-              (new-terms (,name (cdr terms) (cdr arg-isomaps))))
+              (new-terms (,fn (cdr terms) (cdr arg-isomaps))))
            (cons new-term new-terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1510,41 +1504,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-lemma-instance-args-to-forth-of-args
-  ((lemma (or (symbolp lemma)
-              (symbol-listp lemma)) "Lemma to generate an instance of.")
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (lemma-instance true-listp)
-  :verify-guards nil
-  :short "Generate a lemma instance where
-          the variables @('x1'), ..., @('xn') are instantiated with
-          @('(forth1 x1)'), ..., @('(forthn xn)')."
-  (b* ((args (formals old$ wrld))
-       (forth-of-args (isodata-gen-forth-of-terms args arg-isomaps))
-       (inst (alist-to-doublets (pairlis$ args forth-of-args))))
-    `(:instance ,lemma :extra-bindings-ok ,@inst)))
+(defsection isodata-gen-lemma-instance-args-to-forth/back-of-args
+  :short "Macro to generate a function
+          to generate a lemma instance where
+          each variable @('xi') is instantiated with
+          either @('(forthi xi)') or @('(backi xi)')."
+  :long (xdoc::topstring-@def
+         "isodata-gen-lemma-instance-args-to-forth/back-of-args")
+
+  (defmacro isodata-gen-lemma-instance-args-to-forth/back-of-args (forth/back)
+    (declare (xargs :guard (member-eq forth/back '(forth back))))
+    (b* ((name (packn (list 'isodata-gen-lemma-instance-args-to-
+                            forth/back
+                            '-of-args)))
+         (string (str::downcase-string (symbol-name forth/back)))
+         (forth/back-of-args (packn (list forth/back '-of-args)))
+         (isodata-gen-forth/back-of-terms
+          (packn (list 'isodata-gen- forth/back '-of-terms))))
+      `(define ,name ((lemma (or (symbolp lemma)
+                                 (symbol-listp lemma))
+                             "Lemma to generate an instance of.")
+                      (old$ symbolp)
+                      (arg-isomaps isodata-symbol-isomap-alistp)
+                      (wrld plist-worldp))
+         :guard (= (len (formals old$ wrld)) (len arg-isomaps))
+         :returns (lemma-instance true-listp)
+         :verify-guards nil
+         :short ,(str::cat "Generate a lemma instance where
+                            each variable @('xi') is instantiated with
+                            @('(" string "i xi)'.")
+         (b* ((args (formals old$ wrld))
+              (,forth/back-of-args
+               (,isodata-gen-forth/back-of-terms args arg-isomaps))
+              (inst (alist-to-doublets (pairlis$ args ,forth/back-of-args))))
+           `(:instance ,lemma :extra-bindings-ok ,@inst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-lemma-instance-args-to-back-of-args
-  ((lemma (or (symbolp lemma)
-              (symbol-listp lemma)) "Lemma to generate an instance of.")
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (lemma-instance true-listp)
-  :verify-guards nil
-  :short "Generate a lemma instance where
-          the variables @('x1'), ..., @('xn') are instantiated with
-          @('(back1 x1)'), ..., @('(backn xn)')."
-  (b* ((args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (inst (alist-to-doublets (pairlis$ args back-of-args))))
-    `(:instance ,lemma :extra-bindings-ok ,@inst)))
+(isodata-gen-lemma-instance-args-to-forth/back-of-args forth)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(isodata-gen-lemma-instance-args-to-forth/back-of-args back)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
