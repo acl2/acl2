@@ -11,7 +11,7 @@
 (in-package "HMAC")
 
 (include-book "hmac-sha-512")
-(include-book "../../../std/testing/assert")
+(include-book "../../../std/testing/assert-equal")
 
 ;; Tests from https://tools.ietf.org/html/rfc4231
 
