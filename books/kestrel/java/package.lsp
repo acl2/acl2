@@ -180,6 +180,7 @@
                          typed-tuplep
                          ubody
                          ubody+
+                         ubyte8
                          ubyte16
                          ubyte16p
                          ubyte8=>hexchars
