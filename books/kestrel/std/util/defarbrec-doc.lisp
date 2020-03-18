@@ -12,13 +12,13 @@
 
 (include-book "xdoc/constructors" :dir :system)
 
+; (depends-on "design-notes/defarbrec.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
-; (depends-on "kestrel/utilities/design-notes/defarbrec.pdf" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *defarbrec-design-notes*
-  (xdoc::ahref "res/kestrel-utilities-design-notes/defarbrec.pdf"
+  (xdoc::ahref "res/kestrel-std-util-design-notes/defarbrec.pdf"
                "design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
