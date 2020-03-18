@@ -1532,7 +1532,7 @@
          :verify-guards nil
          :short ,(str::cat "Generate a lemma instance where
                             each variable @('xi') is instantiated with
-                            @('(" string "i xi)'.")
+                            @('(" string "i xi)').")
          (b* ((args (formals old$ wrld))
               (,forth/back-of-args
                (,isodata-gen-forth/back-of-terms args arg-isomaps))
