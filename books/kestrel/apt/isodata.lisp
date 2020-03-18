@@ -1510,25 +1510,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-lemma-instance-args-to-back-of-args
-  ((lemma (or (symbolp lemma)
-              (symbol-listp lemma)) "Lemma to generate an instance of.")
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (lemma-instance true-listp)
-  :verify-guards nil
-  :short "Generate a lemma instance where
-          the variables @('x1'), ..., @('xn') are instantiated with
-          @('(back1 x1)'), ..., @('(backn xn)')."
-  (b* ((args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (inst (alist-to-doublets (pairlis$ args back-of-args))))
-    `(:instance ,lemma :extra-bindings-ok ,@inst)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define isodata-gen-lemma-instance-args-to-forth-of-args
   ((lemma (or (symbolp lemma)
               (symbol-listp lemma)) "Lemma to generate an instance of.")
@@ -1544,6 +1525,25 @@
   (b* ((args (formals old$ wrld))
        (forth-of-args (isodata-gen-forth-of-terms args arg-isomaps))
        (inst (alist-to-doublets (pairlis$ args forth-of-args))))
+    `(:instance ,lemma :extra-bindings-ok ,@inst)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-lemma-instance-args-to-back-of-args
+  ((lemma (or (symbolp lemma)
+              (symbol-listp lemma)) "Lemma to generate an instance of.")
+   (old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (wrld plist-worldp))
+  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
+  :returns (lemma-instance true-listp)
+  :verify-guards nil
+  :short "Generate a lemma instance where
+          the variables @('x1'), ..., @('xn') are instantiated with
+          @('(back1 x1)'), ..., @('(backn xn)')."
+  (b* ((args (formals old$ wrld))
+       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
+       (inst (alist-to-doublets (pairlis$ args back-of-args))))
     `(:instance ,lemma :extra-bindings-ok ,@inst)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
