@@ -47,7 +47,7 @@
  :items
 
  ("@('old'),
-   @('args/res-iso'),
+   @('isomaps'),
    @('predicate'),
    @('new-name'),
    @('new-enable'),
@@ -1601,135 +1601,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-forth-image-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('forthi-image') theorems
-          where the formal parameter of @('forthi')
+(defsection isodata-gen-thm-instances-to-args
+  :short "Macro to generate a function
+          to generate @('n') lemma instances,
+          of the @(tsee defiso) theorems @('thm')
+          where the formal parameter of a @(tsee defiso) function @('fn')
           is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (forth-image (isodata-isomap->forth-image isomap))
-       (forth-arg (isodata-formal-of-forth isomap wrld))
-       (instance `(:instance ,forth-image
-                   :extra-bindings-ok (,forth-arg ,arg)))
-       (instances (isodata-gen-forth-image-instances-to-args (cdr arg-isomaps)
-                                                             wrld)))
-    (cons instance instances)))
+  :long (xdoc::topstring-@def "isodata-gen-thm-instances-to-args")
+
+  (defmacro isodata-gen-thm-instances-to-args (thm fn)
+    (declare (xargs :guard (and (member-eq thm '(forth-image
+                                                 back-image
+                                                 back-of-forth
+                                                 newp-guard
+                                                 forth-guard
+                                                 back-guard))
+                                (member-eq fn '(forth back newp)))))
+    (b* ((name (packn (list 'isodata-gen- thm '-instances-to-args)))
+         (thm-selector (packn (list 'isodata-isomap-> thm)))
+         (fn-selector (packn (list 'isodata-isomap-> fn)))
+         (thm-string (str::downcase-string (symbol-name thm)))
+         (fn-string (str::downcase-string (symbol-name fn)))
+         (param (packn (list fn '-arg))))
+      `(define ,name
+         ((arg-isomaps isodata-symbol-isomap-alistp)
+          (wrld plist-worldp))
+         :returns (lemma-instances true-list-listp)
+         :verify-guards nil
+         :short ,(str::cat "Generate @('n') lemma instances:
+                            the lemma is the @('i')-th theorem
+                            @('" thm-string "');
+                            the formal parameter of the @('i')-th function
+                            @('" fn-string "')
+                            is replaced with @('xi').")
+         (b* (((when (endp arg-isomaps)) nil)
+              (arg (caar arg-isomaps))
+              (isomap (cdar arg-isomaps))
+              (,thm (,thm-selector isomap))
+              (,param (isodata-formal-of-unary (,fn-selector isomap) wrld))
+              (instance (list :instance ,thm
+                              :extra-bindings-ok (list ,param arg)))
+              (instances (,name (cdr arg-isomaps) wrld)))
+           (cons instance instances))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-image-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('backi-image') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (back-image (isodata-isomap->back-image isomap))
-       (back-arg (isodata-formal-of-back isomap wrld))
-       (instance `(:instance ,back-image
-                   :extra-bindings-ok (,back-arg ,arg)))
-       (instances (isodata-gen-back-image-instances-to-args (cdr arg-isomaps)
-                                                            wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-args forth-image forth)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-of-forth-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('backi-of-forthi') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (back-of-forth (isodata-isomap->back-of-forth isomap))
-       (forth-arg (isodata-formal-of-forth isomap wrld))
-       (instance `(:instance ,back-of-forth
-                   :extra-bindings-ok (,forth-arg ,arg)))
-       (instances (isodata-gen-back-of-forth-instances-to-args (cdr arg-isomaps)
-                                                               wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-args back-image back)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-newp-guard-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('newpi-guard') theorems
-          where the formal parameter of @('newpi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (newp-guard (isodata-isomap->newp-guard isomap))
-       (newp-arg (isodata-formal-of-newp isomap wrld))
-       (instance `(:instance ,newp-guard
-                   :extra-bindings-ok (,newp-arg ,arg)))
-       (instances (isodata-gen-newp-guard-instances-to-args (cdr arg-isomaps)
-                                                            wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-args back-of-forth forth)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-forth-guard-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('forthi-guard') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (forth-guard (isodata-isomap->forth-guard isomap))
-       (forth-arg (isodata-formal-of-forth isomap wrld))
-       (instance `(:instance ,forth-guard
-                   :extra-bindings-ok (,forth-arg ,arg)))
-       (instances (isodata-gen-forth-guard-instances-to-args (cdr arg-isomaps)
-                                                             wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-args newp-guard newp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-guard-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('backi-guard') theorems
-          where the formal parameter of @('backi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (back-guard (isodata-isomap->back-guard isomap))
-       (back-arg (isodata-formal-of-back isomap wrld))
-       (instance `(:instance ,back-guard
-                   :extra-bindings-ok (,back-arg ,arg)))
-       (instances (isodata-gen-back-guard-instances-to-args (cdr arg-isomaps)
-                                                            wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-args forth-guard forth)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(isodata-gen-thm-instances-to-args back-guard back)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
