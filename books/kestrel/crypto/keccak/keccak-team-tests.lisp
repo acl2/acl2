@@ -66,8 +66,7 @@
 ;; big defconsts
 (include-book "keccak-team-test-data")
 
-;; for assert-equal
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 
 
 ;; --------------------------------
