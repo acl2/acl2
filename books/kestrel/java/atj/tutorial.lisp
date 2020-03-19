@@ -1908,6 +1908,8 @@
                     "the deep and shallow embedding approaches")
     ".")
 
+   (atj-tutorial-section "Accessing the Native Implementations")
+
    (xdoc::p
     "These native implementations are run via
      the public static methods @('Acl2NativeFunction.exec...(...)');
@@ -1915,10 +1917,14 @@
     (xdoc::seetopic "atj-tutorial-acl2-terms"
                     "the Java representation of ACL2 terms")
     ". For instance, @('Acl2NativeFunction.execStringp(Acl2Value)')
-     natively implements @(tsee stringp).
-     Some of these methods have overloaded variants,
+     natively implements @(tsee stringp).")
+
+   (xdoc::p
+    "Some of these methods have overloaded variants,
      whose purpose is explained elsewhere;
      for now, just consider the ones with all @('Acl2Value') arguments.")
+
+   (atj-tutorial-section "Scope the Native Implementations")
 
    (xdoc::p
     "Besides native implementations of the ACL2 primitive functions,
@@ -1934,8 +1940,10 @@
      Another motivation is to avoid "
     (xdoc::seetopic "atj-tutorial-background" "circularities")
     " that exist in the ACL2 definitions
-     unless the raw Lisp code is taken into account.
-     More native Java implementations can be added to AIJ as needed;
+     unless the raw Lisp code is taken into account.")
+
+   (xdoc::p
+    "More native Java implementations can be added to AIJ as needed;
      it could be argued that all the ACL2 functions with raw Lisp code
      should be implemented natively in Java in AIJ, for symmetry.
      The only drawback, besides the effort to do that,
@@ -1947,13 +1955,17 @@
      may not entail significantly more effort,
      or at least not ``superlinear'' effort.")
 
+   (atj-tutorial-section "Implementation Approach")
+
    (xdoc::p
     "Generally, AIJ's native Java implementations of ACL2 functions
      are realized by methods in @('Acl2Value') and its subclasses,
      called by the @('Acl2NativeFunction.exec...(...)') methods.
      This takes advantage of Java's dynamic dispatch
-     to avoid checking types at run time.
-     For example, to implement @(tsee stringp),
+     to avoid checking types at run time.")
+
+   (xdoc::p
+    "For example, to implement @(tsee stringp),
      the @('Acl2Value.stringp()') method returns
      (the Java representation of) @('nil');
      this default implementation is inherited
@@ -1963,8 +1975,10 @@
      invokes @('stringp()') on its argument:
      this selects, in constant time,
      either the default implementation or the overriding one,
-     based on the run-time type type of the argument @('Acl2Value').
-     As another example, to implement @(tsee char-code),
+     based on the run-time type type of the argument @('Acl2Value').")
+
+   (xdoc::p
+    "As another example, to implement @(tsee char-code),
      the @('Acl2Value.charCode()') method returns 0,
      because this function's completion axiom says that
      this function returns 0 on non-characters;
@@ -1975,24 +1989,34 @@
      invokes @('charCode()') on its argument:
      this selects, in constant time,
      either the default implementation or the overriding one,
-     based on the run-time type type of the argument @('Acl2Value').
-     The ACL2 primitive functions for arithmetic (e.g. @(tsee binary-+))
+     based on the run-time type type of the argument @('Acl2Value').")
+
+   (xdoc::p
+    "The ACL2 primitive functions for arithmetic (e.g. @(tsee binary-+))
      are implemented by methods in @('Acl2Value') and subclasses
      that exhibit interesting patterns of dynamic dispatch
      and interplay among the methods for different operations;
      see AIJ's code and Javadoc for details.")
 
+   (atj-tutorial-section "Another Possible Implementation Approach")
+
    (xdoc::p
     "Instead of taking advantage of dynamic dispatch,
      an alternative implementation strategy could use
-     run-time type checks and casts.
-     For example, @('Acl2NativeFunction.execStringp(Acl2Value)')
+     run-time type checks and casts.")
+
+   (xdoc::p
+    "For example, @('Acl2NativeFunction.execStringp(Acl2Value)')
      could test whether the argument is an instance of @('Acl2String'),
-     and return @('t') or @('nil') accordingly.
-     As another example, @('Acl2NativeFunction.execCharCode(Acl2Value)')
+     and return @('t') or @('nil') accordingly.")
+
+   (xdoc::p
+    "As another example, @('Acl2NativeFunction.execCharCode(Acl2Value)')
      could test whether the argument is an instance of @('Acl2Character'),
-     and return the character's code or 0 accordingly.
-     It is not clear which approach is more efficient
+     and return the character's code or 0 accordingly.")
+
+   (xdoc::p
+    "It is not clear which approach is more efficient
      (dynamic dispatch or type checks/casts):
      on the one hand, it seems that dynamic dispatch should be more efficient;
      on the other hand, since type checks/casts are relatively frequent in Java,
