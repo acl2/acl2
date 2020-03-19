@@ -25,7 +25,7 @@
 
 (defxdoc defarbrec
 
-  :parents (kestrel-utilities)
+  :parents (std/util-extensions std/util)
 
   :short "Introduce an arbitrarily recursive function."
 
