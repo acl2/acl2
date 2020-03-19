@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -183,17 +183,8 @@
   :skolem-name rlp-transaction-encoding-witness
   ///
 
-  (fty::deffixequiv rlp-transaction-encoding-p
-    :args ((encoding byte-listp))
-    :hints (("Goal"
-             :in-theory (disable rlp-transaction-encoding-p-suff)
-             :use ((:instance rlp-transaction-encoding-p-suff
-                    (transaction
-                     (rlp-transaction-encoding-witness
-                      (byte-list-fix encoding))))
-                   (:instance rlp-transaction-encoding-p-suff
-                    (transaction (rlp-transaction-encoding-witness encoding))
-                    (encoding (byte-list-fix encoding)))))))
+  (fty::deffixequiv-sk rlp-transaction-encoding-p
+    :args ((encoding byte-listp)))
 
   (defrule rlp-transactionp-of-rlp-transaction-encoding-witness
     (implies (rlp-transaction-encoding-p encoding)
