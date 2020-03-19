@@ -82,8 +82,6 @@
   :short "Utilities that are part of the
           <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
 
-(xdoc::add-resource-directory "kestrel-utilities-design-notes" "design-notes")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc theorems-about-non-kestrel-books
