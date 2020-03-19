@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Matt Kaufmann (kaufmann@cs.utexas.edu)
+; Main Author: Matt Kaufmann (kaufmann@cs.utexas.edu)
+; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15,11 +16,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc must-eval-to
+
   :parents (std/testing errors)
+
   :short "A top-level @(tsee assert$)-like command to ensure that
           a form evaluates to a non-erroneous error triple
           with the value of a specified expression."
+
   :long
+
   "@({
      (must-eval-to form
                    expr
@@ -27,30 +32,28 @@
                    :with-output-off ...
                    :check-expansion ....)
    })
-   <p>
-   @('Form') should evaluate to an error triple @('(mv erp val state)').
+
+   <p>@('Form') should evaluate to an error triple @('(mv erp val state)').
    If @('erp') is @('nil') and @('val') is the value of @('expr')
    then @('(must-eval-to form expr)') expands to @('(value-triple \'val)');
    otherwise expansion causes an appropriate soft error.
-   Note that both @('form') and @('expr') are evaluated.
-   </p>
-   <p>
-   The @(':ld-skip-proofsp') option sets the value of @(tsee ld-skip-proofsp)
+   Note that both @('form') and @('expr') are evaluated.</p>
+
+   <p>The @(':ld-skip-proofsp') option sets the value of @(tsee ld-skip-proofsp)
    to use for evaluating @('form'),
    unless it is @(':default'), which is the default,
-   in which case @(tsee ld-skip-proofsp) retains its current value.
-   </p>
-   <p>
-   The @(':with-output-off') option serves to suppress output from @('form'):
-   when not @('nil'), it is used as the @(':off') argument of @(tsee with-output).
-   The default is @(':all'), i.e., all output is suppressed.
-   </p>
-   <p>
-   The @(':check-expansion') option determines whether @('form')
+   in which case @(tsee ld-skip-proofsp) retains its current value.</p>
+
+   <p>The @(':with-output-off') option serves to suppress output from @('form'):
+   when not @('nil'),
+   it is used as the @(':off') argument of @(tsee with-output).
+   The default is @(':all'), i.e., all output is suppressed.</p>
+
+   <p>The @(':check-expansion') option determines whether @('form')
    is re-run and re-checked at @(tsee include-book) time;
    see @(tsee make-event).
-   By default, it is not.
-   </p>
+   By default, it is not.</p>
+
    @(def must-eval-to)")
 
 (defmacro must-eval-to (&whole must-eval-to-form
