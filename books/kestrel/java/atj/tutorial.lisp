@@ -2192,15 +2192,27 @@
     ", "
     (xdoc::seetopic "atj-tutorial-aij" "AIJ")
     " provides an ACL2 evaluator written in Java.
-     This evaluator is realized via
+     For ease of exposition and understanding,
+     we first describe
+     (key aspects of) the initial implementation of the evaluator
+     (as it was in earlier versions of AIJ),
+     and then we describe how the current implementation
+     is obtained by optimizing the initial one.")
+
+   (atj-tutorial-section "Java Methods")
+
+   (xdoc::p
+    "The evaluator is realized via
      the implementing methods of the abstract methods
-     @('Acl2Term.eval(Acl2Value[])') and @('Acl2Function.eval(Acl2Value[])';
+     @('Acl2Term.eval(Acl2Value[])') and @('Acl2Function.apply(Acl2Value[])';
      The implementing methods are
      in subclasses of @('Acl2Term') and @('Acl2Function').
      Recall that all these classes provide "
     (xdoc::seetopic "atj-tutorial-acl2-terms"
                     "the Java representation of ACL2 terms")
     ".")
+
+   (atj-tutorial-section "Initial Implementation")
 
    (xdoc::p
     "In early versions of AIJ,
@@ -2251,9 +2263,14 @@
     "This simple and typical evaluation algorithm worked,
      but the evaluation of each variable involved a map lookup.
      The use of hash maps made this lookup essentially constant-time,
-     but still a relatively large constant.
-     Thus, the current version of AIJ uses a more optimized approach,
-     described as follows.")
+     but still a relatively large constant.")
+
+   (atj-tutorial-section "Current Implementation")
+
+   (xdoc::p
+    "The current version of AIJ uses
+     a more optimized approach for variable lookup,
+     described below.")
 
    (xdoc::p
     "Each @('Acl2Variable') instance includes
@@ -2302,6 +2319,8 @@
      This ACL2 evaluation is in the logic:
      guards are completely ignored,
      and in fact not even currently represented in AIJ.")
+
+   (atj-tutorial-section "More Information")
 
    (xdoc::p
     "See the AIJ code and Javadoc for more details on the ACL2 evaluator.")))
