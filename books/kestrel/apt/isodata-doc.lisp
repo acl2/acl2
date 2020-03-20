@@ -182,12 +182,12 @@
        and the way in which they are transformed.")
      (xdoc::p
       "It must be a non-empty list of doublets
-       @('((arg/res1 iso1) ... (arg/resq isoq))'),
+       @('((arg/res-list1 iso1) ... (arg/res-listq isoq))'),
        where:")
      (xdoc::ul
       (xdoc::li
        (xdoc::p
-        "Each @('arg/resk') denotes
+        "Each @('arg/res-listk') denotes
          the subset of the arguments and results of @('old')
          whose representation is transformed according to @('isok').")
        (xdoc::p
@@ -203,7 +203,7 @@
       (xdoc::li
        (xdoc::p
         "Each @('isok') denotes the isomorphic mapping
-         to apply to the arguments and results in @('arg/resk').
+         to apply to the arguments and results in @('arg/res-listk').
          Each @('isok') specifies
          old and new isomorphic representations
          and the isomorphisms between them.")
@@ -252,7 +252,8 @@
           after the call of @('isodata').")))
       (xdoc::li
        (xdoc::p
-        "The lists @('arg/res1'), ..., @('arg/resq') are pairwise disjoint,
+        "The lists @('arg/res-list1'), ..., @('arg/res-listq')
+         are pairwise disjoint,
          i.e. each @('xi') and @(':result') appears
          in at most one of those lists.")))
      (xdoc::p
@@ -264,7 +265,7 @@
        "The @('oldp'), @('newp'), @('forth'), and @('back')
         of the (pre-existing or locally generated) @(tsee defiso)
         specified by @('isok'),
-        if @('xi') is in @('arg/resk').")
+        if @('xi') is in @('arg/res-listk').")
       (xdoc::li
        "The functions
         @('(lambda (x) t)'),
@@ -272,7 +273,7 @@
         @('(lambda (x) x)'), and
         @('(lambda (x) x)')
         that form the identity isomorphic mapping over all values,
-        if @('xi') is not in any @('arg/resk')."))
+        if @('xi') is not in any @('arg/res-listk')."))
      (xdoc::p
       "Furthermore,
        let @('oldp-res'), @('newp-res'), @('forth-res'), and @('back-res') be:")
@@ -281,7 +282,7 @@
        "The @('oldp'), @('newp'), @('forth'), and @('back')
         of the (pre-existing or locally generated) @(tsee defiso)
         specified by @('isok'),
-        if @(':result') is in @('arg/resk').")
+        if @(':result') is in @('arg/res-listk').")
       (xdoc::li
        "The functions
         @('(lambda (x) t)'),
@@ -289,7 +290,7 @@
         @('(lambda (x) x)'), and
         @('(lambda (x) x)')
         that form the identity isomorphic mapping over all values,
-        if @(':result') is not in any @('arg/resk')."))
+        if @(':result') is not in any @('arg/res-listk')."))
      (xdoc::p
       "In the " *isodata-design-notes* ", the section
        `Compositional Establishment of Isomorphic Mappings on Tuples'
@@ -315,12 +316,12 @@
        "The isomorphic mapping consisting of
         @('oldp-res'), @('newp-res'), @('forth-res'), and @('back-res')
         is used for the partition consisting of the result,
-        if @(':result') is in some @('arg/resk').
+        if @(':result') is in some @('arg/res-listk').
         (In this case, there is just one result.")
       (xdoc::li
        "The identity isomorphic mapping
         is used for the partitions of all the results,
-        if @(':result') is not in any @('arg/resk')."))
+        if @(':result') is not in any @('arg/res-listk')."))
      (xdoc::p
       "In the design notes,
        the resulting isomorphic mapping over all function arguments
