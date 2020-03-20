@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/utilities/define-sk" :dir :system)
+
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
