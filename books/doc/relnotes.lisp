@@ -233,8 +233,9 @@
      contents of the files @('[books]/misc/assert.lisp') and
      @('[books]/misc/eval.lisp') have been moved here (with the same names),
      while the two files under @('[books]/misc/') have been turned into
-     relocation stubs.  Some new testing utilities have been added to this new
-     library as well.")
+     relocation stubs.  The utilities in those two files have been moved to new
+     individual files for greater modularity.  Some new testing utilities have
+     been added to this new library as well.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
