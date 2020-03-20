@@ -24,6 +24,7 @@
 (include-book "must-fail-with-hard-error")
 (include-book "must-prove")
 (include-book "must-not-prove")
+(include-book "must-be-redundant")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,21 +83,3 @@
   :short "Deprecated synonym of @(tsee must-not-prove)."
   (defmacro not-thm? (&rest args)
     `(must-not-prove ,@args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-be-redundant
-  :parents (std/testing errors)
-  :short "A top-level @(tsee assert$)-like command
-          to ensure that given forms are redundant."
-  :long
-  "<p>
-   The forms are put into an @(tsee encapsulate),
-   along with a @(tsee set-enforce-redundancy) command that precedes them.
-   </p>
-   @(def must-be-redundant)"
-  (defmacro must-be-redundant (&rest forms)
-    `(encapsulate
-       ()
-       (set-enforce-redundancy t)
-       ,@forms)))
