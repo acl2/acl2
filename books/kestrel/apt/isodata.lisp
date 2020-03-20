@@ -255,7 +255,7 @@
    (old$ symbolp)
    ctx state)
   :returns (mv erp
-               (result "A tuple @('(arg res)') satisfying
+               (result "A tuple @('(args res)') satisfying
                         @('(typed-tuplep symbol-listp booleanp result)').")
                state)
   :verify-guards nil
@@ -263,7 +263,7 @@
   :long
   (xdoc::topstring-p
    "If the processing is successful,
-    the @('arg') result is
+    the @('args') result is
     the list of arguments of @('old') in @('arg/res-list'),
     and the @('res') result is @('t')
     iff @(':result') is in @('arg/res-list').")
@@ -705,9 +705,9 @@
                               t nil))
        (arg/res-list (first arg/res-list-iso))
        (iso (second arg/res-list-iso))
-       ((er (list arg res)) (isodata-process-arg/res-list
-                             arg/res-list k old$ ctx state))
-       (arg-overlap (intersection-eq arg (strip-cars arg-isomaps)))
+       ((er (list args res)) (isodata-process-arg/res-list
+                              arg/res-list k old$ ctx state))
+       (arg-overlap (intersection-eq args (strip-cars arg-isomaps)))
        ((when arg-overlap)
         (er-soft+ ctx t nil
                   "The ~n0 component of the second input includes ~x1, ~
@@ -728,20 +728,20 @@
                                                                ctx
                                                                state))
        (arg-isomaps
-        (isodata-process-arg/res-list-iso-aux arg isomap arg-isomaps))
+        (isodata-process-arg/res-list-iso-aux args isomap arg-isomaps))
        (res-isomap? (and res isomap)))
     (value (list arg-isomaps res-isomap? names-to-avoid)))
 
   :prepwork
   ((define isodata-process-arg/res-list-iso-aux
-     ((arg symbol-listp)
+     ((args symbol-listp)
       (isomap isodata-isomapp)
       (arg-isomaps isodata-symbol-isomap-alistp))
      :returns (new-arg-isomaps isodata-symbol-isomap-alistp :hyp :guard)
-     (cond ((endp arg) arg-isomaps)
-           (t (isodata-process-arg/res-list-iso-aux (cdr arg)
+     (cond ((endp args) arg-isomaps)
+           (t (isodata-process-arg/res-list-iso-aux (cdr args)
                                                     isomap
-                                                    (acons (car arg)
+                                                    (acons (car args)
                                                            isomap
                                                            arg-isomaps)))))))
 
