@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/utilities/define-sk" :dir :system)
 
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
@@ -896,32 +897,8 @@
           (parse-treep tree string rulename rules))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv string-parsablep
-    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
-    :hints (("Goal"
-             :in-theory (disable string-parsablep-suff)
-             :use (;; for STRING:
-                   (:instance string-parsablep-suff
-                    (string (string-fix string))
-                    (tree (string-parsablep-witness string rulename rules)))
-                   (:instance string-parsablep-suff
-                    (tree (string-parsablep-witness
-                           (string-fix string) rulename rules)))
-                   ;; for RULENAME:
-                   (:instance string-parsablep-suff
-                    (rulename (rulename-fix rulename))
-                    (tree (string-parsablep-witness string rulename rules)))
-                   (:instance string-parsablep-suff
-                    (tree (string-parsablep-witness
-                           string (rulename-fix rulename) rules)))
-                   ;; for RULES:
-                   (:instance string-parsablep-suff
-                    (rules (rulelist-fix rules))
-                    (tree (string-parsablep-witness string rulename rules)))
-                   (:instance string-parsablep-suff
-                    (tree (string-parsablep-witness
-                           string rulename (rulelist-fix rules))))))))
+  (fty::deffixequiv-sk string-parsablep
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp)))
 
   (defrule treep-of-string-parsablep-witness-when-string-parsablep
     (implies (string-parsablep string rulename rules)
@@ -951,49 +928,8 @@
                (parse-treep tree2 string rulename rules)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv string-ambiguousp
-    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
-    :hints (("Goal"
-             :in-theory (disable string-ambiguousp-suff)
-             :use (;; for STRING:
-                   (:instance string-ambiguousp-suff
-                    (string (string-fix string))
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string rulename rules))))
-                   (:instance string-ambiguousp-suff
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      (string-fix string) rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      (string-fix string) rulename rules))))
-                   ;; for RULENAME:
-                   (:instance string-ambiguousp-suff
-                    (rulename (rulename-fix rulename))
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string rulename rules))))
-                   (:instance string-ambiguousp-suff
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string (rulename-fix rulename) rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string (rulename-fix rulename) rules))))
-                   ;; for RULES:
-                   (:instance string-ambiguousp-suff
-                    (rules (rulelist-fix rules))
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string rulename rules))))
-                   (:instance string-ambiguousp-suff
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename (rulelist-fix rules))))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string
-                                      rulename
-                                      (rulelist-fix rules)))))))))
+  (fty::deffixequiv-sk string-ambiguousp
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp)))
 
   (defruled string-parsablep-when-string-ambiguousp
     (implies (string-ambiguousp string rulename rules)
