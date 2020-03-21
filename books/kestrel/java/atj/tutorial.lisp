@@ -15,6 +15,10 @@
 
 ; (depends-on "images/values.png")
 ; (depends-on "images/value-classes.png")
+; (depends-on "images/aij-api.png")
+; (depends-on "images/atj-aij-api.png")
+; (depends-on "images/term-classes.png")
+; (depends-on "images/package-classes.png")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
