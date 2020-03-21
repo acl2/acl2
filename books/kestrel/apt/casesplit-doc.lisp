@@ -75,7 +75,7 @@
       "@('old') must be in logic mode,
        return a non-" (xdoc::seetopic "mv" "multiple") " value, and
        have no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") "."
-      "If the @(':verify-guards') input is @('t'),
+      " If the @(':verify-guards') input is @('t'),
        @('old') must be guard-verified.")
      (xdoc::p
       "Let @('x1'), ..., @('xn') be the formal arguments of @('old')")
@@ -96,7 +96,7 @@
        that only call logic-mode functions,
        that return non-" (xdoc::seetopic "mv" "multiple") " values,
        and that have no output " (xdoc::seetopic "acl2::stobj" "stobjs") "."
-      "If the generated function is guard-verified
+      " If the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
        then the terms must only call guard-verified functions,
        except possibly in the @(':logic') subterms of @(tsee mbe)s
@@ -105,7 +105,7 @@
      (xdoc::p
       "In order to highlight the dependence on @('x1'), ..., @('xn'),
        in the rest of this documentation page,
-       @('condk<x1,...,xn>') is used for @('condk').")
+       @('condk<x1,...,xn>') may be used for @('condk').")
      (xdoc::p
       "In the " *casesplit-design-notes* ",
        @('condk') is denoted by @($c_k$), for @($1 \\leq k \\leq p$)."))
