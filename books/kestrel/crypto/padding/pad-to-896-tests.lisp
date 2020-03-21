@@ -11,7 +11,7 @@
 (in-package "PADDING")
 
 (include-book "pad-to-896")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/unpackbv" :dir :system)
 
