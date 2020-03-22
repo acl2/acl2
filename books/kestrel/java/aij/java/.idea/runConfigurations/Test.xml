@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Test" type="JUnit" factoryName="JUnit">
+  <configuration default="false" name="Test" type="JUnit" factoryName="JUnit" singleton="false">
     <module name="AIJ" />
     <option name="PACKAGE_NAME" value="edu.kestrel.acl2.aij" />
     <option name="MAIN_CLASS_NAME" value="edu.kestrel.acl2.aij.Acl2PackageNameTest" />
     <option name="METHOD_NAME" value="makeFail" />
-    <option name="TEST_OBJECT" value="method" />
+    <option name="TEST_OBJECT" value="class" />
     <option name="PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="%MODULE_WORKING_DIR%" />
     <method v="2">
