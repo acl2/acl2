@@ -140,9 +140,10 @@
      but it may be already useful in its current incomplete form.
      This tutorial's goal is to provide user-level information
      on how ATJ works and how to use ATJ effectively.
-     The ATJ reference documentation is "
-    (xdoc::seetopic "atj" "here")
-    ", along with some additional information
+     See "
+    (xdoc::seetopic "atj" "the ATJ manual page")
+    " for the ATJ reference documentation,
+     which currently contains some additional information
      that will likely be moved to this tutorial.")
 
    (atj-tutorial-section "Structure of the Tutorial")
@@ -888,7 +889,8 @@
     "where @(':deep t') specifies the deep embedding approach
      and @(':guards nil') specifies not to assume the guards' satisfaction
      (more on this in "
-    (xdoc::seetopic "atj-tutorial-deep-guards" "this page")
+    (xdoc::seetopic "atj-tutorial-deep-guards"
+                    "the tutorial page about guards in the deep embedding")
     ").")
 
    (xdoc::p
@@ -1017,8 +1019,8 @@
    (xdoc::p
     "where @('[books]/...') must be replaced with
      a proper path to the AIJ jar file
-     (see the documentation of "
-    (xdoc::seetopic "aij" "AIJ")
+     (see "
+    (xdoc::seetopic "aij" "the documentation of AIJ")
     " for instructions on how to obtain that jar file.")
 
    (xdoc::p
@@ -1075,7 +1077,7 @@
    (xdoc::p
     "ATJ provides some options to customize the generated Java code,
      in the form of keyword inputs, which are listed in "
-    (xdoc::seetopic "atj" "the reference documentation")
+    (xdoc::seetopic "atj" "the ATJ reference documentation")
     ". This tutorial page covers the simpler options,
      which apply to both "
     (xdoc::seetopic "atj-tutorial-deep-shallow"
@@ -1087,7 +1089,8 @@
 
    (xdoc::p
     "The Java code generated for the factorial function in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " has no @('package') declaration [JLS:7.4],
      which means that the generated class is in an unnamed package [JLS:7.4.2].
      This (i.e. the absence of a @('package') declaration) is the default,
@@ -1095,7 +1098,8 @@
 
    (xdoc::p
     "For the example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", the ATJ call")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :java-package \"mypkg\")")
@@ -1110,7 +1114,8 @@
    (xdoc::p
     "Now that the generated code is in the @('mypkg') package,
      the external Java code exemplified in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " must be adapted, e.g. by putting it into @('mypkg') as well,
      or by referencing the generated Java class
      via the fully qualified name @('mypkg.Acl2Code'),
@@ -1134,7 +1139,8 @@
 
    (xdoc::p
     "The Java class generated for the factorial function in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " is called @('Acl2Code');
      the generated file is called @('Acl2Code.java'),
      thus satisfying the constraint that a public class resides in a file
@@ -1145,7 +1151,8 @@
 
    (xdoc::p
     "For the example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", the ATJ call")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :java-class \"Fact\")")
@@ -1156,7 +1163,8 @@
    (xdoc::p
     "Now that the generated class is called @('Fact'),
      the external Java code exemplified in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " must be adapted, by referencing the generated Java class as @('Fact').")
 
    (xdoc::p
@@ -1170,14 +1178,16 @@
 
    (xdoc::p
     "The Java file generated for the factorial function in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " resides in the current directory.
      This is the default,
      which can be overridden via ATJ's @(':output-dir') option.")
 
    (xdoc::p
     "For the example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", the ATJ call")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :output-dir \"java\")")
@@ -1243,8 +1253,9 @@
     "When @(':verbose') is @('nil'), which is the default,
      ATJ just prints a short completion message
      about the generated Java file(s).
-     This is mentioned in the factorial function example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+     This is mentioned in the factorial function example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", where a single file is generated.
      (The generation of multiple files is discussed elsewhere.)")
 
@@ -1258,10 +1269,13 @@
      and also for debugging.")
 
    (xdoc::p
-    "As discussed in the factorial example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
-    ", and more generally and systematically "
-    (xdoc::seetopic "atj-tutorial-translated" "in this page")
+    "As discussed in the factorial example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ", and more generally and systematically in "
+    (xdoc::seetopic
+     "atj-tutorial-translated"
+     "the tutorial page on the ACL2 functions translated to Java")
     ", ATJ translates to Java not only
      the explicitly supplied target function(s),
      but also the functions that they call directly or indirectly.
@@ -1269,8 +1283,9 @@
      ATJ displays the list of all such functions.")
 
    (xdoc::p
-    "As discussed in the factorial example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    "As discussed in the factorial example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", ATJ generates Java code to build
      Java representations of all the ACL2 packages
      known when ATJ is called.
@@ -1290,8 +1305,9 @@
      messages as it generating Java classes, compilation units, and files.")
 
    (xdoc::p
-    "In the factorial example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    "In the factorial example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", verbose screen output can be displayed via ")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :verbose t)")
@@ -1323,7 +1339,8 @@
 
    (xdoc::p
     "In the factorial function example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", ATJ is called with a single target ACL2 function, @('fact'), as argument.
      As noted in that page, ATJ generates a Java representation
      not only of the @('fact') function,
@@ -1419,8 +1436,9 @@
     (xdoc::li
      "Each function must have no input or output stobjs.
       The reason is that stobjs entail side effects,
-      as explained "
-     (xdoc::seetopic "atj-tutorial-background" "here")
+      as explained in "
+     (xdoc::seetopic "atj-tutorial-background"
+                     "the tutorial page on the ACL2 evaluation semantics")
      ", and side effects are not yet supported by ATJ.")
     (xdoc::li
      "Each function must not have raw Lisp code,
@@ -1501,8 +1519,9 @@
       ATJ treats the call as if it were just @('y');
       if instead ATJ's @(':guards') input is @('t').
       ATJ treats the call as if it were just @('x').
-      The reason for this is explained in more detail "
-     (xdoc::seetopic "atj-tutorial-deep-guards" "here")
+      The reason for this is explained in more detail in "
+     (xdoc::seetopic "atj-tutorial-deep-guards"
+                     "the tutorial page on guards in the deep embedding")
      ". However, the other subterm
       (i.e. @('x') if @(':guards') is @('nil'),
       and @('y') if @(':guards') is @('t'))
@@ -1578,7 +1597,8 @@
 
    (xdoc::p
     "ACL2's execution in the logic is described "
-    (xdoc::seetopic "acl2::evaluation" "here")
+    (xdoc::seetopic "acl2::evaluation"
+                    "in the manual page on ACL2 evaluation")
     ". It means that ACL2 functions, which are total in the logic,
      may be called on any argument values (inside or outside the guards),
      and functions will return the corresponding results.
@@ -1588,7 +1608,8 @@
    (xdoc::p
     "Accordingly, the @('call(Acl2Symbol, Acl2Value[])') method
      generated by ATJ (see "
-    (xdoc::seetopic "atj-tutorial-deep" "this page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ") accepts any array of @('Acl2Value')s,
      independently from the guard of the function named by the @('Acl2Symbol'),
      and return the resulting @('Acl2Value').")
@@ -1604,8 +1625,10 @@
      as if they were just @('a'),
      for the purpose of generating Java code:
      that is, ATJ generates Java code for @('a'), ignoring @('b').
-     This is also discussed "
-    (xdoc::seetopic "atj-tutorial-translated" "here")
+     This is also discussed in "
+    (xdoc::seetopic
+     "atj-tutorial-translated"
+     "the tutorial page on the ACL2 functions translated to Java")
     ".")
 
    (atj-tutorial-section "Assuming Guards")
@@ -1653,7 +1676,8 @@
    (xdoc::p
     "Even with @(':guards t'), the @('call(Acl2Symbol, Acl2Value[])') method
      generated by ATJ (see "
-    (xdoc::seetopic "atj-tutorial-deep" "this page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ") accepts any array of @('Acl2Value')s,
      whether they satisfy the guard of the function named by the @('Acl2Symbol')
      or not.
@@ -1846,9 +1870,8 @@
      for each "
     (xdoc::seetopic "acl2::primitive" "ACL2 primitive function")
     ": these could not be instances of @('Acl2DefinedFunction'),
-     because they have "
-    (xdoc::seetopic "atj-tutorial-background" "no ACL2 definition")
-    ". There are also instances of @('Acl2NativeFunction')
+     because they have no ACL2 definition.
+     There are also instances of @('Acl2NativeFunction')
      for other built-in ACL2 functions,
      and more may be added in the future,
      particularly for execution efficiency.")
@@ -2090,13 +2113,18 @@
      The main motivation is efficiency:
      a native Java implementation can be faster than
      mimicking ACL2's execution (in either the deep or shallow embedding).
-     In fact, this is also why some built-in ACL2 functions have "
-    (xdoc::seetopic "atj-tutorial-background" "raw Lisp code")
-    ", i.e. native Lisp implementations.
-     Another motivation is to avoid "
-    (xdoc::seetopic "atj-tutorial-background" "circularities")
-    " that exist in the ACL2 definitions
-     unless the raw Lisp code is taken into account.")
+     In fact, this is also why some built-in ACL2 functions have raw Lisp code
+     (see the "
+    (xdoc::seetopic "atj-tutorial-background"
+                    "the tutorial page on the ACL2 evaluation semantics")
+    "), i.e. native Lisp implementations.
+     Another motivation is to avoid circularities
+     that exist in the ACL2 definitions
+     unless the raw Lisp code is taken into account
+     (see the "
+    (xdoc::seetopic "atj-tutorial-background"
+                    "the tutorial page on the ACL2 evaluation semantics")
+    ").")
 
    (xdoc::p
     "More native Java implementations can be added to AIJ as needed;
