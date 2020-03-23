@@ -1,6 +1,6 @@
 ; Standard Typed Alists Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "cons-pos-alistp")
 (include-book "keyword-to-keyword-value-list-alistp")
+(include-book "keyword-truelist-alistp")
 (include-book "string-string-alistp")
 (include-book "string-symbollist-alistp")
 (include-book "symbol-nat-alistp")
@@ -33,4 +34,4 @@
    (xdoc::p
     "A library of alists with keys and values of specific types.
      The key and value types are built-in types,
-     or ``general'' types in Std.")))
+     or ``general'' types in @(csee Std).")))
