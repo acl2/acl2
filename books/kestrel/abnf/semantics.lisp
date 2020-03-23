@@ -1072,6 +1072,9 @@
                (parse-trees-of-string-p trees string rulename rules)))
   ///
 
+  (fty::deffixequiv-sk string-has-finite-parse-trees-p
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp)))
+
   (defrule tree-setp-of-witness-when-string-has-finite-parse-trees-p
     (implies (string-has-finite-parse-trees-p string rulename rules)
              (tree-setp
