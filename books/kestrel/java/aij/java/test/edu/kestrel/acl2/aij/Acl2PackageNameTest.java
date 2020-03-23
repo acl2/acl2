@@ -80,4 +80,59 @@ class Acl2PackageNameTest {
                 () -> Acl2PackageName.make("MY\377PKG"));
     }
 
+    @Test
+    void makeLetters() {
+        assertDoesNotThrow(() -> Acl2PackageName.make("KEYWORD"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("JAVA"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("STD"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("MYPKG"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("P"));
+        assertDoesNotThrow
+                (() -> Acl2PackageName.make("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+    }
+
+    @Test
+    void makeLettersDashes() {
+        assertDoesNotThrow(() -> Acl2PackageName.make("COMMON-LISP"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("MY-PKG"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("P-Q"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("-PKG"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("PKG-"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("---P-K-G---"));
+    }
+
+    @Test
+    void makeDigits() {
+        assertDoesNotThrow(() -> Acl2PackageName.make("0"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("1"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("123"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("0123456789"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("8888"));
+    }
+
+    @Test
+    void makeLettersDigits() {
+        assertDoesNotThrow(() -> Acl2PackageName.make("ACL2"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("PKG1"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("PKG2"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("PKG3"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("123P"));
+    }
+
+    @Test
+    void makeLettersDigitsDashes() {
+        assertDoesNotThrow(() -> Acl2PackageName.make("ACL2-USER"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("CATCH-22"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("-0-A---"));
+    }
+
+    @Test
+    void makeStrange() {
+        assertDoesNotThrow(() -> Acl2PackageName.make(" "));
+        assertDoesNotThrow(() -> Acl2PackageName.make("-"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("_"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("%%%"));
+        assertDoesNotThrow(() -> Acl2PackageName.make(".,:;!?"));
+        assertDoesNotThrow(() -> Acl2PackageName.make("A --> B"));
+    }
 }
