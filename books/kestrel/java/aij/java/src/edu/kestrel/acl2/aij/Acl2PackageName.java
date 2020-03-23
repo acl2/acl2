@@ -44,9 +44,8 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * @return {@code true} if the string is valid, {@code false} otherwise.
      */
     private static boolean isValidString(String str) {
-        if (str.equals(""))
-            return false;
         int len = str.length();
+        if (len == 0) return false;
         for (int i = 0; i < len; ++i)
             if (!isValidChar(str.charAt(i)))
                 return false;
