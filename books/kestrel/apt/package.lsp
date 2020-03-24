@@ -219,6 +219,8 @@
                          packn
                          packn-pos
                          pairlis-x1
+                         pos-fix
+                         pos-listp
                          pseudo-event-form-listp
                          pseudo-event-formp
                          pseudo-lambdap
