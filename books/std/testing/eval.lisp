@@ -13,18 +13,18 @@
 
 (in-package "ACL2")
 
+(include-book "must-be-redundant")
 (include-book "must-eval-to")
 (include-book "must-eval-to-t")
-(include-book "must-succeed")
-(include-book "must-succeed-star")
 (include-book "must-fail")
 (include-book "must-fail-local")
 (include-book "must-fail-with-error")
-(include-book "must-fail-with-soft-error")
 (include-book "must-fail-with-hard-error")
-(include-book "must-prove")
+(include-book "must-fail-with-soft-error")
 (include-book "must-not-prove")
-(include-book "must-be-redundant")
+(include-book "must-prove")
+(include-book "must-succeed")
+(include-book "must-succeed-star")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
