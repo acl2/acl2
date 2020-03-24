@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "assert")
+(include-book "assert-qmark")
 (include-book "eval")
 (include-book "must-be-table-key")
 (include-book "must-not-be-table-key")

@@ -12,7 +12,6 @@
 
 (include-book "acceptable-rewrite-rule-p")
 (include-book "apply-fn-if-known")
-(include-book "assert")
 (include-book "auto-instance")
 (include-book "auto-termination")
 (include-book "bits-as-digits")
