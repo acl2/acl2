@@ -18,9 +18,7 @@
 (include-book "build-enumcalls")
 (include-book "with-timeout" :ttags ((:acl2s-timeout)))
 
-
 (set-state-ok t)
-
 
 ;;;; * Main Idea
 ;;;; Given any formula, we want to test it using test? or
@@ -154,11 +152,12 @@
 
 ;;; Purpose: For the current ... , generate the next value-alist
 ;;; (sigma) for the formula under test.  next-sigma : (sampling-method
-;;; seed tuple) ->  seed' * tuple' * A' Given the sampling method,
-;;; current random seed, the current nth-tuple (of nats), it computes
-;;; the full assignment (sigma) to be used in the upcoming test run
-;;; and also returns the updated seed and updated nth-tuple
-(defstub next-sigma (* * *) => (mv * * *))
+;;; N i seed tuple) -> seed' * tuple' * A' Given the sampling method,
+;;; num-trials, local-trial number, the current random seed, the
+;;; current nth-tuple (of nats), it computes the full assignment
+;;; (sigma) to be used in the upcoming test run and also returns the
+;;; updated seed and updated nth-tuple
+(defstub next-sigma (* * * * *) => (mv * * *))
 
 
 (def single-hypothesis (hyp-list)
@@ -321,13 +320,14 @@
 
 (set-verify-guards-eagerness 1)
 
-(def run-single-test. (vl sampling-method N i r. BE.)
-  (decl 
-        :sig ((fixnum keyword fixnum fixnum fixnum symbol-fixnum-alist) 
-              -> 
-              (mv keyword true-listp symbol-doublet-listp fixnum symbol-fixnum-alist))
-        :doc 
-"?:
+(def run-single-test. (vl sampling-method N i r. BE. single-test-timeout)
+  (decl
+   :sig
+   ((fixnum keyword fixnum fixnum fixnum symbol-fixnum-alist rational) 
+    -> 
+    (mv keyword true-listp symbol-doublet-listp fixnum symbol-fixnum-alist))
+   :doc 
+   "?:
 * Synopsis 
 Run single trial of search for cts/wts for the formula under test.
 
@@ -350,28 +350,31 @@ BE. is the updated bounded-exhaustive arg/seed alist.
 eg:n/a")
   
   (b* ((sm (local-sampling-method sampling-method i N))
-       ((mv A r. BE.) (next-sigma sm r. BE.))
+       ((mv A r. BE.) (next-sigma sm N i r. BE.))
        (- (cw? (system-debug-flag vl) 
                "~|Cgen/Sysdebug/run-single: A: ~x0 seed: ~x1~%" A r.))
-       (|not vacuous ?|  (hypotheses-val A))
+       (|not vacuous ?|
+        (acl2::with-timeout1 single-test-timeout
+                             (hypotheses-val A)
+                             nil))
        (hyp-vals (and (verbose-stats-flag vl) (hyp-val-list A)))
 
        (- (cw? (and (system-debug-flag vl)
                     (not |not vacuous ?|)) 
-               "~|Cgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals))
-       )
+               "~|Cgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals)))
 ;  in
-   (if |not vacuous ?|
-       ;; bugfix: why even try to evaluate conclusion when
-       ;; the hypotheses arnt satisfied, the whole form's value
-       ;; is simply true - May 2nd '12
-       (let ((res (if (conclusion-val A) :witness :counterexample)))
-        (mv res hyp-vals A r. BE.))
-     (mv :vacuous hyp-vals A r. BE.))))
-
-
-
-
+    (if |not vacuous ?|
+        ;; bugfix: why even try to evaluate conclusion when
+        ;; the hypotheses are not satisfied, the whole form's value
+        ;; is simply true - May 2nd '12
+        (b* ((conc (acl2::with-timeout1  single-test-timeout
+                                         (conclusion-val A)
+                                         0))
+             (res (cond ((eql conc 0) :vacuous)
+                        (conc :witness)
+                        (t :counterexample))))
+          (mv res hyp-vals A r. BE.))
+      (mv :vacuous hyp-vals A r. BE.))))
 
 ; sort utility for use in record-testrun.
 (defun merge-car-symbol-< (l1 l2)
@@ -403,91 +406,98 @@ eg:n/a")
 ; TODO: This function is in the inner loop. See if it can be furthur
 ; optimized.
 (def record-testrun. (test-result hyp-vals A num-print-cts num-print-wts vl test-outcomes% gcs%)
-  (decl :sig ((keyword true-listp symbol-doublet-listp fixnum fixnum fixnum test-outcomes%-p gcs%-p)
-              ->
-              (mv test-outcomes%-p gcs%-p))
-        :doc 
-"?: records (accumulates) the outcome of a single test trial run ")
+  (decl
+   :sig ((keyword true-listp symbol-doublet-listp fixnum fixnum fixnum test-outcomes%-p gcs%-p)
+         ->
+         (mv test-outcomes%-p gcs%-p))
+   :doc 
+   "?: records (accumulates) the outcome of a single test trial run ")
   (b* ((A (merge-sort-car-symbol-< A))
        (gcs% (gcs-1+ runs)))
 ;   in
     (case test-result
-      (:counterexample   (b* ((A-cts (access test-outcomes% cts))
-                             
-                             ((when (member-equal A A-cts))
-                              (mv (test-outcomes-1+ dups) (gcs-1+ dups)));ignore A
+      (:counterexample
+       (b* ((A-cts (access test-outcomes% cts))
+            ((when (member-equal A A-cts))
+             (mv (test-outcomes-1+ dups) (gcs-1+ dups))) ;ignore A
                                                                                        
-                             (gcs% (gcs-1+ cts))
-                             (m    (access test-outcomes% |#cts|))
-                             (test-outcomes% ;TODO:per subgoal num-cts stored??
-                              (if (< m num-print-cts) ;dont store extra unless
-                                  (b* ((test-outcomes% (change test-outcomes% cts (cons A A-cts))))
-                                    test-outcomes%)
-                                test-outcomes%))
-                             (test-outcomes% (if (verbose-stats-flag vl)
-                                                 (change test-outcomes% cts-hyp-vals-list
-                                                         (cons hyp-vals (access test-outcomes% cts-hyp-vals-list)))
-                                               test-outcomes%))
-                             (test-outcomes%   (test-outcomes-1+ cts)))
+            (gcs% (gcs-1+ cts))
+            (m    (access test-outcomes% |#cts|))
+            (test-outcomes% ;TODO:per subgoal num-cts stored??
+             (if (< m num-print-cts) ;dont store extra unless
+                 (b* ((test-outcomes% (change test-outcomes% cts (cons A A-cts))))
+                   test-outcomes%)
+               test-outcomes%))
+            (test-outcomes% (if (verbose-stats-flag vl)
+                                (change test-outcomes% cts-hyp-vals-list
+                                        (cons hyp-vals (access test-outcomes% cts-hyp-vals-list)))
+                              test-outcomes%))
+            (test-outcomes%   (test-outcomes-1+ cts)))
 ;                              in
-                         (mv test-outcomes% gcs%)))
+         (mv test-outcomes% gcs%)))
 
 
-      (:witness          (b* ((A-wts (access test-outcomes% wts))
-                             ((when (member-equal A A-wts))
-                              (mv (test-outcomes-1+ dups) (gcs-1+ dups)))
+      (:witness
+       (b* ((A-wts (access test-outcomes% wts))
+            ((when (member-equal A A-wts))
+             (mv (test-outcomes-1+ dups) (gcs-1+ dups)))
                              
-                             (gcs% (gcs-1+ wts))
-                             (m    (access test-outcomes% |#wts|))
-                             (test-outcomes%   
-                              (if (< m num-print-wts)
-                                  (b* ((test-outcomes% (change test-outcomes% wts (cons A A-wts))))
-                                    test-outcomes%)
-                                test-outcomes%))
-                             (test-outcomes% (if (verbose-stats-flag vl)
-                                                 (change test-outcomes% wts-hyp-vals-list
-                                                         (cons hyp-vals (access test-outcomes% wts-hyp-vals-list)))
-                                               test-outcomes%))
-                             (test-outcomes%   (test-outcomes-1+ wts))) ;BUGGY -- we dont know if its a duplicate. FIXME
+            (gcs% (gcs-1+ wts))
+            (m    (access test-outcomes% |#wts|))
+            (test-outcomes%   
+             (if (< m num-print-wts)
+                 (b* ((test-outcomes% (change test-outcomes% wts (cons A A-wts))))
+                   test-outcomes%)
+               test-outcomes%))
+            (test-outcomes% (if (verbose-stats-flag vl)
+                                (change test-outcomes% wts-hyp-vals-list
+                                        (cons hyp-vals (access test-outcomes% wts-hyp-vals-list)))
+                              test-outcomes%))
+            (test-outcomes%   (test-outcomes-1+ wts))) ;BUGGY -- we dont know if its a duplicate. FIXME
 ;                         in       
-                          (mv test-outcomes% gcs%)))
+         (mv test-outcomes% gcs%)))
 
                                              
-      (:vacuous          (b* ((A-vacs (access test-outcomes% vacs))
+      (:vacuous
+       (b* ((A-vacs (access test-outcomes% vacs))
 
-                              ;; ((when (member-equal A A-vacs)) ;costly -- commenting out ;; this makes #dups inconsistent
-                              ;; (mv ( test-outcomes-1+ dups) (gcs-1+ dups)))
+            ;; ((when (member-equal A A-vacs)) ;costly -- commenting out ;; this makes #dups inconsistent
+            ;; (mv ( test-outcomes-1+ dups) (gcs-1+ dups)))
 
-                             (test-outcomes% 
-                              (if (verbose-stats-flag vl)
-                                  (change test-outcomes% vacs-hyp-vals-list
-                                          (cons hyp-vals (access test-outcomes% vacs-hyp-vals-list)))
-                                test-outcomes%))
+            (test-outcomes% 
+             (if (verbose-stats-flag vl)
+                 (change test-outcomes% vacs-hyp-vals-list
+                         (cons hyp-vals (access test-outcomes% vacs-hyp-vals-list)))
+               test-outcomes%))
                              
-                             (gcs% (gcs-1+ vacs))
-                             (m    (access test-outcomes% |#vacs|))
-                             (test-outcomes%   
-                              (if (or (< m (acl2::+f num-print-wts num-print-cts))
-                                      (verbose-stats-flag vl)) ;[2015-04-07 Tue]
+            (gcs% (gcs-1+ vacs))
+            (m    (access test-outcomes% |#vacs|))
+            (test-outcomes%   
+             (if (or (< m (acl2::+f num-print-wts num-print-cts))
+                     (verbose-stats-flag vl)) ;[2015-04-07 Tue]
 
 ; TODO: [2014-04-26 Sat] To (post-) diagnose vacuous tests, we ought
 ; to store or at least provide a way to do on-the-fly
 ; diagnosis. Provide a hook here?
-                                  (change test-outcomes% vacs (cons A A-vacs))
-                                test-outcomes%))
-                             (test-outcomes%   (test-outcomes-1+ vacs)))
+                 (change test-outcomes% vacs (cons A A-vacs))
+               test-outcomes%))
+            (test-outcomes%   (test-outcomes-1+ vacs)))
 ;                         in
-                          (mv test-outcomes% gcs%)))
-      (otherwise         (prog2$ (er hard 'test? "not possible") 
-                                 (mv test-outcomes% gcs%))))))
+         (mv test-outcomes% gcs%)))
+                             
+      (otherwise
+       (prog2$ (er hard 'test? "not possible") 
+               (mv test-outcomes% gcs%))))))
 
 
 (def run-n-tests. (n r. BE. test-outcomes% gcs% vl cgen-state)
-  (decl :sig ((fixnum fixnum symbol-fixnum-alist test-outcomes% gcs% fixnum cgen-state)
-              -> (mv boolean fixnum symbol-fixnum-alist 
-                     test-outcomes% gcs%))
-        :doc
-"?: 
+  (decl
+   :sig
+   ((fixnum fixnum symbol-fixnum-alist test-outcomes% gcs% fixnum cgen-state)
+    -> (mv boolean fixnum symbol-fixnum-alist 
+           test-outcomes% gcs%))
+   :doc
+   "?: 
 * Synopsis
   Run 'n' remaining tests on the formula under consideration.
 
@@ -522,8 +532,11 @@ where
 
        (local-trial-num  (acl2::|1+F| (acl2::-f num-trials n)))
 
+       (single-test-timeout (cget cgen-single-test-timeout))
+
        ((mv res hyp-vals A r. BE.) ; res = test value  A= value-bindings
-        (run-single-test. vl (cget sampling-method) num-trials local-trial-num  r. BE.))
+        (run-single-test.
+         vl (cget sampling-method) num-trials local-trial-num  r. BE. single-test-timeout))
        
        (num-print-cts (cget num-print-counterexamples))
        (num-print-wts (cget num-print-witnesses))
@@ -535,17 +548,17 @@ where
 ;  in   
     (run-n-tests. (acl2::|1-F| n) r. BE. test-outcomes% gcs% vl cgen-state)))
 
-          
-
 
 ;; Pre Condition: hypothesis-val, conclusion-val and next-sigma have been
 ;; attached when this function is called!
 (def run-tests. (rseed. BE. test-outcomes% gcs% vl cgen-state)
-  (decl :sig ((fixnump symbol-fixnum-alistp test-outcomes%-p gcs%-p fixnump cgen-state)
-              -> (mv boolean fixnum test-outcomes% gcs%))
-        ;:trace T
-        :doc 
-"?: Run a bunch of simple random/bounded-exhaustive tests/trials to
+   (decl
+    :sig
+    ((fixnump symbol-fixnum-alistp test-outcomes%-p gcs%-p fixnump cgen-state)
+     -> (mv boolean fixnum test-outcomes% gcs%))
+;:trace T
+    :doc 
+    "?: Run a bunch of simple random/bounded-exhaustive tests/trials to
   find cts/wts for formula under test")
 ;do timeout wrapper here!        
   (b* (((mv stop? rseed. test-outcomes% gcs%)
@@ -576,29 +589,28 @@ where
                                         (remove-eq 'ACL2::& (cdr (car x)))
                                       (list (car x))))))
 (include-book "select")
-(def make-next-sigma-defuns (hyps concl
-                                  partial-A elim-bindings fixer-bindings
-                                  top-vt-alist
-                                  type-alist tau-interval-alist
-                                  programp use-fixers-p vl state)
-  (decl :sig ((pseudo-term-list pseudo-term
-                                symbol-doublet-listp symbol-doublet-listp symbol-doublet-listp
-                                symbol-doublet-listp
-                                alist symbol-alist
-                                boolean boolean fixnum plist-worldp) 
+(def make-next-sigma-defuns
+     (hyps concl partial-A elim-bindings fixer-bindings top-vt-alist
+           type-alist tau-interval-alist programp N i use-fixers-p vl state)
+     (decl :sig ((pseudo-term-list pseudo-term symbol-doublet-listp
+                  symbol-doublet-listp symbol-doublet-listp
+                  symbol-doublet-listp alist symbol-alist
+                  boolean fixnum fixnum boolean fixnum plist-worldp) 
               -> (mv erp all symbol-alist))
         :doc "return the defun forms defining next-sigma function, given a
         list of hypotheses and conclusion (terms). Also return the enum-alist to be displayed")
   (declare (xargs :verify-guards nil))
   (f* ((defun-forms ()
-         `((defun next-sigma-current (sampling-method seed. BE.)
+         `((defun next-sigma-current (sampling-method N i seed. BE.)
              "returns (mv A seed. BE.)"
-             (declare (ignorable sampling-method)) ;in case ord-vs is nil
+             (declare (ignorable sampling-method N i)) ;in case ord-vs is nil
              (declare (type (unsigned-byte 31) seed.))
              (declare (xargs :verify-guards nil
                              :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014
                              :guard (and (member-eq sampling-method
                                                     '(:random :uniform-random :be))
+                                         (unsigned-byte-p 31 N)
+                                         (unsigned-byte-p 31 i)
                                          (unsigned-byte-p 31 seed.)
                                          (symbol-unsigned-29bits-alistp BE.)
                                          (consp BE.) ;precondition TODOcheck
@@ -606,7 +618,7 @@ where
                                                  (strip-cars v-cs%-alst)
                                                  'BE.)))
                              :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))))
-             ,(make-next-sigma_mv-let v-cs%-alst '() use-fixers-p vl wrld
+             ,(make-next-sigma_mv-let v-cs%-alst '() N i use-fixers-p vl wrld
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
                                       `(B* ,(append partial-A fixer-bindings elim-bindings)
                                           (mv ,(make-var-value-list-bindings
@@ -616,12 +628,12 @@ where
                                                            (strip-bound-vars fixer-bindings)
                                                            (strip-bound-vars elim-bindings))) '())
                                               seed. BE.))))
-           (defun next-sigma-current-gv (sampling-method seed. BE.)
+           (defun next-sigma-current-gv (sampling-method N i seed. BE.)
              (declare (xargs :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014
                              :guard T :verify-guards ,(not programp)))
 ;(declare (type (unsigned-byte 31) seed.))
-             (ec-call (next-sigma-current sampling-method seed. BE.))))))
-         
+             (ec-call (next-sigma-current sampling-method N i seed. BE.))))))
+
 ; Invariant: v-cs%-alst. should obey a dependency order such that the
 ; final enum-call alist when converted to a let* will obey the
 ; dependency order of evaluation. This is mostly satisfied, as
@@ -701,7 +713,6 @@ where
      (assign ss-temp-result :timed-out)
      (mv T nil state)))))
 
-
 (defloop filter-var-eq-hyps (hyps)
   (for ((hyp in hyps))
        (when (is-var-equality-hyp hyp)
@@ -752,14 +763,14 @@ Use :simple search strategy to find counterexamples and witnesses.
   (if (endp vars)
 ; dont even try trivial forms like constant expressions
       (b* ((form  `(implies (and ,@hyps) ,concl))
-            ((mv erp c state)
-             (trans-eval-single-value form ctx state))
-            ((mv test-outcomes% gcs%)
-             (record-testrun. (if c :witness :counterexample)
-                              '()
-                              partial-A
-                              (cget num-print-counterexamples) (cget num-print-witnesses)
-                              vl test-outcomes% gcs%)))
+           ((mv erp c state)
+            (trans-eval-single-value form ctx state))
+           ((mv test-outcomes% gcs%)
+            (record-testrun. (if c :witness :counterexample)
+                             '()
+                             partial-A
+                             (cget num-print-counterexamples) (cget num-print-witnesses)
+                             vl test-outcomes% gcs%)))
 
 ;       in
         (prog2$
@@ -801,11 +812,10 @@ Use :simple search strategy to find counterexamples and witnesses.
 ;       (new-fxr-vars (set-difference-equal (acl2::all-vars1-lst additional-fxr-hyps '()) vars))
        (- (cw? (and (verbose-stats-flag vl) additional-fxr-hyps)
                "~|Cgen/Note: Additional Hyps for fixers: ~x0~|" additional-fxr-hyps))
-
+       
        (acl2-vt-dlist (var-types-alist-from-acl2-type-alist type-alist vars '()))
        ((mv erp top+-vt-dlist) (meet-type-alist acl2-vt-dlist (cget top-vt-alist) vl (w state)))
        (top+-vt-dlist (if erp (make-weakest-type-alist vars) top+-vt-dlist))
-
        ((mv erp next-sigma-defuns disp-enum-alist)
         (make-next-sigma-defuns (union-equal additional-fxr-hyps hyps) concl
 ;(append new-fxr-vars vars)  Compute it again afresh [2016-10-29 Sat]
@@ -813,6 +823,8 @@ Use :simple search strategy to find counterexamples and witnesses.
                                 top+-vt-dlist
                                 type-alist tau-interval-alist
                                 t ; programp ;;Aug 2014 -- New defdata has program-mode enumerators
+                                (cget num-trials)
+                                0
                                 (cget use-fixers)
                                 vl state))
        ((when erp)

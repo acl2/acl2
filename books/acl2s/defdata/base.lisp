@@ -406,10 +406,75 @@ on a per data definition basis or
   (let ((range (- hi lo)))
     (+ lo (simple-hash n range))))
 
+(local (include-book "arithmetic-5/top" :dir :system))
+       
+(defun bitsize-aux (n acc)
+  (declare (xargs :guard (and (natp n) (posp acc))))
+  (if (and (integerp n) (> n 1))
+      (bitsize-aux (floor (nfix n) 2) (1+ acc))
+    acc))
+
+(defthm bitsize-aux-posp
+  (implies (and (natp n) (posp acc))
+           (posp (bitsize-aux n acc))))
+
+(defun bitsize (n)
+  (declare (xargs :guard (natp n)))
+  (bitsize-aux n 1))
+
+; (bitsize 0)
+; (bitsize 1)
+; (bitsize 63)
+; (bitsize 64)
+
+(defun rounds (lo hi stop-bits)
+  (declare (xargs :guard (and (integerp lo)
+                              (integerp hi)
+                              (<= lo hi)
+                              (posp stop-bits))))
+  (let* ((range (nfix (- hi lo)))
+         (size (bitsize range)))
+    (if (<= size stop-bits)
+        1
+      (- size (1- stop-bits)))))
+    
+; (rounds 0 1023 10)
+; (rounds 0 1024 10)
+
+(defun nth-integer-between-bits-mid (n lo hi bits)
+  (declare (xargs :guard (and (natp n)
+                              (integerp lo)
+                              (integerp hi)
+                              (<= lo hi)
+                              (posp bits))))
+  (let* ((fullrange (- hi lo))
+         (brange (min fullrange (1- (expt 2 bits))))
+         (fullmid (+ lo (floor fullrange 2)))
+         (blo (- fullmid (floor brange 2))))
+    (+ blo (simple-hash n brange))))
+
+(defun nth-integer-between-bits-lo (n lo hi bits)
+  (declare (xargs :guard (and (natp n)
+                              (integerp lo)
+                              (integerp hi)
+                              (<= lo hi)
+                              (posp bits))))
+  (let* ((fullrange (- hi lo))
+         (brange (min fullrange (1- (expt 2 bits)))))
+    (+ lo (simple-hash n brange))))
+
+;(nth-integer-between-bits-mid 1021312 0 10000 100)
+;(nth-integer-between-bits-lo  1021312 0 10000 100)
+;(nth-integer-between          1021312 0 10000)
+
+;(nth-integer-between-bits-mid 1021312 0 10000 8)
+;(nth-integer-between-bits-lo  1021312 0 10000 8)
+;(nth-integer-between          1021312 0 10000)
+
 (defun integer-index (i)
   (declare (xargs :guard (integerp i)))
   (if (< i 0)
-    (1+ (* (- (1+ i)) 2))
+      (1+ (* (- (1+ i)) 2))
     (* i 2)))
 
 #|
@@ -834,7 +899,6 @@ as a type.
     (complex-rational (nth-complex-rational-between n lo hi))
     (t (nth-acl2-number-between n lo hi))))
   
-
 (defmacro nth-number-between (n lo hi &key type)
   `(nth-number-between-fn ,n ,lo ,hi (or ,type 'acl2s::acl2-number)))
 
