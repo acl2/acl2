@@ -16,7 +16,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ xdoc::evmac-constructors
+(defxdoc+ event-macro-xdoc-constructors
   :parents (event-macros xdoc::composite-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url event-macros)'>event macros</see>
@@ -24,8 +24,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ xdoc::evmac-constructors-user-level
-  :parents (xdoc::evmac-constructors)
+(defxdoc+ event-macro-xdoc-constructors-user-level
+  :parents (event-macro-xdoc-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url event-macros)'>event macros</see>
           at the user level."
@@ -917,8 +917,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ xdoc::evmac-constructors-implementation-level
-  :parents (xdoc::evmac-constructors)
+(defxdoc+ event-macro-xdoc-constructors-implementation-level
+  :parents (event-macro-xdoc-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document the implementation of
           <see topic='@(url event-macros)'>event macros</see>."
