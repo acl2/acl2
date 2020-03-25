@@ -977,7 +977,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-function-type-list
-  :short "Recognize true lists of ATJ function types."
+  :short "Fixtype of true lists of ATJ function types."
   :elt-type atj-function-type
   :true-listp t
   :elementp-of-nil nil
@@ -1004,7 +1004,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod atj-function-type-info
-  :short "Recognize ATJ function type information."
+  :short "Fixtype of ATJ function type information."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1030,7 +1030,7 @@
 
 (fty::defoption atj-maybe-function-type-info
   atj-function-type-info
-  :short "Recognize ATJ function type information and @('nil').")
+  :short "Fixtype of ATJ function type information and @('nil').")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
