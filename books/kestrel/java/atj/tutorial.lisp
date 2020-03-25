@@ -58,6 +58,9 @@
 (defconst *atj-tutorial-deep-guards*
   "Guards in the Deep Embedding Approach")
 
+(defconst *atj-tutorial-tests*
+  "Generation of Tests")
+
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
@@ -1257,7 +1260,10 @@
     (xdoc::seetopic "atj-tutorial-deep"
                     "the tutorial page on the deep embedding approach")
     ", where a single file is generated.
-     (The generation of multiple files is discussed elsewhere.)")
+     (The generation of multiple files is discussed in "
+    (xdoc::seetopic "atj-tutorial-tests"
+                    "the tutorial page on test generation")
+    ".)")
 
    (atj-tutorial-section "Verbose Screen Output")
 
@@ -1711,7 +1717,245 @@
      is much more significant in the shallow embedding approach.
      This is described in detail in subsequent pages.")
 
-   (atj-tutorial-previous "atj-tutorial-translated" *atj-tutorial-translated*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-tests" *atj-tutorial-tests*
+    "atj-tutorial-translated" *atj-tutorial-translated*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-tests
+
+  :short (atj-tutorial-short *atj-tutorial-tests*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page describes the @(':tests') option of ATJ,
+     which generates additional Java code to run tests specified by the user.
+     We illustrate this option via an example,
+     but also provide more general explanations.")
+
+   (atj-tutorial-section "Defining Some Tests")
+
+   (xdoc::p
+    "Consider again the factorial function @('fact') example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ". Introduce a named constant as follows:")
+   (xdoc::codeblock
+    "(defconst *tests*"
+    "  '((\"Test0\" (fact 0))"
+    "    (\"Test1\" (fact 1))"
+    "    (\"Test2\" (fact 2))"
+    "    (\"Test3\" (fact 3))"
+    "    (\"Test10\" (fact 10))"
+    "    (\"Test20\" (fact 20))"
+    "    (\"Test50\" (fact 50))"
+    "    (\"Test77\" (fact 77))"
+    "    (\"Test100\" (fact 100))))")
+
+   (xdoc::p
+    "The above is a list of tests,
+     each of which is a doublet that consists of
+     a name (a string) and a ground call of the @('fact') function.
+     The names in the list must be all distinct,
+     and may be in any order:
+     their purpose is to describe the relative tests
+     in a human-readable way.
+     Each ground call in the list
+     specifies to check whether
+     executing the ground call in Java
+     yields the same result as executing it in ACL2.
+     The arguments of the ground call must be constants:
+     they must be or translate to quoted constants;
+     they cannot be just any terms that happen to be constant.")
+
+   (xdoc::p
+    "Note that each such test does not explicitly specify
+     the expected result of the ground call.
+     The test simply compares the ACL2 result with the Java result.
+     Thus, the user can quickly define many tests
+     without specifying, or even knowing, the expected results.")
+
+   (xdoc::p
+    "Currently the names of the test must be non-empty strings
+     that only contains (uppercase and lowercase) letters and digits.
+     This makes it easy to turn these names into (parts of) methods names,
+     as explained below.")
+
+   (atj-tutorial-section "Passing the Tests to ATJ")
+
+   (xdoc::p
+    "The tests defined above can be passed to ATJ as follows:")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :tests *tests*)")
+
+   (xdoc::p
+    "ATJ's @(':tests') input is evaluated:
+     in the example above, ATJ receives
+     the list of doublets that @('*tests*') evaluates to.
+     In general, one can pass any term as the @(':tests') input,
+     so long as its evaluation yields
+     a true list of doublets in the format explained above.
+     For example, the quoted list that defines @('*tests*')
+     could be passed directly as the @(':tests') input.
+     As another example, one could define
+     several named constants like @('*tests*') above,
+     say @('*tests1*'), @('*tests2*'), etc.,
+     and pass @('(append *tests1* *tests2* ...)') as @(':tests').
+     However, passing a single named constant
+     (which may well be defined as the @(tsee append) of other constants,
+     each for a different group of tests)
+     may be the clearest approach.")
+
+   (xdoc::p
+    "The ground call in a test must be that of a target function.
+     Recall that, as described in "
+    (xdoc::seetopic
+     "atj-tutorial-translated"
+     "the tutorial page on the ACL2 functions translated to Java")
+    ", the target functions are the ones explicitly specified to ATJ
+     (just @('fact') in the example above).
+     Currently ATJ does not support tests that involve ground calls of
+     functions directly or indirectly called by the target functions
+     (such as @(tsee zp) in the @('fact') example above):
+     the rationale is that the target functions are the top-level ones,
+     and thus the one to be tested.
+     This restriction can be relaxed if it turns out to be a burden.")
+
+   (atj-tutorial-section "Generated Test Code")
+
+   (xdoc::p
+    "As conveyed by the message shown on the screen by ATJ,
+     two Java files are generated, in the current directory.
+     The first file, @('Acl2Code.java'), is the same as before.
+     The second file, @('Acl2CodeTests.java'), is new.
+     Opening the second file reveals that it contains
+     a single Java public class called @('Acl2CodeTest').
+     The file imports all the (public) AIJ classes,
+     which are in the @('edu.kestrel.acl2.aij') Java package,
+     and a few classes from the Java standard library.")
+
+   (xdoc::p
+    "The class has a @('main()') method,
+     and can be therefore run as a Java application.
+     The @('main()') method accepts
+     either no inputs or a single integer input,
+     whose meaning is explained later.
+     After validating the input(s)
+     and calling @('Acl2Code.initialize()')
+     (see "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    " for details on the latter),
+     the @('main()') method
+     runs all the tests specified in @(':tests'),
+     one after the other.
+     The class has a private method @('test_<name>()')
+     for each test with name @('<name>');
+     more details on these private methods are given later.
+     After running all the test methods,
+     the @('main()') method prints a summary message
+     saying whether there were test failures or not.")
+
+   (atj-tutorial-section "Compiling and Running the Code")
+
+   (xdoc::p
+    "Both the main file and the test file generated by ATJ
+     can be compiled via")
+   (xdoc::codeblock
+    "javac -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar \\"
+    "      Acl2Code.java Acl2CodeTests.java")
+   (xdoc::p
+    "where @('[books]/...') must be replaced with
+     a proper path to the AIJ jar file
+     (see "
+    (xdoc::seetopic "aij" "the documentation of AIJ")
+    " for instructions on how to obtain that jar file.")
+
+   (xdoc::p
+    "After compiling, the code can be run, without argument, via")
+   (xdoc::codeblock
+    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
+    "     Acl2CodeTest")
+   (xdoc::p
+    "where again @('[books]/...') must be replaced with a proper path.
+     As conveyed by the messages printed on the screen,
+     the tests are run one after the other, and they all pass.
+     The final message saying that all tests passed
+     is more useful when there is a large number of tests,
+     sparing the user from having to visually double-check every line.")
+
+   (xdoc::p
+    "Now trying running the same code with a positive integer argument:")
+   (xdoc::codeblock
+    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
+    "     Acl2CodeTest 10")
+   (xdoc::p
+    "In addition to the messages printed before,
+     now 10 running times are reported for each test,
+     along with a minimum, an average, and a maximum.
+     These tests run very quickly and thus it is likely that
+     all the reported time be @('0.000') or perhaps just @('0.001').
+     Adding and running longer tests such as @('(fact 10000)')
+     will show more interesting numbers.")
+
+   (atj-tutorial-section "A Closer Look at the Test Methods")
+
+   (xdoc::p
+    "All the private static method in the test class @('Acl2CodeTests'),
+     each of which corresponds to one of the user-supplied tests,
+     have a very similar structure.")
+
+   (xdoc::p
+    "Each test methof takes as input a non-negative integer,
+     which is the positive integer passed to the @('main()') method, if any,
+     or 0 if no argument is passed to the @('main()') method.
+     The value 0 means that no execution times should be measured and reported.
+     A positive value means that
+     execution times should be measured and reported,
+     with the positive value specifying how many times the test must be run.
+     As seen in the example above (when the value was 10),
+     the execution time of every run is measured and printed,
+     and minimum, average, and maximum are calculated
+     over those execution times.")
+
+   (xdoc::p
+    "Whether the test passes or not (aside from execution time considerations)
+     is determined by each method as follows.
+     The method first builds
+     the values of the arguments of the call being tested,
+     and the value of the expected result of the call.
+     This expected result value is determined by ATJ
+     when it processes the test in the @(':tests') input:
+     ATJ invokes the ACL2 evaluator to obtain each result value,
+     e.g. it invokes the ACL2 evaluator on the term @('(fact 10)')
+     to obtain the value 3,628,800,
+     and generates Java code, in the test method,
+     that builds the Java representation of that value.
+     For each repetition of the test,
+     the method calls the Java code for the function being tested
+     on the arguments, and compares the result with the expected one.")
+
+   (xdoc::p
+    "Each test method measures the execution time of each repetition
+     by calling @('System.currentTimeMillis()') just before and just after
+     the call of the Java code generated for the function,
+     and by subtracting the two values.
+     Note that the arguments are built once before the loop
+     and stored into local variables, which are accessed at each call.
+     Thus we measure the real time,
+     which may be affected by various kinds of ``noise'',
+     in particular any other running processes.
+     By repeating the tests a number of times (via the numeric argument),
+     and perhaps by attempting to run the tests
+     with as few other processes as possible,
+     should mitigate the noise.")
+
+   (atj-tutorial-previous "atj-tutorial-deep-guards"
+                          *atj-tutorial-deep-guards*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
