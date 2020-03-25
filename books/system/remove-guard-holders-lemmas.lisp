@@ -50,7 +50,8 @@
            (my-double-cdr-induction (cdr lst) (cdr ilks)))))
 
 (defthm len-mv-nth-1-remove-guard-holders1-lst
-  (equal (len (mv-nth 1 (remove-guard-holders1-lst lst ilks wrld)))
+  (equal (len (mv-nth 1
+                      (remove-guard-holders1-lst lst ilks wrld)))
          (len lst))
   :hints (("Goal" :induct (my-double-cdr-induction lst ilks))))
 
