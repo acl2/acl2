@@ -12,7 +12,7 @@
 
 (include-book "organize-symbols-by-pkg")
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

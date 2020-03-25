@@ -30,6 +30,7 @@
                                :backtrack-limit
                                :cgen-timeout
                                :cgen-local-timeout
+                               :cgen-single-test-timeout
                                :print-cgen-summary
                                :backtrack-bad-generalizations
                                :use-fixers
@@ -112,6 +113,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
                   testing-enabled
                   cgen-timeout
                   cgen-local-timeout
+                  cgen-single-test-timeout
                   print-cgen-summary
                   use-fixers
                   num-print-counterexamples
@@ -351,6 +353,26 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
     (acl2s-defaults :set cgen-local-timeout 10)
     (acl2s-defaults :get cgen-local-timeout)
     :doc cgen-local-timeout
+   </code>
+   "
+ :guard (and (rationalp value) (<= 0 value)))
+
+        
+(add-acl2s-parameter 
+ cgen-single-test-timeout 1/100
+ :short "Cgen/Testing timeout for single, individual tests (in seconds)"
+ :long
+  "Maximum allowed time (in seconds) for Cgen to check a single test. 
+  The default timeout limit is set to 1/100 sec. This is useful if
+  you have functions that are very slow on some inputs. A simple
+  example is the naive definition of the fibonnaci function.
+  Setting this parameter to 0 amounts to disabling the timeout. 
+  Guard : Timeout should be a non-negative rational.
+   <code>
+    Usage:
+    (acl2s-defaults :set cgen-single-test-timeout 10)
+    (acl2s-defaults :get cgen-single-test-timeout)
+    :doc cgen-single-test-timeout
    </code>
    "
  :guard (and (rationalp value) (<= 0 value)))

@@ -135,4 +135,18 @@ class Acl2PackageNameTest {
         assertDoesNotThrow(() -> Acl2PackageName.make(".,:;!?"));
         assertDoesNotThrow(() -> Acl2PackageName.make("A --> B"));
     }
+
+    @Test
+    void getJavaStringConstants() {
+        assertEquals(Acl2PackageName.KEYWORD.getJavaString(), "KEYWORD");
+        assertEquals(Acl2PackageName.LISP.getJavaString(), "COMMON-LISP");
+        assertEquals(Acl2PackageName.ACL2.getJavaString(), "ACL2");
+        assertEquals(Acl2PackageName.ACL2_OUTPUT.getJavaString(),
+                "ACL2-OUTPUT-CHANNEL");
+        assertEquals(Acl2PackageName.ACL2_INPUT.getJavaString(),
+                "ACL2-INPUT-CHANNEL");
+        assertEquals(Acl2PackageName.ACL2_PC.getJavaString(), "ACL2-PC");
+        assertEquals(Acl2PackageName.ACL2_USER.getJavaString(), "ACL2-USER");
+    }
+
 }
