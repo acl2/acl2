@@ -137,7 +137,7 @@ class Acl2PackageNameTest {
     }
 
     @Test
-    void getJavaStringConstants() {
+    void getJavaStringFromConstants() {
         assertEquals(Acl2PackageName.KEYWORD.getJavaString(), "KEYWORD");
         assertEquals(Acl2PackageName.LISP.getJavaString(), "COMMON-LISP");
         assertEquals(Acl2PackageName.ACL2.getJavaString(), "ACL2");
@@ -149,4 +149,11 @@ class Acl2PackageNameTest {
         assertEquals(Acl2PackageName.ACL2_USER.getJavaString(), "ACL2-USER");
     }
 
+    @Test
+    void getJavaStringFromMake() {
+        assertEquals(Acl2PackageName.make("MYPKG").getJavaString(), "MYPKG");
+        assertEquals(Acl2PackageName.make("P").getJavaString(), "P");
+        assertEquals(Acl2PackageName.make("A2-U").getJavaString(), "A2-U");
+        assertEquals(Acl2PackageName.make("+ *").getJavaString(), "+ *");
+    }
 }
