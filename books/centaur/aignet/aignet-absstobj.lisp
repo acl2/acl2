@@ -870,6 +870,9 @@
 
 (local (in-theory (enable aignet$c::lit->phase)))
 
+; Added by Matt K. after v8-2 for (HIDE (COMMENT ...)) change:
+(local (in-theory (disable (:e aignet-corr) (:e aignet-count-equivs))))
+
 (acl2::defabsstobj-events aignet
   :concrete aignet$c::aignet
   :corr-fn aignet-corr

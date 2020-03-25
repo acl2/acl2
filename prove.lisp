@@ -311,7 +311,8 @@
                                             new-term1
                                             ttree)
                                       (mv step-limit
-                                          (mcons-term* 'hide new-term1)
+                                          (hide-with-comment erp new-term1
+                                                             state)
                                           (push-lemma (fn-rune-nume 'hide nil
                                                                     nil wrld)
                                                       ttree))))

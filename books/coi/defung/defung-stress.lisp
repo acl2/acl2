@@ -127,6 +127,11 @@
 
  )
 
+; Added by Matt K. after v8-2 for (HIDE (COMMENT ...)) change:
+(defattach-system ; generates (local (defattach ...))
+  remove-guard-holders-blocked-by-hide-p
+  constant-nil-function-arity-0)
+
 (hide-local
 
  (def::ung yak (m n)

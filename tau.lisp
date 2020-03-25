@@ -256,6 +256,9 @@
 ; because remove-guard-holders needs to be defined before it is called by
 ; constraint-info.
 
+(defstub remove-guard-holders-blocked-by-hide-p () t)
+(defattach remove-guard-holders-blocked-by-hide-p constant-t-function-arity-0)
+
 (mutual-recursion
 
 (defun remove-guard-holders1 (changedp0 term ilk wrld)
@@ -323,6 +326,15 @@
                (t (mv changedp0 term)))))
            (t (mv changedp0 term))))))
      (t (mv changedp0 term))))
+   ((and (eq (ffn-symb term) 'HIDE)
+         (remove-guard-holders-blocked-by-hide-p))
+
+; Without this case, the proof of
+;   (thm (equal (car (cons x x)) (hide (prog2$ u x)))
+;        :hints (("Goal" :expand ((hide (prog2$ u x))))))
+; will fail.
+
+    (mv changedp0 term))
    ((or (eq (ffn-symb term) 'RETURN-LAST)
         (eq (ffn-symb term) 'MV-LIST))
 

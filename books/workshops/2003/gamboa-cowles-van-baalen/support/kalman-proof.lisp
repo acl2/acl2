@@ -93,7 +93,9 @@
 	   :expand ((pminus k))
 	   :in-theory (enable-disable (pminus xhatmin)
                                       (x ; added by Matt K. for v2-8, 7/31/03
-                                       (pminus) (xhatmin))))))
+                                       (pminus) (xhatmin)
+; Added by Matt K. after v8-2 for (HIDE (COMMENT ...)) change:
+                                       (x))))))
 
 (encapsulate
  ()
@@ -2254,7 +2256,9 @@
 	   :in-theory (disable gain-recdef
 			       (best-prior-estimate-of-x)
 			       (xhatmin)
-			       (gain)))
+			       (gain)
+; Added by Matt K. after v8-2 for (HIDE (COMMENT ...)) change:
+                               (xhat)))
 	  )
   :rule-classes nil)
 

@@ -149,8 +149,14 @@
            (ignored-attachment-msg ignored-attachment)
            (error-trace-suggestion nil)))))
 
+(defun ev-fncall-null-body-erp (fn)
+
+; Warning: Keep this in sync with hide-with-comment.
+
+  `(ev-fncall-null-body-er . ,fn))
+
 (defun ev-fncall-null-body-er (ignored-attachment fn args latches)
-  (mv t
+  (mv (ev-fncall-null-body-erp fn)
       (ev-fncall-null-body-er-msg ignored-attachment fn args)
       latches))
 
@@ -2177,7 +2183,12 @@
 
          (cond
           (throw-raw-ev-fncall-flg
-           (mv t (ev-fncall-msg val w user-stobj-alist) latches))
+           (mv (if (and (consp val)
+                        (eq (car val) 'ev-fncall-null-body-er))
+                   (ev-fncall-null-body-erp (caddr val))
+                 t)
+               (ev-fncall-msg val w user-stobj-alist)
+               latches))
           (t #-acl2-mv-as-values ; adjust val for the multiple value case
              (let ((val
                     (cond
@@ -3818,7 +3829,7 @@
                              hard-error-returns-nilp
                              aok)
                      (cond
-                      (body-er (mv t body-val latches))
+                      (body-er (mv body-er body-val latches))
                       (t (setq *wormhole-status-alist*
                                (put-assoc-equal name body-val
                                                 *wormhole-status-alist*))
@@ -3831,7 +3842,7 @@
                          hard-error-returns-nilp
                          aok)
                  (cond
-                  (test-er (mv t test latches))
+                  (test-er (mv test-er test latches))
                   (test
                    (ev-rec (fargn form 2) alist w user-stobj-alist
                            (decrement-big-n big-n) safe-mode gc-off
@@ -3893,7 +3904,7 @@
                                  latches
                                  hard-error-returns-nilp
                                  aok)
-                     (cond (args-er (mv t args latches))
+                     (cond (args-er (mv args-er args latches))
                            (t (mv nil (car (last args)) latches))))))))
         (t (mv-let (args-er args latches)
                    (ev-rec-lst (fargs form) alist w user-stobj-alist
@@ -3902,7 +3913,7 @@
                                hard-error-returns-nilp
                                aok)
                    (cond
-                    (args-er (mv t args latches))
+                    (args-er (mv args-er args latches))
                     ((flambda-applicationp form)
                      (ev-rec (lambda-body (ffn-symb form))
                              (pairlis$ (lambda-formals (ffn-symb form)) args)
@@ -4901,6 +4912,15 @@
                                                  ,@(and msg-args
                                                         `(:args ,msg-args))))))))
                               (cons fn args)))
+                         (prog2$
+                          (cond ((and (quotep (car args))
+                                      (consp (unquote (car args)))
+                                      (eq (car (unquote (car args)))
+                                          :COMMENT))
+                                 (list 'comment
+                                       (cdr (unquote (car args)))
+                                       (cadr args)))
+                                (t (cons fn args))))
                          (otherwise (cons fn args)))))))
           (t (or (case-match term
                    ((fmt-to-comment-window ('quote str)
