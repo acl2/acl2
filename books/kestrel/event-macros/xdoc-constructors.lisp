@@ -284,22 +284,23 @@
       `(xdoc::&&
         (xdoc::h3 xdoc::*evmac-section-appconds-title*)
         (xdoc::p
-         (concatenate
-          'string
-          "In order for "
-          ,macro-ref
-          " to apply,
-           in addition to the requirements on the inputs
-           stated in the "
-          ,inputs-ref
-          ", the following conditions must be proved.
-           The proofs are attempted when "
-          ,macro-ref
-          " is called,
-           using the hints optionally supplied as the @(':hints') input
-           described in the "
-          ,inputs-ref
-          "."))
+         "In order for "
+         ,macro-ref
+         " to apply,
+          in addition to the requirements on the inputs
+          stated in the "
+         ,inputs-ref
+         ", the following "
+         (xdoc::seetopic "acl2::event-macro-applicability-conditions"
+                         "applicability conditions")
+         " must be proved.
+          The proofs are attempted when "
+         ,macro-ref
+         " is called,
+          using the hints optionally supplied as the @(':hints') input
+          described in the "
+         ,inputs-ref
+         ".")
         ,@content))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
