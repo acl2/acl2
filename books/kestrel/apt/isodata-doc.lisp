@@ -551,7 +551,7 @@
       "                                        (backn xn)>))>))"
       ""
       ";; when old is recursive,"
-      ";; the :predicate input is nil,"
+      ";; :predicate is nil,"
       ";; and isomaps does not include :result:"
       "(defun new (x1 ... xn)"
       "  (if (mbt$ (and (newp1 x1)"
@@ -576,7 +576,7 @@
       "    nil)) ; or (mv nil ... nil)"
       ""
       ";; when old is recursive,"
-      ";; the :predicate input is nil,"
+      ";; :predicate is nil,"
       ";; and isomaps includes :result"
       ";; (in which case the function returns a single result):"
       "(defun new (x1 ... xn)"
@@ -648,13 +648,13 @@
      (xdoc::p
       "The guard of @('new') is:")
      (xdoc::codeblock
-      ";; when the :predicate input is nil:"
+      ";; when :predicate is nil:"
       "(and (newp1 x1)"
       "     ..."
       "     (newpn xn)"
       "     old-guard<(back1 x1),...,(backn xn)>)"
       ""
-      ";; when the :predicate input is t:"
+      ";; when :predicate is t:"
       "(and (newp1 x1)"
       "     ..."
       "     (newpn xn))")
@@ -675,7 +675,7 @@
      (xdoc::p
       "Theorem that relates @('old') to @('new'):")
      (xdoc::codeblock
-      ";; when the :predicate input is nil"
+      ";; when :predicate is nil"
       ";; and isomaps does not include :result:"
       "(defthm old-to-new"
       "  (implies (and (oldp1 x1)"
@@ -684,7 +684,7 @@
       "           (equal (old x1 ... xn)"
       "                  (new (forth1 x1) ... (forthn xn)))))"
       ""
-      ";; when the :predicate input is nil"
+      ";; when :predicate is nil"
       ";; and isomaps includes :result:"
       "(defthm old-to-new"
       "  (implies (and (oldp1 x1)"
@@ -693,7 +693,7 @@
       "           (equal (old x1 ... xn)"
       "                  (back-res (new (forth1 x1) ... (forthn xn))))))"
       ""
-      ";; when the :predicate input is t:"
+      ";; when :predicate is t:"
       "(defthm old-to-new"
       "  (equal (old x1 ... xn)"
       "         (and (oldp1 x1)"
