@@ -12,6 +12,7 @@
 
 (include-book "cons-pos-alistp")
 (include-book "keyword-to-keyword-value-list-alistp")
+(include-book "keyword-symbol-alistp")
 (include-book "keyword-truelist-alistp")
 (include-book "string-string-alistp")
 (include-book "string-symbollist-alistp")
