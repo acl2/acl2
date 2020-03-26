@@ -12623,27 +12623,33 @@
 (defmacro comment (x y)
   (comment-fn x y))
 
+(defstub hide-with-comment-p () t)
+(defattach hide-with-comment-p constant-t-function-arity-0)
+
 (defun hide-with-comment (val term state)
 
 ; Warning: Keep this in sync with ev-fncall-null-body-erp.
 
   (declare (xargs :mode :program))
-  (let ((fn (and (consp val)
-                 (eq (car val) 'ev-fncall-null-body-er)
-                 (symbolp (cdr val))
-                 (cdr val))))
-    (cond ((null fn)
-           (fcons-term* 'hide term))
-          (t (let* ((str0 "Called constrained function ")
-                    (str (if (symbol-in-current-package-p fn state)
-                             (concatenate 'string str0 (symbol-name fn))
-                           (concatenate 'string
-                                        str0
-                                        (symbol-package-name fn)
-                                        "::"
-                                        (symbol-name fn)))))
-               (fcons-term* 'hide
-                            (comment-fn str term)))))))
+  (cond
+   ((hide-with-comment-p)
+    (let ((fn (and (consp val)
+                   (eq (car val) 'ev-fncall-null-body-er)
+                   (symbolp (cdr val))
+                   (cdr val))))
+      (cond ((null fn)
+             (fcons-term* 'hide term))
+            (t (let* ((str0 "Called constrained function ")
+                      (str (if (symbol-in-current-package-p fn state)
+                               (concatenate 'string str0 (symbol-name fn))
+                             (concatenate 'string
+                                          str0
+                                          (symbol-package-name fn)
+                                          "::"
+                                          (symbol-name fn)))))
+                 (fcons-term* 'hide
+                              (comment-fn str term)))))))
+   (t (fcons-term* 'hide term))))
 
 (mutual-recursion
 
