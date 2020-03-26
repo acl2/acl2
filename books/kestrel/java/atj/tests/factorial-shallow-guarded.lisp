@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,9 +18,9 @@
 
 ; Specialize the input and output types of the factorial functions.
 
-(java::def-atj-main-function-type fact (:ainteger) :ainteger)
+(java::atj-main-function-type fact (:ainteger) :ainteger)
 
-(java::def-atj-main-function-type fact-tail (:ainteger :ainteger) :ainteger)
+(java::atj-main-function-type fact-tail (:ainteger :ainteger) :ainteger)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

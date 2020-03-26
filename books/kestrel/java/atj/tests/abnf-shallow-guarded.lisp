@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,51 +19,51 @@
 ; Specialize the input and output types of a library function
 ; (this should be moved to a more central file, ideally).
 
-(java::def-atj-main-function-type char-fix$inline (:avalue) :acharacter)
+(java::atj-main-function-type char-fix$inline (:avalue) :acharacter)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Specialize the input and output types of some of the ABNF parser's functions.
 
-(java::def-atj-main-function-type downcase$inline (:acharacter) :acharacter)
+(java::atj-main-function-type downcase$inline (:acharacter) :acharacter)
 
-(java::def-atj-main-function-type upcase$inline (:acharacter) :acharacter)
+(java::atj-main-function-type upcase$inline (:acharacter) :acharacter)
 
-(java::def-atj-main-function-type nat-match-insensitive-char-p
-                                  (:ainteger :acharacter)
-                                  :asymbol)
+(java::atj-main-function-type nat-match-insensitive-char-p
+                              (:ainteger :acharacter)
+                              :asymbol)
 
-(java::def-atj-main-function-type parse-exact
-                                  (:ainteger :avalue)
-                                  (:avalue :avalue :avalue))
+(java::atj-main-function-type parse-exact
+                              (:ainteger :avalue)
+                              (:avalue :avalue :avalue))
 
-(java::def-atj-main-function-type parse-in-range
-                                  (:ainteger :ainteger :avalue)
-                                  (:avalue :avalue :avalue))
+(java::atj-main-function-type parse-in-range
+                              (:ainteger :ainteger :avalue)
+                              (:avalue :avalue :avalue))
 
-(java::def-atj-main-function-type parse-in-either-range
-                                  (:ainteger
-                                   :ainteger
-                                   :ainteger
-                                   :ainteger
-                                   :avalue)
-                                  (:avalue :avalue :avalue))
+(java::atj-main-function-type parse-in-either-range
+                              (:ainteger
+                               :ainteger
+                               :ainteger
+                               :ainteger
+                               :avalue)
+                              (:avalue :avalue :avalue))
 
-(java::def-atj-main-function-type parse-*-in-either-range
-                                  (:ainteger
-                                   :ainteger
-                                   :ainteger
-                                   :ainteger
-                                   :avalue)
-                                  (:avalue :avalue :avalue))
+(java::atj-main-function-type parse-*-in-either-range
+                              (:ainteger
+                               :ainteger
+                               :ainteger
+                               :ainteger
+                               :avalue)
+                              (:avalue :avalue :avalue))
 
-(java::def-atj-main-function-type parse-ichar
-                                  (:acharacter :avalue)
-                                  (:avalue :avalue :avalue))
+(java::atj-main-function-type parse-ichar
+                              (:acharacter :avalue)
+                              (:avalue :avalue :avalue))
 
-(java::def-atj-main-function-type parse-ichars
-                                  (:acharacter :acharacter :avalue)
-                                  (:avalue :avalue :avalue))
+(java::atj-main-function-type parse-ichars
+                              (:acharacter :acharacter :avalue)
+                              (:avalue :avalue :avalue))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1070,7 +1070,7 @@
      the inferred argument types.
      If there are some, we select the one whose input types are the least
      (this always exists because of the closure property
-     checked by @(tsee def-atj-other-function-type);
+     checked by @(tsee atj-other-function-type);
      see the documentation of that macro and supporting functions for details);
      we then use the output type(s) of the selected function type
      as the type(s) inferred for the function call,

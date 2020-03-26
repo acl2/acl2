@@ -16,13 +16,13 @@
 
 ; Specialize the input and output types for the multi-value ACL2 functions.
 
-(java::def-atj-main-function-type add-sub
-                                  (:ainteger :ainteger)
-                                  (:ainteger :ainteger))
+(java::atj-main-function-type add-sub
+                              (:ainteger :ainteger)
+                              (:ainteger :ainteger))
 
-(java::def-atj-main-function-type diff-types
-                                  (:acharacter)
-                                  (:ainteger :astring :acharacter))
+(java::atj-main-function-type diff-types
+                              (:acharacter)
+                              (:ainteger :astring :acharacter))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

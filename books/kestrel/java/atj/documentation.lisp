@@ -355,8 +355,8 @@
        Furthermore, if the @(':deep') input is @('nil'),
        the Java methods in the generated code
        have the argument and return types
-       specified via @(tsee def-atj-main-function-type)
-       and @(tsee def-atj-other-function-type)
+       specified via @(tsee atj-main-function-type)
+       and @(tsee atj-other-function-type)
        (see the `Generated Java Code' section for more information),
        and the generated Java code may manipulate
        Java primitive values and Java primitive arrays directly.")
@@ -452,7 +452,7 @@
      (xdoc::li
       "If @(':deep') is @('nil') and @(':guards') is @('t'),
        then requirements on @('in') depend on the type assigned,
-       via @(tsee def-atj-main-function-type),
+       via @(tsee atj-main-function-type),
        to the input of @('fn') corresponding to @('in'):"
       (xdoc::ul
        (xdoc::li
@@ -570,7 +570,7 @@
       @(':jint[]'), or
       @(':jlong[]')
       assigned to the corresponding argument
-      via @(tsee def-atj-main-function-type)."))
+      via @(tsee atj-main-function-type)."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
@@ -658,8 +658,8 @@
      If @(':guards') is @('t'),
      for each ACL2 function there are as many overloaded methods
      as the number of function types associated to the function
-     via @(tsee def-atj-main-function-type)
-     and @(tsee def-atj-other-function-type):
+     via @(tsee atj-main-function-type)
+     and @(tsee atj-other-function-type):
      each of these function types determines the argument and return types
      of the corresponding overloaded method,
      with each argument having the corresponding function input type
