@@ -10,6 +10,8 @@
 (include-book "acl2s/custom" :dir :system :ttags :all)
 (include-book "acl2s/acl2s-sigs" :dir :system :ttags :all)
 
+(acl2s-defaults :set cgen-single-test-timeout 0)
+
 #|
 
 I discovered a number of bugs in defdata-core regarding the definition
@@ -180,6 +182,4 @@ Skipping for now.
 (defun nth-number-between-fn (n lo hi type)
 (defmacro nth-number-between (n lo hi &key type)
 |#
-
-
 
