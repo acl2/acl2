@@ -3746,8 +3746,8 @@
      that take argument objects of narrower types
      that correspond to the primary and (if present) secondary ATJ types
      associated to the ACL2 function via the macros
-     @(tsee def-atj-main-function-type) and
-     @(tsee def-atj-other-function-type).")
+     @(tsee atj-main-function-type) and
+     @(tsee atj-other-function-type).")
    (xdoc::p
     "We generate a wrapper method for each such overloaded method:
      the argument and return types of the wrapper method
@@ -3948,8 +3948,8 @@
      with the same number of parameters as the ACL2 function.
      More precisely, we generate an overloaded method
      for each primary and secondary function type associated to the function
-     via @(tsee def-atj-main-function-type)
-     and @(tsee def-atj-other-function-type).")
+     via @(tsee atj-main-function-type)
+     and @(tsee atj-other-function-type).")
    (xdoc::p
     "This function generates one such method,
      based on the (primary or secondary) function type passed as input.

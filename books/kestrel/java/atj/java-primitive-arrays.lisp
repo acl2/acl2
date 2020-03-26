@@ -173,68 +173,68 @@
 
   ;; read operations:
 
-  (def-atj-main-function-type boolean-array-read (:jboolean[] :jint) :jboolean)
+  (atj-main-function-type boolean-array-read (:jboolean[] :jint) :jboolean)
 
-  (def-atj-main-function-type char-array-read (:jchar[] :jint) :jchar)
+  (atj-main-function-type char-array-read (:jchar[] :jint) :jchar)
 
-  (def-atj-main-function-type byte-array-read (:jbyte[] :jint) :jbyte)
+  (atj-main-function-type byte-array-read (:jbyte[] :jint) :jbyte)
 
-  (def-atj-main-function-type short-array-read (:jshort[] :jint) :jshort)
+  (atj-main-function-type short-array-read (:jshort[] :jint) :jshort)
 
-  (def-atj-main-function-type int-array-read (:jint[] :jint) :jint)
+  (atj-main-function-type int-array-read (:jint[] :jint) :jint)
 
-  (def-atj-main-function-type long-array-read (:jlong[] :jint) :jlong)
+  (atj-main-function-type long-array-read (:jlong[] :jint) :jlong)
 
-  (def-atj-main-function-type float-array-read (:jfloat[] :jint) :jfloat)
+  (atj-main-function-type float-array-read (:jfloat[] :jint) :jfloat)
 
-  (def-atj-main-function-type double-array-read (:jdouble[] :jint) :jdouble)
+  (atj-main-function-type double-array-read (:jdouble[] :jint) :jdouble)
 
   ;; length operations:
 
-  (def-atj-main-function-type boolean-array-length (:jboolean[]) :jint)
+  (atj-main-function-type boolean-array-length (:jboolean[]) :jint)
 
-  (def-atj-main-function-type char-array-length (:jchar[]) :jint)
+  (atj-main-function-type char-array-length (:jchar[]) :jint)
 
-  (def-atj-main-function-type byte-array-length (:jbyte[]) :jint)
+  (atj-main-function-type byte-array-length (:jbyte[]) :jint)
 
-  (def-atj-main-function-type short-array-length (:jshort[]) :jint)
+  (atj-main-function-type short-array-length (:jshort[]) :jint)
 
-  (def-atj-main-function-type int-array-length (:jint[]) :jint)
+  (atj-main-function-type int-array-length (:jint[]) :jint)
 
-  (def-atj-main-function-type long-array-length (:jlong[]) :jint)
+  (atj-main-function-type long-array-length (:jlong[]) :jint)
 
-  (def-atj-main-function-type float-array-length (:jfloat[]) :jint)
+  (atj-main-function-type float-array-length (:jfloat[]) :jint)
 
-  (def-atj-main-function-type double-array-length (:jdouble[]) :jint)
+  (atj-main-function-type double-array-length (:jdouble[]) :jint)
 
   ;; constructors from length:
 
-  (def-atj-main-function-type boolean-array-of-length (:jint) :jboolean[])
+  (atj-main-function-type boolean-array-of-length (:jint) :jboolean[])
 
-  (def-atj-main-function-type char-array-of-length (:jint) :jchar[])
+  (atj-main-function-type char-array-of-length (:jint) :jchar[])
 
-  (def-atj-main-function-type byte-array-of-length (:jint) :jbyte[])
+  (atj-main-function-type byte-array-of-length (:jint) :jbyte[])
 
-  (def-atj-main-function-type short-array-of-length (:jint) :jshort[])
+  (atj-main-function-type short-array-of-length (:jint) :jshort[])
 
-  (def-atj-main-function-type int-array-of-length (:jint) :jint[])
+  (atj-main-function-type int-array-of-length (:jint) :jint[])
 
-  (def-atj-main-function-type long-array-of-length (:jint) :jlong[])
+  (atj-main-function-type long-array-of-length (:jint) :jlong[])
 
-  (def-atj-main-function-type float-array-of-length (:jint) :jfloat[])
+  (atj-main-function-type float-array-of-length (:jint) :jfloat[])
 
-  (def-atj-main-function-type double-array-of-length (:jint) :jdouble[])
+  (atj-main-function-type double-array-of-length (:jint) :jdouble[])
 
   ;; constructors from components:
 
-  (def-atj-main-function-type boolean-array-with-comps (:avalue) :jboolean[])
+  (atj-main-function-type boolean-array-with-comps (:avalue) :jboolean[])
 
-  (def-atj-main-function-type char-array-with-comps (:avalue) :jchar[])
+  (atj-main-function-type char-array-with-comps (:avalue) :jchar[])
 
-  (def-atj-main-function-type byte-array-with-comps (:avalue) :jbyte[])
+  (atj-main-function-type byte-array-with-comps (:avalue) :jbyte[])
 
-  (def-atj-main-function-type short-array-with-comps (:avalue) :jshort[])
+  (atj-main-function-type short-array-with-comps (:avalue) :jshort[])
 
-  (def-atj-main-function-type int-array-with-comps (:avalue) :jint[])
+  (atj-main-function-type int-array-with-comps (:avalue) :jint[])
 
-  (def-atj-main-function-type long-array-with-comps (:avalue) :jlong[]))
+  (atj-main-function-type long-array-with-comps (:avalue) :jlong[]))

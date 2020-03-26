@@ -951,6 +951,9 @@
    :rule-classes (:linear :rewrite))
 
 
+; Added by Matt K. after v8-2 for (HIDE (COMMENT ...)) change:
+(defattach-system hide-with-comment-p constant-nil-function-arity-0)
+
 (defthm intersection-point-in-intersection-simplified
   (and (realp (intersection-point))
        (implies (natp n)

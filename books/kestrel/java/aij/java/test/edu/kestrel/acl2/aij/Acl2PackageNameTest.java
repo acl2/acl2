@@ -137,7 +137,7 @@ class Acl2PackageNameTest {
     }
 
     @Test
-    void getJavaStringConstants() {
+    void getJavaStringFromConstants() {
         assertEquals(Acl2PackageName.KEYWORD.getJavaString(), "KEYWORD");
         assertEquals(Acl2PackageName.LISP.getJavaString(), "COMMON-LISP");
         assertEquals(Acl2PackageName.ACL2.getJavaString(), "ACL2");
@@ -147,6 +147,36 @@ class Acl2PackageNameTest {
                 "ACL2-INPUT-CHANNEL");
         assertEquals(Acl2PackageName.ACL2_PC.getJavaString(), "ACL2-PC");
         assertEquals(Acl2PackageName.ACL2_USER.getJavaString(), "ACL2-USER");
+    }
+
+    @Test
+    void getJavaStringFromMake() {
+        assertEquals(Acl2PackageName.make("PKG").getJavaString(), "PKG");
+        assertEquals(Acl2PackageName.make("188").getJavaString(), "188");
+        assertEquals(Acl2PackageName.make("A2-U").getJavaString(), "A2-U");
+        assertEquals(Acl2PackageName.make("+ *").getJavaString(), "+ *");
+    }
+
+    @Test
+    void toStringFromConstants() {
+        assertEquals(Acl2PackageName.KEYWORD.toString(), "KEYWORD");
+        assertEquals(Acl2PackageName.LISP.toString(), "COMMON-LISP");
+        assertEquals(Acl2PackageName.ACL2.toString(), "ACL2");
+        assertEquals(Acl2PackageName.ACL2_OUTPUT.toString(),
+                "ACL2-OUTPUT-CHANNEL");
+        assertEquals(Acl2PackageName.ACL2_INPUT.toString(),
+                "ACL2-INPUT-CHANNEL");
+        assertEquals(Acl2PackageName.ACL2_PC.toString(), "ACL2-PC");
+        assertEquals(Acl2PackageName.ACL2_USER.toString(), "ACL2-USER");
+    }
+
+    @Test
+    void toStringFromMakeNoBars() {
+        assertEquals(Acl2PackageName.make("ABC").toString(), "ABC");
+        assertEquals(Acl2PackageName.make("X123").toString(), "X123");
+        assertEquals(Acl2PackageName.make("H2O").toString(), "H2O");
+        assertEquals(Acl2PackageName.make("H2-O").toString(), "H2-O");
+        assertEquals(Acl2PackageName.make("--").toString(), "--");
     }
 
 }

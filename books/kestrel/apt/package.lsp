@@ -202,6 +202,7 @@
                          make-implication
                          make-lambda
                          make-lambda-term
+                         make-mv-let-call
                          make-paired-name
                          maybe-pseudo-event-formp
                          mbt$
