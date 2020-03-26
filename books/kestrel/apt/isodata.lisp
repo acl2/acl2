@@ -1519,10 +1519,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-result-vars ((old$ symbolp)
+                                 (vars-to-avoid symbol-listp)
+                                 (wrld plist-worldp))
+  :returns (vars "A @(tsee symbol-listp).")
+  :mode :program
+  :short "Generate fresh variables for bounding results of @('old')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When @('old') returns multiple results,
+     sometimes we need to generate @(tsee mv-let) calls
+     that bind the multiple results to variables.
+     This function generates these variables,
+     ensuring that they are distinct from each other
+     and also distinct from a list of variables passed as input.")
+   (xdoc::p
+    "The default generated variables are @('result1'), @('result2'), etc.
+     These are generated in order.
+     If any of these would result in a conflict with the passed variable,
+     we append a @('$') and possibly a number,
+     e.g. @('result2$') if @('result2') are in the list to avoid,
+     and @('result2$0') if both @('result2') and @('result2$')
+     are in the list to avoid."))
+  (b* ((m (number-of-results old$ wrld)))
+    (isodata-gen-result-vars-aux old$ 1 m vars-to-avoid))
+
+  :prepwork
+  ((define isodata-gen-result-vars-aux ((old$ symbolp)
+                                        (j posp)
+                                        (m posp)
+                                        (vars-to-avoid symbol-listp))
+     :returns vars ; SYMBOL-LISTP
+     :mode :program
+     (b* (((unless (mbt (posp j))) nil)
+          ((unless (mbt (posp m))) nil)
+          ((when (> j m)) nil)
+          (name (str::cat "RESULT" (str::natstr j)))
+          (var (genvar old$ name nil vars-to-avoid))
+          (var (if (equal (symbol-name var) name)
+                   var
+                 (genvar old$ (str::cat name "$") nil vars-to-avoid)))
+          (vars (isodata-gen-result-vars-aux old$
+                                             (1+ j)
+                                             m
+                                             (cons var vars-to-avoid))))
+       (cons var vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-gen-app-cond-formula ((app-cond isodata-app-cond-keywordp)
                                       (old$ symbolp)
                                       (arg-isomaps isodata-symbol-isomap-alistp)
-                                      (res-isomap? isodata-maybe-isomapp)
+                                      (res-isomaps isodata-pos-isomap-alistp)
                                       state)
   :returns (formula "An untranslated term.")
   :mode :program
@@ -1534,9 +1583,19 @@
        (formula
         (case app-cond
           (:oldp-of-old
-           (b* ((oldp-res (isodata-isomap->oldp res-isomap?)))
-             (implicate oldp-of-x1...xn-conj
-                        `(,oldp-res (,old$ ,@x1...xn)))))
+           (b* ((m (len res-isomaps))
+                (old-call (fcons-term old$ x1...xn)))
+             (if (= m 1)
+                 (b* ((res-isomap (cdar res-isomaps))
+                      (oldp-res (isodata-isomap->oldp res-isomap)))
+                   (implicate oldp-of-x1...xn-conj
+                              (fcons-term* oldp-res old-call)))
+               (b* ((y1...ym (isodata-gen-result-vars old$ x1...xn wrld))
+                    (oldp-of-y1...ym (isodata-gen-oldp-of-terms y1...ym
+                                                                res-isomaps)))
+                 (implicate oldp-of-x1...xn-conj
+                            (make-mv-let-call 'mv y1...ym :all old-call
+                                              (conjoin oldp-of-y1...ym)))))))
           (:oldp-when-old
            (implicate `(,old$ ,@x1...xn)
                       oldp-of-x1...xn-conj))
@@ -1561,7 +1620,7 @@
 (define isodata-gen-app-cond ((app-cond isodata-app-cond-keywordp)
                               (old$ symbolp)
                               (arg-isomaps isodata-symbol-isomap-alistp)
-                              (res-isomap? isodata-maybe-isomapp)
+                              (res-isomaps isodata-pos-isomap-alistp)
                               (hints$ symbol-alistp)
                               (print$ evmac-input-print-p)
                               (names-to-avoid symbol-listp)
@@ -1603,7 +1662,7 @@
        (formula (isodata-gen-app-cond-formula app-cond
                                               old$
                                               arg-isomaps
-                                              res-isomap?
+                                              res-isomaps
                                               state))
        (hints (cdr (assoc-eq app-cond hints$)))
        (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
@@ -1629,7 +1688,7 @@
 (define isodata-gen-app-conds ((app-conds isodata-app-cond-keyword-listp)
                                (old$ symbolp)
                                (arg-isomaps isodata-symbol-isomap-alistp)
-                               (res-isomap? isodata-maybe-isomapp)
+                               (res-isomaps isodata-pos-isomap-alistp)
                                (hints$ symbol-alistp)
                                (print$ evmac-input-print-p)
                                (names-to-avoid symbol-listp)
@@ -1646,7 +1705,7 @@
        ((mv event thm-name) (isodata-gen-app-cond app-cond
                                                   old$
                                                   arg-isomaps
-                                                  res-isomap?
+                                                  res-isomaps
                                                   hints$
                                                   print$
                                                   names-to-avoid
@@ -1656,7 +1715,7 @@
        ((mv events thm-names) (isodata-gen-app-conds (cdr app-conds)
                                                      old$
                                                      arg-isomaps
-                                                     res-isomap?
+                                                     res-isomaps
                                                      hints$
                                                      print$
                                                      names-to-avoid
@@ -3564,6 +3623,7 @@
 (define isodata-gen-everything
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
    (predicate$ booleanp)
    (new-name$ symbolp)
@@ -3648,7 +3708,7 @@
         (isodata-gen-app-conds app-conds
                                old$
                                arg-isomaps
-                               res-isomap?
+                               res-isomaps
                                hints$
                                print$
                                names-to-avoid
@@ -3836,6 +3896,7 @@
         (isodata-reprocess-res-isomaps res-isomaps old$ ctx state))
        (event (isodata-gen-everything old$
                                       arg-isomaps
+                                      res-isomaps
                                       res-isomap?
                                       predicate
                                       new-name$
