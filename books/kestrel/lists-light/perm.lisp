@@ -38,8 +38,8 @@
   (implies (and (perm x y) ;y is a free var
                 (perm y z))
            (perm x z))
-  ::hints (("Goal" :in-theory (enable perm))
-           ("subgoal *1/5" :use (:instance memberp-when-perm
+  :hints (("Goal" :in-theory (enable perm))
+          ("subgoal *1/5" :use (:instance memberp-when-perm
                                            (a (car x))
                                            (x y)
                                            (y z)))))
