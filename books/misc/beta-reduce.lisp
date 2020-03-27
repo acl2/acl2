@@ -107,6 +107,7 @@
     (cond
      ((and (symbolp term) term)
       (cdr (assoc-eq term alist)))
+     ((atom term) nil)
      ((eq (car term) 'quote) (CAR (CDR term)))
      ((consp (car term))
       (beta-eval (CAR (CDR (CDR (CAR term))))
@@ -118,22 +119,6 @@
   (equal (beta-eval-key arg term alist)
 	 (if arg (beta-eval-list term alist)
 	   (beta-eval term alist))))
-
-(defun wf-beta-term (arg term)
-  (cond
-   (arg
-    (cond
-     ((endp term) t)
-     (t (and (wf-beta-term nil (car term))
-	     (wf-beta-term arg (cdr term))))))
-   (t
-    (cond
-     ((symbolp term) t)
-     ((atom term) nil)
-     ((eq (car term) 'quote) t)
-     ((consp (car term))
-      (wf-beta-term t (CDR term)))
-     (t (wf-beta-term t (cdr term)))))))
 
 (defthm append-nil-fix
   (equal (beta-eval-list (append list nil) a1)
@@ -155,9 +140,7 @@
 
 (defthmd beta-eval-key-beta-reduce-term
   (implies
-   (and
-    (wf-beta-term arg term)
-    (equal (len keys) (len vals)))
+   (equal (len keys) (len vals))
    (equal (beta-eval-key arg (beta-reduce-term arg term keys vals) a1)
 	  (beta-eval-key arg term (pairlis$ keys
 					    (beta-eval-key t vals a1)))))
@@ -166,6 +149,7 @@
 	   :induct (beta-reduce-term arg term keys vals)
 	   :expand (:free (x) (hide x))
 	   :in-theory (e/d (beta-eval-constraint-0
+                            BETA-EVAL-CONSTRAINT-6
 			    beta-eval-key-reduction)
 			   nil))))
 
@@ -228,16 +212,9 @@
   :hints (("Goal" :use beta-eval-lambda-expr-helper
 	   :in-theory (enable beta-eval-key-reduction))))
 
-(defthm pseudo-termp-key-implies-wf-beta-term
-  (implies
-   (pseudo-termp-key arg term)
-   (wf-beta-term arg term))
-  :hints (("Goal" :induct (wf-beta-term arg term))))
-
 (defthm beta-eval-beta-reduce-term
   (implies
    (and
-    (wf-beta-term nil term)
     (equal (len keys) (len vals)))
    (equal (beta-eval (beta-reduce-term nil term keys vals) a1)
 	  (beta-eval term (pairlis$ keys (beta-eval-list vals a1)))))
