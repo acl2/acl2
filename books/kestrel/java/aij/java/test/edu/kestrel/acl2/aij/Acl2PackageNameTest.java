@@ -179,4 +179,13 @@ class Acl2PackageNameTest {
         assertEquals(Acl2PackageName.make("--").toString(), "--");
     }
 
+    @Test
+    void toStringFromMakeBars() {
+        assertEquals(Acl2PackageName.make("MY_PKG").toString(), "|MY_PKG|");
+        assertEquals(Acl2PackageName.make("8080").toString(), "|8080|");
+        assertEquals(Acl2PackageName.make("$").toString(), "|$|");
+        assertEquals(Acl2PackageName.make("|").toString(), "|\\||");
+        assertEquals(Acl2PackageName.make("\\").toString(), "|\\\\|");
+    }
+
 }
