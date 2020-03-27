@@ -969,9 +969,41 @@
     "An ATJ function type consists of
      (zero or more) types for the arguments (i.e. inputs)
      and (one or more) types for the results (i.e. outputs).
-     This is like an arrow type in higher-order languages."))
+     This is like an arrow type in higher-order languages.")
+   (xdoc::p
+    "We also augment the output types with array names.
+     These are represented via a list of symbols,
+     whose length must match the length of the output type list
+     (this length constraint is not explicitly captured in this fixtype,
+     but it is an expected invariant).
+     The @('nil') symbol may be used in any position of the list,
+     meaning that there is no array name for the corresponding output type.
+     A non-@('nil') symbol may be used only in a position
+     whose corresponding output type is a @(':jprimarr') type.
+     In this case the symbol must match a formal parameter of the function
+     that has the same array type as input type.
+     The non-@('nil') symbols must be all distinct.")
+   (xdoc::p
+    "The purpose of these array names is to support
+     an upcoming analysis of single-threaded use of Java primitive arrays
+     (to justify destructive array updates).
+     The idea is that if a function takes an array as input
+     (i.e. that input type is a @(':jprimarr') type)
+     and if the function may modify that array (directly or indirectly),
+     then the possibly modified array must be returned as a result:
+     the explicit non-@('nil') array name assigned to a result
+     specifies which result that is, and simplifies the analysis.
+     If instead a function does not modify an input array,
+     no result with the same name as the input needs to exist.
+     Results of non-array types use @('nil') as array (non-)name.
+     If a function creates an array (directly or indirectly) returns it,
+     then @('nil') is used for that result,
+     i.e. the array has no name because it does not modify any input array
+     (and thus there is no input name to match);
+     it represents a newly created array."))
   ((inputs atj-type-list)
-   (outputs atj-type-list))
+   (outputs atj-type-list)
+   (arrays symbol-list))
   :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1003,52 +1035,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum atj-output-array-info
-  :short "Fixtype of ATJ output array information."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In order to support an upcoming analysis
-     of single-threaded use of Java primitive arrays
-     (to justify destructive array updates),
-     we associate values of this fixtype
-     to every result of every function of interest,
-     as an ``enhancement'' of the ATJ type
-     associated to every result of every function of interest.")
-   (xdoc::p
-    "If the type of the function result is not a @(':jprimarr')
-     then we use the @(':none') value of this fixtype.
-     If instead the type is a @(':jprimarr'), there are two possibilities:
-     if the result array of the function is obtained by possibly modifying
-     an argument array of the function,
-     then we use a @(':name') value of this fixtype
-     with the name of the formal argument as the field;
-     if intead the result array of the function is created by the function,
-     perhaps indirectly by calling another function that does,
-     but in any case not from an argument array,
-     the we use the @(':new') value of this fixtype.")
-   (xdoc::p
-    "The choice between these three possibilities will be determined from
-     an upcoming extension of @(tsee atj-main-function-type).
-     That macro will ensure that @(':none') is used for all non-array types
-     and that @(':name') or @(':new') is used for all array types.
-     The correctness of @(':name') vs. @(':new') will be checked
-     as part of the upcoming array analysis."))
-  (:name ((get symbol)))
-  (:new ())
-  (:none ()))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist atj-output-array-info-list
-  :short "Fixtype of true lists of information about ATJ output arrays."
-  :elt-type atj-output-array-info
-  :true-listp t
-  :elementp-of-nil nil
-  :pred atj-output-array-info-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod atj-function-type-info
   :short "Fixtype of ATJ function type information."
   :long
@@ -1057,14 +1043,9 @@
     "In general, each ACL2 function has, associated with it,
      a primary (`main') function type
      and zero or more secondary (`other') function types,
-     as mentioned in " (xdoc::seetopic "atj-types" "here") ".")
-   (xdoc::p
-    "In addition, to support an upcoming single-threadedness array analysis,
-     each function has, associated with it, a list of output array information
-     (see @(tsee atj-output-array-info))."))
+     as mentioned in " (xdoc::seetopic "atj-types" "here") "."))
   ((main atj-function-type)
-   (others atj-function-type-list)
-   (arrays atj-output-array-info-list))
+   (others atj-function-type-list))
   :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1163,7 +1144,7 @@
     "This is used when a function has no entry in the table.
      It consists of a primary function type of all @(':avalue') types,
      no secondary function types,
-     and @(':none') output array information.")
+     and all @('nil') array names (since there are no array types).")
    (xdoc::p
     "To calculate the output types,
      we need the number of results returned by @('fn')."))
@@ -1174,9 +1155,11 @@
             :inputs (repeat number-of-inputs
                             (atj-type-acl2 (atj-atype-value)))
             :outputs (repeat number-of-outputs
-                             (atj-type-acl2 (atj-atype-value))))
-     :others nil
-     :arrays (repeat number-of-outputs (atj-output-array-info-none)))))
+                             (atj-type-acl2 (atj-atype-value)))
+            :arrays (repeat number-of-outputs nil))
+     :others nil))
+  :prepwork ((local
+              (include-book "std/typed-lists/symbol-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1355,7 +1338,10 @@
      the proposed function type is compared with the existing one.
      If they are the same, the call is considered redundant
      and no further action is taken.
-     If they differ, it is an error."))
+     If they differ, it is an error.")
+   (xdoc::p
+    "For now the array names are all @('nil').
+     The macro will be extended soon to accept array names from the user."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
@@ -1413,7 +1399,9 @@
                    fn guard formals nil (car out-types) wrld))
           (atj-main-function-type-output-theorems
            fn guard formals nresults (rev out-types) wrld)))
-       (fn-ty (make-atj-function-type :inputs in-types :outputs out-types))
+       (fn-ty (make-atj-function-type :inputs in-types
+                                      :outputs out-types
+                                      :arrays (repeat nresults nil)))
        (fn-info (make-atj-function-type-info :main fn-ty :others nil)))
     `(encapsulate
        ()
@@ -1711,7 +1699,10 @@
      then the output types must satisfy that relation too.
      The reason is analogous to the one discussed above
      to motivate the check against the primary output types;
-     but here we are talking about the secondary output types."))
+     but here we are talking about the secondary output types.")
+   (xdoc::p
+    "For now the array names are all @('nil').
+     The macro will be extended soon to accept array names from the user."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
@@ -1766,7 +1757,8 @@
                (atj-type-list-to-keyword-list main-out-types)))
        (other-fn-types (atj-function-type-info->others fn-info?))
        (new-fn-type (make-atj-function-type :inputs in-types
-                                            :outputs out-types))
+                                            :outputs out-types
+                                            :arrays (repeat nresults nil)))
        ((when (member-equal new-fn-type other-fn-types))
         `(value-triple :redundant))
        (other-in-types (atj-function-type-list->inputs other-fn-types))

@@ -167,6 +167,7 @@
                          string-upcase
                          subcor-var
                          string=>nats
+                         symbol-list
                          symbol-name-lst
                          symbol-pos-alistp
                          symbol-string-alistp
