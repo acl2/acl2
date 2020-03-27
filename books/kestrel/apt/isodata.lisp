@@ -81,6 +81,8 @@
    but they have types implied by their successful validation,
    performed when they are processed."
 
+  "@('m') is the number of results of @('old')."
+
   "@('arg-isomaps') is an alist
    from formal arguments of @('old')
    to isomorphic mapping records that specify
@@ -1519,52 +1521,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-result-vars ((old$ symbolp)
-                                 (vars-to-avoid symbol-listp)
-                                 (wrld plist-worldp))
-  :returns (vars "A @(tsee symbol-listp).")
-  :mode :program
-  :short "Generate fresh variables for bounding results of @('old')."
+(define isodata-gen-result-vars ((old$ symbolp) (m posp))
+  :guard (> m 1)
+  :returns (vars symbol-listp)
+  :short "Generate variables for bounding results of @('old') or @('new')
+          when they return multiple results."
   :long
   (xdoc::topstring
    (xdoc::p
-    "When @('old') returns multiple results,
+    "When @('old') returns multiple results (and so @('new') does too),
      sometimes we need to generate @(tsee mv-let) calls
      that bind the multiple results to variables.
      This function generates these variables,
-     ensuring that they are distinct from each other
-     and also distinct from a list of variables passed as input.")
-   (xdoc::p
-    "The default generated variables are @('result1'), @('result2'), etc.
-     These are generated in order.
-     If any of these would result in a conflict with the passed variable,
-     we append a @('$') and possibly a number,
-     e.g. @('result2$') if @('result2') are in the list to avoid,
-     and @('result2$0') if both @('result2') and @('result2$')
-     are in the list to avoid."))
-  (b* ((m (number-of-results old$ wrld)))
-    (isodata-gen-result-vars-aux old$ 1 m vars-to-avoid))
+     which are always the symbols @('result1'), @('result2'), etc.
+     It turns out that these symbols are always adequate:
+     they are the only variables in the body of generated @(tsee mv-let)s,
+     and they are distinct from the symbol @('mv')
+     bound by the outer lambda expression in a translated @(tsee mv-let)
+     (see @(tsee make-mv-let-call)"))
+  (isodata-gen-result-vars-aux old$ 1 m)
 
   :prepwork
-  ((define isodata-gen-result-vars-aux ((old$ symbolp)
-                                        (j posp)
-                                        (m posp)
-                                        (vars-to-avoid symbol-listp))
-     :returns vars ; SYMBOL-LISTP
-     :mode :program
+  ((define isodata-gen-result-vars-aux ((old$ symbolp) (j posp) (m posp))
+     :returns (vars symbol-listp)
      (b* (((unless (mbt (posp j))) nil)
           ((unless (mbt (posp m))) nil)
           ((when (> j m)) nil)
           (name (str::cat "RESULT" (str::natstr j)))
-          (var (genvar old$ name nil vars-to-avoid))
-          (var (if (equal (symbol-name var) name)
-                   var
-                 (genvar old$ (str::cat name "$") nil vars-to-avoid)))
-          (vars (isodata-gen-result-vars-aux old$
-                                             (1+ j)
-                                             m
-                                             (cons var vars-to-avoid))))
-       (cons var vars)))))
+          (var (intern-in-package-of-symbol name old$))
+          (vars (isodata-gen-result-vars-aux old$ (1+ j) m)))
+       (cons var vars))
+     :measure (nfix (- (1+ (nfix m)) (nfix j))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1590,7 +1577,7 @@
                       (oldp-res (isodata-isomap->oldp res-isomap)))
                    (implicate oldp-of-x1...xn-conj
                               (fcons-term* oldp-res old-call)))
-               (b* ((y1...ym (isodata-gen-result-vars old$ x1...xn wrld))
+               (b* ((y1...ym (isodata-gen-result-vars old$ m))
                     (oldp-of-y1...ym (isodata-gen-oldp-of-terms y1...ym
                                                                 res-isomaps)))
                  (implicate oldp-of-x1...xn-conj
