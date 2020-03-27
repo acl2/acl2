@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "evmac-input-print-p")
+
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -68,50 +70,6 @@
   :prepwork ((local (in-theory (enable ensure-keyword-value-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defenum evmac-input-print-p (nil :error :result :info :all)
-  :short "Recognize a valid @(':print') input of an event macro."
-  :long
-  "<p>
-   These are ordered printing levels
-   </p>
-   @({
-   nil < :error < :result < :info < :all
-   })
-   <p>
-   where the amount of printed material increases monotonically.
-   </p>
-   <p>
-   When @(':print') is @('nil'),
-   nothing is printed (not even errors).
-   </p>
-   <p>
-   When @(':print') is @(':error'),
-   only errors (if any) are printed.
-   </p>
-   <p>
-   When @(':print') is @(':result'),
-   besides errors (if any),
-   also the generated events described in
-   the event macro's reference documentation
-   are printed,
-   i.e. the resulting events.
-   </p>
-   <p>
-   When @(':print') is @(':info'),
-   besides errors (if any)
-   and the resulting events,
-   also some additional information, specific to the event macro,
-   is printed.
-   </p>
-   <p>
-   When @(':print') is @(':all'),
-   besides errors (if any),
-   the resulting events,
-   and the additional information,
-   also all the ACL2 output in response to the submitted events
-   (the resulting ones and some ancillary ones).
-   </p>")
 
 (define evmac-process-input-print (print ctx state)
   :returns (mv erp (print$ evmac-input-print-p) state)
