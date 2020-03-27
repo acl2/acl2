@@ -1714,79 +1714,89 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines isodata-xform-rec-calls
-  :verify-guards nil
-  :short "Transform all the calls to @('old')."
+  :short "Transform all the calls of @('old')."
   :long
   (xdoc::topstring
    (xdoc::p
     "Turn each call  @('(old updatej-x1 ... updatej-xn)') inside a term
-     into @('(back-res (new (forth1 updatej-x1) ... (forthn updatej-xn)))')
-     or @('(new (forth1 updatej-x1) ... (forthn updatej-xn))'),
-     depending on whether @(':result') is in @('isomaps') or not.
-     where @('forthi') is the conversion for the argument @('xi')
-     and @('back-res') is the conversion for the result.
-     This is an intermediate step in the construction of
-     the body of the new function from the body of @('old')."))
+     into one of the following:")
+   (xdoc::ul
+    (xdoc::li
+     "@('(new (forth1 updatej-x1) ... (forthn updatej-xn))'),
+      if no results are transformed.")
+    (xdoc::li
+     "@('(back_r1 (new (forth1 updatej-x1) ... (forthn updatej-xn)))'),
+      if @('old') is single-valued and its result is transformed.")
+    (xdoc::li
+     "@('(mv-let (y1 ... ym)
+           (new (forth1 updatej-x1) ... (forthn updatej-xn))
+           (mv (back_r1 y1) ... (back_rm ym)))'),
+      if @('old') is multi-valued and some of its results are transformed."))
+   (xdoc::p
+    "This term transformation is an intermediate step
+     in the construction of the body of @('new') from the body of @('old')."))
+  :verify-guards nil
 
   (define isodata-xform-rec-calls ((term pseudo-termp)
                                    (old$ symbolp)
                                    (arg-isomaps isodata-symbol-isomap-alistp)
-                                   (res-isomap? isodata-maybe-isomapp)
+                                   (res-isomaps isodata-pos-isomap-alistp)
                                    (new-name$ symbolp))
     :returns new-term ; PSEUDO-TERMP
-    (if (or (variablep term)
-            (fquotep term))
-        term
-      (b* ((fn (ffn-symb term)))
-        (if (symbolp fn)
-            (if (eq fn old$)
-                (b* ((new-call (cons-term
-                                new-name$
-                                (isodata-gen-forth-of-terms (fargs term)
-                                                            arg-isomaps))))
-                  (if res-isomap?
-                      (b* ((back (isodata-isomap->back res-isomap?)))
-                        (apply-term* back new-call))
-                    new-call))
-              (cons-term
-               fn
-               (isodata-xform-rec-calls-lst (fargs term)
+    (b* (((when (or (variablep term) (fquotep term))) term)
+         (fn (ffn-symb term))
+         ((when (eq fn old$))
+          (b* ((new-call (fcons-term new-name$
+                                     (isodata-gen-forth-of-terms (fargs term)
+                                                                 arg-isomaps)))
+               ((when (not res-isomaps)) new-call)
+               (m (len res-isomaps)))
+            (if (= m 1)
+                (b* ((back-res (isodata-isomap->back (cdar res-isomaps))))
+                  (apply-term* back-res new-call))
+              (b* ((y1...ym (isodata-gen-result-vars old$ m))
+                   (back-of-y1...ym (isodata-gen-back-of-terms y1...ym
+                                                               res-isomaps)))
+                (make-mv-let-call 'mv y1...ym :all new-call
+                                  (fcons-term 'mv back-of-y1...ym))))))
+         ((when (symbolp fn))
+          (fcons-term fn
+                      (isodata-xform-rec-calls-lst (fargs term)
+                                                   old$
+                                                   arg-isomaps
+                                                   res-isomaps
+                                                   new-name$)))
+         (new-fn (make-lambda (lambda-formals fn)
+                              (isodata-xform-rec-calls (lambda-body fn)
+                                                       old$
+                                                       arg-isomaps
+                                                       res-isomaps
+                                                       new-name$))))
+      (fcons-term new-fn
+                  (isodata-xform-rec-calls-lst (fargs term)
+                                               old$
+                                               arg-isomaps
+                                               res-isomaps
+                                               new-name$))))
+
+  (define isodata-xform-rec-calls-lst
+    ((terms pseudo-term-listp)
+     (old$ symbolp)
+     (arg-isomaps isodata-symbol-isomap-alistp)
+     (res-isomaps isodata-pos-isomap-alistp)
+     (new-name$ symbolp))
+    :returns new-terms ; PSEUDO-TERM-LISTP
+    (cond ((endp terms) nil)
+          (t (cons (isodata-xform-rec-calls (car terms)
                                             old$
                                             arg-isomaps
-                                            res-isomap?
-                                            new-name$)))
-          (b* ((new-fn (make-lambda
-                        (lambda-formals fn)
-                        (isodata-xform-rec-calls (lambda-body fn)
-                                                 old$
-                                                 arg-isomaps
-                                                 res-isomap?
-                                                 new-name$))))
-            (cons-term new-fn
-                       (isodata-xform-rec-calls-lst (fargs term)
-                                                    old$
-                                                    arg-isomaps
-                                                    res-isomap?
-                                                    new-name$)))))))
-
-  (define isodata-xform-rec-calls-lst ((terms pseudo-term-listp)
-                                       (old$ symbolp)
-                                       (arg-isomaps isodata-symbol-isomap-alistp)
-                                       (res-isomap? isodata-maybe-isomapp)
-                                       (new-name$ symbolp))
-    :returns new-terms ; PSEUDO-TERM-LISTP
-    (if (endp terms)
-        nil
-      (cons (isodata-xform-rec-calls (car terms)
-                                     old$
-                                     arg-isomaps
-                                     res-isomap?
-                                     new-name$)
-            (isodata-xform-rec-calls-lst (cdr terms)
-                                         old$
-                                         arg-isomaps
-                                         res-isomap?
-                                         new-name$)))))
+                                            res-isomaps
+                                            new-name$)
+                   (isodata-xform-rec-calls-lst (cdr terms)
+                                                old$
+                                                arg-isomaps
+                                                res-isomaps
+                                                new-name$))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2261,7 +2271,7 @@
 
 (define isodata-gen-new-fn-body-pred ((old$ symbolp)
                                       (arg-isomaps isodata-symbol-isomap-alistp)
-                                      (res-isomap? isodata-maybe-isomapp)
+                                      (res-isomaps isodata-pos-isomap-alistp)
                                       (new-name$ symbolp)
                                       (wrld plist-worldp))
   :returns (new-body "A @(tsee pseudo-termp).")
@@ -2287,7 +2297,7 @@
                    (ubody old$ wrld)))
        (old-body-with-new-rec-calls
         (isodata-xform-rec-calls
-         old-body old$ arg-isomaps res-isomap? new-name$))
+         old-body old$ arg-isomaps res-isomaps new-name$))
        (old-body-with-back-of-x1...xn
         (isodata-gen-subst-x1...xn-with-back-of-x1...xn
          old-body-with-new-rec-calls
@@ -2349,6 +2359,7 @@
 (define isodata-gen-new-fn-body-nonpred-rec
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (wrld plist-worldp))
@@ -2381,7 +2392,7 @@
                    (ubody old$ wrld)))
        (old-body-with-new-rec-calls
         (isodata-xform-rec-calls
-         old-body old$ arg-isomaps res-isomap? new-name$))
+         old-body old$ arg-isomaps res-isomaps new-name$))
        (old-body-with-back-of-x1...xn
         (isodata-gen-subst-x1...xn-with-back-of-x1...xn
          old-body-with-new-rec-calls
@@ -2407,6 +2418,7 @@
 
 (define isodata-gen-new-fn-body ((old$ symbolp)
                                  (arg-isomaps isodata-symbol-isomap-alistp)
+                                 (res-isomaps isodata-pos-isomap-alistp)
                                  (res-isomap? isodata-maybe-isomapp)
                                  (predicate$ booleanp)
                                  (new-name$ symbolp)
@@ -2416,10 +2428,10 @@
   :verify-guards nil
   :short "Generate the body of the new function."
   (if predicate$
-      (isodata-gen-new-fn-body-pred old$ arg-isomaps res-isomap? new-name$ wrld)
+      (isodata-gen-new-fn-body-pred old$ arg-isomaps res-isomaps new-name$ wrld)
     (if (recursivep old$ nil wrld)
         (isodata-gen-new-fn-body-nonpred-rec
-         old$ arg-isomaps res-isomap? new-name$ wrld)
+         old$ arg-isomaps res-isomaps res-isomap? new-name$ wrld)
       (isodata-gen-new-fn-body-nonpred-nonrec
        old$ arg-isomaps res-isomap? compatibility wrld))))
 
@@ -2481,6 +2493,7 @@
 
 (define isodata-gen-new-fn ((old$ symbolp)
                             (arg-isomaps isodata-symbol-isomap-alistp)
+                            (res-isomaps isodata-pos-isomap-alistp)
                             (res-isomap? isodata-maybe-isomapp)
                             (predicate$ booleanp)
                             (new-name$ symbolp)
@@ -2516,7 +2529,7 @@
      we adjust the body of the new function to do the same."))
   (b* ((macro (function-intro-macro new-enable$ non-executable$))
        (formals (formals old$ wrld))
-       (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomap?
+       (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomaps res-isomap?
                                       predicate$ new-name$ compatibility wrld))
        (body (if (> (number-of-results old$ wrld) 1)
                  (mvify body)
@@ -3711,6 +3724,7 @@
             new-fn-exported-event)
         (isodata-gen-new-fn old$
                             arg-isomaps
+                            res-isomaps
                             res-isomap?
                             predicate$
                             new-name$
