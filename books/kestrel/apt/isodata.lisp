@@ -2287,10 +2287,10 @@
    (xdoc::p
     "First we transform any recursive calls via @('isodata-xform-rec-calls'),
      which causes no change if @('old') is not recursive.
-     Then we replace @('y1'), ..., @('yp')
-     with @('(back y1)'), ..., @('(back yp)').
+     Then we replace @('x1'), ..., @('xn')
+     with @('(back1 x1)'), ..., @('(backn xn)').
      Finally, we conjoin the result
-     with @('(newp y1)'), ..., @('(newp yp)')."))
+     with @('(newp1 x1)'), ..., @('(newpn xn)')."))
   (b* ((x1...xn (formals old$ wrld))
        (old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
@@ -2313,60 +2313,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-fn-body-nonpred-nonrec
+(define isodata-gen-new-fn-body-nonpred
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new-name$ symbolp)
    compatibility
    (wrld plist-worldp))
   :returns (new-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the body of the new function,
-          when non-recursive and when @(':predicate') is @('nil')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If @('old') is non-executable,
-     its body is obtained
-     by removing the ``non-executable wrapper''."))
-  (b* ((x1...xn (formals old$ wrld))
-       (old-body (if (non-executablep old$ wrld)
-                     (unwrapped-nonexec-body old$ wrld)
-                   (ubody old$ wrld)))
-       (old-body-with-back-of-x1...xn
-        (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-body
-                                                        old$
-                                                        arg-isomaps
-                                                        wrld))
-       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
-       (newp-of-x1...xn-conj (conjoin newp-of-x1...xn))
-       (then-branch (if res-isomap?
-                        (apply-fn-into-ifs (isodata-isomap->forth res-isomap?)
-                                           old-body-with-back-of-x1...xn)
-                      old-body-with-back-of-x1...xn))
-       (else-branch (b* ((n (number-of-results old$ wrld)))
-                      (if (> n 1)
-                          (cons 'mv (repeat n nil))
-                        nil))))
-    (cond (compatibility then-branch)
-          ((equal newp-of-x1...xn-conj *t*) then-branch)
-          (t `(if (mbt$ ,newp-of-x1...xn-conj)
-                  ,then-branch
-                ,else-branch)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-new-fn-body-nonpred-rec
-  ((old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomaps isodata-pos-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
-   (new-name$ symbolp)
-   (wrld plist-worldp))
-  :returns (new-body "A @(tsee pseudo-termp).")
-  :verify-guards nil
-  :short "Generate the body of the new function,
-          when recursive and when @(':predicate') is @('nil')."
+          when @(':predicate') is @('nil')."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2374,19 +2331,36 @@
      its body is obtained
      by removing the ``non-executable wrapper''.")
    (xdoc::p
-    "First we transform the recursive calls via @('isodata-xform-rec-calls').
-     Then we replace @('y1'), ..., @('yp')
-     with @('(back y1)'), ..., @('(back yp)').
-     Finally,
-     we put the result into the &lsquo;then&rsquo; branch of an @(tsee if)
-     whose condition is the conjunction of
-     @('(newp y1)'), ..., @('(newp yp)').
-     The @('nil') in the &lsquo;else&rsquo; branch of the @(tsee if)
-     is actually a variable name in the pseudo-term returned by this function,
-     but it has the desired effect that
-     the untranslation of the @(tsee if) in @(tsee isodata-gen-everything)
-     does not turn the @(tsee if) into an @(tsee and)."))
+    "First we transform any recursive calls via @('isodata-xform-rec-calls'),
+     which causes no change if @('old') is not recursive,
+     and then we replace @('x1'), ..., @('xn')
+     with @('(back1 x1)'), ..., @('(backn xn)');
+     the resulting term is the code of the new function's body (see below).
+     Then we construct an @(tsee if) as follows.
+     The test is the conjunction of @('(newp1 x1)'), ..., @('(newpn xn)').
+     The `else' branch is @('nil') or @('(mv nil ... nil')),
+     depending on whether @('old') returns single or multiple results.
+     For the `then' branch, there are three cases:
+     (i) if no results are transformed, we use the core term above;
+     (ii) if @('old') is single-valued and its (only) result is transformed,
+     we apply the @('back') mapping of the result to the core term above; and
+     (iii) if @('old') is multi-valued and some results are transformed,
+     we bind the core term above to an @(tsee mv-let)
+     and we apply the @('back') mappings of the results to the bound variables.
+     The @(tsee if) is the final result,
+     unless its test is just @('t'),
+     in which case we omit test and `else' branch.
+     If the compatibility flag is set and @('old') is non-recursive,
+     we omit test and `else' branch as well;
+     this is temporary.")
+   (xdoc::p
+    "The `else' branch should use quoted @('nil')s,
+     but we use unquoted ones just so that the untranslation
+     does not turn the @(tsee if) into an @(tsee and).
+     Technically, the unquoted @('nil')s are ``variable'' (symbols),
+     and thus untranslation leaves them alone."))
   (b* ((x1...xn (formals old$ wrld))
+       (m (number-of-results old$ wrld))
        (old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
                    (ubody old$ wrld)))
@@ -2400,16 +2374,24 @@
          arg-isomaps
          wrld))
        (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
-       (then-branch (if res-isomap?
-                        (apply-fn-into-ifs (isodata-isomap->forth res-isomap?)
-                                           old-body-with-back-of-x1...xn)
-                      old-body-with-back-of-x1...xn))
-       (else-branch (b* ((n (number-of-results old$ wrld)))
-                      (if (> n 1)
-                          (cons 'mv (repeat n nil))
-                        nil)))
-       (newp-of-x1...xn-conj (conjoin newp-of-x1...xn)))
-    (cond ((equal newp-of-x1...xn-conj *t*) then-branch)
+       (newp-of-x1...xn-conj (conjoin newp-of-x1...xn))
+       (then-branch
+        (cond ((endp res-isomaps) old-body-with-back-of-x1...xn)
+              ((endp (cdr res-isomaps))
+               (apply-fn-into-ifs (isodata-isomap->forth (cdar res-isomaps))
+                                  old-body-with-back-of-x1...xn))
+              (t (b* ((y1...ym (isodata-gen-result-vars old$ wrld))
+                      (forth-of-y1...ym (isodata-gen-oldp-of-terms
+                                         y1...ym res-isomaps)))
+                   (make-mv-let-call 'mv y1...ym :all
+                                     old-body-with-back-of-x1...xn
+                                     (fcons-term 'mv forth-of-y1...ym))))))
+       (else-branch (if (> m 1)
+                        (fcons-term 'mv (repeat m nil))
+                      nil)))
+    (cond ((and compatibility
+                (not (recursivep old$ nil wrld)) then-branch))
+          ((equal newp-of-x1...xn-conj *t*) then-branch)
           (t `(if (mbt$ ,newp-of-x1...xn-conj)
                   ,then-branch
                 ,else-branch)))))
@@ -2419,7 +2401,6 @@
 (define isodata-gen-new-fn-body ((old$ symbolp)
                                  (arg-isomaps isodata-symbol-isomap-alistp)
                                  (res-isomaps isodata-pos-isomap-alistp)
-                                 (res-isomap? isodata-maybe-isomapp)
                                  (predicate$ booleanp)
                                  (new-name$ symbolp)
                                  compatibility
@@ -2429,11 +2410,8 @@
   :short "Generate the body of the new function."
   (if predicate$
       (isodata-gen-new-fn-body-pred old$ arg-isomaps res-isomaps new-name$ wrld)
-    (if (recursivep old$ nil wrld)
-        (isodata-gen-new-fn-body-nonpred-rec
-         old$ arg-isomaps res-isomaps res-isomap? new-name$ wrld)
-      (isodata-gen-new-fn-body-nonpred-nonrec
-       old$ arg-isomaps res-isomap? compatibility wrld))))
+    (isodata-gen-new-fn-body-nonpred
+     old$ arg-isomaps res-isomaps new-name$ compatibility wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2494,7 +2472,6 @@
 (define isodata-gen-new-fn ((old$ symbolp)
                             (arg-isomaps isodata-symbol-isomap-alistp)
                             (res-isomaps isodata-pos-isomap-alistp)
-                            (res-isomap? isodata-maybe-isomapp)
                             (predicate$ booleanp)
                             (new-name$ symbolp)
                             (new-enable$ booleanp)
@@ -2529,7 +2506,7 @@
      we adjust the body of the new function to do the same."))
   (b* ((macro (function-intro-macro new-enable$ non-executable$))
        (formals (formals old$ wrld))
-       (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomaps res-isomap?
+       (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomaps
                                       predicate$ new-name$ compatibility wrld))
        (body (if (> (number-of-results old$ wrld) 1)
                  (mvify body)
@@ -3725,7 +3702,6 @@
         (isodata-gen-new-fn old$
                             arg-isomaps
                             res-isomaps
-                            res-isomap?
                             predicate$
                             new-name$
                             new-enable$
