@@ -17,6 +17,7 @@
 (include-book "kestrel/std/system/function-namep" :dir :system)
 (include-book "kestrel/std/system/number-of-results-plus" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "std/lists/index-of" :dir :system)
 (include-book "std/typed-lists/cons-listp" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
@@ -347,9 +348,9 @@
     (:jlong[] (atj-type-jprimarr (primitive-type-long)))
     (:jfloat[] (atj-type-jprimarr (primitive-type-float)))
     (:jdouble[] (atj-type-jprimarr (primitive-type-double)))
-    (otherwise (prog2$ (raise "Internal error: ~
-                               the keyword ~x0 does not correspond to ~
-                               any ATJ type.")
+    (otherwise (prog2$ (raise
+                        "The keyword ~x0 does not correspond to any ATJ type."
+                        kwd)
                        (ec-call (atj-type-fix :irrelevant)))))
   ///
 
@@ -1184,6 +1185,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-process-output-type-spec (out-type-spec
+                                      (formals symbol-listp)
+                                      (in-types atj-type-listp))
+  :guard (= (len formals) (len in-types))
+  :returns (mv (type atj-typep)
+               (array symbolp))
+  :short "Process an output type specification in
+          @(tsee atj-main-function-type) or @(tsee atj-other-function-type)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An output type must be either a keyword that denotes an ATJ type,
+     or a doublet consisting of a non-@('nil') symbol
+     followed by a keyword that denotes an ATJ type.
+     The second case is allowed only if the type is an array one,
+     and in that case the non-@('nil') symbol must be
+     some formal argument of the function that has the same array type:
+     the non-@('nil') is the name of the array."))
+  (if (tuplep 2 out-type-spec)
+      (b* (((list sym kwd) out-type-spec)
+           ((unless (symbolp sym))
+            (prog2$ (raise "Invalid array name ~x0." sym)
+                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+           (array sym)
+           ((unless (keywordp kwd))
+            (prog2$ (raise "Invalid type keyword ~x0." kwd)
+                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+           (type (atj-type-from-keyword kwd))
+           ((when (and sym (not (atj-type-case type :jprimarr))))
+            (prog2$ (raise "Invalid array name ~x0 for non-array type ~x1."
+                           array kwd)
+                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+           (pos (index-of array formals))
+           ((when (not pos))
+            (prog2$ (raise "Array name ~x0 not among formals ~x1."
+                           array formals)
+                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+           (in-type (nth pos in-types))
+           ((unless (equal type in-type))
+            (prog2$ (raise "The type ~x0 of the ~x1 input does not match ~
+                            the type ~x2 of the ~x1 output."
+                           (atj-type-to-keyword in-type) array kwd)
+                    (mv (ec-call (atj-type-fix :irrelevant)) nil))))
+        (mv type array))
+    (if (keywordp out-type-spec)
+        (mv (atj-type-from-keyword out-type-spec) nil)
+      (prog2$ (raise "Invalid output type specification ~x0." out-type-spec)
+              (mv (ec-call (atj-type-fix :irrelevant)) nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-process-output-type-specs ((out-type-specs true-listp)
+                                       (formals symbol-listp)
+                                       (in-types atj-type-listp))
+  :guard (= (len formals) (len in-types))
+  :returns (mv (types atj-type-listp)
+               (arrays symbol-listp))
+  :short "Lift @(tsee atj-process-output-type-spec) to lists."
+  (b* (((when (endp out-type-specs)) (mv nil nil))
+       ((mv type array) (atj-process-output-type-spec (car out-type-specs)
+                                                      formals
+                                                      in-types))
+       ((mv types arrays) (atj-process-output-type-specs (cdr out-type-specs)
+                                                         formals
+                                                         in-types)))
+    (mv (cons type types) (cons array arrays))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-main-function-type-input-theorem ((fn symbolp)
                                               (guard pseudo-termp)
                                               (formal symbolp)
@@ -1322,8 +1392,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-main-function-type-fn (fn
-                                   in-type-kwds
-                                   out-type-kwd/kwds
+                                   in-type-specs
+                                   out-type-spec/specs
                                    (wrld plist-worldp))
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program ; because of ATJ-MAIN-FUNCTION-TYPE-INPUT/OUTPUT-THEOREM(S)
@@ -1338,43 +1408,38 @@
      the proposed function type is compared with the existing one.
      If they are the same, the call is considered redundant
      and no further action is taken.
-     If they differ, it is an error.")
-   (xdoc::p
-    "For now the array names are all @('nil').
-     The macro will be extended soon to accept array names from the user."))
+     If they differ, it is an error."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
-       ((unless (keyword-listp in-type-kwds))
+       ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
                 must be a true list of ATJ type keywords."
-               in-type-kwds))
+               in-type-specs))
        (in-types ; error id not valid ATJ type keywords:
-        (atj-type-list-from-keyword-list in-type-kwds))
+        (atj-type-list-from-keyword-list in-type-specs))
        ((unless (= (len in-types) (len formals)))
         (raise "The number of input types ~x0 must match ~
                 the arity ~x1 of the function ~x2."
-               in-type-kwds (len formals) fn))
+               in-type-specs (len formals) fn))
        (nresults (atj-number-of-results fn wrld))
-       (out-types (if (= nresults 1)
-                      (if (keywordp out-type-kwd/kwds)
-                          ;; error if not valid ATJ type keyword:
-                          (list (atj-type-from-keyword out-type-kwd/kwds))
-                        (raise "The third input, ~x0, ~
-                                must be an ATJ type keyword; ~
-                                note that ~x1 returns a single result."
-                               out-type-kwd/kwds fn))
-                    (if (keyword-listp out-type-kwd/kwds)
-                        ;; error if not valid ATJ type keywords:
-                        (atj-type-list-from-keyword-list out-type-kwd/kwds)
-                      (raise "The third input, ~x0, ~
-                              must be a true list of ATJ type keywords; ~
-                              note that ~x1 returns multiple results."
-                             out-type-kwd/kwds fn))))
-       ((unless (= nresults (len out-types)))
-        (raise "The number of output types ~x0 must match ~
-                the number of results ~x1 of the function ~x2."
-               out-type-kwd/kwds nresults fn))
+       ((mv out-types arrays)
+        (if (= nresults 1)
+            (b* (((mv out-type array) (atj-process-output-type-spec
+                                       out-type-spec/specs formals in-types)))
+              (mv (list out-type) (list array)))
+          (if (tuplep nresults out-type-spec/specs)
+              (atj-process-output-type-specs
+               out-type-spec/specs formals in-types)
+            (prog2$ (raise "The third input, ~x0, ~
+                            must be a true list of length ~x1 ~
+                            of output type specifications."
+                           out-type-spec/specs nresults)
+                    (mv nil nil)))))
+       ((unless (no-duplicatesp-eq (remove-eq nil arrays)))
+        (raise "The list of output array names, ~x0, ~
+                contains non-NIL duplicates."
+               arrays))
        (fn-info? (atj-get-function-type-info-from-table fn wrld))
        ((when fn-info?)
         (b* ((main (atj-function-type-info->main fn-info?)))
@@ -1383,8 +1448,8 @@
               `(value-triple :redundant)
             (raise "The proposed ATJ main function type [~x0 -> ~x1] for ~x2 ~
                     differs from the already recorded [~x3 -> ~x4]."
-                   in-type-kwds
-                   out-type-kwd/kwds
+                   in-type-specs
+                   out-type-spec/specs
                    fn
                    (atj-type-list-to-keyword-list
                     (atj-function-type->inputs main))
@@ -1401,7 +1466,7 @@
            fn guard formals nresults (rev out-types) wrld)))
        (fn-ty (make-atj-function-type :inputs in-types
                                       :outputs out-types
-                                      :arrays (repeat nresults nil)))
+                                      :arrays arrays))
        (fn-info (make-atj-function-type-info :main fn-ty :others nil)))
     `(encapsulate
        ()
@@ -1437,10 +1502,10 @@
      for all the inputs and outputs of the function.
      See the code generation functions for details.")
    (xdoc::@def "atj-main-function-type"))
-  (defmacro atj-main-function-type (fn in-type-kwds out-type-kwd/kwds)
+  (defmacro atj-main-function-type (fn in-type-specs out-type-spec/specs)
     `(make-event
       (atj-main-function-type-fn
-       ',fn ',in-type-kwds ',out-type-kwd/kwds (w state)))))
+       ',fn ',in-type-specs ',out-type-spec/specs (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1653,8 +1718,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-other-function-type-fn (fn
-                                    in-type-kwds
-                                    out-type-kwd/kwds
+                                    in-type-specs
+                                    out-type-spec/specs
                                     (wrld plist-worldp))
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program ; because of ATJ-OTHER-FUNCTION-TYPE-THEOREM
@@ -1699,42 +1764,38 @@
      then the output types must satisfy that relation too.
      The reason is analogous to the one discussed above
      to motivate the check against the primary output types;
-     but here we are talking about the secondary output types.")
-   (xdoc::p
-    "For now the array names are all @('nil').
-     The macro will be extended soon to accept array names from the user."))
+     but here we are talking about the secondary output types."))
   (b* (((unless (symbolp fn))
         (raise "The first input, ~x0, must be a symbol." fn))
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
-       ((unless (keyword-listp in-type-kwds))
+       ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
                 must be a true list of ATJ type keywords."
-               in-type-kwds))
+               in-type-specs))
        (in-types ; error if not valid ATJ type keywords:
-        (atj-type-list-from-keyword-list in-type-kwds))
+        (atj-type-list-from-keyword-list in-type-specs))
        ((unless (= (len in-types) (len formals)))
         (raise "The number of input types ~x0 must match ~
                 the arity ~x1 of the function ~x2."
-               in-type-kwds (len formals) fn))
+               in-type-specs (len formals) fn))
        (nresults (atj-number-of-results fn wrld))
-       (out-types (if (= nresults 1)
-                      (if (keywordp out-type-kwd/kwds)
-                          ;; error if not valid ATJ type keyword:
-                          (list (atj-type-from-keyword out-type-kwd/kwds))
-                        (raise "The third input, ~x0, must be a type; ~
-                                note that ~x1 returns a single result."
-                               out-type-kwd/kwds fn))
-                    (if (keyword-listp out-type-kwd/kwds)
-                        ;; error if not valid ATJ type keywords:
-                        (atj-type-list-from-keyword-list out-type-kwd/kwds)
-                      (raise "The third input, ~x0, ~
-                              must be a true list of types; ~
-                              note that ~x1 returns multiple results."
-                             out-type-kwd/kwds fn))))
-       ((unless (= nresults (len out-types)))
-        (raise "The number of output types ~x0 must match ~
-                the number of results ~x1 of the function ~x2."
-               out-type-kwd/kwds nresults fn))
+       ((mv out-types arrays)
+        (if (= nresults 1)
+            (b* (((mv out-type array) (atj-process-output-type-spec
+                                       out-type-spec/specs formals in-types)))
+              (mv (list out-type) (list array)))
+          (if (tuplep nresults out-type-spec/specs)
+              (atj-process-output-type-specs
+               out-type-spec/specs formals in-types)
+            (prog2$ (raise "The third input, ~x0, ~
+                            must be a true list of length ~x1 ~
+                            of output type specifications."
+                           out-type-spec/specs nresults)
+                    (mv nil nil)))))
+       ((unless (no-duplicatesp-eq (remove-eq nil arrays)))
+        (raise "The list of output array names, ~x0, ~
+                contains non-NIL duplicates."
+               arrays))
        (fn-info? (atj-get-function-type-info-from-table fn wrld))
        ((unless fn-info?)
         (raise "The function ~x0 does not have a primary function type yet. ~
@@ -1747,13 +1808,13 @@
        ((unless (atj-type-list-< in-types main-in-types))
         (raise "The proposed inputs types ~x0 must be strictly narrower ~
                 than the primary input types ~x1."
-               in-type-kwds
+               in-type-specs
                (atj-type-list-to-keyword-list main-in-types)))
        ((unless (atj-type-list-<= out-types main-out-types))
         (raise "The proposed output types ~x0 must be ~
                 narrower than or equal to, ~
                 the primary output types ~x1."
-               out-type-kwd/kwds
+               out-type-spec/specs
                (atj-type-list-to-keyword-list main-out-types)))
        (other-fn-types (atj-function-type-info->others fn-info?))
        (new-fn-type (make-atj-function-type :inputs in-types
