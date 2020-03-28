@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "evmac-appcond-hints-p")
+(include-book "evmac-input-hints-p")
 (include-book "evmac-input-print-p")
 
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
@@ -135,14 +135,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define evmac-appcond-theorem ((appcond evmac-appcondp)
-                               (hints evmac-appcond-hints-p)
+                               (hints evmac-input-hints-p)
                                (names-to-avoid symbol-listp)
                                (print evmac-input-print-p)
                                ctx
                                state)
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (thm-name "A @(tsee symbolp).")
-               (new-hints "An @(tsee evmac-appcond-hints-p).")
+               (new-hints "An @(tsee evmac-input-hints-p).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate a theorem event for an applicability condition."
@@ -276,14 +276,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define evmac-appcond-theorem-list ((appconds evmac-appcond-listp)
-                                    (hints evmac-appcond-hints-p)
+                                    (hints evmac-input-hints-p)
                                     (names-to-avoid symbol-listp)
                                     (print evmac-input-print-p)
                                     ctx
                                     state)
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (thm-names "A @(tsee keyword-symbol-alistp).")
-               (new-hints "An @(tsee evmac-appcond-hints-p).")
+               (new-hints "An @(tsee evmac-input-hints-p).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Lift @(tsee evmac-appcond-theorem)

@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define evmac-appcond-hints-p (x)
+(define evmac-input-hints-p (x)
   :returns (yes/no booleanp)
   :parents (event-macro-applicability-conditions)
   :short (xdoc::topstring
