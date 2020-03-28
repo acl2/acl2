@@ -697,11 +697,11 @@
       ""
       ";; when :predicate is t:"
       "(defthm old-to-new"
-      "  (equal (old x1 ... xn)"
-      "         (and (oldp1 x1)"
-      "              ..."
-      "              (oldpn xn)"
-      "              (new (forth1 x1) ... (forthn xn)))))")
+      "  (implies (and (oldp1 x1)"
+      "                ..."
+      "                (oldpn xn))"
+      "           (equal (old x1 ... xn)"
+      "                  (new (forth1 x1) ... (forthn xn)))))")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('old-to-new') is denoted by
