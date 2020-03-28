@@ -188,4 +188,28 @@ class Acl2PackageNameTest {
         assertEquals(Acl2PackageName.make("\\").toString(), "|\\\\|");
     }
 
+    @Test
+    void compareToConstants() {
+        assertTrue(Acl2PackageName.KEYWORD.
+                compareTo(Acl2PackageName.ACL2) > 0);
+        assertTrue(Acl2PackageName.ACL2_USER.
+                compareTo(Acl2PackageName.LISP) < 0);
+        assertTrue(Acl2PackageName.ACL2_PC.
+                compareTo(Acl2PackageName.ACL2_PC) == 0);
+    }
+
+    @Test
+    void compareToMake() {
+        assertTrue(Acl2PackageName.make("PKG").
+                compareTo(Acl2PackageName.make("X")) < 0);
+        assertTrue(Acl2PackageName.make("PKG").
+                compareTo(Acl2PackageName.make("PKGPKG")) < 0);
+        assertTrue(Acl2PackageName.make("ZZZ").
+                compareTo(Acl2PackageName.make("PKG")) > 0);
+        assertTrue(Acl2PackageName.make("ZZZZZZ").
+                compareTo(Acl2PackageName.make("ZZZ")) > 0);
+        assertTrue(Acl2PackageName.make("SAME-0").
+                compareTo(Acl2PackageName.make("SAME-0")) == 0);
+    }
+
 }
