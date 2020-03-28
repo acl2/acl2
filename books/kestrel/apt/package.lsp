@@ -50,6 +50,7 @@
                          conc
                          congruence-rule
                          conjoin
+                         conjoin-equalities
                          conjoin-untranslated-terms
                          conjoin2
                          cons-term
@@ -203,6 +204,7 @@
                          make-lambda
                          make-lambda-term
                          make-mv-let-call
+                         make-mv-nth-calls
                          make-paired-name
                          maybe-pseudo-event-formp
                          mbt$

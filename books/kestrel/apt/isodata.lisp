@@ -2561,7 +2561,7 @@
 (define isodata-gen-new-to-old-thm-formula
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (wrld plist-worldp))
   :returns (new-to-old-formula "A @(tsee pseudo-termp).")
@@ -2571,13 +2571,25 @@
   (b* ((x1...xn (formals old$ wrld))
        (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
        (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
-       (old-call (fcons-term old$ back-of-x1...xn)))
+       (old-call (fcons-term old$ back-of-x1...xn))
+       (new-call (fcons-term new-name$ x1...xn))
+       (consequent
+        (case (len res-isomaps)
+          (0 `(equal ,new-call ,old-call))
+          (1 (b* ((forth-res (isodata-isomap->forth (cdar res-isomaps)))
+                  (forth-of-old-call (apply-term* forth-res old-call)))
+               `(equal ,new-call ,forth-of-old-call)))
+          (t (b* ((mv-nths-of-new-call (make-mv-nth-calls new-call
+                                                          (len res-isomaps)))
+                  (mv-nths-of-old-call (make-mv-nth-calls old-call
+                                                          (len res-isomaps)))
+                  (forth-of-mv-nths-of-old-call
+                   (isodata-gen-forth-of-terms mv-nths-of-old-call
+                                               res-isomaps)))
+               (conjoin-equalities mv-nths-of-new-call
+                                   forth-of-mv-nths-of-old-call))))))
     (implicate (conjoin newp-of-x1...xn)
-               `(equal (,new-name$ ,@x1...xn)
-                       ,(if res-isomap?
-                            (apply-term* (isodata-isomap->forth res-isomap?)
-                                         old-call)
-                          old-call)))))
+               consequent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2743,6 +2755,7 @@
 (define isodata-gen-new-to-old-thm
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (names-to-avoid symbol-listp)
@@ -2765,7 +2778,7 @@
                                                 wrld))
        (formula (isodata-gen-new-to-old-thm-formula old$
                                                     arg-isomaps
-                                                    res-isomap?
+                                                    res-isomaps
                                                     new-name$
                                                     wrld))
        (formula (untranslate formula t wrld))
@@ -3718,6 +3731,7 @@
             new-to-old)
         (isodata-gen-new-to-old-thm old$
                                     arg-isomaps
+                                    res-isomaps
                                     res-isomap?
                                     new-name$
                                     names-to-avoid
