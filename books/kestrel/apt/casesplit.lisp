@@ -10,13 +10,13 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
+(include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
-(include-book "kestrel/utilities/system/named-formulas" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
@@ -372,23 +372,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-process-hints (hints ctx state)
-  :returns (mv erp (hints$ symbol-alistp) state)
-  :short "Process the @(':hints') input."
-  (b* (((er &) (ensure-keyword-value-list$ hints "The :HINTS input" t nil))
-       (alist (keyword-value-list-to-alist hints))
-       (keys (strip-cars alist))
-       (description
-        (msg "The list of keywords ~x0 ~
-              that identify applicability conditions ~
-              in the :HINTS input" keys))
-       ((er &) (ensure-list-no-duplicates$ keys description t nil)))
-    (value alist))
-  ;; for guard verification and return type proofs:
-  :prepwork ((local (in-theory (enable ensure-keyword-value-list)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define casesplit-process-inputs (old
                                   conditions
                                   theorems
@@ -438,7 +421,7 @@
                         @('verify-guards$') indicates whether the guards of
                         the new function should be verified or not, and
                         @('hints$') is
-                        the result of @(tsee casesplit-process-hints).")
+                        the result of @(tsee evmac-process-input-hints).")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -473,7 +456,7 @@
        ((er thm-name$) (casesplit-process-thm-name
                         thm-name old$ new-name$ ctx state))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er hints$) (casesplit-process-hints hints ctx state))
+       ((er hints$) (evmac-process-input-hints$ hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -485,31 +468,6 @@
                  thm-name$
                  verify-guards$
                  hints$))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define casesplit-ensure-no-extra-hints ((hints$ symbol-alistp)
-                                         (names+formulas symbol-alistp)
-                                         ctx
-                                         state)
-  :returns (mv erp
-               (nothing "Always @('nil').")
-               state)
-  :short "Ensure that the @(':hints') input only refers to
-          applicability conditions that are present."
-  :long
-  (xdoc::topstring-p
-   "This function is called during event generation, not input processing,
-    because it needs the names and formulas of the applicability conditions,
-    which are calculated as part of event generation.")
-  (b* ((hints-names (strip-cars hints$))
-       (app-cond-names (strip-cars names+formulas)))
-    (ensure-list-subset$ hints-names
-                         app-cond-names
-                         (msg "The list of keywords ~x0 ~
-                               that identify applicability conditions ~
-                               in the :HINTS input" hints-names)
-                         t nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -556,18 +514,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-thm-hyp-name+formula
+(define casesplit-gen-app-cond-thm-hyp
   ((k natp)
    (conditions$ pseudo-term-listp)
-   (hyps pseudo-term-listp)
-   (wrld plist-worldp))
+   (hyps pseudo-term-listp))
   :guard (and (= (len hyps) (1+ (len conditions$)))
               (<= k (len conditions$)))
-  :returns (name+formula "A @(tsee consp) consisting of
-                          a keyword and an untranslated term.")
+  :returns (appcond "An @(tsee evmac-appcondp).")
   :mode :program
-  :short "Generate the name and formula of
-          the applicability condition @('thmk-hyp')."
+  :short "Generate the applicability condition @('thmk-hyp')."
   :long
   (xdoc::topstring-p
    "Recall that @('hyps') is @('(hyp1 ... hypp hyp0)').")
@@ -580,23 +535,20 @@
        (consequent (if (= k 0)
                        (car (last hyps))
                      (nth (1- k) hyps)))
-       (formula (implicate antecedent consequent))
-       (formula (untranslate formula t wrld)))
-    (cons name formula)))
+       (formula (implicate antecedent consequent)))
+    (make-evmac-appcond :name name :formula formula)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-cond-guard-name+formula
+(define casesplit-gen-app-cond-cond-guard
   ((k posp)
    (old$ symbolp)
    (conditions$ pseudo-term-listp)
    state)
   :guard (<= k (len conditions$))
-  :returns (name+formula "A @(tsee consp) consisting of
-                          a keyword and an untranslated term.")
+  :returns (appcond "An @(tsee evmac-appcondp).")
   :mode :program
-  :short "Generate the name and formula of
-          the applicability condition @('condk-guard')."
+  :short "Generate the applicability condition @('condk-guard')."
   (b* ((wrld (w state))
        (name (casesplit-gen-app-cond-cond-guard-name k))
        (old-guard (uguard old$ wrld))
@@ -604,13 +556,12 @@
                                    (negate-terms (take (1- k) conditions$))))
        (antecedent (conjoin antecedent-conjuncts))
        (consequent (term-guard-obligation (nth (1- k) conditions$) state))
-       (formula (implicate antecedent consequent))
-       (formula (untranslate formula t wrld)))
-    (cons name formula)))
+       (formula (implicate antecedent consequent)))
+    (make-evmac-appcond :name name :formula formula)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-new-guard-name+formula
+(define casesplit-gen-app-cond-new-guard
   ((k natp)
    (old$ symbolp)
    (conditions$ pseudo-term-listp)
@@ -618,11 +569,9 @@
    state)
   :guard (and (= (len news) (1+ (len conditions$)))
               (<= k (len conditions$)))
-  :returns (name+formula "A @(tsee consp) consisting of
-                          a keyword and an untranslated term.")
+  :returns (appcond "An @(tsee evmac-appcondp).")
   :mode :program
-  :short "Generate the name and formula of
-          the applicability condition @('newk-guard')."
+  :short "Generate the applicability condition @('newk-guard')."
   :long
   (xdoc::topstring-p
    "Recall that @('news') is @('(new1 ... newp new0)').")
@@ -640,32 +589,29 @@
                 (car (last news))
               (nth (1- k) news)))
        (consequent (term-guard-obligation new state))
-       (formula (implicate antecedent consequent))
-       (formula (untranslate formula t wrld)))
-    (cons name formula)))
+       (formula (implicate antecedent consequent)))
+    (make-evmac-appcond :name name :formula formula)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-thm-hyp-names+formulas
+(define casesplit-gen-all-app-cond-thm-hyp
   ((conditions$ pseudo-term-listp)
    (hyps pseudo-term-listp)
    (wrld plist-worldp))
   :guard (= (len hyps) (1+ (len conditions$)))
-  :returns (names+formulas "A @(tsee symbol-alistp).")
+  :returns (appconds "An @(tsee evmac-appcond-listp).")
   :mode :program
-  :short "Generate the names and formulas of the applicability conditions
-          @('thm1-hyp'), ..., @('thmp-hyp'), @('thm0-hyp'),
-          as an alist from unique keywords to formulas, in that order."
-  (append (casesplit-gen-app-cond-thm-hyp-names+formulas-aux (len conditions$)
-                                                             conditions$
-                                                             hyps
-                                                             wrld
-                                                             nil)
-          (list (casesplit-gen-app-cond-thm-hyp-name+formula
-                 0 conditions$ hyps wrld)))
+  :short "Generate the applicability conditions
+          @('thm1-hyp'), ..., @('thmp-hyp'), @('thm0-hyp'), in that order."
+  (append (casesplit-gen-all-app-cond-thm-hyp-aux (len conditions$)
+                                                  conditions$
+                                                  hyps
+                                                  wrld
+                                                  nil)
+          (list (casesplit-gen-app-cond-thm-hyp 0 conditions$ hyps)))
 
   :prepwork
-  ((define casesplit-gen-app-cond-thm-hyp-names+formulas-aux
+  ((define casesplit-gen-all-app-cond-thm-hyp-aux
      ((k natp)
       (conditions$ pseudo-term-listp)
       (hyps pseudo-term-listp)
@@ -673,75 +619,72 @@
       (acc symbol-alistp))
      :guard (and (= (len hyps) (1+ (len conditions$)))
                  (<= k (len conditions$)))
-     :returns names+formulas ; SYMBOL-ALISTP
+     :returns appconds ; EVMAC-APPCOND-LISTP
      :parents nil
      :mode :program
      (b* (((when (zp k)) acc)
-          (name+formula (casesplit-gen-app-cond-thm-hyp-name+formula
-                         k conditions$ hyps wrld))
-          (acc (cons name+formula acc)))
-       (casesplit-gen-app-cond-thm-hyp-names+formulas-aux
+          (appcond (casesplit-gen-app-cond-thm-hyp k conditions$ hyps))
+          (acc (cons appcond acc)))
+       (casesplit-gen-all-app-cond-thm-hyp-aux
         (1- k) conditions$ hyps wrld acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-cond-guard-names+formulas
+(define casesplit-gen-all-app-cond-cond-guard
   ((old$ symbolp)
    (conditions$ pseudo-term-listp)
    state)
-  :returns (names+formulas "A @(tsee symbol-alistp).")
+  :returns (appconds "An @(tsee evmac-appcond-listp).")
   :mode :program
-  :short "Generate the names and formulas of the applicability conditions
-          @('cond1-guard'), ..., @('condp-guard'),
-          as an alist from unique keywords to formulas, in that order."
-  (casesplit-gen-app-cond-cond-guard-names+formulas-aux (len conditions$)
-                                                        old$
-                                                        conditions$
-                                                        state
-                                                        nil)
+  :short "Generate the applicability conditions
+          @('cond1-guard'), ..., @('condp-guard'), in that order."
+  (casesplit-gen-all-app-cond-cond-guard-aux (len conditions$)
+                                             old$
+                                             conditions$
+                                             state
+                                             nil)
 
   :prepwork
-  ((define casesplit-gen-app-cond-cond-guard-names+formulas-aux
+  ((define casesplit-gen-all-app-cond-cond-guard-aux
      ((k natp)
       (old$ symbolp)
       (conditions$ pseudo-term-listp)
       state
       (acc symbol-alistp))
      :guard (<= k (len conditions$))
-     :returns names+formulas ; SYMBOL-ALISTP
+     :returns appconds ; EVMAC-APPCOND-LISTP
      :mode :program
      :parents nil
      (b* (((when (zp k)) acc)
-          (name+formula (casesplit-gen-app-cond-cond-guard-name+formula
-                         k old$ conditions$ state))
-          (acc (cons name+formula acc)))
-       (casesplit-gen-app-cond-cond-guard-names+formulas-aux
+          (appcond (casesplit-gen-app-cond-cond-guard k old$ conditions$ state))
+          (acc (cons appcond acc)))
+       (casesplit-gen-all-app-cond-cond-guard-aux
         (1- k) old$ conditions$ state acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-new-guard-names+formulas
+(define casesplit-gen-all-app-cond-new-guard
   ((old$ symbolp)
    (conditions$ pseudo-term-listp)
    (news pseudo-term-listp)
    state)
   :guard (equal (len news) (1+ (len conditions$)))
-  :returns (names+formulas "A @(tsee symbol-alistp).")
+  :returns (appconds "An @(tsee evmac-appcond-listp).")
   :mode :program
-  :short "Generate the names and formulas of the applicability conditions
+  :short "Generate the applicability conditions
           @('new1-guard'), ..., @('newp-guard'), @('new0-guard'),
-          as an alist from unique keywords to formulas, in that order."
-  (append (casesplit-gen-app-cond-new-guard-names+formulas-aux (len conditions$)
-                                                               old$
-                                                               conditions$
-                                                               news
-                                                               state
-                                                               nil)
-          (list (casesplit-gen-app-cond-new-guard-name+formula
+          in that order."
+  (append (casesplit-gen-all-app-cond-new-guard-aux (len conditions$)
+                                                    old$
+                                                    conditions$
+                                                    news
+                                                    state
+                                                    nil)
+          (list (casesplit-gen-app-cond-new-guard
                  0 old$ conditions$ news state)))
 
   :prepwork
-  ((define casesplit-gen-app-cond-new-guard-names+formulas-aux
+  ((define casesplit-gen-all-app-cond-new-guard-aux
      ((k natp)
       (old$ symbolp)
       (conditions$
@@ -751,128 +694,38 @@
       (acc symbol-alistp))
      :guard (and (= (len news) (1+ (len conditions$)))
                  (<= k (len conditions$)))
-     :returns names+formulas ; SYMBOL-ALISTP
+     :returns appconds ; EVMAC-APPCOND-LISTP
      :mode :program
      (b* (((when (zp k)) acc)
-          (name+formula (casesplit-gen-app-cond-new-guard-name+formula
-                         k old$ conditions$ news state))
-          (acc (cons name+formula acc)))
-       (casesplit-gen-app-cond-new-guard-names+formulas-aux
+          (appcond (casesplit-gen-app-cond-new-guard
+                    k old$ conditions$ news state))
+          (acc (cons appcond acc)))
+       (casesplit-gen-all-app-cond-new-guard-aux
         (1- k) old$ conditions$ news state acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-names+formulas ((old$ symbolp)
-                                               (conditions$ pseudo-term-listp)
-                                               (hyps pseudo-term-listp)
-                                               (news pseudo-term-listp)
-                                               (verify-guards$ booleanp)
-                                               state)
+(define casesplit-gen-all-app-cond ((old$ symbolp)
+                                    (conditions$ pseudo-term-listp)
+                                    (hyps pseudo-term-listp)
+                                    (news pseudo-term-listp)
+                                    (verify-guards$ booleanp)
+                                    state)
   :guard (and (= (len hyps) (1+ (len conditions$)))
               (= (len news) (1+ (len conditions$))))
-  :returns (names+formulas "A @(tsee symbol-alistp).")
+  :returns (appconds "An @(tsee evmac-appcond-listp).")
   :mode :program
   :short "Generate the names and formulas of the applicability conditions
           that are present for the current call of the transformation,
-          as an alist from unique keywords to formulas,
           in the order given in the reference documentation."
   (if verify-guards$
-      (append (casesplit-gen-app-cond-thm-hyp-names+formulas
+      (append (casesplit-gen-all-app-cond-thm-hyp
                conditions$ hyps (w state))
-              (casesplit-gen-app-cond-cond-guard-names+formulas
+              (casesplit-gen-all-app-cond-cond-guard
                old$ conditions$ state)
-              (casesplit-gen-app-cond-new-guard-names+formulas
+              (casesplit-gen-all-app-cond-new-guard
                old$ conditions$ news state))
-    (casesplit-gen-app-cond-thm-hyp-names+formulas conditions$ hyps (w state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define casesplit-gen-app-cond ((name keywordp)
-                                (formula "An untranslated term.")
-                                (hints$ symbol-alistp)
-                                (print$ evmac-input-print-p)
-                                (names-to-avoid symbol-listp)
-                                ctx
-                                state)
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (thm "A @(tsee symbolp) that is the name of the theorem."))
-  :mode :program
-  :short "Generate a theorem for the applicability condition
-          with the given name and formula."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The theorem has no rule classes, because it is used via @(':use') hints
-     in the generated proofs in other events.")
-   (xdoc::p
-    "This is a local event,
-     because it is only used internally by the transformation.
-     The event is wrapped into a @(tsee try-event)
-     in order to provide a terse error message if the proof fails
-     (unless @(':print') is @(':all'), in which case everything is printed).
-     In addition,
-     if @(':print') is @(':info') or @(':all'),
-     the event is preceded and followed by events to print progress messages.")
-   (xdoc::p
-    "The name of the theorem is obtained by
-     putting the keyword that names the applicability condition
-     into the \"APT\" package
-     and adding @('$') as needed to avoid name clashes."))
-  (b* ((wrld (w state))
-       (thm (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
-                                                (symbol-name name)
-                                                (pkg-witness "APT"))
-                                               nil
-                                               names-to-avoid
-                                               wrld))
-       (hints (cdr (assoc-eq name hints$)))
-       (defthm `(defthm ,thm ,formula :hints ,hints :rule-classes nil))
-       (error-msg (msg
-                   "The proof of the ~x0 applicability condition fails:~%~x1~|"
-                   name formula))
-       (try-defthm (try-event defthm ctx t nil error-msg))
-       (print-progress-p (member-eq print$ '(:info :all)))
-       (progress-start? (and print-progress-p
-                             `((cw-event
-                                "~%Attempting to prove the ~x0 ~
-                                 applicability condition:~%~x1~|"
-                                ',name ',formula))))
-       (progress-end? (and print-progress-p
-                           `((cw-event "Done.~%"))))
-       (event `(local (progn ,@progress-start?
-                             ,try-defthm
-                             ,@progress-end?))))
-    (mv event thm)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define casesplit-gen-app-conds ((names+formulas symbol-alistp)
-                                 (hints$ symbol-alistp)
-                                 (print$ evmac-input-print-p)
-                                 (names-to-avoid symbol-listp)
-                                 ctx
-                                 state)
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (app-cond-thm-names "A @(tsee symbol-symbol-alistp)."))
-  :mode :program
-  :short "Generate theorems for the applicability conditions
-          with the given names and formulas."
-  (b* (((when (endp names+formulas)) (mv nil nil))
-       ((cons name formula) (car names+formulas))
-       ((mv event thm) (casesplit-gen-app-cond name
-                                               formula
-                                               hints$
-                                               print$
-                                               names-to-avoid
-                                               ctx
-                                               state))
-       (names-to-avoid (rcons thm names-to-avoid))
-       ((mv events thms) (casesplit-gen-app-conds (cdr names+formulas)
-                                                  hints$
-                                                  print$
-                                                  names-to-avoid
-                                                  ctx state)))
-    (mv (cons event events) (acons name thm thms))))
+    (casesplit-gen-all-app-cond-thm-hyp conditions$ hyps (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1092,45 +945,51 @@
      for visual separation."))
   (b* ((wrld (w state))
        (names-to-avoid (list new-name$ thm-name$))
-       (app-cond-names+formulas (casesplit-gen-app-cond-names+formulas
-                                 old$ conditions$ hyps news verify-guards$
-                                 state))
-       ((er &) (casesplit-ensure-no-extra-hints
-                hints$ app-cond-names+formulas ctx state))
+       (appconds (casesplit-gen-all-app-cond old$
+                                             conditions$
+                                             hyps
+                                             news
+                                             verify-guards$
+                                             state))
        ((mv app-cond-thm-events
-            app-cond-thm-names) (casesplit-gen-app-conds app-cond-names+formulas
-                                                         hints$
-                                                         print$
-                                                         names-to-avoid
-                                                         ctx
-                                                         state))
-       (names-to-avoid (append names-to-avoid
-                               (strip-cdrs app-cond-thm-names)))
+            app-cond-thm-names
+            remaining-hints
+            names-to-avoid)
+        (evmac-appcond-theorem-list
+         appconds hints$ names-to-avoid print$ ctx state))
+       ((when (and (keyword-truelist-alistp remaining-hints)
+                   (consp remaining-hints)))
+        (er-soft+ ctx t nil
+                  "The :HINTS input includes the keywords ~x0, ~
+                   which do not correspond to applicability conditions ~
+                   that must hold in this call of CASESPLIT, ~
+                   at least given the other inputs of CASESPLIT."
+                  (strip-cars remaining-hints)))
        ((mv new-fn-local-event
             new-fn-exported-event) (casesplit-gen-new-fn
-                                    old$
-                                    conditions$
-                                    news
-                                    new-name$
-                                    new-enable$
-                                    verify-guards$
-                                    app-cond-thm-names
-                                    wrld))
+            old$
+            conditions$
+            news
+            new-name$
+            new-enable$
+            verify-guards$
+            app-cond-thm-names
+            wrld))
        ((mv new-unnorm-event
             new-unnorm-name) (install-not-normalized-event new-name$
-                                                           t
-                                                           names-to-avoid
-                                                           wrld))
+            t
+            names-to-avoid
+            wrld))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event) (casesplit-gen-old-to-new-thm
-                                            old$
-                                            theorems$
-                                            new-name$
-                                            thm-name$
-                                            thm-enable$
-                                            app-cond-thm-names
-                                            new-unnorm-name
-                                            wrld))
+            old$
+            theorems$
+            new-name$
+            thm-name$
+            thm-enable$
+            app-cond-thm-names
+            new-unnorm-name
+            wrld))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
