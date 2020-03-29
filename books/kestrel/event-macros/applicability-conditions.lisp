@@ -98,10 +98,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define make-evmac-appcond? (&key (name keywordp)
-                                  (formula pseudo-termp)
-                                  (when 't))
-  :returns (appcond? evmac-appcond-listp :hyp :guard)
+(defsection make-evmac-appcond?
   :short "Conditionally construct an applicability condition."
   :long
   (xdoc::topstring
@@ -124,13 +121,20 @@
      unless an explicit condition (which may hold or not) is given.")
    (xdoc::p
     "An event macro may generate all its applicability conditions
-     by @(tsee append)ing calls of this function."))
-  (and when
-       (list (make-evmac-appcond :name name :formula formula)))
-  ///
-  (defret make-evmac-appcond?-returns-none-or-one
-    (<= (len appcond?) 1)
-    :rule-classes :linear))
+     by @(tsee append)ing calls of this function.")
+   (xdoc::p
+    "Note that this macro expands into a non-strict @(tsee and) form,
+     so that the name and formula arguments are not evaluated
+     if the condition evaluates to @('nil').
+     This is important if the evaluation of the name and formula
+     (most likely the formula, as the name is often just a keyword constant)
+     only makes sense (in particular, does not cause an error)
+     under the condition.")
+   (xdoc::@def "make-evmac-appcond?"))
+
+  (defmacro make-evmac-appcond? (&key name formula (when 't))
+    `(and ,when
+          (list (make-evmac-appcond :name ,name :formula ,formula)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
