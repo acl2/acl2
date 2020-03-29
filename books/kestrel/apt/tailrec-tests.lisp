@@ -858,7 +858,7 @@
 
  ;; not an applicability condition name:
  (must-fail
-  (tailrec f :hints (:not-an-app-cond (("Goal" :in-theory (enable len))))))
+  (tailrec f :hints (:not-an-appcond (("Goal" :in-theory (enable len))))))
 
  ;; duplicate applicability condition names:
  (must-fail

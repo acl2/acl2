@@ -80,10 +80,7 @@
    if @('old') is a reflexive function,
    or @('nil') otherwise."
 
-  "@('app-cond-present-names') is the list of the names (keywords) of
-   the applicability conditions that are present."
-
-  "@('app-cond-thm-names') is an alist
+  "@('appcond-thm-names') is an alist
    from the keywords that identify the applicability conditions
    to the corresponding generated theorem names."
 
@@ -572,7 +569,7 @@
                                      (new-name$ symbolp)
                                      (thm-name$ symbolp)
                                      (thm-enable$ booleanp)
-                                     (app-cond-thm-names symbol-symbol-alistp)
+                                     (appcond-thm-names symbol-symbol-alistp)
                                      (stub? symbolp)
                                      (old-unnorm-name symbolp)
                                      (new-unnorm-name symbolp)
@@ -616,7 +613,7 @@
        (recursive (recursivep old$ nil wrld))
        (hints (if recursive
                   (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
-                                          app-cond-thm-names)))
+                                          appcond-thm-names)))
                        (lemma-instance (if stub?
                                            `(:functional-instance ,lemma-name
                                              (,stub? ,new-name$))
@@ -644,7 +641,7 @@
   ((old$ symbolp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (stub? symbolp)
    (wrld plist-worldp))
   :returns (local-event pseudo-event-formp)
@@ -700,23 +697,23 @@
                      :in-theory '(,thm-name$)
                      :use ((:guard-theorem ,old$)
                            ,(cdr (assoc-eq :restriction-guard
-                                   app-cond-thm-names))
+                                   appcond-thm-names))
                            ,(if stub?
                                 `(:functional-instance
                                   ,(cdr (assoc-eq :restriction-of-rec-calls
-                                         app-cond-thm-names))
+                                         appcond-thm-names))
                                   (,stub? ,new-name$))
                               (cdr (assoc-eq :restriction-of-rec-calls
-                                     app-cond-thm-names)))
+                                     appcond-thm-names)))
                            ,(cdr (assoc-eq :restriction-boolean
-                                   app-cond-thm-names)))))
+                                   appcond-thm-names)))))
                 `(("Goal"
                    :in-theory nil
                    :use ((:guard-theorem ,old$)
                          ,(cdr (assoc-eq :restriction-guard
-                                 app-cond-thm-names))
+                                 appcond-thm-names))
                          ,(cdr (assoc-eq :restriction-boolean
-                                 app-cond-thm-names)))))))
+                                 appcond-thm-names)))))))
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
     event))
 
@@ -828,8 +825,8 @@
                                         verify-guards$
                                         stub?
                                         state))
-       ((mv app-cond-thm-events
-            app-cond-thm-names
+       ((mv appcond-thm-events
+            appcond-thm-names
             remaining-hints
             names-to-avoid)
         (evmac-appcond-theorem-list
@@ -870,7 +867,7 @@
             new-name$
             thm-name$
             thm-enable$
-            app-cond-thm-names
+            appcond-thm-names
             stub?
             old-unnorm-name
             new-unnorm-name
@@ -881,7 +878,7 @@
                                            old$
                                            new-name$
                                            thm-name$
-                                           app-cond-thm-names
+                                           appcond-thm-names
                                            stub?
                                            wrld))))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
@@ -889,7 +886,7 @@
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
                              ,@stub-event?
-                             ,@app-cond-thm-events
+                             ,@appcond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
                              ,old-unnorm-event

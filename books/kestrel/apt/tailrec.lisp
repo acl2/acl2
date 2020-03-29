@@ -118,10 +118,7 @@
   "@('verbose') is a flag saying
    whether to print certain informative messages or not."
 
-  "@('app-cond-present-names') is the list of the names (keywords) of
-   the applicability conditions that are present."
-
-  "@('app-cond-thm-names') is an alist
+  "@('appcond-thm-names') is an alist
    from the keywords that identify the applicability conditions
    to the corresponding generated theorem names."
 
@@ -1059,7 +1056,7 @@
                                        (variant$ tailrec-variantp)
                                        (domain$ pseudo-termfnp)
                                        (names-to-avoid symbol-listp)
-                                       (app-cond-thm-names symbol-symbol-alistp)
+                                       (appcond-thm-names symbol-symbol-alistp)
                                        (old-unnorm-name symbolp)
                                        (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
@@ -1093,11 +1090,11 @@
         (case variant$
           ((:monoid :assoc)
            (b* ((domain-of-base-thm
-                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base appcond-thm-names)))
                 (domain-of-nonrec-thm
-                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec appcond-thm-names)))
                 (domain-of-combine-thm
-                 (cdr (assoc-eq :domain-of-combine app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine appcond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                    :extra-bindings-ok
@@ -1114,9 +1111,9 @@
                        ,domain-of-combine-instance)))))
           (:monoid-alt
            (b* ((domain-of-base-thm
-                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base appcond-thm-names)))
                 (domain-of-combine-uncond-thm
-                 (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine-uncond appcond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                    :extra-bindings-ok
@@ -1152,7 +1149,7 @@
                             (new-enable$ booleanp)
                             (non-executable$ booleanp)
                             (verify-guards$ booleanp)
-                            (app-cond-thm-names symbol-symbol-alistp)
+                            (appcond-thm-names symbol-symbol-alistp)
                             (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp).")
@@ -1231,15 +1228,15 @@
                             (formals domain$ wrld)
                           (lambda-formals domain$))))
                 (domain-of-base-thm
-                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base appcond-thm-names)))
                 (domain-of-nonrec-thm
-                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec appcond-thm-names)))
                 (domain-of-combine-thm
-                 (cdr (assoc-eq :domain-of-combine app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine appcond-thm-names)))
                 (domain-guard-thm
-                 (cdr (assoc-eq :domain-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-guard appcond-thm-names)))
                 (combine-guard-thm
-                 (cdr (assoc-eq :combine-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-guard appcond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                    :extra-bindings-ok
@@ -1273,16 +1270,16 @@
                             (formals domain$ wrld)
                           (lambda-formals domain$))))
                 (domain-of-base-thm
-                 (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-base appcond-thm-names)))
                 (domain-of-combine-uncond-thm
-                 (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine-uncond appcond-thm-names)))
                 (domain-guard-thm
-                 (cdr (assoc-eq :domain-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-guard appcond-thm-names)))
                 (combine-guard-thm
-                 (cdr (assoc-eq :combine-guard app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-guard appcond-thm-names)))
                 (domain-of-nonrec-when-guard-thm
                  (cdr (assoc-eq :domain-of-nonrec-when-guard
-                        app-cond-thm-names)))
+                        appcond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                    :extra-bindings-ok
@@ -1344,7 +1341,7 @@
                                     (domain$ pseudo-termfnp)
                                     (new-name$ symbolp)
                                     (names-to-avoid symbol-listp)
-                                    (app-cond-thm-names symbol-symbol-alistp)
+                                    (appcond-thm-names symbol-symbol-alistp)
                                     (old-unnorm-name symbolp)
                                     (domain-of-old-name symbolp)
                                     (new-formals symbol-listp)
@@ -1400,13 +1397,13 @@
         (case variant$
           ((:monoid :assoc)
            (b* ((domain-of-nonrec-thm
-                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec appcond-thm-names)))
                 (domain-of-combine-thm
-                 (cdr (assoc-eq :domain-of-combine app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine appcond-thm-names)))
                 (combine-associativity-thm
-                 (cdr (assoc-eq :combine-associativity app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-associativity appcond-thm-names)))
                 (combine-right-identity-thm?
-                 (cdr (assoc-eq :combine-right-identity app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-right-identity appcond-thm-names)))
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                    :extra-bindings-ok
@@ -1443,12 +1440,12 @@
                        ,combine-associativity-instance)))))
           (:monoid-alt
            (b* ((domain-of-combine-uncond-thm
-                 (cdr (assoc-eq :domain-of-combine-uncond app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-combine-uncond appcond-thm-names)))
                 (combine-associativity-uncond-thm
                  (cdr (assoc-eq :combine-associativity-uncond
-                        app-cond-thm-names)))
+                        appcond-thm-names)))
                 (combine-right-identity-thm
-                 (cdr (assoc-eq :combine-right-identity app-cond-thm-names)))
+                 (cdr (assoc-eq :combine-right-identity appcond-thm-names)))
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                    :extra-bindings-ok
@@ -1668,7 +1665,7 @@
   ((old$ symbolp)
    (base pseudo-termp)
    (domain$ pseudo-termfnp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (alpha-name symbolp)
    (test-of-alpha-name symbolp)
    (names-to-avoid symbol-listp)
@@ -1693,7 +1690,7 @@
                                                 wrld))
        (formula (apply-term* domain$ base))
        (domain-of-base-thm
-        (cdr (assoc-eq :domain-of-base app-cond-thm-names)))
+        (cdr (assoc-eq :domain-of-base appcond-thm-names)))
        (formals (formals old$ wrld))
        (alpha-comps (tailrec-gen-alpha-component-terms alpha-name
                                                        old$
@@ -1720,7 +1717,7 @@
    (q symbolp)
    (r symbolp)
    (domain$ pseudo-termfnp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (alpha-name symbolp)
    (test-of-alpha-name symbolp)
    (names-to-avoid symbol-listp)
@@ -1750,7 +1747,7 @@
                            `(equal ,(apply-term* combine-op base u)
                                    ,u)))
        (combine-left-identity-thm
-        (cdr (assoc-eq :combine-left-identity app-cond-thm-names)))
+        (cdr (assoc-eq :combine-left-identity appcond-thm-names)))
        (formals (formals old$ wrld))
        (alpha-comps (tailrec-gen-alpha-component-terms alpha-name
                                                        old$
@@ -1872,7 +1869,7 @@
                                     (wrapper$ booleanp)
                                     (thm-name$ symbolp)
                                     (names-to-avoid symbol-listp)
-                                    (app-cond-thm-names symbol-symbol-alistp)
+                                    (appcond-thm-names symbol-symbol-alistp)
                                     (domain-of-old-name symbolp)
                                     (domain-of-ground-base-name symbolp)
                                     (combine-left-identity-ground-name symbolp)
@@ -1946,7 +1943,7 @@
           (:assoc
            (b* ((formals (formals old$ wrld))
                 (domain-of-nonrec-thm
-                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names)))
+                 (cdr (assoc-eq :domain-of-nonrec appcond-thm-names)))
                 (new-to-old-instance
                  `(:instance ,new-to-old-name
                    :extra-bindings-ok
@@ -1980,7 +1977,7 @@
                                 (wrapper-enable$ booleanp)
                                 (non-executable$ booleanp)
                                 (verify-guards$ booleanp)
-                                (app-cond-thm-names symbol-symbol-alistp)
+                                (appcond-thm-names symbol-symbol-alistp)
                                 (domain-of-ground-base-name symbolp)
                                 (base-guard-name symbolp)
                                 (new-formals symbol-listp)
@@ -2031,7 +2028,7 @@
                     ,base-guard-name))))
           (:assoc
            (b* ((domain-of-nonrec-thm
-                 (cdr (assoc-eq :domain-of-nonrec app-cond-thm-names))))
+                 (cdr (assoc-eq :domain-of-nonrec appcond-thm-names))))
              `(("Goal"
                 :in-theory nil
                 :use ((:guard-theorem ,old$)
@@ -2204,8 +2201,8 @@
                                        variant$
                                        verify-guards$
                                        state))
-       ((mv app-cond-thm-events
-            app-cond-thm-names
+       ((mv appcond-thm-events
+            appcond-thm-names
             remaining-hints
             names-to-avoid)
         (evmac-appcond-theorem-list
@@ -2229,7 +2226,7 @@
             old$ test nonrec updates
             variant$ domain$
             names-to-avoid
-            app-cond-thm-names
+            appcond-thm-names
             old-unnorm-name
             wrld))
        (names-to-avoid (cons domain-of-old-name names-to-avoid))
@@ -2241,7 +2238,7 @@
             variant$ domain$
             new-name$ new-enable$
             non-executable$ verify-guards$
-            app-cond-thm-names
+            appcond-thm-names
             wrld))
        ((mv new-unnorm-event
             new-unnorm-name) (install-not-normalized-event new-name$
@@ -2255,7 +2252,7 @@
             variant$ domain$
             new-name$
             names-to-avoid
-            app-cond-thm-names
+            appcond-thm-names
             old-unnorm-name
             domain-of-old-name
             new-formals
@@ -2297,7 +2294,7 @@
             domain-of-ground-base-name?)
         (if gen-alpha
             (tailrec-gen-domain-of-ground-base-thm
-             old$ base domain$ app-cond-thm-names
+             old$ base domain$ appcond-thm-names
              alpha-name? test-of-alpha-name?
              names-to-avoid wrld)
           (mv nil nil)))
@@ -2309,7 +2306,7 @@
             combine-left-identity-ground-name?)
         (if gen-alpha
             (tailrec-gen-combine-left-identity-ground-thm
-             old$ base combine q r domain$ app-cond-thm-names
+             old$ base combine q r domain$ appcond-thm-names
              alpha-name? test-of-alpha-name?
              names-to-avoid wrld)
           (mv nil nil)))
@@ -2339,7 +2336,7 @@
             wrapper$
             thm-name$
             names-to-avoid
-            app-cond-thm-names
+            appcond-thm-names
             domain-of-old-name
             domain-of-ground-base-name?
             combine-left-identity-ground-name?
@@ -2356,7 +2353,7 @@
              new-name$
              wrapper-name$ wrapper-enable$
              non-executable$ verify-guards$
-             app-cond-thm-names
+             appcond-thm-names
              domain-of-ground-base-name?
              base-guard-name?
              new-formals
@@ -2391,7 +2388,7 @@
         `((logic)
           (set-ignore-ok t)
           (set-irrelevant-formals-ok t)
-          ,@app-cond-thm-events
+          ,@appcond-thm-events
           (set-default-hints nil)
           (set-override-hints nil)
           ,old-unnorm-event

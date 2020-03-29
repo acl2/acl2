@@ -515,7 +515,7 @@
  ;; not an applicability condition name:
  (must-fail
   (restrict nfix (natp x)
-            :hints (:not-an-app-cond (("Goal" :in-theory (enable len))))))
+            :hints (:not-an-appcond (("Goal" :in-theory (enable len))))))
 
  ;; duplicate applicability condition names:
  (must-fail

@@ -80,7 +80,7 @@
   "@('news') is the list @('(new1 ... newp new0)') of right-hand sides
    of the theorems named in the @('theorems') input, in the same order."
 
-  "@('app-cond-thm-names') is an alist
+  "@('appcond-thm-names') is an alist
    from the keywords that identify the applicability conditions
    to the corresponding generated theorem names."
 
@@ -477,9 +477,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-name-from-parts ((prefix stringp)
-                                                (k natp)
-                                                (suffix stringp))
+(define casesplit-gen-appcond-name-from-parts ((prefix stringp)
+                                               (k natp)
+                                               (suffix stringp))
   :returns (name symbolp "A keyword.")
   :short "Create the name (keyword) of an applicability condition
           from its parts."
@@ -493,28 +493,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-thm-hyp-name ((k natp))
+(define casesplit-gen-appcond-thm-hyp-name ((k natp))
   :returns (name symbolp "A keyword.")
   :short "Name of the applicability condition @(':thmk-hyp')."
-  (casesplit-gen-app-cond-name-from-parts "THM" k "-HYP"))
+  (casesplit-gen-appcond-name-from-parts "THM" k "-HYP"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-cond-guard-name ((k posp))
+(define casesplit-gen-appcond-cond-guard-name ((k posp))
   :returns (name symbolp "A keyword.")
   :short "Name of the applicability condition @(':condk-guard')."
-  (casesplit-gen-app-cond-name-from-parts "COND" k "-GUARD"))
+  (casesplit-gen-appcond-name-from-parts "COND" k "-GUARD"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-new-guard-name ((k natp))
+(define casesplit-gen-appcond-new-guard-name ((k natp))
   :returns (name symbolp "A keyword.")
   :short "Name of the applicability condition @(':newk-guard')."
-  (casesplit-gen-app-cond-name-from-parts "NEW" k "-GUARD"))
+  (casesplit-gen-appcond-name-from-parts "NEW" k "-GUARD"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-thm-hyp
+(define casesplit-gen-appcond-thm-hyp
   ((k natp)
    (conditions$ pseudo-term-listp)
    (hyps pseudo-term-listp))
@@ -526,7 +526,7 @@
   :long
   (xdoc::topstring-p
    "Recall that @('hyps') is @('(hyp1 ... hypp hyp0)').")
-  (b* ((name (casesplit-gen-app-cond-thm-hyp-name k))
+  (b* ((name (casesplit-gen-appcond-thm-hyp-name k))
        (antecedent-conjuncts (if (= k 0)
                                  (negate-terms conditions$)
                                (append (negate-terms (take (1- k) conditions$))
@@ -540,7 +540,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-cond-guard
+(define casesplit-gen-appcond-cond-guard
   ((k posp)
    (old$ symbolp)
    (conditions$ pseudo-term-listp)
@@ -550,7 +550,7 @@
   :mode :program
   :short "Generate the applicability condition @('condk-guard')."
   (b* ((wrld (w state))
-       (name (casesplit-gen-app-cond-cond-guard-name k))
+       (name (casesplit-gen-appcond-cond-guard-name k))
        (old-guard (uguard old$ wrld))
        (antecedent-conjuncts (cons old-guard
                                    (negate-terms (take (1- k) conditions$))))
@@ -561,7 +561,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-app-cond-new-guard
+(define casesplit-gen-appcond-new-guard
   ((k natp)
    (old$ symbolp)
    (conditions$ pseudo-term-listp)
@@ -576,7 +576,7 @@
   (xdoc::topstring-p
    "Recall that @('news') is @('(new1 ... newp new0)').")
   (b* ((wrld (w state))
-       (name (casesplit-gen-app-cond-new-guard-name k))
+       (name (casesplit-gen-appcond-new-guard-name k))
        (old-guard (uguard old$ wrld))
        (antecedent-conjuncts (if (= k 0)
                                  (cons old-guard
@@ -594,7 +594,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-all-app-cond-thm-hyp
+(define casesplit-gen-appconds-thm-hyp
   ((conditions$ pseudo-term-listp)
    (hyps pseudo-term-listp)
    (wrld plist-worldp))
@@ -603,15 +603,15 @@
   :mode :program
   :short "Generate the applicability conditions
           @('thm1-hyp'), ..., @('thmp-hyp'), @('thm0-hyp'), in that order."
-  (append (casesplit-gen-all-app-cond-thm-hyp-aux (len conditions$)
-                                                  conditions$
-                                                  hyps
-                                                  wrld
-                                                  nil)
-          (list (casesplit-gen-app-cond-thm-hyp 0 conditions$ hyps)))
+  (append (casesplit-gen-appconds-thm-hyp-aux (len conditions$)
+                                              conditions$
+                                              hyps
+                                              wrld
+                                              nil)
+          (list (casesplit-gen-appcond-thm-hyp 0 conditions$ hyps)))
 
   :prepwork
-  ((define casesplit-gen-all-app-cond-thm-hyp-aux
+  ((define casesplit-gen-appconds-thm-hyp-aux
      ((k natp)
       (conditions$ pseudo-term-listp)
       (hyps pseudo-term-listp)
@@ -623,14 +623,14 @@
      :parents nil
      :mode :program
      (b* (((when (zp k)) acc)
-          (appcond (casesplit-gen-app-cond-thm-hyp k conditions$ hyps))
+          (appcond (casesplit-gen-appcond-thm-hyp k conditions$ hyps))
           (acc (cons appcond acc)))
-       (casesplit-gen-all-app-cond-thm-hyp-aux
+       (casesplit-gen-appconds-thm-hyp-aux
         (1- k) conditions$ hyps wrld acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-all-app-cond-cond-guard
+(define casesplit-gen-appconds-cond-guard
   ((old$ symbolp)
    (conditions$ pseudo-term-listp)
    state)
@@ -638,14 +638,14 @@
   :mode :program
   :short "Generate the applicability conditions
           @('cond1-guard'), ..., @('condp-guard'), in that order."
-  (casesplit-gen-all-app-cond-cond-guard-aux (len conditions$)
-                                             old$
-                                             conditions$
-                                             state
-                                             nil)
+  (casesplit-gen-appconds-cond-guard-aux (len conditions$)
+                                         old$
+                                         conditions$
+                                         state
+                                         nil)
 
   :prepwork
-  ((define casesplit-gen-all-app-cond-cond-guard-aux
+  ((define casesplit-gen-appconds-cond-guard-aux
      ((k natp)
       (old$ symbolp)
       (conditions$ pseudo-term-listp)
@@ -656,14 +656,14 @@
      :mode :program
      :parents nil
      (b* (((when (zp k)) acc)
-          (appcond (casesplit-gen-app-cond-cond-guard k old$ conditions$ state))
+          (appcond (casesplit-gen-appcond-cond-guard k old$ conditions$ state))
           (acc (cons appcond acc)))
-       (casesplit-gen-all-app-cond-cond-guard-aux
+       (casesplit-gen-appconds-cond-guard-aux
         (1- k) old$ conditions$ state acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-all-app-cond-new-guard
+(define casesplit-gen-appconds-new-guard
   ((old$ symbolp)
    (conditions$ pseudo-term-listp)
    (news pseudo-term-listp)
@@ -674,17 +674,17 @@
   :short "Generate the applicability conditions
           @('new1-guard'), ..., @('newp-guard'), @('new0-guard'),
           in that order."
-  (append (casesplit-gen-all-app-cond-new-guard-aux (len conditions$)
-                                                    old$
-                                                    conditions$
-                                                    news
-                                                    state
-                                                    nil)
-          (list (casesplit-gen-app-cond-new-guard
+  (append (casesplit-gen-appconds-new-guard-aux (len conditions$)
+                                                old$
+                                                conditions$
+                                                news
+                                                state
+                                                nil)
+          (list (casesplit-gen-appcond-new-guard
                  0 old$ conditions$ news state)))
 
   :prepwork
-  ((define casesplit-gen-all-app-cond-new-guard-aux
+  ((define casesplit-gen-appconds-new-guard-aux
      ((k natp)
       (old$ symbolp)
       (conditions$
@@ -697,20 +697,20 @@
      :returns appconds ; EVMAC-APPCOND-LISTP
      :mode :program
      (b* (((when (zp k)) acc)
-          (appcond (casesplit-gen-app-cond-new-guard
+          (appcond (casesplit-gen-appcond-new-guard
                     k old$ conditions$ news state))
           (acc (cons appcond acc)))
-       (casesplit-gen-all-app-cond-new-guard-aux
+       (casesplit-gen-appconds-new-guard-aux
         (1- k) old$ conditions$ news state acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define casesplit-gen-all-app-cond ((old$ symbolp)
-                                    (conditions$ pseudo-term-listp)
-                                    (hyps pseudo-term-listp)
-                                    (news pseudo-term-listp)
-                                    (verify-guards$ booleanp)
-                                    state)
+(define casesplit-gen-appconds ((old$ symbolp)
+                                (conditions$ pseudo-term-listp)
+                                (hyps pseudo-term-listp)
+                                (news pseudo-term-listp)
+                                (verify-guards$ booleanp)
+                                state)
   :guard (and (= (len hyps) (1+ (len conditions$)))
               (= (len news) (1+ (len conditions$))))
   :returns (appconds "An @(tsee evmac-appcond-listp).")
@@ -719,13 +719,13 @@
           that are present for the current call of the transformation,
           in the order given in the reference documentation."
   (if verify-guards$
-      (append (casesplit-gen-all-app-cond-thm-hyp
+      (append (casesplit-gen-appconds-thm-hyp
                conditions$ hyps (w state))
-              (casesplit-gen-all-app-cond-cond-guard
+              (casesplit-gen-appconds-cond-guard
                old$ conditions$ state)
-              (casesplit-gen-all-app-cond-new-guard
+              (casesplit-gen-appconds-new-guard
                old$ conditions$ news state))
-    (casesplit-gen-all-app-cond-thm-hyp conditions$ hyps (w state))))
+    (casesplit-gen-appconds-thm-hyp conditions$ hyps (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -735,7 +735,7 @@
                               (new-name$ symbolp)
                               (new-enable$ booleanp)
                               (verify-guards$ booleanp)
-                              (app-cond-thm-names symbol-symbol-alistp)
+                              (appcond-thm-names symbol-symbol-alistp)
                               (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp)."))
@@ -764,7 +764,7 @@
     "The new function has the same guard as the old function.")
    (xdoc::p
     "The guards are verified as shown in the template file.
-     The @('app-cond-thm-names') alist is in the same order
+     The @('appcond-thm-names') alist is in the same order
      as the applicability conditions are listed in the reference documentation,
      so we remove the first @('p') elements to obtain
      the applicability condition theorem names to use in the guard hints.
@@ -778,11 +778,11 @@
         (casesplit-gen-new-fn-body (len conditions$) conditions$ news new0))
        (body (untranslate body nil wrld))
        (guard (uguard old$ wrld))
-       (guard-app-cond-thm-names (nthcdr (len news) app-cond-thm-names))
+       (guard-appcond-thm-names (nthcdr (len news) appcond-thm-names))
        (guard-hints? (and verify-guards$
                           `(("Goal"
                              :in-theory nil
-                             :use (,@(strip-cdrs guard-app-cond-thm-names)
+                             :use (,@(strip-cdrs guard-appcond-thm-names)
                                    (:guard-theorem ,old$))))))
        (local-event
         `(local
@@ -790,9 +790,9 @@
                   (declare (xargs
                             :guard ,guard
                             :verify-guards ,verify-guards$
-                             ,@(if verify-guards$
-                                   (list :guard-hints guard-hints?)
-                                 nil)))
+                            ,@(if verify-guards$
+                                  (list :guard-hints guard-hints?)
+                                nil)))
                   ,body)))
        (exported-event
         `(,macro ,new-name$ (,@formals)
@@ -824,7 +824,7 @@
                                       (new-name$ symbolp)
                                       (thm-name$ symbolp)
                                       (thm-enable$ booleanp)
-                                      (app-cond-thm-names symbol-symbol-alistp)
+                                      (appcond-thm-names symbol-symbol-alistp)
                                       (new-unnorm-name symbolp)
                                       (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -840,7 +840,7 @@
     "The formula of the theorem equates old and new function.")
    (xdoc::p
     "The theorem is proved as shown in the template file.
-     The @('app-cond-thm-names') alist is in the same order
+     The @('appcond-thm-names') alist is in the same order
      as the applicability conditions are listed in the reference documentation,
      so we take the first @('p') elements to obtain
      the applicability condition theorem names to use in the guard hints;
@@ -853,11 +853,11 @@
        (formula `(equal (,old$ ,@formals)
                         (,new-name$ ,@formals)))
        (formula (untranslate formula t wrld))
-       (thm-hyp-app-cond-thm-names (take (len theorems$)
-                                         app-cond-thm-names))
+       (thm-hyp-appcond-thm-names (take (len theorems$)
+                                        appcond-thm-names))
        (hints `(("Goal"
                  :in-theory '(,new-unnorm-name)
-                 :use (,@(strip-cdrs thm-hyp-app-cond-thm-names)
+                 :use (,@(strip-cdrs thm-hyp-appcond-thm-names)
                        ,@theorems$))))
        (local-event `(local
                       (,macro ,thm-name$
@@ -945,14 +945,14 @@
      for visual separation."))
   (b* ((wrld (w state))
        (names-to-avoid (list new-name$ thm-name$))
-       (appconds (casesplit-gen-all-app-cond old$
-                                             conditions$
-                                             hyps
-                                             news
-                                             verify-guards$
-                                             state))
-       ((mv app-cond-thm-events
-            app-cond-thm-names
+       (appconds (casesplit-gen-appconds old$
+                                         conditions$
+                                         hyps
+                                         news
+                                         verify-guards$
+                                         state))
+       ((mv appcond-thm-events
+            appcond-thm-names
             remaining-hints
             names-to-avoid)
         (evmac-appcond-theorem-list
@@ -973,7 +973,7 @@
             new-name$
             new-enable$
             verify-guards$
-            app-cond-thm-names
+            appcond-thm-names
             wrld))
        ((mv new-unnorm-event
             new-unnorm-name) (install-not-normalized-event new-name$
@@ -987,14 +987,14 @@
             new-name$
             thm-name$
             thm-enable$
-            app-cond-thm-names
+            appcond-thm-names
             new-unnorm-name
             wrld))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
-                             ,@app-cond-thm-events
+                             ,@appcond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
                              ,new-fn-local-event

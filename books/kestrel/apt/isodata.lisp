@@ -120,7 +120,7 @@
   "@('res-isomap') is the isomorphic mapping record for the function result.
    This is the same as @('res-isomap?'), when that is not @('nil')."
 
-  "@('app-cond-thm-names') is an alist
+  "@('appcond-thm-names') is an alist
    from the applicability condition keywords
    to the corresponding theorem names."
 
@@ -2220,7 +2220,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-termination-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
@@ -2236,7 +2236,7 @@
      while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (instance-termination-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:termination-theorem ,old$) old$ arg-isomaps wrld))
@@ -2269,7 +2269,7 @@
                             (verify-guards$ booleanp)
                             (untranslate$ untranslate-specifier-p)
                             compatibility
-                            (app-cond-thm-names symbol-symbol-alistp)
+                            (appcond-thm-names symbol-symbol-alistp)
                             (wrld plist-worldp))
   :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
                (new-fn-exported-event "A @(tsee pseudo-event-formp)."))
@@ -2322,7 +2322,7 @@
                    nil))
        (termination-hints? (if recursive
                                (isodata-gen-new-fn-termination-hints
-                                app-cond-thm-names old$ arg-isomaps wrld)
+                                appcond-thm-names old$ arg-isomaps wrld)
                              nil))
        (local-event
         `(local
@@ -2394,7 +2394,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-to-old-thm-hints-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
@@ -2409,7 +2409,7 @@
           and @('isomaps') does not include @(':result')."
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (instance-oldp-of-rec-call-args
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          oldp-of-rec-call-args
@@ -2441,7 +2441,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-to-old-thm-hints-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -2457,8 +2457,8 @@
           and @('isomaps') includes @(':result')."
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
-       (oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
+       (oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instance-oldp-of-rec-call-args
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          oldp-of-rec-call-args
@@ -2508,7 +2508,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-to-old-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -2522,7 +2522,7 @@
           that expresses the new function in terms of the old function."
   (if (recursivep old$ nil wrld)
       (if res-isomap?
-          (isodata-gen-new-to-old-thm-hints-rec-res app-cond-thm-names
+          (isodata-gen-new-to-old-thm-hints-rec-res appcond-thm-names
                                                     old$
                                                     arg-isomaps
                                                     res-isomap?
@@ -2530,7 +2530,7 @@
                                                     old-fn-unnorm-name
                                                     new-fn-unnorm-name
                                                     wrld)
-        (isodata-gen-new-to-old-thm-hints-rec-nonres app-cond-thm-names
+        (isodata-gen-new-to-old-thm-hints-rec-nonres appcond-thm-names
                                                      old$
                                                      arg-isomaps
                                                      new-name$
@@ -2549,7 +2549,7 @@
    (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
@@ -2572,7 +2572,7 @@
                                                     new-name$
                                                     wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-new-to-old-thm-hints app-cond-thm-names
+       (hints (isodata-gen-new-to-old-thm-hints appcond-thm-names
                                                 old$
                                                 arg-isomaps
                                                 res-isomap?
@@ -2639,7 +2639,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm-res-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -2650,7 +2650,7 @@
   :short "Generate the hints to prove the theorem
           that relates the old and new function,
           when @('isomaps') includes @(':result')."
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-forth-image
         (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
@@ -2676,7 +2676,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -2687,7 +2687,7 @@
   :short "Generate the hints to prove the theorem
           that relates the old and new function."
   (if res-isomap?
-      (isodata-gen-old-to-new-thm-res-hints app-cond-thm-names
+      (isodata-gen-old-to-new-thm-res-hints appcond-thm-names
                                             old$
                                             arg-isomaps
                                             res-isomap?
@@ -2701,7 +2701,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -2722,7 +2722,7 @@
        (formula (isodata-gen-old-to-new-thm-formula
                  old$ arg-isomaps res-isomap? new-name$ wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-old-to-new-thm-hints app-cond-thm-names
+       (hints (isodata-gen-old-to-new-thm-hints appcond-thm-names
                                                 old$
                                                 arg-isomaps
                                                 res-isomap?
@@ -2764,7 +2764,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-newp-of-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -2780,7 +2780,7 @@
   (xdoc::topstring-p
    "This is the theorem @($f'A'B'$) in the design notes.
     It is generated only if @('isomaps') includes @(':result').")
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-back-image
         (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instance-oldp-of-old
@@ -2813,7 +2813,7 @@
    (new-name$ symbolp)
    (new-to-old symbolp)
    (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp) that names the theorem."))
@@ -2835,7 +2835,7 @@
                                                      new-name$
                                                      wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-newp-of-new-thm-hints app-cond-thm-names
+       (hints (isodata-gen-newp-of-new-thm-hints appcond-thm-names
                                                  old$
                                                  arg-isomaps
                                                  res-isomap?
@@ -2850,7 +2850,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-nonrec
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
@@ -2862,7 +2862,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is according to the design notes."))
-  (b* ((old-guard-pred (cdr (assoc-eq :old-guard-pred app-cond-thm-names)))
+  (b* ((old-guard-pred (cdr (assoc-eq :old-guard-pred appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -2891,7 +2891,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-rec
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -2908,9 +2908,9 @@
      while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
-                                     app-cond-thm-names)))
+                                     appcond-thm-names)))
        (old-guard-pred (cdr (assoc-eq :old-guard-pred
-                              app-cond-thm-names)))
+                              appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -2969,7 +2969,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -2979,12 +2979,12 @@
   :short "Generate the hints to verify the guards of the new function,
           when @(':predicate') is @('t')."
   (if (recursivep old$ nil wrld)
-      (isodata-gen-new-fn-verify-guards-hints-pred-rec app-cond-thm-names
+      (isodata-gen-new-fn-verify-guards-hints-pred-rec appcond-thm-names
                                                        old$
                                                        arg-isomaps
                                                        new-to-old
                                                        wrld)
-    (isodata-gen-new-fn-verify-guards-hints-pred-nonrec app-cond-thm-names
+    (isodata-gen-new-fn-verify-guards-hints-pred-nonrec appcond-thm-names
                                                         old$
                                                         arg-isomaps
                                                         wrld)))
@@ -3024,7 +3024,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (old-fn-unnorm-name symbolp)
@@ -3039,7 +3039,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is according to the design notes."))
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -3075,7 +3075,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (thm-name$ symbolp)
@@ -3094,7 +3094,7 @@
      while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
-                                     app-cond-thm-names)))
+                                     appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -3149,7 +3149,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -3170,9 +3170,9 @@
     "This is according to the design notes,
      taking into account that there may be multiple recursive calls,
      while the design notes only assume one."))
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (rec-calls (recursive-calls old$ wrld))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
@@ -3271,7 +3271,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -3287,7 +3287,7 @@
   (if (recursivep old$ nil wrld)
       (if res-isomap?
           (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
-           app-cond-thm-names
+           appcond-thm-names
            old$
            arg-isomaps
            res-isomap?
@@ -3297,14 +3297,14 @@
            newp-of-new
            wrld)
         (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-nonres
-         app-cond-thm-names
+         appcond-thm-names
          old$
          arg-isomaps
          thm-name$
          wrld))
     (if res-isomap?
         (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-res
-         app-cond-thm-names
+         appcond-thm-names
          old$
          arg-isomaps
          old-fn-unnorm-name
@@ -3316,7 +3316,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -3331,12 +3331,12 @@
   :mode :program
   :short "Generate the hints to verify the guards of the new function."
   (if predicate$
-      (isodata-gen-new-fn-verify-guards-hints-pred app-cond-thm-names
+      (isodata-gen-new-fn-verify-guards-hints-pred appcond-thm-names
                                                    old$
                                                    arg-isomaps
                                                    new-to-old
                                                    wrld)
-    (isodata-gen-new-fn-verify-guards-hints-nonpred app-cond-thm-names
+    (isodata-gen-new-fn-verify-guards-hints-nonpred appcond-thm-names
                                                     old$
                                                     arg-isomaps
                                                     res-isomap?
@@ -3349,7 +3349,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -3384,7 +3384,7 @@
      without implementation-specific proof hints
      that may refer to local events of the @(tsee encapsulate)
      that do not exist in the history after the transformation."))
-  (b* ((hints (isodata-gen-new-fn-verify-guards-hints app-cond-thm-names
+  (b* ((hints (isodata-gen-new-fn-verify-guards-hints appcond-thm-names
                                                       old$
                                                       arg-isomaps
                                                       res-isomap?
@@ -3488,8 +3488,8 @@
                                        predicate$
                                        verify-guards$
                                        wrld))
-       ((mv app-cond-thm-events
-            app-cond-thm-names
+       ((mv appcond-thm-events
+            appcond-thm-names
             remaining-hints
             names-to-avoid)
         (evmac-appcond-theorem-list
@@ -3518,7 +3518,7 @@
                             verify-guards$
                             untranslate$
                             compatibility
-                            app-cond-thm-names
+                            appcond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
             new-fn-unnorm-name)
@@ -3531,7 +3531,7 @@
                                     res-isomap?
                                     new-name$
                                     names-to-avoid
-                                    app-cond-thm-names
+                                    appcond-thm-names
                                     old-fn-unnorm-name
                                     new-fn-unnorm-name
                                     wrld))
@@ -3545,14 +3545,14 @@
                                          new-name$
                                          new-to-old
                                          names-to-avoid
-                                         app-cond-thm-names
+                                         appcond-thm-names
                                          wrld)
           (mv nil nil)))
        (newp-of-new-thm-event? (and newp-of-new-thm-event?
                                     (list newp-of-new-thm-event?)))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event)
-        (isodata-gen-old-to-new-thm app-cond-thm-names
+        (isodata-gen-old-to-new-thm appcond-thm-names
                                     old$
                                     arg-isomaps
                                     res-isomap?
@@ -3564,7 +3564,7 @@
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
                                           (isodata-gen-new-fn-verify-guards
-                                           app-cond-thm-names
+                                           appcond-thm-names
                                            old$
                                            arg-isomaps
                                            res-isomap?
@@ -3580,7 +3580,7 @@
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
                              ,@defiso-events
-                             ,@app-cond-thm-events
+                             ,@appcond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
                              ,old-fn-unnorm-event
