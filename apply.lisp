@@ -825,31 +825,6 @@
         t
         temp)))
 
-; Here is how we beta reduce all ACL2 lambda applications.
-
-(mutual-recursion
-
-(defun expand-all-lambdas (term)
-  (declare (xargs :mode :program))
-  (cond
-   ((variablep term) term)
-   ((fquotep term) term)
-   ((flambdap (ffn-symb term))
-    (expand-all-lambdas
-     (subcor-var (lambda-formals (ffn-symb term))
-                 (fargs term)
-                 (lambda-body (ffn-symb term)))))
-   (t (fcons-term (ffn-symb term)
-                  (expand-all-lambdas-list (fargs term))))))
-
-(defun expand-all-lambdas-list (terms)
-  (declare (xargs :mode :program))
-  (cond
-   ((endp terms) nil)
-   (t (cons (expand-all-lambdas (car terms))
-            (expand-all-lambdas-list (cdr terms))))))
-)
-
 (defun changed-functional-or-expressional-formalp (formals ilks actuals)
 
 ; If there is a formal, vi, of ilk :FN or :EXPR whose corresponding actual is
@@ -965,10 +940,22 @@
       (cond
        ((symbolp (cadr term))
         (cond
-         ((eq fn (cadr term))
-          (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
-                    body is occupied by a quoted reference to ~x0 itself; ~
-                    recursion through APPLY$ is not permitted!"
+         ((and (eq fn (cadr term))
+               (not (executable-badge fn wrld)))
+
+; Note that we avoid the error by testing whether (executable-badge fn wrld) is
+; non-nil.  This means fn was admitted with :LOOP$-RECURSION.  But at the
+; moment, a loop like (loop$ for x in lst collect (fn x)) translates to
+; (collect$ (lambda$ (x)(fn x)) lst), not (collect$ 'fn lst), so technically
+; loop$ recursion has not occured!  But the user who knows what is going on
+; could well type (collect$ 'fn lst) if she wanted to, since it is logically
+; equivalent to the loop$ translation and more succinct!  So we allow it.
+
+          (mv (msg "~x0 cannot be warranted because a :FN slot in its body is ~
+                    occupied by a quoted reference to ~x0 itself; recursion ~
+                    through APPLY$ is not permitted except when the function ~
+                    was admitted with XARGS :LOOP$-RECURSION T, which only ~
+                    permits such recursion in LOOP$s."
                    fn)
               nil))
          ((executable-tamep-functionp (cadr term) wrld)
@@ -989,11 +976,14 @@
 ; closure are unchecked.
 
                (cond
-                ((ffnnamep fn (lambda-object-body (cadr term)))
+                ((and (ffnnamep fn (lambda-object-body (cadr term)))
+                      (not (executable-badge fn wrld)))
                  (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
                            body is occupied by a lambda object, ~x1, that ~
                            recursively calls ~x0; recursion through APPLY$ is ~
-                           not permitted!"
+                           not permitted unless the function was admitted ~
+                           with XARGS :LOOP$-RECURSION T, which only permits ~
+                           such recursion in LOOP$s."
                           fn
                           term)
                      nil))
@@ -1028,7 +1018,12 @@
      ((eq ilk :EXPR)
       (cond
        ((termp (cadr term) wrld)
+
         (cond ((ffnnamep fn (cadr term))
+
+; We don't even allow fns admitted with :LOOP$-RECURSION T because we don't
+; think the user will ever explicitly type a call of EV$! 
+
                (mv (msg "~x0 cannot be warranted because an :EXPR slot ~
                          in its body is occupied by a quoted term, ~x1, that ~
                          calls ~x0; recursion through EV$ is not permitted!"
@@ -1478,6 +1473,15 @@
                                  mp)
                             nil))
                        (t (mv nil terms))))))))))))))
+
+; -----------------------------------------------------------------
+; REDEF+ HACK: Now I redefine badger properly.  If and when this is all
+; working, figure out how to make badger available to defuns-fn legitimately!
+
+; (redef+)
+; (logic)
+
+; -----------------------------------------------------------------
 
 (defun badger (fn ens wrld)
 
@@ -1940,8 +1944,9 @@
   (declare (xargs :mode :logic ; :program mode may suffice, but this is nice
                   :guard (symbol-listp names)))
   (cond ((endp names) nil)
-        ((assoc-eq (car names)
-                   *badge-prim-falist*) ; primitives don't have warrants
+        ((or (assoc-eq (car names) *badge-prim-falist*)
+             (assoc-eq (car names) *apply$-boot-fns-badge-alist*))
+; Primitives and apply$ boot functions do not have or need warrants.
          (warrant-fn (cdr names)))
         (t (cons (list (warrant-name (car names)))
                  (warrant-fn (cdr names))))))
@@ -2176,6 +2181,57 @@
   `(progn
      (defun ,fn ,formals ,@rest)
      (defwarrant ,fn)))
+
+(defmacro defun$! (fn formals &rest rest)
+
+; This is like defun$ but it also includes a post-warrant verify-guards.  The
+; declarations must NOT have any :verify-guard settings, as this is added
+; automatically.  The motivation for this variant of defun$ is that the guards
+; on loop$ recursive defuns cannot be expressed until the warrant is available.
+; See the comment below on the "ideal design" for defun$.
+
+  `(progn
+     (defun ,fn ,formals
+       (declare (xargs :verify-guards nil))
+       ,@rest)
+     (defwarrant ,fn)
+     (verify-guards ,fn)))
+
+; The ideal design for defun$ would be for it to determine first whether the
+; declarations include :loop$-recursion t and whether the user wants guards
+; verified during defun.  If both conditions are true, it could change or add a
+; :verify-guards nil setting to the declarations before submitting the defun.
+; Then it could lay down a verify-guards command after the defwarrant command.
+; Doing this just whenever loop$-recursion is declared would be a mistake since
+; the user might not want guards verified.  But determine whether the user
+; wants guards verified depends on many things including the default defun mode
+; and the default verify-guards-eagerness settings in the world -- which are
+; inaccessible in macros.  So to do it "right" we'd have to implement the ideal
+; defun$ with a make-event.  Other factors involved in determining whether
+; guards are to be verified during defun include information recovered from the
+; declarations, including the :mode, :verify-guards, :guard settings and any
+; type declarations.  E.g., guard verification is not tried automatically if
+; the eagerness value is 1, no :verify-guards value is specified, and no guard
+; or type is present.  Recovering the various settings from untranslated
+; declarations is messy.
+
+; Since a goal of the ideal design would be to not render an illegal defun
+; legal or a legal one illegal when shutting off :verify-guards, the problem is
+; even messier than the various combinations of the above factors suggests.
+; For example, if the world defaults are :logic mode and
+; verify-guards-eagerness 1, and the user has two occurrences of (xargs
+; :verify-guards t) among his declares, then changing just one of them to
+; (xargs :verify-guards nil) would produce an illegal ambiguous setting from a
+; legal defun.  Similarly, if the user had both (xargs :verify-guards t) and
+; (xargs :verify-guards nil), then changing the first to (xargs :verify-guards
+; nil) would produce a legal defun from an illegal one.
+
+; While all of this could be -- and might someday be -- handled by a suitable
+; make-event version of defun or, perhaps better, extending defun to include
+; defwarrant when asked to do so by declarations or loop$ recursion, we decided
+; at the moment to just cut through the complexity by instructing the user to
+; employ defun$! if defun-time guard verification of a loop$-recursive defun is
+; wanted!
 
 ; -----------------------------------------------------------------
 ; 10. The LAMB Hack
@@ -2562,6 +2618,35 @@
       (if (apply$ fn (list globals (car lst)))
           (always$+ fn globals (cdr lst))
           nil)))
+
+; -----------------------------------------------------------------
+; Thereis$ and Thereis$+
+
+; Note there is no need for the -ac versions since thereis$ is tail-recursive!
+; Thus, there's no use of MBE or delayed guard verification in thereis$, unlike
+; sum$.
+
+(defun thereis$ (fn lst)
+  (declare (xargs :guard
+                  (and (apply$-guard fn '(nil))
+                       (true-listp lst))
+                  :mode :program))
+  (if (endp lst)
+      nil
+      (or (apply$ fn (list (car lst)))
+          (thereis$ fn (cdr lst)))))
+
+(defun thereis$+ (fn globals lst)
+  (declare (xargs :guard
+                  (and (apply$-guard fn '(nil nil))
+                       (true-listp globals)
+                       (true-list-listp lst))
+                  :mode :program))
+  (if (endp lst)
+      nil
+      (or (apply$ fn (list globals (car lst)))
+          (thereis$+ fn globals (cdr lst)))))
+
 
 ; -----------------------------------------------------------------
 ; Collect$, Collect$+, and Their Tail Recursive Counterparts

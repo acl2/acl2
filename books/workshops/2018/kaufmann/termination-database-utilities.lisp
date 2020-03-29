@@ -384,7 +384,9 @@
 
   (let ((clause-set
          (termination-theorem-clauses
+          nil nil ; loop$-recursion-checkedp and loop$-recursion value
           names
+          nil ; irrelevant when loop$-recursion-checkedp is nil, as above.
           bodies ; (get-unnormalized-bodies names wrld)
           measure-alist mp rel
           ruler-extenders-lst ; (ruler-extenders-lst names wrld)

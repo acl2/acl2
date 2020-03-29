@@ -1145,7 +1145,7 @@
 ; Thus, we are making it easier to get a nice result from callers of lambdafy,
 ; in particular, directed-untranslate-rec.
 
-         (remove-guard-holders tterm wrld)))
+         (remove-guard-holders tterm)))
     (lambdafy-rec tterm sterm exec-p wrld)))
 )
 

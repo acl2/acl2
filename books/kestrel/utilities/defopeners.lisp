@@ -502,7 +502,7 @@
                   :verify-guards nil
                   ))
   (let* ((body (fn-body fn t (w state)))
-         (body (remove-guard-holders body (w state)))
+         (body (remove-guard-holders body))
         (formals (fn-formals fn (w state))))
     (mv-let (base-claims unroll-claims)
       (make-unroll-and-base-claims-aux body all-fns-in-nest `(,fn ,@formals))

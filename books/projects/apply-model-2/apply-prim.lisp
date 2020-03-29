@@ -522,7 +522,7 @@
         (:in-theory (union-theories
                      '((:definition apply$-prim)
                        (:definition n-car-cadr-caddr-etc))
-                     (union-theories acl2::*expandable-boot-strap-non-rec-fns*
+                     (union-theories *expandable-boot-strap-non-rec-fns*
                                      (set-difference-theories
                                       (current-theory :here)
                                       (cons '(:rewrite default-car)

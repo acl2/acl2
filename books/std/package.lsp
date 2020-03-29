@@ -66,6 +66,11 @@
      byte
      read
      write
+
+     ;; Matt K. mod: rewrite-equiv was added 3/2020 to *acl2-exports but had
+     ;; that addition caused the event (defprod rewrite ...) to fail in
+     ;; centaur/meta/parse-rewrite.lisp; so we exclude that symbol here.
+     rewrite-equiv
      )))
 
 (defpkg "STR"

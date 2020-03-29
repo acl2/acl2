@@ -556,6 +556,30 @@
           nil)))
 
 ; -----------------------------------------------------------------
+; Thereis$ and Thereis$+
+
+#+acl2-devel ; else not redundant
+(defun$ thereis$ (fn lst)
+  (declare (xargs :guard
+                  (and (apply$-guard fn '(nil))
+                       (true-listp lst))))
+  (if (endp lst)
+      nil
+      (or (apply$ fn (list (car lst)))
+          (thereis$ fn (cdr lst)))))
+
+#+acl2-devel ; else not redundant
+(defun$ thereis$+ (fn globals lst)
+  (declare (xargs :guard
+                  (and (apply$-guard fn '(nil nil))
+                       (true-listp globals)
+                       (true-list-listp lst))))
+  (if (endp lst)
+      nil
+      (or (apply$ fn (list globals (car lst)))
+          (thereis$+ fn globals (cdr lst)))))
+
+; -----------------------------------------------------------------
 ; Collect$, Collect$+, and Their Tail Recursive Counterparts
 
 #+acl2-devel ; else not redundant

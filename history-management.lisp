@@ -1635,6 +1635,7 @@
                  UNNORMALIZED-BODY
                  CONSTRAINT-LST
                  RECURSIVEP
+                 LOOP$-RECURSION
                  TYPE-PRESCRIPTIONS
                  GUARD
                  SPLIT-TYPES-TERM
@@ -9503,8 +9504,10 @@
       free-vars))
    (t
     (er-let*@par
-     ((term1 (translate@par form t t t ctx wrld state)))
-     (let ((term (remove-guard-holders term1 wrld)))
+     ((term (translate@par form t t t ctx wrld state)))
+     (let ((term (possibly-clean-up-dirty-lambda-objects
+                  (remove-guard-holders term)
+                  wrld)))
        (cond
         ((or (variablep term)
              (fquotep term))
@@ -9957,8 +9960,14 @@
     (er-let*@par
      ((term (translate@par (cons (car arg) (cadr (car arg)))
                            t t t ctx wrld state))
+      (term (value (possibly-clean-up-dirty-lambda-objects
+                    (remove-guard-holders term)
+                    wrld)))
 ; known-stobjs = t (stobjs-out = t)
-      (rst (translate-hands-off-hint1@par (cdr arg) ctx wrld state)))
+      (rst (translate-hands-off-hint1@par (cdr arg) ctx wrld state))
+      (rst (value (possibly-clean-up-dirty-lambda-objects-lst
+                   (remove-guard-holders-lst rst)
+                   wrld))))
 
 ; Below we assume that if you give translate ((lambda ...) ...) and it
 ; does not cause an error, then it gives you back a function application.
@@ -10303,6 +10312,7 @@
         RETURN-LAST         ;;; affects constraints (see remove-guard-holders1)
         MV-LIST             ;;; affects constraints (see remove-guard-holders1)
         CONS-WITH-HINT      ;;; affects constraints (see remove-guard-holders1)
+        THE-CHECK           ;;; affects constraints (see remove-guard-holders1)
 
 ; The next six are used in built-in defpkg axioms.
 
@@ -11736,9 +11746,352 @@
                               tests)))
                  (t tests)))))
 
+; Essay on Choking on Loop$ Recursion
+
+; Several system functions, e.g., termination-machine, termination-machines,
+; termination-theorem-clauses, and putprop-recursivep-lst have changed so that
+; they anticipate the possibility of recursive calls inside quoted lambda
+; objects.  This is necessary to support recursion in loop$ statements.  But
+; these system functions are sometimes called directly in user-authored books.
+; We do not want to be responsible for correcting those books.  So our
+; functions that deal with loop$ recursion -- at least, those of our functions
+; that are sometimes used directly by users -- have been modified to check
+; whether loop$ recursion is present and to cause a hard error.  We call this
+; ``choking on loop$ recursion.''  However, a difficulty is that some of our
+; functions do not take world as an argument and so cannot actually implement
+; the check properly!  For example, loop$ recursion requires a singly-recursive
+; defun with an xargs declaration of loop$-recursion t, but the old definition
+; of termination-machine can't see the declarations.  Furthermore, if
+; loop$-recursion t is declared, every lambda in the body must be well-formed
+; and that is checked by chk-acceptable-defuns1 before termination-machine ever
+; sees the definition.  But termination-machine doesn't take the world and so
+; can't check well-formedness and thus it can't really explore the body of the
+; quoted lambda object looking for recursive calls.  So our choke detector is
+; conservative and does a tree-occur-eq looking for the fn symbol in the
+; ``body'' of the evg.
+
+; As a final twist, choke detection slows us down.  So functions outfitted with
+; the choke detection have been given a new argument, loop$-recursion-checkedp,
+; which if T means the choke detection is skipped because, supposedly, the
+; caller has done all the necessary well-formedness checks.  This extra
+; argument, of course, breaks books that call such system functions.  That's by
+; design.  The regression will fail and we'll find them.  But rather than fix
+; them properly -- i.e., rather than figuring out how that user's book ought to
+; handle loop$ recursion -- we just add the loop$-recursion-checkedp argument
+; and set it to NIL, meaning choke detection is run.
+
+; Loop$-recursion, a different but similarly named flag, has the value declared
+; in the :loop$-recursion xarg.  If non-nil it means loop$ recursion is
+; permited and present!  If NIL it means loop$ recursion is prohibited and
+; doesn't occur.  But it is only valid if loop$ recursion has been checked.
+
+; Note that loop$-recursion-checkedp does not mean that loop$ recursion is
+; present!  It just means that the bodies have passed the tests in
+; chk-acceptable-defuns1.  What this really means is that the function being,
+; e.g., termination-machine, is being called from within our own source code,
+; where we know definitions have been checked thoroughly before other
+; processing occurs.  But a user might call these system functions and there we
+; advise the user to call them with loop$-recursion-checkedp nil.  That forces
+; the check.  Meanwhile, back in our own code, the choke check is never done
+; and we just proceed.  Note also that if the similarly named flag
+; loop$-recursion is t we know not only that loop$ recursion is allowed but
+; that it actually happens somewhere in the body.
+
+; Our convention is that any of our functions that involves loop$-recursion and
+; is called in a user's book must have a loop$-recursion-checkedp argument that
+; if nil means that the function must call the choke detector.  If a user book
+; calls one of these functions without the proper number of arguments we will
+; get a syntax error if the user's call is in a :program or :logic mode
+; function.  But if it is in a raw function, no compile error may be detected.
+; The result (at least in ccl) is often a runtime memory error and a print out
+; of the call stack.  That print out will show (somewhere) the offending
+; function which is called with insufficient arguments.
+
 (mutual-recursion
 
-(defun termination-machine (names body alist tests ruler-extenders)
+(defun choke-on-loop$-recursion1 (fn term sysfn)
+  (cond
+   ((variablep term) nil)
+   ((fquotep term) nil)
+   ((flambdap (ffn-symb term))
+    (or (choke-on-loop$-recursion1 fn (lambda-body (ffn-symb term)) sysfn)
+        (choke-on-loop$-recursion1-lst fn (fargs term) sysfn)))
+   ((and (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)
+         (quotep (fargn term 1))
+         (consp (unquote (fargn term 1))))
+; This is a loop$ scion call on a quoted cons.  So this might be a loop$ scion
+; call on a quoted lambda.  But the lambda may not be well-formed and because
+; we do not have access to world, we can't check.  So we just see whether fn
+; occurs anywhere in the ``body'' of the ``lambda.''
+
+    (cond ((tree-occur-eq fn (lambda-object-body (unquote (fargn term 1))))
+           (er hard 'choke-on-loop$-recursion
+               "It appears that the ACL2 system function ~x0 has been called ~
+                inappropriately on a function body that engages in loop$ ~
+                recursion.  In particular, ~x1 in the body of ~x2 looks like ~
+                a call of a translated LOOP$ statement that recursively calls ~
+                ~x2.  (We can't be sure because we do not have enough ~
+                contextual information so we have been conservative in our ~
+                defensive check!)  Recursion in quoted LAMBDA constants was ~
+                disallowed when LOOP$ was first introduced but has since been ~
+                allowed.  We suspect some user-managed book calls ~x0 without ~
+                having been updated to anticipate the possibility of ~
+                recursion inside quoted LAMBDA objects!"
+               sysfn term fn))
+          (t (choke-on-loop$-recursion1-lst fn (fargs term) sysfn))))
+   (t (choke-on-loop$-recursion1-lst fn (fargs term) sysfn))))
+
+(defun choke-on-loop$-recursion1-lst (fn terms sysfn)
+  (cond ((endp terms) nil)
+        (t (or (choke-on-loop$-recursion1 fn (car terms) sysfn)
+               (choke-on-loop$-recursion1-lst fn (cdr terms) sysfn)))))
+)
+
+(defun choke-on-loop$-recursion (loop$-recursion-checkedp names body sysfn)
+
+; See the Essay on Choking on Loop$ Recursion above.  We can skip the choke
+; detector if loop$ recursion has already been exposed (i.e., removed) or if
+; there is more than one fn in names (meaning this is a mutual-recursion which
+; disallows loop$-recursion).  This function either causes a hard error or
+; returns nil.
+
+  (cond ((or loop$-recursion-checkedp
+             (cdr names))
+         nil)
+        (t (choke-on-loop$-recursion1
+            (car names)
+            body
+            sysfn))))
+
+; Essay on the Measure Conjectures for Loop$ Recursion
+
+; If a function, fn, with formals (v1 ... vn) and body fn-body contains
+; recursive calls of fn in translated loop$ statements, those calls are hidden
+; because they are in quoted lambda objects.  But the termination machine
+; generated for fn must expose these hidden calls, along with ruling
+; hypotheses, include the hypothesis explaining the iteration over the
+; target(s).
+
+; In this essay we show two generic examples, one for plain loop$s and one for
+; fancy loop$s.
+
+; Recall we has been guaranteed by chk-acceptable-defuns1: First, EVERY QUOTED
+; LAMBDA OBJECT IN IT IS WELL-FORMED, so we can treat the bodies like terms.
+; Second, the lambda provided for a plain loop has exactly one formal and the
+; lambda for a fancy loop has two.  Third, all recursive calls of fn in quoted
+; lambdas are in loop$ scions, so we don't have to look anywhere else.  Fourth,
+; there is at least one loop$ scion containing a recursive call, so we know fn
+; is recursive.  Also note that while we expect that almost all loop$ scion
+; calls will be generated by translate from loop$ statements -- and thereby
+; have very well-defined if complicated structural markings --we cannot count
+; on that!  Termination analysis must work even for well-formed calls of loop$
+; scions hand-written by the user.  So we do not look for translated loops,
+; just loop$ scion calls on quoted lambdas.
+
+; Dealing with Plain Loop$s
+
+; The most general form of a :plain loop$ scion calls approved by
+; chk-acceptable-defuns1 is:
+
+; (sum$ '(lambda (e) <dcl> lam-body) target)
+
+; where the <dcl> is optional.  Without loss of generality, assume lam-body has
+; been beta reduced so there are no ACL2 lambda expressions in it.
+
+; Suppose fn-body contains such a loop$ scion call ruled by hyps1, and that
+; within lam-body there is an occurrence of (fn d1 ... dn) ruled by hyps2.
+; Note that the only free variable in hyp2 and in the di is e.  But also
+; realize that e might occur outside the lambda, i.e., as a formal of fn and
+; thus in hyps1.  Let e' be a new variable that does not occur in hyps1, and
+; let s be the substitution {e <-- e'}.  Then the measure conjecture generated
+; for that recursive call in lam-body is:
+
+; (implies (and hyps1
+;               (member-equal e' target)
+;               hyps2/s)
+;          (rel (m d1 ... dn)/s (m v1 ... vn)))
+
+; Note that the only free variable in hyp2 and in the di is e and we rename e
+; to be e' to avoid conflating uses of e outside the lambda (i.e., in hyps1)
+; from those inside.  We illustrate that problem in a separate section of this
+; essay below.
+
+; Note also that we must generate the measure conjectures arising from
+; recursive calls in target as well!
+
+; Dealing with Fancy Loop$s
+
+; The most general form of a :fancy loop$ scion call approved by
+; chk-acceptable-defuns1 is:
+
+; (SUM$+ '(LAMBDA (gv iv) <dcl> lam-body)
+;        globals
+;        target)
+
+; Again assume lam-body has been beta reduced.  Suppose that hyp1 rules the
+; loop$ scion call and that within lam-body is a recursive call (fn d1 ... dn)
+; ruled by hyps2.  Note that the only free vars in lam-body are gv and iv.  But
+; gv is always bound to globals as the fancy loop$ scion iterates across
+; target.  Meanwhile, iv might occur outside the lambda and must be renamed.
+; So iv' be a new variable not occuring in hyps1 and let s be the substitution
+; {gv <-- globals, iv <-- iv'}.  Then the measure conjecture generated for this
+; call of (fn d1 ... dn) in lam-body is
+
+; (implies (and hyps1
+;               (member-equal e' target)
+;               hyps2/s)
+;          (rel (m d1 ... dn)/s (m v1 ... vn)))
+
+; Note also that we must generate the measure conjectures for both globals and
+; target.
+
+; Caveat about the Beta Reduction Assumption:  In the implementation we do not
+; actually beta reduce lam-body all at once but instead carry along a substitution
+; and beta reduce as we explore lam-body for recursive calls.
+
+; The Treachery of Variable Capture
+
+; Below is an example of maximal variable confusion for a plain loop.  First we
+; introduce some warranted functions that ought to be just stubbed out.
+
+; (encapsulate nil
+;   (defun$ hyp1 (x) (equal x 1))
+;   (defun$ hyp2 (x) (equal x 1))
+;   (defun$ hyp3 (x) (equal x 1))
+;   (defun$ fn1 (x) x)
+;   (defun$ fn2 (x) x)
+;   (defun$ fn3 (x) x)
+;   (defun$ fn4 (x) x)
+;   (defun$ fn5 (x) x)
+;   (defun$ fn6 (x) x)
+;   (in-theory (disable hyp1 hyp2 hyp3 fn1 fn2 fn3 fn4 fn5 fn6)))
+
+; The defun below will fail.  The column of comments renames the iteration
+; variables as termination-machine-rec will, and exhibits the beta reduced
+; versions of the corresponding let bindings and relevant terms on the line.
+
+; (defun fee (e)
+;   (declare (xargs :loop$-recursion t
+;                   :measure (acl2-count e)))
+;   (if (hyp1 e)
+;       (let ((e (fn1 e)))
+;         (loop$ for e in (fn2 e)                 ; nv0 in (fn2 (fn1 e))
+;                sum
+;                (let ((e (fn3 e)))               ; (e (fn3 nv0))
+;                  (if (hyp2 e)                   ; (hyp2 (fn3 nv0))
+;                      (loop$ for e in (fn4 e)    ; nv1 in (fn4 (fn3 nv0))
+;                             sum
+;                             (let ((e (fn5 e)))  ; (e (fn5 nv1))
+;                               (if (hyp3 e)      ; (hyp3 (fn5 nv1))
+;                                   (fee (fn6 e)) ; (fee (fn6 (fn5 nv1)))
+;                                   0)))
+;                      0))))
+;       0))
+
+; Here is the generated measure conjecture:
+
+; (IMPLIES (AND (HYP1 E)
+;               (MEMBER-EQUAL NV0 (FN2 (FN1 E)))
+;               (HYP2 (FN3 NV0))
+;               (MEMBER-EQUAL NV1 (FN4 (FN3 NV0)))
+;               (HYP3 (FN5 NV1)))
+;          (O< (ACL2-COUNT (FN6 (FN5 NV1)))
+;              (ACL2-COUNT E))))
+
+; Note how screwed up it would be if we used the user's names for the
+; iteration variables, i.e., if we replaced NV0 and NV1 both by E.
+
+; Enough said?
+
+; An Example of a Fancy Loop$'s Measure Conjecture
+
+; Execute the encapsulate above to get a bunch of disabled warranted stub-like
+; functions.  Then consider:
+
+; (defun fum (g x)
+;   (declare (xargs :loop$-recursion t
+;                   :measure (acl2-count x)))
+;   (if (and (consp x)
+;            (hyp1 g))
+;       (loop$ for e1 in (fn1 x) as e2 in (fn2 x)
+;              collect
+;              (if (hyp2 (nth g e1))
+;                  (fn3 (fum (fn4 g) (nth g e2)))
+;                  nil))
+;       x))
+
+; The measure conjecture is:
+
+; (IMPLIES (AND (AND (CONSP X)
+;                    (HYP1 G))
+;               (MEMBER-EQUAL NV0 (LOOP$-AS (LIST (FN1 X) (FN2 X))))
+;               (HYP2 (NTH (CAR (LIST G)) (CAR NV0))))
+;          (O< (ACL2-COUNT (NTH (CAR (LIST G)) (CADR NV0)))
+;              (ACL2-COUNT X)))
+
+; The (CAR (LIST G)) is, of course, immediately simplified to G so we get
+
+; (IMPLIES (AND (AND (CONSP X)
+;                    (HYP1 G))
+;               (MEMBER-EQUAL NV0 (LOOP$-AS (LIST (FN1 X) (FN2 X))))
+;               (HYP2 (NTH G (CAR NV0))))
+;          (O< (ACL2-COUNT (NTH G (CADR NV0)))
+;              (ACL2-COUNT X)))
+
+(mutual-recursion
+
+(defun all-loop$-scion-quote-lambdas (term alist)
+
+; We collect every subterm of term/alist that that is a call of a loop$ scion
+; on a quoted lambda and that is not within another such call.
+
+  (cond
+   ((variablep term) nil)
+   ((fquotep term) nil)
+   ((flambda-applicationp term)
+    (union-equal
+     (all-loop$-scion-quote-lambdas-lst (fargs term) alist)
+     (all-loop$-scion-quote-lambdas
+      (lambda-body (ffn-symb term))
+      (pairlis$ (lambda-formals (ffn-symb term))
+                (sublis-var-lst alist
+                                 (fargs term))))))
+   ((and (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)
+         (quotep (fargn term 1))
+         (consp (unquote (fargn term 1)))
+         (eq (car (unquote (fargn term 1))) 'lambda))
+
+; We pay the price of instantiatiating the loop$ scion term now with the alist
+; even though it might not have any recursions in it.  C'est la vie.
+
+    (list (sublis-var alist term)))
+   (t (all-loop$-scion-quote-lambdas-lst (fargs term) alist))))
+
+(defun all-loop$-scion-quote-lambdas-lst (terms alist)
+  (cond ((endp terms) nil)
+        (t (union-equal
+            (all-loop$-scion-quote-lambdas (car terms) alist)
+            (all-loop$-scion-quote-lambdas-lst (cdr terms) alist)))))
+
+)
+
+(mutual-recursion
+
+(defun termination-machine-rec (loop$-recursion
+                                names body alist tests
+                                ruler-extenders avoid-vars)
+
+; This function is only called if loop$-recursion-checkedp is t, i.e., we have
+; run well-formedness checks on body.  The first argument above, the similarly
+; named variable loop$-recursion, if t, means that names is a singleton list
+; and that body actually exhibits loop$ recursion somewhere.
+
+; It is admittedly odd that `names' is a plural noun (and when loop$-recursion
+; is t, is a singleton list of function names) whereas `body' is singular (and
+; is the body of the only function listed in names).  The reason is that when
+; loop$-recursion is nil names may be a list of all the functions in a
+; mutually-recursive clique with the one defined by body and a call of any of
+; the functions in names constitutes recursion.
 
 ; This function builds a list of tests-and-call records for all calls in body
 ; of functions in names, but substituting alist into every term in the result.
@@ -11758,70 +12111,108 @@
 ; notion of "rules" is extended by ruler-extenders; see :doc
 ; acl2-defaults-table and see :doc ruler-extenders.
 
+; If loop$-recursion is non-nil and body is a loop$ scion call on a quoted
+; lambda (sum$ '(lambda ...) lst) then we know that the lambda is well-formed
+; (by the implicit loop$-recursion-checkedp = t mentioned above) and we look
+; for recursive calls inside the body of that lambda.  Furthermore, we generate
+; a new variable (i.e., not in avoid-vars), add it to avoid-vars, throw away
+; alist and replace it with one that binds the locals of the lambda to the new
+; variable, and add a ruling test that the value of this new variable is a
+; member of the target, lst.
+
   (cond
    ((or (variablep body)
         (fquotep body))
     nil)
    ((flambda-applicationp body)
     (let ((lambda-body-result
-           (termination-machine names
-                                (lambda-body (ffn-symb body))
-                                (pairlis$ (lambda-formals (ffn-symb body))
-                                          (sublis-var-lst alist (fargs body)))
-                                tests
-                                ruler-extenders)))
+           (termination-machine-rec loop$-recursion
+                                    names
+                                    (lambda-body (ffn-symb body))
+                                    (pairlis$ (lambda-formals (ffn-symb body))
+                                              (sublis-var-lst alist
+                                                              (fargs body)))
+                                    tests
+                                    ruler-extenders
+                                    avoid-vars)))
       (cond
        ((member-eq-all :lambdas ruler-extenders)
-        (union-equal (termination-machine-for-list names
-                                                   (fargs body)
-                                                   alist
-                                                   tests
-                                                   ruler-extenders)
+        (union-equal (termination-machine-rec-for-list loop$-recursion
+                                                       names
+                                                       (fargs body)
+                                                       alist
+                                                       tests
+                                                       ruler-extenders
+                                                       avoid-vars)
                      lambda-body-result))
        (t
-        (termination-machine1
-         (reverse tests)
-         (all-calls-lst names
-                        (fargs body)
-                        alist
-                        nil)
+        (append
+         (termination-machine1
+          (reverse tests)
+          (all-calls-lst names
+                         (fargs body)
+                         alist
+                         nil)
+          (termination-machine-rec-for-list
+           loop$-recursion
+           names
+           (all-loop$-scion-quote-lambdas-lst (fargs body) alist)
+           alist
+           tests
+           ruler-extenders
+           avoid-vars))
          lambda-body-result)))))
    ((eq (ffn-symb body) 'if)
     (let* ((inst-test (sublis-var alist
 
-; Since (remove-guard-holders x nil) is provably equal to x, the machine we
+; Since (remove-guard-holders x) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
-; It might be sound to pass in the world so that guard holders are removed from
-; quoted lambdas in argument positions with ilk :fn (or :fn?), but we don't
-; expect to pay much of a price by playing it safe here and in
-; induction-machine-for-fn1.
+; It might be sound also call possibly-clean-up-dirty-lambda-objects so that
+; guard holders are removed from quoted lambdas in argument positions with ilk
+; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
+; here and in induction-machine-for-fn1.
 
-                                  (remove-guard-holders (fargn body 1) nil)))
+                                  (remove-guard-holders (fargn body 1))))
            (branch-result
-            (append (termination-machine names
-                                         (fargn body 2)
-                                         alist
-                                         (add-test-smart inst-test tests)
-                                         ruler-extenders)
-                    (termination-machine names
-                                         (fargn body 3)
-                                         alist
-                                         (add-test-smart
-                                          (dumb-negate-lit inst-test)
-                                          tests)
-                                         ruler-extenders))))
+            (append (termination-machine-rec loop$-recursion
+                                             names
+                                             (fargn body 2)
+                                             alist
+                                             (add-test-smart inst-test tests)
+                                             ruler-extenders
+                                             avoid-vars)
+                    (termination-machine-rec loop$-recursion
+                                             names
+                                             (fargn body 3)
+                                             alist
+                                             (add-test-smart
+                                              (dumb-negate-lit inst-test)
+                                              tests)
+                                             ruler-extenders
+                                             avoid-vars))))
       (cond
        ((member-eq-all 'if ruler-extenders)
-        (append (termination-machine names
-                                     (fargn body 1)
-                                     alist
-                                     tests
-                                     ruler-extenders)
+        (append (termination-machine-rec loop$-recursion
+                                         names
+                                         (fargn body 1)
+                                         alist
+                                         tests
+                                         ruler-extenders
+                                         avoid-vars)
                 branch-result))
        (t
-        (termination-machine1
-         (reverse tests)
-         (all-calls names (fargn body 1) alist nil)
+        (append
+         (termination-machine1
+          (reverse tests)
+          (all-calls names (fargn body 1) alist nil)
+          (termination-machine-rec-for-list
+           loop$-recursion
+           names
+           (all-loop$-scion-quote-lambdas (fargn body 1) alist)
+           alist
+           tests
+           ruler-extenders
+           avoid-vars))
          branch-result)))))
    ((and (eq (ffn-symb body) 'return-last)
          (quotep (fargn body 1))
@@ -11832,42 +12223,216 @@
 ; We could probably do this for any return-last call, but for legacy reasons
 ; (before introduction of return-last after v4-1) we restrict to 'mbe1-raw.
 
-    (termination-machine names
-                         (fargn body 3) ; (return-last 'mbe1-raw exec logic)
-                         alist
-                         tests
-                         ruler-extenders))
+    (termination-machine-rec loop$-recursion
+                             names
+                             (fargn body 3) ; (return-last 'mbe1-raw exec logic)
+                             alist
+                             tests
+                             ruler-extenders
+                             avoid-vars))
    ((member-eq-all (ffn-symb body) ruler-extenders)
-    (let ((rec-call (termination-machine-for-list names (fargs body) alist
-                                                  tests ruler-extenders)))
+    (let ((rec-call (termination-machine-rec-for-list loop$-recursion
+                                                      names (fargs body) alist
+                                                      tests ruler-extenders
+                                                      avoid-vars)))
       (if (member-eq (ffn-symb body) names)
           (cons (make tests-and-call
                       :tests (reverse tests)
                       :call (sublis-var alist body))
                 rec-call)
-        rec-call)))
-   (t (termination-machine1 (reverse tests)
-                            (all-calls names body alist nil)
-                            nil))))
+          rec-call)))
+   ((loop$-scion-style (ffn-symb body) *loop$-keyword-info*)
+    (let ((style (loop$-scion-style (ffn-symb body) *loop$-keyword-info*))
 
-(defun termination-machine-for-list (names bodies alist tests ruler-extenders)
+; Before we get too carried away with the possibility of loop$ recursion here,
+; we need to remember to deal with normal recursion in this term!  This
+; collects recursions in the globals and target expressions.
+
+          (normal-ans (termination-machine1 (reverse tests)
+                                            (all-calls names body alist nil)
+                                            nil)))
+      (cond
+       ((and loop$-recursion
+             (quotep (fargn body 1))
+             (consp (unquote (fargn body 1)))
+             (eq (car (unquote (fargn body 1))) 'lambda))
+
+; Loop$-recursion may be present in this call of a loop$ scion.  (We can't just
+; use ffnnamep to ask because it doesn't look inside of lambda objects that
+; might be in the body of this one; furthermore, that information alone
+; wouldn't help us since if a recursive call is buried several layers deep in
+; loop$ scions we need to generate the newvars and ruling member tests on the
+; way down.)  The well-formedness checks done by chk-acceptable-defuns1 ensures
+; that every quoted lambda is well-formed, and that every loop$ scion call is
+; on a quoted lambda of the right arity (1 or 2 depending on whether its a
+; :plain or :fancy loop$ scion).  We need give special attention to those loop$
+; scion calls whose quoted lambda contains a recursive call of the fn being
+; defined.  And this may be one!
+
+        (cond
+         ((eq style :plain)
+          (let* ((lamb (unquote (fargn body 1)))
+                 (v (car (lambda-object-formals lamb)))
+
+; While we generally follow the convention of calling
+; possibly-clean-up-dirty-lambda-objects anytime we're removing guard holders
+; we do not do so here because we don't want to think about the effect on
+; termination machines, at least not until we see it hurt us.
+
+                 (lamb-body (remove-guard-holders (lambda-object-body lamb)))
+                 (target (sublis-var alist (fargn body 2)))
+                 (newvar (genvar v "NV" 0 avoid-vars))
+                 (avoid-vars (cons newvar avoid-vars))
+                 (inst-test `(MEMBER-EQUAL
+                              ,newvar
+                              ,(remove-guard-holders target))))
+            (append normal-ans
+                    (termination-machine-rec loop$-recursion
+                                             names
+                                             lamb-body
+; Note: The only free var in lamb-body is v, so we can ignore the subsitutions
+; in alist!
+                                             (list (cons v newvar))
+                                             (add-test-smart inst-test tests)
+                                             ruler-extenders
+                                             avoid-vars)
+                    (termination-machine-rec-for-list
+                     loop$-recursion
+                     names
+                     (all-loop$-scion-quote-lambdas target alist)
+                     alist
+                     tests
+                     ruler-extenders
+                     avoid-vars))))
+         ((eq style :fancy)
+          (let* ((lamb (unquote (fargn body 1)))
+                 (gvars (car (lambda-object-formals lamb)))
+                 (ivars (cadr (lambda-object-formals lamb)))
+                 (lamb-body (remove-guard-holders (lambda-object-body lamb)))
+                 (globals (sublis-var alist (fargn body 2)))
+                 (target (sublis-var alist (fargn body 3)))
+                 (newvar (genvar ivars "NV" 0 avoid-vars))
+                 (avoid-vars (cons newvar avoid-vars))
+                 (inst-test `(MEMBER-EQUAL
+                              ,newvar
+                              ,(remove-guard-holders target))))
+            (append normal-ans
+                    (termination-machine-rec loop$-recursion
+                                             names
+                                             lamb-body
+                                             (list (cons gvars globals)
+                                                   (cons ivars newvar))
+                                             (add-test-smart inst-test tests)
+                                             ruler-extenders
+                                             avoid-vars)
+                    (termination-machine-rec-for-list
+                     loop$-recursion
+                     names
+; The following collects the top-level loop$-scion calls on quoted lambdas in
+; the globals and the target of a fancy loop$.
+                     (all-loop$-scion-quote-lambdas-lst (cdr (fargs body)) alist)
+                     alist
+                     tests
+                     ruler-extenders
+                     avoid-vars))))
+         (t normal-ans)))
+       (t
+
+; This is a loop$ scion call but not one that could have loop$ recursion in it,
+; (except possibly in the non-:FN arguments) so we just return the normal
+; answer.
+
+        normal-ans))))
+   (t (termination-machine1
+       (reverse tests)
+       (all-calls names body alist nil)
+       (termination-machine-rec-for-list
+        loop$-recursion
+        names
+        (all-loop$-scion-quote-lambdas body alist)
+        alist
+        tests
+        ruler-extenders
+        avoid-vars)))))
+
+(defun termination-machine-rec-for-list
+  (loop$-recursion names bodies alist tests ruler-extenders avoid-vars)
   (cond ((endp bodies) nil)
-        (t (append (termination-machine names (car bodies) alist tests
-                                        ruler-extenders)
-                   (termination-machine-for-list names (cdr bodies) alist tests
-                                                 ruler-extenders)))))
+        (t (append (termination-machine-rec loop$-recursion
+                                            names (car bodies) alist tests
+                                            ruler-extenders avoid-vars)
+                   (termination-machine-rec-for-list loop$-recursion
+                                                     names
+                                                     (cdr bodies)
+                                                     alist tests
+                                                     ruler-extenders
+                                                     avoid-vars)))))
 )
 
-(defun termination-machines (names bodies ruler-extenders-lst)
+(defun termination-machine (loop$-recursion-checkedp
+                            loop$-recursion
+                            names formals body
+                            alist tests ruler-extenders)
 
-; This function builds the termination machine for each function defined
-; in names with the corresponding body in bodies.  A list of machines
-; is returned.
+; See the Essay on Choking on Loop$ Recursion for an explanation of the first
+; argument.  See termination-machine-rec for the spec of what this function
+; does otherwise.
+
+; Names is the list of all the functions defined in a mutually recursive
+; clique, formals is the list of formals of one of those functions and body is
+; the body of one of those functions.  We are only interested in formals when
+; loop$-recursion-checkedp and loop$-recursion are t, in which case names is a
+; singleton containing the name of single function being defined.  In that
+; case, we use formals to initialize the list of all variables to avoid.  Note
+; that bound variables (e.g., from LET statements) occurring in body will be
+; eliminated by the on-the-fly beta reduction.
+
+; Note: formals is irrelevant (as described above) if loop$-recursion-checkedp
+; is nil.
+
+  (prog2$
+   (choke-on-loop$-recursion loop$-recursion-checkedp
+                             names
+                             body
+                             'termination-machine)
+   (termination-machine-rec loop$-recursion
+                            names body alist tests ruler-extenders
+                            (if (and loop$-recursion-checkedp
+                                     loop$-recursion)
+
+; We know names, formals-lst, and bodies are singleton lists and that loop$
+; recursion is present.  In this case, we compute the list of all formals and
+; all bound vars in the body of the fn being defined.  This is the initial list
+; of variable names to avoid when generating newvars for the member-equal hyps
+; implicitly ruling recursions hidden in quoted lambdas.
+
+                                formals
+                                nil))))
+
+(defun termination-machines (loop$-recursion-checkedp
+                             loop$-recursion
+                             names arglists bodies ruler-extenders-lst)
+
+; This function builds the termination machine for each function defined in
+; names with the corresponding formals in arglists and body in bodies.  A list
+; of machines is returned.
+
+; Note: arglists is irrelevant (as implied by the comment in
+; termination-machine) if loop$-recursion-checkedp is nil.  Otherwise, it
+; should be in 1:1 correspondence with names and bodies.  This function chokes
+; on unchecked loop$ recursion, but inherits the call of
+; (choke-on-loop$-recursion loop$-recursion-checkedp ...) from
+; termination-machine.
 
   (cond ((null bodies) nil)
-        (t (cons (termination-machine names (car bodies) nil nil
+        (t (cons (termination-machine loop$-recursion-checkedp
+                                      loop$-recursion
+                                      names (car arglists) (car bodies)
+                                      nil nil
                                       (car ruler-extenders-lst))
-                 (termination-machines names (cdr bodies)
+                 (termination-machines loop$-recursion-checkedp
+                                       loop$-recursion
+                                       names (cdr arglists) (cdr bodies)
                                        (cdr ruler-extenders-lst))))))
 
 ; Function measure-clauses-for-clique was originally defined in defuns.lisp,
@@ -12083,9 +12648,20 @@
                                         measure-alist mp rel measure-debug
                                         wrld)))))
 
-(defun termination-theorem-clauses (names bodies measure-alist mp rel
-                                          ruler-extenders-lst wrld)
-  (let ((t-machines (termination-machines names bodies ruler-extenders-lst)))
+(defun termination-theorem-clauses (loop$-recursion-checkedp
+                                    loop$-recursion
+                                    names arglists bodies measure-alist mp rel
+                                    ruler-extenders-lst wrld)
+
+; Observe that arglist is only used in termination-machines, and in that
+; function we observe that it is irrelevant if loop$-recursion-checkedp is nil.
+; So that holds here too: arglists is irrelevant if loop$-recursion-checkedp is
+; nil.  This function inherits the call of (choke-on-loop$-recursion
+; loop$-recursion-checkedp ...)  from termination-machines.
+
+  (let ((t-machines (termination-machines loop$-recursion-checkedp
+                                          loop$-recursion
+                                          names arglists bodies ruler-extenders-lst)))
     (measure-clauses-for-clique names t-machines
                                 measure-alist
                                 mp rel
@@ -12197,11 +12773,21 @@
                                       fn))))))))))
          (t
           (let ((clauses
-                 (termination-theorem-clauses names
-                                              (get-unnormalized-bodies names wrld)
-                                              measure-alist mp rel
-                                              (ruler-extenders-lst names wrld)
-                                              wrld)))
+                 (termination-theorem-clauses
+                  t ; loop$-recursion-checkedp
+                  (if (cdr names)
+                      nil
+                      (getpropc (car names) 'loop$-recursion nil wrld))
+                  names
+; Formals, below, is relevant only if there's exactly one name and its
+; loop$-recursion property is t.  But we just check the first and pay the price
+; of fetching the formals even though we might not need them.
+
+                  (if (cdr names) nil (list (formals (car names) wrld)))
+                  (get-unnormalized-bodies names wrld)
+                  measure-alist mp rel
+                  (ruler-extenders-lst names wrld)
+                  wrld)))
             (termify-clause-set clauses)))))))))
 
 ; Before completing the implementation of defun we implement support for the
@@ -13005,7 +13591,9 @@
            (let* ((term1 (make-lambda-application
                           (lambda-formals (ffn-symb term))
                           (termify-clause-set cl-set2)
-                          (remove-guard-holders-lst (fargs term) wrld)))
+                          (possibly-clean-up-dirty-lambda-objects-lst
+                           (remove-guard-holders-lst (fargs term))
+                           wrld)))
                   (cl (reverse (add-literal-smart term1 clause nil)))
                   (cl-set3 (if (equal cl *true-clause*)
                                cl-set1
@@ -13020,7 +13608,9 @@
                               (list cl)))))
              (mv cl-set3 ttree)))))
         ((eq (ffn-symb term) 'if)
-         (let ((test (remove-guard-holders (fargn term 1) wrld)))
+         (let ((test (possibly-clean-up-dirty-lambda-objects
+                      (remove-guard-holders (fargn term 1))
+                      wrld)))
            (mv-let
             (cl-set1 ttree)
 
@@ -13215,7 +13805,9 @@
                            (sublis-var-lst-lst
                             (pairlis$
                              (formals (ffn-symb term) wrld)
-                             (remove-guard-holders-lst (fargs term) wrld))
+                             (possibly-clean-up-dirty-lambda-objects-lst
+                              (remove-guard-holders-lst (fargs term))
+                              wrld))
                             guard-concl-segments)))))
                    cl-set2)
                   ttree)))))))
@@ -13892,7 +14484,10 @@
                ""))))
      ((eq (car lmi) :theorem)
       (er-let*@par
-       ((term (translate@par (cadr lmi) t t t ctx wrld state)))
+       ((term (translate@par (cadr lmi) t t t ctx wrld state))
+        (term (value (possibly-clean-up-dirty-lambda-objects
+                      (remove-guard-holders term)
+                      wrld))))
 ; known-stobjs = t (stobjs-out = t)
        (value@par (list term (list term) nil nil))))
      ((or (eq (car lmi) :instance)

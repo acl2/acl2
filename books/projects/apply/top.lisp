@@ -1,4 +1,4 @@
-; Copyright (C) 2019, Regents of the University of Texas
+; Copyright (C) 2020, Regents of the University of Texas
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
@@ -9,3 +9,4 @@
 
 (include-book "base")
 (include-book "loop")
+(include-book "definductor")

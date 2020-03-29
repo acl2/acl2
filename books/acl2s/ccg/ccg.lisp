@@ -7025,7 +7025,25 @@ e2-e1+1.
 ; use the standard state and error primitives and so it returns 3 and lists
 ; together the three "real" answers.
 
- (let ((wrld1 (putprop-recursivep-lst names bodies wrld)))
+  (prog2$
+
+; [Note: With the introduction of loop$-recursion into ACL2 we had to modify
+; this code to stop it from accepting defuns exhibiting loop$ recursion.  The
+; check is conservative but meant to be fast.  JSM 23 Jan, 2020.]
+
+   (choke-on-loop$-recursion nil
+                             names
+                             (car bodies) ; irrelevant if names not singleton
+                             'ccg-put-induction-info)
+   (let ((wrld1 (putprop-recursivep-lst nil nil names bodies wrld)))
+
+; Pete: Putprop-recursivep-lst now takes the new loop$-recursion-checkedp and
+; loop$-recursion arguments, which if nil will mean a hard error is signalled
+; if putprop-recursivep-lst detects recursion inside loop$ bodies.  See the
+; Essay on Choking on Loop$ Recursion.  Basically, the question is whether you
+; want to extend ccg to handle such recursion (and then change the two flags
+; appropriately) or leave them as is and suffer errors if ccg is called on
+; functions that use loop$ recursion.
 
 ; The put above stores a note on each function symbol as to whether it is
 ; recursive or not.  An important question arises: have we inadventently
@@ -7034,66 +7052,72 @@ e2-e1+1.
 ; care about properties such as 'recursivep.  However, we make use of this
 ; property below to decide if we need to prove termination.
 
-    (cond ((and (null (cdr names))
-                (null (getprop (car names) 'recursivep nil
-                               'current-acl2-world wrld1)))
+     (cond ((and (null (cdr names))
+                 (null (getprop (car names) 'recursivep nil
+                                'current-acl2-world wrld1)))
 
 ; If only one function is being defined and it is non-recursive, we can quit.
 ; But we have to store the symbol-class and we have to print out the admission
 ; message with prove-termination so the rest of our processing is uniform.
 
-           (er-let*
-            ((tuple (prove-termination-non-recursive names bodies mp rel hints otf-flg big-mutrec
-                                                     ctx ens wrld1 state)))
-            (value (cons nil tuple))))
-          (t
-           (let ((t-machines (termination-machines names bodies ruler-extenders-lst)))
-             (er-let*
-              ((wrld1 (update-w
+            (er-let*
+                ((tuple (prove-termination-non-recursive names bodies mp rel hints otf-flg big-mutrec
+                                                         ctx ens wrld1 state)))
+              (value (cons nil tuple))))
+           (t
+            (let ((t-machines (termination-machines nil nil
+; loop$-recursion-checkedp and loop$-recursion declared value = nil
+                                                    names
+                                                    nil ; = arglists
+; when loop$-recursion-checkedp = nil, arglists is irrelevant
+                                                    bodies ruler-extenders-lst)))
+              (er-let*
+                  ((wrld1 (update-w
 
 ; Sol Swords sent an example in which a clause-processor failed during a
 ; termination proof.  That problem goes away if we install the world, which we
 ; do by making the following binding.
 
-                       t ; formerly big-mutrec
-                       wrld1))
-              (quadruple
-               (if (eq term-method :measure)
-                   (er-let* ((triple (prove-termination-recursive
-                                      names arglists
-                                      measures
-                                      t-machines
-                                      mp rel hints otf-flg bodies
-                                      measure-debug
-                                      ctx ens wrld1 state)))
-                     (value (cons :measure triple)))
-                 (ccg-prove-termination-recursive names arglists
-                                                  measures
-                                                  ccms
-                                                  ruler-extenders-lst
-                                                  t-machines
-                                                  mp rel
-                                                  verbose
-                                                  time-limit
-                                                  hierarchy
-                                                  otf-flg bodies
-                                                  ctx ens wrld1 state))))
+                           t ; formerly big-mutrec
+                           wrld1))
+                   (quadruple
+                    (if (eq term-method :measure)
+                        (er-let* ((triple (prove-termination-recursive
+                                           names arglists
+                                           measures
+                                           t-machines
+                                           mp rel hints otf-flg bodies
+                                           measure-debug
+                                           ctx ens wrld1 state)))
+                          (value (cons :measure triple)))
+                        (ccg-prove-termination-recursive names arglists
+                                                         measures
+                                                         ccms
+                                                         ruler-extenders-lst
+                                                         t-machines
+                                                         mp rel
+                                                         verbose
+                                                         time-limit
+                                                         hierarchy
+                                                         otf-flg bodies
+                                                         ctx ens wrld1 state))))
                 ;;(progn
-                  ;;(print quadruple)
-               ;; (prog2$
-               ;;  (cw "~%DEBUG:: quadruple = ~x0~%~%" quadruple)
-               (let* ((term-method (car quadruple))
-                      (col (cadr quadruple))
-                      (measure-alist (caddr quadruple))
-                      (ttree (cdddr quadruple)))
-                 (er-let*
-                     ((tuple (put-induction-info-recursive names arglists
-                                                           col ttree
-                                                           measure-alist t-machines
-                                                           ruler-extenders-lst
-                                                           bodies mp rel wrld1
-                                                           state)))
-                   (value (cons term-method tuple))))))))))
+                ;;(print quadruple)
+                ;; (prog2$
+                ;;  (cw "~%DEBUG:: quadruple = ~x0~%~%" quadruple)
+                (let* ((term-method (car quadruple))
+                       (col (cadr quadruple))
+                       (measure-alist (caddr quadruple))
+                       (ttree (cdddr quadruple)))
+                  (er-let*
+                      ((tuple (put-induction-info-recursive nil ; loop$-recursion
+                                                            names arglists
+                                                            col ttree
+                                                            measure-alist t-machines
+                                                            ruler-extenders-lst
+                                                            bodies mp rel wrld1
+                                                            state)))
+                    (value (cons term-method tuple)))))))))))
 
 (defun defun-redundant-get-ccms (fives wrld)
   ;; gets the CCMs installed into the world for a given set of function definitions.

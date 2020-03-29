@@ -48,4 +48,5 @@
                             (ruler-extenders fn wrld)
                           (default-ruler-extenders wrld))))
     (termination-machine
-     (list fn) (ubody fn wrld) nil nil ruler-extenders)))
+     nil nil ; loop$-recursion-checkep = nil --> arglists irrel
+     (list fn) nil (ubody fn wrld) nil nil ruler-extenders)))

@@ -1081,63 +1081,66 @@
 
   (let ((rcnst (access prove-spec-var pspv :rewrite-constant)))
     (mv-let
-     (built-in-clausep ttree)
-     (cond
-      ((or (eq (car (car hist)) 'simplify-clause)
-           (eq (car (car hist)) 'settled-down-clause))
+      (built-in-clausep ttree)
+      (cond
+       ((or (eq (car (car hist)) 'simplify-clause)
+            (eq (car (car hist)) 'settled-down-clause))
 
 ; If the hist shows that cl has just come from simplification, there is no
 ; need to check that it is built in, because the simplifier does that.
 
-       (mv nil nil))
-      (t
-       (built-in-clausep 'preprocess-clause
-                         cl
-                         (access rewrite-constant
-                                 rcnst
-                                 :current-enabled-structure)
-                         (access rewrite-constant
-                                 rcnst
-                                 :oncep-override)
-                         wrld
-                         state)))
+        (mv nil nil))
+       (t
+        (built-in-clausep 'preprocess-clause
+                          cl
+                          (access rewrite-constant
+                                  rcnst
+                                  :current-enabled-structure)
+                          (access rewrite-constant
+                                  rcnst
+                                  :oncep-override)
+                          wrld
+                          state)))
 
 ; Ttree is known to be 'assumption free.
 
-     (cond
-      (built-in-clausep
-       (mv step-limit 'hit nil ttree pspv))
-      (t
+      (cond
+       (built-in-clausep
+        (mv step-limit 'hit nil ttree pspv))
+       (t
 
 ; Here is where we expand the "original" IMPLIES in the conclusion but
 ; leave any IMPLIES in the hypotheses.  These IMPLIES are thought to
 ; have been introduced by :USE hints.
 
-       (let ((term (disjoin (expand-any-final-implies cl wrld))))
-         (sl-let (term ttree)
-                 (expand-abbreviations term nil
-                                       *geneqv-iff* nil
-                                       (access rewrite-constant
-                                               rcnst
-                                               :fns-to-be-ignored-by-rewrite)
-                                       (rewrite-stack-limit wrld)
-                                       step-limit
-                                       (access rewrite-constant
-                                               rcnst
-                                               :current-enabled-structure)
-                                       wrld state nil)
-                 (sl-let (clauses ttree)
-                         (clausify-input term
-                                         (access rewrite-constant
-                                                 rcnst
-                                                 :fns-to-be-ignored-by-rewrite)
-                                         (access rewrite-constant
-                                                 rcnst
-                                                 :current-enabled-structure)
-                                         wrld
-                                         state
-                                         ttree
-                                         step-limit)
+        (let ((term
+               (possibly-clean-up-dirty-lambda-objects
+                (disjoin (expand-any-final-implies cl wrld))
+                wrld)))
+          (sl-let (term ttree)
+                  (expand-abbreviations term nil
+                                        *geneqv-iff* nil
+                                        (access rewrite-constant
+                                                rcnst
+                                                :fns-to-be-ignored-by-rewrite)
+                                        (rewrite-stack-limit wrld)
+                                        step-limit
+                                        (access rewrite-constant
+                                                rcnst
+                                                :current-enabled-structure)
+                                        wrld state nil)
+                  (sl-let (clauses ttree)
+                          (clausify-input term
+                                          (access rewrite-constant
+                                                  rcnst
+                                                  :fns-to-be-ignored-by-rewrite)
+                                          (access rewrite-constant
+                                                  rcnst
+                                                  :current-enabled-structure)
+                                          wrld
+                                          state
+                                          ttree
+                                          step-limit)
 ;;;                         (let ((clauses
 ;;;                                (expand-some-non-rec-fns-in-clauses
 ;;;                                 '(iff implies)
@@ -1185,11 +1188,11 @@
 
 ; in type-set-b for more details on this latter criterion.
 
-                         (let ((tau-completion-alist
-                                (access prove-spec-var pspv :tau-completion-alist)))
-                           (mv-let
-                            (clauses1 ttree1 new-tau-completion-alist)
-                            (if (or (null hist)
+                          (let ((tau-completion-alist
+                                 (access prove-spec-var pspv :tau-completion-alist)))
+                            (mv-let
+                              (clauses1 ttree1 new-tau-completion-alist)
+                              (if (or (null hist)
 
 ; If (null (cdr hist)) and (null (cddr hist)) are tested in this disjunction,
 ; then tau is tried during the first three simplifications and then again when
@@ -1202,41 +1205,41 @@
 ; time down by about 1.5% compared to the less aggressive approach.  However, we
 ; think it might be worth it as more tau-based proofs scripts are developed.
 
-                                    (null (cdr hist))
-                                    (null (cddr hist))
-                                    (eq (car (car hist)) 'settled-down-clause))
-                                (let ((ens (access rewrite-constant
-                                                   rcnst
-                                                   :current-enabled-structure)))
-                                  (if (enabled-numep *tau-system-xnume* ens)
-                                      (tau-clausep-lst clauses
-                                                       ens
-                                                       wrld
-                                                       nil
-                                                       nil
-                                                       state
-                                                       tau-completion-alist)
-                                      (mv clauses nil tau-completion-alist)))
-                                (mv clauses nil tau-completion-alist))
-                            (let ((pspv (if (equal tau-completion-alist
-                                                   new-tau-completion-alist)
-                                            pspv
-                                            (change prove-spec-var pspv
-                                                    :tau-completion-alist
-                                                    new-tau-completion-alist))))
-                              (cond
-                               ((equal clauses1 (list cl))
+                                      (null (cdr hist))
+                                      (null (cddr hist))
+                                      (eq (car (car hist)) 'settled-down-clause))
+                                  (let ((ens (access rewrite-constant
+                                                     rcnst
+                                                     :current-enabled-structure)))
+                                    (if (enabled-numep *tau-system-xnume* ens)
+                                        (tau-clausep-lst clauses
+                                                         ens
+                                                         wrld
+                                                         nil
+                                                         nil
+                                                         state
+                                                         tau-completion-alist)
+                                        (mv clauses nil tau-completion-alist)))
+                                  (mv clauses nil tau-completion-alist))
+                              (let ((pspv (if (equal tau-completion-alist
+                                                     new-tau-completion-alist)
+                                              pspv
+                                              (change prove-spec-var pspv
+                                                      :tau-completion-alist
+                                                      new-tau-completion-alist))))
+                                (cond
+                                 ((equal clauses1 (list cl))
 
 ; In this case, preprocess-clause has made no changes to the clause.
 
-                                (mv step-limit 'miss nil nil nil))
-                               ((and (consp clauses1)
-                                     (null (cdr clauses1))
-                                     (no-op-histp hist)
-                                     (equal (prettyify-clause-simple
-                                             (car clauses1))
-                                            (access prove-spec-var pspv
-                                                    :user-supplied-term)))
+                                  (mv step-limit 'miss nil nil nil))
+                                 ((and (consp clauses1)
+                                       (null (cdr clauses1))
+                                       (no-op-histp hist)
+                                       (equal (prettyify-clause-simple
+                                               (car clauses1))
+                                              (access prove-spec-var pspv
+                                                      :user-supplied-term)))
 
 ; In this case preprocess-clause has produced a singleton set of clauses whose
 ; only element is the translated user input.  For example, the user might have
@@ -1289,18 +1292,18 @@
 ; do such a check for all preprocess-clause transformations, but only when
 ; actually printing output (so as to avoid the overhead of untranslation).
 
-                                (mv step-limit
-                                    'hit
-                                    clauses1
-                                    (add-to-tag-tree
-                                     'hidden-clause t
-                                     (cons-tag-trees ttree1 ttree))
-                                    pspv))
-                               (t (mv step-limit
+                                  (mv step-limit
                                       'hit
                                       clauses1
-                                      (cons-tag-trees ttree1 ttree)
-                                      pspv))))))))))))))
+                                      (add-to-tag-tree
+                                       'hidden-clause t
+                                       (cons-tag-trees ttree1 ttree))
+                                      pspv))
+                                 (t (mv step-limit
+                                        'hit
+                                        clauses1
+                                        (cons-tag-trees ttree1 ttree)
+                                        pspv))))))))))))))
 
 ; And here is the function that reports on a successful preprocessing.
 
@@ -2796,14 +2799,16 @@
            pspv))
       (t
        (let ((lmi-lst (cadr temp)) ; a singleton list
-             (thm (remove-guard-holders
+             (thm (possibly-clean-up-dirty-lambda-objects
+                   (remove-guard-holders
 
 ; We often remove guard-holders without tracking their use in the tag-tree.
 ; Other times we record their use (but not here).  This is analogous to our
 ; reporting of the use of (:DEFINITION NOT) in some cases but not in others
 ; (e.g., when we use strip-not).
 
-                   (caddr temp) wrld))
+                    (caddr temp))
+                   wrld))
              (constraint-cl (cadddr temp))
              (sr-limit (car (access rewrite-constant
                                     (access prove-spec-var pspv
@@ -2826,7 +2831,9 @@
 
 ; WARNING: See the warning about the processing in translate-by-hint.
 
-         (let* ((cl (remove-guard-holders-lst cl wrld))
+         (let* ((cl (possibly-clean-up-dirty-lambda-objects-lst
+                     (remove-guard-holders-lst cl)
+                     wrld))
                 (cl (remove-equal *nil* cl))
                 (easy-winp
                  (cond ((null cl) ; very weird case!

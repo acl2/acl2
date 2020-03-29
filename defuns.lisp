@@ -713,7 +713,8 @@
                                  (access translate-cert-data-record val
                                          :value))))))))))
 
-(defun translate-bodies (non-executablep names arglists bodies known-stobjs-lst
+(defun translate-bodies (non-executablep names arglists bodies bindings0
+                                         known-stobjs-lst
                                          reclassifying-all-programp
                                          ctx wrld state)
 
@@ -723,6 +724,12 @@
 ; (see :DOC defproxy) for encapsulated functions that may replace them later,
 ; and we need to guarantee to callers that those stobjs-out do not change with
 ; such replacements.
+
+; Normally, this function is called with bindings0 = (pairlis$ names names),
+; which indicates that the output signature of each name must be inferred
+; during translation and stored in the ultimate value of bindings.  But when
+; :loop$-recursion is specified, the caller already knows the output signature
+; of the fn being defined and will specify it in the call.
 
   (declare (xargs :guard (true-listp bodies)))
   (let ((cert-data-entry (cert-data-entry :translate state)))
@@ -742,7 +749,7 @@
         (mv-let (erp lst bindings)
           (translate-bodies1 (eq non-executablep t) ; not :program
                              names bodies
-                             (pairlis$ names names)
+                             bindings0
                              known-stobjs-lst
                              ctx wrld
                              (default-state-vars t
@@ -875,7 +882,9 @@
 ; Rockwell Addition:  The recursivep property has changed.  Singly
 ; recursive fns now have the property (fn) instead of fn.
 
-(defun putprop-recursivep-lst (names bodies wrld)
+(defun putprop-recursivep-lst (loop$-recursion-checkedp
+                               loop$-recursion
+                               names bodies wrld)
 
 ; On the property list of each function symbol is stored the 'recursivep
 ; property.  For nonrecursive functions, the value is implicitly nil but no
@@ -885,6 +894,10 @@
 ; functions the value is the list of every name in the clique.  This function
 ; stores the property for each name and body in names and bodies.
 
+; When loop$-recursion is t, we know names is a singleton and that the function
+; is indeed recursive.  Otherwise, we use ffnnamep-mod-mbe to determine whether
+; a singly defined function is recursive.
+
 ; WARNING: We rely on the fact that this function puts the same names into the
 ; 'recursivep property of each member of the clique, in our handling of
 ; being-openedp.  Moreover, we rely in function termination-theorem-fn-subst
@@ -893,10 +906,17 @@
 ; ... ...)) pushes a property for name1 onto a world with property for name2,
 ; etc.
 
-  (cond ((int= (length names) 1)
-         (cond ((ffnnamep-mod-mbe (car names) (car bodies))
-                (putprop (car names) 'recursivep names wrld))
-               (t
+  (prog2$
+   (choke-on-loop$-recursion loop$-recursion-checkedp
+                             names
+                             bodies
+                             'putprop-recursivep-lst)
+   (cond (loop$-recursion
+          (putprop (car names) 'recursivep names wrld))
+         ((int= (length names) 1)
+          (cond ((ffnnamep-mod-mbe (car names) (car bodies))
+                 (putprop (car names) 'recursivep names wrld))
+                (t
 
 ; Until we started using the 'def-bodies property to answer most questions
 ; about recursivep (see macro recursivep), it was a good idea to put a
@@ -904,8 +924,8 @@
 ; entire association list looking for 'recursivep.  Now, this less-used
 ; property is just in the way.
 
-                wrld)))
-        (t (putprop-x-lst1 names 'recursivep names wrld))))
+                 wrld)))
+         (t (putprop-x-lst1 names 'recursivep names wrld)))))
 
 ; Formerly, we defined termination-machines and some of its supporting
 ; functions here.  But we moved them to history-management.lisp in order to
@@ -1271,7 +1291,17 @@
                                (if (equal
                                     t-machines
                                     (termination-machines
-                                     names bodies
+                                     t ; loop$-recursion-checkedp
+                                     (if (cdr names) ; loop$-recursion
+                                         nil
+                                         (getpropc (car names)
+                                                   'loop$-recursion
+                                                   nil wrld))
+                                     names
+                                     (if (cdr names)
+                                         nil
+                                         (list (formals (car names) wrld)))
+                                     bodies
                                      (make-list (length names)
                                                 :initial-element
                                                 :all)))
@@ -1475,6 +1505,34 @@
     (cross-tests-and-calls1
      (cdr full-tacs-lst-lst)
      (car full-tacs-lst-lst))))
+
+; To generate the body of the inductor function for a loop$ recursive function
+; we will generate ``nuggets'' for certain loop$s in the original body and then
+; glue those nuggets onto the front of the original body using (return-last
+; 'progn <nugget> <orig-body>).  But in induction-machine-for-fn1 we need to
+; recognize when a (return-last 'progn ...)  contains a nugget and treat that
+; nugget a little differently than we would another term embedded in such a
+; (return-last 'progn ...) form.  So here is how we mark a nugget -- which
+; involves ANOTHER (return-last 'progn ...) -- and how we extract the nugget
+; from its marking.  The generation of nuggets and inductor functions will
+; eventually be implemented in a distributed book.  The only reason we're
+; defining these functions now is so that induction-machine-for-fn1 can
+; recognize when it's been presented with a nugget.
+
+(defun mark-loop$-recursion-nugget (nugget)
+  `(return-last 'progn
+                'loop$-recursion-nugget
+                ,nugget))
+
+(defun marked-loop$-recursion-nuggetp (term)
+; If term satisfies this predicate, then (fargn term 3) is the nugget.
+  (and (nvariablep term)
+       (not (fquotep term))
+       (eq (ffn-symb term) 'return-last)
+       (quotep (fargn term 1))
+       (eq (unquote (fargn term 1)) 'progn)
+       (quotep (fargn term 2))
+       (eq (unquote (fargn term 2)) 'loop$-recursion-nugget)))
 
 (mutual-recursion
 
@@ -1693,14 +1751,14 @@
    ((eq (ffn-symb body) 'if)
     (let ((test
 
-; Since (remove-guard-holders x nil) is provably equal to x, the machine we
+; Since (remove-guard-holders x) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
-; It might be sound to pass in the world so that guard holders are removed from
-; quoted lambdas in argument positions with ilk :fn (or :fn?), but we don't
-; expect to pay much of a price by playing it safe here and in
-; termination-machine.
+; It might be sound to call possibly-clean-up-dirty-lambda-objects so that
+; guard holders are removed from quoted lambdas in argument positions with ilk
+; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
+; here and in termination-machine.
 
-           (remove-guard-holders (fargn body 1) nil)))
+           (remove-guard-holders (fargn body 1))))
       (cond
        ((member-eq-all 'if ruler-extenders) ; other case is easier to follow
         (mv-let
@@ -1817,8 +1875,13 @@
                   ((and (eq (ffn-symb body) 'return-last)
                         (quotep (fargn body 1))
                         (eq (unquote (fargn body 1)) 'progn)
+                        (marked-loop$-recursion-nuggetp (fargn body 2)))
+                   (mv merge-p (list (fargn (fargn body 2) 3) (fargn body 3))))
+                  ((and (eq (ffn-symb body) 'return-last)
+                        (quotep (fargn body 1))
+                        (eq (unquote (fargn body 1)) 'progn)
                         (not (ffnnamesp names (fargn body 2))))
-                   (mv merge-p (list (fargn body 3))))
+                     (mv merge-p (list (fargn body 3))))
                   ((null (cdr (fargs body)))
                    (mv merge-p (list (fargn body 1))))
                   (t (mv t (fargs body))))
@@ -1868,15 +1931,12 @@
 ; books/workshops/2011/verbeek-schmaltz/sources/correctness.lisp has failed
 ; when we did not do so.
 
+; While we generally follow the convention of calling
+; possibly-clean-up-dirty-lambda-objects anytime we're removing guard holders
+; we do not do so here and just play it safe until we get burned!
+
   (let* ((tests0 (remove-guard-holders-lst
-                  (access tests-and-calls tc :tests)
-
-; Since the present function supports generation of induction machines, we are
-; playing it safe here by passing in nil as the second argument of
-; remove-guard-holders-lst, as we do in induction-machine-for-fn1 for
-; remove-guard-holders.
-
-                  nil)))
+                  (access tests-and-calls tc :tests))))
     (mv-let
      (var const)
      (term-equated-to-constant-in-termlist tests0)
@@ -1906,11 +1966,7 @@
        (make tests-and-calls
              :tests tests
              :calls (remove-guard-holders-lst
-                     (access tests-and-calls tc :calls)
-
-; See the comment above about "playing it safe".
-
-                     nil))))))
+                     (access tests-and-calls tc :calls)))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
 
@@ -1934,6 +1990,39 @@
         (t (cons (simplify-tests-and-calls (car tc-list))
                  (simplify-tests-and-calls-lst (cdr tc-list))))))
 
+(mutual-recursion
+
+(defun loop$-recursion-ffnnamep (fn term)
+
+; Like ffnamep, we determine whether the function fn (possibly a
+; lambda-expression) is used as a function in term.  However, unlike ffnnamep,
+; we check every quoted lambda-like object in term looking for calls of fn.  We
+; know that every quoted lambda-like object in term is in fact a
+; well-formed-lambda-objectp.
+
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond ((variablep term) nil)
+        ((fquotep term)
+         (cond ((and (consp (unquote term))
+                     (eq (car (unquote term)) 'LAMBDA))
+                (loop$-recursion-ffnnamep fn (lambda-object-body (unquote term))))
+               (t nil)))
+        ((flambda-applicationp term)
+         (or (equal fn (ffn-symb term))
+             (loop$-recursion-ffnnamep fn (lambda-body (ffn-symb term)))
+             (loop$-recursion-ffnnamep-lst fn (fargs term))))
+        ((eq (ffn-symb term) fn) t)
+        (t (loop$-recursion-ffnnamep-lst fn (fargs term)))))
+
+(defun loop$-recursion-ffnnamep-lst (fn l)
+  (declare (xargs :guard (pseudo-term-listp l)))
+  (if (endp l)
+      nil
+      (or (loop$-recursion-ffnnamep fn (car l))
+          (loop$-recursion-ffnnamep-lst fn (cdr l)))))
+
+ )
+
 (defun induction-machine-for-fn (names body ruler-extenders)
 
 ; We build an induction machine for the function in names with the given body.
@@ -1956,7 +2045,68 @@
           (declare (ignore flg))
           (simplify-tests-and-calls-lst ans)))
 
-(defun induction-machines (names bodies ruler-extenders-lst)
+(defun clean-up-nots (p)
+  (case-match p
+    (('IF ('IF q ''NIL ''T) ''NIL ''T) q)
+    (('NOT ('IF q ''NIL ''T)) q)
+    (('IF ('NOT q) ''NIL ''T) q)    
+    (('NOT ('NOT q)) q)
+    (('IF q ''NIL ''T) `(NOT ,q))
+    (& p)))
+
+(defun clean-up-nots-lst (lst ans)
+; Simplify double negations and reverse the order of the terms in lst.
+  (cond ((endp lst) ans)
+        (t (clean-up-nots-lst (cdr lst) (cons (clean-up-nots (car lst)) ans)))))
+
+(defun clean-up-conjunction1 (lst ans)
+  (cond
+   ((endp lst) ans)
+   ((member-complement-term (car lst) (cdr lst))
+    :contradiction)
+   ((member-equal (car lst) (cdr lst))
+    (clean-up-conjunction1 (cdr lst) ans))
+   (t (clean-up-conjunction1 (cdr lst) (cons (car lst) ans)))))
+
+(defun clean-up-conjunction (lst)
+
+; Lst is a list of hypotheses, implicitly conjoined.  We return either
+; :contradiction or an equivalent list of conjuncts after eliminating
+; duplicates and double negations.
+
+  (clean-up-conjunction1 (clean-up-nots-lst lst nil) nil))
+
+(defun clean-up-loop$-recursion-induction-machine (tc-list)
+
+; Tc-list is a list of tests-and-calls, i.e., an induction machine.  However,
+; as of this writing this function is only applied to those induction machines
+; generated from loop$ recursion induction function bodies, i.e., inductible
+; loop$ recursive functions.  This function is spiritually similar to
+; simplify-tests-and-calls but just drops cases having contradictory tests and
+; eliminates duplicates and double negations among the remaining tests.  We
+; implement this process as a separate function rather than strengthen
+; simplify-tests-and-calls because we wish not to change any existing induction
+; machines as we add the ability to induct for loop$ recursive functions.
+
+  (cond
+   ((endp tc-list) nil)
+   (t (let ((tests
+             (clean-up-conjunction
+              (access tests-and-calls (car tc-list) :tests))))
+        (cond
+         ((eq tests :contradiction)
+          (clean-up-loop$-recursion-induction-machine (cdr tc-list)))
+         (t (cons
+             (make tests-and-calls
+                   :tests tests
+                   :calls (access tests-and-calls (car tc-list) :calls))
+             (clean-up-loop$-recursion-induction-machine (cdr tc-list)))))))))
+
+(defun induction-machines
+  (loop$-recursion names arglists measure-alist bodies
+                   ruler-extenders-lst wrld)
+
+  (declare (ignore arglists measure-alist wrld)) ; See Note 2 below.
 
 ; This function builds the induction machine for each function defined
 ; in names with the corresponding body in bodies.  A list of machines
@@ -1971,13 +2121,42 @@
 ; up since we can't use them.  So all that machinery is
 ; short-circuited here.
 
+; Note 1: If loop$-recursion has been used (which is only possible if names is
+; a singleton) we refuse to generate an induction machine.  As of March, 2020,
+; we haven't fully understood how to induct appropriately for such functions.
+; We currently aim to produce a book containing a utility, perhaps named
+; definductor, that takes the name of an admitted loop$ recursive function and
+; produces an induction scheme for it.  But our current understanding of this
+; problem produces plausible schemes only for plain, possibly nested loop$s
+; targetting formal variables or car/cdr nests of formal variables.
+; Furthermore, these schemes impose additional restrictions on the acceptable
+; measures justifying the loop$ recursive functions -- restrictions that are
+; not necessary just for admission.  Finally, our current understanding has not
+; been sufficiently tested to deserve being in our sources!  Rather than add a
+; questionable ``automatic'' scheme that restricts admissible loop$ recursive
+; functions or confusing the user by sometimes generating an induction scheme
+; and sometimes not, we have opted to NEVER produce a scheme and leave it to
+; the user (possibly with help from definductor) to introduce effective
+; schemes.
+
+; Note 2: The three ignored arguments are artifacts of an earlier experiment in
+; which we tried to automatically generate induction schemes for ``inductible''
+; loop$ recursive functions.  When we conducted that experiment we needed those
+; arguments and had to refactor the code to get them.  But when we abandoned
+; automatically generating induction schemes for loop$ recursive functions we
+; decided not to revert to the earlier factoring, just in case we someday
+; decide to handle such functions here.
+
   (cond ((null (cdr names))
-         (list (induction-machine-for-fn names (car bodies)
-                                         (car ruler-extenders-lst))))
+         (if loop$-recursion
+             nil
+             (list (induction-machine-for-fn names (car bodies)
+                                             (car ruler-extenders-lst)))))
         (t nil)))
 
-(defun putprop-induction-machine-lst (names bodies ruler-extenders-lst
-                                            subversive-p wrld)
+(defun putprop-induction-machine-lst
+  (loop$-recursion names arglists measure-alist bodies
+                   ruler-extenders-lst subversive-p wrld)
 
 ; Note:  If names has more than one element we do nothing.  We only
 ; know how to interpret induction machines for singly recursive fns.
@@ -1986,8 +2165,9 @@
         (subversive-p wrld)
         (t (putprop (car names)
                     'induction-machine
-                    (car (induction-machines names bodies
-                                             ruler-extenders-lst))
+                    (car (induction-machines
+                          loop$-recursion names arglists measure-alist bodies
+                          ruler-extenders-lst wrld))
                     wrld))))
 
 (defun quick-block-initial-settings (formals)
@@ -2267,9 +2447,9 @@
 
     (value (list* (car pair) measure-alist (cdr pair)))))
 
-(defun put-induction-info-recursive (names arglists col ttree measure-alist
-                                           t-machines ruler-extenders-lst
-                                           bodies mp rel wrld state)
+(defun put-induction-info-recursive
+  (loop$-recursion names arglists col ttree measure-alist t-machines
+         ruler-extenders-lst bodies mp rel wrld state)
 
 ; This function separates out code from put-induction-info.
 
@@ -2294,7 +2474,8 @@
                              wrld)))
          (wrld2
           (putprop-induction-machine-lst
-           names bodies ruler-extenders-lst subversive-p wrld))
+           loop$-recursion names arglists measure-alist bodies
+           ruler-extenders-lst subversive-p wrld))
          (wrld3
           (putprop-justification-lst measure-alist
                                      subset-lst
@@ -2342,13 +2523,23 @@
            set-bogus-measure-ok."
           name)))))
 
-(defun put-induction-info (names arglists measures ruler-extenders-lst bodies
-                                 mp rel hints otf-flg big-mutrec measure-debug
-                                 ctx ens wrld state)
+(defun put-induction-info ( ; we assume loop$-recursion-checkedp = t
+                           loop$-recursion
+                           names arglists measures ruler-extenders-lst bodies
+                           mp rel hints otf-flg big-mutrec measure-debug
+                           ctx ens wrld state)
 
 ; WARNING: This function installs a world.  That is safe at the time of this
 ; writing because this function is only called by defuns-fn0, which is only
 ; called by defuns-fn, where that call is protected by a revert-world-on-error.
+
+; Reminder: If user books start to call this function (or any of our functions
+; that rely on loop$ recursion having been checked), we need to add
+; loop$-recursion-checkedp as a new formal and start by calling
+; choke-on-loop$-recursion.  The call of put-induction-info-recursive, below,
+; has the first argument t in our code because we know loop$ recursion has been
+; checked down there.  So that t stays t even if we add
+; loop$-recursion-checkedp as a new formal above.
 
 ; We are processing a clique of mutually recursive functions with the names,
 ; arglists, measures, ruler-extenders-lst, and bodies given.  All of the above
@@ -2374,7 +2565,7 @@
 ; use the standard state and error primitives and so it returns 3 and lists
 ; together the three "real" answers.
 
-  (let ((wrld1 (putprop-recursivep-lst names bodies wrld)))
+  (let ((wrld1 (putprop-recursivep-lst t loop$-recursion names bodies wrld)))
 
 ; The put above stores a note on each function symbol as to whether it is
 ; recursive or not.  An important question arises: have we inadvertently
@@ -2403,13 +2594,16 @@
 ; functions in the clique.
 
            (let ((t-machines
-                  (termination-machines names bodies ruler-extenders-lst)))
+                  (termination-machines t ; loop$-recursion-checkedp
+                                        loop$-recursion
+                                        names arglists bodies
+                                        ruler-extenders-lst)))
 
 ; Next we get the measures for each function.  That may cause an error
 ; if we couldn't guess one for some function.
 
              (er-let*
-              ((wrld1 (update-w
+                 ((wrld1 (update-w
 
 ; Sol Swords sent an example in which a clause-processor failed during a
 ; termination proof.  That problem goes away if we install the world, which we
@@ -2417,17 +2611,18 @@
 ; that raw-ev-fncall calls chk-raw-ev-fncall to ensure that the world is
 ; (essentially) installed.
 
-                       t ; formerly big-mutrec
-                       wrld1))
-               (triple (prove-termination-recursive
-                        names arglists measures t-machines mp rel hints
-                        otf-flg bodies measure-debug ctx ens wrld1 state)))
-              (let* ((col (car triple))
-                     (measure-alist (cadr triple))
-                     (ttree (cddr triple)))
-                (put-induction-info-recursive
-                 names arglists col ttree measure-alist t-machines
-                 ruler-extenders-lst bodies mp rel wrld1 state))))))))
+                          t ; formerly big-mutrec
+                          wrld1))
+                  (triple (prove-termination-recursive
+                           names arglists measures t-machines mp rel hints
+                           otf-flg bodies measure-debug ctx ens wrld1 state)))
+               (let* ((col (car triple))
+                      (measure-alist (cadr triple))
+                      (ttree (cddr triple)))
+                 (put-induction-info-recursive
+                  loop$-recursion
+                  names arglists col ttree measure-alist t-machines
+                  ruler-extenders-lst bodies mp rel wrld1 state))))))))
 
 ; We next worry about storing the normalized bodies.
 
@@ -2473,7 +2668,9 @@
             (equivalence-relationp equiv wrld))
        (mv-let (body ttree)
                (cond ((eq install-body :NORMALIZE)
-                      (normalize (remove-guard-holders body wrld)
+                      (normalize (possibly-clean-up-dirty-lambda-objects
+                                  (remove-guard-holders body)
+                                  wrld)
                                  nil ; iff-flg
                                  nil ; type-alist
                                  ens
@@ -2525,9 +2722,14 @@
 
   (case-match hyp
     (('atom x)
-     (list (mcons-term* 'not (mcons-term* 'consp
-                                          (remove-guard-holders x wrld)))))
-    (& (list (remove-guard-holders hyp wrld)))))
+     (list (mcons-term* 'not
+                        (mcons-term* 'consp
+                                     (possibly-clean-up-dirty-lambda-objects
+                                      (remove-guard-holders x)
+                                      wrld)))))
+    (& (list (possibly-clean-up-dirty-lambda-objects
+              (remove-guard-holders hyp)
+              wrld)))))
 
 (defun preprocess-hyps (hyps wrld)
   (cond ((null hyps) nil)
@@ -6322,7 +6524,7 @@
            :ruler-extenders :mode :non-executable :normalize
            :otf-flg #+:non-standard-analysis :std-hints
            :stobjs :verify-guards :well-founded-relation
-           :split-types))
+           :split-types :loop$-recursion))
 
 (defun plausible-dclsp1 (lst)
 
@@ -8779,18 +8981,21 @@
                    (DECLARE (IGNORABLE ,@formals))
                    ,(logic-code-to-runnable-code
                      nil
-                     (remove-guard-holders
-                      (or (cadr (assoc-keyword :guard
-                                               (cdr (assoc-eq 'xargs
-                                                              (cdr dcl)))))
-                          *t*)
+                     (possibly-clean-up-dirty-lambda-objects
+                      (remove-guard-holders
+                       (or (cadr (assoc-keyword :guard
+                                                (cdr (assoc-eq 'xargs
+                                                               (cdr dcl)))))
+                           *t*))
                       wrld)
                      wrld))
           `(LAMBDA ,formals
                    ,dcl
                    ,(logic-code-to-runnable-code
                      nil
-                     (remove-guard-holders body wrld)
+                     (possibly-clean-up-dirty-lambda-objects
+                      (remove-guard-holders body)
+                      wrld)
                      wrld)))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)
@@ -9008,6 +9213,326 @@
             (state-globals-set-by (car termlist) acc)))))
 )
 
+(mutual-recursion
+
+(defun chk-lambdas-for-loop$-recursion1 (fn lambda-flg term fn-seenp
+                                            wrld ctx state)
+
+; Fn is being defined with :loop$-recursion t.  Initially, term is the body and
+; we explore it recursively.  Lambda-flg is non-nil if this occurrence of term
+; is in the loop$ scion slot requiring a lambda expression -- in fact,
+; lambda-flg is set to the name of that loop$ scion.  We know that every loop$
+; scion expects its :FN arg to be the first argument.  Fn-seenp is a boolean
+; indicating whether fn is called in the body of some well-formed lambda
+; already seen in a loop$ scion.  We either cause an error or return (value
+; fn-seenp).
+
+; We confirm that: (1) every quoted lambda-like object in the body is a
+; well-formed lambda object, (2) every lambda in the body is in the :FN slot of
+; a loop$ scion or else doesn't call fn, and (3) there is at least one lambda
+; in a loop$ scion that calls fn.
+
+  (cond
+   (lambda-flg
+; Term must be a lambda expression of the right arity for the loop$ scion
+; named by lambda-flg.
+    (cond
+     ((and (quotep term)
+           (consp (unquote term))
+           (eq (car (unquote term)) 'lambda))
+      (cond
+       ((well-formed-lambda-objectp (unquote term) wrld)
+        (let ((style (loop$-scion-style lambda-flg *loop$-keyword-info*))
+              (formals (lambda-object-formals (unquote term)))
+              (body (lambda-object-body (unquote term))))
+          (cond
+           ((eql (length formals) (if (eq style :plain) 1 2))
+            (chk-lambdas-for-loop$-recursion1
+             fn
+             nil
+             body
+             (or fn-seenp
+                 (ffnnamep fn body))
+             wrld ctx state))
+           (t (er soft ctx
+                  "It is illegal to use :loop$-recursion t in the defun of ~
+                   ~x0 because the loop$ scion ~x1 is called with a lambda ~
+                   object of arity ~x2 where a lambda of arity ~x3 is ~
+                   required.  The offending lambda object is ~x4."
+                  fn
+                  lambda-flg
+                  (length formals)
+                  (if (eql style :plain) 1 2))))))
+       (t
+
+; This error cannot arise!  If lambda-flg is set, it means we're in the :FN
+; argument of a loop$ scion.  If the actual is a quoted LAMBDA, as it is here,
+; translate rejects it if it is not well-formed.  Translate notes the
+; gratuitous restriction which allows you to cons up an ill-formed lambda, but
+; then the form wouldn't be quoted.
+
+        (er soft ctx
+              "It is illegal to use :loop$-recursion t in the defun of ~x0 ~
+               because the loop$ scion ~x2 is called with an ill-formed ~
+               lambda object ~x1.  We cannot generate measure conjectures for ~
+               ill-formed terms!"
+              fn term lambda-flg))))
+     ((and (quotep term)
+           (symbolp (unquote term)))
+
+; The only way this would have gotten past translation is if the quoted symbol
+; is either fn itself or a previously admitted and badged function symbol.  The
+; error message explains why we reject it.  However, if we ever change the
+; expansion of (loop$ for e in x collect (fn e)) to expand simply to (collect$
+; 'fn x), we'll have to permit this case.
+
+      (er soft ctx
+          "It is illegal to use :loop$-recursion t in the defun of ~x0 because ~
+           it calls the loop$ scion ~x2 with ~x1 as the :FN argument.  This ~
+           is equivalent to an admissible LOOP$ statement but it doesn't ~
+           execute as efficiently and admitting it would complicate the ~
+           generation of measure conjectures.  Please rewrite this defun to ~
+           use the equivalent LOOP$!"
+          fn term lambda-flg))
+     (t
+        (er soft ctx
+            "It is illegal to use :loop$-recursion t in the defun of ~x0 ~
+             because it calls the loop$ scion ~x2 with something other than a ~
+             lambda object, namely ~x1, as its :FN argument.  We cannot ~
+             generate measure conjectures for computed terms."
+            fn term lambda-flg))))
+   ((variablep term)
+    (value fn-seenp))
+   ((fquotep term)
+    (cond ((and (consp (unquote term))
+                (eq (car (unquote term)) 'lambda))
+           (cond
+            ((not (well-formed-lambda-objectp (unquote term) wrld))
+
+; This is exactly the same error as the first one mentioned in this function.
+; The simple fact is that every quoted lambda in a :loop$-recursion t defun
+; must be well-formed, whether it occurs in a loop$ scion or not!
+
+             (er soft ctx
+                 "It is illegal to use :loop$-recursion t in the defun of ~x0 ~
+                  because the body contains the ill-formed lambda object ~x1. ~
+                  We cannot generate measure conjectures for ill-formed terms."
+                 fn (unquote term)))
+            ((loop$-recursion-ffnnamep fn (lambda-object-body (unquote term)))
+             (er soft ctx
+                 "It is illegal to use :loop$-recursion t in the defun of ~x0 ~
+                  because the lambda object ~x1, which calls ~x0, occurs in ~
+                  the body of ~x0 but not as the lambda object of a ~
+                  translated loop$ statement.  We cannot generate measure ~
+                  conjectures since we cannot tell where or to what this ~
+                  lambda object might be applied!"
+                 fn (unquote term)))
+            (t (chk-lambdas-for-loop$-recursion1
+                fn
+                nil
+                (lambda-object-body (unquote term))
+                fn-seenp
+                wrld ctx state))))
+          (t (value fn-seenp))))
+   ((lambda-applicationp term)
+    (er-let*
+        ((fn-seenp (chk-lambdas-for-loop$-recursion1
+                    fn
+                    nil
+                    (lambda-body (ffn-symb term))
+                    fn-seenp wrld ctx state)))
+      (chk-lambdas-for-loop$-recursion1-lst
+       fn
+       nil
+       (fargs term)
+       fn-seenp wrld ctx state)))
+   (t (let ((style (loop$-scion-style (ffn-symb term) *loop$-keyword-info*)))
+
+; If style is nil, the function being called is not a loop$ scion and so as we
+; sweep through the arguments we provide lambda-flg = nil to each argument.  We
+; do this by providing the list nil, which is effectively a list of nils as
+; long as we need.  If the function being called is a loop$ scion, then style
+; is :plain or :fancy, but in either case the functional argument is the first.
+; So we provide ``(t)'' as the list of lambda-flgs, which is effectively a t
+; followed by as many nils as needed.  However, actually, instead of t we
+; provide the particular loop$ scion involved so we can report it in the
+; subsequent error message, if any.
+
+        (chk-lambdas-for-loop$-recursion1-lst
+           fn
+           (cond
+            ((null style) nil)
+            (t (list (ffn-symb term))))
+           (fargs term)
+           fn-seenp wrld ctx state)))))
+
+(defun chk-lambdas-for-loop$-recursion1-lst (fn lambda-flg-lst term-lst fn-seenp
+                                                wrld ctx state)
+  (cond
+   ((endp term-lst) (value fn-seenp))
+   (t (er-let*
+          ((fn-seenp
+            (chk-lambdas-for-loop$-recursion1
+             fn
+             (car lambda-flg-lst)
+             (car term-lst)
+             fn-seenp wrld ctx state)))
+        (chk-lambdas-for-loop$-recursion1-lst
+         fn
+         (cdr lambda-flg-lst)
+         (cdr term-lst)
+         fn-seenp wrld ctx state)))))
+)
+
+(defun chk-lambdas-for-loop$-recursion (fn body wrld ctx state)
+
+; This function is only called by defun processing if xargs :loop$-recursion t
+; was declared by the user in the defun of fn with the given body.  We confirm
+; that every quoted lambda object in the body is well-formed, every quoted
+; lambda in the body is in the :FN slot of a loop$ scion or else doesn't call
+; fn, and that every loop$ scion's :FN argument is in fact a quoted lambda.  We
+; also check that there is at least one quoted lambda in a loop$ scion that
+; calls fn -- a check that is only there to de-confuse the user who
+; unnecessarily declared :loop$-recursion t.
+
+; Motivation: When generating measure conjectures for fn it is unnecessary to
+; look at quoted lambdas, unless :loop$-recursion t is declared.  If it is
+; declared, one must only inspect the first (the :FN) arg of calls of loop$
+; scions.  No other quoted object is relevant to termination.  Furthermore, you
+; know the first argument of every loop$ scion is a well-formed quoted lambda,
+; so you can just dive into the body of the lambda under the assumption that
+; the first formal of the lambda is a member of the target of the loop$ scion.
+; formed.  The body may or may not call fn.
+
+  (er-let*
+      ((fn-seenp
+        (chk-lambdas-for-loop$-recursion1 fn nil body nil wrld ctx state)))
+    (cond
+     (fn-seenp (value nil))
+     (t (er soft ctx
+            "It is illegal to use :loop$-recursion t in the defun of ~x0 ~
+             because ~x0 is never called in a loop$!  We cause an error ~
+             simply because we expect you've made a mistake."
+            fn)))))
+
+; ; It can be hard to understand why we check each of the cases above.  The
+; ; events below (most of which cause errors) provide an illustration of
+; ; each of the six possible error messages generated by
+; ; chk-lambdas-for-loop$-recursion.
+
+; (include-book "projects/apply/top" :dir :system)
+; (defun my-scion (fn x)(apply$ fn (list x))) ; no defwarrant yet
+; (defun bar (x) (cons 'hi-from-bar x))
+; (defwarrant bar)
+
+; ; Now we provoke the successive errors.
+
+; ; (1) ill-formed lambda in loop$ scion call -- can't happen
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) 23)
+;         (t (collect$ '(lambda (e) e . 47) x))))
+
+; ; The error you see is caused by translate, not
+; ; chk-lambdas-for-loop$-recursion.
+
+; ; (2) loop$ scion is called with quoted symbol
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) t)
+;         (t (collect$ 'foo x))))
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) t)
+;         (t (collect$ 'bar x))))
+
+; ; (3) loop$ scion is called with something other than a lambda object
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) t)
+;         (t (collect$ `(lambda (e) (,x e)) x))))
+
+; ; (4) ill-formed lambda in non-:FN slot
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) (my-scion '(lambda (x) (foo x) . 47) x))
+;         (t (loop$ for e in x collect (foo e)))))
+
+; ; (5) lambda object in non-loop$ scion calls fn
+
+; (defun$ my-scion (fn x)
+;   (if (consp x)
+;       (cons (apply$ fn (list (car x)))
+;             (my-scion fn (cdr x)))
+;       nil))
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) (my-scion '(lambda (x) (foo x)) x))
+;         (t (loop$ for e in x collect (foo e)))))
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) (my-scion (lambda$ (x) (loop$ for e in x collect (foo e))) x))
+;         (t (loop$ for e in x collect (foo e)))))
+
+; But well-formed lambda objects in non-loop$ scions are permitted if they
+; don't call fn.  We have to warrant my-scion first.  The reason has nothing
+; to do with chk-lambdas-for-loop$-recursion.  If we don't warrant my-scion
+; then translation and checking still approve this but the final check that
+; foo is warrantable fails for lack of a badge for my-scion.  You can see
+; this by trying this without warranting my-scion:
+
+; (defun$ bar (x) x)
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t
+;                   :measure (acl2-count x)))
+;   (cond ((atom x) (my-scion '(lambda (x) (bar x)) x))
+;         (t (loop$ for e in x collect (foo e)))))
+
+; ; (6) unnecessary :loop$-recursion declaration:
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t))
+;   (cond ((atom x) (my-scion '(lambda (x) (bar x)) x))
+;         (t (loop$ for e in x collect (bar e)))))
+
+; The following record collects information related to the use of lambda,
+; lambda$ and loop$ forms in defuns.  We document what the items are below.
+; But here we explain why we pack them together.  These items are extracted and
+; returned (ultimately) by chk-acceptable-defuns as part of its 2nd result, a
+; list of over 20 items.  When lambda objects were added, it would have been
+; natural for us to add these items to the list.  However, the number of
+; lambda-related items keeps growing and some user books call
+; chk-acceptable-defuns expecting the list to be of a certain length (whatever
+; it was when the book was created).  So we added one new item to
+; chk-acceptable-defuns list, this record, and changed the user books to expect
+; that new length.  And now we're free to collect additional information during
+; checking without having to mess with user books (unless they begin to use the
+; lambda information here).
+
+(defrec lambda-info
+  (loop$-recursion            ; T or NIL indicating that recursive calls of the
+                              ; (single) function being defined are allowed
+                              ; inside LOOP$ statements.  The function must
+                              ; be tame and return only one result!
+
+   new-lambda$-alist-pairs    ; Maps the obvious untranslated terms to their
+                              ; respective translations
+
+   new-loop$-alist-pairs      ; Maps untranslated loop$ statements to
+                              ; loop$-alist-entry records containing those
+                              ; translations after converting them from logic
+                              ; to runnable code.
+   )
+  nil)
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -9123,73 +9648,188 @@
       (split-types-lst (get-boolean-unambiguous-xargs-flg-lst
                         :SPLIT-TYPES fives nil ctx state))
       (normalizeps (get-boolean-unambiguous-xargs-flg-lst
-                    :NORMALIZE fives t ctx state)))
+                    :NORMALIZE fives t ctx state))
+      (loop$-recursion-lst
+
+; It will be illegal to specify a non-nil :loop$-recursion setting in any of
+; the defuns of a mutually recursive clique.  But to tell whether that has
+; happened we first need to collect all the :loop$-recursion settings...
+
+       (get-unambiguous-xargs-flg-lst
+        :LOOP$-RECURSION
+        fives
+        nil ; :loop$-recursion default value
+        ctx state)))
      (er-progn
       (cond
-       ((not (and (symbolp rel)
-                  (assoc-eq
-                   rel
-                   (global-val 'well-founded-relation-alist
-                               wrld2))))
+       ((and (consp (cdr loop$-recursion-lst))
+             (not (all-nils loop$-recursion-lst)))
         (er soft ctx
-            "The :WELL-FOUNDED-RELATION specified by XARGS must be a symbol ~
-             which has previously been shown to be a well-founded relation.  ~
-             ~x0 has not been. See :DOC well-founded-relation."
-            rel))
+            "We do not support the declaration of non-nil :LOOP$-RECURSION ~
+             settings in MUTUAL-RECURSION."))
+       ((and (null (cdr loop$-recursion-lst))
+             (car loop$-recursion-lst)
+             (not (eq (car loop$-recursion-lst) t)))
+        (er soft ctx
+            "The only legal values for the XARGS key :LOOP$-RECURSION are T ~
+             and NIL.  ~x0 is not allowed."
+            (car loop$-recursion-lst)))
+       ((and (car loop$-recursion-lst)
+             (global-val 'boot-strap-flg wrld))
+        (er soft ctx
+            "Implementors are not allowed to use :LOOP$-RECURSION in system ~
+             code!"))
        (t (value nil)))
-      (let ((mp (cadr (assoc-eq
-                       rel
-                       (global-val 'well-founded-relation-alist
-                                   wrld2)))))
-        (er-let*
-         ((bodies-and-bindings
-           (translate-bodies non-executablep ; t or :program
-                             names
-                             arglists
-                             (get-bodies fives)
-                             stobjs-in-lst ; see "slight abuse" comment below
-                             reclassifying-all-programp
-                             ctx wrld2 state)))
-         (let* ((bodies (car bodies-and-bindings))
-                (bindings
-                 (super-defun-wart-bindings
-                  (cdr bodies-and-bindings)))
-                #+:non-standard-analysis
-                (non-classical-fns
-                 (get-non-classical-fns bodies wrld2)))
-           (er-progn
-            (if assumep
-                (value nil)
-              (er-progn
-               (chk-stobjs-out-bound names bindings ctx state)
-               #+:non-standard-analysis
-               (chk-no-recursive-non-classical
-                non-classical-fns
-                names mp rel measures bodies ctx wrld2 state)))
-            (let* ((wrld30 (store-super-defun-warts-stobjs-in
-                            names wrld2))
-                   (wrld31 (store-stobjs-out names bindings wrld30))
-                   (wrld3 #+:non-standard-analysis
-                          (if (or std-p
-                                  (null non-classical-fns))
-                              wrld31
-                            (putprop-x-lst1 names 'classicalp
-                                            nil wrld31))
-                          #-:non-standard-analysis
-                          wrld31)
-                   (wrld4 (if (store-cert-data (car bodies-and-bindings)
-                                               wrld
-                                               state)
-                              (update-translate-cert-data
-                               (car names) wrld wrld3
-                               :type :translate-bodies
-                               :inputs names
-                               :value bodies-and-bindings
-                               :fns (all-fnnames-lst bodies)
-                               :vars (state-globals-set-by-lst bodies nil))
-                            wrld3)))
-              (er-let* ((guards (translate-term-lst
-                                 (get-guards fives split-types-lst nil wrld2)
+      (er-let*
+          ((wrld2a
+            (if (car loop$-recursion-lst)
+
+; When (car loop$-recursion-lst) is non-nil we know it is actually T and that
+; this is a singly-recursive defun of a fn in which the user has declared xargs
+; :loop$-recursion t.  The user means to use fn recursively inside one or more
+; loop$ statements in the defun.  This means we have to badge fn before
+; translating!  The user is supposed to understand that fn must be tame and
+; must return 1 result -- we will check that.  Just as we have already
+; installed a (temporary) world, wrld2, in which the formals of fn, etc., have
+; been stored in preparation for translation, we now also store a badge that
+; asserts that fn is tame and returns 1 result.  We will confirm this assertion
+; before the defun is admitted.  Note also that we know that fn is new and thus
+; has no pre-existing badge so we can just cons a new one on.  The resulting
+; world is wrld2a and will be used henceforth.
+
+                (let* ((badge-table
+                        (table-alist 'badge-table wrld2))
+                       (userfn-structure
+                        (cdr (assoc-eq :badge-userfn-structure badge-table)))
+                       (fn (car names))
+                       (badge (make apply$-badge
+                                    :arity (length (car arglists))
+                                    :out-arity 1 ; see note below
+                                    :ilks t)))
+
+; Note: We have thought about allowing multi-valued functions here.  The
+; trouble is that we can't know the :out-arity until we've translated and we
+; can't translate without a badge.  One way to solve this would be to allow
+; non-boolean values for :loop$-recursion, e.g., (xargs :loop$-recursion 3).
+; But upon minimal reflection we don't see much use for multi-valued functions
+; inside our loop$s because our loop$ scions all expect single-valued functions
+; and return single values themselves.  So if a multi-valued function were
+; called inside the body, the multiple values would have to be combined inside
+; the body to produce a single result and then some other expression would have
+; to be used to supply the rest of the function's values.  So we just await
+; user complaints!
+
+                  (update-w
+                   t
+                   (putprop
+                    fn
+                    'stobjs-out
+                    '(NIL)
+                    (putprop
+                     'badge-table
+                     'table-alist
+                     (put-assoc-eq :badge-userfn-structure
+                                   (cons (cons fn badge)
+                                         userfn-structure)
+                                   badge-table)
+                     wrld2))))
+                (value wrld2))))
+        (er-progn
+         (cond
+          ((not (and (symbolp rel)
+                     (assoc-eq
+                      rel
+                      (global-val 'well-founded-relation-alist
+                                  wrld2a))))
+           (er soft ctx
+               "The :WELL-FOUNDED-RELATION specified by XARGS must be a ~
+                symbol which has previously been shown to be a well-founded ~
+                relation.  ~x0 has not been. See :DOC well-founded-relation."
+               rel))
+          (t (value nil)))
+         (let ((mp (cadr (assoc-eq
+                          rel
+                          (global-val 'well-founded-relation-alist
+                                      wrld2a)))))
+           (er-let*
+               ((bodies-and-bindings
+                 (translate-bodies non-executablep ; t or :program
+                                   names
+                                   arglists
+                                   (get-bodies fives)
+; bindings0 = 
+                                   (if (car loop$-recursion-lst)
+                                       (list (cons (car names) '(NIL)))
+                                       (pairlis$ names names))
+                                   stobjs-in-lst ; see "slight abuse" comment below
+                                   reclassifying-all-programp
+                                   ctx wrld2a state)))
+             (let* ((bodies (car bodies-and-bindings))
+                    (bindings
+                     (super-defun-wart-bindings
+                      (cdr bodies-and-bindings)))
+                    #+:non-standard-analysis
+                    (non-classical-fns
+                     (get-non-classical-fns bodies wrld2a)))
+               (er-progn
+                (if assumep
+                    (value nil)
+                    (er-progn
+                     (chk-stobjs-out-bound names bindings ctx state)
+                     #+:non-standard-analysis
+                     (chk-no-recursive-non-classical
+                      non-classical-fns
+                      names mp rel measures bodies ctx wrld2a state)))
+                (if (car loop$-recursion-lst)
+
+; If loop$-recursion was allowed, we have to check every lambda object in the
+; body is well-formed and that the only ones that call fn are in loop$ scions,
+; and that all of those lambdas have the right arity (1 or 2) for the loop$
+; scion using them.  We also make sure at least on loop$ scion has a lambda
+; that calls fn, just to confirm that :loop$-recursion t is necessary.
+
+                    (chk-lambdas-for-loop$-recursion
+                     (car names)
+                     (car bodies)
+                     wrld2a ctx state)
+                    (value nil))
+                (let* ((wrld30 (store-super-defun-warts-stobjs-in
+                                names wrld2a))
+                       (wrld31 (store-stobjs-out names bindings wrld30))
+                       (wrld3 #+:non-standard-analysis
+                              (if (or std-p
+                                      (null non-classical-fns))
+                                  wrld31
+                                (putprop-x-lst1 names 'classicalp
+                                                nil wrld31))
+                              #-:non-standard-analysis
+                              wrld31)
+                       (wrld4 (if (store-cert-data (car bodies-and-bindings)
+                                                   wrld
+                                                   state)
+                                  (update-translate-cert-data
+                                   (car names) wrld wrld3
+                                   :type :translate-bodies
+                                   :inputs names
+                                   :value bodies-and-bindings
+                                   :fns (all-fnnames-lst bodies)
+                                   :vars (state-globals-set-by-lst bodies nil))
+                                wrld3)))
+
+; Note: If :loop$-recursion t was specified for fn then wrld3 now contains the
+; output arity of fn (in the stobjs-out property of fn).  Thus, translation
+; will not try to infer the output signature.  Wrld3 is used everywhere a world
+; is needed below, except in the optimizations using wrld2a as noted in the
+; next Note.
+
+                  (er-let* ((guards (translate-term-lst
+                                     (get-guards fives split-types-lst nil wrld2a)
+
+; Note: The use of wrld2a in get-guards above is just an optimization.  We
+; should more properly use wrld3 or even wrld4, but we know the presence of the
+; stobjs-out properties won't affect get-guards because the only use it makes
+; of the given world is to map from stobj names to the corresponding
+; recognizers terms, e.g., from STATE to (STATE-P STATE).
 
 ; Warning: Keep this call of translate-term-lst in sync with translation of a
 ; guard in chk-defabsstobj-guard.
@@ -9203,14 +9843,14 @@
 ; By prohibiting them from modifying state we don't have to answer the
 ; questions about when they run.
 
-                                 '(nil)
+                                     '(nil)
 
 ; Logic-modep:
 ; Since guards have nothing to do with the logic, and since they may
 ; legitimately have mode :program, we set logic-modep to nil here.  This arg is
 ; used for each guard.
 
-                                 nil
+                                     nil
 
 ; Known-stobjs-lst:
 ; Here is a slight abuse.  Translate-term-lst is expecting, in this
@@ -9223,12 +9863,12 @@
 ; stobjsp.  Technically we ought to map over the stobjs-in-lst and
 ; change each element to its collect-non-x nil.
 
-                                 stobjs-in-lst ctx
+                                     stobjs-in-lst ctx
 
-; Note the use of wrld3 instead of wrld2.  It is important that the proper
-; stobjs-out be put on the new functions before we translate the guards!  When
-; we first allowed the functions being defined to be used in their guards (in
-; v3-6), we introduced a soundness bug found by Sol Swords just after the
+; Note the use below of wrld3 instead of wrld2a.  It is important that the
+; proper stobjs-out be put on the new functions before we translate the guards!
+; When we first allowed the functions being defined to be used in their guards
+; (in v3-6), we introduced a soundness bug found by Sol Swords just after the
 ; release of v4-0, as follows.
 
 ; (defun foo (x)
@@ -9243,116 +9883,124 @@
 ;    :hints (("goal" :use ((:instance foo (x nil)))))
 ;    :rule-classes nil)
 
-                                 wrld3
-                                 state))
-                        (split-types-terms
-                         (translate-term-lst
-                          (get-guards fives split-types-lst t wrld2)
+                                     wrld3
+                                     state))
+                            (split-types-terms
+                             (translate-term-lst
+                              (get-guards fives split-types-lst t wrld2a)
+
+; Note: Wrld2a above is just the same optimization noted after the previous use
+; of get-guards above.
 
 ; The arguments below are the same as those for the preceding call of
 ; translate-term-lst.
 
-                          '(nil) nil stobjs-in-lst ctx wrld3 state)))
-                (er-progn
-                 (if (eq defun-mode :logic)
+                              '(nil) nil stobjs-in-lst ctx wrld3 state)))
+                    (er-progn
+                     (if (eq defun-mode :logic)
 
 ; Although translate checks for inappropriate calls of :program functions,
 ; translate11 and translate1 do not.
 
-                     (er-progn
-                      (chk-logic-subfunctions names names
-                                              guards wrld3 "guard"
-                                              ctx state)
-                      (chk-logic-subfunctions names names
-                                              split-types-terms wrld3
-                                              "split-types expression"
-                                              ctx state)
-                      (chk-logic-subfunctions names names bodies
-                                              wrld3 "body"
-                                              ctx state))
-                   (value nil))
-                 (if (eq symbol-class :common-lisp-compliant)
-                     (er-progn
-                      (chk-common-lisp-compliant-subfunctions
-                       names names guards wrld3 "guard" ctx state)
-                      (chk-common-lisp-compliant-subfunctions
-                       names names split-types-terms wrld3
-                       "split-types expression" ctx state)
-                      (chk-common-lisp-compliant-subfunctions
-                       names names bodies wrld3 "body" ctx state))
-                   (value nil))
-                 (mv-let
-                  (erp val state)
+                         (er-progn
+                          (chk-logic-subfunctions names names
+                                                  guards wrld3 "guard"
+                                                  ctx state)
+                          (chk-logic-subfunctions names names
+                                                  split-types-terms wrld3
+                                                  "split-types expression"
+                                                  ctx state)
+                          (chk-logic-subfunctions names names bodies
+                                                  wrld3 "body"
+                                                  ctx state))
+                         (value nil))
+                     (if (eq symbol-class :common-lisp-compliant)
+                         (er-progn
+                          (chk-common-lisp-compliant-subfunctions
+                           names names guards wrld3 "guard" ctx state)
+                          (chk-common-lisp-compliant-subfunctions
+                           names names split-types-terms wrld3
+                           "split-types expression" ctx state)
+                          (chk-common-lisp-compliant-subfunctions
+                           names names bodies wrld3 "body" ctx state))
+                         (value nil))
+                     (mv-let
+                       (erp val state)
 ; This mv-let is just an aside that lets us conditionally check a bunch of
 ; conditions we needn't do in assumep mode.
-                  (cond
-                   (assumep (mv nil nil state))
-                   (t
-                    (let ((ignores (get-ignores fives))
-                          (ignorables (get-ignorables fives))
-                          (irrelevants-alist (get-irrelevants-alist fives)))
-                      (er-progn
-                       (chk-free-and-ignored-vars-lsts names
-                                                       arglists
-                                                       guards
-                                                       split-types-terms
-                                                       measures
-                                                       ignores
-                                                       ignorables
-                                                       bodies
-                                                       ctx state)
-                       (chk-irrelevant-formals names arglists
-                                               guards
-                                               split-types-terms
-                                               measures
-                                               ignores
-                                               ignorables
-                                               irrelevants-alist
-                                               bodies ctx state)
-                       (chk-mutual-recursion names bodies ctx
-                                             state)))))
-                  (cond
-                   (erp (mv erp val state))
-                   (t (er-let* ((new-lambda$-alist-pairs
-                                 (if non-executablep
-                                     (value nil)
-                                   (chk-acceptable-lambda$-translations
-                                    symbol-class
-                                    guards bodies
-                                    ctx wrld state)))
-                                (new-loop$-alist-pairs
-                                 (if non-executablep
-                                     (value nil)
-                                   (chk-acceptable-loop$-translations
-                                    symbol-class
-                                    guards bodies
-                                    ctx wrld state))))
-                        (value (list 'chk-acceptable-defuns
-                                     names
-                                     arglists
-                                     docs
-                                     nil ; doc-pairs
-                                     guards
-                                     measures
-                                     ruler-extenders-lst
-                                     mp
-                                     rel
-                                     hints
-                                     guard-hints
-                                     std-hints ;nil for non-std
-                                     otf-flg
-                                     bodies
-                                     symbol-class
-                                     normalizeps
-                                     reclassifying-all-programp
-                                     wrld4
-                                     non-executablep
-                                     guard-debug
-                                     measure-debug
-                                     split-types-terms
-                                     (list new-lambda$-alist-pairs
-                                           new-loop$-alist-pairs)
-                                     guard-simplify)))))))))))))))))
+                       (cond
+                        (assumep (mv nil nil state))
+                        (t
+                         (let ((ignores (get-ignores fives))
+                               (ignorables (get-ignorables fives))
+                               (irrelevants-alist (get-irrelevants-alist fives)))
+                           (er-progn
+                            (chk-free-and-ignored-vars-lsts names
+                                                            arglists
+                                                            guards
+                                                            split-types-terms
+                                                            measures
+                                                            ignores
+                                                            ignorables
+                                                            bodies
+                                                            ctx state)
+                            (chk-irrelevant-formals names arglists
+                                                    guards
+                                                    split-types-terms
+                                                    measures
+                                                    ignores
+                                                    ignorables
+                                                    irrelevants-alist
+                                                    bodies ctx state)
+                            (chk-mutual-recursion names bodies ctx
+                                                  state)))))
+                       (cond
+                        (erp (mv erp val state))
+                        (t (er-let* ((new-lambda$-alist-pairs
+                                      (if non-executablep
+                                          (value nil)
+                                          (chk-acceptable-lambda$-translations
+                                           symbol-class
+                                           guards bodies
+                                           ctx wrld3 state)))
+                                     (new-loop$-alist-pairs
+                                      (if non-executablep
+                                          (value nil)
+                                          (chk-acceptable-loop$-translations
+                                           symbol-class
+                                           guards bodies
+                                           ctx wrld3 state))))
+                             (value (list 'chk-acceptable-defuns
+                                          names
+                                          arglists
+                                          docs
+                                          nil ; doc-pairs
+                                          guards
+                                          measures
+                                          ruler-extenders-lst
+                                          mp
+                                          rel
+                                          hints
+                                          guard-hints
+                                          std-hints ;nil for non-std
+                                          otf-flg
+                                          bodies
+                                          symbol-class
+                                          normalizeps
+                                          reclassifying-all-programp
+                                          wrld4
+                                          non-executablep
+                                          guard-debug
+                                          measure-debug
+                                          split-types-terms
+                                          (make lambda-info
+                                                :loop$-recursion
+                                                (car loop$-recursion-lst)
+                                                :new-lambda$-alist-pairs
+                                                new-lambda$-alist-pairs
+                                                :new-loop$-alist-pairs
+                                                new-loop$-alist-pairs)
+                                          guard-simplify)))))))))))))))))))
 
 (defun conditionally-memoized-fns (fns memoize-table)
   (declare (xargs :guard (and (symbol-listp fns)
@@ -9429,15 +10077,13 @@
 ;              - list of translated terms, each corresponding to type
 ;                declarations made for a definition with XARGS keyword
 ;                :SPLIT-TYPES T
-;    new-lambda$-and-loop$-translation-pairs
-;               - a list of two alists
-;                 * new-lambda$-alist-pairs
-;                 * new-loop$-alist-pairs
-;                 the first of which maps the obvious untranslated terms to
-;                 their respective translations and the second of which maps
-;                 untranslated loop$ statements to loop$-alist-entry records
-;                 containing those translations after converting them from
-;                 logic to runnable code.
+;    lambda-info
+;              - a lambda-info record (q.v.) containing information about
+;                lambda objects gleaned during the acceptability check.  The
+;                information includes whether recursive calls of the
+;                (singly-defined) new function is allowed in lambdas and about
+;                translations of lambda$ and loop$ forms encountered.
+
 ;    guard-simplify
 ;               - t or nil, determining whether to simplify while generating
 ;                 the guard conjectures
@@ -9668,7 +10314,7 @@
 (defun defuns-fn1 (tuple ens big-mutrec names arglists docs pairs guards
                          guard-hints std-hints otf-flg guard-debug guard-simplify
                          bodies symbol-class normalizeps split-types-terms
-                         new-lambda$-and-loop$-translation-pairs
+                         lambda-info
                          non-executablep
                          #+:non-standard-analysis std-p
                          ctx state)
@@ -9731,24 +10377,40 @@
         (er-progn
          (update-w big-mutrec wrld6)
          (let* ((wrld6a
+                 (if (access lambda-info
+                             lambda-info
+                             :loop$-recursion)
+
+; If loop$-recursion is non-nil, then names is a singleton list and the defun
+; has an xargs :loop$-recursion t declaration.  We store that fact under the
+; loop$-recursion property of the function.  We don't bother to store anything
+; if loop$-recursion is nil.
+
+                     (putprop (car names) 'loop$-recursion T wrld6)
+                     wrld6))
+                (wrld6b
                  (global-set 'lambda$-alist
                              (union-equal
-                              (car new-lambda$-and-loop$-translation-pairs)
+                              (access lambda-info
+                                      lambda-info
+                                      :new-lambda$-alist-pairs)
                               (global-val 'lambda$-alist
-                                          wrld6))
-                             wrld6))
-                (wrld6b
+                                          wrld6a))
+                             wrld6a))
+                (wrld6c
                  (global-set 'loop$-alist
                              (union-equal
-                              (cadr new-lambda$-and-loop$-translation-pairs)
+                              (access lambda-info
+                                      lambda-info
+                                      :new-loop$-alist-pairs)
                               (global-val 'loop$-alist
-                                          wrld6a))
-                             wrld6a)))
+                                          wrld6b))
+                             wrld6b)))
            (er-progn
-            (update-w big-mutrec wrld6b)
+            (update-w big-mutrec wrld6c)
             (er-let*
                 ((wrld7 (update-w big-mutrec
-                                  (putprop-level-no-lst names wrld6b)))
+                                  (putprop-level-no-lst names wrld6c)))
                  (wrld8 (update-w big-mutrec
                                   (putprop-primitive-recursive-defunp-lst
                                    names wrld7)))
@@ -9822,7 +10484,7 @@
                          ruler-extenders-lst mp rel hints guard-hints std-hints
                          otf-flg guard-debug guard-simplify measure-debug bodies
                          symbol-class normalizeps split-types-terms
-                         new-lambda$-and-loop$-translation-pairs
+                         lambda-info
                          non-executablep
                          #+:non-standard-analysis std-p
                          ctx wrld state)
@@ -9839,7 +10501,10 @@
     (let ((ens (ens state))
           (big-mutrec (big-mutrec names)))
       (er-let*
-       ((tuple (put-induction-info names arglists
+       ((tuple (put-induction-info (access lambda-info
+                                           lambda-info
+                                           :loop$-recursion)
+                                   names arglists
                                    measures
                                    ruler-extenders-lst
                                    bodies
@@ -9867,7 +10532,7 @@
          symbol-class
          normalizeps
          split-types-terms
-         new-lambda$-and-loop$-translation-pairs
+         lambda-info
          non-executablep
          #+:non-standard-analysis std-p
          ctx
@@ -10307,7 +10972,7 @@
                 (guard-debug (nth 20 tuple))
                 (measure-debug (nth 21 tuple))
                 (split-types-terms (nth 22 tuple))
-                (new-lambda$-and-loop$-translation-pairs (nth 23 tuple))
+                (lambda-info (nth 23 tuple))
                 (guard-simplify (nth 24 tuple)))
             (er-let*
              ((pair (defuns-fn0
@@ -10331,7 +10996,7 @@
                       symbol-class
                       normalizeps
                       split-types-terms
-                      new-lambda$-and-loop$-translation-pairs
+                      lambda-info
                       non-executablep
                       #+:non-standard-analysis std-p
                       ctx
@@ -10342,6 +11007,62 @@
 
              (er-progn
               (chk-assumption-free-ttree (cdr pair) ctx state)
+              (if (access lambda-info lambda-info :loop$-recursion)
+; If loop$-recursion is set we know this is a singly-recursive (not mutually
+; recursive) defun that the user alleged was tame.  We check that now.
+                  (mv-let (erp msg-and-badge)
+                    (ev-fncall-w 'badger
+                                 (list (car names) (ens state) (w state))
+                                 (w state) nil nil nil t t)
+
+; If erp is t, then msg-and-badge is actually an error msg.  Otherwise,
+; msg-and-badge is (msg badge), where msg is either an error message or nil.
+; When msg is nil, badge is the computed badge.
+
+                    (let ((msg1 msg-and-badge)
+                          (msg2 (if erp
+                                    nil
+                                    (car msg-and-badge)))
+                          (badge (if erp
+                                     nil
+                                     (cadr msg-and-badge))))
+                      (cond
+                       ((or erp msg2)
+                        (er soft 'defun
+                            "When :LOOP$-RECURSION T is declared for a ~
+                             function, as it was for ~x0, we must assign it a ~
+                             badge before we translate its body.  That ~
+                             assigned badge asserts that ~x0 returns a single ~
+                             value and is tame.  We then check that ~
+                             assumption after translation by generating the ~
+                             badge using the technique that DEFWARRANT would ~
+                             use.  But the attempt to generate the badge has ~
+                             failed, indicating that it is illegal to declare ~
+                             :LOOP$-RECURSION T for this function.  ~#1~[Our ~
+                             attempt to generate a badge produced the ~
+                             following error:~/The error message that would ~
+                             be reported by DEFWARRANT is:~]~%~%~@2"
+                            (car names) (if erp 0 1) (if erp msg1 msg2)))
+                        ((not (equal (access apply$-badge badge :out-arity) 1))
+
+; This error can't happen!  The world -- wrld3 of chk-acceptable-defuns1 -- has
+; the stobjs-out property of fn set to a list of length 1.  And the badger just
+; looks there to find the :out-arity.
+
+                         (er soft 'defun
+                             "Impossible error!  The final badger check in ~
+                              DEFUNS-FN has failed on the :OUT-ARITY.  This ~
+                              is impossible given chk-acceptable-defuns1. ~
+                              Please show the implementors this bug!"))
+                        ((not (eq (access apply$-badge badge :ilks) t))
+                         (er soft 'defun
+                             "When :LOOP$-RECURSION T is declared for a ~
+                              function the function must be tame.  But ~x0 is ~
+                              not!  Its ilks are actually ~x1."
+                             (car names)
+                             (access apply$-badge badge :ilks)))
+                        (t (value nil)))))
+                  (value nil))
               (install-event-defuns names event-form def-lst0 symbol-class
                                     reclassifyingp non-executablep pair ctx wrld
                                     state))))))))))
