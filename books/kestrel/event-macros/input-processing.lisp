@@ -26,7 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define evmac-process-input-hints (hints (app-conds keyword-listp) ctx state)
+(define evmac-process-input-hints (hints (appconds keyword-listp) ctx state)
   :returns (mv erp (hints$ symbol-alistp) state)
   :short "Process the @(':hints') input of an event macro."
   :long
@@ -48,7 +48,7 @@
      and each @('hintsk') consists of hints that may appear
      just after @(':hints') in a @(tsee defthm).
      The allowed @('appcondk') keywords are passed
-     as the @('app-conds') argument of this function;
+     as the @('appconds') argument of this function;
      in general they may be a subset of
      all the possible applicability conditions of an event macro,
      based on certain conditions determined by other inputs of the macro.
@@ -69,7 +69,7 @@
               that identify applicability conditions ~
               in the :HINTS input" keys))
        ((er &) (ensure-list-no-duplicates$ keys description t nil))
-       ((er &) (ensure-list-subset$ keys app-conds description t nil)))
+       ((er &) (ensure-list-subset$ keys appconds description t nil)))
     (value alist))
   ;; for guard verification and return type proofs:
   :prepwork ((local (in-theory (enable ensure-keyword-value-list)))))
