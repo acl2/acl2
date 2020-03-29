@@ -10,13 +10,14 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
+(include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
-(include-book "kestrel/utilities/system/named-formulas" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
@@ -245,88 +246,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *restrict-app-cond-names*
-  :short "Names of all the applicability conditions."
-  '(:restriction-of-rec-calls
-    :restriction-guard
-    :restriction-boolean)
-  ///
-
-  (defruled symbol-listp-of-*restrict-app-cond-names*
-    (symbol-listp *restrict-app-cond-names*))
-
-  (defruled no-duplicatesp-eq-of-*restrict-app-cond-names*
-    (no-duplicatesp-eq *restrict-app-cond-names*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define restrict-app-cond-namep (x)
-  :returns (yes/no booleanp)
-  :short "Recognize names of the applicability conditions."
-  (and (member-eq x *restrict-app-cond-names*) t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist restrict-app-cond-name-listp (x)
-  (restrict-app-cond-namep x)
-  :short "Recognize true lists of names of the applicability conditions."
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define restrict-app-cond-present-p ((name restrict-app-cond-namep)
-                                     (old$ symbolp)
-                                     (verify-guards$ booleanp)
-                                     (wrld plist-worldp))
-  :returns (yes/no booleanp :hyp (booleanp verify-guards$))
-  :short "Check if the named applicability condition is present."
-  (case name
-    (:restriction-of-rec-calls (if (recursivep old$ nil wrld) t nil))
-    (:restriction-guard verify-guards$)
-    (:restriction-boolean t)
-    (t (impossible)))
-  :guard-hints (("Goal" :in-theory (enable restrict-app-cond-namep))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define restrict-app-cond-present-names ((old$ symbolp)
-                                         (verify-guards$ booleanp)
-                                         (wrld plist-worldp))
-  :returns (present-names restrict-app-cond-name-listp)
-  :short "Names of the applicability conditions that are present."
-  (restrict-app-cond-present-names-aux *restrict-app-cond-names*
-                                       old$
-                                       verify-guards$
-                                       wrld)
-
-  :prepwork
-  ((define restrict-app-cond-present-names-aux
-     ((names restrict-app-cond-name-listp)
-      (old$ symbolp)
-      (verify-guards$ booleanp)
-      (wrld plist-worldp))
-     :returns (present-names restrict-app-cond-name-listp
-                             :hyp (restrict-app-cond-name-listp names))
-     :parents nil
-     (if (endp names)
-         nil
-       (if (restrict-app-cond-present-p (car names)
-                                        old$
-                                        verify-guards$
-                                        wrld)
-           (cons (car names)
-                 (restrict-app-cond-present-names-aux (cdr names)
-                                                      old$
-                                                      verify-guards$
-                                                      wrld))
-         (restrict-app-cond-present-names-aux (cdr names)
-                                              old$
-                                              verify-guards$
-                                              wrld))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define restrict-process-inputs (old
                                  restriction
                                  undefined
@@ -350,8 +269,7 @@
                                     thm-name$
                                     non-executable$
                                     verify-guards$
-                                    hints$
-                                    app-cond-present-names)')
+                                    hints$)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -361,8 +279,7 @@
                                          symbolp
                                          booleanp
                                          booleanp
-                                         symbol-alistp
-                                         symbol-listp
+                                         evmac-input-hints-p
                                          result)'),
                         where @('old$') is
                         the result of @(tsee restrict-process-old),
@@ -380,11 +297,9 @@
                         the new function should be
                         non-executable or not,
                         @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not,
+                        the new function should be verified or not, and
                         @('hints$') is
-                        the result of @(tsee evmac-process-input-hints), and
-                        @('app-cond-present-names') is
-                        the result of @(tsee restrict-app-cond-present-names).")
+                        the result of @(tsee evmac-process-input-hints).")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -424,10 +339,7 @@
                               non-executable
                               (non-executablep old wrld)
                               "The :NON-EXECUTABLE input" t nil))
-       (app-cond-present-names (restrict-app-cond-present-names
-                                old$ verify-guards$ wrld))
-       ((er hints$) (evmac-process-input-hints
-                     hints app-cond-present-names ctx state))
+       ((er hints$) (evmac-process-input-hints$ hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -438,8 +350,7 @@
                  thm-name$
                  non-executable$
                  verify-guards$
-                 hints$
-                 app-cond-present-names))))
+                 hints$))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -521,164 +432,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict-gen-app-cond-formula ((name restrict-app-cond-namep)
-                                       (old$ symbolp)
-                                       (restriction$ pseudo-termp)
-                                       (stub? symbolp)
-                                       state)
-  :returns (formula "An untranslated term.")
-  :mode :program
-  :short "Generate the formula of the named applicability condition."
-  (let ((wrld (w state)))
-    (case name
-      (:restriction-of-rec-calls
-       (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
-            (consequent (restrict-gen-restriction-of-rec-calls-consequent-term
-                         old$ rec-calls-with-tests restriction$ stub? wrld))
-            (formula-trans (implicate restriction$ consequent)))
-         (untranslate formula-trans t wrld)))
-      (:restriction-guard
-       (b* ((old-guard (guard old$ nil wrld))
-            (restriction-guard (term-guard-obligation restriction$ state))
-            (formula-trans (implicate old-guard restriction-guard)))
-         (untranslate formula-trans t wrld)))
-      (:restriction-boolean
-       (b* ((formula-trans (apply-term* 'acl2::booleanp restriction$)))
-         (untranslate formula-trans t wrld)))
-      (t (impossible)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define restrict-gen-app-cond ((name restrict-app-cond-namep)
-                               (old$ symbolp)
+(define restrict-gen-appconds ((old$ symbolp)
                                (restriction$ pseudo-termp)
-                               (hints$ symbol-alistp)
-                               (print$ evmac-input-print-p)
+                               (verify-guards$ booleanp)
                                (stub? symbolp)
-                               (names-to-avoid symbol-listp)
-                               ctx
                                state)
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (thm-name "A @(tsee symbolp) that is the name of the theorem."))
+  :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
-  :short "Generate a theorem for the named applicability condition."
-  :long
-  "<p>
-   The theorem has no rule classes, because it is used via @(':use') hints
-   in the generated proofs in other events.
-   </p>
-   <p>
-   This is a local event, because it is only used internally by @('restrict').
-   The event is wrapped into a @(tsee try-event)
-   in order to provide a terse error message if the proof fails
-   (unless @(':print') is @(':all'), in which case everything is printed).
-   In addition,
-   if @(':print') is @(':info') or @(':all'),
-   the event is preceded and followed by events to print progress messages.
-   </p>
-   <p>
-   The name of the theorem is obtained by
-   putting the keyword that names the applicability condition
-   into the \"APT\" package
-   and adding @('$') as needed to avoid name clashes.
-   </p>"
-  (b* ((wrld (w state))
-       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
-                                                     (symbol-name name)
-                                                     (pkg-witness "APT"))
-                                                    nil
-                                                    names-to-avoid
-                                                    wrld))
-       (formula
-        (restrict-gen-app-cond-formula name old$ restriction$ stub? state))
-       (hints (cdr (assoc-eq name hints$)))
-       (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
-       (error-msg (msg
-                   "The proof of the ~x0 applicability condition fails:~%~x1~|"
-                   name formula))
-       (try-defthm (try-event defthm ctx t nil error-msg))
-       (print-progress-p (member-eq print$ '(:info :all)))
-       (progress-start? (and print-progress-p
-                             `((cw-event
-                                "~%Attempting to prove the ~x0 ~
-                                 applicability condition:~%~x1~|"
-                                ',name ',formula))))
-       (progress-end? (and print-progress-p
-                           `((cw-event "Done.~%"))))
-       (event `(local (progn ,@progress-start?
-                             ,try-defthm
-                             ,@progress-end?))))
-    (mv event thm-name)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define restrict-gen-app-conds
-  ((old$ symbolp)
-   (restriction$ pseudo-termp)
-   (verify-guards$ booleanp)
-   (hints$ symbol-alistp)
-   (print$ evmac-input-print-p)
-   (app-cond-present-names restrict-app-cond-name-listp)
-   (stub? symbolp)
-   (names-to-avoid symbol-listp)
-   ctx
-   state)
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (thm-names "A @(tsee symbol-symbol-alistp)
-                           from names of applicability conditions
-                           to names of the corresponding theorems event."))
-  :mode :program
-  :short "Generate theorems for the applicability conditions that must hold."
-  (restrict-gen-app-conds-aux app-cond-present-names
-                              old$
-                              restriction$
-                              verify-guards$
-                              hints$
-                              print$
-                              stub?
-                              names-to-avoid
-                              ctx
-                              state)
-
-  :prepwork
-  ((define restrict-gen-app-conds-aux ((names restrict-app-cond-name-listp)
-                                       (old$ symbolp)
-                                       (restriction$ pseudo-termp)
-                                       (verify-guards$ booleanp)
-                                       (hints$ symbol-alistp)
-                                       (print$ evmac-input-print-p)
-                                       (stub? symbolp)
-                                       (names-to-avoid symbol-listp)
-                                       ctx
-                                       state)
-     :returns (mv events ; PSEUDO-EVENT-FORM-LISTP
-                  thm-names) ; SYMBOL-SYMBOL-ALISTP
-     :mode :program
-     :parents nil
-     (b* (((when (endp names)) (mv nil nil))
-          (name (car names))
-          ((mv event thm-name) (restrict-gen-app-cond name
-                                                      old$
-                                                      restriction$
-                                                      hints$
-                                                      print$
-                                                      stub?
-                                                      names-to-avoid
-                                                      ctx
-                                                      state))
-          (names-to-avoid (cons thm-name names-to-avoid))
-          ((mv events thm-names) (restrict-gen-app-conds-aux (cdr names)
-                                                             old$
-                                                             restriction$
-                                                             verify-guards$
-                                                             hints$
-                                                             print$
-                                                             stub?
-                                                             names-to-avoid
-                                                             ctx
-                                                             state)))
-       (mv (cons event events)
-           (acons name thm-name thm-names))))))
+  (b* ((wrld (w state)))
+    (append
+     (make-evmac-appcond?
+      :name :restriction-of-rec-calls
+      :formula (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
+                    (consequent
+                     (restrict-gen-restriction-of-rec-calls-consequent-term
+                      old$ rec-calls-with-tests restriction$ stub? wrld)))
+                 (implicate restriction$
+                            consequent))
+      :when (recursivep old$ nil wrld))
+     (make-evmac-appcond?
+      :name :restriction-guard
+      :formula (b* ((old-guard (guard old$ nil wrld))
+                    (restriction-guard
+                     (term-guard-obligation restriction$ state)))
+                 (implicate old-guard
+                            restriction-guard))
+      :when verify-guards$)
+     (make-evmac-appcond?
+      :name :restriction-boolean
+      :formula (apply-term* 'booleanp restriction$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -953,11 +735,10 @@
    (hints$ symbol-alistp)
    (print$ evmac-input-print-p)
    (show-only$ booleanp)
-   (app-cond-present-names restrict-app-cond-name-listp)
    (call pseudo-event-formp)
    ctx
    state)
-  :returns (event "A @(tsee pseudo-event-formp).")
+  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
   :short "Generate the top-level event."
   :long
@@ -1042,19 +823,25 @@
        (stub-event? (and stub?
                          (list `(defstub ,stub?
                                   ,(repeat (arity old$ wrld) '*) => *))))
+       (appconds (restrict-gen-appconds old$
+                                        restriction$
+                                        verify-guards$
+                                        stub?
+                                        state))
        ((mv app-cond-thm-events
-            app-cond-thm-names) (restrict-gen-app-conds old$
-            restriction$
-            verify-guards$
-            hints$
-            print$
-            app-cond-present-names
-            stub?
-            names-to-avoid
-            ctx
-            state))
-       (names-to-avoid (append names-to-avoid
-                               (strip-cdrs app-cond-thm-names)))
+            app-cond-thm-names
+            remaining-hints
+            names-to-avoid)
+        (evmac-appcond-theorem-list
+         appconds hints$ names-to-avoid print$ ctx state))
+       ((when (and (keyword-truelist-alistp remaining-hints)
+                   (consp remaining-hints)))
+        (er-soft+ ctx t nil
+                  "The :HINTS input includes the keywords ~x0, ~
+                   which do not correspond to applicability conditions ~
+                   that must hold in this call of RESTRICT, ~
+                   at least given the other inputs of RESTRICT."
+                  (strip-cars remaining-hints)))
        ((mv old-unnorm-event
             old-unnorm-name) (install-not-normalized-event old$
             t
@@ -1118,7 +905,7 @@
         (if (member-eq print$ '(:info :all))
             (cw "~%~x0~|" encapsulate)
           (cw "~x0~|" encapsulate))
-        '(value-triple :invisible))
+        (value '(value-triple :invisible)))
        (encapsulate+ (restore-output? (eq print$ :all) encapsulate))
        (transformation-table-event (record-transformation-call-event
                                     call encapsulate wrld))
@@ -1128,11 +915,12 @@
                                '((cw-event "~%")))
                         (cw-event "~x0~|" ',new-fn-exported-event)
                         (cw-event "~x0~|" ',old-to-new-thm-exported-event)))))
-    `(progn
-       ,encapsulate+
-       ,transformation-table-event
-       ,@print-result
-       (value-triple :invisible))))
+    (value
+     `(progn
+        ,encapsulate+
+        ,transformation-table-event
+        ,@print-result
+        (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1179,37 +967,35 @@
                   thm-name$
                   non-executable$
                   verify-guards$
-                  hints$
-                  app-cond-present-names)) (restrict-process-inputs
-                                            old
-                                            restriction
-                                            undefined
-                                            new-name
-                                            new-enable
-                                            thm-name
+                  hints$))
+        (restrict-process-inputs old
+                                 restriction
+                                 undefined
+                                 new-name
+                                 new-enable
+                                 thm-name
+                                 thm-enable
+                                 non-executable
+                                 verify-guards
+                                 hints
+                                 print
+                                 show-only
+                                 ctx state))
+       ((er event) (restrict-gen-everything old$
+                                            restriction$
+                                            undefined$
+                                            new-name$
+                                            new-enable$
+                                            thm-name$
                                             thm-enable
-                                            non-executable
-                                            verify-guards
-                                            hints
+                                            non-executable$
+                                            verify-guards$
+                                            hints$
                                             print
                                             show-only
-                                            ctx state))
-       (event (restrict-gen-everything old$
-                                       restriction$
-                                       undefined$
-                                       new-name$
-                                       new-enable$
-                                       thm-name$
-                                       thm-enable
-                                       non-executable$
-                                       verify-guards$
-                                       hints$
-                                       print
-                                       show-only
-                                       app-cond-present-names
-                                       call
-                                       ctx
-                                       state)))
+                                            call
+                                            ctx
+                                            state)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
