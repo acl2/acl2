@@ -18,11 +18,7 @@
 (define evmac-input-hints-p (x)
   :returns (yes/no booleanp)
   :parents (event-macro-applicability-conditions)
-  :short (xdoc::topstring
-          "Recognize processed hints for proving "
-          (xdoc::seetopic "event-macro-applicability-conditions"
-                          "applicability conditions")
-          ".")
+  :short "Recognize processed hints inputs of event macros."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -78,7 +74,16 @@
      and (ii) we may add further constraints in the future."))
   (true-listp x)
   ///
+
   (local
    (defthm validation
      (implies (keyword-truelist-alistp x)
-              (true-listp x)))))
+              (true-listp x))))
+
+  (defthm evmac-input-hints-p-when-keyword-truelist-alistp
+    (implies (keyword-truelist-alistp x)
+             (evmac-input-hints-p x)))
+
+  (defthm evmac-input-hints-p-when-true-listp
+    (implies (true-listp x)
+             (evmac-input-hints-p x))))
