@@ -24,6 +24,7 @@
       (unmemoize 'normalize)
       (unmemoize 'remove-guard-holders1-lst)
       (unmemoize 'remove-guard-holders1)
+      (unmemoize 'remove-guard-holders-weak)
       (unmemoize 'remove-guard-holders)
       (unmemoize 'ffnnamep-mod-mbe-lst)
       (unmemoize 'all-vars1-lst)

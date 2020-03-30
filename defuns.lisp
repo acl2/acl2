@@ -1751,14 +1751,15 @@
    ((eq (ffn-symb body) 'if)
     (let ((test
 
-; Since (remove-guard-holders x) is provably equal to x, the machine we
+; Since (remove-guard-holders-weak x) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
-; It might be sound to call possibly-clean-up-dirty-lambda-objects so that
+; It might be sound also to call possibly-clean-up-dirty-lambda-objects (i.e.,
+; to call remove-guard-holders instead of remove-guard-holders-weak) so that
 ; guard holders are removed from quoted lambdas in argument positions with ilk
 ; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
 ; here and in termination-machine.
 
-           (remove-guard-holders (fargn body 1))))
+           (remove-guard-holders-weak (fargn body 1))))
       (cond
        ((member-eq-all 'if ruler-extenders) ; other case is easier to follow
         (mv-let
@@ -1935,7 +1936,7 @@
 ; possibly-clean-up-dirty-lambda-objects anytime we're removing guard holders
 ; we do not do so here and just play it safe until we get burned!
 
-  (let* ((tests0 (remove-guard-holders-lst
+  (let* ((tests0 (remove-guard-holders-weak-lst
                   (access tests-and-calls tc :tests))))
     (mv-let
      (var const)
@@ -1965,7 +1966,7 @@
 
        (make tests-and-calls
              :tests tests
-             :calls (remove-guard-holders-lst
+             :calls (remove-guard-holders-weak-lst
                      (access tests-and-calls tc :calls)))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
@@ -2668,9 +2669,7 @@
             (equivalence-relationp equiv wrld))
        (mv-let (body ttree)
                (cond ((eq install-body :NORMALIZE)
-                      (normalize (possibly-clean-up-dirty-lambda-objects
-                                  (remove-guard-holders body)
-                                  wrld)
+                      (normalize (remove-guard-holders body wrld)
                                  nil ; iff-flg
                                  nil ; type-alist
                                  ens
@@ -2724,12 +2723,8 @@
     (('atom x)
      (list (mcons-term* 'not
                         (mcons-term* 'consp
-                                     (possibly-clean-up-dirty-lambda-objects
-                                      (remove-guard-holders x)
-                                      wrld)))))
-    (& (list (possibly-clean-up-dirty-lambda-objects
-              (remove-guard-holders hyp)
-              wrld)))))
+                                     (remove-guard-holders x wrld)))))
+    (& (list (remove-guard-holders hyp wrld)))))
 
 (defun preprocess-hyps (hyps wrld)
   (cond ((null hyps) nil)
@@ -8981,21 +8976,18 @@
                    (DECLARE (IGNORABLE ,@formals))
                    ,(logic-code-to-runnable-code
                      nil
-                     (possibly-clean-up-dirty-lambda-objects
-                      (remove-guard-holders
-                       (or (cadr (assoc-keyword :guard
-                                                (cdr (assoc-eq 'xargs
-                                                               (cdr dcl)))))
-                           *t*))
+                     (remove-guard-holders
+                      (or (cadr (assoc-keyword :guard
+                                               (cdr (assoc-eq 'xargs
+                                                              (cdr dcl)))))
+                          *t*)
                       wrld)
                      wrld))
           `(LAMBDA ,formals
                    ,dcl
                    ,(logic-code-to-runnable-code
                      nil
-                     (possibly-clean-up-dirty-lambda-objects
-                      (remove-guard-holders body)
-                      wrld)
+                     (remove-guard-holders body wrld)
                      wrld)))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)

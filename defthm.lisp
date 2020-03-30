@@ -1666,10 +1666,7 @@
 ; is a ttree that justifies the storage of all the :REWRITE rules.
 
   (chk-acceptable-rewrite-rule1 name match-free loop-stopper
-                                (unprettyify
-                                 (possibly-clean-up-dirty-lambda-objects
-                                  (remove-guard-holders term)
-                                  wrld))
+                                (unprettyify (remove-guard-holders term wrld))
                                 ctx ens wrld state))
 
 ; So now we work on actually generating and adding the rules.
@@ -1775,10 +1772,7 @@
 ; convention.  "Consistency is the hobgoblin of small minds."  Emerson?
 
   (add-rewrite-rule1 rune nume
-                     (unprettyify
-                      (possibly-clean-up-dirty-lambda-objects
-                       (remove-guard-holders term)
-                       wrld))
+                     (unprettyify (remove-guard-holders term wrld))
                      loop-stopper-lst backchain-limit-lst match-free ens wrld))
 
 ;---------------------------------------------------------------------------
@@ -2259,10 +2253,7 @@
 ; messages without causing an error.
 
   (chk-acceptable-linear-rule1 name match-free trigger-terms
-                               (unprettyify
-                                (possibly-clean-up-dirty-lambda-objects
-                                 (remove-guard-holders term)
-                                 wrld))
+                               (unprettyify (remove-guard-holders term wrld))
                                ctx ens wrld state))
 
 ; And now, to adding :LINEAR rules...
@@ -2309,9 +2300,7 @@
 
 (defun add-linear-rule2 (rune nume trigger-terms hyps concl
                               backchain-limit-lst match-free ens wrld state)
-  (let* ((concl (possibly-clean-up-dirty-lambda-objects
-                 (remove-guard-holders concl)
-                 wrld))
+  (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
          (lst (external-linearize xconcl ens wrld state))
          (hyps (preprocess-hyps hyps wrld))
@@ -2376,10 +2365,7 @@
 ;                (recur-over-break-cons cdr)))))
 
   (add-linear-rule1 rune nume trigger-terms
-                    (unprettyify
-                     (possibly-clean-up-dirty-lambda-objects
-                      (remove-guard-holders term)
-                      wrld))
+                    (unprettyify (remove-guard-holders term wrld))
                     backchain-limit-lst match-free ens wrld state))
 
 ;---------------------------------------------------------------------------
@@ -3248,10 +3234,7 @@
 ;                                hyps)
 ;                        concls)))))
 
-  (let ((term (remove-lambdas
-               (possibly-clean-up-dirty-lambda-objects
-                (remove-guard-holders term)
-                wrld))))
+  (let ((term (remove-lambdas (remove-guard-holders term wrld))))
     (cond ((or (variablep term)
                (fquotep term)
                (not (eq (ffn-symb term) 'implies)))
@@ -3734,9 +3717,8 @@
                        cl-set0
                        (normalized-evaluator-cl-set evfn-lst wrld)))
                      (cl-set2
-                      (possibly-clean-up-dirty-lambda-objects-lst-lst
-                       (remove-guard-holders-lst-lst
-                        (evaluator-clauses evfn evfn-lst fn-args-lst))
+                      (remove-guard-holders-lst-lst
+                       (evaluator-clauses evfn evfn-lst fn-args-lst)
                        wrld)))
                 (cond
                  ((not (and (clause-set-subsumes nil cl-set1 cl-set2)
@@ -5380,9 +5362,7 @@
 ; type-set lemmas in wrld.  The ttree returned contains no 'assumption
 ; tags.
 
-  (let ((term (possibly-clean-up-dirty-lambda-objects
-               (remove-guard-holders term)
-               wrld)))
+  (let ((term (remove-guard-holders term wrld)))
     (mv-let
      (hyps concl)
      (unprettyify-tp term)
@@ -6474,10 +6454,7 @@
 ; are so intermingled that it seemed dubious to separate them into two
 ; functions.
 
-  (let ((pairs (unprettyify
-                (possibly-clean-up-dirty-lambda-objects
-                 (remove-guard-holders term)
-                 wrld)))
+  (let ((pairs (unprettyify (remove-guard-holders term wrld)))
         (hyp-msg   "~x0 is an unacceptable :CONGRUENCE rule.  The ~
                     single hypothesis of a :CONGRUENCE rule must be a ~
                     term of the form (equiv x y), where equiv has ~
@@ -8517,10 +8494,7 @@
       (cond ((not (assoc-eq :TYPED-TERM seen))
              (mv-let
               (hyps concl)
-              (unprettyify-tp
-               (possibly-clean-up-dirty-lambda-objects
-                (remove-guard-holders corollary)
-                wrld))
+              (unprettyify-tp (remove-guard-holders corollary wrld))
               (declare (ignore hyps))
               (let ((pat (cond ((ffn-symb-p concl 'implies)
                                 (find-type-prescription-pat (fargn concl 2)
@@ -8796,17 +8770,12 @@
                               See :DOC linear."
                              name))
                         (t
-                         (let ((terms
-                                (possibly-clean-up-dirty-lambda-objects-lst
-                                 (remove-guard-holders-lst terms)
-                                 wrld)))
+                         (let ((terms (remove-guard-holders-lst terms wrld)))
                            (er-progn
                             (chk-legal-linear-trigger-terms
                              terms
                              (unprettyify
-                              (possibly-clean-up-dirty-lambda-objects
-                               (remove-guard-holders corollary)
-                               wrld))
+                              (remove-guard-holders corollary wrld))
                              name ctx state)
                             (value terms)))))))
                     ((eq token :FORWARD-CHAINING)
@@ -8820,9 +8789,7 @@
                                    specifies none.  See :DOC forward-chaining."
                                   x))
                              (t (value
-                                 (possibly-clean-up-dirty-lambda-objects-lst
-                                  (remove-guard-holders-lst terms)
-                                  wrld))))))
+                                 (remove-guard-holders-lst terms wrld))))))
                     (t
                      (er soft ctx
                          ":TRIGGER-TERMS can only be specified for ~
@@ -8970,15 +8937,11 @@
                              (mv-let
                               (hyps concl)
                               (unprettyify-tp
-                               (possibly-clean-up-dirty-lambda-objects
-                                (remove-guard-holders corollary)
-                                wrld))
+                               (remove-guard-holders corollary wrld))
                               (list (cons hyps concl))))
                             (otherwise
                              (unprettyify
-                              (possibly-clean-up-dirty-lambda-objects
-                               (remove-guard-holders corollary)
-                               wrld))))))
+                              (remove-guard-holders corollary wrld))))))
                      (cond
                       ((not (member-eq token
                                        '(:REWRITE :META :LINEAR
@@ -11235,9 +11198,7 @@
             (let ((attached-fns
                    (attached-fns (canonical-ancestors-lst
                                   (all-ffn-symbs
-                                   (possibly-clean-up-dirty-lambda-objects
-                                    (remove-guard-holders tterm)
-                                    wrld)
+                                   (remove-guard-holders tterm wrld)
                                    nil)
                                   wrld)
                                  wrld)))
