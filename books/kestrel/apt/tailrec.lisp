@@ -962,6 +962,7 @@
                               (verify-guards$ booleanp)
                               state)
   :returns (appconds "A @(tsee evmac-appcond-listp).")
+  :short "Generate the applicability conditions."
   :mode :program
   (b* ((wrld (w state))
        (u (tailrec-gen-var-u old$))

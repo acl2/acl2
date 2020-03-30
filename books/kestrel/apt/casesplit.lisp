@@ -715,7 +715,7 @@
               (= (len news) (1+ (len conditions$))))
   :returns (appconds "An @(tsee evmac-appcond-listp).")
   :mode :program
-  :short "Generate the names and formulas of the applicability conditions
+  :short "Generate the applicability conditions
           that are present for the current call of the transformation,
           in the order given in the reference documentation."
   (if verify-guards$

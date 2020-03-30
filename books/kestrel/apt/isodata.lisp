@@ -1455,6 +1455,7 @@
                               (wrld plist-worldp))
   :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
+  :short "Generate the applicability conditions."
   (b* ((x1...xn (formals old$ wrld))
        (oldp-of-x1...xn (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
        (oldp-of-x1...xn-conj (conjoin oldp-of-x1...xn))
