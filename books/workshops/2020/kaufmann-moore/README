@@ -1,0 +1,4 @@
+The community book projects/apply/loop-tests.lisp constitutes
+supporting materials for the paper, "Iteration in ACL2" by Kaufmann
+and Moore.  It contains most ACL2 events and expressions in that
+paper.
