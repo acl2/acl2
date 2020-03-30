@@ -320,7 +320,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *defiso-required-app-cond-keywords*
+(defval *defiso-required-appcond-keywords*
   :short "Keywords that identify the required applicability conditions,
           i.e. the ones that are always present."
   (list :alpha-image
@@ -328,7 +328,7 @@
         :beta-of-alpha
         :alpha-of-beta))
 
-(defval *defiso-optional-app-cond-keywords*
+(defval *defiso-optional-appcond-keywords*
   :short "Keywords that identify the optional applicability conditions,
           i.e. the ones that may or may not be present."
   (list :doma-guard
@@ -348,10 +348,10 @@
   :returns (thm-keywords symbol-listp)
   :short "Keywords that identify all the theorems to generate."
   (if guard-thms$
-      (append *defiso-required-app-cond-keywords*
-              *defiso-optional-app-cond-keywords*
+      (append *defiso-required-appcond-keywords*
+              *defiso-optional-appcond-keywords*
               *defiso-additional-thm-keywords*)
-    (append *defiso-required-app-cond-keywords*
+    (append *defiso-required-appcond-keywords*
             *defiso-additional-thm-keywords*))
   ///
 
@@ -443,19 +443,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defiso-app-cond-keywords ((guard-thms$ booleanp))
-  :returns (app-cond-keywords symbol-listp)
+(define defiso-appcond-keywords ((guard-thms$ booleanp))
+  :returns (appcond-keywords symbol-listp)
   :short "Keywords that identify
           all the applicability conditions that are present."
   (if guard-thms$
-      (append *defiso-required-app-cond-keywords*
-              *defiso-optional-app-cond-keywords*)
-    *defiso-required-app-cond-keywords*)
+      (append *defiso-required-appcond-keywords*
+              *defiso-optional-appcond-keywords*)
+    *defiso-required-appcond-keywords*)
   ///
 
   (more-returns
-   (app-cond-keywords no-duplicatesp-eq
-                      :name no-duplicatesp-eq-of-defiso-app-cond-keywords)))
+   (appcond-keywords no-duplicatesp-eq
+                     :name no-duplicatesp-eq-of-defiso-appcond-keywords)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -503,8 +503,8 @@
        ((er &) (ensure-boolean$ unconditional "The :UNCONDITIONAL input" t nil))
        ((er thm-names$) (defiso-process-thm-names
                           thm-names name guard-thms ctx state))
-       (app-conds (defiso-app-cond-keywords guard-thms))
-       ((er hints$) (evmac-process-input-hints hints app-conds ctx state))
+       (appconds (defiso-appcond-keywords guard-thms))
+       ((er hints$) (evmac-process-input-hints hints appconds ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list doma$
@@ -1130,10 +1130,10 @@
   (b* ((wrld (w state))
        (a1...an (defiso-gen-var-a1...an alpha$ wrld))
        (b1...bm (defiso-gen-var-b1...bm beta$ wrld))
-       ((mv local-app-cond-thms
-            exported-app-cond-thms)
+       ((mv local-appcond-thms
+            exported-appcond-thms)
         (defiso-gen-thms
-          (defiso-app-cond-keywords guard-thms$)
+          (defiso-appcond-keywords guard-thms$)
           doma$
           domb$
           alpha$
@@ -1149,28 +1149,28 @@
        ((mv local-additional-thms
             exported-additional-thms)
         (defiso-gen-thms
-            *defiso-additional-thm-keywords*
-            doma$
-            domb$
-            alpha$
-            beta$
-            unconditional$
-            thm-names$
-            hints$
-            print$
-            a1...an
-            b1...bm
-            ctx
-            state))
+          *defiso-additional-thm-keywords*
+          doma$
+          domb$
+          alpha$
+          beta$
+          unconditional$
+          thm-names$
+          hints$
+          print$
+          a1...an
+          b1...bm
+          ctx
+          state))
        (expansion `(encapsulate
                      ()
                      (logic)
                      (set-ignore-ok t)
-                     ,@local-app-cond-thms
+                     ,@local-appcond-thms
                      (set-default-hints nil)
                      (set-override-hints nil)
                      ,@local-additional-thms
-                     ,@exported-app-cond-thms
+                     ,@exported-appcond-thms
                      ,@exported-additional-thms))
        ((when show-only$)
         (if (member-eq print$ '(:info :all))
@@ -1194,7 +1194,7 @@
                            (and (member-eq print$ '(:info :all))
                                 '((cw-event "~%")))
                            (defiso-gen-print-result
-                             (append exported-app-cond-thms
+                             (append exported-appcond-thms
                                      exported-additional-thms))))))
     `(progn
        ,expansion+

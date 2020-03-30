@@ -3701,7 +3701,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
       (er-let* ((call (translate (cons fn (cadr fn))
                                  t t nil ctx
                                  w state)))
-        (value (ffn-symb (remove-guard-holders call)))))
+        (value (ffn-symb (remove-guard-holders call
+; Matt K. mod 3/2019 for new argument of remove-guard-holders:
+                                               w)))))
      (t (er soft ctx
             "The ~x0 argument must be either a an existing function symbol or ~
              a well-formed LAMBDA expression.  The arity of the function ~
@@ -3742,7 +3744,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                                'translate-list-of-terms
                                (w state) state))
               (rest (translate-list-of-terms (cdr terms) state)))
-      (value (remove-guard-holders-lst (cons term rest)))))))
+      (value (remove-guard-holders-lst (cons term rest)
+; Matt K. mod 3/2019 for new argument of remove-guard-holders:
+                                       (w state)))))))
 
 (defun translate-list-of-terms-list (lst state)
   (cond
@@ -3764,8 +3768,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                                 'translate-list-of-term-term-doublets
                                 (w state) state))
               (rest (translate-list-of-term-term-doublets (cdr doublets) state)))
-      (value (cons (list (remove-guard-holders term1)
-                         (remove-guard-holders term2))
+; Matt K. mod 3/2019 by adding new world argument of remove-guard-holders:
+      (value (cons (list (remove-guard-holders term1 (w state))
+                         (remove-guard-holders term2 (w state)))
                    rest))))
    (t (er soft 'translate-list-of-term-term-doublets
           "This function takes a true list of doublets, each of the form ~
@@ -4556,7 +4561,9 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                   :run run
                   :svar svar
                   :stobjp stobjp
-                  :hyps (remove-guard-holders-lst hyps)
+                  :hyps (remove-guard-holders-lst hyps
+; Matt K. mod 3/2019 for new argument of remove-guard-holders:
+                                                  (w state))
                   :step step
                   :get-pc get-pc
                   :put-pc put-pc

@@ -8789,9 +8789,7 @@
                               (split-on-conjoined-disjunctions-in-hyps-of-pairs (cdr pairs)))))))))
 
 (defun chk-acceptable-tau-rule (name term ctx wrld state)
-  (let ((term1 (possibly-clean-up-dirty-lambda-objects
-                (remove-guard-holders term)
-                wrld)))
+  (let ((term1 (remove-guard-holders term wrld)))
     (mv-let
      (form j bc)
      (tau-bounder-formp term1 wrld)
@@ -8937,9 +8935,7 @@
 ; ACCUMULATE means we just add rune to 'tau-lost-runes, and IGNORE means we
 ; just quietly ignore the situation.
 
-  (let ((term1 (possibly-clean-up-dirty-lambda-objects
-                (remove-guard-holders term)
-                wrld0)))
+  (let ((term1 (remove-guard-holders term wrld0)))
     (mv-let
      (form j bc)
      (tau-bounder-formp term1 wrld0)
@@ -9057,9 +9053,7 @@
              (split-on-conjoined-disjunctions-in-hyps-of-pairs
               (strip-force-and-case-split-in-hyps-of-pairs
                (unprettyify
-                (possibly-clean-up-dirty-lambda-objects
-                 (remove-guard-holders term)
-                 wrld0))))
+                (remove-guard-holders term wrld0))))
              wrld)))
        (cond
         ((null pairs)

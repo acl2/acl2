@@ -9505,9 +9505,7 @@
    (t
     (er-let*@par
      ((term (translate@par form t t t ctx wrld state)))
-     (let ((term (possibly-clean-up-dirty-lambda-objects
-                  (remove-guard-holders term)
-                  wrld)))
+     (let ((term (remove-guard-holders term wrld)))
        (cond
         ((or (variablep term)
              (fquotep term))
@@ -9960,14 +9958,10 @@
     (er-let*@par
      ((term (translate@par (cons (car arg) (cadr (car arg)))
                            t t t ctx wrld state))
-      (term (value (possibly-clean-up-dirty-lambda-objects
-                    (remove-guard-holders term)
-                    wrld)))
+      (term (value (remove-guard-holders term wrld)))
 ; known-stobjs = t (stobjs-out = t)
       (rst (translate-hands-off-hint1@par (cdr arg) ctx wrld state))
-      (rst (value (possibly-clean-up-dirty-lambda-objects-lst
-                   (remove-guard-holders-lst rst)
-                   wrld))))
+      (rst (value (remove-guard-holders-lst rst wrld))))
 
 ; Below we assume that if you give translate ((lambda ...) ...) and it
 ; does not cause an error, then it gives you back a function application.
@@ -12165,14 +12159,15 @@
    ((eq (ffn-symb body) 'if)
     (let* ((inst-test (sublis-var alist
 
-; Since (remove-guard-holders x) is provably equal to x, the machine we
+; Since (remove-guard-holders-weak x) is provably equal to x, the machine we
 ; generate using it below is equivalent to the machine generated without it.
-; It might be sound also call possibly-clean-up-dirty-lambda-objects so that
+; It might be sound also to call possibly-clean-up-dirty-lambda-objects (i.e.,
+; to call remove-guard-holders instead of remove-guard-holders-weak) so that
 ; guard holders are removed from quoted lambdas in argument positions with ilk
 ; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
 ; here and in induction-machine-for-fn1.
 
-                                  (remove-guard-holders (fargn body 1))))
+                                  (remove-guard-holders-weak (fargn body 1))))
            (branch-result
             (append (termination-machine-rec loop$-recursion
                                              names
@@ -12279,13 +12274,14 @@
 ; we do not do so here because we don't want to think about the effect on
 ; termination machines, at least not until we see it hurt us.
 
-                 (lamb-body (remove-guard-holders (lambda-object-body lamb)))
+                 (lamb-body (remove-guard-holders-weak
+                             (lambda-object-body lamb)))
                  (target (sublis-var alist (fargn body 2)))
                  (newvar (genvar v "NV" 0 avoid-vars))
                  (avoid-vars (cons newvar avoid-vars))
                  (inst-test `(MEMBER-EQUAL
                               ,newvar
-                              ,(remove-guard-holders target))))
+                              ,(remove-guard-holders-weak target))))
             (append normal-ans
                     (termination-machine-rec loop$-recursion
                                              names
@@ -12308,14 +12304,15 @@
           (let* ((lamb (unquote (fargn body 1)))
                  (gvars (car (lambda-object-formals lamb)))
                  (ivars (cadr (lambda-object-formals lamb)))
-                 (lamb-body (remove-guard-holders (lambda-object-body lamb)))
+                 (lamb-body (remove-guard-holders-weak
+                             (lambda-object-body lamb)))
                  (globals (sublis-var alist (fargn body 2)))
                  (target (sublis-var alist (fargn body 3)))
                  (newvar (genvar ivars "NV" 0 avoid-vars))
                  (avoid-vars (cons newvar avoid-vars))
                  (inst-test `(MEMBER-EQUAL
                               ,newvar
-                              ,(remove-guard-holders target))))
+                              ,(remove-guard-holders-weak target))))
             (append normal-ans
                     (termination-machine-rec loop$-recursion
                                              names
@@ -13591,9 +13588,7 @@
            (let* ((term1 (make-lambda-application
                           (lambda-formals (ffn-symb term))
                           (termify-clause-set cl-set2)
-                          (possibly-clean-up-dirty-lambda-objects-lst
-                           (remove-guard-holders-lst (fargs term))
-                           wrld)))
+                          (remove-guard-holders-lst (fargs term) wrld)))
                   (cl (reverse (add-literal-smart term1 clause nil)))
                   (cl-set3 (if (equal cl *true-clause*)
                                cl-set1
@@ -13608,9 +13603,7 @@
                               (list cl)))))
              (mv cl-set3 ttree)))))
         ((eq (ffn-symb term) 'if)
-         (let ((test (possibly-clean-up-dirty-lambda-objects
-                      (remove-guard-holders (fargn term 1))
-                      wrld)))
+         (let ((test (remove-guard-holders (fargn term 1) wrld)))
            (mv-let
             (cl-set1 ttree)
 
@@ -13805,9 +13798,7 @@
                            (sublis-var-lst-lst
                             (pairlis$
                              (formals (ffn-symb term) wrld)
-                             (possibly-clean-up-dirty-lambda-objects-lst
-                              (remove-guard-holders-lst (fargs term))
-                              wrld))
+                             (remove-guard-holders-lst (fargs term) wrld))
                             guard-concl-segments)))))
                    cl-set2)
                   ttree)))))))
@@ -14485,9 +14476,7 @@
      ((eq (car lmi) :theorem)
       (er-let*@par
        ((term (translate@par (cadr lmi) t t t ctx wrld state))
-        (term (value (possibly-clean-up-dirty-lambda-objects
-                      (remove-guard-holders term)
-                      wrld))))
+        (term (value (remove-guard-holders term wrld))))
 ; known-stobjs = t (stobjs-out = t)
        (value@par (list term (list term) nil nil))))
      ((or (eq (car lmi) :instance)

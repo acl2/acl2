@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -119,7 +120,7 @@
   "@('res-isomap') is the isomorphic mapping record for the function result.
    This is the same as @('res-isomap?'), when that is not @('nil')."
 
-  "@('app-cond-thm-names') is an alist
+  "@('appcond-thm-names') is an alist
    from the applicability condition keywords
    to the corresponding theorem names."
 
@@ -1118,109 +1119,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *isodata-app-cond-keywords*
-  :short "Keywords that identify the applicability conditions."
-  '(:oldp-of-old
-    :oldp-when-old
-    :oldp-of-rec-call-args
-    :old-guard
-    :old-guard-pred)
-  ///
-
-  (defruled keyword-listp-of-*isodata-app-cond-keywords*
-    (keyword-listp *isodata-app-cond-keywords*))
-
-  (defruled no-duplicatesp-eq-of-*isodata-app-cond-keywords*
-    (no-duplicatesp-eq *isodata-app-cond-keywords*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-app-cond-keywordp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize the keywords of the applicability conditions."
-  (and (member-eq x *isodata-app-cond-keywords*) t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist isodata-app-cond-keyword-listp (x)
-  (isodata-app-cond-keywordp x)
-  :short "Recognize true lists of the keywords of the applicability conditions."
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-app-cond-present-p ((keyword isodata-app-cond-keywordp)
-                                    (old$ symbolp)
-                                    (res-isomaps isodata-pos-isomap-alistp)
-                                    (predicate$ booleanp)
-                                    (verify-guards$ booleanp)
-                                    (wrld plist-worldp))
-  :returns (yes/no booleanp :hyp (and (booleanp res$)
-                                      (booleanp predicate$)
-                                      (booleanp verify-guards$)))
-  :short "Check if an applicability condition is present."
-  (case keyword
-    (:oldp-of-old (and res-isomaps t))
-    (:oldp-when-old predicate$)
-    (:oldp-of-rec-call-args (and (irecursivep old$ wrld) t))
-    (:old-guard (and verify-guards$ (not predicate$)))
-    (:old-guard-pred (and verify-guards$ predicate$))
-    (t (impossible)))
-  :guard-hints (("Goal" :in-theory (enable isodata-app-cond-keywordp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-app-cond-present-keywords
-  ((old$ symbolp)
-   (res-isomaps isodata-pos-isomap-alistp)
-   (predicate$ booleanp)
-   (verify-guards$ booleanp)
-   (wrld plist-worldp))
-  :returns (present-keywords isodata-app-cond-keyword-listp)
-  :short "Keywords of the applicability conditions that are present."
-  (isodata-app-cond-present-keywords-aux *isodata-app-cond-keywords*
-                                         old$
-                                         res-isomaps
-                                         predicate$
-                                         verify-guards$
-                                         wrld)
-
-  :prepwork
-  ((define isodata-app-cond-present-keywords-aux
-     ((keywords isodata-app-cond-keyword-listp)
-      (old$ symbolp)
-      (res-isomaps isodata-pos-isomap-alistp)
-      (predicate$ booleanp)
-      (verify-guards$ booleanp)
-      (wrld plist-worldp))
-     :returns (present-keywords isodata-app-cond-keyword-listp
-                                :hyp (isodata-app-cond-keyword-listp keywords))
-     :parents nil
-     (if (endp keywords)
-         nil
-       (if (isodata-app-cond-present-p (car keywords)
-                                       old$
-                                       res-isomaps
-                                       predicate$
-                                       verify-guards$
-                                       wrld)
-           (cons (car keywords)
-                 (isodata-app-cond-present-keywords-aux (cdr keywords)
-                                                        old$
-                                                        res-isomaps
-                                                        predicate$
-                                                        verify-guards$
-                                                        wrld))
-         (isodata-app-cond-present-keywords-aux (cdr keywords)
-                                                old$
-                                                res-isomaps
-                                                predicate$
-                                                verify-guards$
-                                                wrld))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define isodata-process-inputs (old
                                 isomaps
                                 predicate
@@ -1246,7 +1144,6 @@
                                     non-executable$
                                     verify-guards$
                                     hints$
-                                    app-cond-keywords
                                     names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
@@ -1257,8 +1154,7 @@
                                          symbolp
                                          booleanp
                                          booleanp
-                                         symbol-alistp
-                                         keyword-listp
+                                         evmac-input-hints-p
                                          symbol-listp
                                          result)').")
                state)
@@ -1288,13 +1184,10 @@
                               non-executable
                               (non-executablep old$ wrld)
                               "The :NON-EXECUTABLE input" t nil))
-       (app-cond-keywords (isodata-app-cond-present-keywords
-                           old$ res-isomaps predicate verify-guards$ wrld))
        ((er &) (ensure-is-untranslate-specifier$ untranslate
                                                  "The :UNTRANSLATE input"
                                                  t nil))
-       ((er hints$) (evmac-process-input-hints
-                     hints app-cond-keywords ctx state))
+       ((er hints$) (evmac-process-input-hints$ hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -1306,7 +1199,6 @@
                  non-executable$
                  verify-guards$
                  hints$
-                 app-cond-keywords
                  names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1555,161 +1447,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-app-cond-formula ((app-cond isodata-app-cond-keywordp)
-                                      (old$ symbolp)
-                                      (arg-isomaps isodata-symbol-isomap-alistp)
-                                      (res-isomaps isodata-pos-isomap-alistp)
-                                      state)
-  :returns (formula "An untranslated term.")
-  :mode :program
-  :short "Generate the formula of the specified applicability condition."
-  (b* ((wrld (w state))
-       (x1...xn (formals old$ wrld))
-       (oldp-of-x1...xn (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
-       (oldp-of-x1...xn-conj (conjoin oldp-of-x1...xn))
-       (formula
-        (case app-cond
-          (:oldp-of-old
-           (b* ((m (len res-isomaps))
-                (old-call (fcons-term old$ x1...xn)))
-             (if (= m 1)
-                 (b* ((res-isomap (cdar res-isomaps))
-                      (oldp-res (isodata-isomap->oldp res-isomap)))
-                   (implicate oldp-of-x1...xn-conj
-                              (fcons-term* oldp-res old-call)))
-               (b* ((y1...ym (isodata-gen-result-vars old$ m))
-                    (oldp-of-y1...ym (isodata-gen-oldp-of-terms y1...ym
-                                                                res-isomaps)))
-                 (implicate oldp-of-x1...xn-conj
-                            (make-mv-let-call 'mv y1...ym :all old-call
-                                              (conjoin oldp-of-y1...ym)))))))
-          (:oldp-when-old
-           (implicate `(,old$ ,@x1...xn)
-                      oldp-of-x1...xn-conj))
-          (:oldp-of-rec-call-args
-           (implicate oldp-of-x1...xn-conj
-                      (isodata-gen-oldp-of-rec-call-args-under-contexts
-                       (recursive-calls old$ wrld)
-                       arg-isomaps)))
-          (:old-guard
-           (b* ((old-guard-formula (uguard old$ wrld)))
-             (implicate old-guard-formula
-                        oldp-of-x1...xn-conj)))
-          (:old-guard-pred
-           (b* ((old-guard-formula (uguard old$ wrld)))
-             (implicate oldp-of-x1...xn-conj
-                        old-guard-formula)))
-          (t (impossible)))))
-    (untranslate formula t wrld)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-app-cond ((app-cond isodata-app-cond-keywordp)
-                              (old$ symbolp)
+(define isodata-gen-appconds ((old$ symbolp)
                               (arg-isomaps isodata-symbol-isomap-alistp)
                               (res-isomaps isodata-pos-isomap-alistp)
-                              (hints$ symbol-alistp)
-                              (print$ evmac-input-print-p)
-                              (names-to-avoid symbol-listp)
-                              ctx
-                              state)
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (thm-name "A @(tsee symbolp) that is the name of the theorem."))
+                              (predicate$ booleanp)
+                              (verify-guards$ booleanp)
+                              (wrld plist-worldp))
+  :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
-  :short "Generate a theorem for the specified applicability condition."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The theorem has no rule classes,
-     because it is used via @(':use') hints
-     in the generated proofs in other events.")
-   (xdoc::p
-    "This is a local event,
-     because it is only used internally in the @(tsee encapsulate).
-     The event is wrapped into a @(tsee try-event)
-     in order to provide a terse error message if the proof fails
-     (unless @(':print') is @(':all'), in which case everything is printed).
-     In addition,
-     if @(':print') is @(':info') or @(':all'),
-     the event is preceded and followed by events to print progress messages.")
-   (xdoc::p
-    "The name of the theorem is obtained by
-     putting the keyword that names the applicability condition
-     into the \"APT\" package
-     and adding @('$') as needed to avoid name clashes.
-     However, if the applicability condition is a @(tsee defiso) one,
-     its name is supplied by the caller."))
-  (b* ((wrld (w state))
-       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
-                                                     (symbol-name app-cond)
-                                                     (pkg-witness "APT"))
-                                                    nil
-                                                    names-to-avoid
-                                                    wrld))
-       (formula (isodata-gen-app-cond-formula app-cond
-                                              old$
-                                              arg-isomaps
-                                              res-isomaps
-                                              state))
-       (hints (cdr (assoc-eq app-cond hints$)))
-       (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
-       (error-msg (msg
-                   "The proof of the ~x0 applicability condition fails:~%~x1~|"
-                   app-cond formula))
-       (try-defthm (try-event defthm ctx t nil error-msg))
-       (print-progress-p (member-eq print$ '(:info :all)))
-       (progress-start? (and print-progress-p
-                             `((cw-event
-                                "~%Attempting to prove the ~x0 ~
-                                 applicability condition:~%~x1~|"
-                                ',app-cond ',formula))))
-       (progress-end? (and print-progress-p
-                           `((cw-event "Done.~%"))))
-       (event `(local (progn ,@progress-start?
-                             ,try-defthm
-                             ,@progress-end?))))
-    (mv event thm-name)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-app-conds ((app-conds isodata-app-cond-keyword-listp)
-                               (old$ symbolp)
-                               (arg-isomaps isodata-symbol-isomap-alistp)
-                               (res-isomaps isodata-pos-isomap-alistp)
-                               (hints$ symbol-alistp)
-                               (print$ evmac-input-print-p)
-                               (names-to-avoid symbol-listp)
-                               ctx
-                               state)
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (thm-names "A @(tsee symbol-symbol-alistp)
-                           from keywords that identify applicability conditions
-                           to the names of the corresponding theorems event."))
-  :mode :program
-  :short "Generate theorems for the specified applicability conditions."
-  (b* (((when (endp app-conds)) (mv nil nil))
-       (app-cond (car app-conds))
-       ((mv event thm-name) (isodata-gen-app-cond app-cond
-                                                  old$
-                                                  arg-isomaps
-                                                  res-isomaps
-                                                  hints$
-                                                  print$
-                                                  names-to-avoid
-                                                  ctx
-                                                  state))
-       (names-to-avoid (cons thm-name names-to-avoid))
-       ((mv events thm-names) (isodata-gen-app-conds (cdr app-conds)
-                                                     old$
-                                                     arg-isomaps
-                                                     res-isomaps
-                                                     hints$
-                                                     print$
-                                                     names-to-avoid
-                                                     ctx
-                                                     state)))
-    (mv (cons event events)
-        (acons app-cond thm-name thm-names))))
+  (b* ((x1...xn (formals old$ wrld))
+       (oldp-of-x1...xn (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
+       (oldp-of-x1...xn-conj (conjoin oldp-of-x1...xn))
+       (old-guard (uguard old$ wrld))
+       (old-call (fcons-term old$ x1...xn)))
+    (append
+     (make-evmac-appcond?
+      :name :oldp-of-old
+      :formula (b* ((m (len res-isomaps)))
+                 (if (= m 1)
+                     (b* ((res-isomap (cdar res-isomaps))
+                          (oldp-res (isodata-isomap->oldp res-isomap)))
+                       (implicate oldp-of-x1...xn-conj
+                                  (fcons-term* oldp-res old-call)))
+                   (b* ((y1...ym (isodata-gen-result-vars old$ m))
+                        (oldp-of-y1...ym (isodata-gen-oldp-of-terms
+                                          y1...ym res-isomaps)))
+                     (implicate oldp-of-x1...xn-conj
+                                (make-mv-let-call 'mv y1...ym :all old-call
+                                                  (conjoin oldp-of-y1...ym))))))
+      :when res-isomaps)
+     (make-evmac-appcond?
+      :name :oldp-when-old
+      :formula (implicate old-call
+                          oldp-of-x1...xn-conj)
+      :when predicate$)
+     (make-evmac-appcond?
+      :name :oldp-of-rec-call-args
+      :formula (implicate oldp-of-x1...xn-conj
+                          (isodata-gen-oldp-of-rec-call-args-under-contexts
+                           (recursive-calls old$ wrld)
+                           arg-isomaps))
+      :when (irecursivep old$ wrld))
+     (make-evmac-appcond?
+      :name :old-guard
+      :formula (implicate old-guard
+                          oldp-of-x1...xn-conj)
+      :when (and verify-guards$
+                 (not predicate$)))
+     (make-evmac-appcond?
+      :name :old-guard-pred
+      :formula  (implicate oldp-of-x1...xn-conj
+                           old-guard)
+      :when (and verify-guards$
+                 predicate$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2430,7 +2220,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-termination-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
@@ -2446,7 +2236,7 @@
      while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (instance-termination-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:termination-theorem ,old$) old$ arg-isomaps wrld))
@@ -2479,7 +2269,7 @@
                             (verify-guards$ booleanp)
                             (untranslate$ untranslate-specifier-p)
                             compatibility
-                            (app-cond-thm-names symbol-symbol-alistp)
+                            (appcond-thm-names symbol-symbol-alistp)
                             (wrld plist-worldp))
   :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
                (new-fn-exported-event "A @(tsee pseudo-event-formp)."))
@@ -2532,7 +2322,7 @@
                    nil))
        (termination-hints? (if recursive
                                (isodata-gen-new-fn-termination-hints
-                                app-cond-thm-names old$ arg-isomaps wrld)
+                                appcond-thm-names old$ arg-isomaps wrld)
                              nil))
        (local-event
         `(local
@@ -2604,7 +2394,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-to-old-thm-hints-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
@@ -2619,7 +2409,7 @@
           and @('isomaps') does not include @(':result')."
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (instance-oldp-of-rec-call-args
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          oldp-of-rec-call-args
@@ -2651,7 +2441,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-to-old-thm-hints-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -2667,8 +2457,8 @@
           and @('isomaps') includes @(':result')."
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
-       (oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
+       (oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instance-oldp-of-rec-call-args
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          oldp-of-rec-call-args
@@ -2718,7 +2508,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-to-old-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -2732,7 +2522,7 @@
           that expresses the new function in terms of the old function."
   (if (recursivep old$ nil wrld)
       (if res-isomap?
-          (isodata-gen-new-to-old-thm-hints-rec-res app-cond-thm-names
+          (isodata-gen-new-to-old-thm-hints-rec-res appcond-thm-names
                                                     old$
                                                     arg-isomaps
                                                     res-isomap?
@@ -2740,7 +2530,7 @@
                                                     old-fn-unnorm-name
                                                     new-fn-unnorm-name
                                                     wrld)
-        (isodata-gen-new-to-old-thm-hints-rec-nonres app-cond-thm-names
+        (isodata-gen-new-to-old-thm-hints-rec-nonres appcond-thm-names
                                                      old$
                                                      arg-isomaps
                                                      new-name$
@@ -2759,7 +2549,7 @@
    (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
@@ -2782,7 +2572,7 @@
                                                     new-name$
                                                     wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-new-to-old-thm-hints app-cond-thm-names
+       (hints (isodata-gen-new-to-old-thm-hints appcond-thm-names
                                                 old$
                                                 arg-isomaps
                                                 res-isomap?
@@ -2849,7 +2639,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm-res-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -2860,7 +2650,7 @@
   :short "Generate the hints to prove the theorem
           that relates the old and new function,
           when @('isomaps') includes @(':result')."
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-forth-image
         (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
@@ -2886,7 +2676,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -2897,7 +2687,7 @@
   :short "Generate the hints to prove the theorem
           that relates the old and new function."
   (if res-isomap?
-      (isodata-gen-old-to-new-thm-res-hints app-cond-thm-names
+      (isodata-gen-old-to-new-thm-res-hints appcond-thm-names
                                             old$
                                             arg-isomaps
                                             res-isomap?
@@ -2911,7 +2701,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -2932,7 +2722,7 @@
        (formula (isodata-gen-old-to-new-thm-formula
                  old$ arg-isomaps res-isomap? new-name$ wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-old-to-new-thm-hints app-cond-thm-names
+       (hints (isodata-gen-old-to-new-thm-hints appcond-thm-names
                                                 old$
                                                 arg-isomaps
                                                 res-isomap?
@@ -2974,7 +2764,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-newp-of-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -2990,7 +2780,7 @@
   (xdoc::topstring-p
    "This is the theorem @($f'A'B'$) in the design notes.
     It is generated only if @('isomaps') includes @(':result').")
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-back-image
         (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instance-oldp-of-old
@@ -3023,7 +2813,7 @@
    (new-name$ symbolp)
    (new-to-old symbolp)
    (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp) that names the theorem."))
@@ -3045,7 +2835,7 @@
                                                      new-name$
                                                      wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-newp-of-new-thm-hints app-cond-thm-names
+       (hints (isodata-gen-newp-of-new-thm-hints appcond-thm-names
                                                  old$
                                                  arg-isomaps
                                                  res-isomap?
@@ -3060,7 +2850,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-nonrec
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
@@ -3072,7 +2862,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is according to the design notes."))
-  (b* ((old-guard-pred (cdr (assoc-eq :old-guard-pred app-cond-thm-names)))
+  (b* ((old-guard-pred (cdr (assoc-eq :old-guard-pred appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -3101,7 +2891,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-rec
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -3118,9 +2908,9 @@
      while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
-                                     app-cond-thm-names)))
+                                     appcond-thm-names)))
        (old-guard-pred (cdr (assoc-eq :old-guard-pred
-                              app-cond-thm-names)))
+                              appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -3179,7 +2969,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -3189,12 +2979,12 @@
   :short "Generate the hints to verify the guards of the new function,
           when @(':predicate') is @('t')."
   (if (recursivep old$ nil wrld)
-      (isodata-gen-new-fn-verify-guards-hints-pred-rec app-cond-thm-names
+      (isodata-gen-new-fn-verify-guards-hints-pred-rec appcond-thm-names
                                                        old$
                                                        arg-isomaps
                                                        new-to-old
                                                        wrld)
-    (isodata-gen-new-fn-verify-guards-hints-pred-nonrec app-cond-thm-names
+    (isodata-gen-new-fn-verify-guards-hints-pred-nonrec appcond-thm-names
                                                         old$
                                                         arg-isomaps
                                                         wrld)))
@@ -3234,7 +3024,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (old-fn-unnorm-name symbolp)
@@ -3249,7 +3039,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is according to the design notes."))
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -3285,7 +3075,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (thm-name$ symbolp)
@@ -3304,7 +3094,7 @@
      while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
-                                     app-cond-thm-names)))
+                                     appcond-thm-names)))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:guard-theorem ,old$)
@@ -3359,7 +3149,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap isodata-isomapp)
@@ -3380,9 +3170,9 @@
     "This is according to the design notes,
      taking into account that there may be multiple recursive calls,
      while the design notes only assume one."))
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (rec-calls (recursive-calls old$ wrld))
        (instance-guard-thm-old
         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
@@ -3481,7 +3271,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -3497,7 +3287,7 @@
   (if (recursivep old$ nil wrld)
       (if res-isomap?
           (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
-           app-cond-thm-names
+           appcond-thm-names
            old$
            arg-isomaps
            res-isomap?
@@ -3507,14 +3297,14 @@
            newp-of-new
            wrld)
         (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-nonres
-         app-cond-thm-names
+         appcond-thm-names
          old$
          arg-isomaps
          thm-name$
          wrld))
     (if res-isomap?
         (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-res
-         app-cond-thm-names
+         appcond-thm-names
          old$
          arg-isomaps
          old-fn-unnorm-name
@@ -3526,7 +3316,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -3541,12 +3331,12 @@
   :mode :program
   :short "Generate the hints to verify the guards of the new function."
   (if predicate$
-      (isodata-gen-new-fn-verify-guards-hints-pred app-cond-thm-names
+      (isodata-gen-new-fn-verify-guards-hints-pred appcond-thm-names
                                                    old$
                                                    arg-isomaps
                                                    new-to-old
                                                    wrld)
-    (isodata-gen-new-fn-verify-guards-hints-nonpred app-cond-thm-names
+    (isodata-gen-new-fn-verify-guards-hints-nonpred appcond-thm-names
                                                     old$
                                                     arg-isomaps
                                                     res-isomap?
@@ -3559,7 +3349,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
@@ -3594,7 +3384,7 @@
      without implementation-specific proof hints
      that may refer to local events of the @(tsee encapsulate)
      that do not exist in the history after the transformation."))
-  (b* ((hints (isodata-gen-new-fn-verify-guards-hints app-cond-thm-names
+  (b* ((hints (isodata-gen-new-fn-verify-guards-hints appcond-thm-names
                                                       old$
                                                       arg-isomaps
                                                       res-isomap?
@@ -3628,11 +3418,10 @@
    (show-only$ booleanp)
    compatibility
    (names-to-avoid symbol-listp)
-   (app-conds isodata-app-cond-keyword-listp)
    (call pseudo-event-formp)
    ctx
    state)
-  :returns (event "A @(tsee pseudo-event-formp).")
+  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
   :short "Generate the top-level event."
   :long
@@ -3693,19 +3482,26 @@
                         (and res-isomap? (list res-isomap?))))
        (isomaps (remove-duplicates-equal isomaps))
        (defiso-events (isodata-gen-defisos isomaps verify-guards$ print$))
-       ((mv app-cond-thm-events
-            app-cond-thm-names)
-        (isodata-gen-app-conds app-conds
-                               old$
-                               arg-isomaps
-                               res-isomaps
-                               hints$
-                               print$
-                               names-to-avoid
-                               ctx
-                               state))
-       (names-to-avoid (append names-to-avoid
-                               (strip-cdrs app-cond-thm-names)))
+       (appconds (isodata-gen-appconds old$
+                                       arg-isomaps
+                                       res-isomaps
+                                       predicate$
+                                       verify-guards$
+                                       wrld))
+       ((mv appcond-thm-events
+            appcond-thm-names
+            remaining-hints
+            names-to-avoid)
+        (evmac-appcond-theorem-list
+         appconds hints$ names-to-avoid print$ ctx state))
+       ((when (and (keyword-truelist-alistp remaining-hints)
+                   (consp remaining-hints)))
+        (er-soft+ ctx t nil
+                  "The :HINTS input includes the keywords ~x0, ~
+                   which do not correspond to applicability conditions ~
+                   that must hold in this call of ISODATA, ~
+                   at least given the other inputs of ISODATA."
+                  (strip-cars remaining-hints)))
        ((mv old-fn-unnorm-event
             old-fn-unnorm-name)
         (install-not-normalized-event old$ t names-to-avoid wrld))
@@ -3722,7 +3518,7 @@
                             verify-guards$
                             untranslate$
                             compatibility
-                            app-cond-thm-names
+                            appcond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
             new-fn-unnorm-name)
@@ -3735,7 +3531,7 @@
                                     res-isomap?
                                     new-name$
                                     names-to-avoid
-                                    app-cond-thm-names
+                                    appcond-thm-names
                                     old-fn-unnorm-name
                                     new-fn-unnorm-name
                                     wrld))
@@ -3749,14 +3545,14 @@
                                          new-name$
                                          new-to-old
                                          names-to-avoid
-                                         app-cond-thm-names
+                                         appcond-thm-names
                                          wrld)
           (mv nil nil)))
        (newp-of-new-thm-event? (and newp-of-new-thm-event?
                                     (list newp-of-new-thm-event?)))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event)
-        (isodata-gen-old-to-new-thm app-cond-thm-names
+        (isodata-gen-old-to-new-thm appcond-thm-names
                                     old$
                                     arg-isomaps
                                     res-isomap?
@@ -3768,7 +3564,7 @@
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
                                           (isodata-gen-new-fn-verify-guards
-                                           app-cond-thm-names
+                                           appcond-thm-names
                                            old$
                                            arg-isomaps
                                            res-isomap?
@@ -3784,7 +3580,7 @@
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
                              ,@defiso-events
-                             ,@app-cond-thm-events
+                             ,@appcond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
                              ,old-fn-unnorm-event
@@ -3802,7 +3598,7 @@
         (if (member-eq print$ '(:info :all))
             (cw "~%~x0~|" encapsulate)
           (cw "~x0~|" encapsulate))
-        '(value-triple :invisible))
+        (value '(value-triple :invisible)))
        (encapsulate+ (restore-output? (eq print$ :all) encapsulate))
        (transformation-table-event (record-transformation-call-event
                                     call encapsulate wrld))
@@ -3812,11 +3608,12 @@
                                '((cw-event "~%")))
                         (cw-event "~x0~|" ',new-fn-exported-event)
                         (cw-event "~x0~|" ',old-to-new-thm-exported-event)))))
-    `(progn
-       ,encapsulate+
-       ,transformation-table-event
-       ,@print-result
-       (value-triple :invisible))))
+    (value
+     `(progn
+        ,encapsulate+
+        ,transformation-table-event
+        ,@print-result
+        (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3866,7 +3663,6 @@
                   non-executable$
                   verify-guards$
                   hints$
-                  app-cond-keywords
                   names-to-avoid))
         (isodata-process-inputs old
                                 isomaps
@@ -3885,27 +3681,26 @@
                                 state))
        ((er res-isomap?)
         (isodata-reprocess-res-isomaps res-isomaps old$ ctx state))
-       (event (isodata-gen-everything old$
-                                      arg-isomaps
-                                      res-isomaps
-                                      res-isomap?
-                                      predicate
-                                      new-name$
-                                      new-enable$
-                                      thm-name$
-                                      thm-enable
-                                      non-executable$
-                                      verify-guards$
-                                      untranslate
-                                      hints$
-                                      print
-                                      show-only
-                                      compatibility
-                                      names-to-avoid
-                                      app-cond-keywords
-                                      call
-                                      ctx
-                                      state)))
+       ((er event) (isodata-gen-everything old$
+                                           arg-isomaps
+                                           res-isomaps
+                                           res-isomap?
+                                           predicate
+                                           new-name$
+                                           new-enable$
+                                           thm-name$
+                                           thm-enable
+                                           non-executable$
+                                           verify-guards$
+                                           untranslate
+                                           hints$
+                                           print
+                                           show-only
+                                           compatibility
+                                           names-to-avoid
+                                           call
+                                           ctx
+                                           state)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

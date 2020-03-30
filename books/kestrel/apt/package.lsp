@@ -136,8 +136,13 @@
                          ensure-tuple$
                          equivalence-relationp
                          er-soft+
+                         evmac-appcond-listp
+                         evmac-appcond-theorem-list
+                         evmac-appcondp
+                         evmac-input-hints-p
                          evmac-input-print-p
                          evmac-process-input-hints
+                         evmac-process-input-hints$
                          evmac-process-input-print
                          evmac-process-input-show-only
                          ext-address-subterm-governors-lst
@@ -193,6 +198,7 @@
                          irecursivep
                          justification
                          keyword-listp
+                         keyword-truelist-alistp
                          keyword-value-list-to-alist
                          lambda-applicationp
                          lambda-body
@@ -200,6 +206,8 @@
                          macro-namep
                          macro-required-args
                          make-event-terse
+                         make-evmac-appcond
+                         make-evmac-appcond?
                          make-implication
                          make-lambda
                          make-lambda-term

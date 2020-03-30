@@ -6340,8 +6340,8 @@
 ; constraint-lst properties; but to be safe we go ahead and collect all
 ; constraints.
 
-; We apply remove-guard-holders in order to clean up a bit.  Consider for
-; example:
+; We apply remove-guard-holders[-weak] in order to clean up a bit.  Consider
+; for example:
 
 ; (defun-sk foo (x) (forall e (implies (member e x) (integerp e))))
 
@@ -6350,15 +6350,16 @@
 ; (getpropc 'foo-witness 'constraint-lst)
 
 ; you'll see a much simpler result, with return-last calls removed, than if we
-; did not apply remove-guard-holders-lst here.  Out of an abundance of caution
-; (perhaps more than is necessary), we avoid removing guard holders from quoted
-; lambdas by passing in nil as the second argument of remove-guard-holders-lst.
+; did not apply remove-guard-holders-weak-lst here.  Out of an abundance of
+; caution (perhaps more than is necessary), we avoid removing guard holders
+; from quoted lambdas by calling remove-guard-holders-weak-lst rather than
+; remove-guard-holders-lst, i.e., by avoiding the application of
+; possibly-clean-up-dirty-lambda-objects-lst.  That is, it might be sound to
+; clean up dirty lambdas here, as is our convention when calling
+; remove-guard-holders, but we are playing it safe here.  If that causes
+; problems then we can think harder about whether it is sound.
 
-; It might be sound to clean up dirty lambdas here, as is our convention when
-; calling remove-guard-holders, but we are playing it safe here.  If that
-; causes problems then we can think harder about whether it is sound.
-
-           (remove-guard-holders-lst
+           (remove-guard-holders-weak-lst
             (constraints-list infectious-fns wrld formula-lst1 nil))))
      (mv constraints constrained-fns subversive-fns infectious-fns fns))))
 
@@ -24157,9 +24158,7 @@
             (cond ((or (variablep term)
                        (fquotep term)
                        (flambdap (ffn-symb term)))
-                   (mv t (possibly-clean-up-dirty-lambda-objects
-                          (remove-guard-holders term)
-                          wrld)))
+                   (mv t (remove-guard-holders term wrld)))
                   (t (mv nil term)))
             (cond ((or (variablep term1)
                        (fquotep term1)

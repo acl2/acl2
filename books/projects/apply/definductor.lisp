@@ -528,8 +528,7 @@
   (let* ((inductor-fn1 (or inductor-fn
                            (packn (list fn '-inductor))))
          (formals (formals fn wrld))
-         (body (possibly-clean-up-dirty-lambda-objects
-                (remove-guard-holders (body fn nil wrld)) wrld))
+         (body (remove-guard-holders (body fn nil wrld) wrld))
          (jst (getpropc fn 'justification nil wrld))
          (measure1 (or measure
                        (access justification jst :measure)))

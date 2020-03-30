@@ -116,6 +116,7 @@
                           all-vars1-lst
                           ffnnamep-mod-mbe-lst
                           remove-guard-holders
+                          remove-guard-holders-weak
                           remove-guard-holders1
                           remove-guard-holders1-lst
                           normalize

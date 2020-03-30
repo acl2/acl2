@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "evmac-appcond-hints-p")
+(include-book "evmac-input-hints-p")
 (include-book "evmac-input-print-p")
 
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
@@ -72,7 +72,7 @@
    (xdoc::p
     "We represent an applicability condition as an aggregate.")
    (xdoc::p
-    "The first field is a keyword that identifies the applicabiilty condition.
+    "The first field is a keyword that names the applicabiilty condition.
      This keyword should be the one shown
      in the user documentation of the event macro,
      and in progress or error messages on the screen when the event macro runs.
@@ -84,7 +84,7 @@
      for the applicability condition to be satisfied.")
    (xdoc::p
     "More fields might be added in the future."))
-  ((id keywordp)
+  ((name keywordp)
    (formula pseudo-termp))
   :pred evmac-appcondp)
 
@@ -98,10 +98,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define make-evmac-appcond? (&key (id keywordp)
-                                  (formula pseudo-termp)
-                                  (when 't))
-  :returns (appcond? evmac-appcond-listp :hyp :guard)
+(defsection make-evmac-appcond?
   :short "Conditionally construct an applicability condition."
   :long
   (xdoc::topstring
@@ -116,7 +113,7 @@
     "This function provides a convenient way for event macros
      to generate either @('nil')
      or a singleton list of an applicability condition
-     with given @(':id') and @(':formula'),
+     with given @(':name') and @(':formula'),
      based on whether the @(':when') input is @('nil') or not.
      We treat the latter input as a boolean, but do not require it to be,
      for greater flexibility (e.g. so that @(tsee member) can be used);
@@ -124,25 +121,32 @@
      unless an explicit condition (which may hold or not) is given.")
    (xdoc::p
     "An event macro may generate all its applicability conditions
-     by @(tsee append)ing calls of this function."))
-  (and when
-       (list (make-evmac-appcond :id id :formula formula)))
-  ///
-  (defret make-evmac-appcond?-returns-none-or-one
-    (<= (len appcond?) 1)
-    :rule-classes :linear))
+     by @(tsee append)ing calls of this function.")
+   (xdoc::p
+    "Note that this macro expands into a non-strict @(tsee and) form,
+     so that the name and formula arguments are not evaluated
+     if the condition evaluates to @('nil').
+     This is important if the evaluation of the name and formula
+     (most likely the formula, as the name is often just a keyword constant)
+     only makes sense (in particular, does not cause an error)
+     under the condition.")
+   (xdoc::@def "make-evmac-appcond?"))
+
+  (defmacro make-evmac-appcond? (&key name formula (when 't))
+    `(and ,when
+          (list (make-evmac-appcond :name ,name :formula ,formula)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define evmac-appcond-theorem ((appcond evmac-appcondp)
-                               (hints evmac-appcond-hints-p)
+                               (hints evmac-input-hints-p)
                                (names-to-avoid symbol-listp)
                                (print evmac-input-print-p)
                                ctx
                                state)
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (thm-name "A @(tsee symbolp).")
-               (new-hints "An @(tsee evmac-appcond-hints-p).")
+               (new-hints "An @(tsee evmac-input-hints-p).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate a theorem event for an applicability condition."
@@ -163,7 +167,7 @@
      the event macro may reference this name in generated proofs
      (see @(tsee evmac-appcond-theorem-list) for more discussion on this).
      The theorem name is the same as
-     the keyword that identifies the applicability condition,
+     the keyword that names the applicability condition,
      if fresh, otherwise @('$') characters are appended to it until it is fresh.
      The theorem name is in the @('\"ACL2\"') package,
      which seems like a good general choice;
@@ -241,7 +245,7 @@
   (b* ((wrld (w state))
        ((evmac-appcond appcond) appcond)
        (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
-                                                     (symbol-name appcond.id)
+                                                     (symbol-name appcond.name)
                                                      (pkg-witness "ACL2"))
                                                     nil
                                                     names-to-avoid
@@ -249,8 +253,8 @@
        (new-names-to-avoid (cons thm-name names-to-avoid))
        (thm-formula (untranslate appcond.formula t wrld))
        ((mv thm-hints new-hints) (if (keyword-truelist-alistp hints)
-                                     (mv (cdr (assoc-eq appcond.id hints))
-                                         (remove-assoc-eq appcond.id hints))
+                                     (mv (cdr (assoc-eq appcond.name hints))
+                                         (remove-assoc-eq appcond.name hints))
                                    (mv hints hints)))
        (thm-event `(defthm ,thm-name
                      ,thm-formula
@@ -258,14 +262,14 @@
                      ,@(and thm-hints (list :hints thm-hints))))
        (error-msg (msg
                    "The proof of the ~x0 applicability condition fails:~%~x1~|"
-                   appcond.id thm-formula))
+                   appcond.name thm-formula))
        (try-thm-event (try-event thm-event ctx t nil error-msg))
        (show-progress-p (member-eq print '(:info :all)))
        (progress-start? (and show-progress-p
                              `((cw-event
                                 "~%Attempting to prove the ~x0 ~
                                  applicability condition:~%~x1~|"
-                                ',appcond.id ',thm-formula))))
+                                ',appcond.name ',thm-formula))))
        (progress-end? (and show-progress-p
                            `((cw-event "Done.~%"))))
        (event `(local (progn ,@progress-start?
@@ -276,14 +280,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define evmac-appcond-theorem-list ((appconds evmac-appcond-listp)
-                                    (hints evmac-appcond-hints-p)
+                                    (hints evmac-input-hints-p)
                                     (names-to-avoid symbol-listp)
                                     (print evmac-input-print-p)
                                     ctx
                                     state)
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (thm-names "A @(tsee keyword-symbol-alistp).")
-               (new-hints "An @(tsee evmac-appcond-hints-p).")
+               (new-hints "An @(tsee evmac-input-hints-p).")
                (new-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Lift @(tsee evmac-appcond-theorem)
@@ -307,7 +311,7 @@
     "Since there may be multiple applicability conditions,
      the generated names of the theorems are returned in alist form.
      The theorem names are the values,
-     while the keys are the keywords that identify the applicability conditions.
+     while the keys are the keywords that name the applicability conditions.
      This makes it more convenient to look up the theorem names,
      particularly in order to generate proof hints
      that reference applicability conditions:
@@ -326,6 +330,6 @@
         (evmac-appcond-theorem-list
          (cdr appconds) hints names-to-avoid print ctx state)))
     (mv (cons event events)
-        (acons (evmac-appcond->id appcond) thm-name thm-names)
+        (acons (evmac-appcond->name appcond) thm-name thm-names)
         hints
         names-to-avoid)))
