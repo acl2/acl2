@@ -436,6 +436,7 @@
                                state)
   :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
+  :short "Generate the applicability conditions."
   (b* ((wrld (w state)))
     (append
      (make-evmac-appcond?
