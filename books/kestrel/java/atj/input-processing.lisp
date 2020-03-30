@@ -618,7 +618,8 @@
           (value (atj-test name fn test-inputs test-outputs))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
-       (out-types? (atj-output-types-of-min-input-types in-types all-fn-types))
+       ((mv out-types? &)
+        (atj-output-types-of-min-input-types in-types all-fn-types))
        ((when (null out-types?))
         (value (raise "Internal error: ~
                        the test term ~x0 in the :TESTS input ~

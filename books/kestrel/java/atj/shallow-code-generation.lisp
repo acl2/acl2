@@ -5283,7 +5283,8 @@
        (main-fn-type (atj-function-type-info->main fn-info))
        (other-fn-types (atj-function-type-info->others fn-info))
        (all-fn-types (cons main-fn-type other-fn-types))
-       (out-types (atj-output-types-of-min-input-types arg-types all-fn-types))
+       ((mv out-types &)
+        (atj-output-types-of-min-input-types arg-types all-fn-types))
        ((unless (= (len out-types) (len test-outputs)))
         (raise "Internal error: ~
                 the number of output types ~x0 of function ~x1 ~

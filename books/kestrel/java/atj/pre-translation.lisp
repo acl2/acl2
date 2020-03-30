@@ -1400,7 +1400,7 @@
                (main-fn-type (atj-function-type-info->main fn-info))
                (other-fn-types (atj-function-type-info->others fn-info))
                (all-fn-types (cons main-fn-type other-fn-types))
-               (types?
+               ((mv types? &)
                 (atj-output-types-of-min-input-types types all-fn-types)))
             (if (consp types?)
                 (b* (((unless (or (null required-types?)

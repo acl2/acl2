@@ -1873,7 +1873,8 @@
 
 (define atj-output-types-of-min-input-types ((in-types atj-type-listp)
                                              (fn-types atj-function-type-listp))
-  :returns (out-types? atj-type-listp)
+  :returns (mv (out-types? atj-type-listp)
+               (arrays? symbol-listp))
   :short "Output types for the minimum input types."
   :long
   (xdoc::topstring
@@ -1902,9 +1903,14 @@
      (this is enforced by @(tsee atj-main-function-type)
      and @(tsee atj-other-function-type)),
      so it is appropriate to use @('nil') here to signal that
-     no function types matching the criteria were found."))
+     no function types matching the criteria were found.")
+   (xdoc::p
+    "Besides the output types (if found),
+     we also return the corresponding array names.
+     This second result is @('nil') if no output types are found."))
   (atj-output-type-of-min-input-types-aux (atj-type-list-to-jitype-list in-types)
                                           fn-types
+                                          nil
                                           nil
                                           nil)
 
@@ -1913,24 +1919,30 @@
      ((in-jtypes atj-jitype-listp)
       (fn-types atj-function-type-listp)
       (current-min-in-jtypes atj-jitype-listp)
-      (current-out-types? atj-type-listp))
-     :returns (out-types? atj-type-listp
-                          :hyp (atj-type-listp current-out-types?))
-     (b* (((when (endp fn-types)) current-out-types?)
+      (current-out-types? atj-type-listp)
+      (current-arrays? symbol-listp))
+     :returns (mv (out-types? atj-type-listp
+                              :hyp (atj-type-listp current-out-types?))
+                  (arrays? symbol-listp
+                           :hyp (symbol-listp current-arrays?)))
+     (b* (((when (endp fn-types)) (mv current-out-types? current-arrays?))
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
           (fn-in-jtypes (atj-type-list-to-jitype-list fn-in-types))
-          ((mv current-min-in-jtypes current-out-types?)
+          ((mv current-min-in-jtypes current-out-types? current-arrays?)
            (if (and (atj-maybe-jitype-list-<= in-jtypes fn-in-jtypes)
                     (or (null current-out-types?) ; i.e. none found yet
                         (atj-maybe-jitype-list-< fn-in-jtypes
                                                  current-min-in-jtypes)))
-               (mv fn-in-jtypes (atj-function-type->outputs fn-type))
-             (mv current-min-in-jtypes current-out-types?))))
+               (mv fn-in-jtypes
+                   (atj-function-type->outputs fn-type)
+                   (atj-function-type->arrays fn-type))
+             (mv current-min-in-jtypes current-out-types? current-arrays?))))
        (atj-output-type-of-min-input-types-aux in-jtypes
                                                (cdr fn-types)
                                                current-min-in-jtypes
-                                               current-out-types?)))))
+                                               current-out-types?
+                                               current-arrays?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
