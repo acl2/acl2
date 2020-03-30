@@ -22,4 +22,19 @@ class Acl2CharacterTest {
                 () -> Acl2Character.make('\uffff'));
     }
 
+    @Test
+    void makeRight() {
+        assertDoesNotThrow(() -> Acl2Character.make('\0'));
+        assertDoesNotThrow(() -> Acl2Character.make('A'));
+        assertDoesNotThrow(() -> Acl2Character.make('x'));
+        assertDoesNotThrow(() -> Acl2Character.make('5'));
+        assertDoesNotThrow(() -> Acl2Character.make('?'));
+        assertDoesNotThrow(() -> Acl2Character.make(' '));
+        assertDoesNotThrow(() -> Acl2Character.make('*'));
+        assertDoesNotThrow(() -> Acl2Character.make('\n'));
+        assertDoesNotThrow(() -> Acl2Character.make('\200'));
+        assertDoesNotThrow(() -> Acl2Character.make('\300'));
+        assertDoesNotThrow(() -> Acl2Character.make('\u00ff'));
+    }
+
 }
