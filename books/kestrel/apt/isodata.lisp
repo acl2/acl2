@@ -1847,7 +1847,9 @@
                               is of theorem @('" thm-string "')
                               and instantiates
                               the formal parameter of @('forthi')
-                              with @('xi').")
+                              with a given term @('termi') in which
+                              @('x1'), ..., @('xn') are replaced with
+                              @('(back1 x1)'), ..., @('(backn xn)').")
            (b* ((x1...xn (formals old$ wrld))
                 (back-of-x1...xn
                  (isodata-gen-back-of-terms x1...xn arg-isomaps)))
