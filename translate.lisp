@@ -3210,6 +3210,9 @@
 ; copying the term and cleaning up all the well-formed lambda objects in :fn
 ; positions.
 
+(defstub remove-guard-holders-blocked-by-hide-p () t)
+(defattach remove-guard-holders-blocked-by-hide-p constant-t-function-arity-0)
+
 (mutual-recursion
 
 (defun possibly-dirty-lambda-objectp1 (x)
@@ -3217,6 +3220,9 @@
   (declare (xargs :guard (pseudo-termp x)))
   (cond ((variablep x) nil)
         ((fquotep x) nil)
+        ((and (eq (ffn-symb x) 'HIDE)
+              (remove-guard-holders-blocked-by-hide-p))
+         nil)
         ((lambda-applicationp x) t)
         ((member-eq (ffn-symb x)
                     '(RETURN-LAST
@@ -3249,6 +3255,9 @@
    ((variablep term) nil)
    ((fquotep term)
     (possibly-dirty-lambda-objectp (unquote term)))
+   ((and (eq (ffn-symb term) 'HIDE)
+         (remove-guard-holders-blocked-by-hide-p))
+    nil)
    ((lambda-applicationp term)
     (or (may-contain-dirty-lambda-objectsp
          (lambda-body (ffn-symb term)))
@@ -3413,35 +3422,34 @@
 ; to strip the guard holders out of a term.
 
 ; Starting with Version_2.8 the ``guard holders'' code appears elsewhere,
-; because remove-guard-holders needs to be defined before it is called by
-; constraint-info.
+; because remove-guard-holders[-weak] needs to be defined before it is called
+; by constraint-info.
 
 ; Aside from applications in the prover, remove-guard-holders is used
 ; extensively to process rules before they are stored, to eliminate cruft that
 ; might make a rule inapplicable.  It is also used to clean up termination and
 ; induction machines and contraints.
 
-; Note that remove-guard-holders does not take world.  It is called from some
-; contexts in which world is not available or is inconvenient, i.e., in user
-; books.  Furthermore, it supports books/system/top.lisp where it must be in
-; :logic mode and guard verified.
+; Note that remove-guard-holders-weak does not take world.  It is called from
+; some contexts in which world is not available or is inconvenient, i.e., in
+; user books.  Furthermore, it supports books/system/top.lisp where it must be
+; in :logic mode and guard verified.
 
-; Remove-guard-holders does not dive into lambda objects.  It cannot do so
+; Remove-guard-holders-weak does not dive into lambda objects.  It cannot do so
 ; soundly without knowing that the body of the quoted lambda object is a
 ; well-formed tame term, which it cannot determine without world.  However,
-; remove-guard-holders is used by clean-up-dirty-lambda-objects, which is
+; remove-guard-holders-weak is used by clean-up-dirty-lambda-objects, which is
 ; called to clean up rules before storage.  But because
 ; clean-up-dirty-lambda-objects cannot be called by badges are all in place for
-; the primities, it cannot be called in boot-strap.  But remove-guard-holders
-; can be and is!  Thus, the standard idiom for cleaning up a formula is
-; (possibly-clean-up-dirty-lambda-objects (remove-guard-holders term) wrld)
-; where the inner expression cleans up the term outside any lambda objects and
-; the outer one cleans up the well-formed lambdas.  But occasionally you will
-; see just (remove-guard-holders term) because we're nervous about messing with
-; the lambdas.
-
-(defstub remove-guard-holders-blocked-by-hide-p () t)
-(defattach remove-guard-holders-blocked-by-hide-p constant-t-function-arity-0)
+; the primitives, it cannot be called in boot-strap.  But
+; remove-guard-holders-weak can be and is!  Thus, the standard idiom for
+; cleaning up a formula is (possibly-clean-up-dirty-lambda-objects
+; (remove-guard-holders-weak term) wrld) where the inner expression cleans up
+; the term outside any lambda objects and the outer one cleans up the
+; well-formed lambdas.  For convenience we define (remove-guard-holders term
+; wrld) to be exactly that composition.  Occasionally you will see just
+; (remove-guard-holders-weak term) because we're nervous about messing with the
+; lambdas.
 
 (mutual-recursion
 
@@ -3467,10 +3475,10 @@
 ; bodies of tame but dirty lambda objects in :FN slots (see
 ; clean-up-dirty-lambda-objects) it must also satisfy the ``ev$ property'': the
 ; ev$ of tame input must be provably equal to the ev$ of the output.  There is
-; an easy way to insure that remove-guard-holders has the ev$ property:
-; remove-guard-holders1 ``merely lifts'' ordinary subterms into to ordinary
-; slots.  We call this the ``Merely Lifts'' principle and it is a sufficient
-; but not necessary condition to guarantee the ev$ property.
+; an easy way to ensure that remove-guard-holders-weak has the ev$ property:
+; remove-guard-holders1 ``merely lifts'' ordinary subterms to ordinary slots.
+; We call this the ``Merely Lifts'' principle and it is a sufficient but not
+; necessary condition to guarantee the ev$ property.
 
 ; We will illustrate the ``Merely Lifts'' principle in a moment, but we first
 ; make two important observations about tameness: First, if any ordinary
@@ -3483,26 +3491,26 @@
 ; ev$ property.  Let term be (g u (f a b)) and assume the second slots of both
 ; g and f are ordinary (i.e., have ilk NIL).  We assume term is tame.  But if
 ; (g u (f a b)) is tame, then so is (f a b) and so is b.  Finally, assume that
-; remove-guard-holders merely lifts the b out of (f a b), producing (g u b)
-; which we assume is provably equal to (g u (f a b)).  Then (g u b) is tame
+; remove-guard-holders-weak merely lifts the b out of (f a b), producing (g u
+; b) which we assume is provably equal to (g u (f a b)).  Then (g u b) is tame
 ; because the only difference between (g u (f a b)) and (g u b) is in an
 ; ordinary slot in which one tame term has been replaced by another.  Thus (ev$
-; (remove-guard-holders '(g u (f a b))) s) = (ev$ '(g u b) s) = (g u b)/s, but
-; (ev$ '(g u (f a b)) s) = (g u (f a b))/s.  But since (g u b) is provably
+; (remove-guard-holders-weak '(g u (f a b))) s) = (ev$ '(g u b) s) = (g u b)/s,
+; but (ev$ '(g u (f a b)) s) = (g u (f a b))/s.  But since (g u b) is provably
 ; equal to (g u (f a b)), their mutual instantiations by s are provably equal.
-; So if every transformation made by remove-guard-holders is a lift of ordinary
-; to ordinary, that is, if remove-guard-holders merely lifts, it has the ev$
-; property.
+; So if every transformation made by remove-guard-holders-weak is a lift of
+; ordinary to ordinary, that is, if remove-guard-holders-weak merely lifts, it
+; has the ev$ property.
 
 ; How could it do more than merely lift?  It could, for example, lift b out but
 ; then embed it in a non-tame expression, e.g., produce (g u (h b)) where h is
-; an unwarranted identity function.  In that case, remove-guard-holders would
-; satisfy its minimal requirement of provable equality without having the ev$
-; property because the attempt to ev (g u (h b)) would produce an untame-ev$
-; term, which not provably equal to anything besides itself.
+; an unwarranted identity function.  In that case, remove-guard-holders-weak
+; would satisfy its minimal requirement of provable equality without having the
+; ev$ property because the attempt to ev (g u (h b)) would produce an
+; untame-ev$ term, which is not provably equal to anything besides itself.
 
 ; WARNING: The take home lesson from the discussion above is: Be careful if you
-; change remove-guard-holders so as not to introduce any unbadged functions or
+; change remove-guard-holders1 so as not to introduce any unbadged functions or
 ; untame expressions or the requirements for warrants that are not already
 ; implied by the subterms in term!  The simplest thing to do is to follow the
 ; Merely Lifts principle and always just lift out an ordinary subterm into an
@@ -3514,15 +3522,15 @@
 ; holds.  We also take advantage of this fact in
 ; interpret-term-as-rewrite-rule, as commented there.
 
-; WARNING.  Remove-guard-holders is used in induction-machine-for-fn1, and
-; termination-machine, so (remove-guard-holders1 term ilk w) needs to be
-; provably equal to term, for every term and suitable ilk, in the ground-zero
-; theory.  In fact, because of the use in constraint-info, it needs to be the
-; case that for any axiomatic event e, (remove-guard-holders e w) can be
-; substituted for e without changing the logical power of the set of axioms.
-; Actually, we want to view the logical axiom added by e as though
-; remove-guard-holders had been applied to it, and hence RETURN-LAST, MV-LIST,
-; and CONS-WITH-HINT appear in *non-instantiable-primitives*.
+; WARNING.  Remove-guard-holders-weak is used in induction-machine-for-fn1, and
+; termination-machine, so (remove-guard-holders-weak term) needs to be provably
+; equal to term, for every term and suitable ilk, in the ground-zero theory.
+; In fact, because of the use in constraint-info, it needs to be the case that
+; for any axiomatic event e, (remove-guard-holders-weak e) can be substituted
+; for e without changing the logical power of the set of axioms.  Actually, we
+; want to view the logical axiom added by e as though remove-guard-holders-weak
+; had been applied to it, and hence RETURN-LAST, MV-LIST, and CONS-WITH-HINT
+; appear in *non-instantiable-primitives*.
 
 ; Special functions recognized by this function are: RETURN-LAST, MV-LIST,
 ; CONS-WITH-HINT, and THE-CHECK.
@@ -3628,7 +3636,7 @@
                                  (t (mv nil lst))))))))
 )
 
-(defun remove-guard-holders (term)
+(defun remove-guard-holders-weak (term)
 
 ; Return a term equal to term, but slightly simplified.  See also the warning
 ; in remove-guard-holders1.
@@ -3639,7 +3647,7 @@
           (declare (ignore changedp))
           result))
 
-(defun remove-guard-holders-lst (lst)
+(defun remove-guard-holders-weak-lst (lst)
 
 ; Return a list of terms element-wise equal to lst, but slightly simplified.
 
@@ -3660,7 +3668,7 @@
                                   (mv t (cons a b)))
                                  (t (mv nil lst))))))))
 
-(defun remove-guard-holders-lst-lst (lst)
+(defun remove-guard-holders-weak-lst-lst (lst)
 
 ; Return a list of clauses element-wise equal to lst, but slightly simplified.
 
@@ -3702,12 +3710,15 @@
                       (lambda-object-formals evg)
                       (expand-all-lambdas
                        (clean-up-dirty-lambda-objects
-                        (remove-guard-holders
+                        (remove-guard-holders-weak
                          (lambda-object-body evg))
                         nil
                         wrld)))))
               (t term)))
             (t term))))
+   ((and (eq (ffn-symb term) 'HIDE)
+         (remove-guard-holders-blocked-by-hide-p))
+    term)
    ((lambda-applicationp term)
     (fcons-term
      (list 'lambda
@@ -3771,6 +3782,49 @@
             (possibly-clean-up-dirty-lambda-objects-lst-lst
              (cdr terms-lst)
              wrld)))))
+
+(defun remove-guard-holders (term wrld)
+
+; Return a term equal to term, but slightly simplified, even perhaps inside
+; quoted lambda objects.  See remove-guard-holders-weak for a version that does
+; not take a world argument and does not simplify quoted lambda objects.
+
+; See the warning in remove-guard-holders1.
+
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))))
+  (cond (wrld (possibly-clean-up-dirty-lambda-objects
+               (remove-guard-holders-weak term)
+               wrld))
+        (t (remove-guard-holders-weak term))))
+
+(defun remove-guard-holders-lst (lst wrld)
+
+; Return a list of terms element-wise equal to lst, but slightly simplified,
+; even perhaps inside quoted lambda objects.  See remove-guard-holders-weak-lst
+; for a version that does not take a world argument and does not simplify
+; quoted lambda objects.
+
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (plist-worldp wrld))))
+  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
+               (remove-guard-holders-weak-lst lst)
+               wrld))
+        (t (remove-guard-holders-weak-lst lst))))
+
+(defun remove-guard-holders-lst-lst (lst wrld)
+
+; Return a list of clauses element-wise equal to lst, but slightly simplified,
+; even perhaps inside quoted lambda objects.  See
+; remove-guard-holders-weak-lst-lst for a version that does not take a world
+; argument and does not simplify quoted lambda objects.
+
+  (declare (xargs :guard (and (pseudo-term-list-listp lst)
+                              (plist-worldp wrld))))
+  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst-lst
+               (remove-guard-holders-weak-lst-lst lst)
+               wrld))
+        (t (remove-guard-holders-weak-lst-lst lst))))
 
 (defun lambda-object-guard (x)
 

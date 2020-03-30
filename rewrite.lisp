@@ -8569,8 +8569,9 @@
                  (declare (ignore failures-remaining))
                  (cond
                   ((eq (caddr failure-reason) 'hyp-vars)
-                   (msg ":HYP ~x0 contains free variables ~&1, for which no ~
-                           suitable bindings were found."
+                   (msg ":HYP ~x0 contains free variable~#1~[~/s~] ~&1, for ~
+                         which no suitable ~#1~[binding was~/bindings were~] ~
+                         found."
                         n
                         (set-difference-equal (cdddr failure-reason)
                                               (strip-cars unify-subst))))
