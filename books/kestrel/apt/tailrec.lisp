@@ -971,79 +971,79 @@
        (combine-op (tailrec-gen-combine-op combine q r)))
     (append
      (make-evmac-appcond?
-      :name :domain-of-base
-      :formula (implicate test
-                          (apply-term* domain$ base)))
+      :domain-of-base
+      (implicate test
+                 (apply-term* domain$ base)))
      (make-evmac-appcond?
-      :name :domain-of-nonrec
-      :formula (implicate (dumb-negate-lit test)
-                          (apply-term* domain$ nonrec))
+      :domain-of-nonrec
+      (implicate (dumb-negate-lit test)
+                 (apply-term* domain$ nonrec))
       :when (member-eq variant$ '(:monoid :assoc)))
      (make-evmac-appcond?
-      :name :domain-of-combine
-      :formula (implicate (conjoin2 (apply-term* domain$ u)
-                                    (apply-term* domain$ v))
-                          (apply-term* domain$
-                                       (apply-term* combine-op u v)))
+      :domain-of-combine
+      (implicate (conjoin2 (apply-term* domain$ u)
+                           (apply-term* domain$ v))
+                 (apply-term* domain$
+                              (apply-term* combine-op u v)))
       :when (member-eq variant$ '(:monoid :assoc)))
      (make-evmac-appcond?
-      :name :domain-of-combine-uncond
-      :formula (apply-term* domain$
-                            (apply-term* combine-op u v))
+      :domain-of-combine-uncond
+      (apply-term* domain$
+                   (apply-term* combine-op u v))
       :when (eq variant$ :monoid-alt))
      (make-evmac-appcond?
-      :name :combine-associativity
-      :formula (implicate
-                (conjoin (list (apply-term* domain$ u)
-                               (apply-term* domain$ v)
-                               (apply-term* domain$ w)))
-                `(equal ,(apply-term* combine-op
-                                      u
-                                      (apply-term* combine-op v w))
-                        ,(apply-term* combine-op
-                                      (apply-term* combine-op u v)
-                                      w)))
+      :combine-associativity
+      (implicate
+       (conjoin (list (apply-term* domain$ u)
+                      (apply-term* domain$ v)
+                      (apply-term* domain$ w)))
+       `(equal ,(apply-term* combine-op
+                             u
+                             (apply-term* combine-op v w))
+               ,(apply-term* combine-op
+                             (apply-term* combine-op u v)
+                             w)))
       :when (member-eq variant$ '(:monoid :assoc)))
      (make-evmac-appcond?
-      :name :combine-associativity-uncond
-      :formula `(equal ,(apply-term* combine-op
-                                     u
-                                     (apply-term* combine-op v w))
-                       ,(apply-term* combine-op
-                                     (apply-term* combine-op u v)
-                                     w))
+      :combine-associativity-uncond
+      `(equal ,(apply-term* combine-op
+                            u
+                            (apply-term* combine-op v w))
+              ,(apply-term* combine-op
+                            (apply-term* combine-op u v)
+                            w))
       :when (eq variant$ :monoid-alt))
      (make-evmac-appcond?
-      :name :combine-left-identity
-      :formula (implicate (conjoin2 test
-                                    (apply-term* domain$ u1))
-                          `(equal ,(apply-term* combine-op base u1)
-                                  ,u1))
+      :combine-left-identity
+      (implicate (conjoin2 test
+                           (apply-term* domain$ u1))
+                 `(equal ,(apply-term* combine-op base u1)
+                         ,u1))
       :when (member-eq variant$ '(:monoid :monoid-alt)))
      (make-evmac-appcond?
-      :name :combine-right-identity
-      :formula (implicate (conjoin2 test
-                                    (apply-term* domain$ u1))
-                          `(equal ,(apply-term* combine-op u1 base)
-                                  ,u1))
+      :combine-right-identity
+      (implicate (conjoin2 test
+                           (apply-term* domain$ u1))
+                 `(equal ,(apply-term* combine-op u1 base)
+                         ,u1))
       :when (member-eq variant$ '(:monoid :monoid-alt)))
      (make-evmac-appcond?
-      :name :domain-guard
-      :formula (if (symbolp domain$)
-                   (guard domain$ nil wrld)
-                 (term-guard-obligation (lambda-body domain$) state))
+      :domain-guard
+      (if (symbolp domain$)
+          (guard domain$ nil wrld)
+        (term-guard-obligation (lambda-body domain$) state))
       :when verify-guards$)
      (make-evmac-appcond?
-      :name :combine-guard
-      :formula (implicate (conjoin2 (apply-term* domain$ q)
-                                    (apply-term* domain$ r))
-                          (term-guard-obligation combine state))
+      :combine-guard
+      (implicate (conjoin2 (apply-term* domain$ q)
+                           (apply-term* domain$ r))
+                 (term-guard-obligation combine state))
       :when verify-guards$)
      (make-evmac-appcond?
-      :name :domain-of-nonrec-when-guard
-      :formula (implicate (conjoin2 (guard old$ nil wrld)
-                                    (dumb-negate-lit test))
-                          (apply-term* domain$ nonrec))
+      :domain-of-nonrec-when-guard
+      (implicate (conjoin2 (guard old$ nil wrld)
+                           (dumb-negate-lit test))
+                 (apply-term* domain$ nonrec))
       :when (and (eq variant$ :monoid-alt)
                  verify-guards$)))))
 

@@ -132,7 +132,7 @@
      under the condition.")
    (xdoc::@def "make-evmac-appcond?"))
 
-  (defmacro make-evmac-appcond? (&key name formula (when 't))
+  (defmacro make-evmac-appcond? (name formula &key (when 't))
     `(and ,when
           (list (make-evmac-appcond :name ,name :formula ,formula)))))
 

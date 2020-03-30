@@ -439,25 +439,25 @@
   (b* ((wrld (w state)))
     (append
      (make-evmac-appcond?
-      :name :restriction-of-rec-calls
-      :formula (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
-                    (consequent
-                     (restrict-gen-restriction-of-rec-calls-consequent-term
-                      old$ rec-calls-with-tests restriction$ stub? wrld)))
-                 (implicate restriction$
-                            consequent))
+      :restriction-of-rec-calls
+      (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
+           (consequent
+            (restrict-gen-restriction-of-rec-calls-consequent-term
+             old$ rec-calls-with-tests restriction$ stub? wrld)))
+        (implicate restriction$
+                   consequent))
       :when (recursivep old$ nil wrld))
      (make-evmac-appcond?
-      :name :restriction-guard
-      :formula (b* ((old-guard (guard old$ nil wrld))
-                    (restriction-guard
-                     (term-guard-obligation restriction$ state)))
-                 (implicate old-guard
-                            restriction-guard))
+      :restriction-guard
+      (b* ((old-guard (guard old$ nil wrld))
+           (restriction-guard
+            (term-guard-obligation restriction$ state)))
+        (implicate old-guard
+                   restriction-guard))
       :when verify-guards$)
      (make-evmac-appcond?
-      :name :restriction-boolean
-      :formula (apply-term* 'booleanp restriction$)))))
+      :restriction-boolean
+      (apply-term* 'booleanp restriction$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

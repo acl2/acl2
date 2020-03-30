@@ -1462,42 +1462,42 @@
        (old-call (fcons-term old$ x1...xn)))
     (append
      (make-evmac-appcond?
-      :name :oldp-of-old
-      :formula (b* ((m (len res-isomaps)))
-                 (if (= m 1)
-                     (b* ((res-isomap (cdar res-isomaps))
-                          (oldp-res (isodata-isomap->oldp res-isomap)))
-                       (implicate oldp-of-x1...xn-conj
-                                  (fcons-term* oldp-res old-call)))
-                   (b* ((y1...ym (isodata-gen-result-vars old$ m))
-                        (oldp-of-y1...ym (isodata-gen-oldp-of-terms
-                                          y1...ym res-isomaps)))
-                     (implicate oldp-of-x1...xn-conj
-                                (make-mv-let-call 'mv y1...ym :all old-call
-                                                  (conjoin oldp-of-y1...ym))))))
+      :oldp-of-old
+      (b* ((m (len res-isomaps)))
+        (if (= m 1)
+            (b* ((res-isomap (cdar res-isomaps))
+                 (oldp-res (isodata-isomap->oldp res-isomap)))
+              (implicate oldp-of-x1...xn-conj
+                         (fcons-term* oldp-res old-call)))
+          (b* ((y1...ym (isodata-gen-result-vars old$ m))
+               (oldp-of-y1...ym (isodata-gen-oldp-of-terms
+                                 y1...ym res-isomaps)))
+            (implicate oldp-of-x1...xn-conj
+                       (make-mv-let-call 'mv y1...ym :all old-call
+                                         (conjoin oldp-of-y1...ym))))))
       :when res-isomaps)
      (make-evmac-appcond?
-      :name :oldp-when-old
-      :formula (implicate old-call
-                          oldp-of-x1...xn-conj)
+      :oldp-when-old
+      (implicate old-call
+                 oldp-of-x1...xn-conj)
       :when predicate$)
      (make-evmac-appcond?
-      :name :oldp-of-rec-call-args
-      :formula (implicate oldp-of-x1...xn-conj
-                          (isodata-gen-oldp-of-rec-call-args-under-contexts
-                           (recursive-calls old$ wrld)
-                           arg-isomaps))
+      :oldp-of-rec-call-args
+      (implicate oldp-of-x1...xn-conj
+                 (isodata-gen-oldp-of-rec-call-args-under-contexts
+                  (recursive-calls old$ wrld)
+                  arg-isomaps))
       :when (irecursivep old$ wrld))
      (make-evmac-appcond?
-      :name :old-guard
-      :formula (implicate old-guard
-                          oldp-of-x1...xn-conj)
+      :old-guard
+      (implicate old-guard
+                 oldp-of-x1...xn-conj)
       :when (and verify-guards$
                  (not predicate$)))
      (make-evmac-appcond?
-      :name :old-guard-pred
-      :formula  (implicate oldp-of-x1...xn-conj
-                           old-guard)
+      :old-guard-pred
+      (implicate oldp-of-x1...xn-conj
+                 old-guard)
       :when (and verify-guards$
                  predicate$)))))
 
