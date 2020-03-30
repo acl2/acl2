@@ -345,6 +345,7 @@ r. is updated pseudo-random seed
 BE. is the updated bounded-exhaustive arg/seed alist.
 
 eg:n/a")
+  (declare (ignorable single-test-timeout))
   
   (b* ((sm (local-sampling-method sampling-method i N))
        ((mv A r. BE.) (next-sigma sm N i r. BE.))
