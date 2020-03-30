@@ -942,6 +942,8 @@
     "Certain common items, like the @('state') variable,
      can be included among the items just by setting
      the corresponding keyword options to @('t').")
+   (xdoc::p
+    "If there are items, the list is omitted altogether.")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -976,24 +978,25 @@
                   (and item-ctx
                        '("@('ctx') is the context used for errors."))
                   items))
-         (long `(xdoc::topstring
-                 (xdoc::p
-                  "The implementation functions have arguments,
-                   as well as results (in the "
-                  (xdoc::seetopic "std::returns-specifiers"
-                                  "@(':returns') specifiers")
-                  "), consistently named as follows:")
-                 (xdoc::ul
-                  ,@(xdoc::evmac-topic-implementation-li-wrap all-items))
-                 (xdoc::p
-                  "Implementation functions' arguments and results
-                   that are not listed above
-                   are described in, or clear from,
-                   those functions' documentation."))))
+         (long (and all-items
+                    `(xdoc::topstring
+                      (xdoc::p
+                       "The implementation functions have arguments,
+                        as well as results (in the "
+                       (xdoc::seetopic "std::returns-specifiers"
+                                       "@(':returns') specifiers")
+                       "), consistently named as follows:")
+                      (xdoc::ul
+                       ,@(xdoc::evmac-topic-implementation-li-wrap all-items))
+                      (xdoc::p
+                       "Implementation functions' arguments and results
+                        that are not listed above
+                        are described in, or clear from,
+                        those functions' documentation.")))))
       `(defxdoc+ ,this-topic
          :parents (,parent-topic)
          :short ,short
-         :long ,long
+         ,@(and long (list :long long))
          :order-subtopics t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
