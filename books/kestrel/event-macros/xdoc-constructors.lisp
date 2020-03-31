@@ -1050,10 +1050,10 @@
          (long `(xdoc::topstring
                  (xdoc::p
                   "This involves validating the inputs.
-                 When validation fails, "
+                   When validation fails, "
                   (xdoc::seetopic "acl2::er" "soft errors")
                   " occur.
-                 Thus, generally the input processing functions return "
+                   Thus, generally the input processing functions return "
                   (xdoc::seetopic "acl2::error-triple" "error triples")
                   ".")
                  ,@additional)))
