@@ -396,7 +396,7 @@
                                           result)').")
                state)
   :mode :program
-  :short "Combine @(tsee evmac-appcond-theorems)
+  :short "Combine @(tsee evmac-appcond-theorem-list)
           and @(tsee evmac-ensure-no-extra-hints)."
   :long
   (xdoc::topstring
