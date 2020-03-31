@@ -414,8 +414,6 @@
     (defthm apply$-primp-implies-symbolp
       (implies (apply$-primp fn)
                (symbolp fn))
-      :rule-classes :forward-chaining)
-
-    ))
+      :rule-classes :forward-chaining)))
 
 (in-theory (disable apply$-prim apply$-primp))
