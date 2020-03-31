@@ -2202,20 +2202,11 @@
                                        variant$
                                        verify-guards$
                                        state))
-       ((mv appcond-thm-events
-            appcond-thm-names
-            remaining-hints
-            names-to-avoid)
-        (evmac-appcond-theorem-list
+       ((er (list appcond-thm-events
+                  appcond-thm-names
+                  names-to-avoid))
+        (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
-       ((when (and (keyword-truelist-alistp remaining-hints)
-                   (consp remaining-hints)))
-        (er-soft+ ctx t nil
-                  "The :HINTS input includes the keywords ~x0, ~
-                   which do not correspond to applicability conditions ~
-                   that must hold in this call of TAILREC, ~
-                   at least given the other inputs of TAILREC."
-                  (strip-cars remaining-hints)))
        ((mv old-unnorm-event
             old-unnorm-name) (install-not-normalized-event old$
             t

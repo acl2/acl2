@@ -138,6 +138,7 @@
                          er-soft+
                          evmac-appcond-listp
                          evmac-appcond-theorem-list
+                         evmac-appcond-theorems-no-extra-hints
                          evmac-appcondp
                          evmac-input-hints-p
                          evmac-input-print-p
