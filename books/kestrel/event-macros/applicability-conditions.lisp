@@ -402,7 +402,7 @@
   (xdoc::topstring
    (xdoc::p
     "This function automates the coding pattern in which
-     first one calls @(tsee evmac-appcond-theorems)
+     first one calls @(tsee evmac-appcond-theorem-list)
      and then @(tsee evmac-ensure-no-extra-hints) on the remaining hints.
      This combining function returns no hints result."))
   (b* (((mv events thm-names remaining-hints new-names-to-avoid)
