@@ -1077,7 +1077,8 @@
      An event macro may generate some events both locally and non-locally,
      where the local variant has proof hints and the non-local variant does not;
      in this case, the @(':some-local-nonlocal-p') argument must be @('t').
-     These arguments are used to customize the generated @(':long')."))
+     These arguments are used to customize the generated @(':long').")
+   (xdoc::@def "xdoc::evmac-topic-event-generation"))
 
   (defmacro xdoc::evmac-topic-event-generation (macro
                                                 &key
