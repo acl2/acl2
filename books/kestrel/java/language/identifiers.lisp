@@ -124,6 +124,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::deflist no-identifier-ignore-p (x)
+  (identifier-ignore-p x)
+  :short "Check if a list of Java Unicode characters
+          does not include any character that is ignorable in identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may be useful, for example, to check that
+     an identifier has no ignorable characters,
+     i.e. that it is in some sense ``canonical''."))
+  :guard (unicode-listp x)
+  :negatedp t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ascii-identifier-start-p ((char asciip))
   :returns (yes/no booleanp)
   :short "Check if an ASCII character can start identifiers."
