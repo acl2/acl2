@@ -5914,15 +5914,15 @@ e2-e1+1.
              (?-ccm-lstp (cdr lst))))))
 
 (defun ccg-redundant-measure-for-defunp (def justification wrld)
-  (let ((name (car def))
-        (measure0 (if justification
-                      (access justification
-                              justification
-                              :measure)
-                    nil))
-        (measures (fetch-dcl-field :measure
-                                   (butlast (cddr def)
-                                            1))))
+  (let* ((name (car def))
+         (measure0 (if justification
+                       (access justification
+                               justification
+                               :measure)
+                     nil))
+         (dcls (butlast (cddr def) 1))
+         (measures (fetch-dcl-field :measure dcls)))
+
     (cond ((and (consp measure0)
                 (eq (car measure0) :?))
            (if (and (consp measures)
@@ -6036,13 +6036,18 @@ e2-e1+1.
                                                ld-skip-proofsp
                                                def-lst
                                                wrld)
-  (let ((ans (redundant-or-reclassifying-defunsp0 defun-mode
-                                                  symbol-class
-                                                  ld-skip-proofsp
-                                                  nil
-                                                  def-lst
-                                                  wrld)))
-    (cond ((or (consp ans) ;; a message
+  (let* ((dcls (butlast (cddar def-lst) 1))
+         (termination-method (fetch-dcl-field :termination-method dcls))
+         (use-acl2p (and (consp termination-method)
+                         (eq (car termination-method) :measure)))
+         (ans (redundant-or-reclassifying-defunsp0 defun-mode
+                                                   symbol-class
+                                                   ld-skip-proofsp
+                                                   use-acl2p
+                                                   def-lst
+                                                   wrld)))
+    (cond ((or use-acl2p
+               (consp ans) ;; a message
                (not (eq ans 'redundant))
 
 ; the following 2 are a negation of the conditions for checking measures in
@@ -6053,7 +6058,7 @@ e2-e1+1.
 ; there would have been an error or the new definitions would be
 ; reclassifications). Keep this in sync with the conditions for checking
 ; measures in redundant-or-reclassifying-defunsp.
-
+               
                (not (eq defun-mode :logic))
                ld-skip-proofsp)
            ans)
