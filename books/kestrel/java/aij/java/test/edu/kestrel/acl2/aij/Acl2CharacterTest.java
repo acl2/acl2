@@ -37,4 +37,17 @@ class Acl2CharacterTest {
         assertDoesNotThrow(() -> Acl2Character.make('\u00ff'));
     }
 
+    @Test
+    void getJavaCharFromConstant() {
+        assertEquals(Acl2Character.CODE_0.getJavaChar(), '\0');
+    }
+
+    @Test
+    void getJavaCharFromMake() {
+        assertEquals(Acl2Character.make('a').getJavaChar(), 'a');
+        assertEquals(Acl2Character.make('\7').getJavaChar(), '\7');
+        assertEquals(Acl2Character.make('|').getJavaChar(), '|');
+        assertEquals(Acl2Character.make('\u00f0').getJavaChar(), '\u00f0');
+    }
+
 }
