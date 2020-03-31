@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/conjoin-equalities" :dir :system)
@@ -611,6 +612,180 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defiso-gen-appconds ((doma$ pseudo-termfnp)
+                             (domb$ pseudo-termfnp)
+                             (alpha$ pseudo-termfnp)
+                             (beta$ pseudo-termfnp)
+                             (a1...an symbol-listp)
+                             (b1...bm symbol-listp)
+                             (unconditional$ booleanp)
+                             (guard-thms$ booleanp)
+                             state)
+  :returns (appconds "A @(tsee evmac-appcond-listp).")
+  :mode :program
+  :short "Generate the applicability conditions."
+  :long
+  (xdoc::topstring-p
+   "This code currently overlaps with other code in @(tsee defiso),
+    such as @(tsee defiso-gen-thm-formula).
+    This overlap is temporary, as @(tsee defiso) is being extended
+    to use the applicability condition utilities.")
+  (b* ((wrld (w state))
+       (n (arity doma$ wrld))
+       (m (arity domb$ wrld)))
+    (append
+     (make-evmac-appcond?
+      :alpha-image
+      (b* ((antecedent (apply-term doma$ a1...an))
+           (consequent (if (= m 1)
+                           (apply-term* domb$
+                                        (apply-term alpha$ a1...an))
+                         (make-mv-let-call 'mv
+                                           b1...bm
+                                           :all
+                                           (apply-term alpha$ a1...an)
+                                           (apply-term domb$ b1...bm)))))
+        (implicate antecedent consequent)))
+     (make-evmac-appcond?
+      :beta-image
+      (b* ((antecedent (apply-term domb$ b1...bm))
+           (consequent (if (= n 1)
+                           (apply-term* doma$
+                                        (apply-term beta$ b1...bm))
+                         (make-mv-let-call 'mv
+                                           a1...an
+                                           :all
+                                           (apply-term beta$ b1...bm)
+                                           (apply-term doma$ a1...an)))))
+        (implicate antecedent consequent)))
+     (make-evmac-appcond?
+      :beta-of-alpha
+      (b* ((antecedent (if unconditional$
+                           *t*
+                         (apply-term doma$ a1...an)))
+           (consequent
+            (if (= n 1)
+                (if (= m 1)
+                    (b* ((a (car a1...an)))
+                      `(equal ,(apply-term* beta$
+                                            (apply-term* alpha$
+                                                         a))
+                              ,a))
+                  (b* ((b1...bm (defiso-differentiate-a/b-vars
+                                  b1...bm a1...an)))
+                    (make-mv-let-call 'mv
+                                      b1...bm
+                                      :all
+                                      (apply-term* alpha$ (car a1...an))
+                                      `(equal ,(apply-term beta$ b1...bm)
+                                              ,(car a1...an)))))
+              (if (= m 1)
+                  (b* ((aa1...aan (defiso-gen-var-aa/bb a1...an)))
+                    (make-mv-let-call 'mv
+                                      aa1...aan
+                                      :all
+                                      (apply-term* beta$
+                                                   (apply-term alpha$ a1...an))
+                                      (conjoin-equalities aa1...aan a1...an)))
+                (b* ((aa1...aan (defiso-gen-var-aa/bb a1...an))
+                     (b1...bm (defiso-differentiate-a/b-vars
+                                b1...bm a1...an)))
+                  (make-mv-let-call
+                   'mv
+                   b1...bm
+                   :all
+                   (apply-term alpha$ a1...an)
+                   (make-mv-let-call
+                    'mv
+                    aa1...aan
+                    :all
+                    (apply-term beta$ b1...bm)
+                    (conjoin-equalities aa1...aan a1...an))))))))
+        (implicate antecedent consequent)))
+     (make-evmac-appcond?
+      :alpha-of-beta
+      (b* ((antecedent (if unconditional$
+                           *t*
+                         (apply-term domb$ b1...bm)))
+           (consequent
+            (if (= n 1)
+                (if (= m 1)
+                    (b* ((b (car b1...bm)))
+                      `(equal ,(apply-term* alpha$
+                                            (apply-term* beta$
+                                                         b))
+                              ,b))
+                  (b* ((bb1...bbm (defiso-gen-var-aa/bb b1...bm)))
+                    (make-mv-let-call 'mv
+                                      bb1...bbm
+                                      :all
+                                      (apply-term* alpha$
+                                                   (apply-term beta$ b1...bm))
+                                      (conjoin-equalities bb1...bbm b1...bm))))
+              (if (= m 1)
+                  (b* ((b (car b1...bm))
+                       (a1...an (defiso-differentiate-a/b-vars
+                                  a1...an b1...bm)))
+                    (make-mv-let-call 'mv
+                                      a1...an
+                                      :all
+                                      (apply-term* beta$ b)
+                                      `(equal ,(apply-term alpha$ a1...an)
+                                              ,b)))
+                (b* ((bb1...bbm (defiso-gen-var-aa/bb b1...bm))
+                     (a1...an (defiso-differentiate-a/b-vars
+                                a1...an b1...bm)))
+                  (make-mv-let-call
+                   'mv
+                   a1...an
+                   :all
+                   (apply-term beta$ b1...bm)
+                   (make-mv-let-call
+                    'mv
+                    bb1...bbm
+                    :all
+                    (apply-term alpha$ a1...an)
+                    (conjoin-equalities bb1...bbm b1...bm))))))))
+        (implicate antecedent consequent)))
+     (make-evmac-appcond?
+      :doma-guard
+      (cond ((symbolp doma$) (uguard doma$ wrld))
+            (t (term-guard-obligation (lambda-body doma$) state)))
+      :when guard-thms$)
+     (make-evmac-appcond?
+      :domb-guard
+      (cond ((symbolp domb$) (uguard domb$ wrld))
+            (t (term-guard-obligation (lambda-body domb$) state)))
+      :when guard-thms$)
+     (make-evmac-appcond?
+      :alpha-guard
+      (b* ((alpha-formals
+            (cond ((symbolp alpha$) (formals alpha$ wrld))
+                  (t (lambda-formals alpha$))))
+           (alpha-guard
+            (cond ((symbolp alpha$) (uguard alpha$ wrld))
+                  (t (term-guard-obligation (lambda-body alpha$) state)))))
+        (implicate (apply-term doma$ a1...an)
+                   (subcor-var alpha-formals
+                               a1...an
+                               alpha-guard)))
+      :when guard-thms$)
+     (make-evmac-appcond?
+      :beta-guard
+      (b* ((beta-formals
+            (cond ((symbolp beta$) (formals beta$ wrld))
+                  (t (lambda-formals beta$))))
+           (beta-guard
+            (cond ((symbolp beta$) (uguard beta$ wrld))
+                  (t (term-guard-obligation (lambda-body beta$) state)))))
+        (implicate (apply-term domb$ b1...bm)
+                   (subcor-var beta-formals
+                               b1...bm
+                               beta-guard)))
+      :when guard-thms$))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defiso-gen-thm-formula ((thm-keyword keywordp)
                                 (doma$ pseudo-termfnp)
                                 (domb$ pseudo-termfnp)
@@ -1090,7 +1265,7 @@
                                (call pseudo-event-formp)
                                ctx
                                state)
-  :returns (event "A @(tsee pseudo-event-formp).")
+  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
   :verify-guards nil
   :short "Generate the top-level event."
@@ -1112,6 +1287,11 @@
      this removal is done after proving the applicability conditions,
      in case their proofs rely on the default or override hints.")
    (xdoc::p
+    "Currently the applicability condition theorems are submitted twice,
+     in slightly different form.
+     This is just temporary, as @(tsee defiso) is being extended
+     to use the applicability condition utiltiies.")
+   (xdoc::p
     "If @(':print') is @(':all'),
      the expansion is wrapped to show ACL2's output
      in response to the submitted events.
@@ -1130,6 +1310,12 @@
   (b* ((wrld (w state))
        (a1...an (defiso-gen-var-a1...an alpha$ wrld))
        (b1...bm (defiso-gen-var-b1...bm beta$ wrld))
+       (appconds (defiso-gen-appconds
+                   doma$ domb$ alpha$ beta$ a1...an b1...bm
+                   unconditional$ guard-thms$ state))
+       ((er (list appcond-thm-events & &))
+        (evmac-appcond-theorems-no-extra-hints
+         appconds hints$ nil print$ ctx state))
        ((mv local-appcond-thms
             exported-appcond-thms)
         (defiso-gen-thms
@@ -1166,6 +1352,7 @@
                      ()
                      (logic)
                      (set-ignore-ok t)
+                     ,@appcond-thm-events
                      ,@local-appcond-thms
                      (set-default-hints nil)
                      (set-override-hints nil)
@@ -1176,7 +1363,7 @@
         (if (member-eq print$ '(:info :all))
             (cw "~%~x0~|" expansion)
           (cw "~x0~|" expansion))
-        '(value-triple :invisible))
+        (value '(value-triple :invisible)))
        (expansion+ (restore-output? (eq print$ :all) expansion))
        (call$ (defiso-filter-call call))
        (extend-table (defiso-gen-ext-table
@@ -1196,11 +1383,12 @@
                            (defiso-gen-print-result
                              (append exported-appcond-thms
                                      exported-additional-thms))))))
-    `(progn
-       ,expansion+
-       ,extend-table
-       ,@print-result
-       (value-triple :invisible))))
+    (value
+     `(progn
+        ,expansion+
+        ,extend-table
+        ,@print-result
+        (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1299,23 +1487,22 @@
           print
           show-only
           ctx
-          state))
-       (event (defiso-gen-everything
-                name
-                doma$
-                domb$
-                alpha$
-                beta$
-                unconditional
-                guard-thms
-                thm-names$
-                hints$
-                print
-                show-only
-                call
-                ctx
-                state)))
-    (value event)))
+          state)))
+    (defiso-gen-everything
+      name
+      doma$
+      domb$
+      alpha$
+      beta$
+      unconditional
+      guard-thms
+      thm-names$
+      hints$
+      print
+      show-only
+      call
+      ctx
+      state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
