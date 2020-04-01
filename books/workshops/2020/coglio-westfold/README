@@ -1,0 +1,28 @@
+This directory contains some of the supporting materials for the paper
+"Isomorphic Data Type Transformations" by Alessandro Coglio and Stephen
+Westfold. The rest of the supporting materials are in other community books.
+
+Tools:
+
+- The implementation, documentation, and tests of the DEFISO tool described in
+  the paper are in the community books [books]/kestrel/std/util/defiso*.lisp.
+
+- The implementation, documentation, and tests of the ISODATA tool described in
+  the paper are in the community books [books]/kestrel/apt/isodata*.lisp.
+
+- The implementation, documentation, and tests of the PROPAGATE-ISO tool
+  described in the paper will be added under [books]/kestrel/apt/ as well.
+
+Examples:
+
+- The "schematic" example in Section 3.2 of the paper is in the file
+  schematic-example.lisp in this directory.
+
+- The example described in Section 4.1 of the paper is in the file
+  integer-example.lisp in this directory.
+
+- The example described in Section 4.2 of the paper is in the file
+  loop-example.lisp in this directory.
+
+- The example described in Section 4.3 of the paper will be added to this
+  directory.
