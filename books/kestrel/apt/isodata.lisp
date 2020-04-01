@@ -2641,31 +2641,30 @@
   :short "Generate the hints to prove the theorem
           that expresses the new function in terms of the old function."
   (if (recursivep old$ nil wrld)
-      (if res-isomaps
-          (if (> (number-of-results old$ wrld) 1)
-              (isodata-gen-new-to-old-thm-hints-rec-mres appcond-thm-names
-                                                         old$
-                                                         arg-isomaps
-                                                         res-isomaps
-                                                         new-name$
-                                                         old-fn-unnorm-name
-                                                         new-fn-unnorm-name
-                                                         wrld)
-            (isodata-gen-new-to-old-thm-hints-rec-1res appcond-thm-names
-                                                       old$
-                                                       arg-isomaps
-                                                       res-isomaps
-                                                       new-name$
-                                                       old-fn-unnorm-name
-                                                       new-fn-unnorm-name
-                                                       wrld))
-        (isodata-gen-new-to-old-thm-hints-rec-0res appcond-thm-names
-                                                   old$
-                                                   arg-isomaps
-                                                   new-name$
-                                                   old-fn-unnorm-name
-                                                   new-fn-unnorm-name
-                                                   wrld))
+      (case (len res-isomaps)
+        (0 (isodata-gen-new-to-old-thm-hints-rec-0res appcond-thm-names
+                                                      old$
+                                                      arg-isomaps
+                                                      new-name$
+                                                      old-fn-unnorm-name
+                                                      new-fn-unnorm-name
+                                                      wrld))
+        (1 (isodata-gen-new-to-old-thm-hints-rec-1res appcond-thm-names
+                                                      old$
+                                                      arg-isomaps
+                                                      res-isomaps
+                                                      new-name$
+                                                      old-fn-unnorm-name
+                                                      new-fn-unnorm-name
+                                                      wrld))
+        (t (isodata-gen-new-to-old-thm-hints-rec-mres appcond-thm-names
+                                                      old$
+                                                      arg-isomaps
+                                                      res-isomaps
+                                                      new-name$
+                                                      old-fn-unnorm-name
+                                                      new-fn-unnorm-name
+                                                      wrld)))
     (isodata-gen-new-to-old-thm-hints-nonrec old-fn-unnorm-name
                                              new-fn-unnorm-name)))
 
