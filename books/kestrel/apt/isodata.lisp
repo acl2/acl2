@@ -2495,51 +2495,6 @@
               ,@instances-forth-image
               ,@instances-back-of-forth)))))
 
-;; (define isodata-gen-new-to-old-thm-hints-rec-nonres
-;;   ((appcond-thm-names symbol-symbol-alistp)
-;;    (old$ symbolp)
-;;    (arg-isomaps isodata-symbol-isomap-alistp)
-;;    (new-name$ symbolp)
-;;    (old-fn-unnorm-name symbolp)
-;;    (new-fn-unnorm-name symbolp)
-;;    (wrld plist-worldp))
-;;   :returns (hints "A @(tsee true-listp).")
-;;   :mode :program
-;;   :short "Generate the hints to prove the theorem
-;;           that expresses the new function in terms of the old function,
-;;           when the functions are recursive
-;;           and @('isomaps') does not include @(':result')."
-;;   (b* ((rec-calls (recursive-calls old$ wrld))
-;;        (oldp-of-rec-call-args
-;;         (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
-;;        (instance-oldp-of-rec-call-args
-;;         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
-;;          oldp-of-rec-call-args
-;;          old$
-;;          arg-isomaps
-;;          wrld))
-;;        (instances-back-image
-;;         (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
-;;        (instances-forth-image
-;;         (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
-;;                                                              old$
-;;                                                              arg-isomaps
-;;                                                              wrld))
-;;        (instances-back-of-forth
-;;         (isodata-gen-all-back-of-forth-instances-to-terms-back rec-calls
-;;                                                                old$
-;;                                                                arg-isomaps
-;;                                                                wrld)))
-;;     `(("Goal"
-;;        :in-theory '(,old-fn-unnorm-name
-;;                     ,new-fn-unnorm-name
-;;                     (:induction ,new-name$))
-;;        :induct (,new-name$ ,@(formals old$ wrld)))
-;;       '(:use (,instance-oldp-of-rec-call-args
-;;               ,@instances-back-image
-;;               ,@instances-forth-image
-;;               ,@instances-back-of-forth)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-to-old-thm-hints-rec-1res
@@ -2607,71 +2562,6 @@
               ,@instances-forth-image
               ,@instances-back-of-forth
               ,@instances-back-of-forth-res)))))
-
-;; (define isodata-gen-new-to-old-thm-hints-rec-res
-;;   ((appcond-thm-names symbol-symbol-alistp)
-;;    (old$ symbolp)
-;;    (arg-isomaps isodata-symbol-isomap-alistp)
-;;    (res-isomap isodata-isomapp)
-;;    (new-name$ symbolp)
-;;    (old-fn-unnorm-name symbolp)
-;;    (new-fn-unnorm-name symbolp)
-;;    (wrld plist-worldp))
-;;   :returns (hints "A @(tsee true-listp).")
-;;   :mode :program
-;;   :short "Generate the hints to prove the theorem
-;;           that expresses the new function in terms of the old function,
-;;           when the functions are recursive
-;;           and @('isomaps') includes @(':result')."
-;;   (b* ((rec-calls (recursive-calls old$ wrld))
-;;        (oldp-of-rec-call-args
-;;         (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
-;;        (oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
-;;        (instance-oldp-of-rec-call-args
-;;         (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
-;;          oldp-of-rec-call-args
-;;          old$
-;;          arg-isomaps
-;;          wrld))
-;;        (instances-oldp-of-old
-;;         (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back
-;;          oldp-of-old
-;;          rec-calls
-;;          old$
-;;          arg-isomaps
-;;          wrld))
-;;        (instances-back-image
-;;         (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
-;;        (instances-forth-image
-;;         (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
-;;                                                              old$
-;;                                                              arg-isomaps
-;;                                                              wrld))
-;;        (instances-back-of-forth
-;;         (isodata-gen-all-back-of-forth-instances-to-terms-back rec-calls
-;;                                                                old$
-;;                                                                arg-isomaps
-;;                                                                wrld))
-;;        (back-of-forth-res (isodata-isomap->back-of-forth res-isomap))
-;;        (var (isodata-formal-of-forth res-isomap wrld))
-;;        (instances-back-of-forth-res
-;;         (isodata-gen-lemma-instances-var-to-rec-calls-back back-of-forth-res
-;;                                                            var
-;;                                                            old$
-;;                                                            rec-calls
-;;                                                            arg-isomaps
-;;                                                            wrld)))
-;;     `(("Goal"
-;;        :in-theory '(,old-fn-unnorm-name
-;;                     ,new-fn-unnorm-name
-;;                     (:induction ,new-name$))
-;;        :induct (,new-name$ ,@(formals old$ wrld)))
-;;       '(:use (,instance-oldp-of-rec-call-args
-;;               ,@instances-oldp-of-old
-;;               ,@instances-back-image
-;;               ,@instances-forth-image
-;;               ,@instances-back-of-forth
-;;               ,@instances-back-of-forth-res)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2778,39 +2668,6 @@
                                                    wrld))
     (isodata-gen-new-to-old-thm-hints-nonrec old-fn-unnorm-name
                                              new-fn-unnorm-name)))
-
-;; (define isodata-gen-new-to-old-thm-hints
-;;   ((appcond-thm-names symbol-symbol-alistp)
-;;    (old$ symbolp)
-;;    (arg-isomaps isodata-symbol-isomap-alistp)
-;;    (res-isomap? isodata-maybe-isomapp)
-;;    (new-name$ symbolp)
-;;    (old-fn-unnorm-name symbolp)
-;;    (new-fn-unnorm-name symbolp)
-;;    (wrld plist-worldp))
-;;   :returns (hints "A @(tsee true-listp).")
-;;   :mode :program
-;;   :short "Generate the hints to prove the theorem
-;;           that expresses the new function in terms of the old function."
-;;   (if (recursivep old$ nil wrld)
-;;       (if res-isomap?
-;;           (isodata-gen-new-to-old-thm-hints-rec-res appcond-thm-names
-;;                                                     old$
-;;                                                     arg-isomaps
-;;                                                     res-isomap?
-;;                                                     new-name$
-;;                                                     old-fn-unnorm-name
-;;                                                     new-fn-unnorm-name
-;;                                                     wrld)
-;;         (isodata-gen-new-to-old-thm-hints-rec-nonres appcond-thm-names
-;;                                                      old$
-;;                                                      arg-isomaps
-;;                                                      new-name$
-;;                                                      old-fn-unnorm-name
-;;                                                      new-fn-unnorm-name
-;;                                                      wrld))
-;;     (isodata-gen-new-to-old-thm-hints-nonrec old-fn-unnorm-name
-;;                                              new-fn-unnorm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
