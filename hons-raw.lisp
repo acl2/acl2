@@ -2293,9 +2293,18 @@
 
   (let ((action (get-slow-alist-action *the-live-state*)))
     (when action
+#-acl2-par
       (format *error-output* "
 *****************************************************************
 Fast alist discipline violated in ~a.
+See :DOC slow-alist-warning to suppress or break on this warning.
+*****************************************************************~%"
+              name)
+#+acl2-par
+      (format *error-output* "
+*****************************************************************
+Fast alist discipline violated in ~a.  (May be from
+waterfall-parallelism; see :DOC unsupported-waterfall-parallelism-features.)
 See :DOC slow-alist-warning to suppress or break on this warning.
 *****************************************************************~%"
               name)
