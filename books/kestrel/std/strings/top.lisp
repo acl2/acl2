@@ -10,6 +10,7 @@
 
 (in-package "STR")
 
+(include-book "char-kinds")
 (include-book "strtok-bang")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
