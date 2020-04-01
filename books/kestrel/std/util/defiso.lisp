@@ -797,10 +797,10 @@
                                  (appcond-thm-names symbol-symbol-alistp)
                                  (thm-names$ symbol-symbol-alistp)
                                  (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-list-formp).")
-               (exported-events "A @(tsee pseudo-event-list-formp)."))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exported-events "A @(tsee pseudo-event-form-listp)."))
   :mode :program
-  :short "Lift @(tsee defjso-gen-appcond-thm) to
+  :short "Lift @(tsee defiso-gen-appcond-thm) to
           lists of applicability conditions."
   (b* (((when (endp appconds)) (mv nil nil))
        ((mv local-event exported-event) (defiso-gen-appcond-thm
@@ -828,8 +828,8 @@
                                     (thm-names$ symbol-symbol-alistp)
                                     (appcond-thm-names symbol-symbol-alistp)
                                     (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-list-formp).")
-               (exported-events "A @(tsee pseudo-event-list-formp)."))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exported-events "A @(tsee pseudo-event-form-listp)."))
   :mode :program
   :short "Generate the theorems that are not applicability conditions."
   :long
@@ -950,8 +950,8 @@
                          (appconds evmac-appcond-listp)
                          (appcond-thm-names symbol-symbol-alistp)
                          (wrld plist-worldp))
-  :returns (mv (local-events "A @(tsee pseudo-event-list-formp).")
-               (exported-events "A @(tsee pseudo-event-list-formp)."))
+  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
+               (exported-events "A @(tsee pseudo-event-form-listp)."))
   :mode :program
   :short "Generate all the theorems."
   (b* (((mv appcond-local-events appcond-exported-events)
