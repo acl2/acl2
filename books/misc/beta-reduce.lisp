@@ -1,4 +1,7 @@
-;; Contributed by David Greve
+;;
+;; Copyright (C) 2020, David Greve
+;; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+;;
 
 ;; The following book provides a proof of correctness for a simple
 ;; beta-reduction routine for a generic ACL2 evaluator.  Any user
@@ -7,6 +10,7 @@
 ;; with any ACL2 evaluator, for example in proving a :meta rule.
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
 
 (defevaluator beta-eval beta-eval-list
   nil)
@@ -73,12 +77,8 @@
    (t
     (cond
      ((and (symbolp term) term)
-      (mbe :logic
-           (if (member term keys)
-               (cdr (assoc-eq term (pairlis$ keys vals)))
-             '(quote nil))
-           :exec (let ((pos (position-eq term keys)))
-                   (if pos (nth pos vals) '(quote nil)))))
+      (let ((hit (assoc-eq term (pairlis$ keys vals))))
+        (if hit (cdr hit) '(quote nil))))
      ((atom term) term)
      ((eq (car term) 'quote) term)
      ((consp (car term))
@@ -108,11 +108,11 @@
      ((and (symbolp term) term)
       (cdr (assoc-eq term alist)))
      ((atom term) nil)
-     ((eq (car term) 'quote) (CAR (CDR term)))
+     ((eq (car term) 'quote) (car (cdr term)))
      ((consp (car term))
-      (beta-eval (CAR (CDR (CDR (CAR term))))
-                   (PAIRLIS$ (CAR (CDR (CAR term)))
-                             (BETA-EVAL-key t (CDR term) alist))))
+      (beta-eval (car (cdr (cdr (car term))))
+                   (pairlis$ (car (cdr (car term)))
+                             (beta-eval-key t (cdr term) alist))))
      (t (beta-eval term alist))))))
 
 (defthmd beta-eval-key-reduction
@@ -138,18 +138,26 @@
    (equal (assoc-eq term (pairlis$ keys vals))
 	  nil)))
 
-(defthmd beta-eval-key-beta-reduce-term
+(defthm not-assoc-vals-irrelevant
   (implies
-   (equal (len keys) (len vals))
-   (equal (beta-eval-key arg (beta-reduce-term arg term keys vals) a1)
-	  (beta-eval-key arg term (pairlis$ keys
-					    (beta-eval-key t vals a1)))))
+   (not (assoc-equal term (pairlis$ keys vals)))
+   (not (assoc-equal term (pairlis$ keys (beta-eval-list vals a1))))))
+
+(defthm assoc-beta-eval
+  (implies
+   (assoc-equal term (pairlis$ keys vals))
+   (equal (cdr (assoc-equal term (pairlis$ keys (beta-eval-list vals a1))))
+          (beta-eval (cdr (assoc-equal term (pairlis$ keys vals))) a1))))
+            
+(defthmd beta-eval-key-beta-reduce-term-2
+  (equal (beta-eval-key arg (beta-reduce-term arg term keys vals) a1)
+         (beta-eval-key arg term (pairlis$ keys (beta-eval-key t vals a1))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 	   :do-not-induct t
 	   :induct (beta-reduce-term arg term keys vals)
 	   :expand (:free (x) (hide x))
 	   :in-theory (e/d (beta-eval-constraint-0
-                            BETA-EVAL-CONSTRAINT-6
+                            beta-eval-constraint-6
 			    beta-eval-key-reduction)
 			   nil))))
 
@@ -186,7 +194,7 @@
 
 (defthmd lambda-expr-p-to-para-lambda-expr-key-p
   (equal (lambda-expr-p term)
-	 (para-lambda-expr-key-p nil (CAR (CDR (CDR (CAR term)))) (CAR (CDR (CAR term))) (cdr term) term))
+	 (para-lambda-expr-key-p nil (car (cdr (cdr (car term)))) (car (cdr (car term))) (cdr term) term))
   :hints (("goal" :in-theory (enable lambda-expr-p para-lambda-expr-key-p))))
 
 (in-theory (disable lambda-expr-p para-lambda-expr-key-p))
@@ -195,8 +203,8 @@
   (implies
    (lambda-expr-p term)
    (equal (beta-eval-key nil term a1)
-	  (beta-eval-key nil (CAR (CDR (CDR (CAR term))))
-			   (pairlis$ (CAR (CDR (CAR term)))
+	  (beta-eval-key nil (car (cdr (cdr (car term))))
+			   (pairlis$ (car (cdr (car term)))
 				     (beta-eval-key t (cdr term) a1)))))
   :hints (("Goal"
            :in-theory
@@ -206,21 +214,18 @@
   (implies
    (lambda-expr-p term)
    (equal (beta-eval term a1)
-	  (beta-eval (CAR (CDR (CDR (CAR term))))
-		       (pairlis$ (CAR (CDR (CAR term)))
+	  (beta-eval (car (cdr (cdr (car term))))
+		       (pairlis$ (car (cdr (car term)))
 				 (beta-eval-list (cdr term) a1)))))
   :hints (("Goal" :use beta-eval-lambda-expr-helper
 	   :in-theory (enable beta-eval-key-reduction))))
 
 (defthm beta-eval-beta-reduce-term
-  (implies
-   (and
-    (equal (len keys) (len vals)))
-   (equal (beta-eval (beta-reduce-term nil term keys vals) a1)
-	  (beta-eval term (pairlis$ keys (beta-eval-list vals a1)))))
-  :hints (("Goal" :use (:instance beta-eval-key-beta-reduce-term
-				  (arg nil))
-	   :in-theory (enable beta-eval-key-reduction))))
+  (equal (beta-eval (beta-reduce-term nil term keys vals) a1)
+         (beta-eval term (pairlis$ keys (beta-eval-list vals a1))))
+  :hints (("Goal" :use (:instance beta-eval-key-beta-reduce-term-2
+                                  (arg nil))
+           :in-theory (enable beta-eval-key-reduction))))
 
 (defthm beta-eval-to-beta-reduce-term
   (implies
@@ -228,18 +233,29 @@
     (lambda-expr-p term)
     (pseudo-termp term))
    (equal (beta-eval term a1)
-	  (beta-eval (beta-reduce-term nil (CAR (CDR (CDR (CAR term))))
-				       (CAR (CDR (CAR term)))
+	  (beta-eval (beta-reduce-term nil (car (cdr (cdr (car term))))
+				       (car (cdr (car term)))
 				       (cdr term)) a1))))
 
 ))
+
+(defthm beta-eval-beta-reduce-term
+  (equal (beta-eval (beta-reduce-term nil term keys vals) a1)
+         (beta-eval term (pairlis$ keys (beta-eval-list vals a1)))))
+
+(defthm beta-eval-beta-reduce-term-list
+  (implies
+   key
+   (equal (beta-eval-list (beta-reduce-term key term keys vals) a1)
+          (beta-eval-list term (pairlis$ keys (beta-eval-list vals a1)))))
+  :hints (("Goal" :induct (len term))))
 
 (defund beta-reduce-lambda-expr (term)
   (declare (type (satisfies lambda-expr-p) term)
 	   (type (satisfies pseudo-termp) term)
 	   (xargs :guard-hints (("Goal" :in-theory (enable lambda-expr-p)))))
-  (beta-reduce-term nil (CAR (CDR (CDR (CAR term))))
-		    (CAR (CDR (CAR term)))
+  (beta-reduce-term nil (car (cdr (cdr (car term))))
+		    (car (cdr (car term)))
 		    (cdr term)))
 
 (defthm beta-eval-to-beta-reduce-lambda-expr
@@ -479,3 +495,11 @@
 
 )
 
+(defxdoc beta-reduce
+  :short "A beta-reduction routine and associated proof of correctness"
+  :parents (meta-functions)
+  :long "<p> This book provides a proof of correctness for a simple
+beta-reduction routine under a generic ACL2 evaluator.  Any user defined
+ACL2 evaluator should support functional instantiation of this result,
+allowing this beta reduction routine to be used with any ACL2
+evaluator, for example in proving a :meta rule.  </p>")
