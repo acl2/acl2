@@ -2718,23 +2718,36 @@
 (define isodata-gen-old-to-new-thm-formula
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (wrld plist-worldp))
   :returns (old-to-new-formula "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the formula of the theorem
-          that relates the old and new function."
+          that expresses the old function in terms of the new function."
   (b* ((x1...xn (formals old$ wrld))
        (oldp-of-x1...xn (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
        (forth-of-x1...xn (isodata-gen-forth-of-terms x1...xn arg-isomaps))
-       (new-call (fcons-term new-name$ forth-of-x1...xn)))
+       (new-call (fcons-term new-name$ forth-of-x1...xn))
+       (old-call (fcons-term old$ x1...xn))
+       (consequent
+        (case (len res-isomaps)
+          (0 `(equal ,old-call ,new-call))
+          (1 (b* ((back-res (isodata-isomap->back (cdar res-isomaps)))
+                  (back-of-new-call (apply-term* back-res new-call)))
+               `(equal ,old-call ,back-of-new-call)))
+          (t (b* ((mv-nths-of-old-call (make-mv-nth-calls old-call
+                                                          (len res-isomaps)))
+                  (mv-nths-of-new-call (make-mv-nth-calls new-call
+                                                          (len res-isomaps)))
+                  (back-of-mv-nths-of-new-call
+                   (isodata-gen-back-of-terms mv-nths-of-new-call
+                                              res-isomaps)))
+               (conjoin-equalities mv-nths-of-old-call
+                                   back-of-mv-nths-of-new-call))))))
+
     (implicate (conjoin oldp-of-x1...xn)
-               `(equal (,old$ ,@x1...xn)
-                       ,(if res-isomap?
-                            (apply-term* (isodata-isomap->back res-isomap?)
-                                         new-call)
-                          new-call)))))
+               consequent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2831,6 +2844,7 @@
   ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
@@ -2847,7 +2861,7 @@
     whether the theorem must be enabled or not.")
   (b* ((macro (theorem-intro-macro thm-enable$))
        (formula (isodata-gen-old-to-new-thm-formula
-                 old$ arg-isomaps res-isomap? new-name$ wrld))
+                 old$ arg-isomaps res-isomaps new-name$ wrld))
        (formula (untranslate formula t wrld))
        (hints (isodata-gen-old-to-new-thm-hints appcond-thm-names
                                                 old$
@@ -3672,6 +3686,7 @@
         (isodata-gen-old-to-new-thm appcond-thm-names
                                     old$
                                     arg-isomaps
+                                    res-isomaps
                                     res-isomap?
                                     new-name$
                                     thm-name$
