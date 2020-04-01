@@ -624,12 +624,6 @@
   :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
   :short "Generate the applicability conditions."
-  :long
-  (xdoc::topstring-p
-   "This code currently overlaps with other code in @(tsee defiso),
-    such as @(tsee defiso-gen-thm-formula).
-    This overlap is temporary, as @(tsee defiso) is being extended
-    to use the applicability condition utilities.")
   (b* ((wrld (w state))
        (n (arity doma$ wrld))
        (m (arity domb$ wrld)))
@@ -786,409 +780,205 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defiso-gen-thm-formula ((thm-keyword keywordp)
-                                (doma$ pseudo-termfnp)
-                                (domb$ pseudo-termfnp)
-                                (alpha$ pseudo-termfnp)
-                                (beta$ pseudo-termfnp)
-                                (a1...an symbol-listp)
-                                (b1...bm symbol-listp)
-                                (unconditional$ booleanp)
-                                state)
-  :returns (formula "An untranslated term.")
+(define defiso-gen-appcond-thm ((appcond evmac-appcondp)
+                                (appcond-thm-names symbol-symbol-alistp)
+                                (thm-names$ symbol-symbol-alistp)
+                                (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
-  :short "Generate the formula of the theorem identified by a given keyword."
-  (b* ((wrld (w state))
-       (n (arity doma$ wrld))
-       (m (arity domb$ wrld)))
-    (case thm-keyword
-      (:alpha-image
-       (b* ((antecedent (apply-term doma$ a1...an))
-            (consequent (if (= m 1)
-                            (apply-term* domb$
-                                         (apply-term alpha$ a1...an))
-                          (make-mv-let-call 'mv
-                                            b1...bm
-                                            :all
-                                            (apply-term alpha$ a1...an)
-                                            (apply-term domb$ b1...bm))))
-            (formula (implicate antecedent consequent)))
-         (untranslate formula t wrld)))
-      (:beta-image
-       (b* ((antecedent (apply-term domb$ b1...bm))
-            (consequent (if (= n 1)
-                            (apply-term* doma$
-                                         (apply-term beta$ b1...bm))
-                          (make-mv-let-call 'mv
-                                            a1...an
-                                            :all
-                                            (apply-term beta$ b1...bm)
-                                            (apply-term doma$ a1...an))))
-            (formula (implicate antecedent consequent)))
-         (untranslate formula t wrld)))
-      (:beta-of-alpha
-       (b* ((antecedent (if unconditional$
-                            *t*
-                          (apply-term doma$ a1...an)))
-            (consequent
-             (if (= n 1)
-                 (if (= m 1)
-                     (b* ((a (car a1...an)))
-                       `(equal ,(apply-term* beta$
-                                             (apply-term* alpha$
-                                                          a))
-                               ,a))
-                   (b* ((b1...bm (defiso-differentiate-a/b-vars
-                                   b1...bm a1...an)))
-                     (make-mv-let-call 'mv
-                                       b1...bm
-                                       :all
-                                       (apply-term* alpha$ (car a1...an))
-                                       `(equal ,(apply-term beta$ b1...bm)
-                                               ,(car a1...an)))))
-               (if (= m 1)
-                   (b* ((aa1...aan (defiso-gen-var-aa/bb a1...an)))
-                     (make-mv-let-call 'mv
-                                       aa1...aan
-                                       :all
-                                       (apply-term* beta$
-                                                    (apply-term alpha$ a1...an))
-                                       (conjoin-equalities aa1...aan a1...an)))
-                 (b* ((aa1...aan (defiso-gen-var-aa/bb a1...an))
-                      (b1...bm (defiso-differentiate-a/b-vars
-                                 b1...bm a1...an)))
-                   (make-mv-let-call
-                    'mv
-                    b1...bm
-                    :all
-                    (apply-term alpha$ a1...an)
-                    (make-mv-let-call
-                     'mv
-                     aa1...aan
-                     :all
-                     (apply-term beta$ b1...bm)
-                     (conjoin-equalities aa1...aan a1...an)))))))
-            (formula (implicate antecedent consequent)))
-         (untranslate formula t wrld)))
-      (:alpha-of-beta
-       (b* ((antecedent (if unconditional$
-                            *t*
-                          (apply-term domb$ b1...bm)))
-            (consequent
-             (if (= n 1)
-                 (if (= m 1)
-                     (b* ((b (car b1...bm)))
-                       `(equal ,(apply-term* alpha$
-                                             (apply-term* beta$
-                                                          b))
-                               ,b))
-                   (b* ((bb1...bbm (defiso-gen-var-aa/bb b1...bm)))
-                     (make-mv-let-call 'mv
-                                       bb1...bbm
-                                       :all
-                                       (apply-term* alpha$
-                                                    (apply-term beta$ b1...bm))
-                                       (conjoin-equalities bb1...bbm b1...bm))))
-               (if (= m 1)
-                   (b* ((b (car b1...bm))
-                        (a1...an (defiso-differentiate-a/b-vars
-                                   a1...an b1...bm)))
-                     (make-mv-let-call 'mv
-                                       a1...an
-                                       :all
-                                       (apply-term* beta$ b)
-                                       `(equal ,(apply-term alpha$ a1...an)
-                                               ,b)))
-                 (b* ((bb1...bbm (defiso-gen-var-aa/bb b1...bm))
-                      (a1...an (defiso-differentiate-a/b-vars
-                                 a1...an b1...bm)))
-                   (make-mv-let-call
-                    'mv
-                    a1...an
-                    :all
-                    (apply-term beta$ b1...bm)
-                    (make-mv-let-call
-                     'mv
-                     bb1...bbm
-                     :all
-                     (apply-term alpha$ a1...an)
-                     (conjoin-equalities bb1...bbm b1...bm)))))))
-            (formula (implicate antecedent consequent)))
-         (untranslate formula t wrld)))
-      (:alpha-injective
-       (b* ((aa1...aan (defiso-gen-var-aa/bb a1...an))
-            (antecedent (if unconditional$
-                            *t*
-                          (conjoin2 (apply-term doma$ a1...an)
-                                    (apply-term doma$ aa1...aan))))
-            (consequent `(equal (equal ,(apply-term alpha$ a1...an)
-                                       ,(apply-term alpha$ aa1...aan))
-                                ,(conjoin-equalities a1...an aa1...aan)))
-            (formula (implicate antecedent consequent)))
-         (untranslate formula t wrld)))
-      (:beta-injective
-       (b* ((bb1...bbm (defiso-gen-var-aa/bb b1...bm))
-            (antecedent (if unconditional$
-                            *t*
-                          (conjoin2 (apply-term domb$ b1...bm)
-                                    (apply-term domb$ bb1...bbm))))
-            (consequent `(equal (equal ,(apply-term beta$ b1...bm)
-                                       ,(apply-term beta$ bb1...bbm))
-                                ,(conjoin-equalities b1...bm bb1...bbm)))
-            (formula (implicate antecedent consequent)))
-         (untranslate formula t wrld)))
-      (:doma-guard
-       (b* ((doma-guard
-             (cond ((symbolp doma$) (uguard doma$ wrld))
-                   (t (term-guard-obligation (lambda-body doma$) state)))))
-         (untranslate doma-guard t wrld)))
-      (:domb-guard
-       (b* ((domb-guard
-             (cond ((symbolp domb$) (uguard domb$ wrld))
-                   (t (term-guard-obligation (lambda-body domb$) state)))))
-         (untranslate domb-guard t wrld)))
-      (:alpha-guard
-       (b* ((alpha-formals
-             (cond ((symbolp alpha$) (formals alpha$ wrld))
-                   (t (lambda-formals alpha$))))
-            (alpha-guard
-             (cond ((symbolp alpha$) (uguard alpha$ wrld))
-                   (t (term-guard-obligation (lambda-body alpha$) state))))
-            (formula (implicate (apply-term doma$ a1...an)
-                                (subcor-var alpha-formals
-                                            a1...an
-                                            alpha-guard))))
-         (untranslate formula t wrld)))
-      (:beta-guard
-       (b* ((beta-formals
-             (cond ((symbolp beta$) (formals beta$ wrld))
-                   (t (lambda-formals beta$))))
-            (beta-guard
-             (cond ((symbolp beta$) (uguard beta$ wrld))
-                   (t (term-guard-obligation (lambda-body beta$) state))))
-            (formula (implicate (apply-term domb$ b1...bm)
-                                (subcor-var beta-formals
-                                            b1...bm
-                                            beta-guard))))
-         (untranslate formula t wrld)))
-      (t (impossible)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defiso-gen-thm-hints ((thm-keyword keywordp)
-                              (alpha$ pseudo-termfnp)
-                              (beta$ pseudo-termfnp)
-                              (thm-names$ symbol-symbol-alistp)
-                              (hints$ symbol-truelist-alistp)
-                              (a1...an symbol-listp)
-                              (b1...bm symbol-listp))
-  :returns (thm-hints "A @(tsee true-listp).")
-  :mode :program
-  :short "Hints to prove the theorem identified by the given keyword."
+  :short "Generate a theorem event from an applicability condition."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The hints come from the @(':hints') inputs
-     for the theorems that are also applicability conditions.
-     For the remaining theorems,
-     we generate hints based on the proofs in the design notes.")
+    "All the applicability conditions that must hold for the @(tsee defiso) call
+     are turned into theorems exported from the @(tsee encapsulate).
+     To keep the ACL2 history ``clean'',
+     we generate the theorem in local form with a @(':by') hint
+     (the references the local theorem name of the applicability condition;
+     this name generally differs from
+     the theorem name determined by @(':thm-names')),
+     and in non-local, redundant form without hints."))
+  (b* (((evmac-appcond appcond) appcond)
+       (thm-name (cdr (assoc-eq appcond.name thm-names$)))
+       (thm-formula (untranslate appcond.formula t wrld))
+       (thm-hints
+        `(("Goal" :by ,(cdr (assoc-eq appcond.name appcond-thm-names)))))
+       (local-event `(local (defthmr ,thm-name ,thm-formula :hints ,thm-hints)))
+       (exported-event `(defthmr ,thm-name ,thm-formula)))
+    (mv local-event exported-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defiso-gen-appcond-thms ((appconds evmac-appcond-listp)
+                                 (appcond-thm-names symbol-symbol-alistp)
+                                 (thm-names$ symbol-symbol-alistp)
+                                 (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-list-formp).")
+               (exported-events "A @(tsee pseudo-event-list-formp)."))
+  :mode :program
+  :short "Lift @(tsee defjso-gen-appcond-thm) to
+          lists of applicability conditions."
+  (b* (((when (endp appconds)) (mv nil nil))
+       ((mv local-event exported-event) (defiso-gen-appcond-thm
+                                          (car appconds)
+                                          appcond-thm-names
+                                          thm-names$
+                                          wrld))
+       ((mv local-events exported-events) (defiso-gen-appcond-thms
+                                            (cdr appconds)
+                                            appcond-thm-names
+                                            thm-names$
+                                            wrld)))
+    (mv (cons local-event local-events)
+        (cons exported-event exported-events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defiso-gen-nonappcond-thms ((doma$ pseudo-termfnp)
+                                    (domb$ pseudo-termfnp)
+                                    (alpha$ pseudo-termfnp)
+                                    (beta$ pseudo-termfnp)
+                                    (a1...an symbol-listp)
+                                    (b1...bm symbol-listp)
+                                    (unconditional$ booleanp)
+                                    (thm-names$ symbol-symbol-alistp)
+                                    (appcond-thm-names symbol-symbol-alistp)
+                                    (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-list-formp).")
+               (exported-events "A @(tsee pseudo-event-list-formp)."))
+  :mode :program
+  :short "Generate the theorems that are not applicability conditions."
+  :long
+  (xdoc::topstring
    (xdoc::p
-    "The @(':cases') hints correspond, in the proof in the design notes,
+    "Currently these are the two injectivity theorems.")
+   (xdoc::p
+    "We generate each theorem locally with hints,
+     and also non-locally, redundantly without hints.
+     This keeps the ACL2 world ``clean''.")
+   (xdoc::p
+    "We generate hints based on the proofs in the design notes.
+     The @(':cases') hints correspond, in the proof in the design notes,
      to the inference step that applies @($\\beta$)
      to both sides of the equality @($\\alpha(a)=\\alpha(a')$)
      (in the proof of @(':alpha-injective')),
      or to the inference step that applies @($\\alpha$)
      to both sides of the equality @($\\beta(b)=\\beta(b')$)
      (in the proof of @(':beta-injective')).
-     The hints for the injectivity proofs are the same
+     The hints for these proofs are the same
      whether @(':unconditional') is @('t') or @('nil')."))
-  (case thm-keyword
-    (:alpha-injective
-     (b* ((thm-beta-of-alpha (cdr (assoc-eq :beta-of-alpha thm-names$)))
-          (aa1...aan (defiso-gen-var-aa/bb a1...an))
-          (thm-beta-of-alpha-instance `(:instance
-                                        ,thm-beta-of-alpha
-                                        ,@(alist-to-doublets
-                                           (pairlis$ a1...an aa1...aan))))
-          (m (len b1...bm))
-          (cases-hints-formula
-           (if (= m 1)
-               `(equal ,(apply-term* beta$
-                                     (apply-term alpha$ a1...an))
-                       ,(apply-term* beta$
-                                     (apply-term alpha$ aa1...aan)))
-             `(equal ,(apply-term beta$
-                                  (make-mv-nth-calls
-                                   (apply-term alpha$ a1...an)
-                                   m))
-                     ,(apply-term beta$
-                                  (make-mv-nth-calls
-                                   (apply-term alpha$ aa1...aan)
-                                   m))))))
-       `(("Goal"
-          :in-theory nil
-          :cases (,cases-hints-formula)
-          :use (,thm-beta-of-alpha ,thm-beta-of-alpha-instance)))))
-    (:beta-injective
-     (b* ((thm-alpha-of-beta (cdr (assoc-eq :alpha-of-beta thm-names$)))
-          (bb1...bbm (defiso-gen-var-aa/bb b1...bm))
-          (thm-alpha-of-beta-instance `(:instance
-                                        ,thm-alpha-of-beta
-                                        ,@(alist-to-doublets
-                                           (pairlis$ b1...bm bb1...bbm))))
-          (n (len a1...an))
-          (cases-hints-formula
-           (if (= n 1)
-               `(equal ,(apply-term* alpha$
-                                     (apply-term beta$ b1...bm))
-                       ,(apply-term* alpha$
-                                     (apply-term beta$ bb1...bbm)))
-             `(equal ,(apply-term alpha$
-                                  (make-mv-nth-calls
-                                   (apply-term beta$ b1...bm)
-                                   n))
-                     ,(apply-term alpha$
-                                  (make-mv-nth-calls
-                                   (apply-term beta$ bb1...bbm)
-                                   n))))))
-       `(("Goal"
-          :in-theory nil
-          :cases (,cases-hints-formula)
-          :use (,thm-alpha-of-beta ,thm-alpha-of-beta-instance)))))
-    (t (cdr (assoc-eq thm-keyword hints$)))))
+  (b* ((aa1...aan (defiso-gen-var-aa/bb a1...an))
+       (bb1...bbm (defiso-gen-var-aa/bb b1...bm))
+       (alpha-injective-name (cdr (assoc-eq :alpha-injective thm-names$)))
+       (beta-injective-name (cdr (assoc-eq :beta-injective thm-names$)))
+       (alpha-injective-formula
+        (b* ((antecedent (if unconditional$
+                             *t*
+                           (conjoin2 (apply-term doma$ a1...an)
+                                     (apply-term doma$ aa1...aan))))
+             (consequent `(equal (equal ,(apply-term alpha$ a1...an)
+                                        ,(apply-term alpha$ aa1...aan))
+                                 ,(conjoin-equalities a1...an aa1...aan)))
+             (formula (implicate antecedent consequent)))
+          (untranslate formula t wrld)))
+       (beta-injective-formula
+        (b* ((antecedent (if unconditional$
+                             *t*
+                           (conjoin2 (apply-term domb$ b1...bm)
+                                     (apply-term domb$ bb1...bbm))))
+             (consequent `(equal (equal ,(apply-term beta$ b1...bm)
+                                        ,(apply-term beta$ bb1...bbm))
+                                 ,(conjoin-equalities b1...bm bb1...bbm)))
+             (formula (implicate antecedent consequent)))
+          (untranslate formula t wrld)))
+       (alpha-injective-hints
+        (b* ((beta-of-alpha (cdr (assoc-eq :beta-of-alpha appcond-thm-names)))
+             (beta-of-alpha-instance `(:instance ,beta-of-alpha
+                                       ,@(alist-to-doublets
+                                          (pairlis$ a1...an aa1...aan))))
+             (m (len b1...bm))
+             (cases-hints-formula
+              (if (= m 1)
+                  `(equal ,(apply-term* beta$
+                                        (apply-term alpha$ a1...an))
+                          ,(apply-term* beta$
+                                        (apply-term alpha$ aa1...aan)))
+                `(equal ,(apply-term beta$
+                                     (make-mv-nth-calls
+                                      (apply-term alpha$ a1...an)
+                                      m))
+                        ,(apply-term beta$
+                                     (make-mv-nth-calls
+                                      (apply-term alpha$ aa1...aan)
+                                      m))))))
+          `(("Goal"
+             :in-theory nil
+             :cases (,cases-hints-formula)
+             :use (,beta-of-alpha ,beta-of-alpha-instance)))))
+       (beta-injective-hints
+        (b* ((alpha-of-beta (cdr (assoc-eq :alpha-of-beta appcond-thm-names)))
+             (alpha-of-beta-instance `(:instance ,alpha-of-beta
+                                       ,@(alist-to-doublets
+                                          (pairlis$ b1...bm bb1...bbm))))
+             (n (len a1...an))
+             (cases-hints-formula
+              (if (= n 1)
+                  `(equal ,(apply-term* alpha$
+                                        (apply-term beta$ b1...bm))
+                          ,(apply-term* alpha$
+                                        (apply-term beta$ bb1...bbm)))
+                `(equal ,(apply-term alpha$
+                                     (make-mv-nth-calls
+                                      (apply-term beta$ b1...bm)
+                                      n))
+                        ,(apply-term alpha$
+                                     (make-mv-nth-calls
+                                      (apply-term beta$ bb1...bbm)
+                                      n))))))
+          `(("Goal"
+             :in-theory nil
+             :cases (,cases-hints-formula)
+             :use (,alpha-of-beta ,alpha-of-beta-instance)))))
+       (local-events
+        (list `(local (defthmr ,alpha-injective-name
+                        ,alpha-injective-formula
+                        :hints ,alpha-injective-hints))
+              `(local (defthmr ,beta-injective-name
+                        ,beta-injective-formula
+                        :hints ,beta-injective-hints))))
+       (exported-events
+        (list `(defthmr ,alpha-injective-name
+                 ,alpha-injective-formula)
+              `(defthmr ,beta-injective-name
+                 ,beta-injective-formula))))
+    (mv local-events exported-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defiso-gen-thm ((thm-keyword symbolp)
-                        (doma$ pseudo-termfnp)
-                        (domb$ pseudo-termfnp)
-                        (alpha$ pseudo-termfnp)
-                        (beta$ pseudo-termfnp)
-                        (unconditional$ booleanp)
-                        (thm-names$ symbol-symbol-alistp)
-                        (hints$ symbol-truelist-alistp)
-                        (print$ evmac-input-print-p)
-                        (a1...an symbol-listp)
-                        (b1...bm symbol-listp)
-                        ctx
-                        state)
-  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (exported-event "A @(tsee pseudo-event-formp)."))
-  :mode :program
-  :short "Generate the theorem identified by the given keyword."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For the theorems that are also applicability conditions,
-     the local event is wrapped with a @(tsee try-event)
-     in order to provide a terse error message if the proof fails.
-     This wrapping is not performed if @(':print') is @(':all'),
-     because in that case the ACL2 output includes the error information
-     and the @(tsee try-event) wrapping would just add noise.")
-   (xdoc::p
-    "In addition, for the theorems that are also applicability conditions,
-     if @(':print') is @(':info') or @(':all'),
-     the local event is preceded and followed by events
-     to print progress messages.
-     In this case, the error message passed to @(tsee try-event)
-     does not include the formula,
-     because it is already shown in the progress messages."))
-  (b* ((thm-name (cdr (assoc-eq thm-keyword thm-names$)))
-       (formula (defiso-gen-thm-formula
-                  thm-keyword
-                  doma$
-                  domb$
-                  alpha$
-                  beta$
-                  a1...an
-                  b1...bm
-                  unconditional$
-                  state))
-       (hints (defiso-gen-thm-hints
-                thm-keyword
-                alpha$
-                beta$
-                thm-names$
-                hints$
-                a1...an
-                b1...bm))
-       (defthm-with-hints `(defthmr ,thm-name ,formula :hints ,hints))
-       (defthm-without-hints `(defthmr ,thm-name ,formula))
-       ((when (member-eq thm-keyword *defiso-additional-thm-keywords*))
-        (mv `(local ,defthm-with-hints)
-            defthm-without-hints))
-       (print-info-p (member-eq print$ '(:info :all)))
-       (progress-start? (and print-info-p
-                             `((cw-event
-                                "~%Attempting to prove the ~x0 ~
-                                 applicability condition:~%~x1~|"
-                                ',thm-keyword ',formula))))
-       (progress-end? (and print-info-p
-                           `((cw-event "Done.~%"))))
-       (error-msg (if print-info-p
-                      (msg "The proof of the ~x0 applicability condition fails."
-                           thm-keyword)
-                    (msg "The proof of the ~x0 applicability condition ~
-                          fails:~%~x1~|"
-                         thm-keyword formula)))
-       (wrapped?-defthm (if (eq print$ :all)
-                            defthm-with-hints
-                          (try-event defthm-with-hints ctx t nil error-msg)))
-       (local-event `(local (progn ,@progress-start?
-                                   ,wrapped?-defthm
-                                   ,@progress-end?))))
-    (mv local-event defthm-without-hints)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defiso-gen-thms ((thm-keywords symbol-listp)
-                         (doma$ pseudo-termfnp)
+(define defiso-gen-thms ((doma$ pseudo-termfnp)
                          (domb$ pseudo-termfnp)
                          (alpha$ pseudo-termfnp)
                          (beta$ pseudo-termfnp)
-                         (unconditional$ booleanp)
-                         (thm-names$ symbol-symbol-alistp)
-                         (hints$ symbol-truelist-alistp)
-                         (print$ evmac-input-print-p)
                          (a1...an symbol-listp)
                          (b1...bm symbol-listp)
-                         ctx
-                         state)
-  :returns (mv (local-events "A @(tsee pseudo-event-form-listp).")
-               (exported-events "A @(tsee pseudo-event-form-listp)."))
+                         (unconditional$ booleanp)
+                         (thm-names$ symbol-symbol-alistp)
+                         (appconds evmac-appcond-listp)
+                         (appcond-thm-names symbol-symbol-alistp)
+                         (wrld plist-worldp))
+  :returns (mv (local-events "A @(tsee pseudo-event-list-formp).")
+               (exported-events "A @(tsee pseudo-event-list-formp)."))
   :mode :program
-  :short "Generate the theorems identified by the given keywords, in order."
-  (b* (((when (endp thm-keywords)) (mv nil nil))
-       ((mv local-event exported-event) (defiso-gen-thm
-                                          (car thm-keywords)
-                                          doma$
-                                          domb$
-                                          alpha$
-                                          beta$
-                                          unconditional$
-                                          thm-names$
-                                          hints$
-                                          print$
-                                          a1...an
-                                          b1...bm
-                                          ctx
-                                          state))
-       ((mv local-events exported-events) (defiso-gen-thms
-                                            (cdr thm-keywords)
-                                            doma$
-                                            domb$
-                                            alpha$
-                                            beta$
-                                            unconditional$
-                                            thm-names$
-                                            hints$
-                                            print$
-                                            a1...an
-                                            b1...bm
-                                            ctx
-                                            state)))
-    (mv (cons local-event local-events)
-        (cons exported-event exported-events))))
+  :short "Generate all the theorems."
+  (b* (((mv appcond-local-events appcond-exported-events)
+        (defiso-gen-appcond-thms appconds appcond-thm-names thm-names$ wrld))
+       ((mv nonappcond-local-events nonappcond-exporte-events)
+        (defiso-gen-nonappcond-thms
+          doma$ domb$ alpha$ beta$ a1...an b1...bm
+          unconditional$ thm-names$ appcond-thm-names wrld)))
+    (mv (append appcond-local-events nonappcond-local-events)
+        (append appcond-exported-events nonappcond-exporte-events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1287,11 +1077,6 @@
      this removal is done after proving the applicability conditions,
      in case their proofs rely on the default or override hints.")
    (xdoc::p
-    "Currently the applicability condition theorems are submitted twice,
-     in slightly different form.
-     This is just temporary, as @(tsee defiso) is being extended
-     to use the applicability condition utiltiies.")
-   (xdoc::p
     "If @(':print') is @(':all'),
      the expansion is wrapped to show ACL2's output
      in response to the submitted events.
@@ -1313,52 +1098,22 @@
        (appconds (defiso-gen-appconds
                    doma$ domb$ alpha$ beta$ a1...an b1...bm
                    unconditional$ guard-thms$ state))
-       ((er (list appcond-thm-events & &))
+       ((er (list appcond-events appcond-thm-names &))
         (evmac-appcond-theorems-no-extra-hints
          appconds hints$ nil print$ ctx state))
-       ((mv local-appcond-thms
-            exported-appcond-thms)
+       ((mv local-thm-events exported-thm-events)
         (defiso-gen-thms
-          (defiso-appcond-keywords guard-thms$)
-          doma$
-          domb$
-          alpha$
-          beta$
-          unconditional$
-          thm-names$
-          hints$
-          print$
-          a1...an
-          b1...bm
-          ctx
-          state))
-       ((mv local-additional-thms
-            exported-additional-thms)
-        (defiso-gen-thms
-          *defiso-additional-thm-keywords*
-          doma$
-          domb$
-          alpha$
-          beta$
-          unconditional$
-          thm-names$
-          hints$
-          print$
-          a1...an
-          b1...bm
-          ctx
-          state))
+          doma$ domb$ alpha$ beta$ a1...an b1...bm
+          unconditional$ thm-names$ appconds appcond-thm-names wrld))
        (expansion `(encapsulate
                      ()
                      (logic)
                      (set-ignore-ok t)
-                     ,@appcond-thm-events
-                     ,@local-appcond-thms
+                     ,@appcond-events
                      (set-default-hints nil)
                      (set-override-hints nil)
-                     ,@local-additional-thms
-                     ,@exported-appcond-thms
-                     ,@exported-additional-thms))
+                     ,@local-thm-events
+                     ,@exported-thm-events))
        ((when show-only$)
         (if (member-eq print$ '(:info :all))
             (cw "~%~x0~|" expansion)
@@ -1380,9 +1135,7 @@
                           (append
                            (and (member-eq print$ '(:info :all))
                                 '((cw-event "~%")))
-                           (defiso-gen-print-result
-                             (append exported-appcond-thms
-                                     exported-additional-thms))))))
+                           (defiso-gen-print-result exported-thm-events)))))
     (value
      `(progn
         ,expansion+
