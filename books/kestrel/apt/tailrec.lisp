@@ -856,7 +856,7 @@
                               non-executable
                               (non-executablep old wrld)
                               "The :NON-EXECUTABLE input" t nil))
-       ((er hints$) (evmac-process-input-hints$ hints ctx state))
+       ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
                  test

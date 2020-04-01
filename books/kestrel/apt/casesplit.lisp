@@ -456,7 +456,7 @@
        ((er thm-name$) (casesplit-process-thm-name
                         thm-name old$ new-name$ ctx state))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er hints$) (evmac-process-input-hints$ hints ctx state))
+       ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
