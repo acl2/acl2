@@ -444,22 +444,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defiso-appcond-keywords ((guard-thms$ booleanp))
-  :returns (appcond-keywords symbol-listp)
-  :short "Keywords that identify
-          all the applicability conditions that are present."
-  (if guard-thms$
-      (append *defiso-required-appcond-keywords*
-              *defiso-optional-appcond-keywords*)
-    *defiso-required-appcond-keywords*)
-  ///
-
-  (more-returns
-   (appcond-keywords no-duplicatesp-eq
-                     :name no-duplicatesp-eq-of-defiso-appcond-keywords)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defiso-process-inputs (name
                                doma
                                domb
@@ -504,8 +488,7 @@
        ((er &) (ensure-boolean$ unconditional "The :UNCONDITIONAL input" t nil))
        ((er thm-names$) (defiso-process-thm-names
                           thm-names name guard-thms ctx state))
-       (appconds (defiso-appcond-keywords guard-thms))
-       ((er hints$) (evmac-process-input-hints hints appconds ctx state))
+       ((er hints$) (evmac-process-input-hints$ hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list doma$
