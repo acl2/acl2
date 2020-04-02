@@ -259,6 +259,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-irrelevant ()
+  :returns (type atj-typep)
+  :short "An irrelevant ATJ type, used when errors occur."
+  (with-guard-checking :none (ec-call (atj-type-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e atj-type-irrelevant))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-to-keyword ((type atj-typep))
   :returns (kwd keywordp)
   :short "Map each ATJ type to a distinct keyword."
@@ -351,7 +360,7 @@
     (otherwise (prog2$ (raise
                         "The keyword ~x0 does not correspond to any ATJ type."
                         kwd)
-                       (ec-call (atj-type-fix :irrelevant)))))
+                       (atj-type-irrelevant))))
   ///
 
   (defrule atj-type-from-keyword-of-atj-type-to-keyword
@@ -958,7 +967,7 @@
                            the value ~x0 is not a number, ~
                            a character, a string, a symbol, or a CONS."
                           val)
-                   (ec-call (atj-type-fix :irrelevant))))))
+                   (atj-type-irrelevant)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1206,33 +1215,31 @@
   (if (tuplep 2 out-type-spec)
       (b* (((list sym kwd) out-type-spec)
            ((unless (symbolp sym))
-            (prog2$ (raise "Invalid array name ~x0." sym)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Invalid array name ~x0." sym)
+            (mv (atj-type-irrelevant) nil))
            (array sym)
            ((unless (keywordp kwd))
-            (prog2$ (raise "Invalid type keyword ~x0." kwd)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Invalid type keyword ~x0." kwd)
+            (mv (atj-type-irrelevant) nil))
            (type (atj-type-from-keyword kwd))
            ((when (and sym (not (atj-type-case type :jprimarr))))
-            (prog2$ (raise "Invalid array name ~x0 for non-array type ~x1."
-                           array kwd)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Invalid array name ~x0 for non-array type ~x1." array kwd)
+            (mv (atj-type-irrelevant) nil))
            (pos (index-of array formals))
            ((when (not pos))
-            (prog2$ (raise "Array name ~x0 not among formals ~x1."
-                           array formals)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Array name ~x0 not among formals ~x1." array formals)
+            (mv (atj-type-irrelevant) nil))
            (in-type (nth pos in-types))
            ((unless (equal type in-type))
-            (prog2$ (raise "The type ~x0 of the ~x1 input does not match ~
-                            the type ~x2 of the ~x1 output."
-                           (atj-type-to-keyword in-type) array kwd)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil))))
+            (raise "The type ~x0 of the ~x1 input does not match ~
+                    the type ~x2 of the ~x1 output."
+                   (atj-type-to-keyword in-type) array kwd)
+            (mv (atj-type-irrelevant) nil)))
         (mv type array))
     (if (keywordp out-type-spec)
         (mv (atj-type-from-keyword out-type-spec) nil)
       (prog2$ (raise "Invalid output type specification ~x0." out-type-spec)
-              (mv (ec-call (atj-type-fix :irrelevant)) nil)))))
+              (mv (atj-type-irrelevant) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1998,5 +2005,5 @@
       (atj-type-fix (car types))
     (prog2$
      (raise "Internal error: ~x0 is not a singleton list of types." types)
-     (ec-call (atj-type-fix :irrelevant))))
+     (atj-type-irrelevant)))
   :hooks (:fix))
