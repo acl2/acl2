@@ -106,7 +106,11 @@
            :in-theory (e/d (bitp)
                            ()))))
 
-;; Lemma for final stage adder. 
+; Matt K. mod: Avoid ACL2(p) error from a clause-processor that returns one or
+; more stobjs.
+(set-waterfall-parallelism nil)
+
+;; Lemma for final stage adder.
 (defthmrp final-stage-adder-correct
   (implies (and (integerp in1)
                 (integerp in2))

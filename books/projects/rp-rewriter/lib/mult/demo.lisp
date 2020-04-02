@@ -81,7 +81,7 @@
  (svl::svl-flatten-design *sv-design*
                           *vl-design*
                           :dont-flatten :all))
- 
+
 
 ;; Spec function for Full/half adder modules
 (progn
@@ -197,6 +197,10 @@
 
     (rp-attach-sc svl-run-phase-of-HalfAdder-tem
                   svl-run-phase-of-HalfAdder-tem-side-cond)))
+
+; Matt K. mod: Avoid ACL2(p) error from a clause-processor that returns one or
+; more stobjs.
+(set-waterfall-parallelism nil)
 
 ;; Lemma for final stage adder.
 (defthmrp final-stage-adder-correct
