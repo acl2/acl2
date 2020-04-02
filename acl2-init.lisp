@@ -883,15 +883,38 @@ implementations.")
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
 
-(defun git-commit-hash ()
+(defun git-commit-hash (&optional quiet)
   (multiple-value-bind
    (exit-code hash)
    (ignore-errors (system-call+ "git" '("rev-parse" "HEAD")))
-   (cond ((not (and (eql exit-code 0)
-                    (stringp hash)))
-          "[UNKNOWN]                               ")
-         (t (coerce (remove #\Newline (coerce hash 'list))
-                    'string)))))
+   (cond ((and (eql exit-code 0)
+               (stringp hash))
+          (coerce (remove #\Newline (coerce hash 'list))
+                  'string))
+         (quiet nil)
+         (t (error "Unable to determine git commit hash.")))))
+
+(defun acl2-snapshot-info ()
+  (let* ((var "ACL2_SNAPSHOT_INFO")
+         (s (getenv$-raw var))
+         (err-string
+          "Unable to determine git commit hash for use in the startup~%~
+           banner.  Consider setting environment variable ACL2_SNAPSHOT_INFO~%~
+           to a message to use in its place, or set it to NONE if you simply~%~
+           want to avoid this error."))
+    (cond ((and s (string-equal s "NONE"))
+           " +~71t+")
+          ((and s (not (equal s "")))
+           (format nil
+                   " + (Note from the environment when this executable was ~
+                    saved:~71t+~% +  ~a)~71t+"
+                   s))
+          (t (let ((h (git-commit-hash t)))
+               (cond (h
+                      (format nil
+                              " + (Git commit hash: ~a)~71t+"
+                              h))
+                     (t (error err-string var))))))))
 
 (defconstant *acl2-snapshot-string*
 
@@ -913,13 +936,13 @@ implementations.")
    nil
    "
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + WARNING: This is NOT an ACL2 release; it is a development snapshot  +
- + (git commit hash: ~a).        +
+ + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+~a
  + On rare occasions development snapshots may be incomplete, fragile, +
  + or unable to pass the usual regression tests.                       +
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 "
-   (git-commit-hash))
+   (acl2-snapshot-info))
   )
 
 (defvar *saved-string*
