@@ -81,4 +81,23 @@ class Acl2CharacterTest {
         assertEquals(Acl2Character.make('\u0014').toString(), "#\\14");
     }
 
+    @Test
+    void compareToConstant() {
+        assertTrue(Acl2Character.CODE_0.compareTo(Acl2Character.CODE_0) == 0);
+        assertTrue(Acl2Character.CODE_0.
+                compareTo(Acl2Character.make('Y')) < 0);
+        assertTrue(Acl2Character.make('i').
+                compareTo(Acl2Character.CODE_0) > 0);
+    }
+
+    @Test
+    void compareToMake() {
+        assertTrue(Acl2Character.make('8').
+                compareTo(Acl2Character.make('\377')) < 0);
+        assertTrue(Acl2Character.make('Z').
+                compareTo(Acl2Character.make('A')) > 0);
+        assertTrue(Acl2Character.make('@').
+                compareTo(Acl2Character.make('@')) == 0);
+    }
+
 }
