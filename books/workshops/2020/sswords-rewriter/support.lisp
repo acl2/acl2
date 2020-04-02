@@ -203,7 +203,8 @@
 (include-book "rtl/rel9/arithmetic/expo" :dir :system)
 (include-book "rtl/rel9/arithmetic/power2p" :dir :system)
 
-(in-package "ACL2")
+#!acl2
+(progn
 (defevaluator p2ev p2ev-list ((expt x y) (binary-* x y) (unary-/ x) (power2p x)) :namedp t)
 
 ;; First claim -- power2-syntaxp is only true of terms whose evaluation satisfies power2p.
@@ -316,3 +317,4 @@
                                    (mv (cons (car x) rest1) rest2))))
            (bind-split-list-by-membership free-var x y))
   :hints ((acl2::set-reasoning)))
+)
