@@ -1267,8 +1267,18 @@
                               returns multiple values."
                              second term)
                       (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+                     ((unless (= (len first-types) (len second-types)))
+                      (raise "Internal error: ~
+                              the types ~x0 and ~x1 differ in number."
+                             first-types second-types)
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      (types (or required-types?
                                 (atj-type-list-join first-types second-types)))
+                     ((unless (atj-type-listp types))
+                      (raise "Type annotation failure: ~
+                              cannot merge types ~x0 with types ~x1."
+                             first-types second-types)
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      (first (if required-types?
                                 first
                               (atj-type-rewrap-term first
@@ -1326,6 +1336,11 @@
                     (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    (types (or required-types?
                               (atj-type-list-join then-types else-types)))
+                   ((unless (atj-type-listp types))
+                    (raise "Type annotation failure: ~
+                            cannot merge types ~x0 with types ~x1."
+                           then-types else-types)
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    (then (if required-types?
                              then
                            (atj-type-rewrap-term then then-types types)))
