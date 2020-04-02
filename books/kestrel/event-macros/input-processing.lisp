@@ -26,57 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define evmac-process-input-hints (hints (appconds keyword-listp) ctx state)
-  :returns (mv erp (hints$ symbol-alistp) state)
-  :short "Process the @(':hints') input of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is being replaced by @(tsee evmac-process-input-hints$),
-     and will be removed when it is no longer used.
-     At that point, @(tsee evmac-process-input-hints$)
-     will be renamed to @('evmac-process-input-hints').")
-   (xdoc::p
-    "This is for event macros that have a @(':hints') input
-     for user-supplied hints to prove applicability conditions.")
-   (xdoc::p
-    "The @(':hints') input must be a
-     <see topic='@(url acl2::keyword-value-listp)'>keyword-value list</see>
-     @('(appcond1 hints1 ... appcondp hintsp)'),
-     where each @('appcondk') is a keyword
-     that identifies one an applicability conditions
-     and each @('hintsk') consists of hints that may appear
-     just after @(':hints') in a @(tsee defthm).
-     The allowed @('appcondk') keywords are passed
-     as the @('appconds') argument of this function;
-     in general they may be a subset of
-     all the possible applicability conditions of an event macro,
-     based on certain conditions determined by other inputs of the macro.
-     The @('appcond1'), ..., @('appcondp') keywords must be all distinct.
-     Here we do not check @('hints1'), ..., @('hintsp'):
-     they are implicitly checked
-     when attempting to prove the applicability conditions.")
-   (xdoc::p
-    "If all the validation checks pass,
-     we return the information in the @(':hints') input in alist form:
-     the keys are the @('appcondk') keywords,
-     and the values are the @('hintsk') hints."))
-  (b* (((er &) (ensure-keyword-value-list$ hints "The :HINTS input" t nil))
-       (alist (keyword-value-list-to-alist hints))
-       (keys (strip-cars alist))
-       (description
-        (msg "The list of keywords ~x0 ~
-              that identify applicability conditions ~
-              in the :HINTS input" keys))
-       ((er &) (ensure-list-no-duplicates$ keys description t nil))
-       ((er &) (ensure-list-subset$ keys appconds description t nil)))
-    (value alist))
-  ;; for guard verification and return type proofs:
-  :prepwork ((local (in-theory (enable ensure-keyword-value-list)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define evmac-process-input-hints$ (hints ctx state)
+(define evmac-process-input-hints (hints ctx state)
   :returns (mv erp (hints$ evmac-input-hints-p) state)
   :short "Process the @(':hints') input of an event macro."
   :long
@@ -128,6 +78,18 @@
                  either a keyword-value list or a true list, ~
                  but it is ~x0 instead, which is neither."
                 hints))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define evmac-process-input-hints$ (hints ctx state)
+  :returns (mv erp (hints$ evmac-input-hints-p) state)
+  :short "Temporary synonym of @(tsee evmac-process-input-hints)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for temporary compatibility.
+     It will be removed soon."))
+  (evmac-process-input-hints hints ctx state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

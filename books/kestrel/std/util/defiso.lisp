@@ -488,7 +488,7 @@
        ((er &) (ensure-boolean$ unconditional "The :UNCONDITIONAL input" t nil))
        ((er thm-names$) (defiso-process-thm-names
                           thm-names name guard-thms ctx state))
-       ((er hints$) (evmac-process-input-hints$ hints ctx state))
+       ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list doma$

@@ -1187,7 +1187,7 @@
        ((er &) (ensure-is-untranslate-specifier$ untranslate
                                                  "The :UNTRANSLATE input"
                                                  t nil))
-       ((er hints$) (evmac-process-input-hints$ hints ctx state))
+       ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
