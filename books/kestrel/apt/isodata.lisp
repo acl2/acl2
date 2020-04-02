@@ -2751,7 +2751,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-old-to-new-thm-nonres-hints
+(define isodata-gen-old-to-new-thm-hints-0res
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -2760,7 +2760,7 @@
   :mode :program
   :short "Generate the hints to prove the theorem
           that relates the old and new function,
-          when @('isomaps') does not include @(':result')."
+          when no result is being transformed."
   (b* ((instances-forth-image
         (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
@@ -2778,18 +2778,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-old-to-new-thm-res-hints
+(define isodata-gen-old-to-new-thm-hints-1res
   ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap isodata-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
   :short "Generate the hints to prove the theorem
           that relates the old and new function,
-          when @('isomaps') includes @(':result')."
+          when the result of a single-valued function is being transformed."
   (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-forth-image
         (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
@@ -2800,11 +2800,13 @@
                                                                 old$
                                                                 arg-isomaps
                                                                 wrld))
+       (res-isomap (cdar res-isomaps))
        (back-of-forth-res (isodata-isomap->back-of-forth res-isomap))
        (var (isodata-formal-of-forth res-isomap wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call (fcons-term old$ x1...xn))
        (instance-back-of-forth-res
-        `(:instance ,back-of-forth-res
-          :extra-bindings-ok (,var (,old$ ,@(formals old$ wrld))))))
+        `(:instance ,back-of-forth-res :extra-bindings-ok (,var ,old-call))))
     `(("Goal"
        :in-theory nil
        :use (,@instances-forth-image
@@ -2815,28 +2817,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-old-to-new-thm-hints-mres
+  ((appcond-thm-names symbol-symbol-alistp)
+   (old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new-to-old symbolp)
+   (wrld plist-worldp))
+  :returns (hints "A @(tsee true-listp).")
+  :mode :program
+  :short "Generate the hints to prove the theorem
+          that relates the old and new function,
+          when some result of a multi-valued function is being transformed."
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
+       (instances-forth-image
+        (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
+       (instances-back-of-forth
+        (isodata-gen-back-of-forth-instances-to-x1...xn arg-isomaps wrld))
+       (instance-new-to-old
+        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old
+                                                                old$
+                                                                arg-isomaps
+                                                                wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call (fcons-term old$ x1...xn))
+       (instances-back-of-forth-res
+        (isodata-gen-back-of-forth-instances-to-mv-nth
+         (repeat (len res-isomaps) old-call)
+         res-isomaps
+         wrld)))
+    `(("Goal"
+       :in-theory nil
+       :use (,@instances-forth-image
+             ,@instances-back-of-forth
+             ,instance-new-to-old
+             ,oldp-of-old
+             ,@instances-back-of-forth-res)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-gen-old-to-new-thm-hints
   ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
   :short "Generate the hints to prove the theorem
           that relates the old and new function."
-  (if res-isomap?
-      (isodata-gen-old-to-new-thm-res-hints appcond-thm-names
-                                            old$
-                                            arg-isomaps
-                                            res-isomap?
-                                            new-to-old
-                                            wrld)
-    (isodata-gen-old-to-new-thm-nonres-hints old$
-                                             arg-isomaps
-                                             new-to-old
-                                             wrld)))
+  (case (len res-isomaps)
+    (0 (isodata-gen-old-to-new-thm-hints-0res old$
+                                              arg-isomaps
+                                              new-to-old
+                                              wrld))
+    (1 (isodata-gen-old-to-new-thm-hints-1res appcond-thm-names
+                                              old$
+                                              arg-isomaps
+                                              res-isomaps
+                                              new-to-old
+                                              wrld))
+    (t (isodata-gen-old-to-new-thm-hints-mres appcond-thm-names
+                                              old$
+                                              arg-isomaps
+                                              res-isomaps
+                                              new-to-old
+                                              wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2845,7 +2892,6 @@
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
@@ -2866,7 +2912,7 @@
        (hints (isodata-gen-old-to-new-thm-hints appcond-thm-names
                                                 old$
                                                 arg-isomaps
-                                                res-isomap?
+                                                res-isomaps
                                                 new-to-old
                                                 wrld))
        (local-event `(local
@@ -3687,7 +3733,6 @@
                                     old$
                                     arg-isomaps
                                     res-isomaps
-                                    res-isomap?
                                     new-name$
                                     thm-name$
                                     thm-enable$
