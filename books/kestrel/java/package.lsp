@@ -129,6 +129,7 @@
                          pseudo-term-call->fn
                          pseudo-term-case
                          pseudo-term-count
+                         pseudo-term-fix
                          pseudo-term-kind
                          pseudo-term-lambda->formals
                          pseudo-term-lambda->body
