@@ -2928,10 +2928,10 @@
 (define isodata-gen-newp-of-new-thm-formula
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (wrld plist-worldp))
-  :guard res-isomap?
+  :guard (consp res-isomaps)
   :returns (formula "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the formula of the theorem
@@ -2943,10 +2943,20 @@
    "This is the theorem @($f'A'B'$) in the design notes.
     It is generated only if @('isomaps') includes @(':result').")
   (b* ((x1...xn (formals old$ wrld))
-       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps)))
-    (implicate (conjoin newp-of-x1...xn)
-               `(,(isodata-isomap->newp res-isomap?)
-                 (,new-name$ ,@x1...xn)))))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (newp-of-x1...xn-conj (conjoin newp-of-x1...xn))
+       (new-call (fcons-term new-name$ x1...xn))
+       (m (len res-isomaps)))
+    (if (= m 1)
+        (b* ((res-isomap (cdar res-isomaps))
+             (newp-res (isodata-isomap->newp res-isomap)))
+          (implicate newp-of-x1...xn-conj
+                     (fcons-term* newp-res new-call)))
+      (b* ((y1...ym (isodata-gen-result-vars new-name$ m))
+           (newp-of-y1...ym (isodata-gen-newp-of-terms y1...ym res-isomaps)))
+        (implicate newp-of-x1...xn-conj
+                   (make-mv-let-call 'mv y1...ym :all new-call
+                                     (conjoin newp-of-y1...ym)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2996,6 +3006,7 @@
 (define isodata-gen-newp-of-new-thm
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (new-to-old symbolp)
@@ -3018,7 +3029,7 @@
                                                 wrld))
        (formula (isodata-gen-newp-of-new-thm-formula old$
                                                      arg-isomaps
-                                                     res-isomap?
+                                                     res-isomaps
                                                      new-name$
                                                      wrld))
        (formula (untranslate formula t wrld))
@@ -3718,6 +3729,7 @@
         (if res-isomap?
             (isodata-gen-newp-of-new-thm old$
                                          arg-isomaps
+                                         res-isomaps
                                          res-isomap?
                                          new-name$
                                          new-to-old
