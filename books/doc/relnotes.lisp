@@ -2072,7 +2072,7 @@
  macroexpansion when all macros to be expanded are in logic mode.</p>
 
  <p>There is a new @(see symbol-utilities) book (initially with a single
- function, @(tsee symbol-package-name-safe)).</p>
+ function, @('symbol-package-name-safe')).</p>
 
  <h4>The apply books</h4>
 
