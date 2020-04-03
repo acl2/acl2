@@ -145,7 +145,7 @@
      In proving those lemmas, we need to break the FTY abstraction
      so that we can reduce the FTY term API operations
      to the ACL2 term API operations."))
-  (check-mv-let-call (acl2::pseudo-term-fix term))
+  (check-mv-let-call (pseudo-term-fix term))
   ///
 
   (defret len-of-fty-check-mv-let-call.indices/vars

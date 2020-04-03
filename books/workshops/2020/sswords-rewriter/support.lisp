@@ -36,6 +36,10 @@
 
 (in-package "FGL")
 
+; Matt K. mod: Avoid ACL2(p) error from a clause-processor that returns one or
+; more stobjs.
+(set-waterfall-parallelism nil)
+
 (include-book "centaur/fgl/top" :dir :system)
 
 ;; ------------------------------------------------------
@@ -92,7 +96,7 @@
                       (implies (acl2::rewriting-negative-literal
                                 `(fgl-ev-context-equiv-forall-extensions ,contexts ,obj ,term ,eval-alist))
                                (iff (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
-                                    (and 
+                                    (and
                                      (equal (fgl-ev-context-fix contexts (fgl-ev term eval-alist))
                                             (fgl-ev-context-fix contexts obj))
                                      (hide (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))))
@@ -161,7 +165,7 @@
            (equal (split-list-by-membership var x y)
                   var))
   :hints ((acl2::set-reasoning)))
-                             
+
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable signed-byte-p)))
@@ -188,7 +192,7 @@
 (fgl-thm
  (signed-byte-p 30 (logext 20 x)))
 
-(thm (signed-byte-p 30 (logext 20 x)))  
+(thm (signed-byte-p 30 (logext 20 x)))
 
 
 

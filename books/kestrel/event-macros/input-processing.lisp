@@ -81,18 +81,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define evmac-process-input-hints$ (hints ctx state)
-  :returns (mv erp (hints$ evmac-input-hints-p) state)
-  :short "Temporary synonym of @(tsee evmac-process-input-hints)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is for temporary compatibility.
-     It will be removed soon."))
-  (evmac-process-input-hints hints ctx state))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define evmac-process-input-print (print ctx state)
   :returns (mv erp (print$ evmac-input-print-p) state)
   :short "Process the @(':print') input of an event macro."

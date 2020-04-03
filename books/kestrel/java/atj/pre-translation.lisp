@@ -587,7 +587,7 @@
         ((equal id "YD") (atj-type-jprimarr (primitive-type-double)))
         (t (prog2$
             (raise "Internal error: ~x0 does not identify a type." id)
-            (ec-call (atj-type-fix :irrelevant)))))
+            (atj-type-irrelevant))))
   ///
 
   (defrule atj-type-of-id-of-atj-type-id
@@ -633,7 +633,7 @@
         types
       (prog2$
        (raise "Internal error: ~x0 identifies an empty list of types." id)
-       (list (ec-call (atj-type-fix :irrelevant))))))
+       (list (atj-type-irrelevant)))))
 
   :prepwork
   ((define atj-types-of-id-aux ((chars character-listp) (id stringp))
@@ -698,13 +698,11 @@
                      (eql (char string 0) #\[)
                      (eql (char string (1- (length string))) #\])))
         (raise "Internal error: ~x0 is not a conversion function." conv)
-        (mv (list (ec-call (atj-type-fix :irrelevant)))
-            (list (ec-call (atj-type-fix :irrelevant)))))
+        (mv (list (atj-type-irrelevant)) (list (atj-type-irrelevant))))
        (pos (position #\> string))
        ((unless (natp pos))
         (raise "Internal error: ~x0 is not a conversion function." conv)
-        (mv (list (ec-call (atj-type-fix :irrelevant)))
-            (list (ec-call (atj-type-fix :irrelevant)))))
+        (mv (list (atj-type-irrelevant)) (list (atj-type-irrelevant))))
        (src-id (subseq string 1 pos))
        (dst-id (subseq string (1+ pos) (1- (length string))))
        (src-types (atj-types-of-id src-id))
@@ -760,15 +758,11 @@
                   (fquotep term)
                   (flambda-applicationp term)))
         (raise "Internal error: the term ~x0 has the wrong format." term)
-        (mv nil
-            (list (ec-call (atj-type-fix :irrelevant)))
-            (list (ec-call (atj-type-fix :irrelevant)))))
+        (mv nil (list (atj-type-irrelevant)) (list (atj-type-irrelevant))))
        (fn (ffn-symb term))
        ((when (flambdap fn))
         (raise "Internal error: the term ~x0 has the wrong format." term)
-        (mv nil
-            (list (ec-call (atj-type-fix :irrelevant)))
-            (list (ec-call (atj-type-fix :irrelevant)))))
+        (mv nil (list (atj-type-irrelevant)) (list (atj-type-irrelevant))))
        ((mv src-types dst-types) (atj-types-of-conv fn)))
     (mv (fargn term 1) src-types dst-types))
   ///
@@ -885,11 +879,11 @@
        ((unless (and (> (length string) 0)
                      (eql (char string 0) #\[)))
         (raise "Internal error: ~x0 is not an annotated variable." var)
-        (mv nil (list (ec-call (atj-type-fix :irrelevant)))))
+        (mv nil (list (atj-type-irrelevant))))
        (pos (position #\] string))
        ((unless (natp pos))
         (raise "Internal error: ~x0 is not an annotated variable." var)
-        (mv nil (list (ec-call (atj-type-fix :irrelevant)))))
+        (mv nil (list (atj-type-irrelevant))))
        (types-id (subseq string 1 pos))
        (types (atj-types-of-id types-id))
        (unannotated-string (subseq string (1+ pos) (length string)))
@@ -1181,31 +1175,21 @@
                  (new-mv-typess (and (atj-type-list-listp new-mv-typess)
                                      (cons-listp new-mv-typess))))
     (b* (((unless (mbt (atj-type-listp required-types?)))
-          (mv (pseudo-term-null)
-              (list (ec-call (atj-type-fix :irrelevant)))
-              nil))
+          (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
          ((unless (mbt (atj-symbol-type-alistp var-types)))
-          (mv (pseudo-term-null)
-              (list (ec-call (atj-type-fix :irrelevant)))
-              nil))
+          (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
          ((unless (mbt (and (atj-type-list-listp mv-typess)
                             (cons-listp mv-typess))))
-          (mv (pseudo-term-null)
-              (list (ec-call (atj-type-fix :irrelevant)))
-              nil))
+          (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
          ((when (pseudo-term-case term :null))
-          (mv (pseudo-term-null)
-              (list (ec-call (atj-type-fix :irrelevant)))
-              nil))
+          (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
                (var+type (assoc-eq var var-types))
                ((unless (consp var+type))
                 (prog2$
                  (raise "Internal error: the variable ~x0 has no type." term)
-                 (mv (pseudo-term-null)
-                     (list (ec-call (atj-type-fix :irrelevant)))
-                     nil)))
+                 (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
                (type (cdr var+type))
                (types (list type))
                (var (atj-type-annotate-var var types))
@@ -1214,9 +1198,7 @@
                         requiring multiple types ~x0 ~
                         for a single-type variable ~x1."
                        required-types? var)
-                (mv (pseudo-term-null)
-                    (list (ec-call (atj-type-fix :irrelevant)))
-                    nil)))
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
             (mv (atj-type-wrap-term (pseudo-term-var var)
                                     types
                                     required-types?)
@@ -1231,9 +1213,7 @@
                         requiring multiple types ~x0 ~
                         for a quoted constant ~x1."
                        required-types? term)
-                (mv (pseudo-term-null)
-                    (list (ec-call (atj-type-fix :irrelevant)))
-                    nil)))
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
             (mv (atj-type-wrap-term term types required-types?)
                 (or required-types? types)
                 mv-typess)))
@@ -1260,9 +1240,7 @@
                               requiring multiple types ~x0 ~
                               for the term ~x1."
                              required-types? term)
-                      (mv (pseudo-term-null)
-                          (list (ec-call (atj-type-fix :irrelevant)))
-                          nil))
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      ((mv first first-types mv-typess)
                       (atj-type-annotate-term first
                                               required-types?
@@ -1275,9 +1253,7 @@
                               the first disjunct ~x0 of the term ~x1 ~
                               returns multiple values."
                              first term)
-                      (mv (pseudo-term-null)
-                          (list (ec-call (atj-type-fix :irrelevant)))
-                          nil))
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      ((mv second second-types mv-typess)
                       (atj-type-annotate-term second
                                               required-types?
@@ -1290,11 +1266,19 @@
                               the second disjunct ~x0 of the term ~x1 ~
                               returns multiple values."
                              second term)
-                      (mv (pseudo-term-null)
-                          (list (ec-call (atj-type-fix :irrelevant)))
-                          nil))
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+                     ((unless (= (len first-types) (len second-types)))
+                      (raise "Internal error: ~
+                              the types ~x0 and ~x1 differ in number."
+                             first-types second-types)
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      (types (or required-types?
                                 (atj-type-list-join first-types second-types)))
+                     ((unless (atj-type-listp types))
+                      (raise "Type annotation failure: ~
+                              cannot merge types ~x0 with types ~x1."
+                             first-types second-types)
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      (first (if required-types?
                                 first
                               (atj-type-rewrap-term first
@@ -1321,9 +1305,7 @@
                             the test ~x0 of the term ~x1 ~
                             returns multiple values."
                            test term)
-                    (mv (pseudo-term-null)
-                        (list (ec-call (atj-type-fix :irrelevant)))
-                        nil))
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    ((mv then then-types mv-typess)
                     (atj-type-annotate-term then
                                             required-types?
@@ -1344,20 +1326,21 @@
                             have different numbers of types, ~
                             namely ~x3 and ~x4."
                            then else term then-types else-types)
-                    (mv (pseudo-term-null)
-                        (list (ec-call (atj-type-fix :irrelevant)))
-                        nil))
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    ((unless (or (null required-types?)
                                 (= (len required-types?) (len then-types))))
                     (raise "Internal error: ~
                             requiring the types ~x0 for the term ~x1, ~
                             which has a different number of types ~x2."
                            required-types? term (len then-types))
-                    (mv (pseudo-term-null)
-                        (list (ec-call (atj-type-fix :irrelevant)))
-                        nil))
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    (types (or required-types?
                               (atj-type-list-join then-types else-types)))
+                   ((unless (atj-type-listp types))
+                    (raise "Type annotation failure: ~
+                            cannot merge types ~x0 with types ~x1."
+                           then-types else-types)
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    (then (if required-types?
                              then
                            (atj-type-rewrap-term then then-types types)))
@@ -1378,17 +1361,13 @@
                 (raise "Internal error: ~
                         found MV applied to arguments ~x0."
                        args)
-                (mv (pseudo-term-null)
-                    (list (ec-call (atj-type-fix :irrelevant)))
-                    nil))
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                ((unless (or (null required-types?)
                             (= (len types) (len required-types?))))
                 (raise "Internal error: ~
                         requiring the types ~x0 for the term ~x1."
                        required-types? term)
-                (mv (pseudo-term-null)
-                    (list (ec-call (atj-type-fix :irrelevant)))
-                    nil))
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                (resulting-types (or required-types? types)))
             (mv (atj-type-wrap-term (pseudo-term-call 'mv args)
                                     types
@@ -1409,9 +1388,7 @@
                               requiring the types ~x0 for the term ~x1, ~
                               which has a different number of types ~x2."
                              required-types? term types?)
-                      (mv (pseudo-term-null)
-                          (list (ec-call (atj-type-fix :irrelevant)))
-                          nil)))
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
                   (mv (atj-type-wrap-term (pseudo-term-call fn args)
                                           types?
                                           required-types?)
@@ -1424,17 +1401,13 @@
                             the function ~x0 has ~x1 arguments ~
                             but a different number of input types ~x2."
                            fn (len args) (len in-types))
-                    (mv (pseudo-term-null)
-                        (list (ec-call (atj-type-fix :irrelevant)))
-                        nil))
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    ((unless (= (len in-types) (len types)))
                     (raise "Internal error: ~
                             the input types ~x0 of the function ~x1 ~
                             differ in number from the argument types ~x2."
                            in-types fn types)
-                    (mv (pseudo-term-null)
-                        (list (ec-call (atj-type-fix :irrelevant)))
-                        nil))
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    (args (atj-type-rewrap-terms args
                                                 (atj-type-list-to-type-list-list
                                                  types)
@@ -1444,9 +1417,7 @@
                     (raise "Internal error: ~
                             the function ~x0 has an empty list of output types."
                            fn)
-                    (mv (pseudo-term-null)
-                        (list (ec-call (atj-type-fix :irrelevant)))
-                        nil)))
+                    (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
                 (mv (atj-type-wrap-term (pseudo-term-call fn args)
                                         out-types
                                         required-types?)
@@ -1469,9 +1440,7 @@
                   requiring the types ~x0 for the term ~x1, ~
                   whose inferred types are ~x2."
                  required-types? term types)
-          (mv (pseudo-term-null)
-              (list (ec-call (atj-type-fix :irrelevant)))
-              nil)))
+          (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
       (mv (atj-type-wrap-term term
                               types
                               required-types?)
@@ -1495,12 +1464,12 @@
                  (new-mv-typess (and (atj-type-list-listp new-mv-typess)
                                      (cons-listp new-mv-typess))))
     (b* (((unless (mbt (atj-type-listp required-types?)))
-          (mv nil nil (list (ec-call (atj-type-fix :irrelevant))) nil))
+          (mv nil nil (list (atj-type-irrelevant)) nil))
          ((unless (mbt (atj-symbol-type-alistp var-types)))
-          (mv nil nil (list (ec-call (atj-type-fix :irrelevant))) nil))
+          (mv nil nil (list (atj-type-irrelevant)) nil))
          ((unless (mbt (and (atj-type-list-listp mv-typess)
                             (cons-listp mv-typess))))
-          (mv nil nil (list (ec-call (atj-type-fix :irrelevant))) nil))
+          (mv nil nil (list (atj-type-irrelevant)) nil))
          ((mv mv-let-p mv-var vars indices mv-term body-term)
           (fty-check-mv-let-call term))
          ((unless mv-let-p)
@@ -1532,7 +1501,7 @@
                   requiring the types ~x0 for the term ~x1, ~
                   whose inferred types are ~x2."
                  required-types? term body-term-types)
-          (mv nil nil (list (ec-call (atj-type-fix :irrelevant))) nil))
+          (mv nil nil (list (atj-type-irrelevant)) nil))
          (wrapped-mv (atj-type-wrap-term annotated-mv mv-term-types nil))
          (annotated-mv-nth-calls (atj-type-annotate-mv-nth-terms sel-types
                                                                  indices
@@ -1572,12 +1541,12 @@
                                      (cons-listp new-mv-typess))))
     (b* (((unless (mbt (atj-symbol-type-alistp var-types)))
           (mv (repeat (len args) (pseudo-term-null))
-              (repeat (len args) (ec-call (atj-type-fix :irrelevant)))
+              (repeat (len args) (atj-type-irrelevant))
               nil))
          ((unless (mbt (and (atj-type-list-listp mv-typess)
                             (cons-listp mv-typess))))
           (mv (repeat (len args) (pseudo-term-null))
-              (repeat (len args) (ec-call (atj-type-fix :irrelevant)))
+              (repeat (len args) (atj-type-irrelevant))
               nil))
          ((when (endp args)) (mv nil nil mv-typess))
          ((mv arg types mv-typess) (atj-type-annotate-term (car args)
@@ -1591,7 +1560,7 @@
                   the function argument ~x0 has types ~x1."
                  (car args) types)
           (mv (repeat (len args) (pseudo-term-null))
-              (repeat (len args) (ec-call (atj-type-fix :irrelevant)))
+              (repeat (len args) (atj-type-irrelevant))
               nil))
          (type (car types))
          ((mv args types mv-typess) (atj-type-annotate-args (cdr args)
@@ -1635,16 +1604,16 @@
                                      (mv-types atj-type-listp))
      :returns (selected-mv-types atj-type-listp)
      (b* (((unless (mbt (nat-listp indices)))
-           (repeat (len indices) (ec-call (atj-type-fix :irrelevant))))
+           (repeat (len indices) (atj-type-irrelevant)))
           ((unless (mbt (atj-type-listp mv-types)))
-           (repeat (len indices) (ec-call (atj-type-fix :irrelevant))))
+           (repeat (len indices) (atj-type-irrelevant)))
           ((when (endp indices)) nil)
           (index (car indices))
           ((unless (< index (len mv-types)))
            (raise "Internal error: ~
                    index ~x0 has no corresponding type in ~x1."
                   index mv-types)
-           (repeat (len indices) (ec-call (atj-type-fix :irrelevant))))
+           (repeat (len indices) (atj-type-irrelevant)))
           (type (nth index mv-types))
           (rest-types (atj-select-mv-term-types (cdr indices) mv-types)))
        (cons type rest-types))
