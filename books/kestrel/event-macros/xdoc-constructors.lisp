@@ -390,29 +390,31 @@
         (xdoc::p
          "Hints to prove the applicability conditions.")
         (xdoc::p
-         (concatenate
-          'string
-          "It must be a
-           <see topic='@(url acl2::keyword-value-listp)'>keyword-value
-           list</see> @('(appcond1 hints1 ... appcondp hintsp)'),
+         "It must be one of the following:")
+        (xdoc::ul
+         (xdoc::li
+          "A "
+          (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
+          " @('(appcond1 hints1 appcond2 hints2 ...)'),
            where each @('appcondk') is a keyword
            that identifies one of the applicability conditions
            listed in the "
           ,appconds-ref
-          ", and each @('hintsk') consists of hints that may appear
-           just after @(':hints') in a @(tsee defthm).
+          " and each @('hintsk') is a list of hints of the kind
+           that may appear just after @(':hints') in a @(tsee defthm).
            The hints @('hintsk') are used
-           to prove applicability condition @('appcondk')."))
-        (xdoc::p
-         "The @('appcond1'), ..., @('appcondp') keywords must be all distinct.")
-        (xdoc::p
-         (concatenate
-          'string
-          "An @('appcondk') keyword is allowed in the @(':hints') input iff
+           to prove applicability condition @('appcondk').
+           The @('appcond1'), @('appcond2'), ... keywords must be all distinct.
+           An @('appcondk') keyword is allowed only if
            the corresponding applicability condition is present,
            as specified in the "
           ,appconds-ref
-          "."))
+          ".")
+         (xdoc::li
+          "A list of hints of the kind
+           that may appear just after @(':hints') in a @(tsee defthm).
+           In this case, these same hints are used
+           to prove every applicability condition,."))
         ,@additional))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
