@@ -845,7 +845,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We have @(tsee atj-maybe-type-join)
+    "We have defined @(tsee atj-maybe-type-join)
      in order to exhibit and prove the semilattice structure,
      but we always want to use ATJ types as arguments, never @('nil').
      So we introduce this function,
@@ -1821,7 +1821,7 @@
      it will also fit the method corresponding to the greatest lower bound;
      therefore, there will be always a ``minimum'' method
      that will be selected at compile time and called at run time.
-     However, recall that @(tsee atj-maybe-jitype-meet) may produce @('nil'):
+     However, recall that @(tsee atj-jitype-meet) may produce @('nil'):
      if the greatest lower bound contains a @('nil') component,
      the closure requirement does not apply,
      because it means that some types are incompatible
@@ -1870,7 +1870,12 @@
                new-in-types))
        (old-in-jtypes (atj-type-list-to-jitype-list old-in-types))
        (new-in-jtypes (atj-type-list-to-jitype-list new-in-types))
-       (glb (atj-maybe-jitype-list-meet old-in-jtypes new-in-jtypes))
+       ((unless (= (len old-in-jtypes) (len new-in-jtypes)))
+        (raise "Internal error: ~
+                the number of proposed input types ~x0 differs from ~
+                the number of existing input types ~x1."
+               new-in-types old-in-types))
+       (glb (atj-jitype-list-meet old-in-jtypes new-in-jtypes))
        ((unless (or (member-eq nil glb)
                     (member-equal glb all-in-jtypess)))
         (raise "The Java counterparts ~x0 of the proposed input types ~x1 ~
@@ -2105,10 +2110,10 @@
           (fn-in-types (atj-function-type->inputs fn-type))
           (fn-in-jtypes (atj-type-list-to-jitype-list fn-in-types))
           ((mv current-min-in-jtypes current-out-types? current-arrays?)
-           (if (and (atj-maybe-jitype-list-<= in-jtypes fn-in-jtypes)
+           (if (and (atj-jitype-list-<= in-jtypes fn-in-jtypes)
                     (or (null current-out-types?) ; i.e. none found yet
-                        (atj-maybe-jitype-list-< fn-in-jtypes
-                                                 current-min-in-jtypes)))
+                        (atj-jitype-list-< fn-in-jtypes
+                                           current-min-in-jtypes)))
                (mv fn-in-jtypes
                    (atj-function-type->outputs fn-type)
                    (atj-function-type->arrays fn-type))
