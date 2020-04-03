@@ -82,22 +82,28 @@ class Acl2CharacterTest {
     }
 
     @Test
-    void compareToConstant() {
+    void compareToCharacters() { // compare codes -- see ACL2's alphorder
         assertTrue(Acl2Character.CODE_0.compareTo(Acl2Character.CODE_0) == 0);
         assertTrue(Acl2Character.CODE_0.
                 compareTo(Acl2Character.make('Y')) < 0);
         assertTrue(Acl2Character.make('i').
                 compareTo(Acl2Character.CODE_0) > 0);
-    }
-
-    @Test
-    void compareToMake() {
         assertTrue(Acl2Character.make('8').
                 compareTo(Acl2Character.make('\377')) < 0);
         assertTrue(Acl2Character.make('Z').
                 compareTo(Acl2Character.make('A')) > 0);
         assertTrue(Acl2Character.make('@').
                 compareTo(Acl2Character.make('@')) == 0);
+    }
+
+    @Test
+    void compareToNumbers() { // characters come after -- see ACL2's alphorder
+        assertTrue(Acl2Character.make('a').
+                compareTo(Acl2Integer.make(-45)) > 0);
+        assertTrue(Acl2Character.make('^').
+                compareTo(Acl2Rational.make(-45,4)) > 0);
+        assertTrue(Acl2Character.make('{').
+                compareTo(Acl2Number.make(1, 1)) > 0);
     }
 
 }
