@@ -12,7 +12,7 @@
 
 (include-book "check-mv-let-call")
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
