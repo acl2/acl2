@@ -462,16 +462,15 @@
    (xdoc::p
     "This step annotates ACL2 terms with ATJ types:
      (i) each ACL2 term is wrapped with a function named @('[src>dst]'),
-     where @('src') identifies the ATJ type of the term
-     and @('dst') identifies an ATJ type to which the term must be converted to;
+     where @('src') identifies the ATJ types of the term
+     and @('dst') identifies ATJ types to which the term must be converted to;
      (ii) each ACL2 variable @('var') in a term is renamed to @('[type]var'),
      where @('type') identifies the ATJ type of the variable.")
    (xdoc::p
-    "More precisely,
-     both @('src') and @('dst') above identify non-empty lists of ATJ types.
+    "Both @('src') and @('dst') above identify non-empty lists of ATJ types.
      This is because an ACL2 term may return multiple values (see @(tsee mv)):
      each list consists of two or more ATJ types when he ACL2 term does;
-     otherwise, it consists of one type ATJ type only.
+     otherwise, it consists of one ATJ type only.
      The two lists (for @('src') and @('dst')) will always have the same length,
      because ACL2 prevents treating
      single values as multiple values,
@@ -487,8 +486,8 @@
      (i) which types to declare Java local variables with, and
      (ii) which Java conversion code to insert around expressions.")
    (xdoc::p
-    "The annotated terms are still ACL2 terms (with a specific structure).
-     This should let us prove, in ACL2,
+    "The annotated terms are still ACL2 terms, but with a specific structure.
+     This should let us prove, in the ACL2 logic,
      the equality of the annotated terms with the original terms,
      under suitable variable rebinding,
      and by introducing the @('[src>dst]') functions as identities.
@@ -1182,6 +1181,7 @@
                             (cons-listp mv-typess))))
           (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
          ((when (pseudo-term-case term :null))
+          (raise "Internal error: null term.")
           (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
          ((when (pseudo-term-case term :var))
           (b* ((var (pseudo-term-var->name term))
@@ -1266,11 +1266,6 @@
                               the second disjunct ~x0 of the term ~x1 ~
                               returns multiple values."
                              second term)
-                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
-                     ((unless (= (len first-types) (len second-types)))
-                      (raise "Internal error: ~
-                              the types ~x0 and ~x1 differ in number."
-                             first-types second-types)
                       (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      (types (or required-types?
                                 (atj-type-list-join first-types second-types)))
@@ -1473,17 +1468,11 @@
          ((mv mv-let-p mv-var vars indices mv-term body-term)
           (fty-check-mv-let-call term))
          ((unless mv-let-p)
-          (mv nil
-              nil
-              (list (atj-type-acl2 (atj-atype-value))) ; irrelevant
-              mv-typess))
+          (mv nil nil (list (atj-type-irrelevant)) mv-typess))
          ((mv annotated-mv-term mv-term-types mv-typess)
           (atj-type-annotate-term mv-term nil var-types mv-typess guards$ wrld))
          ((when (= (len mv-term-types) 1))
-          (mv nil
-              nil
-              (list (atj-type-acl2 (atj-atype-value))) ; irrelevant
-              mv-typess))
+          (mv nil nil (list (atj-type-irrelevant)) mv-typess))
          (annotated-mv (atj-type-annotate-var mv-var mv-term-types))
          (sel-types (atj-select-mv-term-types indices mv-term-types))
          (annotated-vars (atj-type-annotate-vars vars sel-types))
@@ -1826,7 +1815,7 @@
        ((unless (and (>= (length string) 5)
                      (member-equal (subseq string 0 3) '("[N]" "[O]"))))
         (raise "Internal error: ~x0 has the wrong format." var)
-        (mv nil nil)) ; irrelevant
+        (mv nil nil))
        (new? (eql (char string 1) #\N))
        (unmarked-string (subseq string 3 (length string)))
        (unmarked-var (intern-in-package-of-symbol unmarked-string var)))
@@ -2461,7 +2450,6 @@
         (b* ((renaming-pair (assoc-eq uformal renaming-old))
              ((unless (consp renaming-pair))
               (raise "Internal error: ~x0 has no renaming." formal)
-              ;; irrelevant:
               (mv (true-list-fix formals)
                   renaming-new
                   renaming-old
@@ -2582,7 +2570,7 @@
                ((unless (consp renaming-pair))
                 (raise "Internal error: no renaming found for variable ~x0."
                        term)
-                (mv nil nil nil)) ; irrelevant
+                (mv nil nil nil))
                (new-var (cdr renaming-pair))
                (new-term (if new?
                              (atj-mark-var-new new-var)
