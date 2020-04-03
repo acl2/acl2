@@ -279,9 +279,12 @@
 
 (set-rewrite-stack-limit 10000)
 
+;; Note: this originally contained (make-expts 4000), but this caused a stack
+;; overflow in translate11-lst on some Lisp implementations.  Using 1000
+;; instead seems to avoid the problem.
 (make-event
  `(defthm power2p-of-bad-nesting
-    (power2p (* . ,(make-expts 4000)))
+    (power2p (* . ,(make-expts 1000)))
     :hints(("Goal" :in-theory '(power2p-expt2-i power2p-shift-2-mine)))))
 
 
