@@ -1,6 +1,6 @@
-; Symbol Utilities -- Tests
+; Standard Basic Library
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,20 +10,21 @@
 
 (in-package "ACL2")
 
-(include-book "symbols")
-(include-book "testing")
+(include-book "symbol-package-name-non-cl")
+
+(include-book "std/testing/assert-equal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (symbol-package-name-safe 'symbol-listp)
+(assert-equal (symbol-package-name-non-cl 'symbol-listp)
               "ACL2")
 
-(assert-equal (symbol-package-name-safe 'std::define)
+(assert-equal (symbol-package-name-non-cl 'std::define)
               "ACL2")
 
 
-(assert-equal (symbol-package-name-safe 'std::deflist)
+(assert-equal (symbol-package-name-non-cl 'std::deflist)
               "STD")
 
-(assert-equal (symbol-package-name-safe 'cons)
+(assert-equal (symbol-package-name-non-cl 'cons)
               "ACL2")
