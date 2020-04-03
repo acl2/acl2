@@ -2094,6 +2094,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-forth-image-instances-to-mv-nth
+  ((term pseudo-termp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (wrld plist-worldp))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate @('m') lemma instances
+          such that the @('j')-th instance
+          is of theorem @('forth_rj-image')
+          and instantiates
+          the formal parameter of @('forth_rj')
+          with @('(mv-nth j-1 ...)') applied to
+          a given term @('term')."
+  (b* (((when (endp res-isomaps)) nil)
+       (j (caar res-isomaps))
+       (isomap (cdar res-isomaps))
+       (forth-image (isodata-isomap->back-of-forth isomap))
+       (var (isodata-formal-of-forth isomap wrld))
+       (mv-nth-of-term (fcons-term* 'mv-nth (1- j) term))
+       (instance `(:instance ,forth-image
+                   :extra-bindings-ok (,var ,mv-nth-of-term)))
+       (instances (isodata-gen-forth-image-instances-to-mv-nth
+                   term
+                   (cdr res-isomaps)
+                   wrld)))
+    (cons instance instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-gen-new-fn-guard ((old$ symbolp)
                                   (arg-isomaps isodata-symbol-isomap-alistp)
                                   (predicate$ booleanp)
@@ -2964,9 +2993,10 @@
   ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap isodata-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
+  :guard (consp res-isomaps)
   :returns (hints true-listp)
   :verify-guards nil
   :short "Generate the hints to prove the theorem
@@ -2989,16 +3019,21 @@
        (old-call (fcons-term old$ x1...xn))
        (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
        (old-call-of-back-x1...xn (subcor-var x1...xn back-of-x1...xn old-call))
-       (forth-image-res (isodata-isomap->forth-image res-isomap))
-       (var (isodata-formal-of-forth res-isomap wrld))
-       (instance-forth-image
-        `(:instance ,forth-image-res
-          :extra-bindings-ok (,var ,old-call-of-back-x1...xn))))
+       (instances-forth-image
+        (if (= (len res-isomaps) 1)
+            (b* ((res-isomap (cdar res-isomaps))
+                 (forth-image-res (isodata-isomap->forth-image res-isomap))
+                 (var (isodata-formal-of-forth res-isomap wrld)))
+              `(:instance ,forth-image-res
+                :extra-bindings-ok (,var ,old-call-of-back-x1...xn)))
+          (isodata-gen-forth-image-instances-to-mv-nth old-call-of-back-x1...xn
+                                                       res-isomaps
+                                                       wrld))))
     `(("Goal"
        :in-theory nil
        :use (,@instances-back-image
              ,instance-oldp-of-old
-             ,instance-forth-image
+             ,instances-forth-image
              ,new-to-old)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3007,12 +3042,12 @@
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
    (new-name$ symbolp)
    (new-to-old symbolp)
    (names-to-avoid symbol-listp)
    (appcond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
+  :guard (consp res-isomaps)
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp) that names the theorem."))
   :mode :program
@@ -3036,7 +3071,7 @@
        (hints (isodata-gen-newp-of-new-thm-hints appcond-thm-names
                                                  old$
                                                  arg-isomaps
-                                                 res-isomap?
+                                                 res-isomaps
                                                  new-to-old
                                                  wrld))
        (event `(local
@@ -3730,7 +3765,6 @@
             (isodata-gen-newp-of-new-thm old$
                                          arg-isomaps
                                          res-isomaps
-                                         res-isomap?
                                          new-name$
                                          new-to-old
                                          names-to-avoid
