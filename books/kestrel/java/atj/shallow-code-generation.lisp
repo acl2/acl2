@@ -1819,6 +1819,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-jprim-constr-of-nonqconst-to-expr ((fn atj-java-primitive-constr-p)
+                                               (arg-expr jexprp))
+  :returns (expr jexprp)
+  :short "Map an ACL2 function that models a Java primitive constructor
+          to the Java expression that constructs the primitive value,
+          when the argument of the constructor is non a quoted constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The parameter @('arg') is the Java expression for the argument,
+     which is an @('Acl2Symbol') for @(tsee boolean-value)
+     and an @('Acl2Integer') for the other constructors.")
+   (xdoc::p
+    "If the constructor is @(tsee boolean-value),
+     we turn it into a Java @('boolean') by comparing it with @('nil').")
+   (xdoc::p
+    "If the constructor is @(tsee long-value),
+     we extract a Java @('long') from the ACL2 integer.")
+   (xdoc::p
+    "For the other constructors,
+     we extract a Java @('int') from the ACL2 integer,
+     and we cast to the appropriate primitive type
+     unless the constructor is @(tsee int-value)."))
+  (b* (((when (eq fn 'boolean-value))
+        (jexpr-binary (jbinop-ne) arg-expr (atj-gen-symbol nil)))
+       ((when (eq fn 'long-value))
+        (jexpr-smethod *aij-type-int* "getJavaLong" (list arg-expr)))
+       (expr (jexpr-smethod *aij-type-int* "getJavaInt" (list arg-expr))))
+    (case fn
+      (char-value (jexpr-cast (jtype-char) expr))
+      (byte-value (jexpr-cast (jtype-byte) expr))
+      (short-value (jexpr-cast (jtype-short) expr))
+      (int-value expr)
+      (t (prog2$ (impossible)
+                 (ec-call (jexpr-fix :irrelevant))))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-jprim-constr-to-type ((fn atj-java-primitive-constr-p))
   :returns (type atj-typep)
   :short "Map an ACL2 function that models a Java primitive constructor
@@ -2550,9 +2589,7 @@
                                     qpairs
                                     t ; GUARDS$
                                     wrld))
-             (expr (atj-adapt-expr-to-type arg-expr
-                                           (atj-jprim-constr-to-type fn)
-                                           src-type)))
+             (expr (atj-jprim-constr-of-nonqconst-to-expr fn arg-expr)))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
               jvar-tmp-index))))
