@@ -106,4 +106,35 @@ class Acl2CharacterTest {
                 compareTo(Acl2Number.make(1, 1)) > 0);
     }
 
+    @Test
+    void compareToStrings() { // characters come before -- see ACL2's alphorder
+        assertTrue(Acl2Character.make('H').
+                compareTo(Acl2String.make("some string")) < 0);
+        assertTrue(Acl2Character.make('\u00ee').
+                compareTo(Acl2String.make("")) < 0);
+        assertTrue(Acl2Character.make('H').
+                compareTo(Acl2String.make("ABCDEFGHIJKLMNOPQRSTUVWXYZ")) < 0);
+        assertTrue(Acl2Character.make('H').compareTo(Acl2String.EMPTY) < 0);
+        assertTrue(Acl2Character.make('H').compareTo(Acl2String.ACL2) < 0);
+    }
+
+    @Test
+    void compareToSymbols() { // characters come before -- see ACL2's alphorder
+        assertTrue(Acl2Character.make('T').compareTo(Acl2Symbol.T) < 0);
+        assertTrue(Acl2Character.make('t').compareTo(Acl2Symbol.NIL) < 0);
+    }
+
+    @Test
+    void compareToConsPairs() { // characters come before -- see ACL2's lexorder
+        assertTrue(Acl2Character.CODE_0.
+                compareTo(Acl2ConsPair.make(Acl2Character.make('w'),
+                        Acl2String.EMPTY)) < 0);
+        assertTrue(Acl2Character.make('C').
+                compareTo(Acl2ConsPair.make(Acl2Character.make('C'),
+                        Acl2Character.make('C'))) < 0);
+        assertTrue(Acl2Character.make('\177').
+                compareTo(Acl2ConsPair.make(Acl2Integer.make(0),
+                        Acl2Symbol.LEN)) < 0);
+    }
+
 }
