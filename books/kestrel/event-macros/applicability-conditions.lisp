@@ -132,7 +132,7 @@
      under the condition.")
    (xdoc::@def "make-evmac-appcond?"))
 
-  (defmacro make-evmac-appcond? (&key name formula (when 't))
+  (defmacro make-evmac-appcond? (name formula &key (when 't))
     `(and ,when
           (list (make-evmac-appcond :name ,name :formula ,formula)))))
 
@@ -188,7 +188,8 @@
      one for each applicability condition,
      at the end the event macro can detect if there were unused hints
      (e.g. for applicability conditions that were not actually present),
-     and issue a warning or error in that case.
+     and issue a warning or error in that case
+     (see @(tsee evmac-ensure-no-extra-hints)).
      If the event macro's hints are not an alist from keywords to true lists,
      we use those in their entirety to prove the theorem,
      and we return them unchanged.")
@@ -306,7 +307,8 @@
      Perhaps those keywords refer to applicability conditions
      that may be present but were not actually present this time.
      Callers of this function can decide how to handle this situation,
-     e.g. by issuing a warning or error.")
+     e.g. by issuing a warning or error
+     (see @(tsee evmac-ensure-no-extra-hints)).")
    (xdoc::p
     "Since there may be multiple applicability conditions,
      the generated names of the theorems are returned in alist form.
@@ -333,3 +335,78 @@
         (acons (evmac-appcond->name appcond) thm-name thm-names)
         hints
         names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define evmac-ensure-no-extra-hints ((remaining-hints evmac-input-hints-p)
+                                     ctx
+                                     state)
+  :returns (mv erp (nothing null) state)
+  :short "Ensure that there are no extra hints for applicability conditions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is meant to be called on
+     the hints result of @(tsee evmac-appcond-theorem-list).
+     That function removes the specific hints for applicability conditions
+     as it turns the applicability conditions into theorem form.
+     Thus, if there are remaining hints at the end,
+     it means that the user has specified hints
+     for applicability conditions that did not have to hold
+     in that particular call of the event macro.
+     If that is the case, the event macro may cause an error,
+     and can use this function to do so consistently.")
+   (xdoc::p
+    "Note that here we cause an error only if
+     the hints are a non-empty alist from keywords to true lists.
+     It would be wrong to just check for @(tsee consp),
+     because if the hints originally entered by the user
+     are not a keyword-value list,
+     then @(tsee evmac-appcond-theorem-list)
+     uses the same hints on all the applicability conditions,
+     and never changes them."))
+  (if (and (keyword-truelist-alistp remaining-hints)
+           (consp remaining-hints))
+      (er-soft+ ctx t nil
+                "The :HINTS input includes the keywords ~x0, ~
+                 which do not correspond to applicability conditions ~
+                 that must hold in this call. ~
+                 Double-check the names (keywords) ~
+                 of the applicability conditions, ~
+                 as well as the conditions under which ~
+                 each applicability condition must hold."
+                (strip-cars remaining-hints))
+    (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define evmac-appcond-theorems-no-extra-hints ((appconds evmac-appcond-listp)
+                                               (hints evmac-input-hints-p)
+                                               (names-to-avoid symbol-listp)
+                                               (print evmac-input-print-p)
+                                               ctx
+                                               state)
+  :returns (mv erp
+               (result "A tuple
+                        @('(events thm-names new-named-to-avoid)')
+                        satisfying
+                        @('(typed-tupledp pseudo-event-form-listp
+                                          keyword-symbol-alistp
+                                          symbol-listp
+                                          result)').")
+               state)
+  :mode :program
+  :short "Combine @(tsee evmac-appcond-theorem-list)
+          and @(tsee evmac-ensure-no-extra-hints)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function automates the coding pattern in which
+     first one calls @(tsee evmac-appcond-theorem-list)
+     and then @(tsee evmac-ensure-no-extra-hints) on the remaining hints.
+     This combining function returns no hints result."))
+  (b* (((mv events thm-names remaining-hints new-names-to-avoid)
+        (evmac-appcond-theorem-list
+         appconds hints names-to-avoid print ctx state))
+       ((er &) (evmac-ensure-no-extra-hints remaining-hints ctx state)))
+    (value (list events thm-names new-names-to-avoid))))

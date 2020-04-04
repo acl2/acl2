@@ -88,11 +88,7 @@
      e.g. to convert from @('Acl2Value') to @('Acl2String');
      the cast is guaranteed to succeed,
      assuming that the ACL2 guards are verified.
-     The conversion may be a change in representation,
-     e.g. to convert from @('int') to @('Acl2Value');
-     here the conversion is based on
-     the ACL2 representation of Java @('int') values,
-     described " (xdoc::seetopic "atj-java-primitives" "here") ".")
+     The conversion may also be a change in representation in the future.")
    (xdoc::p
     "The ATJ type information stored in the table
      determines/specifies the input and output types of the Java methods
@@ -259,6 +255,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-irrelevant ()
+  :returns (type atj-typep)
+  :short "An irrelevant ATJ type,
+          usable as dummy return value with hard errors."
+  (with-guard-checking :none (ec-call (atj-type-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e atj-type-irrelevant))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-to-keyword ((type atj-typep))
   :returns (kwd keywordp)
   :short "Map each ATJ type to a distinct keyword."
@@ -351,7 +357,7 @@
     (otherwise (prog2$ (raise
                         "The keyword ~x0 does not correspond to any ATJ type."
                         kwd)
-                       (ec-call (atj-type-fix :irrelevant)))))
+                       (atj-type-irrelevant))))
   ///
 
   (defrule atj-type-from-keyword-of-atj-type-to-keyword
@@ -437,6 +443,37 @@
                   (atj-type-listp vals)
                   (equal (len keys) (len vals)))
              (atj-symbol-type-alistp (pairlis$ keys vals)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption atj-maybe-type
+  atj-type
+  :short "Fixtype of ATJ types and @('nil')."
+  :pred atj-maybe-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist atj-maybe-type-list
+  :short "Fixtype of lists of ATJ types and @('nil')."
+  :elt-type atj-maybe-type
+  :true-listp t
+  :elementp-of-nil t
+  :pred atj-maybe-type-listp
+  ///
+
+  (defruled atj-maybe-type-list-equiv-alt-def
+    (equal (atj-maybe-type-list-equiv x y)
+           (cond ((endp x) (endp y))
+                 ((endp y) (endp x))
+                 (t (and (atj-maybe-type-equiv (car x) (car y))
+                         (atj-maybe-type-list-equiv (cdr x) (cdr y))))))
+    :enable atj-maybe-type-list-fix
+    :rule-classes :definition)
+
+  (defrule atj-maybe-type-listp-when-atj-type-listp
+    (implies (atj-type-listp x)
+             (atj-maybe-type-listp x))
+    :enable atj-maybe-type-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -547,24 +584,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ATJ types form a partial order,
-     based on the inclusion of the ACL2 predicates they denote;
-     this denotation is defined by @(tsee atj-type-to-pred).")
+    "The ATJ types form a partial order.
+     The ordering on the @(':acl2') types
+     is based on the inclusion of the ACL2 predicates they denote;
+     this denotation is defined by @(tsee atj-type-to-pred).
+     Each of the @(':jprim') and @(':jprimarr') types
+     is incomparable with all the types except itself.")
    (xdoc::p
-    "The ordering on the @(':acl2') types is straightforward.
-     The @(':jprim') types denote ACL2 predicates
-     satisfied only by @(tsee cons)es
-     (satisfying additional properties; see "
-    (xdoc::seetopic "atj-java-primitives" "here")
-    "); thus, such types are below @(':acons') in the partial order.
-     The @(':jprimarr') types denote true lists,
-     which are either @(tsee cons)es or (@('nil')) symbols;
-     thus, such types are below @(':avalue') in the partial order.
-     The @(':jprim') and @(':jprimarr') types
-     are unrelated to each other in the partial order;
-     the corresponding predicates are mostly all disjoint,
-     except that the predicates for the @(':jprimarr') types
-     share @('nil') as the model of the empty array.")
+    "This definition of partial order is motivated by
+     the conversions that we want to allow, in the generated Java code,
+     between (the Java representations of) the ACL2 values denoted by the types.
+     While we want to allow conversions between the @(':acl2') types,
+     we keep the @(':jprim') and @(':jprimarr') types
+     all separate from each other and from the @(':acl2') types.
+     This is not the only possible choice and definition of partial order.")
    (xdoc::p
     "To validate this definition of partial order,
      we prove that the relation is indeed a partial order,
@@ -578,14 +611,13 @@
      The motonocity theorem validates that the partial order
      is consistent with the inclusion of the denoted ACL2 types.")
    (xdoc::p
-    "It is also not difficult to see that,
-     besides being order-presering (i.e. monotonic),
-     @(tsee atj-type-to-pred) is also order-reflecting:
+    "While @(tsee atj-type-to-pred) is order-presering (i.e. monotonic),
+     it is not order-reflecting (and thus not an order embedding):
      if @('(atj-type-to-pred x)') is included in @('(atj-type-to-pred y)'),
-     then @('(atj-type-<= x y)') holds;
-     we may prove this explicitly at some point.
-     Being both order-preserving and order-reflecting,
-     @(tsee atj-type-to-pred) is an order embedding."))
+     @('(atj-type-<= x y)') does not necessarily hold.
+     The counterexample to being order-reflective consists of
+     @('x') being a @(':jprim') or @(':jprimarr') type and
+     @('y') being the @(':acl2') type of all ACL2 values."))
   (atj-type-case
    sub
    :acl2 (atj-type-case sup
@@ -593,12 +625,11 @@
                         :jprim nil
                         :jprimarr nil)
    :jprim (atj-type-case sup
-                         :acl2 (or (atj-atype-case sup.get :cons)
-                                   (atj-atype-case sup.get :value))
+                         :acl2 nil
                          :jprim (primitive-type-equiv sub.get sup.get)
                          :jprimarr nil)
    :jprimarr (atj-type-case sup
-                            :acl2 (atj-atype-case sup.get :value)
+                            :acl2 nil
                             :jprim nil
                             :jprimarr (primitive-type-equiv sub.comp sup.comp)))
   :hooks (:fix)
@@ -707,20 +738,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-join ((x atj-typep) (y atj-typep))
-  :returns (lub atj-typep)
-  :short "Least upper bound of two ATJ types."
+(define atj-maybe-type-<= ((sub atj-maybe-typep) (sup atj-maybe-typep))
+  :returns (yes/no booleanp)
+  :short "Extension of @(tsee atj-type-<=) to include @('nil') as top."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ATJ types form a join semilattice,
-     with the partial order @(tsee atj-type-<=).")
+    "For certain purposes, we want to calculate
+     the least upper bound of two ATJ types w.r.t. @(tsee atj-type-<=).
+     However, the ATJ types with this partial order
+     do not quite form a join semilattice,
+     because there are no upper bounds, for instance,
+     for two different @(':jprim') types.")
    (xdoc::p
-    "We define this operation by four cases:
+    "Thus, we extend the partial order
+     to the set of ATJ types plus @('nil'),
+     where @('nil') is above every type.")
+   (xdoc::p
+    "We show that this extended relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (or (null sup)
+      (and (not (null sub))
+           (atj-type-<= sub sup)))
+  :hooks (:fix)
+  ///
+
+  (defrule atj-maybe-type-<=-reflexive
+    (implies (atj-maybe-type-equiv x y)
+             (atj-maybe-type-<= x y)))
+
+  (defrule atj-maybe-type-<=-antisymmetric
+    (implies (and (atj-maybe-type-<= x y)
+                  (atj-maybe-type-<= y x))
+             (atj-maybe-type-equiv x y))
+    :enable (atj-maybe-type-fix
+             atj-type-fix
+             atj-type-acl2->get
+             atj-type-jprim->get
+             atj-type-jprimarr->comp
+             atj-type-<=
+             atj-atype-<=))
+
+  (defrule atj-maybe-type-<=-transitive
+    (implies (and (atj-maybe-type-<= x y)
+                  (atj-maybe-type-<= y z))
+             (atj-maybe-type-<= x z))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-join ((x atj-maybe-typep) (y atj-maybe-typep))
+  :returns (lub atj-maybe-typep)
+  :short "Least upper bound of two ATJ types or @('nil')s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As discussed in @(tsee atj-maybe-type-<=),
+     the addition of @('nil') as top element of the partial order
+     results in a join semilattice.")
+   (xdoc::p
+    "We define this operation by five cases:
      the first two are obvious,
-     while the remaining two are motivated by the fact that
-     @(':acons') and @(':avalue') are the only types
-     with more than one (strict) subtype.")
+     while the remaining three are motivated by the fact that
+     @(':acons'), @(':avalue'), and @('nil') are the only elements
+     each of which has more than one elements strictly smaller.")
    (xdoc::p
     "To validate this definition of least upper bound,
      we prove that the this operation indeed returns an upper bound
@@ -730,33 +810,49 @@
     "The commutativity, idempotence, and associativity of the join operation
      follows from these and the partial order properties,
      according to lattice theory.
-     So we do not prove these properties explicitly here.")
-   (xdoc::p
-    "ATJ uses this least upper bound operation
-     to calculate the type of an @(tsee if)
-     from the types of the `then' and `else' branches."))
-  (cond ((atj-type-<= x y) (atj-type-fix y))
-        ((atj-type-<= y x) (atj-type-fix x))
-        ((and (atj-type-<= x (atj-type-acl2 (atj-atype-cons)))
-              (atj-type-<= y (atj-type-acl2 (atj-atype-cons))))
+     So we do not prove these properties explicitly here."))
+  (cond ((atj-maybe-type-<= x y) (atj-maybe-type-fix y))
+        ((atj-maybe-type-<= y x) (atj-maybe-type-fix x))
+        ((and (atj-maybe-type-<= x (atj-type-acl2 (atj-atype-cons)))
+              (atj-maybe-type-<= y (atj-type-acl2 (atj-atype-cons))))
          (atj-type-acl2 (atj-atype-cons)))
-        (t (atj-type-acl2 (atj-atype-value))))
+        ((and (atj-maybe-type-<= x (atj-type-acl2 (atj-atype-value)))
+              (atj-maybe-type-<= y (atj-type-acl2 (atj-atype-value))))
+         (atj-type-acl2 (atj-atype-value)))
+        (t nil))
   :hooks (:fix)
   ///
 
-  (defrule atj-type-join-upper-bound-left
-    (atj-type-<= x (atj-type-join x y))
-    :enable (atj-type-<= atj-atype-<=))
+  (defrule atj-maybe-type-join-upper-bound-left
+    (atj-maybe-type-<= x (atj-maybe-type-join x y))
+    :enable atj-maybe-type-<=)
 
-  (defrule atj-type-join-upper-bound-right
-    (atj-type-<= y (atj-type-join x y))
-    :enable (atj-type-<= atj-atype-<=))
+  (defrule atj-maybe-type-join-upper-bound-right
+    (atj-maybe-type-<= y (atj-maybe-type-join x y))
+    :enable atj-maybe-type-<=)
 
   (defrule atj-type-join-least
-    (implies (and (atj-type-<= x z)
-                  (atj-type-<= y z))
-             (atj-type-<= (atj-type-join x y) z))
-    :enable (atj-type-<= atj-atype-<=)))
+    (implies (and (atj-maybe-type-<= x z)
+                  (atj-maybe-type-<= y z))
+             (atj-maybe-type-<= (atj-maybe-type-join x y) z))
+    :enable (atj-maybe-type-<= atj-type-<= atj-atype-<=)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-join ((x atj-typep) (y atj-typep))
+  :returns (lub atj-maybe-typep)
+  :short "Least upper bound of two ATJ types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We have defined @(tsee atj-maybe-type-join)
+     in order to exhibit and prove the semilattice structure,
+     but we always want to use ATJ types as arguments, never @('nil').
+     So we introduce this function,
+     which operates on types but may return @('nil'),
+     which can be also interpreted as saying that
+     the two ATJ types have no (least) upper bound w.r.t @(tsee atj-type-<=)."))
+  (atj-maybe-type-join x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -815,9 +911,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-type-list-join ((x atj-type-listp) (y atj-type-listp))
-  :returns (lub atj-type-listp)
-  :short "Lift @(tsee atj-type-join) to lists."
+(define atj-maybe-type-list-<= ((sub atj-maybe-type-listp)
+                                (sup atj-maybe-type-listp))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee atj-maybe-type-<=) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists are ordered element-wise.
+     Given two lists of different lengths
+     such that the shorter one is a prefix of the longer one
+     (i.e. the two lists cannot be ordered based on their initial elements),
+     the shorter one is smaller than the longer one.")
+   (xdoc::p
+    "We show that the resulting relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (cond ((endp sub) t)
+        ((endp sup) nil)
+        (t (and (atj-maybe-type-<= (car sub) (car sup))
+                (atj-maybe-type-list-<= (cdr sub) (cdr sup)))))
+  :hooks (:fix)
+  ///
+
+  (defrule atj-maybe-type-list-<=-reflexive
+    (implies (atj-maybe-type-list-equiv x y)
+             (atj-maybe-type-list-<= x y))
+    :enable atj-maybe-type-list-fix)
+
+  (defrule atj-maybe-type-list-<=-antisymmetric
+    (implies (and (atj-maybe-type-list-<= x y)
+                  (atj-maybe-type-list-<= y x))
+             (atj-maybe-type-list-equiv x y))
+    :disable atj-maybe-type-list-equiv
+    :enable atj-maybe-type-list-equiv-alt-def)
+
+  (defrule atj-maybe-type-list-<=-transitive
+    (implies (and (atj-maybe-type-list-<= x y)
+                  (atj-maybe-type-list-<= y z))
+             (atj-maybe-type-list-<= x z))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-maybe-type-list-join ((x atj-maybe-type-listp)
+                                  (y atj-maybe-type-listp))
+  :returns (lub atj-maybe-type-listp)
+  :short "Lift @(tsee atj-maybe-type-join) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -827,26 +965,65 @@
    (xdoc::p
     "We show that this indeed returns the least upper bound
      of the order relation lifted to lists."))
+  (cond ((endp x) (atj-maybe-type-list-fix y))
+        ((endp y) (atj-maybe-type-list-fix x))
+        (t (cons (atj-maybe-type-join (car x) (car y))
+                 (atj-maybe-type-list-join (cdr x) (cdr y)))))
+  :hooks (:fix)
+  ///
+
+  (defrule atj-maybe-type-list-join-upper-bound-left
+    (atj-maybe-type-list-<= x (atj-maybe-type-list-join x y))
+    :enable atj-maybe-type-list-<=)
+
+  (defrule atj-maybe-type-list-join-upper-bound-right
+    (atj-maybe-type-list-<= y (atj-maybe-type-list-join x y))
+    :enable atj-maybe-type-list-<=)
+
+  (defrule atj-maybe-type-list-join-least
+    (implies (and (atj-maybe-type-list-<= x z)
+                  (atj-maybe-type-list-<= y z))
+             (atj-maybe-type-list-<= (atj-maybe-type-list-join x y) z))
+    :enable atj-maybe-type-list-<=)
+
+  (defret consp-of-atj-maybe-type-list-join
+    (equal (consp lub)
+           (or (consp x)
+               (consp y)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-type-list-join ((x atj-type-listp) (y atj-type-listp))
+  :guard (= (len x) (len y))
+  :returns (lub atj-maybe-type-listp)
+  :short "Lift @(tsee atj-type-join) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done element-wise.
+     When the shorter list is exhausted,
+     we return (what remains of) the longer list.")
+   (xdoc::p
+    "We show that this agrees with @(tsee atj-maybe-type-list-join)
+     over lists of ATJ types.
+     Note that @(tsee atj-maybe-type-list-join) has been defined
+     just to show the semilattice properties,
+     but we always want to use, as arguments,
+     lists of ATJ types without @('nil')s of the same length
+     (so we add a length equality requirement to the guard)."))
   (cond ((endp x) (atj-type-list-fix y))
         ((endp y) (atj-type-list-fix x))
         (t (cons (atj-type-join (car x) (car y))
                  (atj-type-list-join (cdr x) (cdr y)))))
-  :hooks (:fix)
   ///
 
-  (defrule atj-type-list-join-upper-bound-left
-    (atj-type-list-<= x (atj-type-list-join x y))
-    :enable atj-type-list-<=)
-
-  (defrule atj-type-list-join-upper-bound-right
-    (atj-type-list-<= y (atj-type-list-join x y))
-    :enable atj-type-list-<=)
-
-  (defrule atj-type-list-join-least
-    (implies (and (atj-type-list-<= x z)
-                  (atj-type-list-<= y z))
-             (atj-type-list-<= (atj-type-list-join x y) z))
-    :enable atj-type-list-<=)
+  (defruled atj-type-list-join-alt-def
+    (implies (and (atj-type-listp x)
+                  (atj-type-listp y))
+             (equal (atj-type-list-join x y)
+                    (atj-maybe-type-list-join x y)))
+    :enable (atj-maybe-type-list-join
+             atj-type-join))
 
   (defret consp-of-atj-type-list-join
     (equal (consp lub)
@@ -958,7 +1135,7 @@
                            the value ~x0 is not a number, ~
                            a character, a string, a symbol, or a CONS."
                           val)
-                   (ec-call (atj-type-fix :irrelevant))))))
+                   (atj-type-irrelevant)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1206,33 +1383,31 @@
   (if (tuplep 2 out-type-spec)
       (b* (((list sym kwd) out-type-spec)
            ((unless (symbolp sym))
-            (prog2$ (raise "Invalid array name ~x0." sym)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Invalid array name ~x0." sym)
+            (mv (atj-type-irrelevant) nil))
            (array sym)
            ((unless (keywordp kwd))
-            (prog2$ (raise "Invalid type keyword ~x0." kwd)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Invalid type keyword ~x0." kwd)
+            (mv (atj-type-irrelevant) nil))
            (type (atj-type-from-keyword kwd))
            ((when (and sym (not (atj-type-case type :jprimarr))))
-            (prog2$ (raise "Invalid array name ~x0 for non-array type ~x1."
-                           array kwd)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Invalid array name ~x0 for non-array type ~x1." array kwd)
+            (mv (atj-type-irrelevant) nil))
            (pos (index-of array formals))
            ((when (not pos))
-            (prog2$ (raise "Array name ~x0 not among formals ~x1."
-                           array formals)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil)))
+            (raise "Array name ~x0 not among formals ~x1." array formals)
+            (mv (atj-type-irrelevant) nil))
            (in-type (nth pos in-types))
            ((unless (equal type in-type))
-            (prog2$ (raise "The type ~x0 of the ~x1 input does not match ~
-                            the type ~x2 of the ~x1 output."
-                           (atj-type-to-keyword in-type) array kwd)
-                    (mv (ec-call (atj-type-fix :irrelevant)) nil))))
+            (raise "The type ~x0 of the ~x1 input does not match ~
+                    the type ~x2 of the ~x1 output."
+                   (atj-type-to-keyword in-type) array kwd)
+            (mv (atj-type-irrelevant) nil)))
         (mv type array))
     (if (keywordp out-type-spec)
         (mv (atj-type-from-keyword out-type-spec) nil)
       (prog2$ (raise "Invalid output type specification ~x0." out-type-spec)
-              (mv (ec-call (atj-type-fix :irrelevant)) nil)))))
+              (mv (atj-type-irrelevant) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1646,7 +1821,7 @@
      it will also fit the method corresponding to the greatest lower bound;
      therefore, there will be always a ``minimum'' method
      that will be selected at compile time and called at run time.
-     However, recall that @(tsee atj-maybe-jitype-meet) may produce @('nil'):
+     However, recall that @(tsee atj-jitype-meet) may produce @('nil'):
      if the greatest lower bound contains a @('nil') component,
      the closure requirement does not apply,
      because it means that some types are incompatible
@@ -1695,7 +1870,12 @@
                new-in-types))
        (old-in-jtypes (atj-type-list-to-jitype-list old-in-types))
        (new-in-jtypes (atj-type-list-to-jitype-list new-in-types))
-       (glb (atj-maybe-jitype-list-meet old-in-jtypes new-in-jtypes))
+       ((unless (= (len old-in-jtypes) (len new-in-jtypes)))
+        (raise "Internal error: ~
+                the number of proposed input types ~x0 differs from ~
+                the number of existing input types ~x1."
+               new-in-types old-in-types))
+       (glb (atj-jitype-list-meet old-in-jtypes new-in-jtypes))
        ((unless (or (member-eq nil glb)
                     (member-equal glb all-in-jtypess)))
         (raise "The Java counterparts ~x0 of the proposed input types ~x1 ~
@@ -1873,7 +2053,8 @@
 
 (define atj-output-types-of-min-input-types ((in-types atj-type-listp)
                                              (fn-types atj-function-type-listp))
-  :returns (out-types? atj-type-listp)
+  :returns (mv (out-types? atj-type-listp)
+               (arrays? symbol-listp))
   :short "Output types for the minimum input types."
   :long
   (xdoc::topstring
@@ -1902,9 +2083,14 @@
      (this is enforced by @(tsee atj-main-function-type)
      and @(tsee atj-other-function-type)),
      so it is appropriate to use @('nil') here to signal that
-     no function types matching the criteria were found."))
+     no function types matching the criteria were found.")
+   (xdoc::p
+    "Besides the output types (if found),
+     we also return the corresponding array names.
+     This second result is @('nil') if no output types are found."))
   (atj-output-type-of-min-input-types-aux (atj-type-list-to-jitype-list in-types)
                                           fn-types
+                                          nil
                                           nil
                                           nil)
 
@@ -1913,24 +2099,30 @@
      ((in-jtypes atj-jitype-listp)
       (fn-types atj-function-type-listp)
       (current-min-in-jtypes atj-jitype-listp)
-      (current-out-types? atj-type-listp))
-     :returns (out-types? atj-type-listp
-                          :hyp (atj-type-listp current-out-types?))
-     (b* (((when (endp fn-types)) current-out-types?)
+      (current-out-types? atj-type-listp)
+      (current-arrays? symbol-listp))
+     :returns (mv (out-types? atj-type-listp
+                              :hyp (atj-type-listp current-out-types?))
+                  (arrays? symbol-listp
+                           :hyp (symbol-listp current-arrays?)))
+     (b* (((when (endp fn-types)) (mv current-out-types? current-arrays?))
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
           (fn-in-jtypes (atj-type-list-to-jitype-list fn-in-types))
-          ((mv current-min-in-jtypes current-out-types?)
-           (if (and (atj-maybe-jitype-list-<= in-jtypes fn-in-jtypes)
+          ((mv current-min-in-jtypes current-out-types? current-arrays?)
+           (if (and (atj-jitype-list-<= in-jtypes fn-in-jtypes)
                     (or (null current-out-types?) ; i.e. none found yet
-                        (atj-maybe-jitype-list-< fn-in-jtypes
-                                                 current-min-in-jtypes)))
-               (mv fn-in-jtypes (atj-function-type->outputs fn-type))
-             (mv current-min-in-jtypes current-out-types?))))
+                        (atj-jitype-list-< fn-in-jtypes
+                                           current-min-in-jtypes)))
+               (mv fn-in-jtypes
+                   (atj-function-type->outputs fn-type)
+                   (atj-function-type->arrays fn-type))
+             (mv current-min-in-jtypes current-out-types? current-arrays?))))
        (atj-output-type-of-min-input-types-aux in-jtypes
                                                (cdr fn-types)
                                                current-min-in-jtypes
-                                               current-out-types?)))))
+                                               current-out-types?
+                                               current-arrays?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1986,5 +2178,5 @@
       (atj-type-fix (car types))
     (prog2$
      (raise "Internal error: ~x0 is not a singleton list of types." types)
-     (ec-call (atj-type-fix :irrelevant))))
+     (atj-type-irrelevant)))
   :hooks (:fix))

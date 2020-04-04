@@ -2293,12 +2293,32 @@
 
   (let ((action (get-slow-alist-action *the-live-state*)))
     (when action
-      (format *error-output* "
+      (let ((normal-string "
 *****************************************************************
 Fast alist discipline violated in ~a.
 See :DOC slow-alist-warning to suppress or break on this warning.
+*****************************************************************~%"))
+        #-acl2-par
+        (format *error-output* normal-string name)
+        #+acl2-par
+        (let ((prover-par (and (f-get-global 'waterfall-parallelism *the-live-state*)
+                               (f-get-global 'in-prove-flg *the-live-state*))))
+          (cond ((or prover-par
+                     (f-get-global 'parallel-execution-enabled *the-live-state*))
+                 (format *error-output* "
+*****************************************************************
+Fast alist discipline violated in ~a.  (May be from
+~aparallelism; see :DOC unsupported-~aparallelism-features.)
+See :DOC slow-alist-warning to suppress or break on this warning.
 *****************************************************************~%"
-              name)
+                         name
+                         (if prover-par
+                             "waterfall-"
+                           "")
+                         (if prover-par
+                             "waterfall-"
+                           "")))
+                (t (format *error-output* normal-string name)))))
       (when (eq action :break)
         (format *error-output* "
 To avoid the following break and get only the above warning:~%  ~s~%"

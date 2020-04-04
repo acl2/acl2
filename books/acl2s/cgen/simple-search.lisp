@@ -315,9 +315,6 @@
 
 (defattach (local-sampling-method local-sampling-method-builtin))
 
-
-
-
 (set-verify-guards-eagerness 1)
 
 (def run-single-test. (vl sampling-method N i r. BE. single-test-timeout)
@@ -348,17 +345,21 @@ r. is updated pseudo-random seed
 BE. is the updated bounded-exhaustive arg/seed alist.
 
 eg:n/a")
+  (declare (ignorable single-test-timeout))
   
   (b* ((sm (local-sampling-method sampling-method i N))
        ((mv A r. BE.) (next-sigma sm N i r. BE.))
        (- (cw? (system-debug-flag vl) 
                "~|Cgen/Sysdebug/run-single: A: ~x0 seed: ~x1~%" A r.))
        (|not vacuous ?|
+        #+sb-thread
         (acl2::with-timeout1 single-test-timeout
                              (hypotheses-val A)
-                             nil))
+                             nil)
+        #-sb-thread
+        (hypotheses-val A)
+        )
        (hyp-vals (and (verbose-stats-flag vl) (hyp-val-list A)))
-
        (- (cw? (and (system-debug-flag vl)
                     (not |not vacuous ?|)) 
                "~|Cgen/Sysdebug/run-single: hyp-vals : ~x0~%" hyp-vals)))
@@ -367,9 +368,14 @@ eg:n/a")
         ;; bugfix: why even try to evaluate conclusion when
         ;; the hypotheses are not satisfied, the whole form's value
         ;; is simply true - May 2nd '12
-        (b* ((conc (acl2::with-timeout1  single-test-timeout
-                                         (conclusion-val A)
-                                         0))
+        (b* ((conc
+              #+sb-thread
+              (acl2::with-timeout1  single-test-timeout
+                                    (conclusion-val A)
+                                    0)
+              #-sb-thread
+              (conclusion-val A)
+              )
              (res (cond ((eql conc 0) :vacuous)
                         (conc :witness)
                         (t :counterexample))))
@@ -707,7 +713,8 @@ where
 ~|Use (acl2s-defaults :set cgen-local-timeout 0) to disable timeout. ~
 ~|For more information see :doc cgen-local-timeout.~%") 
     (er-progn
-     (b* (((mv & (the (unsigned-byte 31) rseed.)) (defdata::genrandom-seed 2 (defdata::getseed state)))
+     (b* (((mv & (the (unsigned-byte 31) rseed.))
+           (defdata::genrandom-seed 2 (defdata::getseed state)))
           (state (defdata::putseed rseed. state))) ;make some progress -- dont get stuck on the same sequence of seeds
        (value nil))
      (assign ss-temp-result :timed-out)

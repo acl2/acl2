@@ -336,7 +336,7 @@
                               non-executable
                               (non-executablep old wrld)
                               "The :NON-EXECUTABLE input" t nil))
-       ((er hints$) (evmac-process-input-hints$ hints ctx state))
+       ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -436,28 +436,29 @@
                                state)
   :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
+  :short "Generate the applicability conditions."
   (b* ((wrld (w state)))
     (append
      (make-evmac-appcond?
-      :name :restriction-of-rec-calls
-      :formula (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
-                    (consequent
-                     (restrict-gen-restriction-of-rec-calls-consequent-term
-                      old$ rec-calls-with-tests restriction$ stub? wrld)))
-                 (implicate restriction$
-                            consequent))
+      :restriction-of-rec-calls
+      (b* ((rec-calls-with-tests (recursive-calls old$ wrld))
+           (consequent
+            (restrict-gen-restriction-of-rec-calls-consequent-term
+             old$ rec-calls-with-tests restriction$ stub? wrld)))
+        (implicate restriction$
+                   consequent))
       :when (recursivep old$ nil wrld))
      (make-evmac-appcond?
-      :name :restriction-guard
-      :formula (b* ((old-guard (guard old$ nil wrld))
-                    (restriction-guard
-                     (term-guard-obligation restriction$ state)))
-                 (implicate old-guard
-                            restriction-guard))
+      :restriction-guard
+      (b* ((old-guard (guard old$ nil wrld))
+           (restriction-guard
+            (term-guard-obligation restriction$ state)))
+        (implicate old-guard
+                   restriction-guard))
       :when verify-guards$)
      (make-evmac-appcond?
-      :name :restriction-boolean
-      :formula (apply-term* 'booleanp restriction$)))))
+      :restriction-boolean
+      (apply-term* 'booleanp restriction$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -825,20 +826,11 @@
                                         verify-guards$
                                         stub?
                                         state))
-       ((mv appcond-thm-events
-            appcond-thm-names
-            remaining-hints
-            names-to-avoid)
-        (evmac-appcond-theorem-list
+       ((er (list appcond-thm-events
+                  appcond-thm-names
+                  names-to-avoid))
+        (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
-       ((when (and (keyword-truelist-alistp remaining-hints)
-                   (consp remaining-hints)))
-        (er-soft+ ctx t nil
-                  "The :HINTS input includes the keywords ~x0, ~
-                   which do not correspond to applicability conditions ~
-                   that must hold in this call of RESTRICT, ~
-                   at least given the other inputs of RESTRICT."
-                  (strip-cars remaining-hints)))
        ((mv old-unnorm-event
             old-unnorm-name) (install-not-normalized-event old$
             t

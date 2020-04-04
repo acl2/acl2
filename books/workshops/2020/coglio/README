@@ -1,0 +1,4 @@
+The community books under [books]/kestrel/ethereum/rlp/ constitute supporting
+materials for the paper "Ethereum's Recursive Length Prefix in ACL2" by
+Alessandro Coglio.  Those books contain the entire development described in the
+paper.

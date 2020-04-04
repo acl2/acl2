@@ -1,4 +1,4 @@
-Below is a list of all papers accepted for ACL2 Workshop 2018,
+Below is a list of all papers accepted for ACL2 Workshop 2020,
 together with the corresponding subdirectory, which either contains
 supporting materials or a README that explains where they may be
 found.  (When the subdirectory is missing, it means that neither
@@ -8,11 +8,13 @@ supporting materials nor README have yet been included.)
 
 Alessandro Coglio
 Ethereum's Recursive Length Prefix in ACL2
+coglio/
 
 ------------------------------
 
 Alessandro Coglio and Stephen Westfold
 Isomorphic Data Type Transformations
+coglio-westfold/
 
 ------------------------------
 
@@ -54,11 +56,13 @@ Computing and Proving Well-founded Orderings through Finite Abstractions
 
 Sol Swords
 Generating Mutually Inductive Theorems from Concise Descriptions
+sswords-mutual-ind/
 
 ------------------------------
 
 Sol Swords
 New Rewriter Features in FGL
+sswords-rewriter/
 
 ------------------------------
 

@@ -22,4 +22,88 @@ class Acl2CharacterTest {
                 () -> Acl2Character.make('\uffff'));
     }
 
+    @Test
+    void makeRight() {
+        assertDoesNotThrow(() -> Acl2Character.make('\0'));
+        assertDoesNotThrow(() -> Acl2Character.make('A'));
+        assertDoesNotThrow(() -> Acl2Character.make('x'));
+        assertDoesNotThrow(() -> Acl2Character.make('5'));
+        assertDoesNotThrow(() -> Acl2Character.make('?'));
+        assertDoesNotThrow(() -> Acl2Character.make(' '));
+        assertDoesNotThrow(() -> Acl2Character.make('*'));
+        assertDoesNotThrow(() -> Acl2Character.make('\n'));
+        assertDoesNotThrow(() -> Acl2Character.make('\200'));
+        assertDoesNotThrow(() -> Acl2Character.make('\300'));
+        assertDoesNotThrow(() -> Acl2Character.make('\u00ff'));
+    }
+
+    @Test
+    void getJavaCharFromConstant() {
+        assertEquals(Acl2Character.CODE_0.getJavaChar(), '\0');
+    }
+
+    @Test
+    void getJavaCharFromMake() {
+        assertEquals(Acl2Character.make('a').getJavaChar(), 'a');
+        assertEquals(Acl2Character.make('\7').getJavaChar(), '\7');
+        assertEquals(Acl2Character.make('|').getJavaChar(), '|');
+        assertEquals(Acl2Character.make('\u00f0').getJavaChar(), '\u00f0');
+    }
+
+    @Test
+    void toStringFromConstant() {
+        assertEquals(Acl2Character.CODE_0.toString(), "#\\00");
+    }
+
+    @Test
+    void toStringFromMakeNormal() {
+        assertEquals(Acl2Character.make('c').toString(), "#\\c");
+        assertEquals(Acl2Character.make('F').toString(), "#\\F");
+        assertEquals(Acl2Character.make('*').toString(), "#\\*");
+        assertEquals(Acl2Character.make('%').toString(), "#\\%");
+    }
+
+    @Test
+    void toStringFromMakeSpecial() {
+        assertEquals(Acl2Character.make(' ').toString(), "#\\Space");
+        assertEquals(Acl2Character.make('\t').toString(), "#\\Tab");
+        assertEquals(Acl2Character.make('\n').toString(), "#\\Newline");
+        assertEquals(Acl2Character.make('\f').toString(), "#\\Page");
+        assertEquals(Acl2Character.make('\r').toString(), "#\\Return");
+        assertEquals(Acl2Character.make('\177').toString(), "#\\Rubout");
+    }
+
+    @Test
+    void toStringFromMakeHex() {
+        assertEquals(Acl2Character.make('\u0000').toString(), "#\\00");
+        assertEquals(Acl2Character.make('\u00ff').toString(), "#\\ff");
+        assertEquals(Acl2Character.make('\u00b2').toString(), "#\\b2");
+        assertEquals(Acl2Character.make('\u0014').toString(), "#\\14");
+    }
+
+    @Test
+    void compareToCharacters() { // compare codes -- see ACL2's alphorder
+        assertTrue(Acl2Character.CODE_0.compareTo(Acl2Character.CODE_0) == 0);
+        assertTrue(Acl2Character.CODE_0.
+                compareTo(Acl2Character.make('Y')) < 0);
+        assertTrue(Acl2Character.make('i').
+                compareTo(Acl2Character.CODE_0) > 0);
+        assertTrue(Acl2Character.make('8').
+                compareTo(Acl2Character.make('\377')) < 0);
+        assertTrue(Acl2Character.make('Z').
+                compareTo(Acl2Character.make('A')) > 0);
+        assertTrue(Acl2Character.make('@').
+                compareTo(Acl2Character.make('@')) == 0);
+    }
+
+    @Test
+    void compareToNumbers() { // characters come after -- see ACL2's alphorder
+        assertTrue(Acl2Character.make('a').
+                compareTo(Acl2Integer.make(-45)) > 0);
+        assertTrue(Acl2Character.make('^').
+                compareTo(Acl2Rational.make(-45,4)) > 0);
+        assertTrue(Acl2Character.make('{').
+                compareTo(Acl2Number.make(1, 1)) > 0);
+    }
+
 }

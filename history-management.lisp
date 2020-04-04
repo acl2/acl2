@@ -9958,10 +9958,10 @@
     (er-let*@par
      ((term (translate@par (cons (car arg) (cadr (car arg)))
                            t t t ctx wrld state))
-      (term (value (remove-guard-holders term wrld)))
+      (term (value@par (remove-guard-holders term wrld)))
 ; known-stobjs = t (stobjs-out = t)
       (rst (translate-hands-off-hint1@par (cdr arg) ctx wrld state))
-      (rst (value (remove-guard-holders-lst rst wrld))))
+      (rst (value@par (remove-guard-holders-lst rst wrld))))
 
 ; Below we assume that if you give translate ((lambda ...) ...) and it
 ; does not cause an error, then it gives you back a function application.
@@ -14476,7 +14476,7 @@
      ((eq (car lmi) :theorem)
       (er-let*@par
        ((term (translate@par (cadr lmi) t t t ctx wrld state))
-        (term (value (remove-guard-holders term wrld))))
+        (term (value@par (remove-guard-holders term wrld))))
 ; known-stobjs = t (stobjs-out = t)
        (value@par (list term (list term) nil nil))))
      ((or (eq (car lmi) :instance)
