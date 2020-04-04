@@ -1140,7 +1140,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod atj-function-type
-  :short "Fixtype of the ATJ function types."
+  :short "Fixtype of ATJ function types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1183,6 +1183,13 @@
    (outputs atj-type-list)
    (arrays symbol-list))
   :layout :list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption atj-maybe-function-type
+  atj-function-type-p
+  :short "Fixtype of ATJ function types and @('nil')."
+  :pred atj-maybe-function-type-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2051,11 +2058,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-output-types-of-min-input-types ((in-types atj-type-listp)
-                                             (fn-types atj-function-type-listp))
-  :returns (mv (out-types? atj-type-listp)
-               (arrays? symbol-listp))
-  :short "Output types for the minimum input types."
+(define atj-function-type-of-min-input-types
+  ((in-types atj-type-listp)
+   (fn-types atj-function-type-listp))
+  :returns (fn-type? atj-maybe-function-type-p)
+  :short "Function type with the minimum input types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2070,59 +2077,44 @@
      are greater than or equal to the Java counterparts
      of the types of the actual arguments.
      If no such function type is found, we return @('nil').
-     If instead some exist, we select the minimum one,
+     If instead some exist, we select the one with the  minimum input types,
      which always exists because of the closure property
      enforced by @(tsee atj-other-function-type),
-     and we return its corresponding output types.
+     and we return that function type.
      In other words, given the types of the actual arguments,
-     the returned output types (if any) tell us
-     the result type of the overloaded method
-     that will be resolved at compile time.")
-   (xdoc::p
-    "A function type always has one or more output types
-     (this is enforced by @(tsee atj-main-function-type)
-     and @(tsee atj-other-function-type)),
-     so it is appropriate to use @('nil') here to signal that
-     no function types matching the criteria were found.")
-   (xdoc::p
-    "Besides the output types (if found),
-     we also return the corresponding array names.
-     This second result is @('nil') if no output types are found."))
-  (atj-output-type-of-min-input-types-aux (atj-type-list-to-jitype-list in-types)
-                                          fn-types
-                                          nil
-                                          nil
-                                          nil)
+     the output types of the returned function type (if any)
+     tell us the result type of the overloaded method
+     that will be resolved at compile time."))
+  (atj-function-type-of-min-input-types-aux
+   (atj-type-list-to-jitype-list in-types)
+   (atj-function-type-list-fix fn-types)
+   nil
+   nil)
 
   :prepwork
-  ((define atj-output-type-of-min-input-types-aux
+  ((define atj-function-type-of-min-input-types-aux
      ((in-jtypes atj-jitype-listp)
       (fn-types atj-function-type-listp)
       (current-min-in-jtypes atj-jitype-listp)
-      (current-out-types? atj-type-listp)
-      (current-arrays? symbol-listp))
-     :returns (mv (out-types? atj-type-listp
-                              :hyp (atj-type-listp current-out-types?))
-                  (arrays? symbol-listp
-                           :hyp (symbol-listp current-arrays?)))
-     (b* (((when (endp fn-types)) (mv current-out-types? current-arrays?))
+      (current-fn-type? atj-maybe-function-type-p))
+     :returns (fn-type? atj-maybe-function-type-p
+                        :hyp (and (atj-function-type-listp fn-types)
+                                  (atj-maybe-function-type-p current-fn-type?)))
+     (b* (((when (endp fn-types)) current-fn-type?)
           (fn-type (car fn-types))
           (fn-in-types (atj-function-type->inputs fn-type))
           (fn-in-jtypes (atj-type-list-to-jitype-list fn-in-types))
-          ((mv current-min-in-jtypes current-out-types? current-arrays?)
+          ((mv current-min-in-jtypes current-fn-type?)
            (if (and (atj-jitype-list-<= in-jtypes fn-in-jtypes)
-                    (or (null current-out-types?) ; i.e. none found yet
+                    (or (null current-fn-type?) ; i.e. none found yet
                         (atj-jitype-list-< fn-in-jtypes
                                            current-min-in-jtypes)))
-               (mv fn-in-jtypes
-                   (atj-function-type->outputs fn-type)
-                   (atj-function-type->arrays fn-type))
-             (mv current-min-in-jtypes current-out-types? current-arrays?))))
-       (atj-output-type-of-min-input-types-aux in-jtypes
-                                               (cdr fn-types)
-                                               current-min-in-jtypes
-                                               current-out-types?
-                                               current-arrays?)))))
+               (mv fn-in-jtypes fn-type)
+             (mv current-min-in-jtypes current-fn-type?))))
+       (atj-function-type-of-min-input-types-aux in-jtypes
+                                                 (cdr fn-types)
+                                                 current-min-in-jtypes
+                                                 current-fn-type?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

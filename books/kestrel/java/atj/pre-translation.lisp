@@ -1512,20 +1512,26 @@
                (main-fn-type (atj-function-type-info->main fn-info))
                (other-fn-types (atj-function-type-info->others fn-info))
                (all-fn-types (cons main-fn-type other-fn-types))
-               ((mv types? &)
-                (atj-output-types-of-min-input-types types all-fn-types)))
-            (if (consp types?)
-                (b* (((unless (or (null required-types?)
-                                  (= (len required-types?) (len types?))))
+               (fn-type? (atj-function-type-of-min-input-types types
+                                                               all-fn-types)))
+            (if fn-type?
+                (b* ((types (atj-function-type->outputs fn-type?))
+                     ((unless (consp types))
+                      (raise "Internal error: ~
+                              no output types in function type ~x0."
+                             fn-type?)
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+                     ((unless (or (null required-types?)
+                                  (= (len required-types?) (len types))))
                       (raise "Internal error: ~
                               requiring the types ~x0 for the term ~x1, ~
                               which has a different number of types ~x2."
-                             required-types? term types?)
+                             required-types? term types)
                       (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
                   (mv (atj-type-wrap-term (pseudo-term-call fn args)
-                                          types?
+                                          types
                                           required-types?)
-                      (or required-types? types?)
+                      (or required-types? types)
                       mv-typess))
               (b* ((in-types (atj-function-type->inputs main-fn-type))
                    (out-types (atj-function-type->outputs main-fn-type))

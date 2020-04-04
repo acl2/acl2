@@ -5364,8 +5364,14 @@
        (main-fn-type (atj-function-type-info->main fn-info))
        (other-fn-types (atj-function-type-info->others fn-info))
        (all-fn-types (cons main-fn-type other-fn-types))
-       ((mv out-types &)
-        (atj-output-types-of-min-input-types arg-types all-fn-types))
+       (fn-type? (atj-function-type-of-min-input-types arg-types all-fn-types))
+       ((unless fn-type?)
+        (raise "Internal error: ~
+                the argument types ~x0 ~
+                do not have a corresponding Java overloaded method."
+               arg-types)
+        (mv nil nil nil nil nil))
+       (out-types (atj-function-type->outputs fn-type?))
        ((unless (= (len out-types) (len test-outputs)))
         (raise "Internal error: ~
                 the number of output types ~x0 of function ~x1 ~

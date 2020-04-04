@@ -618,19 +618,19 @@
           (value (atj-test name fn test-inputs test-outputs))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
-       ((mv out-types? &)
-        (atj-output-types-of-min-input-types in-types all-fn-types))
-       ((when (null out-types?))
+       (fn-type? (atj-function-type-of-min-input-types in-types all-fn-types))
+       ((when (null fn-type?))
         (value (raise "Internal error: ~
                        the test term ~x0 in the :TESTS input ~
                        does not have a corresponding Java overloaded method."
                       call)))
-       ((unless (= (len outputs) (len out-types?)))
+       (out-types (atj-function-type->outputs fn-type?))
+       ((unless (= (len outputs) (len out-types)))
         (value (raise "Internal error: ~
                        the number of results ~x0 of ~x1 ~
                        does not match the number ~x2 of its output types."
-                      (len outputs) fn (len out-types?))))
-       (test-outputs (atj-test-values-of-types outputs out-types?)))
+                      (len outputs) fn (len out-types))))
+       (test-outputs (atj-test-values-of-types outputs out-types)))
     (value (atj-test name fn test-inputs test-outputs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
