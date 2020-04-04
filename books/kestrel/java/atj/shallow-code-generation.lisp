@@ -2574,6 +2574,69 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 2))
 
+  (define atj-gen-shallow-jprim-deconstr-call
+    ((fn atj-java-primitive-deconstr-p)
+     (arg pseudo-termp)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded
+            ACL2 call of a Java primitive deconstructor."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t').")
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions that model the deconstruction of Java primitive values
+       (i.e. @(tsee boolean-value->bool) etc.)
+       are treated specially.
+       Their argument terms are translated to Java primitive values,
+       consistently with the input types of these deconstructors
+       and the fact that automatic conversions
+       from Java primitive values to any other types are disallowed.
+       Thus, we generate code to convert the Java primitive values
+       to the corresponding (Java representations of) ACL2 values."))
+    (b* (((mv arg-block
+              arg-expr
+              jvar-tmp-index)
+          (atj-gen-shallow-term arg
+                                jvar-tmp-base
+                                jvar-tmp-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
+         (expr (if (eq fn 'boolean-value->bool$inline)
+                   (jexpr-cond arg-expr
+                               (atj-gen-symbol t)
+                               (atj-gen-symbol nil))
+                 (jexpr-smethod *aij-type-int* "make" (list arg-expr))))
+         (src-type (atj-type-list-to-type src-types))
+         (dst-type (atj-type-list-to-type dst-types)))
+      (mv arg-block
+          (atj-adapt-expr-to-type expr src-type dst-type)
+          jvar-tmp-index))
+    ;; 2nd component is greater than 1
+    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
+    :measure (two-nats-measure (acl2-count arg) 2))
+
   (define atj-gen-shallow-jprim-unop-call
     ((fn atj-java-primitive-unop-p)
      (operand pseudo-termp)
@@ -3225,6 +3288,20 @@
                                              curr-pkg
                                              qpairs
                                              wrld))
+         ((when (and guards$
+                     (atj-java-primitive-deconstr-p fn)
+                     (int= (len args) 1))) ; should be always true
+          (atj-gen-shallow-jprim-deconstr-call fn
+                                               (car args)
+                                               src-types
+                                               dst-types
+                                               jvar-tmp-base
+                                               jvar-tmp-index
+                                               pkg-class-names
+                                               fn-method-names
+                                               curr-pkg
+                                               qpairs
+                                               wrld))
          ((when (and guards$
                      (atj-java-primitive-unop-p fn)
                      (int= (len args) 1))) ; should be always true
