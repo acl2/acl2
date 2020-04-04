@@ -569,3 +569,30 @@ ACL2 !>(let ((rule (car (find-rules-of-rune
 ACL2 !>
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Enable the generation of extra-info hypothesis for each functional instantiation constraint}}
+
+A couple of reasons for this: a) knowing where constraints are coming
+from is useful for debugging. and, perhaps more importantly, b) the
+proofs of different constraints can have radically different
+strategies.  Generating extra-info hyps would allow a user to write
+robust computed hints that could employ strategies appropriate for
+each constraint.
+
+There could be a table to enable this feature.  A good model for that
+is the inhibit-warnings-table, where the macro set-inhibit-warnings is
+a local table event using that table:
+
+(defmacro set-inhibit-warnings (&rest lst)
+  `(local (set-inhibit-warnings! ,@lst)))
+
+Or it could be yet another acl2-defaults-table key, which would
+automatically make it local to books and encapsulate events.  That's
+probably best in general, but the former approach is good if one wants
+a way to make the setting global in one's session, including all books
+that one is certifying in that session.
+
+Note: extra-info hypotheses are already available for guard and
+termination proofs.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
