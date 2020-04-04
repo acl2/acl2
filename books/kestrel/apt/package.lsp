@@ -271,7 +271,7 @@
                          subst-expr1
                          subst-var
                          symbol-class
-                         symbol-package-name-safe
+                         symbol-package-name-non-cl
                          symbol-symbol-alistp
                          symbol-truelist-alistp
                          term-guard-obligation
