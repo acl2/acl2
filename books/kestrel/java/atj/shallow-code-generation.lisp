@@ -1771,16 +1771,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-expr ((fn atj-java-primitive-constr-p) arg)
+(define atj-jprim-constr-of-qconst-to-expr ((fn atj-java-primitive-constr-p)
+                                            arg)
   :returns (expr jexprp)
   :short "Map an ACL2 function that models a Java primitive constructor
-          to the Java expression that constructs the primitive value."
+          to the Java expression that constructs the primitive value,
+          when the argument of the constructor is a quoted constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used to translate to Java a call of @('fn')
-     whose argument is a quoted constant term.
-     The unquoted argument is the parameter @('arg')."))
+    "The parameter @('arg') is the unquoted constant (i.e. the value)."))
   (case fn
     (boolean-value (if (booleanp arg)
                        (atj-gen-jboolean arg)
@@ -2535,7 +2535,7 @@
          (dst-type (atj-type-list-to-type dst-types)))
       (if (quotep arg)
           (b* ((arg (unquote-term arg))
-               (expr (atj-jprim-constr-to-expr fn arg))
+               (expr (atj-jprim-constr-of-qconst-to-expr fn arg))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
             (mv nil expr jvar-tmp-index))
         (b* (((mv arg-block
