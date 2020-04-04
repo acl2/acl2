@@ -1515,23 +1515,41 @@
                (fn-type? (atj-function-type-of-min-input-types types
                                                                all-fn-types)))
             (if fn-type?
-                (b* ((types (atj-function-type->outputs fn-type?))
-                     ((unless (consp types))
+                (b* ((in-types (atj-function-type->inputs fn-type?))
+                     (out-types (atj-function-type->outputs fn-type?))
+                     ((unless (= (len in-types) (len args)))
+                      (raise "Internal error: ~
+                              the function ~x0 has ~x1 arguments ~
+                              but a different number of input types ~x2."
+                             fn (len args) (len in-types))
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+                     ((unless (= (len in-types) (len types)))
+                      (raise "Internal error: ~
+                              the input types ~x0 of the function ~x1 ~
+                              differ in number from the argument types ~x2."
+                             in-types fn types)
+                      (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+                     (args (atj-type-rewrap-terms args
+                                                (atj-type-list-to-type-list-list
+                                                 types)
+                                                (atj-type-list-to-type-list-list
+                                                 in-types)))
+                     ((unless (consp out-types))
                       (raise "Internal error: ~
                               no output types in function type ~x0."
                              fn-type?)
                       (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      ((unless (or (null required-types?)
-                                  (= (len required-types?) (len types))))
+                                  (= (len required-types?) (len out-types))))
                       (raise "Internal error: ~
                               requiring the types ~x0 for the term ~x1, ~
                               which has a different number of types ~x2."
-                             required-types? term types)
+                             required-types? term out-types)
                       (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil)))
                   (mv (atj-type-wrap-term (pseudo-term-call fn args)
-                                          types
+                                          out-types
                                           required-types?)
-                      (or required-types? types)
+                      (or required-types? out-types)
                       mv-typess))
               (b* ((in-types (atj-function-type->inputs main-fn-type))
                    (out-types (atj-function-type->outputs main-fn-type))
