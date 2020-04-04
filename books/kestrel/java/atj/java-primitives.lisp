@@ -162,6 +162,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-java-primitive-deconstrs*
+  :short "List of (the names of) the ACL2 functions that model
+          the deconstruction of Java primitive values."
+  :long
+  (xdoc::topstring-p
+   "These are the inverses of the functions
+    that model the construction of primitive values.
+    These deconstructors essentially convert the Java primitive values
+    to the corresponding ACL2 values (symbols and integers).")
+  '(boolean-value->bool$inline
+    char-value->nat$inline
+    byte-value->int$inline
+    short-value->int$inline
+    int-value->int$inline
+    long-value->int$inline))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primitive-unops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive unary operations."
@@ -327,6 +345,7 @@
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
   (append *atj-java-primitive-constrs*
+          *atj-java-primitive-deconstrs*
           *atj-java-primitive-unops*
           *atj-java-primitive-binops*
           *atj-java-primitive-convs*)
@@ -341,6 +360,14 @@
   :short "Recognize the ACL2 function symbols that model
           the construction of Java primitive types."
   (and (member-eq fn *atj-java-primitive-constrs*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primitive-deconstr-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 function symbols that model
+          the deconstruction of Java primitive types."
+  (and (member-eq fn *atj-java-primitive-deconstrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -392,6 +419,20 @@
   (atj-main-function-type int-value (:ainteger) :jint)
 
   (atj-main-function-type long-value (:ainteger) :jlong)
+
+  ;; deconstructors:
+
+  (atj-main-function-type boolean-value->bool$inline (:jboolean) :asymbol)
+
+  (atj-main-function-type char-value->nat$inline (:jchar) :ainteger)
+
+  (atj-main-function-type byte-value->int$inline (:jbyte) :ainteger)
+
+  (atj-main-function-type short-value->int$inline (:jshort) :ainteger)
+
+  (atj-main-function-type int-value->int$inline (:jint) :ainteger)
+
+  (atj-main-function-type long-value->int$inline (:jlong) :ainteger)
 
   ;; boolean operations:
 
@@ -644,35 +685,3 @@
   ;; widening and narrowing conversions:
 
   (atj-main-function-type byte-to-char (:jbyte) :jchar))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atj-types-for-boolean-value-destructor
-  :short "ATJ types for the Java boolean destructor."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The ACL2 destructor of Java boolean values @(tsee boolean-value->bool)
-     plays a special role in the translation of ACL2 to Java.
-     An ACL2 @(tsee if) test of the form @('(boolean-value->bool b)'),
-     where @('b') is an ACL2 term that returns a @(tsee boolean-value)
-     (i.e. a Java boolean value in our model),
-     is compiled to Java @('if') test that consists of just
-     the Java expression derived from @('b'):
-     for instance, if @('b') is @('(java::int-less x y)'),
-     the generated Java test is @('(jx < jy)'),
-     where @('jx') and @('jy') are the Java equivalents of @('x') and @('y').")
-   (xdoc::p
-    "To make this work, we do not want the generated Java code
-     to convert @('b') to the Java representation of the ACL2 representation
-     of the Java boolean value;
-     instead, we want @('b') to remain a Java boolean value.
-     By assigning to @(tsee boolean-value->bool)
-     the argument type @(':jboolean') and the result type @(':asymbol'),
-     the conversion of @('b') will be avoided.")
-   (xdoc::p
-    "Since the @(tsee boolean-value->bool) destructor is inlined,
-     we need to specify @('boolean-value->bool$inline')
-     for @(tsee atj-main-function-type)."))
-
-  (atj-main-function-type boolean-value->bool$inline (:jboolean) :asymbol))

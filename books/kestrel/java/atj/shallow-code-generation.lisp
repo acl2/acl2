@@ -2194,9 +2194,13 @@
      (xdoc::p
       "Here we handle the test of the @(tsee if).
        If the test has the form @('(boolean-value->bool b)'),
-       as explained in @(tsee atj-types-for-boolean-value-destructor),
+       where @('b') is an ACL2 term that returns a @(tsee boolean-value)
+       (i.e. a Java boolean value in our model),
        we translate @('b') to its Java equivalent,
        ``ignoring'' @(tsee boolean-value->bool).
+       For instance, if @('b') is @('(java::int-less x y)'),
+       the generated Java test is @('(jx < jy)'),
+       where @('jx') and @('jy') are the Java equivalents of @('x') and @('y').
        More precisely, we are dealing with annotated terms,
        so we look for @(tsee if) tests of the form
        @('([AS>AS] (boolean-value->bool ([JZ>JZ] <jbool>)))'),

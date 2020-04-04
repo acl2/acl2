@@ -720,6 +720,125 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-conv-allowed-p ((src-type atj-typep)
+                                 (dst-type atj-typep))
+  :returns (yes/no booleanp)
+  :short "Ensure that a conversion between ATJ types is allowed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Not all @('[src>dst]') wrappers are allowed during type annotation.
+     These wrappers server to generate Java code
+     to convert from the source to the destination types.
+     This conversion is ``automatic'' in the sense that
+     there is no corresponding conversion function
+     in the original (i.e. not-typed-annotated) ACL2 code.")
+   (xdoc::p
+    "For example,
+     we allow a conversion from @(':ainteger') to @(':anumber'),
+     which may happen when an integer is passed to a function
+     whose input type is that of numbers.
+     As another example,
+     we allow a conversion from @(':avalue') to @(':astring'),
+     which may be justified by guard verification,
+     since the inferred types are decidable over-approximations.")
+   (xdoc::p
+    "However, we do not allow conversions
+     between @(':astring') and @(':anumber'),
+     because those two types are disjoint:
+     it is never the case, even when guards are verified,
+     that a number may be (turned into) a string
+     or a string may be (turned into) a number.
+     This situation should only happen
+     with program-mode or non-guard-verified code.")
+   (xdoc::p
+    "Among the @(':acl2') types, we allow conversions exactly when
+     the two types have values in common.
+     Currently this is only the case when one is a subset of the other,
+     but future extensions of the ATJ types may result in
+     more general situations.")
+   (xdoc::p
+    "We disallow any conversions
+     involving the @(':jprim') and @(':jprimarr') types,
+     unless the two types are identical, of course.
+     That is, no @(':acl2') type can be converted to a @(':j...') type,
+     and no @(':j...') type can be converted to an @(':acl2') type.
+     Furthermore, no @(':j...') type can be converted
+     to a different @(':j...') type.
+     The reason for these restrictions is that we want to keep
+     the @(':j...') types separate
+     from each other and from the @(':acl2') types,
+     and only allow explicit conversions between these,
+     i.e. via functions that the developer must write
+     in the original (i.e. non-typed-annotated) ACL2 code.")
+   (xdoc::p
+    "This predicate says whether
+     a conversion between two single types is allowed.
+     The predicate @(tsee atj-types-conv-allowed-p)
+     does the same for type lists,
+     which are actually used in the conversion functions
+     used to wrap ACL2 terms during type annotation."))
+  (if (and (atj-type-case src-type :acl2)
+           (atj-type-case dst-type :acl2))
+      (or (atj-type-<= src-type dst-type)
+          (atj-type-<= dst-type src-type))
+    (atj-type-equiv src-type dst-type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-types-conv-allowed-p ((src-types atj-type-listp)
+                                  (dst-types atj-type-listp))
+  :guard (and (consp src-types) (consp dst-types))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee atj-type-conv-allowed-p) to lists of types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists should always have the same length.
+     The conversion between type lists is allowed if and only if
+     it is allowed element-wise.")
+   (xdoc::p
+    "As a temporary exception,
+     we also allow singleton lists of @(':jprim') types
+     to be converted to the singleton list of @(':avalue').
+     This is needed in order to handle the translation to Java
+     of Java primitive array constructions via functions like
+     @(tsee byte-array-with-comps),
+     which may take as inputs lists of primitive values like
+     @('((byte-value 33) (byte-value 0) ...)'):
+     when the elements of these lists are type-annotated,
+     they are wrapped with conversions from @(':jprim') types to @(':avalue'),
+     which are then rewrapped during the translation to Java
+     (see @(tsee atj-type-rewrap-array-initializer-elements)).
+     We plan to improve the treatment of these array constructions:
+     when that is done, we will remove the temporary exception
+     from this predicate."))
+  (if (= (len src-types) (len dst-types))
+      (or (and ; the exception:
+           (endp (cdr src-types))
+           (endp (cdr dst-types))
+           (atj-type-case (car src-types) :jprim)
+           (atj-type-equiv (car dst-types)
+                           (atj-type-acl2 (atj-atype-value))))
+          (atj-types-conv-allowed-p-aux src-types dst-types))
+    (raise "Internal error: ~
+            the type lists ~x0 and ~x1 differe in length."
+           src-types dst-types))
+
+  :prepwork
+  ((define atj-types-conv-allowed-p-aux ((src-types atj-type-listp)
+                                         (dst-types atj-type-listp))
+     :guard (= (len src-types) (len dst-types))
+     :returns (yes/no booleanp)
+     (or (endp src-types)
+         (and (atj-type-conv-allowed-p (car src-types)
+                                       (car dst-types))
+              (atj-types-conv-allowed-p-aux (cdr src-types)
+                                            (cdr dst-types)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-wrap-term ((term pseudo-termp)
                             (src-types atj-type-listp)
                             (dst-types? atj-type-listp))
@@ -732,8 +851,19 @@
     "The conversion is from the source types to the destination types.
      If the destination types are the empty list,
      they are treated as if they were equal to the source types,
-     i.e. the conversion is a no-op."))
+     i.e. the conversion is a no-op.")
+   (xdoc::p
+    "If the destination type list is not empty,
+     we ensure that the conversion is allowed.
+     If it is not, we stop with an error:
+     this is a ``deep'' input validation error,
+     because the problem is in the ACL2 code provided by the user."))
   (b* (((unless (mbt (pseudo-termp term))) nil)
+       ((when (and (consp dst-types?)
+                   (not (atj-types-conv-allowed-p src-types dst-types?))))
+        (raise "Type annotation failure: ~
+                cannot convert from ~x0 to ~x1."
+               src-types dst-types?))
        (conv (if dst-types?
                  (atj-type-conv src-types dst-types?)
                (atj-type-conv src-types src-types))))
@@ -788,16 +918,24 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used when annotating @(tsee if) terms,
-     in the shallow embedding approach.
-     These terms are initially wrapped with a type conversion function,
-     but in general may need to be wrapped with a different one.
-     So here we replace the wrapper.
-     See @(tsee atj-type-annotate-term) for details."))
+    "This is used when a term is
+     preliminarily wrapped with a type conversion function,
+     but its wrapping is then finalized with a different conversion function.
+     So here we replace the wrapper.")
+   (xdoc::p
+    "We also check that the new conversion is allowed.
+     We stop with an error if that is not the case;
+     as in @(tsee atj-type-wrap-term),
+     this is a ``deep'' input validation error."))
   (b* (((when (or (variablep term)
                   (fquotep term)
                   (not (consp (fargs term)))))
-        (raise "Internal error: the term ~x0 has the wrong format." term)))
+        (raise "Internal error: the term ~x0 has the wrong format." term))
+       ((when (and (consp dst-types?)
+                   (not (atj-types-conv-allowed-p src-types dst-types?))))
+        (raise "Type annotation failure: ~
+                cannot convert from ~x0 to ~x1."
+               src-types dst-types?)))
     (atj-type-wrap-term (fargn term 1) src-types dst-types?))
   :guard-hints (("Goal" :expand ((pseudo-termp term)))))
 
