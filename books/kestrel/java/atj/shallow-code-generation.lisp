@@ -4087,6 +4087,7 @@
      for which we will need to generate @(tsee mv) classes."))
   (b* ((in-types (atj-function-type->inputs fn-type))
        (out-types (atj-function-type->outputs fn-type))
+       (out-arrays (atj-function-type->arrays fn-type))
        ((unless (= (len in-types) (len formals)))
         (raise "Internal error: ~
                 the number ~x0 of parameters of ~x1 ~
@@ -4097,8 +4098,9 @@
         (raise "Internal error: no output types ~x0 for ~x1." out-types fn)
         (mv (ec-call (jmethod-fix :irrelevant)) qconsts nil))
        ((mv formals body mv-typess)
-        (atj-pre-translate
-         fn formals body in-types out-types mv-typess nil guards$ wrld))
+        (atj-pre-translate fn formals body
+                           in-types out-types out-arrays
+                           mv-typess nil guards$ wrld))
        (qconsts (atj-add-qconstants-in-term body qconsts))
        ((mv formals &) (atj-unmark-vars formals))
        (formals (atj-type-unannotate-vars formals))

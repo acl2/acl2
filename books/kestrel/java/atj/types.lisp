@@ -1163,7 +1163,7 @@
      The non-@('nil') symbols must be all distinct.")
    (xdoc::p
     "The purpose of these array names is to support
-     an upcoming analysis of single-threaded use of Java primitive arrays
+     the analysis of single-threaded use of Java primitive arrays
      (to justify destructive array updates).
      The idea is that if a function takes an array as input
      (i.e. that input type is a @(':jprimarr') type)
