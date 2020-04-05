@@ -5,9 +5,9 @@
 ;;
 (in-package "ACL2")
 
-;; We say that the fraction N/D 'represents' x when x * D = N % Q.
+;; We say x is represented by the fraction N/D when x * D = N % Q.
 ;; This definition admits many possible fractional representations.
-;; We say that N/D is a 'minimal' representation of x if no smaller
+;; We say that N/D is a minimal representation of x if no smaller
 ;; denominator results in a numerator with a magnitude less than N.
 ;; This book introduces a function for computing such fractional
 ;; representations and proves that it generates minimal fractions.  We
@@ -97,7 +97,7 @@
 ;; 10 : 3/2
 ;; 11 : -1/3
 ;; 12 : 2/3
-;; 13 : 1/4
+;; 13 : -4/1
 ;; 14 : -3/1
 ;; 15 : -2/1
 ;; 16 : -1/1
@@ -938,7 +938,9 @@
                 (let ((f1 (max k (- n)))
                       (f2 (max m p)))
                   (if (< f1 f2) (mv n k)
-                    (mv p m)))
+                    (if (< f2 f1) (mv p m)
+                      (if (< k m) (mv n k)
+                        (mv p m)))))
               (if (lt-sqrt n q)
                   (mv n k)
                 (mv p m)))))))))
