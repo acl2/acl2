@@ -34,7 +34,7 @@
    (xdoc::p
     "Example:")
    (xdoc::codeblock
-    "ACL2 !>(symbol-package-name-safe 'car)"
+    "ACL2 !>(symbol-package-name-non-cl 'car)"
     "\"ACL2\""
     "ACL2 !>(symbol-package-name 'car)"
     "\"COMMON-LISP\""
