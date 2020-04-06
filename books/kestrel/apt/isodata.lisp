@@ -124,12 +124,7 @@
    by allowing keywords @(':resultj'), where @('j') is a positive integer,
    as part of the @('arg/res-listk') components of the @('isomaps') input,
    and by also allowing @(':result') as an abbreviation of @(':result1')
-   when the function is single-valued.
-   However, the rest of the transformation has not been extended yet,
-   and therefore at the end of input processing we ensure that
-   only results of single-valued functions are isomorphically transformed.
-   This final input pocessing code will be removed
-   once the rest of the transformation has been extended."))
+   when the function is single-valued."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,17 +184,6 @@
            if locally generated (otherwise @('nil'))."
           keyword-value-listp))
   :pred isodata-isomapp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-maybe-isomapp (x)
-  :short "Recognize isomorphic mapping records and @('nil')."
-  (or (isodata-isomapp x)
-      (null x))
-  ///
-  (defrule isodata-maybe-isomapp-when-isomapp
-    (implies (isodata-isomapp x)
-             (isodata-maybe-isomapp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
