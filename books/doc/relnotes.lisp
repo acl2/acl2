@@ -734,6 +734,12 @@
      under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
 
    (xdoc::p
+    "The function @(tsee symbol-package-name-non-cl),
+     originally called @('symbol-package-name-safe') but now renamed,
+     has been moved to the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/symbol-package-name-non-cl.lisp').")
+
+   (xdoc::p
     "The functions @(tsee organize-symbols-by-name)
      and @(tsee organize-symbols-by-pkg)
      has been moved to the Std extensions in the Kestrel Books,
