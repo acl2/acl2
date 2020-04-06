@@ -6,13 +6,8 @@
 (in-package "ACL2S")
 (include-book "cgen/top" :ttags :all)
 (include-book "utilities")
-(include-book "kestrel/utilities/symbols" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
-(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/system/terms" :dir :system)
-(include-book "centaur/misc/outer-local" :dir :system)
 (include-book "std/lists/top" :dir :system)
-(include-book "coi/util/pseudo-translate" :dir :system)
 
 #|
 Here is the top-level defunc control flow:
