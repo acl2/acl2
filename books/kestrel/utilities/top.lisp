@@ -57,7 +57,6 @@
 (include-book "skip-in-book")
 (include-book "strings/top")
 (include-book "sublis-expr-plus")
-(include-book "symbols")
 (include-book "system/top")
 (include-book "testing")
 (include-book "trans-eval-error-triple")
