@@ -137,4 +137,14 @@ class Acl2CharacterTest {
                         Acl2Symbol.LEN)) < 0);
     }
 
+    @Test
+    void equalsToCharacters() { // equality of codes
+        assertTrue(Acl2Character.make('o').equals(Acl2Character.make('o')));
+        assertTrue(Acl2Character.make('\22').equals(Acl2Character.make('\22')));
+        assertTrue(Acl2Character.CODE_0.equals(Acl2Character.CODE_0));
+        assertFalse(Acl2Character.CODE_0.equals(Acl2Character.make('4')));
+        assertFalse(Acl2Character.make('0').equals(Acl2Character.make('4')));
+        assertFalse(Acl2Character.make('\2').equals(Acl2Character.make('2')));
+    }
+
 }
