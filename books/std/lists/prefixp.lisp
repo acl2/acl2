@@ -188,4 +188,17 @@ the list @('y')."
     :rule-classes ((:rewrite :corollary (implies (and (prefixp x y)
                                                       (not (list-equiv x y))
                                                       (< (nfix n) (len x)))
-                                                 (equal (nth n y) (nth n x)))))))
+                                                 (equal (nth n y) (nth n x))))))
+  (defthm
+    append-when-prefixp
+    (implies (prefixp x y)
+             (equal (append x (nthcdr (len x) y)) y))
+    :hints (("Goal" :induct (prefixp x y)
+             :in-theory (enable prefixp)) ))
+
+  (defthm nthcdr-when-prefixp
+    (implies (and (prefixp x y) (true-listp y))
+             (iff (nthcdr (len x) y)
+                  (not (list-equiv x y))))
+    :hints (("Goal" :induct (prefixp x y)
+             :in-theory (enable prefixp)) )))
