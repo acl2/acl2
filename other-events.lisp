@@ -3562,6 +3562,81 @@
                      (and (termp tterm world)
                           (subsetp-eq (all-vars tterm) '(ens state))))))
 
+(defun theory-invariant-fn (term state key error event-form)
+  (when-logic
+   "THEORY-INVARIANT"
+   (with-ctx-summarized
+    'theory-invariant
+    (er-let* ((tterm
+               (translate term '(nil) nil '(state)
+                          'theory-invariant (w state) state)))
+
+; known-stobjs ='(state).  All other variables in term are treated as
+; non- stobjs.  This is ok because the :guard on the
+; theory-invariant-table will check that the only variables involved
+; in tterm are THEORY and STATE and when we ev the term THEORY will be
+; bound to a non-stobj (and STATE to state, of course).
+
+      (let* ((inv-table (table-alist 'theory-invariant-table
+                                     (w state)))
+             (key (or key
+                      (1+ (length inv-table)))))
+        (er-let* ((val (with-output!
+                         :off summary
+                         (table-fn1 'theory-invariant-table
+                                    key
+                                    (make theory-invariant-record
+                                          :tterm tterm
+                                          :error error
+                                          :untrans-term term
+                                          :book
+                                          (active-book-name (w state) state))
+                                    :put
+                                    nil
+                                    'theory-invariant
+                                    (w state)
+                                    (ens state)
+                                    state
+                                    event-form))))
+          (cond
+           ((eq val :redundant)
+            (value val))
+           (t
+            (pprogn
+             (cond ((assoc-equal key inv-table)
+                    (warning$ 'theory-invariant "Theory"
+                              "An existing theory invariant, named ~x0, is ~
+                               being overwritten by a new theory invariant ~
+                               with that name.~@1"
+                              key
+                              (cond ((f-get-global 'in-local-flg state)
+                                     "  Moreover, this override is being done ~
+                                      LOCALly; see :DOC theory-invariant (in ~
+                                      particular, the Local Redefinition ~
+                                      Caveat there), especially if an error ~
+                                      occurs.")
+                                    (t ""))))
+                   (t state))
+             (mv-let (erp val state)
+               (revert-world (with-output! :off summary
+
+; Below is the translation of:
+;                              (in-theory (current-theory :here))
+
+                               (in-theory-fn '(current-theory :here)
+                                             state
+                                             '(in-theory
+                                               (current-theory :here)))))
+               (declare (ignore val))
+               (cond
+                (erp
+                 (er soft 'theory-invariant
+                     "The specified theory invariant fails for the current ~
+                      ACL2 world, and hence is rejected.  This failure can ~
+                      probably be overcome by supplying an appropriate ~
+                      in-theory event first."))
+                (t (value key)))))))))))))
+
 #+acl2-loop-only
 (defmacro theory-invariant (&whole event-form term &key key (error 't))
 
@@ -3576,78 +3651,12 @@
 
 ; Therefore, we also define this macro as a trivial no-op in raw Lisp.
 
-  `(when-logic
-    "THEORY-INVARIANT"
-    (with-ctx-summarized
-     'theory-invariant
-     (er-let* ((tterm
-                (translate ',term '(nil) nil '(state)
-                           'theory-invariant (w state) state)))
-
-; known-stobjs ='(state).  All other variables in term are treated as
-; non- stobjs.  This is ok because the :guard on the
-; theory-invariant-table will check that the only variables involved
-; in tterm are THEORY and STATE and when we ev the term THEORY will be
-; bound to a non-stobj (and STATE to state, of course).
-
-              (let* ((inv-table (table-alist 'theory-invariant-table
-                                             (w state)))
-                     (key ,(if key
-                               `(quote ,key)
-                             '(1+
-                               (length inv-table)))))
-                (er-let*
-                 ((val
-                   (with-output
-                    :off summary
-                    (table-fn1 'theory-invariant-table
-                               key
-                               (make theory-invariant-record
-                                     :tterm tterm
-                                     :error ',error
-                                     :untrans-term ',term
-                                     :book (active-book-name (w state) state))
-                               :put
-                               nil
-                               'theory-invariant
-                               (w state)
-                               (ens state)
-                               state
-                               ',event-form))))
-                 (cond
-                  ((eq val :redundant)
-                   (value val))
-                  (t
-                   (pprogn
-                    (cond ((assoc-equal key inv-table)
-                           (warning$ 'theory-invariant "Theory"
-                                     "An existing theory invariant, named ~
-                                      ~x0, is being overwritten by a new ~
-                                      theory invariant with that name.~@1"
-                                     key
-                                     (cond ((f-get-global 'in-local-flg state)
-                                            "  Moreover, this override is ~
-                                             being done LOCALly; see :DOC ~
-                                             theory-invariant (in particular, ~
-                                             the Local Redefinition Caveat ~
-                                             there), especially if an error ~
-                                             occurs.")
-                                           (t ""))))
-                          (t state))
-                    (mv-let (erp val state)
-                            (with-output
-                             :off summary
-                             (in-theory (current-theory :here)))
-                            (declare (ignore val))
-                            (cond
-                             (erp
-                              (er soft 'theory-invariant
-                                  "The specified theory invariant fails for ~
-                                   the current ACL2 world, and hence is ~
-                                   rejected.  This failure can probably be ~
-                                   overcome by supplying an appropriate ~
-                                   in-theory event first."))
-                             (t (value key)))))))))))))
+  (list 'theory-invariant-fn
+        (list 'quote term)
+        'state
+        (list 'quote key)
+        (list 'quote error)
+        (list 'quote event-form)))
 
 #-acl2-loop-only
 (defmacro theory-invariant (&rest args)

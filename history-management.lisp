@@ -17988,6 +17988,19 @@
         "Illegal attempt to set the include-book-dir!-table.  This can only ~
          be done by calling ~v0."
         '(add-include-book-dir! delete-include-book-dir!)))
+   ((and (eq name 'puff-included-books)
+         (not (f-get-global 'modifying-include-book-dir-alist state)))
+
+; It's a bit of a hack (maybe a major hack) to use
+; modifying-include-book-dir-alist as a way of supporting the use of the
+; puff-included-books table when checking redundancy of include-book events.
+; But that works well; it's not used for very much else, it's set to t while
+; using :puff, and anyhow :puff is really a hack too.  This way we avoid adding
+; yet another state global.
+
+    (er soft ctx
+        "Illegal attempt to set the puff-included-books table.  This can only ~
+         be done by calling :puff or :puff*."))
    (t (let ((term (getpropc name 'table-guard *t* wrld)))
         (er-progn
          (mv-let
@@ -18198,9 +18211,27 @@
                (stop-redundant-event ctx state))
               (t (er-let*
                      ((pair (chk-table-guard name key val ctx wrld ens state))
+                      (wrld0 (value
+                              (cond
+                               ((eq name 'puff-included-books)
+                                (global-set
+                                 'include-book-alist
+
+; This setting is for use in the implementation of :puff, where the
+; puff-included-books table records books that have been puffed.  We could
+; consider setting 'include-book-alist-all as well, but since that is only used
+; for certification and one can't certify on a puffled world, we don't bother.
+; (If that changes, then be careful that val is also the right tuple to push
+; onto the global value of 'include-book-alist-all.)
+
+                                 (cons val
+                                       (global-val 'include-book-alist
+                                                   wrld))
+                                 wrld))
+                               (t wrld))))
                       (wrld1 (cond
                               ((null pair)
-                               (value wrld))
+                               (value wrld0))
                               (t (let ((ttags-allowed1 (car pair))
                                        (ttags-seen1 (cdr pair)))
                                    (pprogn (f-put-global 'ttags-allowed
@@ -18209,7 +18240,7 @@
                                            (value (global-set?
                                                    'ttags-seen
                                                    ttags-seen1
-                                                   wrld
+                                                   wrld0
                                                    (global-val 'ttags-seen
                                                                wrld)))))))))
                    (install-event
