@@ -639,6 +639,38 @@ to generate an attributed constraint, such as:
 will require us to generate constraint attribution at the time of
 function admission.
 
+[[
+Matt's reply: Or will it?  It seems to me that at the time the
+:functional-instance hint is processed, we have this chain of calls:
+
+translate-lmi
+calls
+translate-lmi/functional-instance
+calls
+relevant-constraints
+calls
+relevant-constraints1
+calls
+constraint-info
+
+If a suitable flag were passed, then constraint-info could return
+extra-info.  For example, after the encapsulate above, try this:
+
+(defthm lemma (equal (fn x) (fn x)) :rule-classes nil)
+(trace$ constraint-info)
+(thm t :hints (("Goal" :use (:functional-instance lemma (fn ifix)))))
+
+Then you'll see this:
+
+1> (CONSTRAINT-INFO FN |current-acl2-world|)
+<1 (CONSTRAINT-INFO FN
+                    ((IMPLIES (INTEGERP X)
+                              (INTEGERP (FN X)))))
+
+But actually, I think it would make a lot more sense to modify
+relevant-constraints1 to take a flag instead of constraint-info.
+... end of Matt's reply]]
+
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
 {{Improve :pl output when a free variable of the rule occurs in the argument of :pl.}}
