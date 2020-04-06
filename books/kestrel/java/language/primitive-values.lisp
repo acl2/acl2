@@ -54,7 +54,7 @@
                (equal x (boolean-value nil))))
     :enable boolean-value-p))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-value
   :short "Fixtype of Java @('char') values [JLS:4.2.1]."
@@ -70,7 +70,7 @@
              acl2::ubyte16p
              acl2::ubyte16-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod byte-value
   :short "Fixtype of Java @('byte') values [JLS:4.2.1]."
@@ -93,7 +93,7 @@
              acl2::sbyte8p
              acl2::sbyte8-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod short-value
   :short "Fixtype of Java @('short') values [JLS:4.2.1]."
@@ -116,7 +116,7 @@
              acl2::sbyte16p
              acl2::sbyte16-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod int-value
   :short "Fixtype of Java @('int') values [JLS:4.2.1]."
@@ -139,7 +139,7 @@
              acl2::sbyte32p
              acl2::sbyte32-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod long-value
   :short "Fixtype of Java @('long') values [JLS:4.2.1]."
@@ -162,7 +162,7 @@
              acl2::sbyte64p
              acl2::sbyte64-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod float-value
   :short "Fixtype of Java @('float') values
@@ -171,7 +171,7 @@
   :tag :float
   :layout :list)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod double-value
   :short "Fixtype of Java @('double') values
@@ -179,6 +179,78 @@
   ((double double-value-abs))
   :tag :double
   :layout :list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist boolean-value-list
+  :short "Fixtype of true lists of Java @('boolean') values."
+  :elt-type boolean-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred boolean-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist char-value-list
+  :short "Fixtype of true lists of Java @('char') values."
+  :elt-type char-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred char-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist byte-value-list
+  :short "Fixtype of true lists of Java @('byte') values."
+  :elt-type byte-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred byte-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist short-value-list
+  :short "Fixtype of true lists of Java @('short') values."
+  :elt-type short-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred short-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist int-value-list
+  :short "Fixtype of true lists of Java @('int') values."
+  :elt-type int-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred int-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist long-value-list
+  :short "Fixtype of true lists of Java @('long') values."
+  :elt-type long-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred long-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist float-value-list
+  :short "Fixtype of true lists of Java @('float') values."
+  :elt-type float-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred float-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist double-value-list
+  :short "Fixtype of true lists of Java @('double') values."
+  :elt-type double-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred double-value-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,7 +322,7 @@
                       (floatx-value-abs-fix x)))
       :enable floatx-value)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection doublex-value-fns
   :short "Recognizer, fixer, constructor, and destructor of

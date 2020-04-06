@@ -1275,7 +1275,7 @@
 (define atj-adapt-expr-to-type ((expr jexprp)
                                 (src-type atj-typep)
                                 (dst-type atj-typep))
-  :returns (new-expr jexprp :hyp (jexprp expr))
+  :returns (new-expr jexprp)
   :short "Adapt a Java expression from a source type to a destination type."
   :long
   (xdoc::topstring
@@ -1283,7 +1283,7 @@
     "This is used when generating
      shallowly embedded ACL2 calls of named functions.
      As explained " (xdoc::seetopic "atj-types" "here") ",
-     when the type of an actual argument of a function call
+     when, for instance, the type of an actual argument of a function call
      is not the same as or a subtype (according to Java subtyping) of
      the type of the formal argument,
      ATJ adds Java code to convert from the former type to the latter type.")
@@ -1294,14 +1294,27 @@
      The input @('dst-type') (for `destination type')
      is the type of the corresponding formal argument.")
    (xdoc::p
-    "A conversion from/to a @(':jprim') type to/from another type
-     is possible only if the other type is @(':acons') or @(':avalue');
-     otherwise, the assumption of guard verification must be violated somehow.
-     A conversion from/to a @(':jprimarr') type to/from another type
-     is possible only if the other type is
-     @(':asymbol'), @(':acons'), or @(':avalue');
-     otherwise, the assumption of guard verification must be violated somehow.
-     To convert between the AIJ class types,
+    "These type conversions are determined from
+     the wrapping conversion functions added by the type annotation step.
+     Those prohibit any conversion between @(':j...') and @(':acl2') types
+     (see @(tsee atj-type-wrap-term) and @(tsee atj-type-conv-allowed-p)),
+     save for a temporary exception needed to accommodate
+     terms that construct Java primitive arrays
+     (the exception is described in @(tsee atj-type-conv-allowed-p)).
+     However, those conversions are changed prior to the translation to Java
+     (see @(tsee atj-type-rewrap-array-initializer-elements)).
+     So, by the time we call this function @('atj-adapt-expr-to-type'),
+     the @('src-type') and @('dst-type') inputs should never be
+     one a @(':j...') type and one a @(':acl2') type.
+     If it is, it means that such a conversion was used somewhere else
+     than in the array constructions that get rewrapped,
+     and so here we cause a (deep input validation) failure
+     if that's the case.
+     For extra safety, we also cause an implementation error
+     if we are trying to do any other disallowed conversion,
+     but this should never happen.")
+   (xdoc::p
+    "To convert between the @(':acl2') types,
      if the source type is a subtype of or the same type as
      the destination type
      (which can be checked via @(tsee atj-type-<=),
@@ -1309,55 +1322,27 @@
      otherwise, we insert a cast to the destination type,
      which is expected to always succeed
      under the assumption of guard verification."))
-  (cond ((equal src-type dst-type) expr)
-        ((atj-type-case src-type :jprim)
-         (if (and (atj-type-case dst-type :acl2)
-                  (member-eq (atj-atype-kind (atj-type-acl2->get dst-type))
-                             '(:cons :value)))
-             (atj-adapt-expr-from-jprim-to-cons expr
-                                                (atj-type-jprim->get src-type))
-           (prog2$ (raise "Internal error: ~
-                           attempting to convert the Java expression ~x0 ~
-                           from type ~x1 to type ~x2."
-                          expr src-type dst-type)
-                   expr)))
-        ((atj-type-case src-type :jprimarr)
-         (if (and (atj-type-case dst-type :acl2)
-                  (member-eq (atj-atype-kind (atj-type-acl2->get dst-type))
-                             '(:symbol :cons :value)))
-             (atj-adapt-expr-from-jprimarray-to-list expr
-                                                     (atj-type-jprimarr->comp
-                                                      src-type))
-           (prog2$ (raise "Internal error: ~
-                           attempting to convert the Java expression ~x0 ~
-                           from type ~x1 to type ~x2."
-                          expr src-type dst-type)
-                   expr)))
-        ((atj-type-case dst-type :jprim)
-         (if (and (atj-type-case src-type :acl2)
-                  (member-eq (atj-atype-kind (atj-type-acl2->get src-type))
-                             '(:cons :value)))
-             (atj-adapt-expr-from-value-to-jprim expr
-                                                 (atj-type-jprim->get dst-type))
-           (prog2$ (raise "Internal error: ~
-                           attempting to convert the Java expression ~x0 ~
-                           from type ~x1 to type ~x2."
-                          expr src-type dst-type)
-                   expr)))
-        ((atj-type-case dst-type :jprimarr)
-         (if (and (atj-type-case src-type :acl2)
-                  (member-eq (atj-atype-kind (atj-type-acl2->get src-type))
-                             '(:symbol :cons :value)))
-             (atj-adapt-expr-from-value-to-jprimarray expr
-                                                      (atj-type-jprimarr->comp
-                                                       dst-type))
-           (prog2$ (raise "Internal error: ~
-                           attempting to convert the Java expression ~x0 ~
-                           from type ~x1 to type ~x2."
-                          expr src-type dst-type)
-                   expr)))
-        ((atj-type-<= src-type dst-type) expr)
-        (t (jexpr-cast (atj-type-to-jitype dst-type) expr))))
+  (cond ((atj-type-equiv src-type dst-type) (jexpr-fix expr))
+        ((and (atj-type-case src-type :jprim)
+              (atj-type-equiv dst-type (atj-type-acl2 (atj-atype-value))))
+         (prog2$ (raise "Type annotation failure: ~
+                         attempting to convert from ~x0 to ~x1."
+                        src-type dst-type)
+                 (jexpr-fix expr)))
+        ((and (atj-type-case src-type :acl2)
+              (atj-type-case dst-type :acl2))
+         (cond ((atj-type-<= src-type dst-type) (jexpr-fix expr))
+               ((atj-type-< dst-type src-type)
+                (jexpr-cast (atj-type-to-jitype dst-type) expr))
+               (t (prog2$ (raise "Internal error: ~
+                                  unexpected conversion from ~x0 to ~x1."
+                                 src-type dst-type)
+                          (jexpr-fix expr)))))
+        (t (prog2$ (raise "Internal error: ~
+                           unexpected conversion from ~x0 to ~x1."
+                          src-type dst-type)
+                   (jexpr-fix expr))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1366,7 +1351,7 @@
                                   (dst-types atj-type-listp))
   :guard (and (= (len exprs) (len src-types))
               (= (len exprs) (len dst-types)))
-  :returns (new-exprs jexpr-listp :hyp (jexpr-listp exprs))
+  :returns (new-exprs jexpr-listp)
   :short "Lift @(tsee atj-adapt-expr-to-type) to lists."
   :long
   (xdoc::topstring
@@ -1391,7 +1376,7 @@
               (consp dst-types)
               (= (len src-types) (len dst-types)))
   :returns (mv (block jblockp)
-               (new-expr jexprp :hyp (jexprp expr))
+               (new-expr jexprp)
                (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
   :short "Adapt a Java expression from source types to destination types."
   :long
@@ -1420,12 +1405,13 @@
             jvar-tmp-index))
        (src-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
        (dst-jtype (jtype-class (atj-gen-shallow-mv-class-name src-types)))
-       ((when (equal src-jtype dst-jtype)) (mv nil expr jvar-tmp-index))
+       ((when (equal src-jtype dst-jtype))
+        (mv nil (jexpr-fix expr) jvar-tmp-index))
        ((mv block
             expr
             jvar-tmp-index)
         (if (jexpr-case expr :name)
-            (mv nil expr jvar-tmp-index)
+            (mv nil (jexpr-fix expr) jvar-tmp-index)
           (b* (((mv block var jvar-tmp-index)
                 (atj-gen-jlocvar-indexed src-jtype
                                          jvar-tmp-base
@@ -1785,16 +1771,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-expr ((fn atj-java-primitive-constr-p) arg)
+(define atj-jprim-constr-of-qconst-to-expr ((fn atj-java-primitive-constr-p)
+                                            arg)
   :returns (expr jexprp)
   :short "Map an ACL2 function that models a Java primitive constructor
-          to the Java expression that constructs the primitive value."
+          to the Java expression that constructs the primitive value,
+          when the argument of the constructor is a quoted constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used to translate to Java a call of @('fn')
-     whose argument is a quoted constant term.
-     The unquoted argument is the parameter @('arg')."))
+    "The parameter @('arg') is the unquoted constant (i.e. the value)."))
   (case fn
     (boolean-value (if (booleanp arg)
                        (atj-gen-jboolean arg)
@@ -1829,6 +1815,45 @@
                    (ec-call (jexpr-fix :irrelevant)))))
     (t (prog2$ (impossible)
                (ec-call (jexpr-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprim-constr-of-nonqconst-to-expr ((fn atj-java-primitive-constr-p)
+                                               (arg-expr jexprp))
+  :returns (expr jexprp)
+  :short "Map an ACL2 function that models a Java primitive constructor
+          to the Java expression that constructs the primitive value,
+          when the argument of the constructor is non a quoted constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The parameter @('arg') is the Java expression for the argument,
+     which is an @('Acl2Symbol') for @(tsee boolean-value)
+     and an @('Acl2Integer') for the other constructors.")
+   (xdoc::p
+    "If the constructor is @(tsee boolean-value),
+     we turn it into a Java @('boolean') by comparing it with @('nil').")
+   (xdoc::p
+    "If the constructor is @(tsee long-value),
+     we extract a Java @('long') from the ACL2 integer.")
+   (xdoc::p
+    "For the other constructors,
+     we extract a Java @('int') from the ACL2 integer,
+     and we cast to the appropriate primitive type
+     unless the constructor is @(tsee int-value)."))
+  (b* (((when (eq fn 'boolean-value))
+        (jexpr-binary (jbinop-ne) arg-expr (atj-gen-symbol nil)))
+       ((when (eq fn 'long-value))
+        (jexpr-smethod *aij-type-int* "getJavaLong" (list arg-expr)))
+       (expr (jexpr-smethod *aij-type-int* "getJavaInt" (list arg-expr))))
+    (case fn
+      (char-value (jexpr-cast (jtype-char) expr))
+      (byte-value (jexpr-cast (jtype-byte) expr))
+      (short-value (jexpr-cast (jtype-short) expr))
+      (int-value expr)
+      (t (prog2$ (impossible)
+                 (ec-call (jexpr-fix :irrelevant))))))
   :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2549,7 +2574,7 @@
          (dst-type (atj-type-list-to-type dst-types)))
       (if (quotep arg)
           (b* ((arg (unquote-term arg))
-               (expr (atj-jprim-constr-to-expr fn arg))
+               (expr (atj-jprim-constr-of-qconst-to-expr fn arg))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
             (mv nil expr jvar-tmp-index))
         (b* (((mv arg-block
@@ -2564,9 +2589,7 @@
                                     qpairs
                                     t ; GUARDS$
                                     wrld))
-             (expr (atj-adapt-expr-to-type arg-expr
-                                           (atj-jprim-constr-to-type fn)
-                                           src-type)))
+             (expr (atj-jprim-constr-of-nonqconst-to-expr fn arg-expr)))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
               jvar-tmp-index))))

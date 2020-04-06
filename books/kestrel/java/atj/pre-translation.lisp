@@ -1121,9 +1121,7 @@
      the body of the function must have the output type(s) of the function.
      The recursive function @('atj-type-annotate-args'),
      which operates on the arguments of a function call,
-     does not take a list of required types as input;
-     if it did, it would be always consist of @('nil')s,
-     so we simply avoid it.")
+     does not take a list of required types as input.")
    (xdoc::p
     "The result of annotating a term is not only the annotated term,
      but also the type(s) of the wrapped term.
