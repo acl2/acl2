@@ -595,6 +595,50 @@ that one is certifying in that session.
 Note: extra-info hypotheses are already available for guard and
 termination proofs.
 
+Note: A cursory look into how constraints are computed reveals that
+some constraints (ie: from encapsulations) are associated with
+function symbols at the time of their admission:
+
+ACL2 !>(trace$ putprop-constraints)
+ACL2 !>(encapsulate
+    (
+     ((fn *) => *)
+     )
+  (local (defun fn (x) x))
+  (defthm integerp-fn
+    (implies
+     (integerp x)
+     (integerp (fn x))))
+  )
+
+1> (PUTPROP-CONSTRAINTS FN NIL
+                        ((IMPLIES (INTEGERP X)
+                                  (INTEGERP (FN X))))
+                        NIL
+                        ((FN SIBLINGS FN)
+                         . |current-acl2-world|))
+<1 (PUTPROP-CONSTRAINTS ((FN CONSTRAINT-LST
+                             (IMPLIES (INTEGERP X)
+                                      (INTEGERP (FN X))))
+                         (FN SIBLINGS FN)
+                         . |current-acl2-world|))
+
+In other words, enabling the event:
+
+:hints (("Goal" :use (:functional-instance lemma
+                                           (fn zed))))
+
+to generate an attributed constraint, such as:
+
+(implies
+ (and
+  (extra-info '(:functional-instantiation) '(:constraint integerp-fn))
+  (integerp x))
+ (integerp (zed x)))
+
+will require us to generate constraint attribution at the time of
+function admission.
+
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
 {{Improve :pl output when a free variable of the rule occurs in the argument of :pl.}}
