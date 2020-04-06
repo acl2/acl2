@@ -79,6 +79,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-java-primarray-writes*
+  :short "List of (the names of) the ACL2 functions that model
+          the writing of components from Java primitive arrays."
+  '(boolean-array-write
+    char-array-write
+    byte-array-write
+    short-array-write
+    int-array-write
+    long-array-write
+    float-array-write
+    double-array-write))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primarray-constrs*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive arrays."
@@ -113,13 +127,9 @@
 (defval *atj-java-primarray-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive array operations."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This just consists of the read, length, and constructor functions for now.
-     The write functions will be added in the future."))
   (append *atj-java-primarray-reads*
           *atj-java-primarray-lengths*
+          *atj-java-primarray-writes*
           *atj-java-primarray-constrs*
           *atj-java-primarray-constrs-init*)
   ///
@@ -141,6 +151,14 @@
   :short "Recognizer the ACL2 function symbols that model
           the retrieval of lengths of Java primitive arrays."
   (and (member-eq fn *atj-java-primarray-lengths*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primarray-write-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the writing of components from Java primitive arrays."
+  (and (member-eq fn *atj-java-primarray-writes*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,6 +224,40 @@
   (atj-main-function-type float-array-length (:jfloat[]) :jint)
 
   (atj-main-function-type double-array-length (:jdouble[]) :jint)
+
+  ;; write operations:
+
+  (atj-main-function-type boolean-array-write
+                          (:jboolean[] :jint :jboolean)
+                          (array :jboolean[]))
+
+  (atj-main-function-type char-array-write
+                          (:jchar[] :jint :jchar)
+                          (array :jchar[]))
+
+  (atj-main-function-type byte-array-write
+                          (:jbyte[] :jint :jbyte)
+                          (array :jbyte[]))
+
+  (atj-main-function-type short-array-write
+                          (:jshort[] :jint :jshort)
+                          (array :jshort[]))
+
+  (atj-main-function-type int-array-write
+                          (:jint[] :jint :jint)
+                          (array :jint[]))
+
+  (atj-main-function-type long-array-write
+                          (:jlong[] :jint :jlong)
+                          (array :jlong[]))
+
+  (atj-main-function-type float-array-write
+                          (:jfloat[] :jint :jfloat)
+                          (array :jfloat[]))
+
+  (atj-main-function-type double-array-write
+                          (:jdouble[] :jint :jdouble)
+                          (array :jdouble[]))
 
   ;; constructors from length:
 

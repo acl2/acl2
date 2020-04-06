@@ -2173,6 +2173,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-jprimarr-write-to-method-name ((fn atj-java-primarray-write-p))
+  :returns (method stringp)
+  :short "Map an ACL2 function that models
+          a Java primitive array write operation
+          to the corresponding Java method name."
+  (atj-primarray-write-method-name
+   (case fn
+     (boolean-array-write (primitive-type-boolean))
+     (char-array-write (primitive-type-char))
+     (byte-array-write (primitive-type-byte))
+     (short-array-write (primitive-type-short))
+     (int-array-write (primitive-type-int))
+     (long-array-write (primitive-type-long))
+     (float-array-write (primitive-type-float))
+     (double-array-write (primitive-type-double))
+     (t (prog2$ (impossible) ""))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-write-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-gen-shallow-term-fns
   :short "Functions to generate shallowly embedded ACL2 terms."
   :long
@@ -2982,6 +3002,94 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count array) 2))
 
+  (define atj-gen-shallow-jprimarr-write-call
+    ((fn atj-java-primarray-write-p)
+     (array pseudo-termp)
+     (index pseudo-termp)
+     (component pseudo-termp)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded
+            ACL2 call of a Java primitive write operation."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t').")
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions that model Java primitive array write operations
+       (i.e. @(tsee byte-array-write) etc.) are treated specially.
+       We generate Java code to compute the operands,
+       and generate a call of the Java method to write arrays."))
+    (b* (((mv array-block
+              array-expr
+              jvar-tmp-index)
+          (atj-gen-shallow-term array
+                                jvar-tmp-base
+                                jvar-tmp-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
+         ((mv index-block
+              index-expr
+              jvar-tmp-index)
+          (atj-gen-shallow-term index
+                                jvar-tmp-base
+                                jvar-tmp-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
+         ((mv component-block
+              component-expr
+              jvar-tmp-index)
+          (atj-gen-shallow-term component
+                                jvar-tmp-base
+                                jvar-tmp-index
+                                pkg-class-names
+                                fn-method-names
+                                curr-pkg
+                                qpairs
+                                t ; GUARDS$
+                                wrld))
+         (block (append array-block
+                        index-block
+                        component-block))
+         (expr (jexpr-method (atj-jprimarr-write-to-method-name fn)
+                             (list array-expr index-expr component-expr))))
+      (mv block
+          (atj-adapt-expr-to-type expr
+                                  (atj-type-list-to-type src-types)
+                                  (atj-type-list-to-type dst-types))
+          jvar-tmp-index))
+    ;; 2nd component is greater than 1
+    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases
+    ;; even when the ACL2-COUNT of the other addends is 0:
+    :measure (two-nats-measure (+ (acl2-count array)
+                                  (acl2-count index)
+                                  (acl2-count component))
+                               2))
+
   (define atj-gen-shallow-jprimarr-constr-call
     ((fn atj-java-primarray-constr-p)
      (length pseudo-termp)
@@ -3395,6 +3503,22 @@
                                                 curr-pkg
                                                 qpairs
                                                 wrld))
+         ((when (and guards$
+                     (atj-java-primarray-write-p fn)
+                     (int= (len args) 3))) ; should be always true
+          (atj-gen-shallow-jprimarr-write-call fn
+                                               (first args)
+                                               (second args)
+                                               (third args)
+                                               src-types
+                                               dst-types
+                                               jvar-tmp-base
+                                               jvar-tmp-index
+                                               pkg-class-names
+                                               fn-method-names
+                                               curr-pkg
+                                               qpairs
+                                               wrld))
          ((when (and guards$
                      (atj-java-primarray-constr-p fn)
                      (int= (len args) 1))) ; should be always true
