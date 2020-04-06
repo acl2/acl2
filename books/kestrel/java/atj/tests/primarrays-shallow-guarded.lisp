@@ -42,6 +42,30 @@
 
 (java::atj-main-function-type test-long-array-length (:jlong[]) :jint)
 
+(java::atj-main-function-type test-boolean-array-write
+                              (:jboolean[] :jint :jboolean)
+                              (a :jboolean[]))
+
+(java::atj-main-function-type test-char-array-write
+                              (:jchar[] :jint :jchar)
+                              (a :jchar[]))
+
+(java::atj-main-function-type test-byte-array-write
+                              (:jbyte[] :jint :jbyte)
+                              (a :jbyte[]))
+
+(java::atj-main-function-type test-short-array-write
+                              (:jshort[] :jint :jshort)
+                              (a :jshort[]))
+
+(java::atj-main-function-type test-int-array-write
+                              (:jint[] :jint :jint)
+                              (a :jint[]))
+
+(java::atj-main-function-type test-long-array-write
+                              (:jlong[] :jint :jlong)
+                              (a :jlong[]))
+
 (java::atj-main-function-type test-boolean-array-of-length (:jint) :jboolean[])
 
 (java::atj-main-function-type test-char-array-of-length (:jint) :jchar[])
@@ -136,6 +160,10 @@
 
 (java::atj-main-function-type i (:jfloat[] :jdouble[] :jint :jint) :jdouble)
 
+(java::atj-main-function-type j
+                              (:jbyte[] :jbyte[] :jint :jint)
+                              ((bytes1 :jbyte[]) (bytes2 :jbyte[])))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the tested functions.
@@ -153,6 +181,12 @@
            test-short-array-length
            test-int-array-length
            test-long-array-length
+           test-boolean-array-write
+           test-char-array-write
+           test-byte-array-write
+           test-short-array-write
+           test-int-array-write
+           test-long-array-write
            test-boolean-array-of-length
            test-char-array-of-length
            test-byte-array-of-length
@@ -187,6 +221,7 @@
            g
            h
            i
+           j
            :deep nil
            :guards t
            :java-class "PrimarraysShallowGuarded"

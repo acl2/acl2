@@ -97,6 +97,56 @@
   (declare (xargs :guard (java::long-array-p a)))
   (java::long-array-length a))
 
+;; array length operations:
+
+(defun test-boolean-array-write (a i e)
+  (declare
+   (xargs :guard (and (java::boolean-array-p a)
+                      (java::int-value-p i)
+                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (java::boolean-value-p e))))
+  (java::boolean-array-write a i e))
+
+(defun test-char-array-write (a i e)
+  (declare
+   (xargs :guard (and (java::char-array-p a)
+                      (java::int-value-p i)
+                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (java::char-value-p e))))
+  (java::char-array-write a i e))
+
+(defun test-byte-array-write (a i e)
+  (declare
+   (xargs :guard (and (java::byte-array-p a)
+                      (java::int-value-p i)
+                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (java::byte-value-p e))))
+  (java::byte-array-write a i e))
+
+(defun test-short-array-write (a i e)
+  (declare
+   (xargs :guard (and (java::short-array-p a)
+                      (java::int-value-p i)
+                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (java::short-value-p e))))
+  (java::short-array-write a i e))
+
+(defun test-int-array-write (a i e)
+  (declare
+   (xargs :guard (and (java::int-array-p a)
+                      (java::int-value-p i)
+                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (java::int-value-p e))))
+  (java::int-array-write a i e))
+
+(defun test-long-array-write (a i e)
+  (declare
+   (xargs :guard (and (java::long-array-p a)
+                      (java::int-value-p i)
+                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (java::long-value-p e))))
+  (java::long-array-write a i e))
+
 ;; array creation from length:
 
 (defun test-boolean-array-of-length (l)
@@ -292,6 +342,21 @@
                      (java::float-array-read floatarray i))
                     (java::double-array-read doublearray j)))
 
+(defun j (bytes1 bytes2 i1 i2)
+  (declare (xargs :guard (and (java::byte-array-p bytes1)
+                              (java::byte-array-p bytes2)
+                              (java::int-value-p i1)
+                              (java::int-value-p i2)
+                              (integer-range-p 0 (len bytes1)
+                                               (java::int-value->int i1))
+                              (integer-range-p 0 (len bytes2)
+                                               (java::int-value->int i2)))))
+  (let* ((x1 (java::byte-array-read bytes1 i1))
+         (x2 (java::byte-array-read bytes2 i2))
+         (bytes1 (java::byte-array-write bytes1 i1 x2))
+         (bytes2 (java::byte-array-write bytes2 i2 x1)))
+    (mv bytes1 bytes2)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Tests for the functions above (except the ones involving floating-point),
@@ -360,6 +425,46 @@
                         (java::long-array-with-comps
                          (list (java::long-value 1000000000)
                                (java::long-value 1000000000000000000)))))
+    ;; array write operations:
+    ("BooleanArrayWrite" (test-boolean-array-write
+                          (java::boolean-array-with-comps
+                           (list (java::boolean-value t)
+                                 (java::boolean-value nil)
+                                 (java::boolean-value nil)))
+                          (java::int-value 2)
+                          (java::boolean-value t)))
+    ("CharArrayWrite" (test-char-array-write
+                       (java::char-array-with-comps
+                        (list (java::char-value 722)
+                              (java::char-value 9990)
+                              (java::char-value 1)))
+                       (java::int-value 1)
+                       (java::char-value 88)))
+    ("ByteArrayWrite" (test-byte-array-write
+                       (java::byte-array-with-comps
+                        (list (java::byte-value -100)
+                              (java::byte-value 100)))
+                       (java::int-value 0)
+                       (java::byte-value -10)))
+    ("ShortArrayWrite" (test-short-array-write
+                        (java::short-array-with-comps
+                         (list (java::short-value -100)
+                               (java::short-value 100)
+                               (java::short-value 32001)
+                               (java::short-value -5000)))
+                        (java::int-value 2)
+                        (java::short-value 1)))
+    ("IntArrayWrite" (test-int-array-write
+                      (java::int-array-with-comps
+                       (list (java::int-value 1000000000)))
+                      (java::int-value 0)
+                      (java::int-value -100000)))
+    ("LongArrayWrite" (test-long-array-write
+                       (java::long-array-with-comps
+                        (list (java::long-value 1000000000)
+                              (java::long-value 1000000000000000000)))
+                       (java::int-value 1)
+                       (java::long-value -55555555555555555)))
     ;; array creation from length:
     ("BooleanArrayFromLength0" (test-boolean-array-of-length
                                 (java::int-value 0)))
@@ -480,7 +585,25 @@
     ;; H:
     ("H0" (h (java::byte-value 0)))
     ("H1" (h (java::byte-value 10)))
-    ("H2" (h (java::byte-value 100)))))
+    ("H2" (h (java::byte-value 100)))
+    ;; J:
+    ("J0" (j (java::byte-array-with-comps (list (java::byte-value 0)
+                                                (java::byte-value 1)
+                                                (java::byte-value 2)
+                                                (java::byte-value 3)))
+             (java::byte-array-with-comps (list (java::byte-value 0)
+                                                (java::byte-value -1)
+                                                (java::byte-value -2)
+                                                (java::byte-value -3)))
+             (java::int-value 1)
+             (java::int-value 3)))
+    ("J1" (j (java::byte-array-with-comps (list (java::byte-value 10)
+                                                (java::byte-value 10)
+                                                (java::byte-value 10)))
+             (java::byte-array-with-comps (list (java::byte-value 100)
+                                                (java::byte-value 100)))
+             (java::int-value 0)
+             (java::int-value 1)))))
 
 (defconst *shallow-guarded-tests*
   (append *shallow-guarded-basic-tests*
