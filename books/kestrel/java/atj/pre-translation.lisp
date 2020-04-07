@@ -2887,7 +2887,7 @@
     "Marking a variable as `new' is always ``safe'',
      because it is always safe to introduce a new Java local variable.
      On the other hand, marking a variable as `old' requires care,
-     to prevent a Java local variable may be erroneously reused.
+     to prevent a Java local variable to be erroneously reused.
      To understand this marking algorithm,
      one has to keep in mind how ACL2 terms are translated to Java:
      see @(tsee atj-gen-shallow-term) and companions.
@@ -2895,7 +2895,7 @@
      a proof of correctness would be very beneficial.")
    (xdoc::p
     "Two conditions are necessary for reusing a variable:
-     (i) the variable must be in scope (i.e. exists and be accessible); and
+     (i) the variable must be in scope (i.e. exist and be accessible); and
      (ii) the previous value of the variable must not be used afterwards.
      The parameters @('vars-in-scope') and @('vars-used-after')
      support the checking of these conditions.")
@@ -2967,8 +2967,8 @@
      this is somewhat inefficient,
      as the same free variables are collected repeatedly
      as the argument terms are processed,
-     but terms are not expected to be too large in the short term;
-     this will be optimized when needed.
+     but terms are not expected to be too large in the near future;
+     this may be eventually optimized when needed.
      Calls of @(tsee if) are treated a little differently,
      because the arguments are not evaluated left-to-right
      in the generated Java code:
@@ -2990,7 +2990,7 @@
     "As we mark the formal parameters of a lambda expression,
      we need to mark in the same way
      all the references to these variables in the body of the lambda expression.
-     For this purpose, we pass around a mapping
+     For this purpose, we pass around a mapping, @('vars-to-mark-new'),
      from (unmarked) variables to markings:
      this could be an alist from symbols to booleans,
      but we isomorphically use lists (treated as sets) of symbols instead,
