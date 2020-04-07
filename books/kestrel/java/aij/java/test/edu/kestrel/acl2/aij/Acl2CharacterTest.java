@@ -147,4 +147,23 @@ class Acl2CharacterTest {
         assertFalse(Acl2Character.make('\2').equals(Acl2Character.make('2')));
     }
 
+    @Test
+    void equalsToNonCharacters() {
+        // strings:
+        assertFalse(Acl2Character.CODE_0.equals(Acl2String.make("str")));
+        assertFalse(Acl2Character.make('a').equals(Acl2String.make("a")));
+        // symbols:
+        assertFalse(Acl2Character.CODE_0.equals(Acl2Symbol.T));
+        assertFalse(Acl2Character.make('~').equals(Acl2Symbol.IF));
+        // numbers:
+        assertFalse(Acl2Character.make('-').equals(Acl2Integer.make(473)));
+        assertFalse(Acl2Character.make('-').equals(Acl2Rational.make(3,4)));
+        assertFalse(Acl2Character.make('-').equals(Acl2Number.make(3,4)));
+        // cons pairs:
+        assertFalse(Acl2Character.CODE_0.
+                equals(Acl2ConsPair.make(Acl2Character.make('a'),
+                        Acl2Number.make(Acl2Rational.make(2,3),
+                                Acl2Rational.make(-3,4)))));
+    }
+
 }
