@@ -1186,3 +1186,9 @@
   (implies (and (not (equal x2 x1))
                 (consp (assoc-equal x1 alist)))
            (consp (remove-assoc-equal x2 alist))))
+
+(defthm nthcdr-under-iff
+  (iff (nthcdr n l)
+       (or (< (nfix n) (len l))
+           (and (equal (nfix n) (len l))
+                (not (true-listp l))))))

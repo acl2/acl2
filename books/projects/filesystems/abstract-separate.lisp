@@ -4022,23 +4022,26 @@
 
 (defthm
   abs-separate-of-put-assoc-lemma-13
-  (implies
-   (prefixp relpath
-            (frame-val->path (cdr (car frame))))
-   (equal (prefixp (append relpath x-path)
-                   (frame-val->path (cdr (car frame))))
-          (prefixp x-path
-                   (nthcdr (len relpath)
-                           (frame-val->path$inline (cdr (car frame)))))))
+  (implies (prefixp relpath
+                    (frame-val->path (cdr (car frame))))
+           (equal (prefixp (append relpath x-path)
+                           (frame-val->path (cdr (car frame))))
+                  (prefixp x-path
+                           (nthcdr (len relpath)
+                                   (frame-val->path (cdr (car frame)))))))
   :hints (("goal" :in-theory (disable (:rewrite binary-append-take-nthcdr)
                                       (:rewrite take-when-prefixp)
-                                      append-when-prefixp)
+                                      (:rewrite prefixp-nthcdr-nthcdr))
            :use ((:instance (:rewrite binary-append-take-nthcdr)
                             (l (frame-val->path (cdr (car frame))))
                             (i (len relpath)))
                  (:instance (:rewrite take-when-prefixp)
                             (y (frame-val->path (cdr (car frame))))
-                            (x relpath))))))
+                            (x relpath))
+                 (:instance (:rewrite prefixp-nthcdr-nthcdr)
+                            (l2 (frame-val->path (cdr (car frame))))
+                            (l1 (append relpath x-path))
+                            (n (len relpath)))))))
 
 (defthm
   abs-separate-of-put-assoc-lemma-14
@@ -5395,17 +5398,7 @@
                            (hifat-no-dups-p fs)))))
   :hints
   (("goal" :in-theory (enable collapse intersectp-equal)
-    :induct (collapse frame))
-   ("subgoal *1/7.3"
-    :in-theory (disable append-when-prefixp)
-    :use
-    (:instance
-     append-when-prefixp
-     (x (frame-val->path
-         (cdr (assoc-equal (1st-complete-src (frame->frame frame))
-                           (frame->frame frame)))))
-     (y (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                           (frame->frame frame)))))))))
+    :induct (collapse frame))))
 
 (defthm dist-names-of-append
   (equal (dist-names dir relpath (append frame1 frame2))
@@ -13016,61 +13009,6 @@
     (implies
      (and
       (mv-nth 1 (collapse frame))
-      (not (zp (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))))
-     (iff
-      (<
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-               (frame->frame frame)))))
-       (len
-        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
-      (not
-       (equal
-        (frame-val->path
-         (cdr (assoc-equal
-               (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-               (frame->frame frame))))
-        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))))
-    :hints (("Goal" :in-theory (enable list-equiv))))
-   (:rewrite
-    :corollary
-    (implies
-     (and
-      (mv-nth 1 (collapse frame))
-      (not (zp (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))))
-     (iff
-      (nthcdr
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-               (frame->frame frame)))))
-       (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-      (not
-       (equal
-        (frame-val->path
-         (cdr (assoc-equal
-               (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-               (frame->frame frame))))
-        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))))
-    :hints (("Goal" :in-theory (e/d () (append-when-prefixp))
-             :use (:instance
-                   append-when-prefixp
-                   (x
-                    (frame-val->path
-                     (cdr (assoc-equal
-                           (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-                           (frame->frame frame)))))
-                   (y
-                    (frame-val->path (cdr (assoc-equal x (frame->frame
-                                                          frame)))))))))
-   (:rewrite
-    :corollary
-    (implies
-     (and
-      (mv-nth 1 (collapse frame))
       (not (zp (frame-val->src (cdr (assoc-equal x (frame->frame frame))))))
       (list-equiv src-path
                   (frame-val->path
@@ -18285,7 +18223,7 @@
       :expand
       (:with
        (:rewrite partial-collapse-correctness-lemma-45
-                 . 5)
+                 . 3)
        (prefixp
         (frame-val->path$inline
          (cdr (assoc-equal (1st-complete (frame->frame frame))
