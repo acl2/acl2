@@ -2735,4 +2735,31 @@
     (lambda (i) (if (>= i 0)
                     (* 2 i)
                   (1- (- (* 2 i))))))
-  (isodata j ((x nat/int)))))
+  (isodata j ((x nat/int))))
+
+ ;;;;;;;;;;
+
+ (defun i (x y z)
+   (declare (xargs :guard (and (natp x) (natp y) (natp z))))
+   (mv z x y))
+
+ (must-succeed*
+  (defiso nat-id natp natp identity identity)
+  (isodata i (((x y z :result1 :result2 :result3) nat-id))))
+
+ (must-succeed*
+  (defun nat-to-int (n) ; FORTH
+    (declare (xargs :guard (natp n)))
+    (if (evenp n)
+        (/ n 2)
+      (- (/ (1+ n) 2))))
+  (defun int-to-nat (i) ; BACK
+    (declare (xargs :guard (integerp i)))
+    (if (>= i 0)
+        (* 2 i)
+      (1- (- (* 2 i)))))
+  (defiso nat/int natp integerp nat-to-int int-to-nat)
+  (isodata i (((x y z :result1 :result2 :result3) nat/int)))
+  (isodata i (((y :result3 z) nat/int))))
+
+ :with-output-off nil)
