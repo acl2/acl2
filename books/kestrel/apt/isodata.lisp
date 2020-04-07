@@ -2044,7 +2044,7 @@
   (b* (((when (endp res-isomaps)) nil)
        (j (caar res-isomaps))
        (isomap (cdar res-isomaps))
-       (forth-image (isodata-isomap->back-of-forth isomap))
+       (forth-image (isodata-isomap->forth-image isomap))
        (var (isodata-formal-of-forth isomap wrld))
        (mv-nth-of-term (fcons-term* 'mv-nth (1- j) term))
        (instance `(:instance ,forth-image
@@ -2283,8 +2283,8 @@
               ((endp (cdr res-isomaps))
                (apply-fn-into-ifs (isodata-isomap->forth (cdar res-isomaps))
                                   old-body-with-back-of-x1...xn))
-              (t (b* ((y1...ym (isodata-gen-result-vars old$ wrld))
-                      (forth-of-y1...ym (isodata-gen-oldp-of-terms
+              (t (b* ((y1...ym (isodata-gen-result-vars old$ m))
+                      (forth-of-y1...ym (isodata-gen-forth-of-terms
                                          y1...ym res-isomaps)))
                    (make-mv-let-call 'mv y1...ym :all
                                      old-body-with-back-of-x1...xn
