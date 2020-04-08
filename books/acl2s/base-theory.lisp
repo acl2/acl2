@@ -915,6 +915,14 @@ I commented out some disabled theorems that seem fine to me.
                            (<= 0 b)
                            (equal (mod b n) b))))))
 
+(defthm |(x*y mod m)/y = x|
+  (implies (and (acl2-numberp y)
+                (/= y 0)
+                (acl2-numberp x)
+                (acl2-numberp m))
+           (equal (equal (* (/ y) (mod (* x y) m)) x)
+                  (equal (mod (* x y) m) (* x y)))))
+
 #|
 
 Useful for testing defunc/definec errors
@@ -1349,4 +1357,3 @@ Useful for testing defunc/definec errors
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
         ))
-

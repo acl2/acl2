@@ -223,7 +223,17 @@
       l<
       <<
       lexp
-      
+
+      enable*
+      disable*
+      e/d*
+      add-to-ruleset
+      def-ruleset 
+      def-ruleset!
+      expand-ruleset
+      get-ruleset
+      ruleset
+    
       test? ;for acl2s-hooks query categorization
       acl2s-defaults acl2s-defaults-table
 
