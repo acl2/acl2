@@ -102,7 +102,7 @@ the list @('y')."
              (and (equal (< (len y) (len x)) nil)
                   (equal (< (len x) (len y))
                          (not (list-equiv x y)))))
-    :rule-classes ((:rewrite :backchain-limit-lst 0)
+    :rule-classes ((:rewrite)
                    (:linear :corollary (implies (prefixp x y)
                                                 (<= (len x) (len y)))))
     :hints (("goal" :in-theory (enable (:induction prefixp)))))

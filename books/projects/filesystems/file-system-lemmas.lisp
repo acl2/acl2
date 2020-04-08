@@ -1187,8 +1187,16 @@
                 (consp (assoc-equal x1 alist)))
            (consp (remove-assoc-equal x2 alist))))
 
-(defthm nthcdr-under-iff
-  (iff (nthcdr n l)
-       (or (< (nfix n) (len l))
-           (and (equal (nfix n) (len l))
-                (not (true-listp l))))))
+;; The following is redundant with the eponymous theorem in
+;;  books/kestrel/lists-light/nthcdr.lisp, from where it was taken after a
+;;  discussion with Eric Smith.
+(defthm nthcdr-iff
+  (iff (nthcdr n x)
+       (if (< (nfix n) (len x))
+           t
+         (if (equal (nfix n) (len x))
+             ;; If we know true-listp, this simplifies to nil and get merged
+             ;; with the nil branch below.
+             (not (true-listp x))
+           nil)))
+  :hints (("Goal" :in-theory (enable nthcdr))))
