@@ -3045,7 +3045,20 @@
      on the other hand, @('y') could be reused,
      if it is in scope and not used after the @(tsee let),
      because at the time of assigning to @('y')
-     its (previous) value has already been assigned to @('x')."))
+     its (previous) value has already been assigned to @('x').")
+   (xdoc::p
+    "When analyzing the arguments of a call of a lambda expression,
+     we need to extend @('vars-used-after') with
+     the free variables in the lambda expression
+     (i.e. the free variables in the body minus the formal arguments).
+     This is because the body of the lambda expression
+     is evaluated after the arguments of the call.
+     We store the extended list into @('vars-used-after-args').
+     But when we process the body of the lambda expression after that,
+     we go back to using @('vars-used-after'),
+     which excludes the variables used in the lambda expression,
+     and only includes the variables used
+     after the call of the lambda expression."))
 
   (define atj-mark-term ((term pseudo-termp)
                          (vars-in-scope symbol-listp)
@@ -3100,7 +3113,7 @@
                 (mv `(if ,test ,then ,else)
                     vars-in-scope)))))
          (args (fargs term))
-         (vars-used-after
+         (vars-used-after-args
           (if (symbolp fn)
               vars-used-after
             (union-eq vars-used-after
@@ -3108,7 +3121,7 @@
                                          (lambda-formals fn)))))
          ((mv marked-args vars-in-scope) (atj-mark-terms args
                                                          vars-in-scope
-                                                         vars-used-after
+                                                         vars-used-after-args
                                                          vars-to-mark-new))
          ((when (symbolp fn)) (mv (fcons-term fn marked-args)
                                   vars-in-scope))
