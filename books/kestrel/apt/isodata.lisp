@@ -54,7 +54,6 @@
    @('new-enable'),
    @('thm-name'),
    @('thm-enable'),
-   @('non-executable'),
    @('verify-guards'),
    @('untranslate'),
    @('hints'),
@@ -70,7 +69,6 @@
    @('new-enable$'),
    @('thm-name$'),
    @('thm-enable$'),
-   @('non-executable'),
    @('verify-guards$'),
    @('untranslate$'),
    @('hints$'),
@@ -1094,7 +1092,6 @@
                                 new-enable
                                 thm-name
                                 thm-enable
-                                non-executable
                                 verify-guards
                                 untranslate
                                 hints
@@ -1109,7 +1106,6 @@
                                     new-name$
                                     new-enable$
                                     thm-name$
-                                    non-executable$
                                     verify-guards$
                                     hints$
                                     names-to-avoid)')
@@ -1148,10 +1144,6 @@
                           "The :NEW-ENABLE input"
                           t nil))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
-                              non-executable
-                              (non-executablep old$ wrld)
-                              "The :NON-EXECUTABLE input" t nil))
        ((er &) (ensure-is-untranslate-specifier$ untranslate
                                                  "The :UNTRANSLATE input"
                                                  t nil))
@@ -1164,7 +1156,6 @@
                  new-name$
                  new-enable$
                  thm-name$
-                 non-executable$
                  verify-guards$
                  hints$
                  names-to-avoid))))
@@ -2372,7 +2363,6 @@
                             (predicate$ booleanp)
                             (new-name$ symbolp)
                             (new-enable$ booleanp)
-                            (non-executable$ booleanp)
                             (verify-guards$ booleanp)
                             (untranslate$ untranslate-specifier-p)
                             compatibility
@@ -2387,7 +2377,8 @@
    (xdoc::p
     "The macro used to introduce the new function is determined by
      whether the new function must be
-     enabled or not, and non-executable or not.")
+     enabled or not, and non-executable or not.
+     We make it non-executable if and only if @('old') is non-executable.")
    (xdoc::p
     "The new function has the same formal arguments as the old function.")
    (xdoc::p
@@ -2401,7 +2392,7 @@
    (xdoc::p
     "If the old function returns a multi-value result,
      we adjust the body of the new function to do the same."))
-  (b* ((macro (function-intro-macro new-enable$ non-executable$))
+  (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
        (formals (formals old$ wrld))
        (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomaps
                                       predicate$ new-name$ compatibility wrld))
@@ -3679,7 +3670,6 @@
    (new-enable$ booleanp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
-   (non-executable$ booleanp)
    (verify-guards$ booleanp)
    (untranslate$ untranslate-specifier-p)
    (hints$ symbol-truelist-alistp)
@@ -3774,7 +3764,6 @@
                             predicate$
                             new-name$
                             new-enable$
-                            non-executable$
                             verify-guards$
                             untranslate$
                             compatibility
@@ -3883,7 +3872,6 @@
                     new-enable
                     thm-name
                     thm-enable
-                    non-executable
                     verify-guards
                     untranslate
                     hints
@@ -3919,7 +3907,6 @@
                   new-name$
                   new-enable$
                   thm-name$
-                  non-executable$
                   verify-guards$
                   hints$
                   names-to-avoid))
@@ -3930,7 +3917,6 @@
                                 new-enable
                                 thm-name
                                 thm-enable
-                                non-executable
                                 verify-guards
                                 untranslate
                                 hints
@@ -3946,7 +3932,6 @@
                                            new-enable$
                                            thm-name$
                                            thm-enable
-                                           non-executable$
                                            verify-guards$
                                            untranslate
                                            hints$
@@ -3981,7 +3966,6 @@
                      (new-enable ':auto)
                      (thm-name ':auto)
                      (thm-enable 't)
-                     (non-executable ':auto)
                      (verify-guards ':auto)
                      (untranslate ':nice)
                      (hints 'nil)
@@ -3995,7 +3979,6 @@
                                    ',new-enable
                                    ',thm-name
                                    ',thm-enable
-                                   ',non-executable
                                    ',verify-guards
                                    ',untranslate
                                    ',hints
