@@ -126,7 +126,7 @@
 
 ;; /**
 ;;  * Check if the given assumption literal was used to prove the
-o;;  * unsatisfiability of the formula under the assumptions
+;;  * unsatisfiability of the formula under the assumptions
 ;;  * used for the last SAT search. Return 1 if so, 0 otherwise.
 ;;  * This function can only be used if ipasir_solve has returned 20 and
 ;;  * no ipasir_add or ipasir_assume has been called since then, i.e.,
