@@ -780,7 +780,8 @@ Example use
     (declare (xargs :guard (symbol-listp tnames)))
   (for ((tname in tnames)) (collect (type-metadata-basis tname curr-pkg))))
 
-(defconst *per-def-keywords* '(:satisfies :satisfies-fixer :min-rec-depth :max-rec-depth))
+(def-const *per-def-keywords*
+  '(:satisfies :satisfies-fixer :min-rec-depth :max-rec-depth))
 
 (defun parse-data-def (def tnames args curr-pkg ctx wrld)
   (declare (ignorable args))
@@ -887,10 +888,10 @@ Example use
 
 
 
-(defconst *defdata-keywords*
+(def-const *defdata-keywords*
   (append '(:pred-prefix
-            ;:pred-suffix :enum-prefix :enum-suffix :enum/acc-prefix :enum/acc-suffix
-            ;:pred-guard :enum-guard :enum/acc-guard
+            ;;:pred-suffix :enum-prefix :enum-suffix :enum/acc-prefix :enum/acc-suffix
+            ;;:pred-guard :enum-guard :enum/acc-guard
             :theory-name
             :debug :print-commentary :print-summary :time-track
             ;; :pre-pred-hook-fns :post-pred-hook-fns
@@ -909,43 +910,44 @@ Example use
 (defun parse-defdata (args curr-pkg wrld)
   (b* (((mv ds kwd-val-list) (separate-kwd-args args '()))
        (ctx 'parse)
-      (defaults-alst (table-alist 'defdata-defaults-table wrld)) ;TODO chek
-      (defaults-alst (remove1-assoc-eq-lst (evens kwd-val-list) defaults-alst))
-      ((mv kwd-alist rest-args)
-       (extract-keywords
-        ctx *defdata-keywords* kwd-val-list defaults-alst nil))
-      (acl2-defaults-tbl (table-alist 'acl2::acl2-defaults-table wrld))
-      (current-termination-method-entry
-       (assoc :termination-method acl2-defaults-tbl))
-      (kwd-alist
-       (put-assoc-eq :termination-method current-termination-method-entry kwd-alist))
-      (tnames (if (symbolp (car ds)) (list (car ds)) (strip-cars ds)))
-      (theory-name (s+ (car tnames) "-THEORY" :pkg curr-pkg))
-      (kwd-alist (put-assoc-eq :theory-name theory-name kwd-alist))
-      (kwd-alist (put-assoc-eq :clique tnames kwd-alist))
-      (kwd-alist (put-assoc-eq :current-package curr-pkg kwd-alist))
-      (preds (make-predicate-symbol-lst tnames curr-pkg))
-      ;;these are not yet defined, so we choose the predicate naming convention
-      (kwd-alist (put-assoc-eq :post-pred-events
-                               `((acl2::def-ruleset! ,theory-name ',preds)) ;definitions
-                               kwd-alist))
+       (defaults-alst (table-alist 'defdata-defaults-table wrld)) ;TODO chek
+       (defaults-alst (remove1-assoc-eq-lst (evens kwd-val-list) defaults-alst))
+       ((mv kwd-alist rest-args)
+        (extract-keywords
+         ctx *defdata-keywords* kwd-val-list defaults-alst nil))
+       (acl2-defaults-tbl (table-alist 'acl2::acl2-defaults-table wrld))
+       (current-termination-method-entry
+        (assoc :termination-method acl2-defaults-tbl))
+       (kwd-alist
+        (put-assoc-eq :termination-method current-termination-method-entry kwd-alist))
+       (tnames (if (symbolp (car ds)) (list (car ds)) (strip-cars ds)))
+       (theory-name (s+ (car tnames) "-THEORY" :pkg curr-pkg))
+       (kwd-alist (put-assoc-eq :theory-name theory-name kwd-alist))
+       (kwd-alist (put-assoc-eq :clique tnames kwd-alist))
+       (kwd-alist (put-assoc-eq :current-package curr-pkg kwd-alist))
+       (preds (make-predicate-symbol-lst tnames curr-pkg))
+       ;;these are not yet defined, so we choose the predicate naming convention
+       (kwd-alist (put-assoc-eq
+                   :post-pred-events
+                   `((acl2::def-ruleset! ,theory-name ',preds)) ;definitions
+                   kwd-alist))
 
-      ((unless (and (consp ds)
+       ((unless (and (consp ds)
                      (true-listp ds)))
-       (er hard? ctx "~| Empty form not allowed.~%"))
-
-      ((when (and (not (symbolp (car ds)))
-                  (consp (cdr ds)))) ;atleast 2 types
-       (list (parse-data-defs ds tnames rest-args curr-pkg ctx wrld) kwd-alist))
+        (er hard? ctx "~| Empty form not allowed.~%"))
+      
+       ((when (and (not (symbolp (car ds)))
+                   (consp (cdr ds)))) ;atleast 2 types
+        (list (parse-data-defs ds tnames rest-args curr-pkg ctx wrld) kwd-alist))
 
 
        (d (if (symbolp (car ds)) ds (car ds)))
        ;;rename ds to d to avoid confusion, d is the single definition
        ((unless (> (len d) 1))
         (er hard? ctx "~| Empty definition.~%" ))
-
+      
        ((unless (null (cddr d)))
-         (er hard? ctx "~| Definitions that are not mutually-recursive should be ~
+        (er hard? ctx "~| Definitions that are not mutually-recursive should be ~
                       of form (defdata <id> <type-exp> [:hints <hints>
                      ...]).~%" )))
 
@@ -970,7 +972,8 @@ Example use
   (b* ((verbosep (let ((lst (member :verbose args)))
                    (and lst (cadr lst)))))
     `(with-output
-      ,@(and (not verbosep) '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
+      ,@(and (not verbosep)
+             '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
       :gag-mode t :stack :push
       (encapsulate
        nil

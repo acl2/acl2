@@ -17,25 +17,26 @@
 
 
 ;;; Keep the following defconst synced with all the acl2s parameters
-(defconst *acl2s-parameters* '(:testing-enabled
-                               :num-trials
-                               :verbosity-level
-                               :num-counterexamples
-                               :num-print-counterexamples
-                               :num-witnesses
-                               :num-print-witnesses
-                               ;show-top-level-counterexample
-                               :search-strategy
-                               :sampling-method
-                               :backtrack-limit
-                               :cgen-timeout
-                               :cgen-local-timeout
-                               :cgen-single-test-timeout
-                               :print-cgen-summary
-                               :backtrack-bad-generalizations
-                               :use-fixers
-                               :recursively-fix
-                               ))
+(def-const *acl2s-parameters*
+  '(:testing-enabled
+    :num-trials
+    :verbosity-level
+    :num-counterexamples
+    :num-print-counterexamples
+    :num-witnesses
+    :num-print-witnesses
+    ;;show-top-level-counterexample
+    :search-strategy
+    :sampling-method
+    :backtrack-limit
+    :cgen-timeout
+    :cgen-local-timeout
+    :cgen-single-test-timeout
+    :print-cgen-summary
+    :backtrack-bad-generalizations
+    :use-fixers
+    :recursively-fix
+    ))
 
 ;All user-defined parameters are stored here
 (table acl2s-defaults-table)
@@ -123,7 +124,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 </p>
 ")
 
-(defconst *testing-enabled-values* '(T NIL :naive))
+(def-const *testing-enabled-values* '(T NIL :naive))
 
 (add-acl2s-parameter 
  testing-enabled :naive
@@ -260,7 +261,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   </code>"
    :guard (natp value))
 
-(defconst *search-strategy-values* '(:simple :incremental :hybrid))
+(def-const *search-strategy-values* '(:simple :incremental :hybrid))
 (add-acl2s-parameter 
  search-strategy :simple
  :short "Specify the search strategy to be used."
@@ -282,7 +283,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 ;; Use natural seeds or random tree of natural numbers 
 
-(defconst *sampling-method-values* '(:random :uniform-random :be :mixed))
+(def-const *sampling-method-values* '(:random :uniform-random :be :mixed))
 
 (add-acl2s-parameter 
  sampling-method :random

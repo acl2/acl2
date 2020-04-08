@@ -228,7 +228,7 @@
     cgen-state))
 
 ;Turned into an acl2s parameter
-;(defconst *check-bad-generalizations-and-backtrack* t)
+;(def-const *check-bad-generalizations-and-backtrack* t)
         
 ;; The following function implements a callback function (computed hint)
 ;; which calls the counterexample generation testing code. Thus the

@@ -52,8 +52,8 @@
   :satisfies (and (< (len x) 100) (> (len x) 10))
   :min-rec-depth 10)
 
-(defconst *SRL-DATA-MINIMUM* (- (expt 2 30)))
-(defconst *SRL-DATA-MAXIMUM* (expt 2 30))
+(def-const *SRL-DATA-MINIMUM* (- (expt 2 30)))
+(def-const *SRL-DATA-MAXIMUM* (expt 2 30))
 
 (defdata srl-int
   (range integer (*SRL-DATA-MINIMUM* <= _ <= *SRL-DATA-MAXIMUM*)))

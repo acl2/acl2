@@ -17,7 +17,7 @@ data last modified: [2014-08-06]
 (include-book "register-combinator")
 
 
-(defconst *listof-export-defthms*
+(def-const *listof-export-defthms*
   '((defthm _PRED_-IMPLIES-TLP
       (implies (_PRED_ x)
                (true-listp x))

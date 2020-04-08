@@ -9,6 +9,7 @@
 (in-package "ACL2S")
 (include-book "kestrel/utilities/proof-builder-macros" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(include-book "data-structures/utilities" :dir :system)
 
 (defxdoc ACL2s-utilities
   :parents (acl2::acl2-sedan)
@@ -593,3 +594,43 @@ functions over natural numbers.
                         nil *standard-co* state nil))
           (value :invisible))))))
 
+; A recognizer for quoted objects. Notice that quotep and fquotep only
+; recognize quoted object for pseudo-terms, even though they have a
+; guard of t.
+
+(defun rquotep (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (consp (cdr x))
+       (eq (car x) 'quote)
+       (null (cddr x))))
+
+; A recognizer for quoted objects that are conses. Notice that quotep
+; and fquotep only recognize quoted object for pseudo-terms, even
+; though they have a guard of t.
+
+(defun rfquotep (x)
+  (declare (xargs :guard (consp x)))
+  (and (consp (cdr x))
+       (eq (car x) 'quote)
+       (null (cdr (cdr x)))))
+
+(defloop rquote-listp (xs)
+  (declare (xargs :guard t))
+  (for ((x in xs)) (always (rquotep x))))
+
+(defloop unrquote-lst (xs)
+  (declare (xargs :guard (rquote-listp xs)))
+  (for ((x in xs))
+       (collect (unquote x))))
+
+; Added this since even on very simple examples defconst
+; seems to go on forever.
+(defmacro def-const (name form &optional doc)
+  `(with-output
+    :off :all :gag-mode nil :stack :push
+    (make-event
+     (let ((form ,form))
+       `(with-output
+         :stack :pop 
+         (defconst ,',name ',form ,@(and ,doc '(,doc))))))))

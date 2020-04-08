@@ -19,9 +19,9 @@ data last modified: [2014-08-06]
 ; DATA CONSTRUCTOR TABLE
 (table data-constructor-table nil nil :clear)
 
-(defconst *register-data-constructor-keywords* 
-  '(:verbose :hints :proper :rule-classes :local-events :export-defthms :theory-name :recordp))
-
+(def-const *register-data-constructor-keywords* 
+  '(:verbose :hints :proper :rule-classes :local-events
+             :export-defthms :theory-name :recordp))
 
 (defmacro register-data-constructor (recog-constr-pair pred-dex-lst &rest keys)
   (declare (xargs :guard (and (consp recog-constr-pair)

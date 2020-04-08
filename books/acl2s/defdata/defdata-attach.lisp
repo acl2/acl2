@@ -81,18 +81,20 @@ data last modified: [2015-06-09 Tue]
 
 (logic)
 
-(defconst *defdata-attach-need-override-permission-keywords*
+(def-const *defdata-attach-need-override-permission-keywords*
   '(:size :prettyified-def)) ;add more later
 
-(defconst *defdata-attach-constraint-rules-keywords* '(:constraint :constraint-variable :match-type :rule :meta-precondition :meta-replace))
+(def-const *defdata-attach-constraint-rules-keywords*
+  '(:constraint :constraint-variable :match-type :rule :meta-precondition :meta-replace))
 
-(defconst *defdata-attach-keywords* (append '(:test-enumerator ;aliased to :enumerator
-                                              :enumerator :enum/acc
-                                              :equiv :equiv-fixer
-                                              :sampling
-                                              :fixer :fixer-domain)
-                                            *defdata-attach-constraint-rules-keywords*
-                                            *defdata-attach-need-override-permission-keywords*))
+(def-const *defdata-attach-keywords*
+  (append '(:test-enumerator ;aliased to :enumerator
+            :enumerator :enum/acc
+            :equiv :equiv-fixer
+            :sampling
+            :fixer :fixer-domain)
+          *defdata-attach-constraint-rules-keywords*
+          *defdata-attach-need-override-permission-keywords*))
 
 
 ;TODO: The following form is currently quite limited. Extend it later to be more general.

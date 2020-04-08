@@ -306,11 +306,8 @@ data last modified: [2017-06-22 Thu]
        (hi-rel (tau-interval-hi-rel tau-interval)))
     (make-enum/acc-body-for-range ivar '_SEED (cadr s) lo hi lo-rel hi-rel)))
 
-
-
-
-
 (include-book "defdata-util")
+
 (defun make-defconst-event1 (p top-kwd-alist wrld)
   (declare (ignorable top-kwd-alist wrld))
   (b* (((cons tname A) p)
@@ -318,10 +315,11 @@ data last modified: [2017-06-22 Thu]
        (nbody ndef)
        (curr-pkg (get1 :current-package top-kwd-alist))
        (name (s+ "*" tname "-VALUES*" :pkg curr-pkg)))
-    (if (and (consp nbody) (eq 'acl2s::member (car nbody)))
-        `((acl2::defconst-fast ,name ,(cadr nbody)))
+    (if (and (consp nbody)
+             (eq 'acl2s::or (car nbody))
+             (rquote-listp (cdr nbody)))
+        `((def-const ,name ',(unrquote-lst (cdr nbody))))
       '())))
-
 
 (defloop member-defconst-event (ps kwd-alist wrld)
   (for ((p in ps)) (append (make-defconst-event1  p kwd-alist wrld))))

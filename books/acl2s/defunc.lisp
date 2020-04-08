@@ -126,7 +126,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           (xargs-kwd-alist1 (cdr decls) keywords ctx al))
       (xargs-kwd-alist1 (cdr decls) keywords ctx al))))
 
-(defconst *our-xargs-keywords*
+(def-const *our-xargs-keywords*
   (append '(:CONSIDER-CCMS :CONSIDER-ONLY-CCMS :TERMINATION-METHOD
                            :CCG-PRINT-PROOFS :TIME-LIMIT
                            :CCG-HIERARCHY)
@@ -780,10 +780,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   ((acl2s-d-undefined () t :guard t))
   (local (defun acl2s-d-undefined () nil)))
 
-(defconst *input-contract-alias*
+(def-const *input-contract-alias*
   '(:input-contract :ic :pre-condition :pre :require :assume))
 
-(defconst *output-contract-alias*
+(def-const *output-contract-alias*
   '(:output-contract :oc :post-condition :post :ensure :guarantee))
 
 (defun gather-alias1 (alias alist)
@@ -914,7 +914,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
     (or (get1 (car alias) alist)
         (get1-alias (cdr alias) alist))))
 
-(defconst *defunc-keywords*
+(def-const *defunc-keywords*
   (append
    *input-contract-alias*
    *output-contract-alias*

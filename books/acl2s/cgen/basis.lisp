@@ -373,7 +373,8 @@
    (mv def-events~ P)))
 
 
-(defconst *stobjs* '(state R$ types-ht$)) ;ACHTUNG: Keep in sync!
+(def-const *stobjs*
+  '(state R$ types-ht$)) ;ACHTUNG: Keep in sync!
 
 (defun mk-declare (K)
   (declare (xargs :guard (and (keyword-value-listp K)
@@ -438,10 +439,6 @@
   (mv A nil))
 
 (deflabel f*)
-
-
-
-(defconst   *acl2s-version* "1.0.2.1")
 
 (defun def-fn1 (name arglist decl-kv-list decls body ctx wrld state)
   (declare (ignorable wrld state))
@@ -546,7 +543,7 @@ General form: ~
 
 
 
-(defconst   *primitives*
+(def-const   *primitives*
   '(+f   *f   |1+f|   =  |1-f|   -f   /=  <=  <  >  >=
     plus-mod-m31 double-mod-m31 times-expt-2-16-mod-m31 times-mod-m31
     mod mod^ floor floor^ expt expt^
@@ -611,7 +608,7 @@ General form: ~
     subst-var subst-var-lst
     ))
 
-(defconst   *special-forms*
+(def-const *special-forms*
   '(b* let mv-let cond case case-match defabbrev defun defmacro
     ))
 

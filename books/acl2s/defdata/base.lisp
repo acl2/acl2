@@ -182,11 +182,11 @@ on a per data definition basis or
 
 ;;characters
 
-(defconst *character-values* *standard-chars*)
+(def-const *character-values* *standard-chars*)
 
-(defconst *len-character-values* (len *character-values*))
+(def-const *len-character-values* (len *character-values*))
 
-(defconst *alpha-chars*
+(def-const *alpha-chars*
   '(#\A #\B #\C #\D #\E #\F #\G
     #\H #\I #\J #\K #\L #\M #\N #\O #\P #\Q
     #\R #\S #\T #\U #\V #\W #\X #\Y #\Z
@@ -195,26 +195,26 @@ on a per data definition basis or
     #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w
     #\x #\y #\z     ))
 
-(defconst *len-alpha-chars* (len *alpha-chars*))
+(def-const *len-alpha-chars* (len *alpha-chars*))
 
-(defconst *alpha-low-chars*
+(def-const *alpha-low-chars*
   '(#\a #\b #\c
     #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
     #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w
     #\x #\y #\z 
     ))
 
-(defconst *len-alpha-low-chars* (len *alpha-low-chars*))
+(def-const *len-alpha-low-chars* (len *alpha-low-chars*))
 
-(defconst *alpha-up-chars*
+(def-const *alpha-up-chars*
   '(#\A #\B #\C #\D #\E #\F #\G
     #\H #\I #\J #\K #\L #\M #\N #\O #\P #\Q
     #\R #\S #\T #\U #\V #\W #\X #\Y #\Z
     ))
 
-(defconst *len-alpha-up-chars* (len *alpha-up-chars*))
+(def-const *len-alpha-up-chars* (len *alpha-up-chars*))
 
-(defconst *alpha-num-chars*
+(def-const *alpha-num-chars*
   '(#\A #\B #\C #\D #\E #\F #\G
     #\H #\I #\J #\K #\L #\M #\N #\O #\P #\Q
     #\R #\S #\T #\U #\V #\W #\X #\Y #\Z
@@ -225,7 +225,7 @@ on a per data definition basis or
     #\x #\y #\z
     ))
 
-(defconst *len-alpha-num-chars* (len *alpha-num-chars*))
+(def-const *len-alpha-num-chars* (len *alpha-num-chars*))
 
 
 (defthm integerp-mod
@@ -274,7 +274,7 @@ on a per data definition basis or
 (local (in-theory (disable mod)))
 ;;booleans
 
-(defconst *boolean-values* '(t nil))
+(def-const *boolean-values* '(t nil))
 (defun nth-boolean-builtin (n)
   (declare (xargs :guard (natp n)))
   (nth (mod n 2) *boolean-values*))
@@ -390,7 +390,7 @@ on a per data definition basis or
       mag
       (- -1 mag))))
 
-(defconst *init-hash-num* 
+(def-const *init-hash-num* 
   (floor (* 61803095516164791237/100000000000000000000 (expt 2 64)) 1))
 
 (defun simple-hash (n range)
@@ -979,7 +979,7 @@ as a type.
     charlist))
 
 #||
-(defconst *base-types* '((BOOLEAN 2 *BOOLEAN-VALUES* . BOOLEANP)
+(def-const *base-types* '((BOOLEAN 2 *BOOLEAN-VALUES* . BOOLEANP)
                          (CHARACTER-LIST T NTH-CHARACTER-LIST . CHARACTER-LISTP)
                          (SYMBOL T NTH-SYMBOL . SYMBOLP)
                          (STRING T NTH-STRING . STRINGP)
@@ -1111,7 +1111,7 @@ Same as neg-ratio
                       nth-acl2-number-builtin
                       acl2-numberp)
 
-(defconst *number-testing-limit* 1000)
+(def-const *number-testing-limit* 1000)
 
 ;ADDED restricted testing enumerators for all number types
 (defun nth-neg-testing (n)
@@ -1229,7 +1229,7 @@ No longer needed.
 
 (local (in-theory (disable acl2::legal-constantp)))
 
-(defconst *nice-symbol-names*
+(def-const *nice-symbol-names*
   '(x y z a b c i j k p q r s u v w l d e f g h m n))
 
 (defun nth-proper-symbol-builtin (n)
@@ -1308,7 +1308,7 @@ No longer needed.
 ;added the above atom primitive types in the data-type graph using register-custom-type
 
 ;custom type
-(defconst *z-values* '(0 -1 "a" 1/3 :a)) ;for zp
+(def-const *z-values* '(0 -1 "a" 1/3 :a)) ;for zp
 (defun nth-z-builtin (n)
   (declare (xargs :guard (natp n)))
   (nth (mod n 5) *z-values*))
@@ -1789,17 +1789,6 @@ The corresponding rules do not seem to help, at all.
         (nth-all-uniform-builtin m seed)))
     (mv `(quote ,val) seed)))
 
-; A recognizer for quoted objects. Notice that quotep and fquotep only
-; recognize quoted object for pseudo-terms, even though they have a
-; guard of t.
-
-(defun rquotep (x)
-  (declare (xargs :guard t))
-  (and (consp x)
-       (consp (cdr x))
-       (eq (car x) 'quote)
-       (null (cdr (cdr x)))))
-
 (defdata::register-type quote
   :predicate rquotep
   :domain-size t
@@ -1807,7 +1796,7 @@ The corresponding rules do not seem to help, at all.
   :enum/acc nth-quote-uniform-builtin)
 
 ;We will also name a special type, the empty type, which has no elements in its typeset.
-(defconst *empty-values* '())
+(def-const *empty-values* '())
 (defun nth-empty (x)
   (declare (ignore x) (xargs :guard (natp x)))
   (er hard? 'nth-empty "~| Empty enumerator~%"))

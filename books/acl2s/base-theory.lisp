@@ -1319,17 +1319,6 @@ Useful for testing defunc/definec errors
 (definec lrev (x :tl) :tl
   (rev x))
 
-; Added this since even on very simple examples defconst
-; seems to go on forever.
-(defmacro def-const (name form &optional doc)
-  `(with-output
-    :off :all :gag-mode nil :stack :push
-    (make-event
-     (let ((form ,form))
-       `(with-output
-         :stack :pop 
-         (defconst ,',name ',form ,@(and ,doc '(,doc))))))))
-
 (in-theory
  #!acl2(disable
         ;; |(mod (+ x y) z) where (<= 0 z)|
