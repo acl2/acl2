@@ -185,6 +185,12 @@
                   (take n (nats=>chars nats))))
   :hints (("goal" :in-theory (enable nats=>chars take))))
 
+(defthm list-equiv-when-true-listp
+  (implies (and (true-listp x) (true-listp y))
+           (iff (list-equiv x y) (equal x y)))
+  :hints (("goal" :in-theory (enable fast-list-equiv)
+           :induct (fast-list-equiv x y))))
+
 (defthm
   consecutive-read-file-into-string-1
   (implies
@@ -557,6 +563,12 @@
                 (<= 32 (len dir-contents)))
            (dir-ent-p (take 32 dir-contents)))
   :hints (("goal" :in-theory (enable dir-ent-p))))
+
+(defthm element-list-equiv-of-nthcdr-1
+  (implies (not (element-list-final-cdr-p t))
+           (element-list-equiv (nthcdr (len l) l)
+                               nil)))
+(table listfix-rules 'element-list-equiv-of-nthcdr-1 t)
 
 (fty::deflist dir-ent-list
               :elt-type dir-ent
@@ -1501,6 +1513,11 @@
   (implies (m1-file-alist-p fs)
            (m1-file-alist-p (remove-assoc-equal key fs))))
 
+(defthm member-equal-of-strip-cars-when-m1-file-alist-p
+  (implies (and (not (fat32-filename-p x))
+                (m1-file-alist-p fs))
+           (not (member-equal x (strip-cars fs)))))
+
 (defun
     hifat-bounded-file-alist-p-helper (x ac)
   (declare (xargs :guard (and (m1-file-alist-p x) (natp ac))
@@ -1930,13 +1947,14 @@
   (hifat-place-file fs pathname file) 3
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
-(defthm hifat-no-dups-p-of-put-assoc-equal-1
-  (implies
-   (and (m1-file-alist-p m1-file-alist)
-        (hifat-no-dups-p m1-file-alist)
-        (m1-regular-file-p file))
-   (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+(local
+ (defthm hifat-no-dups-p-of-put-assoc-equal-1
+   (implies
+    (and (m1-file-alist-p m1-file-alist)
+         (hifat-no-dups-p m1-file-alist)
+         (m1-regular-file-p file))
+    (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
+   :hints (("goal" :in-theory (enable hifat-no-dups-p)))))
 
 (defthm hifat-no-dups-p-of-put-assoc-equal-2
   (implies (and (m1-file-alist-p m1-file-alist)
@@ -2019,26 +2037,28 @@
    (hifat-remove-file fs pathname))
   :hints (("goal" :in-theory (enable hifat-remove-file))))
 
-(defthm
-  hifat-remove-file-correctness-3-lemma-1
-  (implies
-   (and (m1-file-alist-p m1-file-alist)
-        (hifat-no-dups-p m1-file-alist))
-   (hifat-no-dups-p (remove-assoc-equal key m1-file-alist)))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+(local
+ (defthm
+   hifat-remove-file-correctness-3-lemma-1
+   (implies
+    (and (m1-file-alist-p m1-file-alist)
+         (hifat-no-dups-p m1-file-alist))
+    (hifat-no-dups-p (remove-assoc-equal key m1-file-alist)))
+   :hints (("goal" :in-theory (enable hifat-no-dups-p)))))
 
 (defthm
   hifat-remove-file-correctness-3
   (hifat-no-dups-p (mv-nth 0 (hifat-remove-file fs pathname)))
   :hints (("goal" :in-theory (enable hifat-remove-file))))
 
-(defthm
-  hifat-remove-file-correctness-4-lemma-1
-  (implies (and (m1-file-alist-p z)
-                (hifat-no-dups-p z)
-                (m1-directory-file-p (cdr (assoc-equal key z))))
-           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key z)))))
-  :hints (("Goal" :in-theory (enable hifat-no-dups-p)) ))
+(local
+ (defthm
+   hifat-remove-file-correctness-4-lemma-1
+   (implies (and (m1-file-alist-p z)
+                 (hifat-no-dups-p z)
+                 (m1-directory-file-p (cdr (assoc-equal key z))))
+            (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key z)))))
+   :hints (("Goal" :in-theory (enable hifat-no-dups-p)) )))
 
 (defthm hifat-remove-file-correctness-4
   (implies (not (equal (mv-nth 1 (hifat-remove-file fs pathname))

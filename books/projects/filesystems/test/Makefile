@@ -754,6 +754,20 @@ create-tar-1: $(MOUNTPOINT)
 	TAR_OUTPUT="/tmp" saved_acl2 < tar-reader.lisp
 	true
 
+create-tar-2: $(MOUNTPOINT)
+	rm -f $(DISK)
+	mkfs.fat -C -v -F 32 -s 2 $(DISK) $(SIZE)
+	sudo mount -o loop,uid=$(UID),gid=$(GID) -t msdos $(DISK) $(MOUNTPOINT)
+	mkdir -p $(MOUNTPOINT)/tmp/tickets1
+	cp input-4623-bytes.txt $(MOUNTPOINT)/tmp/tickets1/ticket1.txt
+	cp input-4623-bytes.txt $(MOUNTPOINT)/tmp/tickets1/ticket2.txt
+	mv $(MOUNTPOINT)/tmp/tickets1 $(MOUNTPOINT)/tmp/tickets2
+	sleep 1
+	sudo umount $(MOUNTPOINT)
+	env DISK=disk1.raw TAR_INPUT="/tmp" \
+	TAR_OUTPUT="/tmp/tickets1.tar" saved_acl2 < tar-writer.lisp
+	true
+
 # The following test creates a 128 MB disk image, copies a file to the
 # root directory, reads it in ACL2, then writes it back without change.
 mtools-read-write-test-128MB: read-disk-image-write-disk-image.lisp
