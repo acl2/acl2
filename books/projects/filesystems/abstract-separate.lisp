@@ -17503,6 +17503,47 @@
     partial-collapse-correctness-lemma-16
     (implies
      (and
+      (< 0 (1st-complete (frame->frame frame)))
+      (context-apply-ok
+       (frame-val->dir
+        (cdr (assoc-equal
+              (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+              (frame->frame frame))))
+       (frame-val->dir (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                         (frame->frame frame))))
+       (1st-complete (frame->frame frame))
+       (nthcdr
+        (len
+         (frame-val->path
+          (cdr (assoc-equal
+                (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+                (frame->frame frame)))))
+        (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                           (frame->frame frame))))))
+      (frame-p (frame->frame frame))
+      (no-duplicatesp-equal (strip-cars (frame->frame frame))))
+     (not
+      (equal
+       (1st-complete (frame->frame frame))
+       (frame-val->src$inline (cdr (assoc-equal x (frame->frame frame)))))))
+    :hints
+    (("goal" :in-theory (e/d (collapse 1st-complete-src)
+                             ((:definition assoc-equal)
+                              (:definition remove-assoc-equal)
+                              (:rewrite put-assoc-equal-without-change . 2)
+                              (:rewrite nthcdr-when->=-n-len-l)
+                              (:rewrite abs-file-alist-p-when-m1-file-alist-p)
+                              m1-file-alist-p-of-cdr-when-m1-file-alist-p
+                              (:definition member-equal)
+                              (:definition remove-equal)
+                              (:rewrite remove-when-absent)
+                              (:definition len)
+                              (:rewrite remove-assoc-when-absent))))))
+
+  (defthm
+    partial-collapse-correctness-lemma-55
+    (implies
+     (and
       (not
        (equal
         (nthcdr
@@ -17641,17 +17682,19 @@
     :hints
     (("goal"
       :in-theory
-      (disable (:definition assoc-equal)
-               (:definition remove-assoc-equal)
-               (:rewrite put-assoc-equal-without-change . 2)
-               (:rewrite nthcdr-when->=-n-len-l)
-               (:rewrite abs-file-alist-p-when-m1-file-alist-p)
-               m1-file-alist-p-of-cdr-when-m1-file-alist-p
-               (:definition member-equal)
-               (:definition remove-equal)
-               (:rewrite remove-when-absent)
-               (:definition len)
-               (:rewrite remove-assoc-when-absent))
+      (e/d
+       (collapse 1st-complete-src)
+       ((:definition assoc-equal)
+        (:definition remove-assoc-equal)
+        (:rewrite put-assoc-equal-without-change . 2)
+        (:rewrite nthcdr-when->=-n-len-l)
+        (:rewrite abs-file-alist-p-when-m1-file-alist-p)
+        m1-file-alist-p-of-cdr-when-m1-file-alist-p
+        (:definition member-equal)
+        (:definition remove-equal)
+        (:rewrite remove-when-absent)
+        (:definition len)
+        (:rewrite remove-assoc-when-absent)))
       :cases
       ((member-equal
         (nth
