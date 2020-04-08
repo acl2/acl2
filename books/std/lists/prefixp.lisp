@@ -99,13 +99,12 @@ the list @('y')."
 
   (defthm len-when-prefixp
     (implies (prefixp x y)
-             (and (equal (< (len y) (len x)) nil)
-                  (equal (< (len x) (len y))
-                         (not (list-equiv x y)))))
+             (equal (< (len y) (len x))
+                    nil))
     :rule-classes ((:rewrite)
                    (:linear :corollary (implies (prefixp x y)
                                                 (<= (len x) (len y)))))
-    :hints (("goal" :in-theory (enable (:induction prefixp)))))
+    :hints(("Goal" :in-theory (enable (:induction prefixp)))))
 
   (defthm take-when-prefixp
     (implies (prefixp x y)
@@ -143,7 +142,7 @@ the list @('y')."
                     (list-equiv x y)))
     :hints(("Goal" :in-theory (enable prefixp list-equiv))))
 
-  ;; Mihir M. mod: Five lemmas are added below. prefixp-transitive generates
+  ;; Mihir M. mod: Six lemmas are added below. prefixp-transitive generates
   ;; two rewrite rules which are identical except in how they bind the free
   ;; variable y; it is similar with prefixp-one-way-or-another and the free
   ;; variable z. In nth-when-prefixp, the rewrite rule is a little less general
