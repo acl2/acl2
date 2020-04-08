@@ -156,14 +156,16 @@ data last modified: [2014-08-06]
 
 
 (program)
+
 (defun map-theory-events (name keybody valbody new-types kwd-alist wrld)
  ; (declare (xargs :mode :program))
 ;assumption: key/val body are core defdata exps (holds because user-combinators occur only at top-level)
   (b* ((M (append new-types (type-metadata-table wrld)))
        (A (type-alias-table wrld))
        (pred (predicate-name name A M))
-       ((when (not (proper-symbolp pred))) (er hard? 'map-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
-       
+       ((when (not (proper-symbolp pred)))
+        (er hard? 'map-theory-events
+            "~| Couldnt find predicate name for ~x0.~%" name))
        ((mv ?symbol-alist-subtypep ?keypred) 
         (if (and (proper-symbolp keybody) (assoc-eq keybody M))
             (mv (subtype-p (predicate-name keybody A M)
@@ -175,6 +177,8 @@ data last modified: [2014-08-06]
                       (predicate-name valbody A M)))
 
        (disabled (get1 :disabled kwd-alist))
+       (curr-pkg (get1 :current-package kwd-alist))
+       (pkg-sym (pkg-witness curr-pkg))
        (disabled (cons 'acl2::mset-diff-mset disabled))
        (local-events-template *map-local-events*)
        (export-defthms-template *map-export-defthms*)
@@ -187,13 +191,13 @@ data last modified: [2014-08-06]
                                      :splice-alist splice-alist
                                      :atom-alist atom-alist
                                      :str-alist str-alist
-                                     :pkg-sym 'acl2::asdf))
+                                     :pkg-sym pkg-sym))
        (export-defthms (template-subst export-defthms-template
                                      :features features
                                      :splice-alist splice-alist
                                      :atom-alist atom-alist
                                      :str-alist str-alist
-                                     :pkg-sym 'acl2::asdf))
+                                     :pkg-sym pkg-sym))
        (all-defthm-names (get-event-names export-defthms))
        (theory-name (get1 :theory-name kwd-alist))
 

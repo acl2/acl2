@@ -198,19 +198,21 @@ data last modified: [2014-08-06]
         (s+ theory-name "DEST-DEFS" :separator "/" :pkg pkg))
        )
        
-    (append `((local (in-theory (enable ,(get1 :recog conx-al)))))
-            (make-constructor conx-name field-pred-alist kwd-alist)
-            (make-destructors conx-name field-pred-alist kwd-alist)
-
-            (make-modifiers conx-name field-pred-alist kwd-alist)
-            ;; `((acl2::def-ruleset! ,(s+ theory-name "ALL-DEFS" :separator "/")
-            ;;                       ',(append (list conx-name)
-            ;;                               (destructor-function-names field-pred-alist kwd-alist)
-            ;;                               (modifier-fn-names field-pred-alist kwd-alist))))
-            `((acl2::def-ruleset! ,dest-defs-ruleset-name
-                                  ',(destructor-function-names conx-name field-pred-alist kwd-alist)))
-
-            `((acl2::def-patbind-macro ,conx-name ,(strip-cars dest-pred-alist))))))
+    (append
+     `((local (in-theory (enable ,(get1 :recog conx-al)))))
+     (make-constructor conx-name field-pred-alist kwd-alist)
+     (make-destructors conx-name field-pred-alist kwd-alist)
+     
+     (make-modifiers conx-name field-pred-alist kwd-alist)
+     ;; `((acl2::def-ruleset! ,(s+ theory-name "ALL-DEFS" :separator "/")
+     ;;                       ',(append (list conx-name)
+     ;;                               (destructor-function-names field-pred-alist kwd-alist)
+     ;;                               (modifier-fn-names field-pred-alist kwd-alist))))
+     `((acl2::def-ruleset!
+        ,dest-defs-ruleset-name
+        ',(destructor-function-names conx-name field-pred-alist kwd-alist)))
+     
+     `((acl2::def-patbind-macro ,conx-name ,(strip-cars dest-pred-alist))))))
    
 
 (defloop conx/dex/mod/record-events (new-constructors kwd-alist)
