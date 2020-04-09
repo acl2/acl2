@@ -175,10 +175,10 @@ program.  You may want to use the -i option, "<code>tar xpvfi
 8.2.tar</code>", if you have problems with other than Gnu tar.  You
 can see if you have Gnu tar by running "<code>tar -v</code>".)  The
 resulting tarball and its extracted directory will consist of
-about 80 MB and 260 MB, respectively.  Additional space is
-required to build an executable image, probably between about 100 MB and 300 MB
-depending on the platform (including the host Lisp); and more will be
-required to <A HREF="using.html#Certifying">certify books</A>.
+about 120 MB and 300+ MB, respectively.  Additional space is
+required to build an executable image, for example, perhaps a little
+more than 150 MB if you use CCL and 200 MB if you use SBCL; and more
+will be required to <A HREF="using.html#Certifying">certify books</A>.
 
 
 <BR><BR>
@@ -196,9 +196,9 @@ required to <A HREF="using.html#Certifying">certify books</A>.
 <b>Note</b>: You can also fetch the latest "bleeding-edge" version of
 the ACL2 system and the community books using git, as shown below.
 (These generally work very well, but the authors of ACL2 issue this
-disclaimer at startup: <i>The authors of ACL2 consider such
-distributions to be experimental; they may be incomplete, fragile, and
-unable to pass our own regression tests.</i>)
+disclaimer at startup: <i>On rare occasions development snapshots may
+be incomplete, fragile, or unable to pass the usual regression
+tests.</i>)
 
 <pre>
 git clone https://github.com/acl2/acl2
