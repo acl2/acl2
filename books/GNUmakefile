@@ -275,9 +275,9 @@ REBUILD_MAKEFILE_BOOKS := $(shell \
 #$(info $(REBUILD_MAKEFILE_BOOKS))
 
 ifdef ACL2_PCERT
-	PCERT_OPT := "--pcert-all"	
+	PCERT_OPT := "--pcert-all"
 else
-	PCERT_OPT := 
+	PCERT_OPT :=
 endif
 
 $(info Scanning for dependencies...)
@@ -1451,6 +1451,14 @@ BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-fast.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
+# Uses redefinition:
+BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/redef.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Includes the redef book just above:
+BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/top.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Name conflict for "INSTANCE" package between instance.lisp and
+# (included in system/pseudo-good-worldp.lisp) system book
+# std/portcullis.lisp:
+BOOKS_BKCHK_OUT := $(filter-out workshops/2004/davis/support/%, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
