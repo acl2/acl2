@@ -12,6 +12,9 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/utilities/define-sk" :dir :system)
+
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
@@ -894,32 +897,8 @@
           (parse-treep tree string rulename rules))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv string-parsablep
-    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
-    :hints (("Goal"
-             :in-theory (disable string-parsablep-suff)
-             :use (;; for STRING:
-                   (:instance string-parsablep-suff
-                    (string (string-fix string))
-                    (tree (string-parsablep-witness string rulename rules)))
-                   (:instance string-parsablep-suff
-                    (tree (string-parsablep-witness
-                           (string-fix string) rulename rules)))
-                   ;; for RULENAME:
-                   (:instance string-parsablep-suff
-                    (rulename (rulename-fix rulename))
-                    (tree (string-parsablep-witness string rulename rules)))
-                   (:instance string-parsablep-suff
-                    (tree (string-parsablep-witness
-                           string (rulename-fix rulename) rules)))
-                   ;; for RULES:
-                   (:instance string-parsablep-suff
-                    (rules (rulelist-fix rules))
-                    (tree (string-parsablep-witness string rulename rules)))
-                   (:instance string-parsablep-suff
-                    (tree (string-parsablep-witness
-                           string rulename (rulelist-fix rules))))))))
+  (fty::deffixequiv-sk string-parsablep
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp)))
 
   (defrule treep-of-string-parsablep-witness-when-string-parsablep
     (implies (string-parsablep string rulename rules)
@@ -949,49 +928,8 @@
                (parse-treep tree2 string rulename rules)))
   ///
 
-  ;; boilerplate:
-  (fty::deffixequiv string-ambiguousp
-    :args ((string stringp) (rulename rulenamep) (rules rulelistp))
-    :hints (("Goal"
-             :in-theory (disable string-ambiguousp-suff)
-             :use (;; for STRING:
-                   (:instance string-ambiguousp-suff
-                    (string (string-fix string))
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string rulename rules))))
-                   (:instance string-ambiguousp-suff
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      (string-fix string) rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      (string-fix string) rulename rules))))
-                   ;; for RULENAME:
-                   (:instance string-ambiguousp-suff
-                    (rulename (rulename-fix rulename))
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string rulename rules))))
-                   (:instance string-ambiguousp-suff
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string (rulename-fix rulename) rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string (rulename-fix rulename) rules))))
-                   ;; for RULES:
-                   (:instance string-ambiguousp-suff
-                    (rules (rulelist-fix rules))
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename rules)))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string rulename rules))))
-                   (:instance string-ambiguousp-suff
-                    (tree1 (mv-nth 0 (string-ambiguousp-witness
-                                      string rulename (rulelist-fix rules))))
-                    (tree2 (mv-nth 1 (string-ambiguousp-witness
-                                      string
-                                      rulename
-                                      (rulelist-fix rules)))))))))
+  (fty::deffixequiv-sk string-ambiguousp
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp)))
 
   (defruled string-parsablep-when-string-ambiguousp
     (implies (string-ambiguousp string rulename rules)
@@ -1041,9 +979,25 @@
   (xdoc::topstring-p
    "If this is true, then the string has a finite number of parse trees.")
   (forall (tree)
-          (iff (in tree trees)
+          (iff (in tree (tree-set-fix trees))
                (parse-treep tree string rulename rules)))
+  :thm-name parse-trees-of-string-p-necc0
   ///
+
+  (in-theory (disable parse-trees-of-string-p-necc0))
+
+  (defrule parse-trees-of-string-p-necc
+    (implies (and (parse-trees-of-string-p trees string rulename rules)
+                  (tree-setp trees))
+             (iff (in tree trees)
+                  (parse-treep tree string rulename rules)))
+    :use (:instance parse-trees-of-string-p-necc0 (trees (tree-set-fix trees))))
+
+  (fty::deffixequiv-sk parse-trees-of-string-p
+    :args ((trees tree-setp)
+           (string stringp)
+           (rulename rulenamep)
+           (rules rulelistp)))
 
   (defrule at-most-one-parse-tree-set-of-string
     (implies (and (tree-setp trees1)
@@ -1088,27 +1042,20 @@
                    nil))))
 
   (defrule string-unambiguousp-when-parse-trees-of-string-p-of-one
-    (implies (parse-trees-of-string-p
-              (insert (string-parsablep-witness string rulename rules) nil)
-              string rulename rules)
+    (implies (and (parse-trees-of-string-p
+                   (insert tree nil) string rulename rules)
+                  (treep tree))
              (string-unambiguousp string rulename rules))
     :enable (string-unambiguousp string-ambiguousp)
     :disable parse-trees-of-string-p-necc
     :use ((:instance parse-trees-of-string-p-necc
-           (trees (insert
-                   (string-parsablep-witness string rulename rules)
-                   nil))
-           (tree (string-parsablep-witness string rulename rules)))
+           (trees (insert tree nil)))
           (:instance parse-trees-of-string-p-necc
-           (trees (insert
-                   (string-parsablep-witness string rulename rules)
-                   nil))
+           (trees (insert tree nil))
            (tree (mv-nth 0 (string-ambiguousp-witness
                             string rulename rules))))
           (:instance parse-trees-of-string-p-necc
-           (trees (insert
-                   (string-parsablep-witness string rulename rules)
-                   nil))
+           (trees (insert tree nil))
            (tree (mv-nth 1 (string-ambiguousp-witness
                             string rulename rules)))))))
 
@@ -1124,6 +1071,9 @@
           (and (tree-setp trees)
                (parse-trees-of-string-p trees string rulename rules)))
   ///
+
+  (fty::deffixequiv-sk string-has-finite-parse-trees-p
+    :args ((string stringp) (rulename rulenamep) (rules rulelistp)))
 
   (defrule tree-setp-of-witness-when-string-has-finite-parse-trees-p
     (implies (string-has-finite-parse-trees-p string rulename rules)

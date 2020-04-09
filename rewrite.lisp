@@ -8569,8 +8569,9 @@
                  (declare (ignore failures-remaining))
                  (cond
                   ((eq (caddr failure-reason) 'hyp-vars)
-                   (msg ":HYP ~x0 contains free variables ~&1, for which no ~
-                           suitable bindings were found."
+                   (msg ":HYP ~x0 contains free variable~#1~[~/s~] ~&1, for ~
+                         which no suitable ~#1~[binding was~/bindings were~] ~
+                         found."
                         n
                         (set-difference-equal (cdddr failure-reason)
                                               (strip-cars unify-subst))))
@@ -12612,6 +12613,45 @@
              (mv t ttree0)))))
         (t (mv t ttree0))))))))
 
+(defun comment-fn (x y)
+
+; If y is a term, then (comment-fn x y) is a term.  We take advantage of this
+; fact when calling comment-fn in hide-with-comment.
+
+  (declare (xargs :guard t))
+  `(return-last 'progn '(:comment . ,x) ,y))
+
+(defmacro comment (x y)
+  (comment-fn x y))
+
+(defstub hide-with-comment-p () t)
+(defattach hide-with-comment-p constant-t-function-arity-0)
+
+(defun hide-with-comment (val term state)
+
+; Warning: Keep this in sync with ev-fncall-null-body-erp.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((hide-with-comment-p)
+    (let ((fn (and (consp val)
+                   (eq (car val) 'ev-fncall-null-body-er)
+                   (symbolp (cdr val))
+                   (cdr val))))
+      (cond ((null fn)
+             (fcons-term* 'hide term))
+            (t (let* ((str0 "Called constrained function ")
+                      (str (if (symbol-in-current-package-p fn state)
+                               (concatenate 'string str0 (symbol-name fn))
+                             (concatenate 'string
+                                          str0
+                                          (symbol-package-name fn)
+                                          "::"
+                                          (symbol-name fn)))))
+                 (fcons-term* 'hide
+                              (comment-fn str term)))))))
+   (t (fcons-term* 'hide term))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -13144,7 +13184,8 @@
                                       (cond
                                        ((equal new-term1 new-term2)
                                         (mv step-limit
-                                            (fcons-term* 'hide new-term1)
+                                            (hide-with-comment erp new-term1
+                                                               state)
                                             (push-lemma
                                              (fn-rune-nume 'hide nil nil wrld)
                                              ttree)))

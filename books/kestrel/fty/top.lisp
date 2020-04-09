@@ -23,6 +23,8 @@
 (include-book "deffixequiv-sk")
 (include-book "deffixequiv-sk-doc")
 (include-book "deffixtype-alias")
+(include-book "defflatsum")
+(include-book "defflatsum-doc")
 (include-book "deflist-of-len")
 (include-book "defomap")
 (include-book "defset")

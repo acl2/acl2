@@ -93,6 +93,9 @@
    :hints (("Goal" :in-theory (disable f)
             :use (:instance f-limited)))))
   
+; Added by Matt K. after v8-2 for (HIDE (COMMENT ...)) change:
+(defattach-system hide-with-comment-p constant-nil-function-arity-0)
+
 (local
  (encapsulate
   nil

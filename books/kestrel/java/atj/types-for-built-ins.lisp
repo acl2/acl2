@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,8 +21,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-atj-main-function-type mv-nth (:ainteger :avalue) :avalue)
+(atj-main-function-type mv-nth (:ainteger :avalue) :avalue)
 
-(def-atj-main-function-type not (:avalue) :asymbol)
+(atj-main-function-type not (:avalue) :asymbol)
 
-(def-atj-main-function-type zp (:ainteger) :asymbol)
+(atj-main-function-type zp (:ainteger) :asymbol)

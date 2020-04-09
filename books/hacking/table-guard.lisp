@@ -2,7 +2,7 @@
 
 ; Modification by Matt K. after v4-3: Removed :load-compiled-file :comp, which
 ; was part of all three include-book forms just below, in support of
-; provisional certification.  Presumably the indicate books have already been
+; provisional certification.  Presumably the indicated books have already been
 ; compiled by now, anyhow.
 
 ; were in portcullis:

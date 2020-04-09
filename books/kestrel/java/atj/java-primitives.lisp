@@ -162,6 +162,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-java-primitive-deconstrs*
+  :short "List of (the names of) the ACL2 functions that model
+          the deconstruction of Java primitive values."
+  :long
+  (xdoc::topstring-p
+   "These are the inverses of the functions
+    that model the construction of primitive values.
+    These deconstructors essentially convert the Java primitive values
+    to the corresponding ACL2 values (symbols and integers).")
+  '(boolean-value->bool$inline
+    char-value->nat$inline
+    byte-value->int$inline
+    short-value->int$inline
+    int-value->int$inline
+    long-value->int$inline))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primitive-unops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive unary operations."
@@ -327,6 +345,7 @@
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
   (append *atj-java-primitive-constrs*
+          *atj-java-primitive-deconstrs*
           *atj-java-primitive-unops*
           *atj-java-primitive-binops*
           *atj-java-primitive-convs*)
@@ -341,6 +360,14 @@
   :short "Recognize the ACL2 function symbols that model
           the construction of Java primitive types."
   (and (member-eq fn *atj-java-primitive-constrs*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primitive-deconstr-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognize the ACL2 function symbols that model
+          the deconstruction of Java primitive types."
+  (and (member-eq fn *atj-java-primitive-deconstrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,298 +408,280 @@
 
   ;; constructors:
 
-  (def-atj-main-function-type boolean-value (:asymbol) :jboolean)
+  (atj-main-function-type boolean-value (:asymbol) :jboolean)
 
-  (def-atj-main-function-type char-value (:ainteger) :jchar)
+  (atj-main-function-type char-value (:ainteger) :jchar)
 
-  (def-atj-main-function-type byte-value (:ainteger) :jbyte)
+  (atj-main-function-type byte-value (:ainteger) :jbyte)
 
-  (def-atj-main-function-type short-value (:ainteger) :jshort)
+  (atj-main-function-type short-value (:ainteger) :jshort)
 
-  (def-atj-main-function-type int-value (:ainteger) :jint)
+  (atj-main-function-type int-value (:ainteger) :jint)
 
-  (def-atj-main-function-type long-value (:ainteger) :jlong)
+  (atj-main-function-type long-value (:ainteger) :jlong)
+
+  ;; deconstructors:
+
+  (atj-main-function-type boolean-value->bool$inline (:jboolean) :asymbol)
+
+  (atj-main-function-type char-value->nat$inline (:jchar) :ainteger)
+
+  (atj-main-function-type byte-value->int$inline (:jbyte) :ainteger)
+
+  (atj-main-function-type short-value->int$inline (:jshort) :ainteger)
+
+  (atj-main-function-type int-value->int$inline (:jint) :ainteger)
+
+  (atj-main-function-type long-value->int$inline (:jlong) :ainteger)
 
   ;; boolean operations:
 
-  (def-atj-main-function-type boolean-not (:jboolean) :jboolean)
+  (atj-main-function-type boolean-not (:jboolean) :jboolean)
 
-  (def-atj-main-function-type boolean-and (:jboolean :jboolean) :jboolean)
+  (atj-main-function-type boolean-and (:jboolean :jboolean) :jboolean)
 
-  (def-atj-main-function-type boolean-xor (:jboolean :jboolean) :jboolean)
+  (atj-main-function-type boolean-xor (:jboolean :jboolean) :jboolean)
 
-  (def-atj-main-function-type boolean-ior (:jboolean :jboolean) :jboolean)
+  (atj-main-function-type boolean-ior (:jboolean :jboolean) :jboolean)
 
-  (def-atj-main-function-type boolean-eq (:jboolean :jboolean) :jboolean)
+  (atj-main-function-type boolean-eq (:jboolean :jboolean) :jboolean)
 
-  (def-atj-main-function-type boolean-neq (:jboolean :jboolean) :jboolean)
+  (atj-main-function-type boolean-neq (:jboolean :jboolean) :jboolean)
 
   ;; integer operations:
 
-  (def-atj-main-function-type int-plus (:jint) :jint)
+  (atj-main-function-type int-plus (:jint) :jint)
 
-  (def-atj-main-function-type long-plus (:jlong) :jlong)
+  (atj-main-function-type long-plus (:jlong) :jlong)
 
-  (def-atj-main-function-type int-minus (:jint) :jint)
+  (atj-main-function-type int-minus (:jint) :jint)
 
-  (def-atj-main-function-type long-minus (:jlong) :jlong)
+  (atj-main-function-type long-minus (:jlong) :jlong)
 
-  (def-atj-main-function-type int-add (:jint :jint) :jint)
+  (atj-main-function-type int-add (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-add (:jlong :jlong) :jlong)
+  (atj-main-function-type long-add (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-sub (:jint :jint) :jint)
+  (atj-main-function-type int-sub (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-sub (:jlong :jlong) :jlong)
+  (atj-main-function-type long-sub (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-mul (:jint :jint) :jint)
+  (atj-main-function-type int-mul (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-mul (:jlong :jlong) :jlong)
+  (atj-main-function-type long-mul (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-div (:jint :jint) :jint)
+  (atj-main-function-type int-div (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-div (:jlong :jlong) :jlong)
+  (atj-main-function-type long-div (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-rem (:jint :jint) :jint)
+  (atj-main-function-type int-rem (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-rem (:jlong :jlong) :jlong)
+  (atj-main-function-type long-rem (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-not (:jint) :jint)
+  (atj-main-function-type int-not (:jint) :jint)
 
-  (def-atj-main-function-type long-not (:jlong) :jlong)
+  (atj-main-function-type long-not (:jlong) :jlong)
 
-  (def-atj-main-function-type int-and (:jint :jint) :jint)
+  (atj-main-function-type int-and (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-and (:jlong :jlong) :jlong)
+  (atj-main-function-type long-and (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-xor (:jint :jint) :jint)
+  (atj-main-function-type int-xor (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-xor (:jlong :jlong) :jlong)
+  (atj-main-function-type long-xor (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-ior (:jint :jint) :jint)
+  (atj-main-function-type int-ior (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-ior (:jlong :jlong) :jlong)
+  (atj-main-function-type long-ior (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type int-eq (:jint :jint) :jboolean)
+  (atj-main-function-type int-eq (:jint :jint) :jboolean)
 
-  (def-atj-main-function-type long-eq (:jlong :jlong) :jboolean)
+  (atj-main-function-type long-eq (:jlong :jlong) :jboolean)
 
-  (def-atj-main-function-type int-neq (:jint :jint) :jboolean)
+  (atj-main-function-type int-neq (:jint :jint) :jboolean)
 
-  (def-atj-main-function-type long-neq (:jlong :jlong) :jboolean)
+  (atj-main-function-type long-neq (:jlong :jlong) :jboolean)
 
-  (def-atj-main-function-type int-less (:jint :jint) :jboolean)
+  (atj-main-function-type int-less (:jint :jint) :jboolean)
 
-  (def-atj-main-function-type long-less (:jlong :jlong) :jboolean)
+  (atj-main-function-type long-less (:jlong :jlong) :jboolean)
 
-  (def-atj-main-function-type int-lesseq (:jint :jint) :jboolean)
+  (atj-main-function-type int-lesseq (:jint :jint) :jboolean)
 
-  (def-atj-main-function-type long-lesseq (:jlong :jlong) :jboolean)
+  (atj-main-function-type long-lesseq (:jlong :jlong) :jboolean)
 
-  (def-atj-main-function-type int-great (:jint :jint) :jboolean)
+  (atj-main-function-type int-great (:jint :jint) :jboolean)
 
-  (def-atj-main-function-type long-great (:jlong :jlong) :jboolean)
+  (atj-main-function-type long-great (:jlong :jlong) :jboolean)
 
-  (def-atj-main-function-type int-greateq (:jint :jint) :jboolean)
+  (atj-main-function-type int-greateq (:jint :jint) :jboolean)
 
-  (def-atj-main-function-type long-greateq (:jlong :jlong) :jboolean)
+  (atj-main-function-type long-greateq (:jlong :jlong) :jboolean)
 
-  (def-atj-main-function-type int-int-shiftl (:jint :jint) :jint)
+  (atj-main-function-type int-int-shiftl (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-long-shiftl (:jlong :jlong) :jlong)
+  (atj-main-function-type long-long-shiftl (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type long-int-shiftl (:jlong :jint) :jlong)
+  (atj-main-function-type long-int-shiftl (:jlong :jint) :jlong)
 
-  (def-atj-main-function-type int-long-shiftl (:jint :jlong) :jint)
+  (atj-main-function-type int-long-shiftl (:jint :jlong) :jint)
 
-  (def-atj-main-function-type int-int-shiftr (:jint :jint) :jint)
+  (atj-main-function-type int-int-shiftr (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-long-shiftr (:jlong :jlong) :jlong)
+  (atj-main-function-type long-long-shiftr (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type long-int-shiftr (:jlong :jint) :jlong)
+  (atj-main-function-type long-int-shiftr (:jlong :jint) :jlong)
 
-  (def-atj-main-function-type int-long-shiftr (:jint :jlong) :jint)
+  (atj-main-function-type int-long-shiftr (:jint :jlong) :jint)
 
-  (def-atj-main-function-type int-int-ushiftr (:jint :jint) :jint)
+  (atj-main-function-type int-int-ushiftr (:jint :jint) :jint)
 
-  (def-atj-main-function-type long-long-ushiftr (:jlong :jlong) :jlong)
+  (atj-main-function-type long-long-ushiftr (:jlong :jlong) :jlong)
 
-  (def-atj-main-function-type long-int-ushiftr (:jlong :jint) :jlong)
+  (atj-main-function-type long-int-ushiftr (:jlong :jint) :jlong)
 
-  (def-atj-main-function-type int-long-ushiftr (:jint :jlong) :jint)
+  (atj-main-function-type int-long-ushiftr (:jint :jlong) :jint)
 
   ;; floating-point operations:
 
-  (def-atj-main-function-type float-plus (:jfloat) :jfloat)
+  (atj-main-function-type float-plus (:jfloat) :jfloat)
 
-  (def-atj-main-function-type double-plus (:jdouble) :jdouble)
+  (atj-main-function-type double-plus (:jdouble) :jdouble)
 
-  (def-atj-main-function-type float-minus (:jfloat) :jfloat)
+  (atj-main-function-type float-minus (:jfloat) :jfloat)
 
-  (def-atj-main-function-type double-minus (:jdouble) :jdouble)
+  (atj-main-function-type double-minus (:jdouble) :jdouble)
 
-  (def-atj-main-function-type float-add (:jfloat :jfloat) :jfloat)
+  (atj-main-function-type float-add (:jfloat :jfloat) :jfloat)
 
-  (def-atj-main-function-type double-add (:jdouble :jdouble) :jdouble)
+  (atj-main-function-type double-add (:jdouble :jdouble) :jdouble)
 
-  (def-atj-main-function-type float-sub (:jfloat :jfloat) :jfloat)
+  (atj-main-function-type float-sub (:jfloat :jfloat) :jfloat)
 
-  (def-atj-main-function-type double-sub (:jdouble :jdouble) :jdouble)
+  (atj-main-function-type double-sub (:jdouble :jdouble) :jdouble)
 
-  (def-atj-main-function-type float-mul (:jfloat :jfloat) :jfloat)
+  (atj-main-function-type float-mul (:jfloat :jfloat) :jfloat)
 
-  (def-atj-main-function-type double-mul (:jdouble :jdouble) :jdouble)
+  (atj-main-function-type double-mul (:jdouble :jdouble) :jdouble)
 
-  (def-atj-main-function-type float-div (:jfloat :jfloat) :jfloat)
+  (atj-main-function-type float-div (:jfloat :jfloat) :jfloat)
 
-  (def-atj-main-function-type double-div (:jdouble :jdouble) :jdouble)
+  (atj-main-function-type double-div (:jdouble :jdouble) :jdouble)
 
-  (def-atj-main-function-type float-rem (:jfloat :jfloat) :jfloat)
+  (atj-main-function-type float-rem (:jfloat :jfloat) :jfloat)
 
-  (def-atj-main-function-type double-rem (:jdouble :jdouble) :jdouble)
+  (atj-main-function-type double-rem (:jdouble :jdouble) :jdouble)
 
-  (def-atj-main-function-type float-eq (:jfloat :jfloat) :jboolean)
+  (atj-main-function-type float-eq (:jfloat :jfloat) :jboolean)
 
-  (def-atj-main-function-type double-eq (:jdouble :jdouble) :jboolean)
+  (atj-main-function-type double-eq (:jdouble :jdouble) :jboolean)
 
-  (def-atj-main-function-type float-neq (:jfloat :jfloat) :jboolean)
+  (atj-main-function-type float-neq (:jfloat :jfloat) :jboolean)
 
-  (def-atj-main-function-type double-neq (:jdouble :jdouble) :jboolean)
+  (atj-main-function-type double-neq (:jdouble :jdouble) :jboolean)
 
-  (def-atj-main-function-type float-less (:jfloat :jfloat) :jboolean)
+  (atj-main-function-type float-less (:jfloat :jfloat) :jboolean)
 
-  (def-atj-main-function-type double-less (:jdouble :jdouble) :jboolean)
+  (atj-main-function-type double-less (:jdouble :jdouble) :jboolean)
 
-  (def-atj-main-function-type float-lesseq (:jfloat :jfloat) :jboolean)
+  (atj-main-function-type float-lesseq (:jfloat :jfloat) :jboolean)
 
-  (def-atj-main-function-type double-lesseq (:jdouble :jdouble) :jboolean)
+  (atj-main-function-type double-lesseq (:jdouble :jdouble) :jboolean)
 
-  (def-atj-main-function-type float-great (:jfloat :jfloat) :jboolean)
+  (atj-main-function-type float-great (:jfloat :jfloat) :jboolean)
 
-  (def-atj-main-function-type double-great (:jdouble :jdouble) :jboolean)
+  (atj-main-function-type double-great (:jdouble :jdouble) :jboolean)
 
-  (def-atj-main-function-type float-greateq (:jfloat :jfloat) :jboolean)
+  (atj-main-function-type float-greateq (:jfloat :jfloat) :jboolean)
 
-  (def-atj-main-function-type double-greateq (:jdouble :jdouble) :jboolean)
+  (atj-main-function-type double-greateq (:jdouble :jdouble) :jboolean)
 
   ;; widening conversions:
 
-  (def-atj-main-function-type byte-to-short (:jbyte) :jshort)
+  (atj-main-function-type byte-to-short (:jbyte) :jshort)
 
-  (def-atj-main-function-type byte-to-int (:jbyte) :jint)
+  (atj-main-function-type byte-to-int (:jbyte) :jint)
 
-  (def-atj-main-function-type byte-to-long (:jbyte) :jlong)
+  (atj-main-function-type byte-to-long (:jbyte) :jlong)
 
-  (def-atj-main-function-type byte-to-float (:jbyte) :jfloat)
+  (atj-main-function-type byte-to-float (:jbyte) :jfloat)
 
-  (def-atj-main-function-type byte-to-double (:jbyte) :jdouble)
+  (atj-main-function-type byte-to-double (:jbyte) :jdouble)
 
-  (def-atj-main-function-type short-to-int (:jshort) :jint)
+  (atj-main-function-type short-to-int (:jshort) :jint)
 
-  (def-atj-main-function-type short-to-long (:jshort) :jlong)
+  (atj-main-function-type short-to-long (:jshort) :jlong)
 
-  (def-atj-main-function-type short-to-float (:jshort) :jfloat)
+  (atj-main-function-type short-to-float (:jshort) :jfloat)
 
-  (def-atj-main-function-type short-to-double (:jshort) :jdouble)
+  (atj-main-function-type short-to-double (:jshort) :jdouble)
 
-  (def-atj-main-function-type char-to-int (:jchar) :jint)
+  (atj-main-function-type char-to-int (:jchar) :jint)
 
-  (def-atj-main-function-type char-to-long (:jchar) :jlong)
+  (atj-main-function-type char-to-long (:jchar) :jlong)
 
-  (def-atj-main-function-type char-to-float (:jchar) :jfloat)
+  (atj-main-function-type char-to-float (:jchar) :jfloat)
 
-  (def-atj-main-function-type char-to-double (:jchar) :jdouble)
+  (atj-main-function-type char-to-double (:jchar) :jdouble)
 
-  (def-atj-main-function-type int-to-long (:jint) :jlong)
+  (atj-main-function-type int-to-long (:jint) :jlong)
 
-  (def-atj-main-function-type int-to-float (:jint) :jfloat)
+  (atj-main-function-type int-to-float (:jint) :jfloat)
 
-  (def-atj-main-function-type int-to-double (:jint) :jdouble)
+  (atj-main-function-type int-to-double (:jint) :jdouble)
 
-  (def-atj-main-function-type long-to-float (:jlong) :jfloat)
+  (atj-main-function-type long-to-float (:jlong) :jfloat)
 
-  (def-atj-main-function-type long-to-double (:jlong) :jdouble)
+  (atj-main-function-type long-to-double (:jlong) :jdouble)
 
-  (def-atj-main-function-type float-to-double (:jfloat) :jdouble)
+  (atj-main-function-type float-to-double (:jfloat) :jdouble)
 
   ;; narrowing conversions:
 
-  (def-atj-main-function-type short-to-byte (:jshort) :jbyte)
+  (atj-main-function-type short-to-byte (:jshort) :jbyte)
 
-  (def-atj-main-function-type short-to-char (:jshort) :jchar)
+  (atj-main-function-type short-to-char (:jshort) :jchar)
 
-  (def-atj-main-function-type char-to-byte (:jchar) :jbyte)
+  (atj-main-function-type char-to-byte (:jchar) :jbyte)
 
-  (def-atj-main-function-type char-to-short (:jchar) :jshort)
+  (atj-main-function-type char-to-short (:jchar) :jshort)
 
-  (def-atj-main-function-type int-to-byte (:jint) :jbyte)
+  (atj-main-function-type int-to-byte (:jint) :jbyte)
 
-  (def-atj-main-function-type int-to-short (:jint) :jshort)
+  (atj-main-function-type int-to-short (:jint) :jshort)
 
-  (def-atj-main-function-type int-to-char (:jint) :jchar)
+  (atj-main-function-type int-to-char (:jint) :jchar)
 
-  (def-atj-main-function-type long-to-byte (:jlong) :jbyte)
+  (atj-main-function-type long-to-byte (:jlong) :jbyte)
 
-  (def-atj-main-function-type long-to-short (:jlong) :jshort)
+  (atj-main-function-type long-to-short (:jlong) :jshort)
 
-  (def-atj-main-function-type long-to-char (:jlong) :jchar)
+  (atj-main-function-type long-to-char (:jlong) :jchar)
 
-  (def-atj-main-function-type long-to-int (:jlong) :jint)
+  (atj-main-function-type long-to-int (:jlong) :jint)
 
-  (def-atj-main-function-type float-to-byte (:jfloat) :jbyte)
+  (atj-main-function-type float-to-byte (:jfloat) :jbyte)
 
-  (def-atj-main-function-type float-to-short (:jfloat) :jshort)
+  (atj-main-function-type float-to-short (:jfloat) :jshort)
 
-  (def-atj-main-function-type float-to-char (:jfloat) :jchar)
+  (atj-main-function-type float-to-char (:jfloat) :jchar)
 
-  (def-atj-main-function-type float-to-int (:jfloat) :jint)
+  (atj-main-function-type float-to-int (:jfloat) :jint)
 
-  (def-atj-main-function-type float-to-long (:jfloat) :jlong)
+  (atj-main-function-type float-to-long (:jfloat) :jlong)
 
-  (def-atj-main-function-type double-to-byte (:jdouble) :jbyte)
+  (atj-main-function-type double-to-byte (:jdouble) :jbyte)
 
-  (def-atj-main-function-type double-to-short (:jdouble) :jshort)
+  (atj-main-function-type double-to-short (:jdouble) :jshort)
 
-  (def-atj-main-function-type double-to-char (:jdouble) :jchar)
+  (atj-main-function-type double-to-char (:jdouble) :jchar)
 
-  (def-atj-main-function-type double-to-int (:jdouble) :jint)
+  (atj-main-function-type double-to-int (:jdouble) :jint)
 
-  (def-atj-main-function-type double-to-long (:jdouble) :jlong)
+  (atj-main-function-type double-to-long (:jdouble) :jlong)
 
-  (def-atj-main-function-type double-to-float (:jdouble) :jfloat)
+  (atj-main-function-type double-to-float (:jdouble) :jfloat)
 
   ;; widening and narrowing conversions:
 
-  (def-atj-main-function-type byte-to-char (:jbyte) :jchar))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection atj-types-for-boolean-value-destructor
-  :short "ATJ types for the Java boolean destructor."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The ACL2 destructor of Java boolean values @(tsee boolean-value->bool)
-     plays a special role in the translation of ACL2 to Java.
-     An ACL2 @(tsee if) test of the form @('(boolean-value->bool b)'),
-     where @('b') is an ACL2 term that returns a @(tsee boolean-value)
-     (i.e. a Java boolean value in our model),
-     is compiled to Java @('if') test that consists of just
-     the Java expression derived from @('b'):
-     for instance, if @('b') is @('(java::int-less x y)'),
-     the generated Java test is @('(jx < jy)'),
-     where @('jx') and @('jy') are the Java equivalents of @('x') and @('y').")
-   (xdoc::p
-    "To make this work, we do not want the generated Java code
-     to convert @('b') to the Java representation of the ACL2 representation
-     of the Java boolean value;
-     instead, we want @('b') to remain a Java boolean value.
-     By assigning to @(tsee boolean-value->bool)
-     the argument type @(':jboolean') and the result type @(':asymbol'),
-     the conversion of @('b') will be avoided.")
-   (xdoc::p
-    "Since the @(tsee boolean-value->bool) destructor is inlined,
-     we need to specify @('boolean-value->bool$inline')
-     for @(tsee def-atj-main-function-type)."))
-
-  (def-atj-main-function-type boolean-value->bool$inline (:jboolean) :asymbol))
+  (atj-main-function-type byte-to-char (:jbyte) :jchar))

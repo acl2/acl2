@@ -1,4 +1,4 @@
-; Isomorphisms Library
+; Standard Utilities Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -12,7 +12,7 @@
 
 (include-book "defiso")
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/eval" :dir :system)
 (include-book "std/testing/must-be-table-key" :dir :system)
 (include-book "std/testing/must-not-be-table-key" :dir :system)

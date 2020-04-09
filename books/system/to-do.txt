@@ -569,3 +569,172 @@ ACL2 !>(let ((rule (car (find-rules-of-rune
 ACL2 !>
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Enable the generation of extra-info hypothesis for each functional instantiation constraint}}
+
+A couple of reasons for this: a) knowing where constraints are coming
+from is useful for debugging. and, perhaps more importantly, b) the
+proofs of different constraints can have radically different
+strategies.  Generating extra-info hyps would allow a user to write
+robust computed hints that could employ strategies appropriate for
+each constraint.
+
+There could be a table to enable this feature.  A good model for that
+is the inhibit-warnings-table, where the macro set-inhibit-warnings is
+a local table event using that table:
+
+(defmacro set-inhibit-warnings (&rest lst)
+  `(local (set-inhibit-warnings! ,@lst)))
+
+Or it could be yet another acl2-defaults-table key, which would
+automatically make it local to books and encapsulate events.  That's
+probably best in general, but the former approach is good if one wants
+a way to make the setting global in one's session, including all books
+that one is certifying in that session.
+
+Note: extra-info hypotheses are already available for guard and
+termination proofs.
+
+Note: A cursory look into how constraints are computed reveals that
+some constraints (ie: from encapsulations) are associated with
+function symbols at the time of their admission:
+
+ACL2 !>(trace$ putprop-constraints)
+ACL2 !>(encapsulate
+    (
+     ((fn *) => *)
+     )
+  (local (defun fn (x) x))
+  (defthm integerp-fn
+    (implies
+     (integerp x)
+     (integerp (fn x))))
+  )
+
+1> (PUTPROP-CONSTRAINTS FN NIL
+                        ((IMPLIES (INTEGERP X)
+                                  (INTEGERP (FN X))))
+                        NIL
+                        ((FN SIBLINGS FN)
+                         . |current-acl2-world|))
+<1 (PUTPROP-CONSTRAINTS ((FN CONSTRAINT-LST
+                             (IMPLIES (INTEGERP X)
+                                      (INTEGERP (FN X))))
+                         (FN SIBLINGS FN)
+                         . |current-acl2-world|))
+
+In other words, enabling the event:
+
+:hints (("Goal" :use (:functional-instance lemma
+                                           (fn zed))))
+
+to generate an attributed constraint, such as:
+
+(implies
+ (and
+  (extra-info '(:functional-instantiation) '(:constraint integerp-fn))
+  (integerp x))
+ (integerp (zed x)))
+
+will require us to generate constraint attribution at the time of
+function admission.
+
+[[
+Matt's reply: Or will it?  It seems to me that at the time the
+:functional-instance hint is processed, we have this chain of calls:
+
+translate-lmi
+calls
+translate-lmi/functional-instance
+calls
+relevant-constraints
+calls
+relevant-constraints1
+calls
+constraint-info
+
+If a suitable flag were passed, then constraint-info could return
+extra-info.  For example, after the encapsulate above, try this:
+
+(defthm lemma (equal (fn x) (fn x)) :rule-classes nil)
+(trace$ constraint-info)
+(thm t :hints (("Goal" :use (:functional-instance lemma (fn ifix)))))
+
+Then you'll see this:
+
+1> (CONSTRAINT-INFO FN |current-acl2-world|)
+<1 (CONSTRAINT-INFO FN
+                    ((IMPLIES (INTEGERP X)
+                              (INTEGERP (FN X)))))
+
+But actually, I think it would make a lot more sense to modify
+relevant-constraints1 to take a flag instead of constraint-info.
+... end of Matt's reply]]
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Improve :pl output when a free variable of the rule occurs in the argument of :pl.}}
+
+Eric Smith sent this example:
+
+(defthm <-trans
+  (implies (and (< x y) ; y is a free var
+                (< y z))
+           (< x z)))
+
+and then do:
+
+:pl (< y z)
+
+The current output is confusing, since sometimes "Y" refers to the
+free variable in the hypotheses of <-trans, and other times "Y" refers
+to the variable in the input term, (< y z)::
+
+(:REWRITE <-TRANS)
+  New term: T
+  Hypotheses: ((< Y Y) (< Y Z))
+  Equiv: EQUAL
+  Substitution: ((Z Z) (X Y))
+  Free variable: Y
+
+On the acl2-devel list we seemed to agree on the following as desired
+output for this example.
+
+(:REWRITE <-TRANS)
+ New term: T
+ Hypotheses: ((< Y Y{FREE}) (< Y{FREE} Z))
+ Equiv: EQUAL
+ Substitution: ((Z Z) (X Y) (Y Y{FREE}))
+ Free variable bindings: ((Y Y{FREE}))
+
+Of course, if Y{FREE} should be suitably "fresh"; if it weren't then
+we could search for the first "fresh" variable of the form Y{FREE}1,
+Y{FREE}2, etc.
+
+The same issue arises in the proof-builder: you can see it with
+(verify (< y z)) followed by sr.
+
+This issue also applies to :linear rules and perhaps others; whoever
+takes this item on should figure out which rule classes are relevant
+and fix them all.  Perhaps :pl2 or :pr should also be considered (not
+sure).  Here's an example involving a :linear rule.
+
+(defthm <-trans
+  (implies (and (< x y) ; y is a free var
+                (< y z))
+           (< (identity x) (identity z)))
+  :rule-classes :linear)
+
+:pl (identity y) currently gives this output.
+
+(:LINEAR <-TRANS)
+  Conclusion: (< (IDENTITY Y) (IDENTITY Z))
+  Hypotheses: ((< Y Y) (< Y Z))
+  Substitution: ((X Y))
+  Free variables: Y and Z
+
+Again, an analogous issue arises in the proof-builder: you can see it
+with (verify (< (identity y) (identity z))) followed by (dv 1) and
+show-linears.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>

@@ -12,7 +12,6 @@
 
 (include-book "isodata")
 
-(include-book "std/testing/assert" :dir :system)
 (include-book "std/testing/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -854,10 +853,6 @@
  (must-fail (isodata f ((x (natp natp identity identity))) :thm-enable :auto))
  (must-fail (isodata f ((x nat-id)) :thm-enable :auto))
 
- ;; NON-EXECUTABLE is not in (T NIL :AUTO):
- (must-fail (isodata f ((x (natp natp identity identity))) :non-executable #\t))
- (must-fail (isodata f ((x nat-id)) :non-executable #\t))
-
  ;; VERIFY-GUARDS is not in (T NIL :AUTO):
  (must-fail
   (isodata f ((x (natp natp identity identity))) :verify-guards :nil))
@@ -1624,7 +1619,7 @@
 
  (defiso nat-id natp natp identity identity)
 
- ;; by default, NEW is non-executable iff OLD is:
+ ;; NEW is non-executable iff OLD is:
  (must-succeed*
   ;; :PREDICATE is NIL:
   (must-succeed*
@@ -1670,169 +1665,7 @@
    (must-succeed*
     (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
     (isodata p ((x nat-id)) :predicate t)
-    (assert-event (non-executablep 'p{1} (w state))))))
-
- ;; make NEW non-executable iff OLD is:
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable :auto)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x (natp natp identity identity))) :non-executable :auto)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (non-executablep 'p{1} (w state))))))
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x nat-id)) :non-executable :auto)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x nat-id)) :non-executable :auto)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x nat-id))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x nat-id))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (non-executablep 'p{1} (w state))))))
-
- ;; make NEW non-executable:
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x (natp natp identity identity))) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))))
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x nat-id)) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x nat-id)) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))))
-
- ;; do not make NEW non-executable:
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state))))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state)))))))
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x nat-id)) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata f ((x nat-id)) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state))))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state))))))))
+    (assert-event (non-executablep 'p{1} (w state)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2736,4 +2569,31 @@
     (lambda (i) (if (>= i 0)
                     (* 2 i)
                   (1- (- (* 2 i))))))
-  (isodata j ((x nat/int)))))
+  (isodata j ((x nat/int))))
+
+ ;;;;;;;;;;
+
+ (defun i (x y z)
+   (declare (xargs :guard (and (natp x) (natp y) (natp z))))
+   (mv z x y))
+
+ (must-succeed*
+  (defiso nat-id natp natp identity identity)
+  (isodata i (((x y z :result1 :result2 :result3) nat-id))))
+
+ (must-succeed*
+  (defun nat-to-int (n) ; FORTH
+    (declare (xargs :guard (natp n)))
+    (if (evenp n)
+        (/ n 2)
+      (- (/ (1+ n) 2))))
+  (defun int-to-nat (i) ; BACK
+    (declare (xargs :guard (integerp i)))
+    (if (>= i 0)
+        (* 2 i)
+      (1- (- (* 2 i)))))
+  (defiso nat/int natp integerp nat-to-int int-to-nat)
+  (isodata i (((x y z :result1 :result2 :result3) nat/int)))
+  (isodata i (((y :result3 z) nat/int))))
+
+ :with-output-off nil)

@@ -1,4 +1,4 @@
-; Isomorphisms Library
+; Standard Utilities Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -464,11 +464,11 @@
 
 (test-title ":HINTS input validation.")
 
-;; not a keyword-value list:
+;; not a keyword-value list or a true list:
 (must-succeed*
  (must-fail (defiso iso dom dom id id :hints #\a))
- (must-fail (defiso iso dom dom id id :hints (1 2 3)))
- (must-fail (defiso iso dom dom id id :hints (:alpha-image))))
+ (must-fail (defiso iso dom dom id id :hints (1 2 3 . 4)))
+ (must-fail (defiso iso dom dom id id :hints :alpha-image)))
 
 ;; wrong theorem keywords:
 (must-succeed*

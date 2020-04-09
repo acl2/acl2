@@ -12,12 +12,6 @@
 
 (include-book "../language/primitive-values")
 
-; these are so that the FTY::DEFLISTs in this file
-; can generate theorems about NTH, UPDATE-NTH, and REPEAT:
-(include-book "std/lists/nth" :dir :system)
-(include-book "std/lists/update-nth" :dir :system)
-(include-book "std/lists/repeat" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-java-primitive-array-model
@@ -89,78 +83,6 @@
       and translated to array creation expressions without initializers.")))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist boolean-value-list
-  :short "Fixtype of true lists of Java @('boolean') values."
-  :elt-type boolean-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred boolean-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist char-value-list
-  :short "Fixtype of true lists of Java @('char') values."
-  :elt-type char-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred char-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist byte-value-list
-  :short "Fixtype of true lists of Java @('byte') values."
-  :elt-type byte-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred byte-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist short-value-list
-  :short "Fixtype of true lists of Java @('short') values."
-  :elt-type short-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred short-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist int-value-list
-  :short "Fixtype of true lists of Java @('int') values."
-  :elt-type int-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred int-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist long-value-list
-  :short "Fixtype of true lists of Java @('long') values."
-  :elt-type long-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred long-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist float-value-list
-  :short "Fixtype of true lists of Java @('float') values."
-  :elt-type float-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred float-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist double-value-list
-  :short "Fixtype of true lists of Java @('double') values."
-  :elt-type double-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred double-value-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,7 +337,14 @@
                       :hints (("Goal" :in-theory (enable boolean-array-p))))
   :short "Read a component from a Java @('boolean') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p))))
+  :guard-hints (("Goal" :in-theory (enable boolean-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist boolean-value-list
+                      :elt-type boolean-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred boolean-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,7 +355,14 @@
                       :hints (("Goal" :in-theory (enable char-array-p))))
   :short "Read a component from a Java @('char') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable char-array-p))))
+  :guard-hints (("Goal" :in-theory (enable char-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist char-value-list
+                      :elt-type char-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred char-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -437,7 +373,14 @@
                       :hints (("Goal" :in-theory (enable byte-array-p))))
   :short "Read a component from a Java @('byte') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable byte-array-p))))
+  :guard-hints (("Goal" :in-theory (enable byte-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist byte-value-list
+                      :elt-type byte-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred byte-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -448,7 +391,14 @@
                       :hints (("Goal" :in-theory (enable short-array-p))))
   :short "Read a component from a Java @('short') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable short-array-p))))
+  :guard-hints (("Goal" :in-theory (enable short-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist short-value-list
+                      :elt-type short-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred short-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -459,7 +409,14 @@
                       :hints (("Goal" :in-theory (enable int-array-p))))
   :short "Read a component from a Java @('int') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable int-array-p))))
+  :guard-hints (("Goal" :in-theory (enable int-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist int-value-list
+                      :elt-type int-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred int-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -470,7 +427,14 @@
                       :hints (("Goal" :in-theory (enable long-array-p))))
   :short "Read a component from a Java @('long') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable long-array-p))))
+  :guard-hints (("Goal" :in-theory (enable long-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist long-value-list
+                      :elt-type long-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred long-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -481,7 +445,14 @@
                       :hints (("Goal" :in-theory (enable float-array-p))))
   :short "Read a component from a Java @('float') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable float-array-p))))
+  :guard-hints (("Goal" :in-theory (enable float-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist float-value-list
+                      :elt-type float-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred float-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,7 +463,14 @@
                       :hints (("Goal" :in-theory (enable double-array-p))))
   :short "Read a component from a Java @('double') array."
   (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable double-array-p))))
+  :guard-hints (("Goal" :in-theory (enable double-array-p)))
+  :prepwork ((local (include-book "std/lists/nth" :dir :system))
+             ;; generates theorems about NTH:
+             (local (fty::deflist double-value-list
+                      :elt-type double-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred double-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -569,7 +547,14 @@
                       :hints (("Goal" :in-theory (enable boolean-array-p))))
   :short "Write a component to a Java @('boolean') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p))))
+  :guard-hints (("Goal" :in-theory (enable boolean-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist boolean-value-list
+                      :elt-type boolean-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred boolean-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,7 +567,14 @@
                       :hints (("Goal" :in-theory (enable char-array-p))))
   :short "Write a component to a Java @('char') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable char-array-p))))
+  :guard-hints (("Goal" :in-theory (enable char-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist char-value-list
+                      :elt-type char-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred char-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -595,7 +587,14 @@
                       :hints (("Goal" :in-theory (enable byte-array-p))))
   :short "Write a component to a Java @('byte') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable byte-array-p))))
+  :guard-hints (("Goal" :in-theory (enable byte-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist byte-value-list
+                      :elt-type byte-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred byte-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -608,7 +607,14 @@
                       :hints (("Goal" :in-theory (enable short-array-p))))
   :short "Write a component to a Java @('short') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable short-array-p))))
+  :guard-hints (("Goal" :in-theory (enable short-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist short-value-list
+                      :elt-type short-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred short-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -621,7 +627,14 @@
                       :hints (("Goal" :in-theory (enable int-array-p))))
   :short "Write a component to a Java @('int') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable int-array-p))))
+  :guard-hints (("Goal" :in-theory (enable int-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist int-value-list
+                      :elt-type int-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred int-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -634,7 +647,14 @@
                       :hints (("Goal" :in-theory (enable long-array-p))))
   :short "Write a component to a Java @('long') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable long-array-p))))
+  :guard-hints (("Goal" :in-theory (enable long-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist long-value-list
+                      :elt-type long-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred long-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -647,7 +667,14 @@
                       :hints (("Goal" :in-theory (enable float-array-p))))
   :short "Write a component to a Java @('float') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable float-array-p))))
+  :guard-hints (("Goal" :in-theory (enable float-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist float-value-list
+                      :elt-type float-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred float-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -660,7 +687,14 @@
                       :hints (("Goal" :in-theory (enable double-array-p))))
   :short "Write a component to a Java @('double') array."
   (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable double-array-p))))
+  :guard-hints (("Goal" :in-theory (enable double-array-p)))
+  :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+             ;; generates theorems about UPDATE-NTH:
+             (local (fty::deflist double-value-list
+                      :elt-type double-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred double-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -758,7 +792,14 @@
                   :hints (("Goal" :in-theory (enable boolean-array-p))))
   :short "Construct a Java @('boolean') array with the given size
           and with @('false') as every component."
-  (repeat (int-value->int length) (boolean-value nil)))
+  (repeat (int-value->int length) (boolean-value nil))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist boolean-value-list
+                      :elt-type boolean-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred boolean-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -768,7 +809,14 @@
                   :hints (("Goal" :in-theory (enable char-array-p))))
   :short "Construct a Java @('char') array with the given size
           and with 0 as every component."
-  (repeat (int-value->int length) (char-value 0)))
+  (repeat (int-value->int length) (char-value 0))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist char-value-list
+                      :elt-type char-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred char-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -778,7 +826,14 @@
                   :hints (("Goal" :in-theory (enable byte-array-p))))
   :short "Construct a Java @('byte') array with the given size
           and with 0 as every component."
-  (repeat (int-value->int length) (byte-value 0)))
+  (repeat (int-value->int length) (byte-value 0))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist byte-value-list
+                      :elt-type byte-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred byte-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -788,7 +843,14 @@
                   :hints (("Goal" :in-theory (enable short-array-p))))
   :short "Construct a Java @('short') array with the given size
           and with 0 as every component."
-  (repeat (int-value->int length) (short-value 0)))
+  (repeat (int-value->int length) (short-value 0))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist short-value-list
+                      :elt-type short-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred short-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -798,7 +860,14 @@
                   :hints (("Goal" :in-theory (enable int-array-p))))
   :short "Construct a Java @('int') array with the given size
           and with 0 as every component."
-  (repeat (int-value->int length) (int-value 0)))
+  (repeat (int-value->int length) (int-value 0))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist int-value-list
+                      :elt-type int-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred int-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -808,7 +877,14 @@
                   :hints (("Goal" :in-theory (enable long-array-p))))
   :short "Construct a Java @('long') array with the given size
           and with 0 as every component."
-  (repeat (int-value->int length) (long-value 0)))
+  (repeat (int-value->int length) (long-value 0))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist long-value-list
+                      :elt-type long-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred long-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,7 +894,14 @@
                   :hints (("Goal" :in-theory (enable float-array-p))))
   :short "Construct a Java @('float') array with the given size
           and with positive 0 as every component."
-  (repeat (int-value->int length) (float-value (float-value-abs-pos-zero))))
+  (repeat (int-value->int length) (float-value (float-value-abs-pos-zero)))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist float-value-list
+                      :elt-type float-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred float-value-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -828,4 +911,11 @@
                   :hints (("Goal" :in-theory (enable double-array-p))))
   :short "Construct a Java @('double') array with the given size
           and with positive 0 as every component."
-  (repeat (int-value->int length) (double-value (double-value-abs-pos-zero))))
+  (repeat (int-value->int length) (double-value (double-value-abs-pos-zero)))
+  :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+             ;; generates theorems about REPEAT:
+             (local (fty::deflist double-value-list
+                      :elt-type double-value
+                      :true-listp t
+                      :elementp-of-nil nil
+                      :pred double-value-listp))))

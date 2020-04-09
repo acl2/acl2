@@ -165,7 +165,6 @@
  (equal
   (body 'sum-squares t (w state)) ; normalized body
   '(SUM$ '(LAMBDA (X)
-                  (DECLARE (IGNORABLE X))
                   (BINARY-* X X))
          LST)))
 

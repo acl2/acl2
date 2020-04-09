@@ -10,8 +10,6 @@
 
 (in-package "JAVA")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (include-book "grammar")
 (include-book "hexadecimal-digits")
 

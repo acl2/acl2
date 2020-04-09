@@ -81,6 +81,34 @@
   (implies (integer-listp lst)
            (integer-listp (when$ fn lst))))
 
+; Lemmas needed for Special Conjecture c2
+
+(encapsulate
+  nil
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defthm member-equal-from-to-by-exact
+    (implies (and (integerp i)
+                  (integerp j)
+                  (integerp k)
+                  (< 0 k))
+             (iff (member-equal newv (from-to-by i j k))
+                  (and (integerp newv)
+                       (<= i newv)
+                       (<= newv j)
+                       (equal (mod (- newv i) k) 0))))
+    :hints (("Goal" :in-theory (disable |(integerp (- x))|))))
+
+  (defthm integerp==>numerator-=-x
+    (implies (integerp x)
+             (equal (numerator x)
+                    x)))
+
+  (defthm integerp==>denominator-=-1
+    (implies (integerp x)
+             (equal (denominator x)
+                    1))))
+
 ; Preservation of member-posship
 #||
 
@@ -159,7 +187,7 @@
 
 (defthm member-equal-until$
   (IFF (MEMBER-EQUAL NEWV (UNTIL$ Q LST))
-       (and (member-equal newv lst)
+       (and (member-equal newv lst) 
             (< (mempos newv lst)
                (len (until$ q lst))))))
 
@@ -195,9 +223,39 @@
   :hints (("Goal" :induct (list (pairlis$ t1 t2)
                                 (pairlis$ t2 t3)))))
 
+; These are the analogous theorems for showing that
+; acl2-count decreases for certain common cases arising
+; from loop$ recursion.
+
+(defthm member-equal-acl2-count-smaller-0
+ (implies (member-equal nv lst)
+          (< (acl2-count nv) (acl2-count lst)))
+ :rule-classes :linear)
+
+(defthm member-equal-acl2-count-smaller-1
+ (implies (member-equal nv (loop$-as (list lst1)))
+          (< (acl2-count (car nv)) (acl2-count lst1)))
+ :rule-classes :linear)
+
+(defthm member-equal-acl2-count-smaller-2
+ (implies (member-equal nv (loop$-as (list lst1 lst2)))
+          (and (< (acl2-count (car nv)) (acl2-count lst1))
+               (< (acl2-count (cadr nv)) (acl2-count lst2))))
+ :hints (("Goal" :induct (pairlis$ lst1 lst2)))
+ :rule-classes :linear)
+
+(defthm member-equal-acl2-count-smaller-3
+ (implies (member-equal nv (loop$-as (list lst1 lst2 lst3)))
+          (and (< (acl2-count (car nv)) (acl2-count lst1))
+               (< (acl2-count (cadr nv)) (acl2-count lst2))
+               (< (acl2-count (caddr nv)) (acl2-count lst3))))
+  :hints (("Goal" :induct (cons (pairlis$ lst1 lst2)
+                                (pairlis$ lst2 lst3))))
+  :rule-classes :linear)
+
 ; -----------------------------------------------------------------
 
-; Universal Quantifier Instantiation Machinery
+; Universal Quantifier Instantiation Machinery 
 ;  -- Deducing Properties of Elements from Properties of Lists
 
 ; A crucial part of reasoning about loop$ guards is deducing properties of the
@@ -366,7 +424,7 @@
                 (acl2-number-listp ac))
            (acl2-number-listp (make-list-ac n i ac))))
 
-(defthm  acl2-number-listp-from-to-by
+(defthm acl2-number-listp-from-to-by
   (implies (and (integerp i)
                 (integerp j)
                 (integerp k)

@@ -1,0 +1,74 @@
+Below is a list of all papers accepted for ACL2 Workshop 2020,
+together with the corresponding subdirectory, which either contains
+supporting materials or a README that explains where they may be
+found.  (When the subdirectory is missing, it means that neither
+supporting materials nor README have yet been included.)
+
+------------------------------
+
+Alessandro Coglio
+Ethereum's Recursive Length Prefix in ACL2
+coglio/
+
+------------------------------
+
+Alessandro Coglio and Stephen Westfold
+Isomorphic Data Type Transformations
+coglio-westfold/
+
+------------------------------
+
+Ruben Gamboa, John Cowles and Woodrow Gamboa
+Quadratic Extensions in ACL2
+
+------------------------------
+
+David Greve
+Minimal fractional representations of integers mod M
+greve/
+
+------------------------------
+
+David Hardin
+Put Me on the RAC
+
+------------------------------
+
+Matt Kaufmann and J Moore
+Iteration in ACL2
+kaufmann-moore/
+
+------------------------------
+
+Carl Kwan, Yan Peng and Mark R Greenstreet
+Cauchy-Schwarz for ACL2 Abstract Vector Spaces
+
+------------------------------
+
+Yan Peng and Mark Greenstreet
+Type Inference Using Meta-extract for Smtlink and Beyond
+
+------------------------------
+
+Rob Sumners
+Computing and Proving Well-founded Orderings through Finite Abstractions
+sumners/
+
+------------------------------
+
+Sol Swords
+Generating Mutually Inductive Theorems from Concise Descriptions
+sswords-mutual-ind/
+
+------------------------------
+
+Sol Swords
+New Rewriter Features in FGL
+sswords-rewriter/
+
+------------------------------
+
+Mertcan Temel
+RP-Rewriter: An Optimized Rewriter for Large Terms in ACL2
+
+------------------------------

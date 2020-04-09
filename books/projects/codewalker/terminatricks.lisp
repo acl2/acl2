@@ -3660,7 +3660,9 @@
                ,@rest))
             (let* ((name ',name)
                    (tbody (body name t (w state)))
-                   (tmach (termination-machine (list name) ; fns
+                   (tmach (termination-machine nil nil
+                                               (list name) ; fns
+                                               nil
                                                tbody nil nil :all)))
               (er-progn
                (assign defunm-tbody tbody)

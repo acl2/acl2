@@ -421,11 +421,13 @@
         (cond
          ((eq ilk :FN)
           (or (and (symbolp (cadr term))
-                   (not (equal fn (cadr term)))
+                   (or (not (equal fn (cadr term)))
+                       (executable-badge fn wrld))
                    (executable-tamep-functionp (cadr term) wrld))
               (and (consp (cadr term))
                    (and (weak-well-formed-lambda-objectp (cadr term) wrld)
-                        (not (ffnnamep fn (lambda-object-body (cadr term))))
+                        (or (not (ffnnamep fn (lambda-object-body (cadr term))))
+                            (executable-badge fn wrld))
                         (executable-tamep-lambdap (cadr term) wrld)))))
          ((eq ilk :EXPR)
           (and (termp (cadr term) wrld)
@@ -592,7 +594,7 @@
                      (term-listp terms wrld))
                 (check-ilks-list fn formals new-badge terms ilks wrld))
        :flag guess-ilks-alist-list)
-     :hints (("Subgoal *1/24" :use ((:instance apply$-badgep-executable-badge
+     :hints (("Subgoal *1/28" :use ((:instance apply$-badgep-executable-badge
                                                (fn (car term)))))))
    ))
 

@@ -17,8 +17,6 @@
 ;;;============ Build enumerator expression code =================e=======
 ;;;======================================================================
 
-
-
 (defrec enum-info% (domain-size category expr expr2 min-rec-depth max-rec-depth) NIL)
 (defun enum-info%-p (v)
   (declare (xargs :guard T))
@@ -33,12 +31,6 @@
           (pseudo-termp expr)
           (pseudo-termp expr2)))))
 
-
-
-
-
-          
-
 (defun abs/complex (c)
   (declare (xargs :guard (complex/complex-rationalp c)))
   (complex (abs (realpart c)) (abs (imagpart c))))
@@ -48,7 +40,6 @@
   (if (complex/complex-rationalp x)
       (abs/complex x)
     (abs x)))
-
 
 (defun mod/complex (c m)
   (declare (xargs :guard (and (rationalp m)
@@ -495,37 +486,39 @@ thought about how to implement it.
         (cw? (normal-output-flag vl) "~|Cgen/Error: BAD record cs% passed to cs%-enumcalls")
         (mv 0 0 0 NIL)))))     
 
-(def make-next-sigma_mv-let (v-cs%-alst seen-vars use-fixers-p vl wrld body)
-  (decl :sig ((symbol-alistp symbol-listp booleanp fixnum plist-worldp pseudo-termp) -> pseudo-termp)
+(def make-next-sigma_mv-let (v-cs%-alst seen-vars N i use-fixers-p vl wrld body)
+  (decl :sig ((symbol-alistp symbol-listp fixnum fixnum booleanp fixnum plist-worldp pseudo-termp)
+              -> pseudo-termp)
         :doc "helper function to make-next-sigma")
+  (declare (ignorable N i))
   (f* ((_mv-value (v min max exp exp2) 
           `(case sampling-method 
-             (:uniform-random (b* (((mv ?m seed.) (defdata::choose-size ,min ,max seed.))
-                                   ((mv val seed.) ,exp2))
-                        (mv seed. BE. val)))
+             (:uniform-random
+              (b* (((mv ?m seed.) (defdata::choose-size ,min ,max seed.))
+                   ((mv val seed.) ,exp2))
+                (mv seed. BE. val)))
              (:random 
               (b* (((mv ?r seed.) (defdata::random-natural-seed seed.)))
                 (mv seed. BE. ,exp)))
              ;; bugfix - It is possible that r is not in exp
              ;; this is the case when exp is a eq-constraint
              (:be (b* ((?r (cdr (assoc-eq ',v BE.))))
-                   (mv seed. (|next BE args| BE.) ,exp)))
+                    (mv seed. (|next BE args| BE.) ,exp)))
              (otherwise (mv seed. BE. '0)))))
-                           
-  (if (endp v-cs%-alst)
-      body
-    (b* (((cons var cs%) (car v-cs%-alst))
-         ((mv & min-rec-depth max-rec-depth (list exp exp2))
-          (if use-fixers-p
-              (cs%-enumcalls-defdata cs% vl wrld)
-              (cs%-enumcalls cs% vl wrld seen-vars))))
+      (if (endp v-cs%-alst)
+          body
+        (b* (((cons var cs%) (car v-cs%-alst))
+             ((mv & min-rec-depth max-rec-depth (list exp exp2))
+              (if use-fixers-p
+                  (cs%-enumcalls-defdata cs% vl wrld)
+                (cs%-enumcalls cs% vl wrld seen-vars))))
 ;    in 
-     `(mv-let (seed. BE. ,var)
-              ,(_mv-value var min-rec-depth max-rec-depth exp exp2)
-              (declare (ignorable ,var))
-            ,(make-next-sigma_mv-let (cdr v-cs%-alst) (cons var seen-vars) use-fixers-p vl wrld body ))))))
-
-
+          `(mv-let
+            (seed. BE. ,var)
+            ,(_mv-value var min-rec-depth max-rec-depth exp exp2)
+            (declare (ignorable ,var))
+            ,(make-next-sigma_mv-let (cdr v-cs%-alst) (cons var seen-vars)
+                                     N i use-fixers-p vl wrld body))))))
                
 ;; dead code 
 ;; (def make-enumerator-calls-alist (v-cs%-alst vl wrld ans.)

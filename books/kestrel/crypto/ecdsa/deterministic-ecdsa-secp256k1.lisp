@@ -1,6 +1,6 @@
 ; Elliptic Curve Digital Signature Algorithm (ECDSA) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,7 @@
 (include-book "kestrel/bv-lists/all-integerp-of-repeat" :dir :system)
 (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "kestrel/bv-lists/bits-to-bytes" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))

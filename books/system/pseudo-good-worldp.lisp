@@ -1986,6 +1986,13 @@
   (pseudo-linear-lemma-listp val))
 
 ;-----------------------------------------------------------------
+; LOOP$-RECURSION
+
+(defun loop$-recursionp (sym val)
+  (declare (ignore sym))
+  (booleanp val))
+
+;-----------------------------------------------------------------
 ; MACRO-ARGS
 
 (verify-termination legal-initp) ; and guards
@@ -2639,7 +2646,8 @@
 ; The form of an untranslated theorem is quite arbitrary, because of macros.
 
   (declare (ignore sym))
-  (true-listp val))
+  (or (atom val)
+      (true-listp val)))
 
 ; -----------------------------------------------------------------
 
@@ -2835,6 +2843,7 @@
           (LEMMAS (pseudo-lemmasp sym val))
           (LEVEL-NO (level-nop sym val))
           (LINEAR-LEMMAS (pseudo-linear-lemmasp sym val))
+          (LOOP$-RECURSION (loop$-recursionp sym val))
           (MACRO-ARGS (pseudo-macro-argsp sym val))
           (MACRO-BODY (pseudo-macro-bodyp sym val))
           (NEG-IMPLICANTS (pseudo-neg-implicantsp sym val))

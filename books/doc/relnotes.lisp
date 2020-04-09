@@ -139,9 +139,8 @@
      There exist similar macros in the community books,
      but the specifics of this new macro are motivated for use with "
     (xdoc::seetopic "apt::apt" "APT")
-    ". See the "
-    (xdoc::seetopic "defarbrec-related" "related tools section")
-    " of the documentation of @(tsee defarbrec) for more information.")
+    ". See the `Related Tools' section
+     of the documentation of @(tsee defarbrec) for more information.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,8 +233,9 @@
      contents of the files @('[books]/misc/assert.lisp') and
      @('[books]/misc/eval.lisp') have been moved here (with the same names),
      while the two files under @('[books]/misc/') have been turned into
-     relocation stubs.  Some new testing utilities have been added to this new
-     library as well.")
+     relocation stubs.  The utilities in those two files have been moved to new
+     individual files for greater modularity.  Some new testing utilities have
+     been added to this new library as well.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -732,6 +732,12 @@
     "The function @(tsee symbol-package-name-lst)
      has been moved to the Std extensions in the Kestrel Books,
      under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
+
+   (xdoc::p
+    "The function @(tsee symbol-package-name-non-cl),
+     originally called @('symbol-package-name-safe') but now renamed,
+     has been moved to the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/symbol-package-name-non-cl.lisp').")
 
    (xdoc::p
     "The functions @(tsee organize-symbols-by-name)
@@ -1687,8 +1693,8 @@
  string of hex digit characters.  Refactored all the old and new utilities into
  separate files to reduce dependencies.</p>
 
- <p>Extended the <see topic='@(url symbol-utilities)'>symbol utilities</see>
- with a utility that lifts @(tsee symbol-package-name) to lists.</p>
+ <p>Extended the Kestrel symbol utilities with a utility that lifts @(tsee
+ symbol-package-name) to lists.</p>
 
  <p>Moved @(tsee maybe-msgp) under newly created <see topic='@(url
  message-utilities)'>message utilities</see>.  Extended these utilities with a
@@ -2071,8 +2077,8 @@
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
  macroexpansion when all macros to be expanded are in logic mode.</p>
 
- <p>There is a new @(see symbol-utilities) book (initially with a single
- function, @(tsee symbol-package-name-safe)).</p>
+ <p>There is a new Kestrel symbol utilities book (initially with a single
+ function, @('symbol-package-name-safe')).</p>
 
  <h4>The apply books</h4>
 

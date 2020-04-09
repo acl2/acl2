@@ -11,16 +11,16 @@
 
 (in-package "ACL2")
 
-(include-book "symbols")
+(include-book "kestrel/std/basic/symbol-package-name-non-cl" :dir :system)
 
 (defun fn-copy-name (fn)
   (declare (xargs :guard (symbolp fn)))
   (intern$ (concatenate 'string (symbol-name fn) "-COPY")
-           (symbol-package-name-safe fn)))
+           (symbol-package-name-non-cl fn)))
 
 (defun fn-copy-def-name (fn)
   (intern$ (concatenate 'string (symbol-name fn) "-COPY-DEF")
-           (symbol-package-name-safe fn)))
+           (symbol-package-name-non-cl fn)))
 
 ; The following function might be moved to a more general utilities book.
 (defun implicate-untranslated-terms (hyps concl)
@@ -290,7 +290,7 @@
          ,(fn-is-fn-copy fn hyps-fn hyps-preserved-thm-names equiv nil
                          wrld)))
      (t
-      (let* ((pkg (symbol-package-name-safe fn))
+      (let* ((pkg (symbol-package-name-non-cl fn))
              (flag-name (or flag-name
                             (intern$ (concatenate 'string
                                                   "FLAG-"

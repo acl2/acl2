@@ -13,13 +13,18 @@
 
 (in-package "ACL2")
 
+(include-book "must-be-redundant")
 (include-book "must-eval-to")
 (include-book "must-eval-to-t")
-(include-book "must-succeed")
-(include-book "must-succeed-star")
 (include-book "must-fail")
 (include-book "must-fail-local")
 (include-book "must-fail-with-error")
+(include-book "must-fail-with-hard-error")
+(include-book "must-fail-with-soft-error")
+(include-book "must-not-prove")
+(include-book "must-prove")
+(include-book "must-succeed")
+(include-book "must-succeed-star")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,25 +46,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection must-fail-with-soft-error
-  :parents (std/testing errors must-fail)
-  :short "A specialization of @(tsee must-fail) to ensure that
-          a soft error occurs."
-
-  :long "<p>Evaluation of @('(must-fail-with-soft-error <form>)') returns
- without error exactly when evaluation of @('<form>') causes a soft error.</p>
-
- <p>See @(see must-fail) for more details, as @('must-fail-with-soft-error')
- abbreviates @('must-fail') as follows.</p>
-
- @(def must-fail-with-soft-error)
-
- <p>Also see @(see must-fail-with-error) and
- @(see must-fail-with-hard-error).</p>"
-
-  (defmacro must-fail-with-soft-error (form &rest args)
-    (list* 'must-fail form :expected :soft args)))
-
 ;; deprecated:
 
 (defsection ensure-soft-error
@@ -69,25 +55,6 @@
     `(must-fail-with-soft-error ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-fail-with-hard-error
-  :parents (std/testing errors must-fail)
-  :short "A specialization of @(tsee must-fail) to ensure that
-          a hard error occurs."
-
-  :long "<p>Evaluation of @('(must-fail-with-hard-error <form>)') returns
- without error exactly when evaluation of @('<form>') causes a hard error.</p>
-
- <p>See @(see must-fail) for more details, as @('must-fail-with-hard-error')
- abbreviates @('must-fail') as follows.</p>
-
- @(def must-fail-with-hard-error)
-
- <p>Also see @(see must-fail-with-error) and
- @(see must-fail-with-soft-error).</p>"
-
-  (defmacro must-fail-with-hard-error (form &rest args)
-    (list* 'must-fail form :expected :hard args)))
 
 ;; deprecated:
 
@@ -99,20 +66,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection must-prove
-  :parents (std/testing errors)
-  :short "A top-level @(tsee assert$)-like command to ensure that
-          a formula gets proved."
-  :long
-  "<p>
-   This takes the same arguments as @(tsee thm).
-   It wraps the @(tsee thm) into a @(tsee must-succeed).
-   </p>
-   @(def must-prove)"
-
-  (defmacro must-prove (&rest args)
-    `(must-succeed (thm ,@args))))
-
 ;; deprecated:
 
 (defsection thm?
@@ -123,20 +76,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection must-not-prove
-  :parents (std/testing errors)
-  :short "A top-level @(tsee assert$)-like command to ensure that
-          a formula does not get proved."
-  :long
-  "<p>
-   This takes the same arguments as @(tsee thm).
-   It wraps the @(tsee thm) into a @(tsee must-fail).
-   </p>
-   @(def must-not-prove)"
-
-  (defmacro must-not-prove (&rest args)
-    `(must-fail (thm ,@args))))
-
 ;; deprecated:
 
 (defsection not-thm?
@@ -144,21 +83,3 @@
   :short "Deprecated synonym of @(tsee must-not-prove)."
   (defmacro not-thm? (&rest args)
     `(must-not-prove ,@args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection must-be-redundant
-  :parents (std/testing errors)
-  :short "A top-level @(tsee assert$)-like command
-          to ensure that given forms are redundant."
-  :long
-  "<p>
-   The forms are put into an @(tsee encapsulate),
-   along with a @(tsee set-enforce-redundancy) command that precedes them.
-   </p>
-   @(def must-be-redundant)"
-  (defmacro must-be-redundant (&rest forms)
-    `(encapsulate
-       ()
-       (set-enforce-redundancy t)
-       ,@forms)))

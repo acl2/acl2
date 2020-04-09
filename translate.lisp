@@ -149,8 +149,14 @@
            (ignored-attachment-msg ignored-attachment)
            (error-trace-suggestion nil)))))
 
+(defun ev-fncall-null-body-erp (fn)
+
+; Warning: Keep this in sync with hide-with-comment.
+
+  `(ev-fncall-null-body-er . ,fn))
+
 (defun ev-fncall-null-body-er (ignored-attachment fn args latches)
-  (mv t
+  (mv (ev-fncall-null-body-erp fn)
       (ev-fncall-null-body-er-msg ignored-attachment fn args)
       latches))
 
@@ -2177,7 +2183,12 @@
 
          (cond
           (throw-raw-ev-fncall-flg
-           (mv t (ev-fncall-msg val w user-stobj-alist) latches))
+           (mv (if (and (consp val)
+                        (eq (car val) 'ev-fncall-null-body-er))
+                   (ev-fncall-null-body-erp (caddr val))
+                 t)
+               (ev-fncall-msg val w user-stobj-alist)
+               latches))
           (t #-acl2-mv-as-values ; adjust val for the multiple value case
              (let ((val
                     (cond
@@ -2576,15 +2587,19 @@
     (append (flatten-ands-in-lit (car x))
             (flatten-ands-in-lit-lst (cdr x)))))
 
+(mutual-recursion
+
 (defun syntactically-plausible-lambda-objectp (x)
 
 ; This function takes a purported lambda expression and determines if it is
 ; syntactically well-formed -- at least as far as that can be determined
-; without access to the world.  Since some parts of the well-formedness check
-; require the world, this function returns those parts of the lambda expression
-; needed to finish: the type expressions steming from SATISFIES specs, the
-; guard, and the body.  We return (mv t formals satisfies-exprs guard body) if
-; the syntactic checks succeed and (mv nil nil nil nil nil) if they don't.
+; without access to the world.  The result is either nil or a list of 3-tuples,
+; called the ``extracts'' of the lambda object.  Each 3-tuple is of the form
+; (satisfies-exprs guard . body).  Critically, the first such 3-tuple in the
+; extracts contains the satisfies-exprs, guard, and body of x itself; the
+; remaining 3-tuples are from lambda objects properly within x.  To confirm
+; well-formedness all of the extracts must be checked for certain properties
+; wrt the world.
 
 ; We would like to believe that if x is syntactically plausible then there is
 ; some world in which it is well-formed.  But our plausibility check, which
@@ -2641,8 +2656,12 @@
 
                 (and (subsetp-eq used-vars formals)
                      (subsetp-eq formals used-vars))))
-         (mv t formals nil *t* body)
-         (mv nil nil nil nil nil)))
+         (let ((ans (syntactically-plausible-lambda-objectsp-within body)))
+           (cond
+            ((null ans) nil)
+            ((eq ans t) (list (list* nil *t* body)))
+            (t (cons (list* nil *t* body) ans))))
+         nil))
     (('LAMBDA formals ('DECLARE . edcls) body)
      (if (arglistp formals)
          (mv-let (flg ignores ignorables type-exprs satisfies-exprs guard)
@@ -2665,10 +2684,63 @@
                                         (set-difference-eq formals used-vars)
                                         ignores)
                                        ignorables))))
-               (mv t formals satisfies-exprs guard body)
-               (mv nil nil nil nil nil)))
-         (mv nil nil nil nil nil)))
-    (& (mv nil nil nil nil nil))))
+               (let* ((ans1 (syntactically-plausible-lambda-objectsp-within guard))
+                      (ans2 (if ans1
+                                (syntactically-plausible-lambda-objectsp-within body)
+                                nil)))
+                 (cond
+                  ((null ans2) nil)
+                  ((eq ans1 t)
+                   (if (eq ans2 t)
+                       (list (list* satisfies-exprs guard body))
+                       (cons (list* satisfies-exprs guard body) ans2)))
+                  ((eq ans2 t)
+                   (cons (list* satisfies-exprs guard body) ans1))
+                  (t (cons (list* satisfies-exprs guard body)
+                           (append ans1 ans2)))))
+               nil))
+         nil))
+    (& nil)))
+
+(defun syntactically-plausible-lambda-objectsp-within (body)
+
+; Body is a pseudo-termp and we call syntactically-plause-lambda-objectsp on
+; every quoted lambda-like object in it and return one of nil (meaning we found
+; a syntactically illegal quoted lambda-like object), t (meaning there were no
+; quoted lambda-like objects found), or a list of all the 4-tuples that need
+; further checking by well-formed-lambda-objectp1.
+
+  (cond
+   ((variablep body) t)
+   ((fquotep body)
+    (cond ((and (consp (unquote body))
+                (eq (car (unquote body)) 'lambda))
+           (syntactically-plausible-lambda-objectp (unquote body)))
+          (t t)))
+   ((flambda-applicationp body)
+    (let* ((ans1 (syntactically-plausible-lambda-objectp (ffn-symb body)))
+           (ans2 (if ans1
+                     (syntactically-plausible-lambda-objectsp-within-lst (fargs body))
+                     nil)))
+      (cond
+       ((null ans2) nil) ; = (or (null ans1) (null ans2))
+       ((eq ans1 t) ans2)
+       ((eq ans2 t) ans1)
+       (t (append ans1 ans2)))))
+   (t (syntactically-plausible-lambda-objectsp-within-lst (fargs body)))))
+
+(defun syntactically-plausible-lambda-objectsp-within-lst (args)
+  (cond
+   ((null args) t)
+   (t (let* ((ans1 (syntactically-plausible-lambda-objectsp-within (car args)))
+             (ans2 (if ans1
+                       (syntactically-plausible-lambda-objectsp-within-lst (cdr args))
+                       nil)))
+        (cond
+         ((null ans2) nil)
+         ((eq ans1 t) ans2)
+         ((eq ans2 t) ans1)
+         (t (append ans1 ans2))))))))
 
 (defun collect-programs (names wrld)
 
@@ -2759,7 +2831,9 @@
 ; primitives and the apply$ boot functions, all badges are stored in the
 ; badge-table entry :badge-userfn-structure.
 
-; Aside: A function symbol has a badge iff it has a warrant.
+; Aside: All badged functions have warrants except the primitives and the
+; apply$ boot functions, which have badges but don't have and don't need
+; warrants.
 
 ; There's nothing wrong with putting this in logic mode but we don't need it in
 ; logic mode here.  This function is only used by defwarrant, to analyze and
@@ -2883,31 +2957,22 @@
        (executable-suitably-tamep-listp (- n 1) (cdr flags) (cdr args) wrld)))))
 )
 
-(defun well-formed-lambda-objectp1
-  (formals satisfies-exprs guard body wrld)
+(defun well-formed-lambda-objectp1 (extracts wrld)
 
-; All the arguments except wrld are the obvious extracts from a syntactically
-; plausible lambda expression.
+; Extracts is a non-nil list of 3-tuples, (satisfies-exprs guard . body), as
+; returned by a successful syntactically-plausible-lambda-objectp.  We check
+; that each 3-tuple contains truly well-formed components wrt wrld.
 
-; We know formals is a list of distinct legal variables, that the ignores and
-; ignorables are each subsets of formals, and that satisfies-exprs is a list of
-; ``fully translated pseudo terms'' (if we can use that oxymoronic phrase) in
-; those formals because we constructed them from TYPE declarations, checking
-; the relevant vars in formals but without checking that the (SATISFIES p) all
-; mention unary function symbols.  Furthermore, we don't know anything about
-; guard and body.  We complete the well-formedness check on the lambda
-; expression from which these components were extracted.
-
-; We passed in formals merely because it's one of the results of
-; syntactically-plausible-lambda-objectp.  That result is needed in other
-; places that syntactically-plausible-lambda-objectp is called, but not here.
-
-  (declare (ignore formals))
-  (and (term-listp satisfies-exprs wrld)
-       (termp guard wrld)
-       (null (collect-programs (all-fnnames guard) wrld))
-       (termp body wrld)
-       (executable-tamep body wrld)))
+  (cond ((endp extracts) t)
+        (t (let ((satisfies-exprs (car (car extracts)))
+                 (guard (cadr (car extracts)))
+                 (body (cddr (car extracts))))
+             (and (term-listp satisfies-exprs wrld)
+                  (termp guard wrld)
+                  (null (collect-programs (all-fnnames guard) wrld))
+                  (termp body wrld)
+                  (executable-tamep body wrld)
+                  (well-formed-lambda-objectp1 (cdr extracts) wrld))))))
 
 (defun well-formed-lambda-objectp (x wrld)
 
@@ -2920,12 +2985,846 @@
 ; We do not check that the :guard and/or body are composed of guard verified
 ; functions, nor do we prove the guard conjectures for x.
 
-  (mv-let (flg formals satisfies-exprs guard body)
-    (syntactically-plausible-lambda-objectp x)
-    (cond
-     ((null flg) nil)
-     (t (well-formed-lambda-objectp1 formals satisfies-exprs
-                                     guard body wrld)))))
+  (let ((extracts (syntactically-plausible-lambda-objectp x)))
+
+; Extracts is either nil, indicating that the object x is not syntactically
+; plausible or is a list of 3-tuples, (satisfies-exprs guard . body), to be
+; checked wrt the wrld.
+
+    (and extracts
+         (well-formed-lambda-objectp1 extracts wrld))))
+
+; Essay on Cleaning Up Dirty Lambda Objects
+
+; A dirty lambda object is one that contains arbitrary but irrelevant junk that
+; makes it unnecessarily distinct from functionally equivalent lambda objects.
+; There are three kinds of junk: DECLARE forms, guard holder forms like
+; RETURN-LAST, and lambda expressions.  For clarity, an example of the last is
+
+; '(lambda (x) ((lambda (y) (car y)) x))
+
+; which arises in the translation of a lambda$ containing a LET form.
+; In fact, 
+
+; ACL2 !>:translam (lambda$ (x) (let ((y x)) (car y)))
+;  '(LAMBDA (X)
+;           (DECLARE (IGNORABLE X))
+;           (RETURN-LAST 'PROGN
+;                        '(LAMBDA$ (X) (LET ((Y X)) (CAR Y)))
+;                        ((LAMBDA (Y) (CAR Y)) X)))
+
+; illustrates a dirty lambda suffering from all three afflictions!
+; Functionally, the junk contributes nothing.  Furthermore, the user is often
+; unaware of the junk because much is removed by
+; untranslate1-lambda-objects-in-fn-slots when we print quoted lambda objects
+; in :fn slots as lambda$ expressions.  Even when the junk survives that
+; untranslation it is hard to notice because the Lisp programmer is accustomed
+; to ignoring such declarations.  For example, who notices the difference
+; between (declare (ignorable x y)) and (declare (ignorable y x)) or the
+; absence of the declaration altogether?
+
+; The cleaned up version of the triply dirty lambda above is
+
+; '(lambda (x) (car x)).
+
+; By cleaning up dirty lambdas in defun bodies and other rules, and in
+; preprocess-clause, we can render trivial some problems that otherwise require
+; induction.  For example, if lam1 and lam2 are two dirty lambdas that clean up
+; to the same thing, then
+
+; (equal (sum$ 'lam1 lst) (sum$ 'lam2 lst))
+
+; must be proved by induction because the two lambda objects differ and their
+; equivalence is only discovered upon their applications.  But after cleaning
+; up that equality it is trivial.
+
+; Cleaning up consists of deleting DECLAREs, lifting some subterms out of guard
+; holders like RETURN-LAST, and beta reducing lambda explressions in dirty but
+; well-formed lambda objects occurring in :FN slots.  The clean-up process uses
+; remove-guard-holders on the body, but since it only runs on tame bodies the
+; argument in remove-guard-holders1 establishes that we haven't changed the
+; functionality of the transformed lambda object.
+
+; Most of this essay focuses on beta reduction of all lambda expressions in
+; well-formed lambda objects occurring in :FN slots, when the lambda object is
+; in or will be injected into a formula being proved.  There are many
+; questions: Under what circumstances is that sound -- or more accurately, can
+; any of the conditions mentioned above be eased?  Why do we wish to do this?
+; And where in our code should we do it?  These questions are sort of
+; intertwined and we discuss them that way.
+
+; At the time we decided to do this, Fall, 2019 while working on what may
+; be become Version 8.3, we first considered adding this capability to
+; remove-guard-holders (actually remove-guard-holders1).  It already removed
+; guard holders from lambda objects.  And in fact, we extended it to
+; additionally remove the optional DECLARE forms.  These optimizations can be
+; done with fairly minimal checks about the well-formedness of the lambda
+; objects.
+
+; But further extending remove-guard-holders1 to do beta reduction in lambda
+; objects requires more checks.  In particular, we need a full blown
+; well-formed-lambda-objectp test, which checks that the body is truly a termp
+; and is in fact tame and closed.
+
+; But if we put a well-formed-lambda-objectp test in remove-guard-holders1 we
+; have to be able run executable-tamep, which can't be run during the
+; boot-strap.  (Furthermore, since we have to guard verify
+; remove-guard-holders1 because of its use in supporting books/system/top, we
+; need to guard verify a lot of executable tameness stuff, including
+; executable-badge, which is how we realized we had this boot-strapping
+; problem.)  But remove-guard-holders1 is run a lot during boot-strap, e.g., in
+; defun processing and in producing rules from defthm.  So there's no way we
+; want to make remove-guard-holders1 uncallable during boot-strap!
+
+; So that leaves us with the idea of a separate little simplifier that cleans
+; up well-formed lambda objects in :FN slots as part of preprocess-clause, not
+; in remove-guard-holders1.  That is implemented in the function
+; possibly-beta-reduce-lambda-objects defined further below.
+
+; But why do we need a full well-formed-lambda-objectp test?  If a lambda
+; object is not well-formed expanding the lambdas inside it can change its
+; meaning under apply$.
+
+; We give two examples.  The first shows what can happen if the body of the
+; lambda object contains an un-closed lambda application.  Consider
+
+; '(LAMBDA (X) ((LAMBDA (A) X) '123))
+
+; But if you expand-all-lambdas on that object's (ill-formed) body you get
+
+; '(LAMBDA (X) X)
+
+; If you apply$ the first lambda to '(456) the answer is NIL, because when the
+; inner X is evaluated by ev$ it is not in the alist which binds A to 123.  So
+; that X has value NIL under ev$.  But clearly, if you apply$ the second lambda
+; to '(456) you get 456.
+
+; The second example illustrate why tameness is crucial.  Consider
+
+; `(LAMBDA (FN) ((LAMBDA (A) '123) (APPLY$ FN '(1 2))))
+
+; Note that the body of this object is not tame.  But expanding the lambda
+; application in it eliminates the source of untameness and produces:
+
+; '(LAMBDA (X) '123)
+
+; That is, expand-all-lambdas can turn an untame lambda object into a tame one.
+; The question is whether their applications are always equal, and the answer
+; is no.
+
+; This may be a bit surprising because intuitively the untame part of the
+; expression is clearly irrelevant.  If ev$ would just proceed through the
+; expression giving unspecified values to the innermost untame parts and
+; carrying on, it would discover it didn't need the values of the untame parts.
+
+; But that is not how ev$ is defined.  The first thing it does is check whether
+; the expression is tame and if it is not it stops with an UNTAME-EV$ result.
+
+; (thm
+;  (equal (apply$
+;          `(LAMBDA (FN) ((LAMBDA (A) '123) (APPLY$ FN '(1 2))))
+;          '(cons))
+;         (untame-ev$ '((LAMBDA (A) '123) (APPLY$ FN '(1 2)))
+;                     '((FN . CONS))))
+
+;  :hints (("Goal" :expand ((:free (x)(hide x))
+;                           (EV$ '((LAMBDA (A) '123) (APPLY$ FN '(1 2)))
+;                                '((FN . CONS))))))
+
+; Of course, apply$ing the tame version of the object to '(cons) produces 123
+; and that is not proveably equal to the call of untame-ev$.
+
+; So we see that expanding lambdas in an untame expression changes the value.
+
+; Our previous remarks about (sum$ 'lam1 lst) versus (sum$ 'lam2 lst) might
+; suffice to explain our interest in this whole subject, but for posterity we
+; here record how this issue arose.
+
+; First, recall that the lambda$ generated by translate for loop$ bodies
+; contains a LET that binds the free variables appearing in the body.  E.g.,
+; the lambda$ produced for the loop$ body in
+
+; (loop$ for e in lst always (occ v1 e))
+
+; is
+
+; (lambda$ (loop$-gvars loop$-ivars)
+;          (let ((v1 (car loop$-gvars))
+;                (e (car loop$-ivars)))
+;            (occ v1 e)))
+
+; which, when further translated is
+
+; '(lambda (loop$-gvars loop$-ivars)
+;           ((lambda (v1 e) (occ v1 e))
+;            (car loop$-gvars)
+;            (car loop$-ivars)))
+
+; ignoring markers and declares.  Observe that this constant contains the
+; symbols v1 and e.
+
+; The lambda object produced for
+
+; (loop$ for d in lst always (occ v2 d)).
+
+; will contain the symbols v2 and d.
+
+; Thus
+
+; (thm (implies (equal v1 v2)
+;               (equal (loop$ for e in lst always (occ v1 e))
+;                      (loop$ for d in lst always (occ v2 d)))))
+
+; requires induction to prove because the functional identity of the two
+; lambdas (when v1 is v2) is not apparent until they are applied point-wise.
+; However, with the expansion of all lambda expressions within well-formed
+; lambda objects, the translation of the above theorem is
+
+; (implies (equal v1 v2)
+;          (equal (always$+ '(lambda (loop$-gvars loop$-ivars)
+;                              (occ (car loop$-gvars)
+;                                   (car loop$-ivars)))
+;                           (list v1)
+;                           (loop$-as (list lst)))
+;                 (always$+ '(lambda (loop$-gvars loop$-ivars)
+;                              (occ (car loop$-gvars)
+;                                   (car loop$-ivars)))
+;                           (list v2)
+;                           (loop$-as (list lst)))))
+
+; The two always$+ expressions have the same lambda expressions and the same
+; targets.  The only difference is that v1 is passed as a ``global'' in one
+; where v2 is passed in the other.  Note that the quoted constants v1, v2, e,
+; and d no longer occur in the formula; the only occurrences of v1 and v2 are
+; as logical variables.  The proof is immediate by substitution of equals for
+; equals.
+
+; All this motivates the desire for beta-reduction in well-formed lambda
+; objects in :FN slots.  We start the development of the requisite beta reducer
+; by first trying to determine rapidly whether a lambda-looking object might be
+; dirty.  If so, it might be reducible if it is in a well-formed lambda object.
+; Then we define the function to determine whether a term contains a lambda
+; object that might have a lambda application or guard holder in it.  All this
+; is done without checking well-formedness of lambda objects.  If the quick
+; check indicates that we might find a dirty lambda object, we pay the price of
+; copying the term and cleaning up all the well-formed lambda objects in :fn
+; positions.
+
+(defstub remove-guard-holders-blocked-by-hide-p () t)
+(defattach remove-guard-holders-blocked-by-hide-p constant-t-function-arity-0)
+
+(mutual-recursion
+
+(defun possibly-dirty-lambda-objectp1 (x)
+; Warning:  This function cannot expect x to be a term, only a pseudo-termp!
+  (declare (xargs :guard (pseudo-termp x)))
+  (cond ((variablep x) nil)
+        ((fquotep x) nil)
+        ((and (eq (ffn-symb x) 'HIDE)
+              (remove-guard-holders-blocked-by-hide-p))
+         nil)
+        ((lambda-applicationp x) t)
+        ((member-eq (ffn-symb x)
+                    '(RETURN-LAST
+                      MV-LIST
+                      CONS-WITH-HINT
+                      THE-CHECK))
+         t)
+        (t (possibly-dirty-lambda-objectp1-lst (fargs x)))))
+
+(defun possibly-dirty-lambda-objectp1-lst (x)
+; Warning: This function cannot expect x to be a list of terms, only a list of
+; pseudo-termps!
+  (declare (xargs :guard (pseudo-term-listp x)))
+  (cond ((endp x) nil)
+        (t (or (possibly-dirty-lambda-objectp1 (car x))
+               (possibly-dirty-lambda-objectp1-lst (cdr x)))))))
+
+(defun possibly-dirty-lambda-objectp (obj)
+  (and (lambda-object-shapep obj)
+       (or (lambda-object-dcl obj)
+           (and (pseudo-termp (lambda-object-body obj))
+                (possibly-dirty-lambda-objectp1
+                 (lambda-object-body obj))))))
+
+(mutual-recursion
+
+(defun may-contain-dirty-lambda-objectsp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond
+   ((variablep term) nil)
+   ((fquotep term)
+    (possibly-dirty-lambda-objectp (unquote term)))
+   ((and (eq (ffn-symb term) 'HIDE)
+         (remove-guard-holders-blocked-by-hide-p))
+    nil)
+   ((lambda-applicationp term)
+    (or (may-contain-dirty-lambda-objectsp
+         (lambda-body (ffn-symb term)))
+        (may-contain-dirty-lambda-objectsp-lst (fargs term))))
+   (t (may-contain-dirty-lambda-objectsp-lst (fargs term)))))
+
+(defun may-contain-dirty-lambda-objectsp-lst (terms)
+  (cond
+   ((endp terms) nil)
+   (t (or (may-contain-dirty-lambda-objectsp (car terms))
+          (may-contain-dirty-lambda-objectsp-lst (cdr terms)))))))
+
+; Here is how we beta reduce all ACL2 lambda applications.  This is entirely
+; unconcerned with quoted lambda objects and just beta reduces every lambda
+; application in a fully translated term.
+
+(mutual-recursion
+
+(defun expand-all-lambdas (term)
+  (declare (xargs :guard (pseudo-termp term)
+                  :verify-guards nil))
+  (cond
+   ((variablep term) term)
+   ((fquotep term) term)
+   ((flambdap (ffn-symb term))
+; See note below.
+    (subcor-var (lambda-formals (ffn-symb term))
+                (expand-all-lambdas-lst (fargs term))
+                (expand-all-lambdas (lambda-body (ffn-symb term)))))
+   (t (fcons-term (ffn-symb term)
+                  (expand-all-lambdas-lst (fargs term))))))
+
+(defun expand-all-lambdas-lst (terms)
+  (declare (xargs :guard (pseudo-term-listp terms)
+                  :verify-guards nil))
+  (cond
+   ((endp terms) nil)
+   (t (cons (expand-all-lambdas (car terms))
+            (expand-all-lambdas-lst (cdr terms))))))
+ )
+
+; Note on the recursive scheme used in expand-all-lambdas.  At one time the
+; flambdap case above was written this way, which we regard as more intuitively
+; correct:
+
+;    ((flambdap (ffn-symb term))
+;     (expand-all-lambdas
+;      (subcor-var (lambda-formals (ffn-symb term))
+;                  (fargs term)
+;                  (lambda-body (ffn-symb term)))))
+
+; But it is hard to admit the definition with this handling of lambda
+; applications because the subcor-var returns a larger term to recur into.
+; Rather than invent an appropriate measure, we changed the definition.  By the
+; way we don't actually need expand-all-lambdas to be in :logic mode, but at
+; one point in the development of the code to beta reduce well-formed lambda
+; objects we needed it to be in :logic mode: the beta-reduction was going to be
+; implemented in remove-guard-holders1 which has to be a guard-verified :logic
+; mode function to support books in books/system/top.
+
+; In any case, we changed the code to make it easy to admit and now offer the
+; following proof of the equivalence of the old and new versions.  In this
+; proof, the ``old'' definition is the (expand-all-lambdas (subcor-var ...))
+; version and the ``new'' definition is (subcor-var ... (expand-all-lambdas
+; ...)) one.  The new definition is the current definition.
+
+; Lemma.  Let s and s' be finite substitutions with the same domain such
+; that for all v in the common domain, if t is s(v) and t' is s'(v) then
+; |- t = t'.  Also let t1 and t2 be terms such that |- t1 = t2.  Then:
+
+; |- t1/s = t2/s'
+
+; Assuming the Lemma, it's easy to prove by computational induction that
+; the new expand-all-lambdas always produces a term provably equal to
+; its input.  For the flambdap case, first apply beta reduction to
+; replace the lambda by the provably equal
+
+; (subcor-var (lambda-formals (ffn-symb term))
+;             (fargs term)
+;             (lambda-body (ffn-symb term)))
+
+; Now define:
+
+; - s  is (pairlis$ (lambda-formals (ffn-symb term))
+;                   (fargs term))
+; - s' is (pairlis$ (lambda-formals (ffn-symb term))
+;                   (expand-all-lambdas-lst (fargs term)))
+; - t1 is (lambda-body (ffn-symb term))
+; - t2 is (expand-all-lambdas-lst (lambda-body (ffn-symb term)))
+
+; Then this lambda case of the induction follows immediately from the
+; Lemma above, for the values above of s, s', t1, and t2.
+
+; The Lemma, in turn, follows immediately from these two lemmas, as I
+; show below.
+
+; Lemma 1.  Let s and s' be finite substitutions with the same domain such
+; that for all v in the common domain, if t is s(v) and t' is s'(v) then
+; |- t = t'.  Also let t0 be a term.  Then:
+
+; |- t0/s = t0/s'
+
+; Lemma 2.  Let s be a finite substitution, and let t and t' be terms
+; such that |- t = t'.  Then:
+
+; |- t/s = t'/s
+
+; Then the Lemma follows by observing that the following are all
+; provably equal, using Lemma 1 and Lemma 2 as shown below and also
+; using the computational inductive hypotheses.
+
+; t1/s1
+;   {applying Lemma 1 replacing t0 by t1, s by s1, and s' by s2}
+; t1/s2
+;   {applying Lemma 2 replacing s by s2}
+; t2/s2
+
+; It remains to prove Lemma 1 and Lemma 2.  But Lemma 1 follows by a
+; trivial induction on terms, and Lemma 2 is just the usual
+; instantiation rule of inference applied to the formula, t = t'.
+
+; Q.E.D.
+
+; Rockwell Addition:  A major change is the removal of THEs from
+; many terms.
+
+; Essay on the Removal of Guard Holders
+
+; We now develop the code to remove certain trivial calls, such as those
+; generated by THE, from a term.  Suppose for example that the user types (THE
+; type expr); type is translated (using translate-declaration-to-guard) into a
+; predicate in one variable.  The variable is always VAR.  Denote this
+; predicate as (guard VAR).  Then the entire form (THE type expr) is translated
+; into ((LAMBDA (VAR) (THE-CHECK (guard VAR) 'type VAR)) expr).  The-check is
+; defined to have a guard that logically is its first argument, so when we
+; generate guards for the translation above we generate the obligation to prove
+; (guard expr).  Furthermore, the definition of the-check is such that unless
+; the value of state global 'guard-checking-on is :none, executing it in the
+; *1* function tests (guard expr) at runtime and signals an error.
+
+; But logically speaking, the definition of (THE-check g x y) is y.  Hence,
+;   (THE type expr)
+; = ((LAMBDA (VAR) (THE-check (guard VAR) 'type VAR)) expr)
+; = ((LAMBDA (VAR) VAR) expr)
+; = expr.
+; Observe that this is essentially just the expansion of certain non-rec
+; functions (namely, THE-CHECK and the lambda application) and
+; IF-normalization.
+
+; We belabor this obvious point because until Version_2.5, we kept the THEs in
+; bodies, which injected them into the theorem proving process.  We now remove
+; them from the stored BODY property.  It is not obvious that this is a benign
+; change; it might have had unintended side-effects on other processing, e.g.,
+; guard generation.  But the BODY property has long been normalized with
+; certain non-rec fns expanded, and so we argue that the removal of THE could
+; have been accomplished by the processing we were already doing.
+
+; But there is another place we wish to remove such ``guard holders.''  We want
+; the guard clauses we generate not to have these function calls in them.  The
+; terms we explore to generate the guards WILL have these calls in them.  But
+; the output we produce will not, courtesy of the following code which is used
+; to strip the guard holders out of a term.
+
+; Starting with Version_2.8 the ``guard holders'' code appears elsewhere,
+; because remove-guard-holders[-weak] needs to be defined before it is called
+; by constraint-info.
+
+; Aside from applications in the prover, remove-guard-holders is used
+; extensively to process rules before they are stored, to eliminate cruft that
+; might make a rule inapplicable.  It is also used to clean up termination and
+; induction machines and contraints.
+
+; Note that remove-guard-holders-weak does not take world.  It is called from
+; some contexts in which world is not available or is inconvenient, i.e., in
+; user books.  Furthermore, it supports books/system/top.lisp where it must be
+; in :logic mode and guard verified.
+
+; Remove-guard-holders-weak does not dive into lambda objects.  It cannot do so
+; soundly without knowing that the body of the quoted lambda object is a
+; well-formed tame term, which it cannot determine without world.  However,
+; remove-guard-holders-weak is used by clean-up-dirty-lambda-objects, which is
+; called to clean up rules before storage.  But because
+; clean-up-dirty-lambda-objects cannot be called by badges are all in place for
+; the primitives, it cannot be called in boot-strap.  But
+; remove-guard-holders-weak can be and is!  Thus, the standard idiom for
+; cleaning up a formula is (possibly-clean-up-dirty-lambda-objects
+; (remove-guard-holders-weak term) wrld) where the inner expression cleans up
+; the term outside any lambda objects and the outer one cleans up the
+; well-formed lambdas.  For convenience we define (remove-guard-holders term
+; wrld) to be exactly that composition.  Occasionally you will see just
+; (remove-guard-holders-weak term) because we're nervous about messing with the
+; lambdas.
+
+(mutual-recursion
+
+(defun remove-guard-holders1 (changedp0 term)
+
+; Warning: If you change this function, consider changing :DOC guard-holders.
+
+; We return (mv changedp new-term), where new-term is provably equal to term,
+; and where if changedp is nil, then changedp0 is nil and new-term is identical
+; to term.  The second part can be restated as follows: if changedp0 is true
+; then changedp is true (a kind of monotonicity), and if the resulting term is
+; distinct from the input term then changedp is true.  Intuitively, if changedp
+; is true then new-term might be distinct from term but we don't know that
+; (especially if changedp0 is true), but if changedp is nil then we know that
+; new-term is just term.
+
+; See the Essay on the Removal of Guard Holders.
+
+; See the various WARNINGs below.
+
+; The minimal requirement on this function is that it return a term that is
+; provably equal to term.  But since this function is used to clean up the
+; bodies of tame but dirty lambda objects in :FN slots (see
+; clean-up-dirty-lambda-objects) it must also satisfy the ``ev$ property'': the
+; ev$ of tame input must be provably equal to the ev$ of the output.  There is
+; an easy way to ensure that remove-guard-holders-weak has the ev$ property:
+; remove-guard-holders1 ``merely lifts'' ordinary subterms to ordinary slots.
+; We call this the ``Merely Lifts'' principle and it is a sufficient but not
+; necessary condition to guarantee the ev$ property.
+
+; We will illustrate the ``Merely Lifts'' principle in a moment, but we first
+; make two important observations about tameness: First, if any ordinary
+; subterm of a term is untame then the term itself is untame, or
+; contrapositively, if a term is tame, every ordinary subterm is tame.  Second,
+; if a term, z, is tame, then (ev$ z s) = z/s, or colloquially, ``tame terms
+; evaluate to themselves.''
+
+; So now we illustrate the Merely Lifts principle and show how it insures the
+; ev$ property.  Let term be (g u (f a b)) and assume the second slots of both
+; g and f are ordinary (i.e., have ilk NIL).  We assume term is tame.  But if
+; (g u (f a b)) is tame, then so is (f a b) and so is b.  Finally, assume that
+; remove-guard-holders-weak merely lifts the b out of (f a b), producing (g u
+; b) which we assume is provably equal to (g u (f a b)).  Then (g u b) is tame
+; because the only difference between (g u (f a b)) and (g u b) is in an
+; ordinary slot in which one tame term has been replaced by another.  Thus (ev$
+; (remove-guard-holders-weak '(g u (f a b))) s) = (ev$ '(g u b) s) = (g u b)/s,
+; but (ev$ '(g u (f a b)) s) = (g u (f a b))/s.  But since (g u b) is provably
+; equal to (g u (f a b)), their mutual instantiations by s are provably equal.
+; So if every transformation made by remove-guard-holders-weak is a lift of
+; ordinary to ordinary, that is, if remove-guard-holders-weak merely lifts, it
+; has the ev$ property.
+
+; How could it do more than merely lift?  It could, for example, lift b out but
+; then embed it in a non-tame expression, e.g., produce (g u (h b)) where h is
+; an unwarranted identity function.  In that case, remove-guard-holders-weak
+; would satisfy its minimal requirement of provable equality without having the
+; ev$ property because the attempt to ev (g u (h b)) would produce an
+; untame-ev$ term, which is not provably equal to anything besides itself.
+
+; WARNING: The take home lesson from the discussion above is: Be careful if you
+; change remove-guard-holders1 so as not to introduce any unbadged functions or
+; untame expressions or the requirements for warrants that are not already
+; implied by the subterms in term!  The simplest thing to do is to follow the
+; Merely Lifts principle and always just lift out an ordinary subterm into an
+; ordinary slot.
+
+; WARNING: The resulting term is in quote normal form.  We take advantage of
+; this fact in our implementation of :by hints, in function
+; apply-top-hints-clause1, to increase the chances that the "easy-winp" case
+; holds.  We also take advantage of this fact in
+; interpret-term-as-rewrite-rule, as commented there.
+
+; WARNING.  Remove-guard-holders-weak is used in induction-machine-for-fn1, and
+; termination-machine, so (remove-guard-holders-weak term) needs to be provably
+; equal to term, for every term and suitable ilk, in the ground-zero theory.
+; In fact, because of the use in constraint-info, it needs to be the case that
+; for any axiomatic event e, (remove-guard-holders-weak e) can be substituted
+; for e without changing the logical power of the set of axioms.  Actually, we
+; want to view the logical axiom added by e as though remove-guard-holders-weak
+; had been applied to it, and hence RETURN-LAST, MV-LIST, and CONS-WITH-HINT
+; appear in *non-instantiable-primitives*.
+
+; Special functions recognized by this function are: RETURN-LAST, MV-LIST,
+; CONS-WITH-HINT, and THE-CHECK.
+
+  (declare (xargs :guard (pseudo-termp term)
+                  :measure (acl2-count term)))
+  (cond
+   ((variablep term) (mv changedp0 term))
+   ((fquotep term) (mv changedp0 term))
+   ((and (eq (ffn-symb term) 'HIDE)
+         (remove-guard-holders-blocked-by-hide-p))
+
+; Without this case, the proof of
+;   (thm (equal (car (cons x x)) (hide (prog2$ u x)))
+;        :hints (("Goal" :expand ((hide (prog2$ u x))))))
+; will fail.
+
+    (mv changedp0 term))
+   ((or (eq (ffn-symb term) 'RETURN-LAST)
+        (eq (ffn-symb term) 'MV-LIST))
+
+; Recall that PROG2$ (hence, RETURN-LAST) is used to attach the dcl-guardian of
+; a LET to the body of the LET for guard generation purposes.  A typical call
+; of PROG2$ is (PROG2$ dcl-guardian body), where dcl-guardian has a lot of IFs
+; in it.  Rather than distribute them over PROG2$ and then when we finally get
+; to the bottom with things like (prog2$ (illegal ...) body) and (prog2$ T
+; body), we just open up the prog2$ early, throwing away the dcl-guardian.
+
+    (remove-guard-holders1 t (car (last (fargs term)))))
+   ((eq (ffn-symb term) 'CONS-WITH-HINT)
+    (mv-let
+      (changedp1 arg1)
+      (remove-guard-holders1 nil (fargn term 1))
+      (declare (ignore changedp1))
+      (mv-let
+        (changedp2 arg2)
+        (remove-guard-holders1 nil (fargn term 2))
+        (declare (ignore changedp2))
+        (mv t (mcons-term* 'cons arg1 arg2)))))
+   ((flambdap (ffn-symb term))
+    (case-match
+      term
+      ((('LAMBDA ('VAR) ('THE-CHECK & & 'VAR))
+        val)
+       (remove-guard-holders1 t val))
+      ((('LAMBDA formals ('RETURN-LAST ''MBE1-RAW & logic))
+        . args)
+
+; This case handles equality variants.  For example, the macroexpansion of
+; (member x y) matches this pattern, and we return (member-equal x y).  The
+; goal here is to deal with the uses of let-mbe in macro definitions of
+; equality variants, as for member.
+
+       (mv-let
+         (changedp1 args1)
+         (remove-guard-holders1-lst args)
+         (declare (ignore changedp1))
+         (mv-let
+           (changedp2 logic2)
+           (remove-guard-holders1 nil logic)
+           (declare (ignore changedp2))
+           (mv t (subcor-var formals args1 logic2)))))
+      (&
+       (mv-let
+         (changedp1 lambda-body)
+         (remove-guard-holders1 nil
+                                (lambda-body (ffn-symb term)))
+         (mv-let
+           (changedp2 args)
+           (remove-guard-holders1-lst (fargs term))
+           (cond ((or changedp1 changedp2)
+                  (mv t
+                      (mcons-term
+                       (if changedp1
+                           (make-lambda (lambda-formals (ffn-symb term))
+                                        lambda-body)
+                         (ffn-symb term))
+                       args)))
+                 (t (mv changedp0 term))))))))
+   (t (mv-let
+        (changedp1 args)
+        (remove-guard-holders1-lst (fargs term))
+        (cond ((null changedp1)
+               (cond ((quote-listp args)
+                      (let ((new-term (mcons-term (ffn-symb term)
+                                                  args)))
+                        (cond ((equal term new-term) ; even if not eq
+                               (mv changedp0 term))
+                              (t (mv t new-term)))))
+                     (t (mv changedp0 term))))
+              (t (mv t (mcons-term (ffn-symb term) args))))))))
+
+(defun remove-guard-holders1-lst (lst)
+  (declare (xargs :guard (pseudo-term-listp lst)
+                  :measure (acl2-count lst)))
+  (cond ((endp lst) (mv nil nil))
+        (t (mv-let (changedp1 a)
+                   (remove-guard-holders1 nil (car lst))
+                   (mv-let (changedp2 b)
+                           (remove-guard-holders1-lst (cdr lst))
+                           (cond ((or changedp1 changedp2)
+                                  (mv t (cons a b)))
+                                 (t (mv nil lst))))))))
+)
+
+(defun remove-guard-holders-weak (term)
+
+; Return a term equal to term, but slightly simplified.  See also the warning
+; in remove-guard-holders1.
+
+  (declare (xargs :guard (pseudo-termp term)))
+  (mv-let (changedp result)
+          (remove-guard-holders1 nil term)
+          (declare (ignore changedp))
+          result))
+
+(defun remove-guard-holders-weak-lst (lst)
+
+; Return a list of terms element-wise equal to lst, but slightly simplified.
+
+  (declare (xargs :guard (pseudo-term-listp lst)))
+  (mv-let (changedp result)
+          (remove-guard-holders1-lst lst)
+          (declare (ignore changedp))
+          result))
+
+(defun remove-guard-holders1-lst-lst (lst)
+  (declare (xargs :guard (pseudo-term-list-listp lst)))
+  (cond ((null lst) (mv nil nil))
+        (t (mv-let (changedp1 a)
+                   (remove-guard-holders1-lst (car lst))
+                   (mv-let (changedp2 b)
+                           (remove-guard-holders1-lst-lst (cdr lst))
+                           (cond ((or changedp1 changedp2)
+                                  (mv t (cons a b)))
+                                 (t (mv nil lst))))))))
+
+(defun remove-guard-holders-weak-lst-lst (lst)
+
+; Return a list of clauses element-wise equal to lst, but slightly simplified.
+
+  (declare (xargs :guard (pseudo-term-list-listp lst)))
+  (mv-let (changedp result)
+          (remove-guard-holders1-lst-lst lst)
+          (declare (ignore changedp))
+          result))
+
+(mutual-recursion
+
+(defun clean-up-dirty-lambda-objects (term ilk wrld)
+
+; Warning: This function must not be called during boot-strap, so check
+; (global-val 'boot-strap-flg wrld) before calling this function.
+
+; We advise that, in addition, you check (may-contain-dirty-lambda-objectsp
+; term) since if term contains no dirty lambda objects this function needlessly
+; copies term.
+
+  (cond
+   ((variablep term) term)
+   ((fquotep term)
+    (let ((evg (unquote term)))
+      (cond ((eq ilk :FN)
+             (cond
+              ((and (consp evg)
+                    (eq (car evg) 'lambda)
+                    (well-formed-lambda-objectp evg wrld))
+
+; We drop any DECLARE form, remove guard holders, expand all the lambdas (beta
+; reduce) the body, and recursively clean up dirty lambdas that might be inside
+; this one.  We actually clean up recursively before expanding lambdas to avoid
+; having to clean up the same lambda repeatedly should expansion duplicate a
+; dirty lambda.
+
+               (kwote
+                (list 'lambda
+                      (lambda-object-formals evg)
+                      (expand-all-lambdas
+                       (clean-up-dirty-lambda-objects
+                        (remove-guard-holders-weak
+                         (lambda-object-body evg))
+                        nil
+                        wrld)))))
+              (t term)))
+            (t term))))
+   ((and (eq (ffn-symb term) 'HIDE)
+         (remove-guard-holders-blocked-by-hide-p))
+    term)
+   ((lambda-applicationp term)
+    (fcons-term
+     (list 'lambda
+           (lambda-formals (ffn-symb term))
+           (clean-up-dirty-lambda-objects
+            (lambda-body (ffn-symb term))
+            nil
+            wrld))
+     (clean-up-dirty-lambda-objects-lst (fargs term) nil wrld)))
+   (t (let ((bdg (executable-badge (ffn-symb term) wrld)))
+        (fcons-term (ffn-symb term)
+                    (clean-up-dirty-lambda-objects-lst
+                     (fargs term)
+                     (if (or (null bdg)
+                             (eq (access apply$-badge bdg :ilks) t))
+                         nil
+                         (access apply$-badge bdg :ilks))
+                     wrld))))))
+
+(defun clean-up-dirty-lambda-objects-lst (terms ilks wrld)
+  (cond
+   ((endp terms) nil)
+   (t (cons (clean-up-dirty-lambda-objects (car terms) (car ilks) wrld)
+            (clean-up-dirty-lambda-objects-lst (cdr terms) (cdr ilks) wrld))))))
+
+(defun possibly-clean-up-dirty-lambda-objects (term wrld)
+
+; We copy term and clean up every dirty well-formed lambda object occurring in
+; a :FN slot.  We only do this if we're not in boot-strap and if we have reason
+; to believe there is a dirty lambda object somewhere in term.  For a
+; discussion of the reasons we do this and the necessary conditions to
+; guarantee soundness, see the Essay on Cleaning Up Dirty Lambda Objects.
+
+  (cond
+   ((and (not (global-val 'boot-strap-flg wrld))
+         (may-contain-dirty-lambda-objectsp term))
+    (clean-up-dirty-lambda-objects term nil wrld))
+   (t term)))
+
+(defun possibly-clean-up-dirty-lambda-objects-lst (terms wrld)
+
+; We copy each term in terms and clean up every dirty well-formed quoted lambda
+; objects we find.  This funtion checks (not (global-val 'boot-strap-flg wrld))
+; once for every element of terms.  This is less efficient than checking it
+; once and then running the may-contain-dirty-lambda-objectsp check on each
+; term, but that would require having a lot of nearly duplicate code.
+
+  (cond
+   ((endp terms) nil)
+   (t (cons (possibly-clean-up-dirty-lambda-objects (car terms) wrld)
+            (possibly-clean-up-dirty-lambda-objects-lst (cdr terms) wrld)))))
+
+(defun possibly-clean-up-dirty-lambda-objects-lst-lst (terms-lst wrld)
+
+; Again, we test the 'boot-strap-flg repeatedly when only one test would
+; suffice.  So we're sacrificing a little efficiency for code simplicity.
+
+  (cond
+   ((endp terms-lst) nil)
+   (t (cons (possibly-clean-up-dirty-lambda-objects-lst (car terms-lst) wrld)
+            (possibly-clean-up-dirty-lambda-objects-lst-lst
+             (cdr terms-lst)
+             wrld)))))
+
+(defun remove-guard-holders (term wrld)
+
+; Return a term equal to term, but slightly simplified, even perhaps inside
+; quoted lambda objects.  See remove-guard-holders-weak for a version that does
+; not take a world argument and does not simplify quoted lambda objects.
+
+; See the warning in remove-guard-holders1.
+
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))))
+  (cond (wrld (possibly-clean-up-dirty-lambda-objects
+               (remove-guard-holders-weak term)
+               wrld))
+        (t (remove-guard-holders-weak term))))
+
+(defun remove-guard-holders-lst (lst wrld)
+
+; Return a list of terms element-wise equal to lst, but slightly simplified,
+; even perhaps inside quoted lambda objects.  See remove-guard-holders-weak-lst
+; for a version that does not take a world argument and does not simplify
+; quoted lambda objects.
+
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (plist-worldp wrld))))
+  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst
+               (remove-guard-holders-weak-lst lst)
+               wrld))
+        (t (remove-guard-holders-weak-lst lst))))
+
+(defun remove-guard-holders-lst-lst (lst wrld)
+
+; Return a list of clauses element-wise equal to lst, but slightly simplified,
+; even perhaps inside quoted lambda objects.  See
+; remove-guard-holders-weak-lst-lst for a version that does not take a world
+; argument and does not simplify quoted lambda objects.
+
+  (declare (xargs :guard (and (pseudo-term-list-listp lst)
+                              (plist-worldp wrld))))
+  (cond (wrld (possibly-clean-up-dirty-lambda-objects-lst-lst
+               (remove-guard-holders-weak-lst-lst lst)
+               wrld))
+        (t (remove-guard-holders-weak-lst-lst lst))))
 
 (defun lambda-object-guard (x)
 
@@ -3818,7 +4717,7 @@
                              hard-error-returns-nilp
                              aok)
                      (cond
-                      (body-er (mv t body-val latches))
+                      (body-er (mv body-er body-val latches))
                       (t (setq *wormhole-status-alist*
                                (put-assoc-equal name body-val
                                                 *wormhole-status-alist*))
@@ -3831,7 +4730,7 @@
                          hard-error-returns-nilp
                          aok)
                  (cond
-                  (test-er (mv t test latches))
+                  (test-er (mv test-er test latches))
                   (test
                    (ev-rec (fargn form 2) alist w user-stobj-alist
                            (decrement-big-n big-n) safe-mode gc-off
@@ -3893,7 +4792,7 @@
                                  latches
                                  hard-error-returns-nilp
                                  aok)
-                     (cond (args-er (mv t args latches))
+                     (cond (args-er (mv args-er args latches))
                            (t (mv nil (car (last args)) latches))))))))
         (t (mv-let (args-er args latches)
                    (ev-rec-lst (fargs form) alist w user-stobj-alist
@@ -3902,7 +4801,7 @@
                                hard-error-returns-nilp
                                aok)
                    (cond
-                    (args-er (mv t args latches))
+                    (args-er (mv args-er args latches))
                     ((flambda-applicationp form)
                      (ev-rec (lambda-body (ffn-symb form))
                              (pairlis$ (lambda-formals (ffn-symb form)) args)
@@ -4901,6 +5800,15 @@
                                                  ,@(and msg-args
                                                         `(:args ,msg-args))))))))
                               (cons fn args)))
+                         (prog2$
+                          (cond ((and (quotep (car args))
+                                      (consp (unquote (car args)))
+                                      (eq (car (unquote (car args)))
+                                          :COMMENT))
+                                 (list 'comment
+                                       (cdr (unquote (car args)))
+                                       (cadr args)))
+                                (t (cons fn args))))
                          (otherwise (cons fn args)))))))
           (t (or (case-match term
                    ((fmt-to-comment-window ('quote str)
@@ -6968,10 +7876,10 @@
 
 ; The names used above are not the ones we actually use.  Instead of loop we
 ; will use loop$.  The scions sum, always, collect, and append used above are
-; actually named sum$, always$, collect$ and append$, so that the scion name is
-; predictable from the loop operator symbol.  (We can't use the loop operator
-; names as scion names because for example the names always and append are
-; already defined in ACL2.)
+; actually named sum$, always$, thereis$, collect$ and append$, so that the
+; scion name is predictable from the loop operator symbol.  (We can't use the
+; loop operator names as scion names because for example the names always and
+; append are already defined in ACL2.)
 
 ; Loop$ is essentially an ACL2 macro so that
 
@@ -7011,9 +7919,10 @@
 ; fix is necessary since we don't know fn returns a number.
 
 ; A ``loop$ scion'' is any scion used in the translation of loop$ statements.
-; The plain ones are sum$, always$, collect$, append$, until$, and when$ and
-; their fancy counterparts are sum$+, always$+, collect$+, append$+, until$+,
-; and when$+.  We discuss the fancy loop$ scions in Section 8.
+; The plain ones are sum$, always$, thereis$, collect$, append$, until$, and
+; when$ and their fancy counterparts are sum$+, always$+, thereis$+, collect$+,
+; append$+, until$+, and when$+.  We discuss the fancy loop$ scions in Section
+; 8.
 
 ; The plain loop$ scions are informally described as follows, where the
 ; elements of lst are e1, ..., en:
@@ -7021,6 +7930,9 @@
 ; (sum$ fn lst): sums all (fix (apply$ fn (list ei)))
 
 ; (always$ fn lst): tests that all (apply$ fn (list ei)) are non-nil
+
+; (thereis$ fn lst): tests that some (apply$ fn (list ei)) is non-nil
+;                    and returns the first such value
 
 ; (collect$ fn lst): conses together all (apply$ fn (list ei))
 
@@ -8029,10 +8941,10 @@
 ; iteration variables and no globals translates to a collect$+ called with nil
 ; for the list of globals.
 
-; As noted, we have fancy scions sum$+, always$+, collect$+, and append$+.  The
-; first and last have fixers as do their plain counterparts.  All but always$
-; have tail-recursive :exec counterparts for faster evaluation at the
-; top-level.
+; As noted, we have fancy scions sum$+, always$+, thereis$+, collect$+, and
+; append$+.  The first and last have fixers as do their plain counterparts.
+; All but always$ and thereis$ have tail-recursive :exec counterparts for
+; faster evaluation at the top-level.
 
 ; -----------------------------------------------------------------
 ; Section 9:  An Example Fancy Loop$ and Its Guard Conjectures
@@ -8254,7 +9166,9 @@
 ; Before deciding to use the compositional approach, which makes proofs easier
 ; and maintains CLTL speed in guard verified loop$ in defuns, we experimented
 ; with top-level ACL2 evaluation of various special-purpose scions.  We actually
-; defined and guard verified all 43 of the necessary scions:
+; defined and guard verified all 43 of the necessary scions.  (This list was
+; written when the only supported loop$ operators were sum, always, collect, and
+; append.)
 
 ; sum$-until$-when$-ac
 ; sum$-until$-ac
@@ -10734,7 +11648,9 @@
    may see this message without having explicitly typed a LAMBDA if you used ~
    a loop$ statement.  Loop$ statements are translated into calls of scions ~
    that use LAMBDA objects generated from the UNTIL, WHEN, and operator ~
-   expressions.")
+   expressions.  If you are defining a function that calls itself recursively ~
+   from within a loop$ you must include the xargs :LOOP$-RECURSION T and an ~
+   explicit :MEASURE.")
 
 (defun edcls-from-lambda-object-dcls (dcls x bindings cform ctx wrld)
 
@@ -10856,6 +11772,7 @@
 ; loop op    scion     scion     req on apply$ output
   '((sum     sum$      sum$+     acl2-numberp)
     (always  always$   always$+  t)
+    (thereis thereis$  thereis$+ t)
     (collect collect$  collect$+ t)
     (append  append$   append$+  true-listp)
     (nil     until$    until$+   t)             ; the nil key indicates a loop$-related
@@ -10863,14 +11780,20 @@
     ))
 
 ; This is a list of every function symbol used in the translation of loop$
-; statements.  Because of Special Conjectures (a), (b), and (c) -- see the
-; Essay on Loop$ -- we have to be careful not to evaluate ground calls of these
-; symbols during guard clause generation.  If any of these functions were to be
-; evaluated we would fail to recognize the need for some special conjectures.
-; For example, (collect$ (lambda$ ...) (tails '...)) is a pattern that triggers
-; Special Conjecture (c) because it represents ON iteration, and that pattern
-; would not be present if (tails '...) turned into a constant.  See the call
-; of eval-ground-subexpressions1 in guard-clauses+ for where we use this list.
+; statements.  Built into our code, e.g., make-plain-loop$, make-fancy-loop$,
+; chk-lambdas-for-loop$-recursion, etc, is the knowlege that every plain scion
+; takes the lambda expression in arg 1 and the domain (over which mapping
+; occurs) in arg 2.  Every fancy scion takes the lambda expression in arg 1 and
+; the domain in arg 3.
+
+; Because of Special Conjectures (a), (b), and (c) -- see the Essay on Loop$ --
+; we have to be careful not to evaluate ground calls of these symbols during
+; guard clause generation.  If any of these functions were to be evaluated we
+; would fail to recognize the need for some special conjectures.  For example,
+; (collect$ (lambda$ ...) (tails '...)) is a pattern that triggers Special
+; Conjecture (c) because it represents ON iteration, and that pattern would not
+; be present if (tails '...) turned into a constant.  See the call of
+; eval-ground-subexpressions1 in guard-clauses+ for where we use this list.
 
 ; Before we avoided evaluating ground calls of these symbols we saw the
 ; following bug:
@@ -10896,7 +11819,8 @@
 ; ***********************************************
 
 (defconst *loop$-special-function-symbols*
-  '(sum$ sum$+ always$ always$+ collect$ collect$+ append$ append$+
+  '(sum$ sum$+ always$ always$+ thereis$ thereis$+
+         collect$ collect$+ append$ append$+
          until$ until$+ when$ when$+
          loop$-as tails from-to-by))
 
@@ -13695,10 +14619,10 @@
               (nth 4 parse) ; bodyc
               )
           (cond
-           ((and whenc (eq op 'ALWAYS))
+           ((and whenc (or (eq op 'ALWAYS) (eq op 'THEREIS)))
             (trans-er+? cform x ctx
                         "It is illegal in CLTL to have a WHEN clause with an ~
-                         ALWAYS accumulator, so ~x0 is illegal."
+                         ALWAYS or THEREIS accumulator, so ~x0 is illegal."
                         x))
            (t
             (trans-er-let*
@@ -13776,14 +14700,21 @@
                    (trans-value *nil*))))
 
 ; Each of the calls of translate11 above uses bindings nil, so they're not
-; sensitive to the input value of bindings.  But it is conceivable that the
+; sensitive to the input value of bindings.  If the xargs :loop$-recursion is t
+; then calls of the about-to-be-defined function, fn, are to be expected, so in
+; order to know the output arity of fn (which is known when :loop$-recursion is
+; used) chk-acceptable-defuns1 will have stored the stobjs-out of fn before
+; calling translate-bodies.  Thus, the nil bindings here are ok: they mean get
+; the output arities from the world.
+
+; But, if :loop$-recursion t is not specified but recursion occurs then the
 ; calls of translate11 might change bindings to allege the output signature of
 ; one of the functions being defined -- even though ultimately an error will be
 ; caused by that because recursion is not allowed in LAMBDA objects.  But we
 ; don't check that in this function, we just produce lambda$ expressions that
 ; will be further translated.  To try to make sensible error messages -- not
-; ones reporting inappropriate signatures -- we restore bindings to what it was
-; before we started changing it.
+; ones reporting inappropriate signatures -- we will restore bindings to what
+; it was before we started changing it.
 
 ; BTW: It may at first appear that we needn't translate the extra guardx
 ; because they'll find their way into the corresponding lambda$s and be

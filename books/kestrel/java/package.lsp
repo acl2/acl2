@@ -129,6 +129,7 @@
                          pseudo-term-call->fn
                          pseudo-term-case
                          pseudo-term-count
+                         pseudo-term-fix
                          pseudo-term-kind
                          pseudo-term-lambda->formals
                          pseudo-term-lambda->body
@@ -167,6 +168,7 @@
                          string-upcase
                          subcor-var
                          string=>nats
+                         symbol-list
                          symbol-name-lst
                          symbol-pos-alistp
                          symbol-string-alistp
@@ -180,6 +182,7 @@
                          typed-tuplep
                          ubody
                          ubody+
+                         ubyte8
                          ubyte16
                          ubyte16p
                          ubyte8=>hexchars

@@ -1,11 +1,28 @@
-; I, David Rager, would like to release this source code under the 3-clause BSD
-; license, but it currently includes some GPLv2 books.  As such, I am just
-; distributing this source code, without any explicit license.  Those familiar
-; with the GPLv2 will probably ascertain that this software is available to
-; them under the GPLv2, but I do not explicitly license it under GPLv2.  If I
-; ever figure out a way to escape the GPLv2, my plan is to try to release this
-; file under 3-clause BSD (a license that is "compatible" with the GPLv2,
-; whatever that means).
+; Standard IO Library
+; read-file-characters-no-errors.lisp
+; Copyright (C) 2013 David Rager
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original author: David Rager <ragerdl@defthm.com>
 
 (in-package "ACL2")
 (include-book "read-file-characters")

@@ -12,7 +12,6 @@
 
 (include-book "acceptable-rewrite-rule-p")
 (include-book "apply-fn-if-known")
-(include-book "assert")
 (include-book "auto-instance")
 (include-book "auto-termination")
 (include-book "bits-as-digits")
@@ -20,10 +19,8 @@
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "bytes-as-digits")
 (include-book "copy-def")
-(include-book "defarbrec/top")
 (include-book "define-sk")
 (include-book "defmacroq")
-(include-book "defmax-nat/top")
 (include-book "deftest")
 (include-book "defthmr")
 (include-book "digits-any-base/top")
@@ -60,7 +57,6 @@
 (include-book "skip-in-book")
 (include-book "strings/top")
 (include-book "sublis-expr-plus")
-(include-book "symbols")
 (include-book "system/top")
 (include-book "testing")
 (include-book "trans-eval-error-triple")
@@ -82,8 +78,6 @@
   :parents (kestrel-books)
   :short "Utilities that are part of the
           <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
-
-(xdoc::add-resource-directory "kestrel-utilities-design-notes" "design-notes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

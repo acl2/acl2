@@ -3218,7 +3218,7 @@
 ; might have.  But we decided to stick with the ``just do what the user said''
 ; approach.
 
-;   (let ((term (remove-lambdas (remove-guard-holders term wrld))))
+;   (let ((term (remove-lambdas (remove-guard-holders term))))
 ;     (cond ((or (variablep term)
 ;                (fquotep term)
 ;                (not (eq (ffn-symb term) 'implies)))
@@ -7834,7 +7834,7 @@
 ; for a :definition rule with the indicated formals and body.  We guess a
 ; :controller-alist or cause an error.
 
-  (let ((t-machine (termination-machine names body nil nil
+  (let ((t-machine (termination-machine nil nil names formals body nil nil
                                         (default-ruler-extenders wrld))))
     (er-let*
      ((m (guess-measure (car names) nil formals 0 t-machine ctx wrld state)))
@@ -8774,7 +8774,8 @@
                            (er-progn
                             (chk-legal-linear-trigger-terms
                              terms
-                             (unprettyify (remove-guard-holders corollary wrld))
+                             (unprettyify
+                              (remove-guard-holders corollary wrld))
                              name ctx state)
                             (value terms)))))))
                     ((eq token :FORWARD-CHAINING)
@@ -8787,8 +8788,8 @@
                                    one trigger.  Your rule class, ~x0, ~
                                    specifies none.  See :DOC forward-chaining."
                                   x))
-                             (t (value (remove-guard-holders-lst terms
-                                                                 wrld))))))
+                             (t (value
+                                 (remove-guard-holders-lst terms wrld))))))
                     (t
                      (er soft ctx
                          ":TRIGGER-TERMS can only be specified for ~
@@ -8935,12 +8936,12 @@
                             (:type-prescription
                              (mv-let
                               (hyps concl)
-                              (unprettyify-tp (remove-guard-holders corollary
-                                                                    wrld))
+                              (unprettyify-tp
+                               (remove-guard-holders corollary wrld))
                               (list (cons hyps concl))))
                             (otherwise
-                             (unprettyify (remove-guard-holders corollary
-                                                                wrld))))))
+                             (unprettyify
+                              (remove-guard-holders corollary wrld))))))
                      (cond
                       ((not (member-eq token
                                        '(:REWRITE :META :LINEAR
@@ -11196,9 +11197,9 @@
 
             (let ((attached-fns
                    (attached-fns (canonical-ancestors-lst
-                                  (all-ffn-symbs (remove-guard-holders tterm
-                                                                       wrld)
-                                                 nil)
+                                  (all-ffn-symbs
+                                   (remove-guard-holders tterm wrld)
+                                   nil)
                                   wrld)
                                  wrld)))
               (cond

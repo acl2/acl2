@@ -428,7 +428,9 @@
     (or (b* ((new-measure (sublis-var (car injections) old-measure))
              (clause-set
               (termination-theorem-clauses
+               nil nil ; loop$-recursion-checkedp and loop$-recursion value
                names
+               nil ; arglist irrelevant when loop$-recursion-checkedp = nil
                tbodies
                (acons (car names) new-measure nil)
                mp rel

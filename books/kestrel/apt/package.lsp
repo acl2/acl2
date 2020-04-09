@@ -50,6 +50,7 @@
                          conc
                          congruence-rule
                          conjoin
+                         conjoin-equalities
                          conjoin-untranslated-terms
                          conjoin2
                          cons-term
@@ -135,8 +136,14 @@
                          ensure-tuple$
                          equivalence-relationp
                          er-soft+
+                         evmac-appcond-listp
+                         evmac-appcond-theorem-list
+                         evmac-appcond-theorems-no-extra-hints
+                         evmac-appcondp
+                         evmac-input-hints-p
                          evmac-input-print-p
                          evmac-process-input-hints
+                         evmac-process-input-hints$
                          evmac-process-input-print
                          evmac-process-input-show-only
                          ext-address-subterm-governors-lst
@@ -192,6 +199,7 @@
                          irecursivep
                          justification
                          keyword-listp
+                         keyword-truelist-alistp
                          keyword-value-list-to-alist
                          lambda-applicationp
                          lambda-body
@@ -199,9 +207,13 @@
                          macro-namep
                          macro-required-args
                          make-event-terse
+                         make-evmac-appcond
+                         make-evmac-appcond?
                          make-implication
                          make-lambda
                          make-lambda-term
+                         make-mv-let-call
+                         make-mv-nth-calls
                          make-paired-name
                          maybe-pseudo-event-formp
                          mbt$
@@ -219,6 +231,8 @@
                          packn
                          packn-pos
                          pairlis-x1
+                         pos-fix
+                         pos-listp
                          pseudo-event-form-listp
                          pseudo-event-formp
                          pseudo-lambdap
@@ -257,7 +271,7 @@
                          subst-expr1
                          subst-var
                          symbol-class
-                         symbol-package-name-safe
+                         symbol-package-name-non-cl
                          symbol-symbol-alistp
                          symbol-truelist-alistp
                          term-guard-obligation

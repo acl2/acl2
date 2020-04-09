@@ -43,14 +43,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc std/system
-  :parents (std-extensions std)
+(defxdoc std/system-extensions
+  :parents (std-extensions std/system)
   :short
-  (xdoc::topstring
-   "A library that complements the "
-   (xdoc::seetopic "system-utilities" "built-in system utilities")
-   " with theorems and with non-built-in system utilities.")
+  (xdoc::topstring "Extensions of "
+                   (xdoc::seetopic "std/system" "Std/system")
+                   " in the "
+                   (xdoc::seetopic "acl2::kestrel-books" "Kestrel Books")
+                   ".")
   :long
   (xdoc::topstring
    (xdoc::p
-    "These could be moved under @('[books]/std') at some point.")))
+    "These extensions could be moved under @('[books]/std/system')
+     at some point.")))

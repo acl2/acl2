@@ -14,7 +14,6 @@
 (include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/fty/nati" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
-(include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)

@@ -23,8 +23,7 @@
 (include-book "keccak")
 
 ; Leave this include-book here just in case it gets taken out of the spec.
-;; for assert-equal
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 
 ;; for parsing strings of space-separated byte values
 (include-book "std/strings/strsplit" :dir :system)

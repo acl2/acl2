@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -47,13 +48,12 @@
  :items
 
  ("@('old'),
-   @('args/res-iso'),
+   @('isomaps'),
    @('predicate'),
    @('new-name'),
    @('new-enable'),
    @('thm-name'),
    @('thm-enable'),
-   @('non-executable'),
    @('verify-guards'),
    @('untranslate'),
    @('hints'),
@@ -69,7 +69,6 @@
    @('new-enable$'),
    @('thm-name$'),
    @('thm-enable$'),
-   @('non-executable'),
    @('verify-guards$'),
    @('untranslate$'),
    @('hints$'),
@@ -81,17 +80,29 @@
    but they have types implied by their successful validation,
    performed when they are processed."
 
-  "@('arg-isomaps') is an alist from the formal arguments of @('old')
+  "@('m') is the number of results of @('old')."
+
+  "@('arg-isomaps') is an alist
+   from formal arguments of @('old')
    to isomorphic mapping records that specify
-   how each formal argument must be transformed."
+   how the associated formal arguments must be transformed.
+   There are never duplicate keys.
+   When input processing is complete,
+   the keys are exactly all the formal arguments of @('old'), in order."
 
-  "@('res-isomap?') is the isomorphic mapping record for the function result,
-   or @('nil') if the result is not transformed."
+  "@('res-isomaps') is an alist
+   from positive integers from 1 to @('m')
+   to isomorphic mapping records that specify
+   how the result with the associated (1-based) indices
+   must be transformed.
+   There are never duplicate keys.
+   When input processing is complete:
+   if some results are transformed,
+   the keys are exactly all the integers from 1 to @('m'), in order;
+   if no results are transformed,
+   the alist is @('nil')."
 
-  "@('res-isomap') is the isomorphic mapping record for the function result.
-   This is the same as @('res-isomap?'), when that is not @('nil')."
-
-  "@('app-cond-thm-names') is an alist
+  "@('appcond-thm-names') is an alist
    from the applicability condition keywords
    to the corresponding theorem names."
 
@@ -103,22 +114,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-input-processing isodata)
+(xdoc::evmac-topic-input-processing
+ isodata
+ (xdoc::p
+  "The input processing part of @(tsee isodata) has been already extended
+   to support the transformation of results of multi-valued functions,
+   by allowing keywords @(':resultj'), where @('j') is a positive integer,
+   as part of the @('arg/res-listk') components of the @('isomaps') input,
+   and by also allowing @(':result') as an abbreviation of @(':result1')
+   when the function is single-valued."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defaggregate isodata-isomap
-  :short "Information about an isomorphic mapping
-          according to which the target function's
-          arguments and/or results are transformed."
+  :short "Information about an isomorphic mapping according to which
+          (some of) the target function's arguments and results
+          are transformed."
   :long
   (xdoc::topstring-p
-   "This is somewhat similar to @(tsee acl2::defiso-infop),
-    and in fact it corresponds to
-    either an existing @(tsee defiso) that is referenced
-    in the @('args/res-iso') input of @(tsee isodata),
-    or a locally generated @(tsee defiso) that is determined
-    in the @('args/res-iso') input of @(tsee isodata).
+   "This aggregate is somewhat similar to @(tsee acl2::defiso-infop),
+    and in fact it corresponds
+    either to an existing @(tsee defiso) that is referenced
+    in an @('isok') input of @(tsee isodata),
+    or to a locally generated @(tsee defiso) that is determined
+    in the @('isok') input of @(tsee isodata).
     However, this aggregate is not stored in any table;
     it has some fields in common (except for their names)
     with @(tsee acl2::defiso-infop),
@@ -166,17 +185,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-maybe-isomapp (x)
-  :short "Recognize isomorphic mapping records and @('nil')."
-  (or (isodata-isomapp x)
-      (null x))
-  ///
-  (defrule isodata-maybe-isomapp-when-isomapp
-    (implies (isodata-isomapp x)
-             (isodata-maybe-isomapp x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::deflist isodata-isomap-listp (x)
   :short "Recognize true lists of isomorphic mapping records."
   (isodata-isomapp x)
@@ -201,7 +209,37 @@
   (defrule isodata-isomapp-of-val-of-symbol-isomap-alist
     (implies (and (isodata-symbol-isomap-alistp x)
                   (consp (assoc-equal k x)))
-             (isodata-isomapp (cdr (assoc-equal k x))))))
+             (isodata-isomapp (cdr (assoc-equal k x)))))
+
+  (defruled alistp-when-isodata-symbol-isomap-alistp-rewrite
+    (implies (isodata-symbol-isomap-alistp x)
+             (alistp x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defalist isodata-pos-isomap-alistp (x)
+  :short "Recognize alists
+          from positive integers to isomorphic mapping records."
+  :key (posp x)
+  :val (isodata-isomapp x)
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  ///
+
+  (defrule isodata-posp-of-key-of-pos-isomap-alist
+    (implies (and (isodata-pos-isomap-alistp x)
+                  (consp (assoc-equal k x)))
+             (posp (car (assoc-equal k x)))))
+
+  (defrule isodata-isomapp-of-val-of-pos-isomap-alist
+    (implies (and (isodata-pos-isomap-alistp x)
+                  (consp (assoc-equal k x)))
+             (isodata-isomapp (cdr (assoc-equal k x)))))
+
+  (defruled alistp-when-isodata-pos-isomap-alistp-rewrite
+    (implies (isodata-pos-isomap-alistp x)
+             (alistp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,62 +287,119 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-arg/res
-  ((arg/res "The @('arg/resk') component of @('isomaps').")
-   (k posp "The @('k') in @('arg/resk').")
+(define isodata-process-res (res (m posp) (err-msg-preamble msgp) ctx state)
+  :returns (mv erp (j posp) state)
+  :short "Process a result specification in the @('isomap') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Recall that @('m') is the number of results of @('old').")
+   (xdoc::p
+    "We check that the result specification is a keyword @(':resultj'),
+     where @('j') is a positive integer not exceeding @('m').
+     We return @('j'), if successful.")
+   (xdoc::p
+    "If @('m') is 1, we also accept the keyword @(':result'),
+     treating it the same as @(':result1')."))
+  (b* ((err-msg (msg "~@0 But ~x1 is none of those." err-msg-preamble res))
+       ((unless (keywordp res)) (er-soft+ ctx t 1 err-msg-preamble res))
+       ((when (and (= m 1) (eq res :result))) (value 1))
+       (name (symbol-name res))
+       ((unless (and (> (length name) 6)
+                     (equal (subseq name 0 6) "RESULT")))
+        (er-soft+ ctx t 1 "~@0" err-msg))
+       (j (str::strval (subseq name 6 (length name))))
+       ((unless j) (er-soft+ ctx t 1 "~@0" err-msg))
+       ((unless (and (<= 1 j) (<= j m))) (er-soft+ ctx t 1 "~@0" err-msg)))
+    (value j)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-arg/res-list
+  ((arg/res-list "The @('arg/res-listk') component of @('isomaps').")
+   (k posp "The @('k') in @('arg/res-listk').")
    (old$ symbolp)
-   ctx state)
+   ctx
+   state)
   :returns (mv erp
-               (result "A tuple @('(arg res)') satisfying
-                        @('(typed-tuplep symbol-listp booleanp result)').")
+               (result "A tuple @('(args ress)') satisfying
+                        @('(typed-tuplep symbol-listp pos-listp result)').")
                state)
   :verify-guards nil
-  :short "Process an @('arg/res') component of the @('isomaps') input."
+  :short "Process an @('arg/res-list') component of the @('isomaps') input."
   :long
-  (xdoc::topstring-p
-   "If the processing is successful,
-    the @('arg') result is the list of arguments of @('old') in @('arg/res'),
-    and the @('res') result is @('t') iff @(':result') is in @('arg/res').")
+  (xdoc::topstring
+   (xdoc::P
+    "If the processing is successful,
+     the @('args') result is
+     the list of arguments of @('old') in @('arg/res-list'),
+     and the @('ress') result is
+     the list of 1-based indices of results of @('old') in @('arg/res-list')."))
   (b* ((wrld (w state))
-       (formals (formals old$ wrld)))
-    (cond ((member-eq arg/res formals)
-           (value (list (list arg/res) nil)))
-          ((eq arg/res :result)
-           (value (list nil t)))
-          (t (b* (((er &) (ensure-symbol-list$
-                           arg/res
-                           (msg "Since the ~n0 ARG/RES component ~
-                                 of the second input is ~
-                                 neither a formal argument of ~x1 ~
-                                 nor the keyword :RESULT, it"
-                                (list k) old$)
-                           t nil))
-                  ((er &) (ensure-list-no-duplicates$
-                           arg/res
-                           (msg "The list ~x0 that is ~
-                                 the ~n1 ARG/RES component of the second input"
-                                arg/res (list k))
-                           t nil))
-                  ((mv args res) (if (member-eq :result arg/res)
-                                     (mv (remove1-eq :result arg/res) t)
-                                   (mv arg/res nil)))
-                  ((er &) (ensure-list-subset$
-                           args
-                           formals
-                           (msg "The list ~x0 that is ~
-                                 the ~n1 ARG/RES component ~
-                                 of the second input, ~
-                                 except for the keyword :RESULT (if present),"
-                                arg/res (list k))
-                           t nil))
-                  ((when (and res
-                              (> (number-of-results old$ wrld) 1)))
-                   (er-soft+ ctx t nil
-                             "Since the ~n0 ARG/RES component ~
-                              of the second input includes :RESULT, ~
-                              the target function ~x1 must be single-valued"
-                             (list k) old$)))
-               (value (list args res)))))))
+       (x1...xn (formals old$ wrld))
+       (m (number-of-results old$ wrld))
+       (err-msg-part (if (= m 1)
+                         (msg "must be either a formal argument of ~x0, ~
+                               or the keyword @(':RESULT'),
+                               or the keyword @(':RESULT1')."
+                              old$)
+                       (msg "must be either a formal argument of ~x0, ~
+                             or a keyword :RESULTj where j is ~
+                             a positive integer not exceeding ~
+                             the number of results ~x1 of ~x0."
+                            old$ m))))
+    (if (atom arg/res-list)
+        (if (member-eq arg/res-list x1...xn)
+            (value (list (list arg/res-list) nil))
+          (b* ((err-msg-preamble (msg "Since the ~n0 ARG/RES-LIST component ~
+                                       of the second input ~
+                                       is not a list, it ~@1"
+                                      (list k) err-msg-part))
+               ((er j) (isodata-process-res arg/res-list m
+                                            err-msg-preamble ctx state)))
+            (value (list nil (list j)))))
+      (b* (((er &) (ensure-symbol-list$
+                    arg/res-list
+                    (msg "Since the ~n0 ARG/RES component of the second input ~
+                          is not an atom, it"
+                         (list k))
+                    t nil))
+           ((er &) (ensure-list-no-duplicates$
+                    arg/res-list
+                    (msg "The list ~x0 that is ~
+                          the ~n1 ARG/RES-LIST component of the second input"
+                         arg/res-list (list k))
+                    t nil))
+           (err-msg-preamble (msg "Each element ~
+                                   of the ~n0 ARG/RES-LIST component ~
+                                   of the second input ~
+                                   must be ~@1"
+                                  (list k) err-msg-part)))
+        (isodata-process-arg/res-list-aux arg/res-list x1...xn m
+                                          err-msg-preamble ctx state))))
+
+  :prepwork
+  ((define isodata-process-arg/res-list-aux ((arg/res-list symbol-listp)
+                                             (x1...xn symbol-listp)
+                                             (m posp)
+                                             (err-msg-preamble msgp)
+                                             ctx
+                                             state)
+     :returns (mv erp
+                  result ; tuple (SYMBOL-LISTP POS-LISTP)
+                  state)
+     (b* (((when (endp arg/res-list)) (value (list nil nil)))
+          (arg/res (car arg/res-list))
+          ((when (member-eq arg/res x1...xn))
+           (b* (((er (list args ress)) (isodata-process-arg/res-list-aux
+                                        (cdr arg/res-list) x1...xn m
+                                        err-msg-preamble ctx state)))
+             (value (list (cons arg/res args) ress))))
+          ((er j) (isodata-process-res arg/res m err-msg-preamble ctx state))
+          ((er (list args ress)) (isodata-process-arg/res-list-aux
+                                  (cdr arg/res-list) x1...xn m
+                                  err-msg-preamble ctx state)))
+       (value (list args (cons j ress)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -656,65 +751,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-arg/res-iso
-  ((arg/res-iso "The @('(arg/resk isok)') component of @('isomaps').")
-   (k posp "The @('k') in @('(arg/resk isok)').")
+(define isodata-process-arg/res-list-iso
+  ((arg/res-list-iso "The @('(arg/res-listk isok)') component of @('isomaps').")
+   (k posp "The @('k') in @('(arg/res-listk isok)').")
    (old$ symbolp)
    (verify-guards$ booleanp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (names-to-avoid symbol-listp)
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomap? names-to-avoid)')
+               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
-                                                    isodata-maybe-isomapp
+                                                    isodata-pos-isomap-alistp
                                                     symbol-listp
                                                     result)').")
                state)
   :mode :program
-  :short "Process an @('(arg/res iso)') component of the @('isomaps') input."
+  :short "Process an @('(arg/res-list iso)') component
+          of the @('isomaps') input."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('arg-isomaps') and @('res-isomap?') inputs
+    "The @('arg-isomaps') and @('res-isomaps') inputs
      are obtained by having previously called this function
-     on @('(arg/res1 iso1)'), ..., @('(arg/resk-1 isok-1)') in turn.
-     When we call this function on @('(arg/resk isok)'),
-     we extend @('arg-isomaps') and @('res-isomap?')
-     with the information in @('(arg/resk isok)').
+     on @('(arg/res-list1 iso1)'), ..., @('(arg/res-listk-1 isok-1)') in turn.
+     When we call this function on @('(arg/res-listk isok)'),
+     we extend @('arg-isomaps') and @('res-isomaps')
+     with the information in @('(arg/res-listk isok)').
      As we do that, we check that
-     the arguments of @('old') in @('arg/resk') are not
+     the arguments of @('old') in @('arg/res-listk') are not
      already keys in @('arg-isomaps'):
      if any of them did, it would mean that it is already present
-     in one of @('(arg/res1 iso1)'), ..., @('(arg/resk-1 isok-1)'),
+     in one of @('(arg/res-list1 iso1)'), ..., @('(arg/res-listk-1 isok-1)'),
      violating the disjointness requirement.
-     Similarly, it is an error if @('arg/resk') includes @(':result')
-     but the input @('res-isomap?') is not @('nil'),
-     because that means that @('result') was already present
-     in one of @('(arg/res1 iso1)'), ..., @('(arg/resk-1 isok-1)'),
-     again violating the disjointness requirement."))
-  (b* (((er &) (ensure-tuple$ arg/res-iso 2
+     Similarly, we check that the result indices in @('arg/res-listk') are not
+     already keys in @('res-isomaps'):
+     if any of them did, it would mean that the same result is already present
+     in one of @('(arg/res-list1 iso1)'), ..., @('(arg/res-listk-1 isok-1)'),
+     violating the disjointness requirement."))
+  (b* (((er &) (ensure-tuple$ arg/res-list-iso 2
                               (msg "The ~n0 component of the second input"
                                    (list k))
                               t nil))
-       (arg/res (first arg/res-iso))
-       (iso (second arg/res-iso))
-       ((er (list arg res)) (isodata-process-arg/res arg/res k old$ ctx state))
-       (arg-overlap (intersection-eq arg (strip-cars arg-isomaps)))
+       (arg/res-list (first arg/res-list-iso))
+       (iso (second arg/res-list-iso))
+       ((er (list args ress)) (isodata-process-arg/res-list
+                               arg/res-list k old$ ctx state))
+       (arg-overlap (intersection-eq args (strip-cars arg-isomaps)))
        ((when arg-overlap)
         (er-soft+ ctx t nil
-                  "The ~n0 component of the second input includes ~x1, ~
+                  "The ~n0 component of the second input includes ~&1, ~
                    which are also present in the preceding components. ~
                    This violates the disjointness requirement."
                   (list k) arg-overlap))
-       ((when (and res res-isomap?))
+       (res-overlap (intersection$ ress (strip-cars res-isomaps)))
+       ((when res-overlap)
         (er-soft+ ctx t nil
-                  "The ~n0 component of the second input includes :RESULT, ~
-                   which is also present in the preceding components. ~
+                  "The ~n0 component of the second input includes ~
+                   the ~s1 ~&2, ~
+                   which ~s3 also present in the preceding components. ~
                    This violates the disjointness requirement."
-                  (list k)))
+                  (list k)
+                  (if (= (len res-overlap) 1)
+                      "result with index"
+                    "results with indices")
+                  res-overlap
+                  (if (= (len res-overlap) 1)
+                      "is"
+                    "are")))
        ((er (list isomap names-to-avoid)) (isodata-process-iso iso
                                                                k
                                                                old$
@@ -722,65 +828,76 @@
                                                                names-to-avoid
                                                                ctx
                                                                state))
-       (arg-isomaps (isodata-process-arg/res-iso-aux arg isomap arg-isomaps))
-       (res-isomap? (and res isomap)))
-    (value (list arg-isomaps res-isomap? names-to-avoid)))
+       (arg-isomaps
+        (isodata-process-arg/res-list-iso-add-args args isomap arg-isomaps))
+       (res-isomaps
+        (isodata-process-arg/res-list-iso-add-ress ress isomap res-isomaps)))
+    (value (list arg-isomaps res-isomaps names-to-avoid)))
 
   :prepwork
-  ((define isodata-process-arg/res-iso-aux
-     ((arg symbol-listp)
+
+  ((define isodata-process-arg/res-list-iso-add-args
+     ((args symbol-listp)
       (isomap isodata-isomapp)
       (arg-isomaps isodata-symbol-isomap-alistp))
      :returns (new-arg-isomaps isodata-symbol-isomap-alistp :hyp :guard)
-     (cond ((endp arg) arg-isomaps)
-           (t (isodata-process-arg/res-iso-aux (cdr arg)
-                                               isomap
-                                               (acons (car arg)
-                                                      isomap
-                                                      arg-isomaps)))))))
+     (cond ((endp args) arg-isomaps)
+           (t (isodata-process-arg/res-list-iso-add-args
+               (cdr args)
+               isomap
+               (acons (car args) isomap arg-isomaps)))))
+
+   (define isodata-process-arg/res-list-iso-add-ress
+     ((ress pos-listp)
+      (isomap isodata-isomapp)
+      (res-isomaps isodata-pos-isomap-alistp))
+     :returns (new-res-isomaps isodata-pos-isomap-alistp :hyp :guard)
+     (cond ((endp ress) res-isomaps)
+           (t (isodata-process-arg/res-list-iso-add-ress
+               (cdr ress) isomap (acons (car ress) isomap res-isomaps)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-arg/res-iso-list
-  ((arg/res-iso-list)
+(define isodata-process-arg/res-list-iso-list
+  ((arg/res-list-iso-list)
    (k posp)
    (old$ symbolp)
    (verify-guards$ booleanp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (names-to-avoid symbol-listp)
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomap? names-to-avoid)')
+               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
-                                                    isodata-maybe-isomapp
+                                                    isodata-pos-isomap-alistp
                                                     symbol-listp
                                                     result)').")
                state)
   :mode :program
-  :short "Lift @(tsee isodata-process-arg/res-iso) to lists."
-  (b* (((when (endp arg/res-iso-list))
-        (value (list arg-isomaps res-isomap? names-to-avoid)))
-       ((er (list arg-isomaps res-isomap? names-to-avoid))
-        (isodata-process-arg/res-iso (car arg/res-iso-list)
-                                     k
-                                     old$
-                                     verify-guards$
-                                     arg-isomaps
-                                     res-isomap?
-                                     names-to-avoid
-                                     ctx
-                                     state)))
-    (isodata-process-arg/res-iso-list (cdr arg/res-iso-list)
-                                      (1+ k)
-                                      old$
-                                      verify-guards$
-                                      arg-isomaps
-                                      res-isomap?
-                                      names-to-avoid
-                                      ctx
-                                      state)))
+  :short "Lift @(tsee isodata-process-arg/res-list-iso) to lists."
+  (b* (((when (endp arg/res-list-iso-list))
+        (value (list arg-isomaps res-isomaps names-to-avoid)))
+       ((er (list arg-isomaps res-isomaps names-to-avoid))
+        (isodata-process-arg/res-list-iso (car arg/res-list-iso-list)
+                                          k
+                                          old$
+                                          verify-guards$
+                                          arg-isomaps
+                                          res-isomaps
+                                          names-to-avoid
+                                          ctx
+                                          state)))
+    (isodata-process-arg/res-list-iso-list (cdr arg/res-list-iso-list)
+                                           (1+ k)
+                                           old$
+                                           verify-guards$
+                                           arg-isomaps
+                                           res-isomaps
+                                           names-to-avoid
+                                           ctx
+                                           state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -791,9 +908,9 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomap? names-to-avoid)')
+               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
-                                                    isodata-maybe-isomapp
+                                                    isodata-pos-isomap-alistp
                                                     symbol-listp
                                                     result)').")
                state)
@@ -802,13 +919,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting from the empty alist for @('arg-isomaps')
-     and with @('nil') for @('res-isomap?'),
-     we repeatedly process each @('(arg/resk isok)') element,
+    "Starting from the empty alists for @('arg-isomaps') and @('res-isomap'),
+     we repeatedly process each @('(arg/res-listk isok)') element,
      accumulating the processing results
-     into @('arg-isomaps') and @('res-isomap?').
+     into @('arg-isomaps') and @('res-isomaps').
      Then we reconstruct a possible larger @('arg-isomaps')
      by going through the formal parameters of @('old') in order,
+     and associating them, in the new alist, with
+     either the corresponding value in the old alist,
+     or the identity isomorphic mapping.
+     If the final @('res-isomaps') is not empty,
+     we similarly reconstruct a possibly larger @('res-isomaps')
+     by going through the integers from 1 to @('m') in order,
      and associating them, in the new alist, with
      either the corresponding value in the old alist,
      or the identity isomorphic mapping."))
@@ -821,8 +943,8 @@
         (er-soft+ ctx t nil
                   "The second input must be a non-empty list, ~
                    but it is ~x0 instead." isomaps))
-       ((er (list arg-isomaps res-isomap? names-to-avoid))
-        (isodata-process-arg/res-iso-list
+       ((er (list arg-isomaps res-isomaps names-to-avoid))
+        (isodata-process-arg/res-list-iso-list
          isomaps 1 old$ verify-guards$ nil nil names-to-avoid ctx state))
        (isoname-id
         (isodata-fresh-defiso-name-with-*s-suffix 'defiso-identity wrld))
@@ -860,13 +982,20 @@
                    :back-guard back-guard-id
                    :hints nil))
        (formals (formals old$ wrld))
-       (arg-isomaps (isodata-process-isomaps-aux formals
-                                                 arg-isomaps
-                                                 isomap-id)))
-    (value (list arg-isomaps res-isomap? names-to-avoid)))
+       (arg-isomaps (isodata-process-isomaps-args formals
+                                                  arg-isomaps
+                                                  isomap-id))
+       (res-isomaps (and res-isomaps
+                         (isodata-process-isomaps-ress 1
+                                                       (number-of-results
+                                                        old$ wrld)
+                                                       res-isomaps
+                                                       isomap-id))))
+    (value (list arg-isomaps res-isomaps names-to-avoid)))
 
   :prepwork
-  ((define isodata-process-isomaps-aux
+
+  ((define isodata-process-isomaps-args
      ((formals symbol-listp)
       (arg-isomaps isodata-symbol-isomap-alistp)
       (isomap-id isodata-isomapp))
@@ -874,14 +1003,47 @@
      (b* (((when (endp formals)) nil)
           (pair (assoc-eq (car formals) arg-isomaps)))
        (if (consp pair)
-           (cons pair (isodata-process-isomaps-aux (cdr formals)
-                                                   arg-isomaps
-                                                   isomap-id))
+           (cons pair (isodata-process-isomaps-args (cdr formals)
+                                                    arg-isomaps
+                                                    isomap-id))
          (acons (car formals)
                 isomap-id
-                (isodata-process-isomaps-aux (cdr formals)
-                                             arg-isomaps
-                                             isomap-id)))))))
+                (isodata-process-isomaps-args (cdr formals)
+                                              arg-isomaps
+                                              isomap-id))))
+     :verify-guards nil ; done below
+     ///
+     (verify-guards isodata-process-isomaps-args
+       :hints (("Goal"
+                :in-theory
+                (enable alistp-when-isodata-symbol-isomap-alistp-rewrite)))))
+
+   (define isodata-process-isomaps-ress ((j posp)
+                                         (m posp)
+                                         (res-isomaps isodata-pos-isomap-alistp)
+                                         (isomap-id isodata-isomapp))
+     :returns (new-res-isomaps isodata-pos-isomap-alistp :hyp :guard)
+     (b* (((unless (mbt (and (posp j) (posp m)))) nil)
+          ((when (> j m)) nil)
+          (pair (assoc j res-isomaps)))
+       (if (consp pair)
+           (cons pair (isodata-process-isomaps-ress (1+ j)
+                                                    m
+                                                    res-isomaps
+                                                    isomap-id))
+         (acons j
+                isomap-id
+                (isodata-process-isomaps-ress (1+ j)
+                                              m
+                                              res-isomaps
+                                              isomap-id))))
+     :measure (nfix (- (1+ (pos-fix m)) (pos-fix j)))
+     :verify-guards nil ; done below
+     ///
+     (verify-guards isodata-process-isomaps-ress
+       :hints (("Goal"
+                :in-theory
+                (enable alistp-when-isodata-pos-isomap-alistp-rewrite)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -923,108 +1085,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *isodata-app-cond-keywords*
-  :short "Keywords that identify the applicability conditions."
-  '(:oldp-of-old
-    :oldp-when-old
-    :oldp-of-rec-call-args
-    :old-guard
-    :old-guard-pred)
-  ///
-
-  (defruled keyword-listp-of-*isodata-app-cond-keywords*
-    (keyword-listp *isodata-app-cond-keywords*))
-
-  (defruled no-duplicatesp-eq-of-*isodata-app-cond-keywords*
-    (no-duplicatesp-eq *isodata-app-cond-keywords*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-app-cond-keywordp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize the keywords of the applicability conditions."
-  (and (member-eq x *isodata-app-cond-keywords*) t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist isodata-app-cond-keyword-listp (x)
-  (isodata-app-cond-keywordp x)
-  :short "Recognize true lists of the keywords of the applicability conditions."
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-app-cond-present-p ((keyword isodata-app-cond-keywordp)
-                                    (old$ symbolp)
-                                    (res-isomap? isodata-maybe-isomapp)
-                                    (predicate$ booleanp)
-                                    (verify-guards$ booleanp)
-                                    (wrld plist-worldp))
-  :returns (yes/no booleanp :hyp (and (booleanp res$)
-                                      (booleanp predicate$)
-                                      (booleanp verify-guards$)))
-  :short "Check if an applicability condition is present."
-  (case keyword
-    (:oldp-of-old (and res-isomap? t))
-    (:oldp-when-old predicate$)
-    (:oldp-of-rec-call-args (and (irecursivep old$ wrld) t))
-    (:old-guard (and verify-guards$ (not predicate$)))
-    (:old-guard-pred (and verify-guards$ predicate$))
-    (t (impossible)))
-  :guard-hints (("Goal" :in-theory (enable isodata-app-cond-keywordp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-app-cond-present-keywords ((old$ symbolp)
-                                           (res-isomap? isodata-maybe-isomapp)
-                                           (predicate$ booleanp)
-                                           (verify-guards$ booleanp)
-                                           (wrld plist-worldp))
-  :returns (present-keywords isodata-app-cond-keyword-listp)
-  :short "Keywords of the applicability conditions that are present."
-  (isodata-app-cond-present-keywords-aux *isodata-app-cond-keywords*
-                                         old$
-                                         res-isomap?
-                                         predicate$
-                                         verify-guards$
-                                         wrld)
-
-  :prepwork
-  ((define isodata-app-cond-present-keywords-aux
-     ((keywords isodata-app-cond-keyword-listp)
-      (old$ symbolp)
-      (res-isomap? isodata-maybe-isomapp)
-      (predicate$ booleanp)
-      (verify-guards$ booleanp)
-      (wrld plist-worldp))
-     :returns (present-keywords isodata-app-cond-keyword-listp
-                                :hyp (isodata-app-cond-keyword-listp keywords))
-     :parents nil
-     (if (endp keywords)
-         nil
-       (if (isodata-app-cond-present-p (car keywords)
-                                       old$
-                                       res-isomap?
-                                       predicate$
-                                       verify-guards$
-                                       wrld)
-           (cons (car keywords)
-                 (isodata-app-cond-present-keywords-aux (cdr keywords)
-                                                        old$
-                                                        res-isomap?
-                                                        predicate$
-                                                        verify-guards$
-                                                        wrld))
-         (isodata-app-cond-present-keywords-aux (cdr keywords)
-                                                old$
-                                                res-isomap?
-                                                predicate$
-                                                verify-guards$
-                                                wrld))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define isodata-process-inputs (old
                                 isomaps
                                 predicate
@@ -1032,7 +1092,6 @@
                                 new-enable
                                 thm-name
                                 thm-enable
-                                non-executable
                                 verify-guards
                                 untranslate
                                 hints
@@ -1043,26 +1102,23 @@
   :returns (mv erp
                (result "A tuple @('(old$
                                     arg-isomaps
-                                    res-isomap?
+                                    res-isomaps
                                     new-name$
                                     new-enable$
                                     thm-name$
-                                    non-executable$
                                     verify-guards$
                                     hints$
-                                    app-cond-keywords
                                     names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          isodata-symbol-isomap-alistp
-                                         isodata-maybe-isomapp
+                                         isodata-pos-isomap-alistp
                                          symbolp
                                          booleanp
                                          symbolp
                                          booleanp
                                          booleanp
-                                         symbol-alistp
-                                         keyword-listp
+                                         evmac-input-hints-p
                                          symbol-listp
                                          result)').")
                state)
@@ -1078,7 +1134,7 @@
                              (guard-verified-p old$ wrld)
                              "The :VERIFY-GUARDS input" t nil))
        (names-to-avoid (list new-name$ thm-name$))
-       ((er (list arg-isomaps res-isomap? names-to-avoid))
+       ((er (list arg-isomaps res-isomaps names-to-avoid))
         (isodata-process-isomaps
          isomaps old$ verify-guards$ names-to-avoid ctx state))
        ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
@@ -1088,29 +1144,20 @@
                           "The :NEW-ENABLE input"
                           t nil))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
-                              non-executable
-                              (non-executablep old$ wrld)
-                              "The :NON-EXECUTABLE input" t nil))
-       (app-cond-keywords (isodata-app-cond-present-keywords
-                           old$ res-isomap? predicate verify-guards$ wrld))
        ((er &) (ensure-is-untranslate-specifier$ untranslate
                                                  "The :UNTRANSLATE input"
                                                  t nil))
-       ((er hints$) (evmac-process-input-hints
-                     hints app-cond-keywords ctx state))
+       ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
                  arg-isomaps
-                 res-isomap?
+                 res-isomaps
                  new-name$
                  new-enable$
                  thm-name$
-                 non-executable$
                  verify-guards$
                  hints$
-                 app-cond-keywords
                  names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1193,129 +1240,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-oldp-of-terms ((terms pseudo-term-listp)
-                                   (arg-isomaps isodata-symbol-isomap-alistp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (new-terms "A @(tsee pseudo-term-listp).")
-  :verify-guards nil
-  :short "Apply the @('oldp') function to the corresponding term
-          in a list of terms of length equal to the formals of @('old')."
+(defsection isodata-gen-fn-of-terms
+  :short "Generate a function to generate certain kinds of terms."
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, given @('term1'), ..., @('termn'),
-     generate @('(oldp1 term1)'), ..., @('(oldpn termn)'),
-     where @('oldpi') is the old-representation predicate
-     for the argument @('xi') of @('old').
-     Currently, @('oldpi') is
-     either the one specified in @('args/res-iso')
-     or the always-true one,
-     but this will be generalized when @(tsee isodata) is extended
-     to allow multiple isomorphic mappings."))
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (oldp (isodata-isomap->oldp isomap))
-       (new-term (apply-term* oldp term))
-       (new-terms (isodata-gen-oldp-of-terms (cdr terms) (cdr arg-isomaps))))
-    (cons new-term new-terms)))
+    "The function generated by this macro
+     generates the list @('((fn1 term1) (fn2 term2) ...)'),
+     where @('(term1 term2 ...)') is the @('terms') input of the function,
+     and where each @('fnk') is one of
+     either @('oldpk'), @('newpk'), @('forthk'), and @('backk')
+     or @('oldp_rk'), @('newp_rk'), @('forth_rk'), and @('back_rk').
+     The choice of the @('fnk') functions is the input of the macro.
+     The @('arg/res-isomaps') input of the generated function
+     may be @('arg-isomaps') or @('res-isomaps').")
+   (xdoc::@def "isodata-gen-fn-of-terms"))
+
+  (defmacro isodata-gen-fn-of-terms (fn)
+    (declare (xargs :guard (member-eq fn '(oldp newp forth back))))
+    (b* ((name (packn (list 'isodata-gen- fn '-of-terms)))
+         (string (str::downcase-string (symbol-name fn)))
+         (selector (packn (list 'isodata-isomap-> fn))))
+      `(define ,name ((terms pseudo-term-listp)
+                      (arg/res-isomaps isodata-symbol-isomap-alistp))
+         :guard (= (len terms) (len arg/res-isomaps))
+         :returns (new-terms "A @(tsee pseudo-term-listp).")
+         :verify-guards nil
+         :short ,(str::cat "Apply the @('"
+                           string
+                           "k') or @('"
+                           string
+                           "_rk') function
+                            to the corresponding term
+                            in a list of terms of length equal to
+                            the number of formals or results of @('old').")
+         (b* (((when (endp terms)) nil)
+              (term (car terms))
+              (isomap (cdar arg/res-isomaps))
+              (,fn (,selector isomap))
+              (new-term (apply-term* ,fn term))
+              (new-terms (,name (cdr terms) (cdr arg/res-isomaps))))
+           (cons new-term new-terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-newp-of-terms ((terms pseudo-term-listp)
-                                   (arg-isomaps isodata-symbol-isomap-alistp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (new-terms "A @(tsee pseudo-term-listp).")
-  :verify-guards nil
-  :short "Apply the @('newp') function to the corresponding term
-          in a list of terms of length equal to the formals of @('old')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, given @('term1'), ..., @('termn'),
-     generate @('(newp1 term1)'), ..., @('(newpn termn)'),
-     where @('newpi') is the old-representation predicate
-     for the argument @('xi') of @('old').
-     Currently, @('newpi') is
-     either the one specified in @('args/res-iso')
-     or the always-true one,
-     but this will be generalized when @(tsee isodata) is extended
-     to allow multiple isomorphic mappings."))
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (newp (isodata-isomap->newp isomap))
-       (new-term (apply-term* newp term))
-       (new-terms (isodata-gen-newp-of-terms (cdr terms) (cdr arg-isomaps))))
-    (cons new-term new-terms)))
+(isodata-gen-fn-of-terms oldp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-forth-of-terms ((terms pseudo-term-listp)
-                                    (arg-isomaps isodata-symbol-isomap-alistp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (new-terms "A @(tsee pseudo-term-listp).")
-  :verify-guards nil
-  :short "Apply the @('forth') function to the corresponding term
-          in a list of terms of length equal to the formals of @('old')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, given @('term1'), ..., @('termn'),
-     generate @('(forth1 term1)'), ..., @('(forthn termn)'),
-     where @('forthi') is the conversion for the argument @('xi').
-     Currently, @('forthi') is
-     either the one specified in @('args/res-iso')
-     or the identity one,
-     but this will generalize when @(tsee isodata) is extended
-     to allow multiple isomorphic mappings.")
-   (xdoc::p
-    "This is used in the generation of the body of the function.
-     The input terms are arguments of a recursive call of @('old'),
-     i.e. the terms @('updatej-xi<x1,...,xn>'),
-     which must be all converted to the new representation (via @('forthi'))
-     in order to be arguments of @('new')."))
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (forth (isodata-isomap->forth isomap))
-       (new-term (apply-term* forth term))
-       (new-terms (isodata-gen-forth-of-terms (cdr terms) (cdr arg-isomaps))))
-    (cons new-term new-terms)))
+(isodata-gen-fn-of-terms newp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-of-terms ((terms pseudo-term-listp)
-                                   (arg-isomaps isodata-symbol-isomap-alistp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (new-terms "A @(tsee pseudo-term-listp).")
-  :verify-guards nil
-  :short "Apply the @('back') function to the corresponding term
-          in a list of terms of length equal to the formals of @('old')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, given @('term1'), ..., @('termn'),
-     generate @('(back1 term1)'), ..., @('(backn termn)'),
-     where @('backi') is the conversion for the argument @('xi').
-     Currently, @('backi') is
-     either the one specified in @('args/res-iso')
-     or the identity one,
-     but this will generalize when @(tsee isodata) is extended
-     to allow multiple isomorphic mappings.")
-   (xdoc::p
-    "This is used in the generation of the body of the function.
-     The input terms are arguments of a recursive call of @('old'),
-     i.e. the terms @('updatej-xi<x1,...,xn>'),
-     which must be all converted to the new representation (via @('backi'))
-     in order to be arguments of @('new')."))
-  (b* (((when (endp terms)) nil)
-       (term (car terms))
-       (isomap (cdar arg-isomaps))
-       (back (isodata-isomap->back isomap))
-       (new-term (apply-term* back term))
-       (new-terms (isodata-gen-back-of-terms (cdr terms) (cdr arg-isomaps))))
-    (cons new-term new-terms)))
+(isodata-gen-fn-of-terms forth)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(isodata-gen-fn-of-terms back)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1357,270 +1338,232 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-app-cond-formula ((app-cond isodata-app-cond-keywordp)
-                                      (old$ symbolp)
-                                      (arg-isomaps isodata-symbol-isomap-alistp)
-                                      (res-isomap? isodata-maybe-isomapp)
-                                      state)
-  :returns (formula "An untranslated term.")
-  :mode :program
-  :short "Generate the formula of the specified applicability condition."
-  (b* ((wrld (w state))
-       (args (formals old$ wrld))
-       (oldp-of-args (isodata-gen-oldp-of-terms args arg-isomaps))
-       (oldp-of-args-conj (conjoin oldp-of-args))
-       (formula
-        (case app-cond
-          (:oldp-of-old
-           (b* ((oldp-res (isodata-isomap->oldp res-isomap?)))
-             (implicate oldp-of-args-conj
-                        `(,oldp-res (,old$ ,@args)))))
-          (:oldp-when-old
-           (implicate `(,old$ ,@args)
-                      oldp-of-args-conj))
-          (:oldp-of-rec-call-args
-           (implicate oldp-of-args-conj
-                      (isodata-gen-oldp-of-rec-call-args-under-contexts
-                       (recursive-calls old$ wrld)
-                       arg-isomaps)))
-          (:old-guard
-           (b* ((old-guard-formula (uguard old$ wrld)))
-             (implicate old-guard-formula
-                        oldp-of-args-conj)))
-          (:old-guard-pred
-           (b* ((old-guard-formula (uguard old$ wrld)))
-             (implicate oldp-of-args-conj
-                        old-guard-formula)))
-          (t (impossible)))))
-    (untranslate formula t wrld)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-app-cond ((app-cond isodata-app-cond-keywordp)
-                              (old$ symbolp)
-                              (arg-isomaps isodata-symbol-isomap-alistp)
-                              (res-isomap? isodata-maybe-isomapp)
-                              (hints$ symbol-alistp)
-                              (print$ evmac-input-print-p)
-                              (names-to-avoid symbol-listp)
-                              ctx
-                              state)
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (thm-name "A @(tsee symbolp) that is the name of the theorem."))
-  :mode :program
-  :short "Generate a theorem for the specified applicability condition."
+(define isodata-gen-result-vars ((old$ symbolp) (m posp))
+  :guard (> m 1)
+  :returns (vars symbol-listp)
+  :short "Generate variables for bounding results of @('old') or @('new')
+          when they return multiple results."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorem has no rule classes,
-     because it is used via @(':use') hints
-     in the generated proofs in other events.")
-   (xdoc::p
-    "This is a local event,
-     because it is only used internally in the @(tsee encapsulate).
-     The event is wrapped into a @(tsee try-event)
-     in order to provide a terse error message if the proof fails
-     (unless @(':print') is @(':all'), in which case everything is printed).
-     In addition,
-     if @(':print') is @(':info') or @(':all'),
-     the event is preceded and followed by events to print progress messages.")
-   (xdoc::p
-    "The name of the theorem is obtained by
-     putting the keyword that names the applicability condition
-     into the \"APT\" package
-     and adding @('$') as needed to avoid name clashes.
-     However, if the applicability condition is a @(tsee defiso) one,
-     its name is supplied by the caller."))
-  (b* ((wrld (w state))
-       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
-                                                     (symbol-name app-cond)
-                                                     (pkg-witness "APT"))
-                                                    nil
-                                                    names-to-avoid
-                                                    wrld))
-       (formula (isodata-gen-app-cond-formula app-cond
-                                              old$
-                                              arg-isomaps
-                                              res-isomap?
-                                              state))
-       (hints (cdr (assoc-eq app-cond hints$)))
-       (defthm `(defthm ,thm-name ,formula :hints ,hints :rule-classes nil))
-       (error-msg (msg
-                   "The proof of the ~x0 applicability condition fails:~%~x1~|"
-                   app-cond formula))
-       (try-defthm (try-event defthm ctx t nil error-msg))
-       (print-progress-p (member-eq print$ '(:info :all)))
-       (progress-start? (and print-progress-p
-                             `((cw-event
-                                "~%Attempting to prove the ~x0 ~
-                                 applicability condition:~%~x1~|"
-                                ',app-cond ',formula))))
-       (progress-end? (and print-progress-p
-                           `((cw-event "Done.~%"))))
-       (event `(local (progn ,@progress-start?
-                             ,try-defthm
-                             ,@progress-end?))))
-    (mv event thm-name)))
+    "When @('old') returns multiple results (and so @('new') does too),
+     sometimes we need to generate @(tsee mv-let) calls
+     that bind the multiple results to variables.
+     This function generates these variables,
+     which are always the symbols @('result1'), @('result2'), etc.
+     It turns out that these symbols are always adequate:
+     they are the only variables in the body of generated @(tsee mv-let)s,
+     and they are distinct from the symbol @('mv')
+     bound by the outer lambda expression in a translated @(tsee mv-let)
+     (see @(tsee make-mv-let-call)"))
+  (isodata-gen-result-vars-aux old$ 1 m)
+
+  :prepwork
+  ((define isodata-gen-result-vars-aux ((old$ symbolp) (j posp) (m posp))
+     :returns (vars symbol-listp)
+     (b* (((unless (mbt (posp j))) nil)
+          ((unless (mbt (posp m))) nil)
+          ((when (> j m)) nil)
+          (name (str::cat "RESULT" (str::natstr j)))
+          (var (intern-in-package-of-symbol name old$))
+          (vars (isodata-gen-result-vars-aux old$ (1+ j) m)))
+       (cons var vars))
+     :measure (nfix (- (1+ (nfix m)) (nfix j))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-app-conds ((app-conds isodata-app-cond-keyword-listp)
-                               (old$ symbolp)
-                               (arg-isomaps isodata-symbol-isomap-alistp)
-                               (res-isomap? isodata-maybe-isomapp)
-                               (hints$ symbol-alistp)
-                               (print$ evmac-input-print-p)
-                               (names-to-avoid symbol-listp)
-                               ctx
-                               state)
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (thm-names "A @(tsee symbol-symbol-alistp)
-                           from keywords that identify applicability conditions
-                           to the names of the corresponding theorems event."))
+(define isodata-gen-appconds ((old$ symbolp)
+                              (arg-isomaps isodata-symbol-isomap-alistp)
+                              (res-isomaps isodata-pos-isomap-alistp)
+                              (predicate$ booleanp)
+                              (verify-guards$ booleanp)
+                              (wrld plist-worldp))
+  :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
-  :short "Generate theorems for the specified applicability conditions."
-  (b* (((when (endp app-conds)) (mv nil nil))
-       (app-cond (car app-conds))
-       ((mv event thm-name) (isodata-gen-app-cond app-cond
-                                                  old$
-                                                  arg-isomaps
-                                                  res-isomap?
-                                                  hints$
-                                                  print$
-                                                  names-to-avoid
-                                                  ctx
-                                                  state))
-       (names-to-avoid (cons thm-name names-to-avoid))
-       ((mv events thm-names) (isodata-gen-app-conds (cdr app-conds)
-                                                     old$
-                                                     arg-isomaps
-                                                     res-isomap?
-                                                     hints$
-                                                     print$
-                                                     names-to-avoid
-                                                     ctx
-                                                     state)))
-    (mv (cons event events)
-        (acons app-cond thm-name thm-names))))
+  :short "Generate the applicability conditions."
+  (b* ((x1...xn (formals old$ wrld))
+       (oldp-of-x1...xn (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
+       (oldp-of-x1...xn-conj (conjoin oldp-of-x1...xn))
+       (old-guard (uguard old$ wrld))
+       (old-call (fcons-term old$ x1...xn)))
+    (append
+     (make-evmac-appcond?
+      :oldp-of-old
+      (b* ((m (len res-isomaps)))
+        (if (= m 1)
+            (b* ((res-isomap (cdar res-isomaps))
+                 (oldp-res (isodata-isomap->oldp res-isomap)))
+              (implicate oldp-of-x1...xn-conj
+                         (fcons-term* oldp-res old-call)))
+          (b* ((y1...ym (isodata-gen-result-vars old$ m))
+               (oldp-of-y1...ym (isodata-gen-oldp-of-terms
+                                 y1...ym res-isomaps)))
+            (implicate oldp-of-x1...xn-conj
+                       (make-mv-let-call 'mv y1...ym :all old-call
+                                         (conjoin oldp-of-y1...ym))))))
+      :when res-isomaps)
+     (make-evmac-appcond?
+      :oldp-when-old
+      (implicate old-call
+                 oldp-of-x1...xn-conj)
+      :when predicate$)
+     (make-evmac-appcond?
+      :oldp-of-rec-call-args
+      (implicate oldp-of-x1...xn-conj
+                 (isodata-gen-oldp-of-rec-call-args-under-contexts
+                  (recursive-calls old$ wrld)
+                  arg-isomaps))
+      :when (irecursivep old$ wrld))
+     (make-evmac-appcond?
+      :old-guard
+      (implicate old-guard
+                 oldp-of-x1...xn-conj)
+      :when (and verify-guards$
+                 (not predicate$)))
+     (make-evmac-appcond?
+      :old-guard-pred
+      (implicate oldp-of-x1...xn-conj
+                 old-guard)
+      :when (and verify-guards$
+                 predicate$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines isodata-xform-rec-calls
-  :verify-guards nil
-  :short "Transform all the calls to @('old')."
+  :short "Transform all the calls of @('old')."
   :long
   (xdoc::topstring
    (xdoc::p
     "Turn each call  @('(old updatej-x1 ... updatej-xn)') inside a term
-     into @('(back-res (new (forth1 updatej-x1) ... (forthn updatej-xn)))')
-     or @('(new (forth1 updatej-x1) ... (forthn updatej-xn))'),
-     depending on whether @(':result') is in @('args/res-iso') or not.
-     where @('forthi') is the conversion for the argument @('xi')
-     and @('back-res') is the conversion for the result.
-     This is an intermediate step in the construction of
-     the body of the new function from the body of @('old')."))
+     into one of the following:")
+   (xdoc::ul
+    (xdoc::li
+     "@('(new (forth1 updatej-x1) ... (forthn updatej-xn))'),
+      if no results are transformed.")
+    (xdoc::li
+     "@('(back_r1 (new (forth1 updatej-x1) ... (forthn updatej-xn)))'),
+      if @('old') is single-valued and its result is transformed.")
+    (xdoc::li
+     "@('(mv-let (y1 ... ym)
+           (new (forth1 updatej-x1) ... (forthn updatej-xn))
+           (mv (back_r1 y1) ... (back_rm ym)))'),
+      if @('old') is multi-valued and some of its results are transformed."))
+   (xdoc::p
+    "This term transformation is an intermediate step
+     in the construction of the body of @('new') from the body of @('old')."))
+  :verify-guards nil
 
   (define isodata-xform-rec-calls ((term pseudo-termp)
                                    (old$ symbolp)
                                    (arg-isomaps isodata-symbol-isomap-alistp)
-                                   (res-isomap? isodata-maybe-isomapp)
+                                   (res-isomaps isodata-pos-isomap-alistp)
                                    (new-name$ symbolp))
     :returns new-term ; PSEUDO-TERMP
-    (if (or (variablep term)
-            (fquotep term))
-        term
-      (b* ((fn (ffn-symb term)))
-        (if (symbolp fn)
-            (if (eq fn old$)
-                (b* ((new-call (cons-term
-                                new-name$
-                                (isodata-gen-forth-of-terms (fargs term)
-                                                            arg-isomaps))))
-                  (if res-isomap?
-                      (b* ((back (isodata-isomap->back res-isomap?)))
-                        (apply-term* back new-call))
-                    new-call))
-              (cons-term
-               fn
-               (isodata-xform-rec-calls-lst (fargs term)
+    (b* (((when (or (variablep term) (fquotep term))) term)
+         (fn (ffn-symb term))
+         ((when (eq fn old$))
+          (b* ((new-call (fcons-term new-name$
+                                     (isodata-gen-forth-of-terms (fargs term)
+                                                                 arg-isomaps)))
+               ((when (not res-isomaps)) new-call)
+               (m (len res-isomaps)))
+            (if (= m 1)
+                (b* ((back-res (isodata-isomap->back (cdar res-isomaps))))
+                  (apply-term* back-res new-call))
+              (b* ((y1...ym (isodata-gen-result-vars old$ m))
+                   (back-of-y1...ym (isodata-gen-back-of-terms y1...ym
+                                                               res-isomaps)))
+                (make-mv-let-call 'mv y1...ym :all new-call
+                                  (fcons-term 'mv back-of-y1...ym))))))
+         ((when (symbolp fn))
+          (fcons-term fn
+                      (isodata-xform-rec-calls-lst (fargs term)
+                                                   old$
+                                                   arg-isomaps
+                                                   res-isomaps
+                                                   new-name$)))
+         (new-fn (make-lambda (lambda-formals fn)
+                              (isodata-xform-rec-calls (lambda-body fn)
+                                                       old$
+                                                       arg-isomaps
+                                                       res-isomaps
+                                                       new-name$))))
+      (fcons-term new-fn
+                  (isodata-xform-rec-calls-lst (fargs term)
+                                               old$
+                                               arg-isomaps
+                                               res-isomaps
+                                               new-name$))))
+
+  (define isodata-xform-rec-calls-lst
+    ((terms pseudo-term-listp)
+     (old$ symbolp)
+     (arg-isomaps isodata-symbol-isomap-alistp)
+     (res-isomaps isodata-pos-isomap-alistp)
+     (new-name$ symbolp))
+    :returns new-terms ; PSEUDO-TERM-LISTP
+    (cond ((endp terms) nil)
+          (t (cons (isodata-xform-rec-calls (car terms)
                                             old$
                                             arg-isomaps
-                                            res-isomap?
-                                            new-name$)))
-          (b* ((new-fn (make-lambda
-                        (lambda-formals fn)
-                        (isodata-xform-rec-calls (lambda-body fn)
-                                                 old$
-                                                 arg-isomaps
-                                                 res-isomap?
-                                                 new-name$))))
-            (cons-term new-fn
-                       (isodata-xform-rec-calls-lst (fargs term)
-                                                    old$
-                                                    arg-isomaps
-                                                    res-isomap?
-                                                    new-name$)))))))
-
-  (define isodata-xform-rec-calls-lst ((terms pseudo-term-listp)
-                                       (old$ symbolp)
-                                       (arg-isomaps isodata-symbol-isomap-alistp)
-                                       (res-isomap? isodata-maybe-isomapp)
-                                       (new-name$ symbolp))
-    :returns new-terms ; PSEUDO-TERM-LISTP
-    (if (endp terms)
-        nil
-      (cons (isodata-xform-rec-calls (car terms)
-                                     old$
-                                     arg-isomaps
-                                     res-isomap?
-                                     new-name$)
-            (isodata-xform-rec-calls-lst (cdr terms)
-                                         old$
-                                         arg-isomaps
-                                         res-isomap?
-                                         new-name$)))))
+                                            res-isomaps
+                                            new-name$)
+                   (isodata-xform-rec-calls-lst (cdr terms)
+                                                old$
+                                                arg-isomaps
+                                                res-isomaps
+                                                new-name$))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-lemma-instance-args-to-back-of-args
-  ((lemma (or (symbolp lemma)
-              (symbol-listp lemma)) "Lemma to generate an instance of.")
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (lemma-instance true-listp)
-  :verify-guards nil
-  :short "Generate a lemma instance where
-          the variables @('x1'), ..., @('xn') are instantiated with
-          @('(back1 x1)'), ..., @('(backn xn)')."
-  (b* ((args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (inst (alist-to-doublets (pairlis$ args back-of-args))))
-    `(:instance ,lemma :extra-bindings-ok ,@inst)))
+(defsection isodata-gen-lemma-instance-x1...xn-to-fn-of-x1...xn
+  :short "Generate a function to generate certain kinds of lemma instances."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function generated by this macro
+     generates a lemma instance of the form
+     @('(:instance lemma (x1 (fn1 x1)) ... (xn (fnn xn)))'),
+     where each @('fni') is either @('forthi') or @('backi').
+     The choice of the @('fni') functions is the input of the macro.")
+   (xdoc::@def "isodata-gen-lemma-instance-x1...xn-to-fn-of-x1...xn"))
+
+  (defmacro isodata-gen-lemma-instance-x1...xn-to-fn-of-x1...xn (fn)
+    (declare (xargs :guard (member-eq fn '(forth back))))
+    (b* ((name
+          (packn
+           (list 'isodata-gen-lemma-instance-x1...xn-to- fn '-of-x1...xn)))
+         (string (str::downcase-string (symbol-name fn)))
+         (fn-of-x1...xn (packn (list fn '-of-x1...xn)))
+         (isodata-gen-fn-of-terms (packn (list 'isodata-gen- fn '-of-terms))))
+      `(define ,name ((lemma (or (symbolp lemma)
+                                 (symbol-listp lemma))
+                             "Lemma to generate an instance of.")
+                      (old$ symbolp)
+                      (arg-isomaps isodata-symbol-isomap-alistp)
+                      (wrld plist-worldp))
+         :guard (= (len (formals old$ wrld)) (len arg-isomaps))
+         :returns (lemma-instance true-listp)
+         :verify-guards nil
+         :short ,(str::cat "Generate a lemma instance where
+                            each variable @('xi') is instantiated with
+                            @('(" string "i xi)').")
+         (b* ((x1...xn (formals old$ wrld))
+              (,fn-of-x1...xn (,isodata-gen-fn-of-terms x1...xn arg-isomaps))
+              (inst (alist-to-doublets (pairlis$ x1...xn ,fn-of-x1...xn))))
+           `(:instance ,lemma :extra-bindings-ok ,@inst))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-lemma-instance-args-to-forth-of-args
-  ((lemma (or (symbolp lemma)
-              (symbol-listp lemma)) "Lemma to generate an instance of.")
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len (formals old$ wrld)) (len arg-isomaps))
-  :returns (lemma-instance true-listp)
-  :verify-guards nil
-  :short "Generate a lemma instance where
-          the variables @('x1'), ..., @('xn') are instantiated with
-          @('(forth1 x1)'), ..., @('(forthn xn)')."
-  (b* ((args (formals old$ wrld))
-       (forth-of-args (isodata-gen-forth-of-terms args arg-isomaps))
-       (inst (alist-to-doublets (pairlis$ args forth-of-args))))
-    `(:instance ,lemma :extra-bindings-ok ,@inst)))
+(isodata-gen-lemma-instance-x1...xn-to-fn-of-x1...xn forth)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-subst-args-with-back-of-args
+(isodata-gen-lemma-instance-x1...xn-to-fn-of-x1...xn back)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-subst-x1...xn-with-back-of-x1...xn
   ((term pseudo-termp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
@@ -1630,9 +1573,18 @@
   :short "Substitute each formal @('xi') of @('old') in a term
           with the term @('(backi xi)'),
           where @('backi') is the conversion associated to @('xi')."
-  (b* ((args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
-    (subcor-var args back-of-args term)))
+  (b* ((x1...xn (formals old$ wrld))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps)))
+    (subcor-var x1...xn back-of-x1...xn term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-formal-of-unary ((fn pseudo-termfnp) (wrld plist-worldp))
+  :returns (var "A @(tsee symbolp).")
+  :verify-guards nil
+  :short "Formal argument of an (assumed) unary function."
+  (cond ((symbolp fn) (car (formals fn wrld)))
+        (t (car (lambda-formals fn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1641,9 +1593,7 @@
   :verify-guards nil
   :short "Formal argument of the @('newp') predicate
           of an isomorphic mapping."
-  (b* ((newp (isodata-isomap->newp isomap)))
-    (cond ((symbolp newp) (car (formals newp wrld)))
-          (t (car (lambda-formals newp))))))
+  (isodata-formal-of-unary (isodata-isomap->newp isomap) wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1652,9 +1602,7 @@
   :verify-guards nil
   :short "Formal argument of the @('forth') conversion
           of an isomorphic mapping."
-  (b* ((forth (isodata-isomap->forth isomap)))
-    (cond ((symbolp forth) (car (formals forth wrld)))
-          (t (car (lambda-formals forth))))))
+  (isodata-formal-of-unary (isodata-isomap->forth isomap) wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1663,349 +1611,232 @@
   :verify-guards nil
   :short "Formal argument of the @('back') conversion
           of an isomorphic mapping."
-  (b* ((back (isodata-isomap->back isomap)))
-    (cond ((symbolp back) (car (formals back wrld)))
-          (t (car (lambda-formals back))))))
+  (isodata-formal-of-unary (isodata-isomap->back isomap) wrld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-forth-image-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('forthi-image') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (forth-image (isodata-isomap->forth-image isomap))
-       (forth-arg (isodata-formal-of-forth isomap wrld))
-       (instance `(:instance ,forth-image
-                   :extra-bindings-ok (,forth-arg ,arg)))
-       (instances (isodata-gen-forth-image-instances-to-args (cdr arg-isomaps)
-                                                             wrld)))
-    (cons instance instances)))
+(defsection isodata-gen-thm-instances-to-x1...xn
+  :short "Generate a function to generate certain kinds of lemma instances."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function generated by this macro
+     generates a list of lemma instances of the form
+     @('((:instance thm1 (var1 x1)) ... (:instance thmn (varn xn)))'),
+     where each @('thmi') is one of
+     @('forthi-image'),
+     @('backi-image'),
+     @('backi-of-forthi'),
+     @('newpi-guard'),
+     @('forthi-guard'), and
+     @('backi-guard'),
+     and where @('vari') is the formal parameter of (respectively)
+     @('forthi'),
+     @('backi'),
+     @('forthi'),
+     @('newpi'),
+     @('forthi'), and
+     @('backi').
+     The choice of the @('thmi') theorems is the input of the macro,
+     from which the choice of the @('vari') variables is derived.")
+   (xdoc::@def "isodata-gen-thm-instances-to-x1...xn"))
+
+  (defmacro isodata-gen-thm-instances-to-x1...xn (thm)
+    (declare (xargs :guard (member-eq thm '(forth-image
+                                            back-image
+                                            back-of-forth
+                                            newp-guard
+                                            forth-guard
+                                            back-guard))))
+    (b* ((name (packn (list 'isodata-gen- thm '-instances-to-x1...xn)))
+         (thm-selector (packn (list 'isodata-isomap-> thm)))
+         (thm-string (case thm
+                       (forth-image "forthi-image")
+                       (back-image "backi-image")
+                       (back-of-forth "backi-of-forthi")
+                       (newp-guard "newpi-guard")
+                       (forth-guard "forthi-guard")
+                       (back-guard "backi-guard")
+                       (t (impossible))))
+         (fn (case thm
+               (forth-image 'forth)
+               (back-image 'back)
+               (back-of-forth 'forth)
+               (newp-guard 'newp)
+               (forth-guard 'forth)
+               (back-guard 'back)
+               (t (impossible))))
+         (fn-selector (packn (list 'isodata-isomap-> fn)))
+         (fn-string (str::downcase-string (symbol-name fn)))
+         (param (packn (list fn '-arg))))
+      `(define ,name ((arg-isomaps isodata-symbol-isomap-alistp)
+                      (wrld plist-worldp))
+         :returns (lemma-instances true-list-listp)
+         :verify-guards nil
+         :short ,(str::cat "Generate @('n') lemma instances
+                            such that the @('i')-th instance
+                            is of theorem @('" thm-string "')
+                            and instantiates
+                            the formal parameter of @('" fn-string "')
+                            with @('xi').")
+         (b* (((when (endp arg-isomaps)) nil)
+              (arg (caar arg-isomaps))
+              (isomap (cdar arg-isomaps))
+              (,thm (,thm-selector isomap))
+              (,param (isodata-formal-of-unary (,fn-selector isomap) wrld))
+              (instance (list :instance ,thm
+                              :extra-bindings-ok (list ,param arg)))
+              (instances (,name (cdr arg-isomaps) wrld)))
+           (cons instance instances))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-image-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('backi-image') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (back-image (isodata-isomap->back-image isomap))
-       (back-arg (isodata-formal-of-back isomap wrld))
-       (instance `(:instance ,back-image
-                   :extra-bindings-ok (,back-arg ,arg)))
-       (instances (isodata-gen-back-image-instances-to-args (cdr arg-isomaps)
-                                                            wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-x1...xn forth-image)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-of-forth-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('backi-of-forthi') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (back-of-forth (isodata-isomap->back-of-forth isomap))
-       (forth-arg (isodata-formal-of-forth isomap wrld))
-       (instance `(:instance ,back-of-forth
-                   :extra-bindings-ok (,forth-arg ,arg)))
-       (instances (isodata-gen-back-of-forth-instances-to-args (cdr arg-isomaps)
-                                                               wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-x1...xn back-image)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-newp-guard-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('newpi-guard') theorems
-          where the formal parameter of @('newpi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (newp-guard (isodata-isomap->newp-guard isomap))
-       (newp-arg (isodata-formal-of-newp isomap wrld))
-       (instance `(:instance ,newp-guard
-                   :extra-bindings-ok (,newp-arg ,arg)))
-       (instances (isodata-gen-newp-guard-instances-to-args (cdr arg-isomaps)
-                                                            wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-x1...xn back-of-forth)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-forth-guard-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('forthi-guard') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (forth-guard (isodata-isomap->forth-guard isomap))
-       (forth-arg (isodata-formal-of-forth isomap wrld))
-       (instance `(:instance ,forth-guard
-                   :extra-bindings-ok (,forth-arg ,arg)))
-       (instances (isodata-gen-forth-guard-instances-to-args (cdr arg-isomaps)
-                                                             wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-x1...xn newp-guard)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-guard-instances-to-args
-  ((arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('backi-guard') theorems
-          where the formal parameter of @('backi')
-          is instantiated with @('old')'s formal parameter @('xi')."
-  (b* (((when (endp arg-isomaps)) nil)
-       (arg (caar arg-isomaps))
-       (isomap (cdar arg-isomaps))
-       (back-guard (isodata-isomap->back-guard isomap))
-       (back-arg (isodata-formal-of-back isomap wrld))
-       (instance `(:instance ,back-guard
-                   :extra-bindings-ok (,back-arg ,arg)))
-       (instances (isodata-gen-back-guard-instances-to-args (cdr arg-isomaps)
-                                                            wrld)))
-    (cons instance instances)))
+(isodata-gen-thm-instances-to-x1...xn forth-guard)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-back-of-forth-instances-to-terms-back
-  ((terms pseudo-term-listp)
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('backi-of-forthi') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with a term @('termi')
-          in which the formals @('x1'), ..., @('xn') of @('old')
-          are replaced with @('(back1 x1)'), ..., @('backn xn)')."
-  (b* ((args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
-    (isodata-gen-back-of-forth-instances-to-terms-back-aux terms
-                                                           arg-isomaps
-                                                           args
-                                                           back-of-args
-                                                           wrld))
-
-  :prepwork
-  ((define isodata-gen-back-of-forth-instances-to-terms-back-aux
-     ((terms pseudo-term-listp)
-      (arg-isomaps isodata-symbol-isomap-alistp)
-      (args symbol-listp)
-      (back-of-args pseudo-term-listp)
-      (wrld plist-worldp))
-     :guard (= (len terms) (len arg-isomaps))
-     :returns (lemma-instances true-list-listp)
-     :verify-guards nil
-     (b* (((when (endp terms)) nil)
-          (term (car terms))
-          (isomap (cdar arg-isomaps))
-          (back-of-forth (isodata-isomap->back-of-forth isomap))
-          (var (isodata-formal-of-forth isomap wrld))
-          (term-with-back (subcor-var args back-of-args term))
-          (instance `(:instance ,back-of-forth
-                      :extra-bindings-ok (,var ,term-with-back)))
-          (instances (isodata-gen-back-of-forth-instances-to-terms-back-aux
-                      (cdr terms) (cdr arg-isomaps) args back-of-args wrld)))
-       (cons instance instances)))))
+(isodata-gen-thm-instances-to-x1...xn back-guard)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-all-back-of-forth-instances-to-terms-back
-  ((rec-calls pseudo-tests-and-call-listp)
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Return all the lemma instances generated by
-          @(tsee isodata-gen-back-of-forth-instances-to-terms-back)
-          for all the recursive call arguments of @('old')."
-  (b* (((when (endp rec-calls)) nil)
-       (tests-and-call (car rec-calls))
-       (rec-call (access tests-and-call tests-and-call :call))
-       (updates (fargs rec-call))
-       (instances (isodata-gen-back-of-forth-instances-to-terms-back
-                   updates old$ arg-isomaps wrld))
-       (more-instances (isodata-gen-all-back-of-forth-instances-to-terms-back
-                        (cdr rec-calls) old$ arg-isomaps wrld)))
-    (append instances more-instances)))
+(defsection isodata-gen-thm-instances-to-terms-back
+  :short "Generate functions to generate certain kinds of lemma instances."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first function generated by this macro
+     generates a list of lemma instances of the form
+     @('((:instance thm1 (var1 bterm1)) ... (:instance thmn (varn btermn)))'),
+     where each @('thmi') is one of
+     @('forthi-image'), @('backi-of-forthi'), and @('forthi-guard'),
+     where @('vari') is the formal parameter of @('forthi'),
+     and where @('btermi') is obtained by replacing
+     @('x1'), ..., @('xn') with @('(back1 x1)'), ..., @('(backn xn)')
+     in a term @('termi') that is part of
+     a list of terms @('term1'), ..., @('termn')
+     supplied as input to the function.
+     The choice of the @('thmi') theorems is in the input of the macro,
+     from which the choice of the @('vari') variables is derived.")
+   (xdoc::p
+    "The second function generated by this macro
+     calls the first function once for each recursively call of @('old').
+     Each such call of the first function is passed, as the @('terms') argument,
+     the arguments of the corresponding recursive call of @('old').
+     Each call of the first function generates @('n') lemma instances,
+     thus if there are @('r') recursive calls
+     a total of @('r * n') lemma instances are generated,
+     which are all concatenated together in one list
+     and returned by the second function generated by this macro.")
+   (xdoc::@def "isodata-gen-thm-instances-to-terms-back"))
+
+  (defmacro isodata-gen-thm-instances-to-terms-back (thm)
+    (declare (xargs :guard (member-eq thm '(forth-image
+                                            back-of-forth
+                                            forth-guard))))
+    (b* ((name1 (packn (list 'isodata-gen- thm '-instances-to-terms-back)))
+         (name1-aux (packn (list name1 '-aux)))
+         (name2 (packn (list 'isodata-gen-all- thm '-instances-to-terms-back)))
+         (name1-string (str::downcase-string (symbol-name name1)))
+         (thm-selector (packn (list 'isodata-isomap-> thm)))
+         (thm-string (case thm
+                       (forth-image "forthi-image")
+                       (back-of-forth "backi-of-forthi")
+                       (forth-guard "forthi-guard")
+                       (t (impossible)))))
+      `(progn
+         (define ,name1 ((terms pseudo-term-listp)
+                         (old$ symbolp)
+                         (arg-isomaps isodata-symbol-isomap-alistp)
+                         (wrld plist-worldp))
+           :guard (= (len terms) (len arg-isomaps))
+           :returns (lemma-instances true-list-listp)
+           :verify-guards nil
+           :short ,(str::cat "Generate @('n') lemma instances
+                              such that the @('i')-th instance
+                              is of theorem @('" thm-string "')
+                              and instantiates
+                              the formal parameter of @('forthi')
+                              with a given term @('termi') in which
+                              @('x1'), ..., @('xn') are replaced with
+                              @('(back1 x1)'), ..., @('(backn xn)').")
+           (b* ((x1...xn (formals old$ wrld))
+                (back-of-x1...xn
+                 (isodata-gen-back-of-terms x1...xn arg-isomaps)))
+             (,name1-aux terms arg-isomaps x1...xn back-of-x1...xn wrld))
+           :prepwork
+           ((define ,name1-aux ((terms pseudo-term-listp)
+                                (arg-isomaps isodata-symbol-isomap-alistp)
+                                (x1...xn symbol-listp)
+                                (back-of-x1...xn pseudo-term-listp)
+                                (wrld plist-worldp))
+              :guard (= (len terms) (len arg-isomaps))
+              :returns (lemma-instances true-list-listp)
+              :verify-guards nil
+              (b* (((when (endp terms)) nil)
+                   (term (car terms))
+                   (isomap (cdar arg-isomaps))
+                   (,thm (,thm-selector isomap))
+                   (var (isodata-formal-of-forth isomap wrld))
+                   (term-with-back (subcor-var x1...xn back-of-x1...xn term))
+                   (instance (list :instance ,thm
+                                   :extra-bindings-ok
+                               (list var term-with-back)))
+                   (instances (,name1-aux (cdr terms)
+                                          (cdr arg-isomaps)
+                                          x1...xn
+                                          back-of-x1...xn
+                                          wrld)))
+                (cons instance instances)))))
+         (define ,name2 ((rec-calls pseudo-tests-and-call-listp)
+                         (old$ symbolp)
+                         (arg-isomaps isodata-symbol-isomap-alistp)
+                         (wrld plist-worldp))
+           :returns (lemma-instances true-list-listp)
+           :verify-guards nil
+           :short ,(str::cat "Generate the concatenation of
+                              all the @('n * r') lemma instances generated by
+                              @('" name1-string "')
+                              for all the recursive call arguments of @('old')
+                              passed as the @('terms') input.")
+           (b* (((when (endp rec-calls)) nil)
+                (tests-and-call (car rec-calls))
+                (rec-call (access tests-and-call tests-and-call :call))
+                (updates (fargs rec-call))
+                (instances (,name1 updates old$ arg-isomaps wrld))
+                (more-instances (,name2 (cdr rec-calls) old$ arg-isomaps wrld)))
+             (append instances more-instances)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-forth-image-instances-to-terms-back
-  ((terms pseudo-term-listp)
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('forthi-image') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with a term @('termi')
-          in which the formals @('x1'), .., @('xn') of @('old')
-          are replaced with @('(back1 x1)'), ..., @('backn xn)')."
-  (b* ((args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
-    (isodata-gen-forth-image-instances-to-terms-back-aux terms
-                                                         arg-isomaps
-                                                         args
-                                                         back-of-args
-                                                         wrld))
-
-  :prepwork
-  ((define isodata-gen-forth-image-instances-to-terms-back-aux
-     ((terms pseudo-term-listp)
-      (arg-isomaps isodata-symbol-isomap-alistp)
-      (args symbol-listp)
-      (back-of-args pseudo-term-listp)
-      (wrld plist-worldp))
-     :guard (= (len terms) (len arg-isomaps))
-     :returns (lemma-instances true-list-listp)
-     :verify-guards nil
-     (b* (((when (endp terms)) nil)
-          (term (car terms))
-          (isomap (cdar arg-isomaps))
-          (forth-image (isodata-isomap->forth-image isomap))
-          (var (isodata-formal-of-forth isomap wrld))
-          (term-with-back (subcor-var args back-of-args term))
-          (instance `(:instance ,forth-image
-                      :extra-bindings-ok (,var ,term-with-back)))
-          (instances (isodata-gen-forth-image-instances-to-terms-back-aux
-                      (cdr terms) (cdr arg-isomaps) args back-of-args wrld)))
-       (cons instance instances)))))
+(isodata-gen-thm-instances-to-terms-back forth-image)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-all-forth-image-instances-to-terms-back
-  ((rec-calls pseudo-tests-and-call-listp)
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Return all the lemma instances generated by
-          @(tsee isodata-gen-forth-image-instances-to-terms-back)
-          for all the recursive call arguments of @('old')."
-  (b* (((when (endp rec-calls)) nil)
-       (tests-and-call (car rec-calls))
-       (rec-call (access tests-and-call tests-and-call :call))
-       (updates (fargs rec-call))
-       (instances (isodata-gen-forth-image-instances-to-terms-back
-                   updates old$ arg-isomaps wrld))
-       (more-instances (isodata-gen-all-forth-image-instances-to-terms-back
-                        (cdr rec-calls) old$ arg-isomaps wrld)))
-    (append instances more-instances)))
+(isodata-gen-thm-instances-to-terms-back back-of-forth)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-forth-guard-instances-to-terms-back
-  ((terms pseudo-term-listp)
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :guard (= (len terms) (len arg-isomaps))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Generate @('n') lemma instances
-          of the @('forthi-guard') theorems
-          where the formal parameter of @('forthi')
-          is instantiated with a term @('termi')
-          in which the formals @('x1'), .., @('xn') of @('old')
-          are replaced with @('(back1 x1)'), ..., @('backn xn)')."
-  (b* ((args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps)))
-    (isodata-gen-forth-guard-instances-to-terms-back-aux terms
-                                                         arg-isomaps
-                                                         args
-                                                         back-of-args
-                                                         wrld))
-
-  :prepwork
-  ((define isodata-gen-forth-guard-instances-to-terms-back-aux
-     ((terms pseudo-term-listp)
-      (arg-isomaps isodata-symbol-isomap-alistp)
-      (args symbol-listp)
-      (back-of-args pseudo-term-listp)
-      (wrld plist-worldp))
-     :guard (= (len terms) (len arg-isomaps))
-     :returns (lemma-instances true-list-listp)
-     :verify-guards nil
-     (b* (((when (endp terms)) nil)
-          (term (car terms))
-          (isomap (cdar arg-isomaps))
-          (forth-guard (isodata-isomap->forth-guard isomap))
-          (var (isodata-formal-of-forth isomap wrld))
-          (term-with-back (subcor-var args back-of-args term))
-          (instance `(:instance ,forth-guard
-                      :extra-bindings-ok (,var ,term-with-back)))
-          (instances (isodata-gen-forth-guard-instances-to-terms-back-aux
-                      (cdr terms) (cdr arg-isomaps) args back-of-args wrld)))
-       (cons instance instances)))))
+(isodata-gen-thm-instances-to-terms-back forth-guard)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-all-forth-guard-instances-to-terms-back
-  ((rec-calls pseudo-tests-and-call-listp)
-   (old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (wrld plist-worldp))
-  :returns (lemma-instances true-list-listp)
-  :verify-guards nil
-  :short "Return the concatenation of all the lemma instances generated by
-          @(tsee isodata-gen-forth-guard-instances-to-terms-back),
-          for all the recursive call arguments of @('old')."
-  (b* (((when (endp rec-calls)) nil)
-       (tests-and-call (car rec-calls))
-       (rec-call (access tests-and-call tests-and-call :call))
-       (updates (fargs rec-call))
-       (instances (isodata-gen-forth-guard-instances-to-terms-back
-                   updates old$ arg-isomaps wrld))
-       (more-instances (isodata-gen-all-forth-guard-instances-to-terms-back
-                        (cdr rec-calls) old$ arg-isomaps wrld)))
-    (append instances more-instances)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-lemma-instances-args-to-rec-call-args-back
+(define isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back
   ((lemma symbolp "Lemma to generate instances of.")
    (rec-calls pseudo-tests-and-call-listp)
    (old$ symbolp)
@@ -2024,18 +1855,19 @@
        (tests-and-call (car rec-calls))
        (rec-call (access tests-and-call tests-and-call :call))
        (rec-call-args (fargs rec-call))
-       (args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (rec-call-args-back (subcor-var-lst args back-of-args rec-call-args))
-       (inst (alist-to-doublets (pairlis$ args rec-call-args-back)))
+       (x1...xn (formals old$ wrld))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (rec-call-args-back
+        (subcor-var-lst x1...xn back-of-x1...xn rec-call-args))
+       (inst (alist-to-doublets (pairlis$ x1...xn rec-call-args-back)))
        (instance `(:instance ,lemma :extra-bindings-ok ,@inst))
-       (instances (isodata-gen-lemma-instances-args-to-rec-call-args-back
+       (instances (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back
                    lemma (cdr rec-calls) old$ arg-isomaps wrld)))
     (cons instance instances)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-lemma-instances-args-to-forth-rec-call-args-back
+(define isodata-gen-lemma-instances-x1...xn-to-forth-rec-call-args-back
   ((lemma symbolp "Lemma to generate instances of.")
    (rec-calls pseudo-tests-and-call-listp)
    (old$ symbolp)
@@ -2055,15 +1887,17 @@
        (tests-and-call (car rec-calls))
        (rec-call (access tests-and-call tests-and-call :call))
        (rec-call-args (fargs rec-call))
-       (args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (rec-call-args-back (subcor-var-lst args back-of-args rec-call-args))
-       (forth-rec-call-args-back (isodata-gen-forth-of-terms rec-call-args-back
-                                                             arg-isomaps))
-       (inst (alist-to-doublets (pairlis$ args forth-rec-call-args-back)))
+       (x1...xn (formals old$ wrld))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (rec-call-args-back
+        (subcor-var-lst x1...xn back-of-x1...xn rec-call-args))
+       (forth-rec-call-args-back
+        (isodata-gen-forth-of-terms rec-call-args-back arg-isomaps))
+       (inst (alist-to-doublets (pairlis$ x1...xn forth-rec-call-args-back)))
        (instance `(:instance ,lemma :extra-bindings-ok ,@inst))
-       (instances (isodata-gen-lemma-instances-args-to-forth-rec-call-args-back
-                   lemma (cdr rec-calls) old$ arg-isomaps wrld)))
+       (instances
+        (isodata-gen-lemma-instances-x1...xn-to-forth-rec-call-args-back
+         lemma (cdr rec-calls) old$ arg-isomaps wrld)))
     (cons instance instances)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2085,9 +1919,9 @@
   (b* (((when (endp rec-calls)) nil)
        (tests-and-call (car rec-calls))
        (rec-call (access tests-and-call tests-and-call :call))
-       (args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (rec-call-back (subcor-var args back-of-args rec-call))
+       (x1...xn (formals old$ wrld))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (rec-call-back (subcor-var x1...xn back-of-x1...xn rec-call))
        (instance `(:instance ,lemma :extra-bindings-ok (,var ,rec-call-back)))
        (instances (isodata-gen-lemma-instances-var-to-rec-calls-back
                    lemma var old$ (cdr rec-calls) arg-isomaps wrld)))
@@ -2116,9 +1950,10 @@
        (tests-and-call (car rec-calls))
        (rec-call (access tests-and-call tests-and-call :call))
        (rec-call-args (fargs rec-call))
-       (args (formals old$ wrld))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (rec-call-args-back (subcor-var-lst args back-of-args rec-call-args))
+       (x1...xn (formals old$ wrld))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (rec-call-args-back
+        (subcor-var-lst x1...xn back-of-x1...xn rec-call-args))
        (forth-of-rec-call-args-back
         (isodata-gen-forth-of-terms rec-call-args-back arg-isomaps))
        (new-call (fcons-term new-name$ forth-of-rec-call-args-back))
@@ -2130,6 +1965,182 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-gen-back-of-forth-instances-to-mv-nth
+  ((terms pseudo-term-listp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (wrld plist-worldp))
+  :guard (= (len terms) (len res-isomaps))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate @('m') lemma instances
+          such that the @('j')-th instance
+          is of theorem @('back_rj-of-forth_rj')
+          and instantiates
+          the formal parameter of @('forth_rj')
+          with @('(mv-nth j-1 ...)') applied to
+          a given term @('termj')."
+  (b* (((when (endp terms)) nil)
+       (term (car terms))
+       (j (caar res-isomaps))
+       (isomap (cdar res-isomaps))
+       (back-of-forth (isodata-isomap->back-of-forth isomap))
+       (var (isodata-formal-of-forth isomap wrld))
+       (mv-nth-of-term (fcons-term* 'mv-nth (1- j) term))
+       (instance `(:instance ,back-of-forth
+                   :extra-bindings-ok (,var ,mv-nth-of-term)))
+       (instances (isodata-gen-back-of-forth-instances-to-mv-nth
+                   (cdr terms)
+                   (cdr res-isomaps)
+                   wrld)))
+    (cons instance instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-all-back-of-forth-instances-to-mv-nth
+  ((rec-calls pseudo-tests-and-call-listp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (wrld plist-worldp))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate the concatenation of
+          all the @('n * r') lemma instances generated by
+          @('isodata-gen-back-of-forth-instances-to-mv-nth')
+          for all the recursive call arguments of @('old')
+          passed as the @('terms') input."
+  (b* (((when (endp rec-calls)) nil)
+       (tests-and-call (car rec-calls))
+       (rec-call (access tests-and-call tests-and-call :call))
+       (updates (fargs rec-call))
+       (instances (isodata-gen-back-of-forth-instances-to-mv-nth
+                   updates res-isomaps wrld))
+       (more-instances (isodata-gen-all-back-of-forth-instances-to-mv-nth
+                        (cdr rec-calls) res-isomaps wrld)))
+    (append instances more-instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-forth-image-instances-to-mv-nth
+  ((term pseudo-termp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (wrld plist-worldp))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate @('m') lemma instances
+          such that the @('j')-th instance
+          is of theorem @('forth_rj-image')
+          and instantiates
+          the formal parameter of @('forth_rj')
+          with @('(mv-nth j-1 ...)') applied to
+          a given term @('term')."
+  (b* (((when (endp res-isomaps)) nil)
+       (j (caar res-isomaps))
+       (isomap (cdar res-isomaps))
+       (forth-image (isodata-isomap->forth-image isomap))
+       (var (isodata-formal-of-forth isomap wrld))
+       (mv-nth-of-term (fcons-term* 'mv-nth (1- j) term))
+       (instance `(:instance ,forth-image
+                   :extra-bindings-ok (,var ,mv-nth-of-term)))
+       (instances (isodata-gen-forth-image-instances-to-mv-nth
+                   term
+                   (cdr res-isomaps)
+                   wrld)))
+    (cons instance instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-forth-guard-instances-to-mv-nth
+  ((term pseudo-termp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (wrld plist-worldp))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate @('m') lemma instances
+          such that the @('j')-th instance
+          is of theorem @('forth_rj-guard')
+          and instantiates
+          the formal parameter of @('forth_rj')
+          with @('(mv-nth j-1 ...)') applied to
+          a given term @('term')."
+  (b* (((when (endp res-isomaps)) nil)
+       (j (caar res-isomaps))
+       (isomap (cdar res-isomaps))
+       (forth-guard (isodata-isomap->back-of-forth isomap))
+       (var (isodata-formal-of-forth isomap wrld))
+       (mv-nth-of-term (fcons-term* 'mv-nth (1- j) term))
+       (instance `(:instance ,forth-guard
+                   :extra-bindings-ok (,var ,mv-nth-of-term)))
+       (instances (isodata-gen-forth-guard-instances-to-mv-nth
+                   term
+                   (cdr res-isomaps)
+                   wrld)))
+    (cons instance instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-back-guard-instances-to-mv-nth
+  ((term pseudo-termp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (wrld plist-worldp))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate @('m') lemma instances
+          such that the @('j')-th instance
+          is of theorem @('back_rj-guard')
+          and instantiates
+          the formal parameter of @('back_rj')
+          with @('(mv-nth j-1 ...)') applied to
+          a given term @('term')."
+  (b* (((when (endp res-isomaps)) nil)
+       (j (caar res-isomaps))
+       (isomap (cdar res-isomaps))
+       (back-guard (isodata-isomap->back-guard isomap))
+       (var (isodata-formal-of-back isomap wrld))
+       (mv-nth-of-term (fcons-term* 'mv-nth (1- j) term))
+       (instance `(:instance ,back-guard
+                   :extra-bindings-ok (,var ,mv-nth-of-term)))
+       (instances (isodata-gen-back-guard-instances-to-mv-nth
+                   term
+                   (cdr res-isomaps)
+                   wrld)))
+    (cons instance instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-all-back-guard-instances-to-mv-nth
+  ((old$ symbolp)
+   (rec-calls pseudo-tests-and-call-listp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new-name$ symbolp)
+   (wrld plist-worldp))
+  :returns (lemma-instances true-list-listp)
+  :verify-guards nil
+  :short "Generate the concatenation of
+          all the @('n * r') lemma instances generated by
+          @('isodata-gen-back-guard-instances-to-mv-nth')
+          for all the terms, passed as the @('term') input,
+          of the form
+          @('(new ... (forthi updatek-xi<...,(back xi),...>) ...)'),
+          corresponding to all the recursive calls of @('old')."
+  (b* (((when (endp rec-calls)) nil)
+       (tests-and-call (car rec-calls))
+       (rec-call (access tests-and-call tests-and-call :call))
+       (updates (fargs rec-call))
+       (x1...xn (formals old$ wrld))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (updates-back (subcor-var-lst x1...xn back-of-x1...xn updates))
+       (forth-updates-back (isodata-gen-forth-of-terms updates-back
+                                                       arg-isomaps))
+       (new-forth-updates-back (fcons-term new-name$ forth-updates-back))
+       (instances (isodata-gen-back-guard-instances-to-mv-nth
+                   new-forth-updates-back res-isomaps wrld))
+       (more-instances
+        (isodata-gen-all-back-guard-instances-to-mv-nth
+         old$ (cdr rec-calls) arg-isomaps res-isomaps new-name$ wrld)))
+    (append instances more-instances)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-gen-new-fn-guard ((old$ symbolp)
                                   (arg-isomaps isodata-symbol-isomap-alistp)
                                   (predicate$ booleanp)
@@ -2138,23 +2149,23 @@
   :mode :program
   :short "Generate the guard of the new function."
   (b* ((x1...xn (formals old$ wrld))
-       (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps)))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps)))
     (if predicate$
-        (conjoin newp-of-args)
+        (conjoin newp-of-x1...xn)
       (b* ((old-guard (uguard old$ wrld))
-           (old-guard-with-back-of-args
-            (isodata-gen-subst-args-with-back-of-args old-guard
-                                                      old$
-                                                      arg-isomaps
-                                                      wrld)))
-        (conjoin (append newp-of-args
-                         (list old-guard-with-back-of-args)))))))
+           (old-guard-with-back-of-x1...xn
+            (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-guard
+                                                            old$
+                                                            arg-isomaps
+                                                            wrld)))
+        (conjoin (append newp-of-x1...xn
+                         (list old-guard-with-back-of-x1...xn)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-body-pred ((old$ symbolp)
                                       (arg-isomaps isodata-symbol-isomap-alistp)
-                                      (res-isomap? isodata-maybe-isomapp)
+                                      (res-isomaps isodata-pos-isomap-alistp)
                                       (new-name$ symbolp)
                                       (wrld plist-worldp))
   :returns (new-body "A @(tsee pseudo-termp).")
@@ -2170,84 +2181,43 @@
    (xdoc::p
     "First we transform any recursive calls via @('isodata-xform-rec-calls'),
      which causes no change if @('old') is not recursive.
-     Then we replace @('y1'), ..., @('yp')
-     with @('(back y1)'), ..., @('(back yp)').
+     Then we replace @('x1'), ..., @('xn')
+     with @('(back1 x1)'), ..., @('(backn xn)').
      Finally, we conjoin the result
-     with @('(newp y1)'), ..., @('(newp yp)')."))
+     with @('(newp1 x1)'), ..., @('(newpn xn)')."))
   (b* ((x1...xn (formals old$ wrld))
        (old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
                    (ubody old$ wrld)))
        (old-body-with-new-rec-calls
         (isodata-xform-rec-calls
-         old-body old$ arg-isomaps res-isomap? new-name$))
-       (old-body-with-back-of-args
-        (isodata-gen-subst-args-with-back-of-args old-body-with-new-rec-calls
-                                                  old$
-                                                  arg-isomaps
-                                                  wrld))
-       (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps))
-       (newp-of-args-conj (conjoin newp-of-args)))
-    (if (equal newp-of-args-conj *t*)
-        old-body-with-back-of-args
-      (conjoin2 `(mbt$ ,newp-of-args-conj)
-                old-body-with-back-of-args))))
+         old-body old$ arg-isomaps res-isomaps new-name$))
+       (old-body-with-back-of-x1...xn
+        (isodata-gen-subst-x1...xn-with-back-of-x1...xn
+         old-body-with-new-rec-calls
+         old$
+         arg-isomaps
+         wrld))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (newp-of-x1...xn-conj (conjoin newp-of-x1...xn)))
+    (if (equal newp-of-x1...xn-conj *t*)
+        old-body-with-back-of-x1...xn
+      (conjoin2 `(mbt$ ,newp-of-x1...xn-conj)
+                old-body-with-back-of-x1...xn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-fn-body-nonpred-nonrec
+(define isodata-gen-new-fn-body-nonpred
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new-name$ symbolp)
    compatibility
    (wrld plist-worldp))
   :returns (new-body "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the body of the new function,
-          when non-recursive and when @(':predicate') is @('nil')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If @('old') is non-executable,
-     its body is obtained
-     by removing the ``non-executable wrapper''."))
-  (b* ((x1...xn (formals old$ wrld))
-       (old-body (if (non-executablep old$ wrld)
-                     (unwrapped-nonexec-body old$ wrld)
-                   (ubody old$ wrld)))
-       (old-body-with-back-of-args
-        (isodata-gen-subst-args-with-back-of-args old-body
-                                                  old$
-                                                  arg-isomaps
-                                                  wrld))
-       (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps))
-       (newp-of-args-conj (conjoin newp-of-args))
-       (then-branch (if res-isomap?
-                        (apply-fn-into-ifs (isodata-isomap->forth res-isomap?)
-                                           old-body-with-back-of-args)
-                      old-body-with-back-of-args))
-       (else-branch (b* ((n (number-of-results old$ wrld)))
-                      (if (> n 1)
-                          (cons 'mv (repeat n nil))
-                        nil))))
-    (cond (compatibility then-branch)
-          ((equal newp-of-args-conj *t*) then-branch)
-          (t `(if (mbt$ ,newp-of-args-conj)
-                  ,then-branch
-                ,else-branch)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-gen-new-fn-body-nonpred-rec
-  ((old$ symbolp)
-   (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
-   (new-name$ symbolp)
-   (wrld plist-worldp))
-  :returns (new-body "A @(tsee pseudo-termp).")
-  :verify-guards nil
-  :short "Generate the body of the new function,
-          when recursive and when @(':predicate') is @('nil')."
+          when @(':predicate') is @('nil')."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2255,42 +2225,68 @@
      its body is obtained
      by removing the ``non-executable wrapper''.")
    (xdoc::p
-    "First we transform the recursive calls via @('isodata-xform-rec-calls').
-     Then we replace @('y1'), ..., @('yp')
-     with @('(back y1)'), ..., @('(back yp)').
-     Finally,
-     we put the result into the &lsquo;then&rsquo; branch of an @(tsee if)
-     whose condition is the conjunction of
-     @('(newp y1)'), ..., @('(newp yp)').
-     The @('nil') in the &lsquo;else&rsquo; branch of the @(tsee if)
-     is actually a variable name in the pseudo-term returned by this function,
-     but it has the desired effect that
-     the untranslation of the @(tsee if) in @(tsee isodata-gen-everything)
-     does not turn the @(tsee if) into an @(tsee and)."))
+    "First we transform any recursive calls via @('isodata-xform-rec-calls'),
+     which causes no change if @('old') is not recursive,
+     and then we replace @('x1'), ..., @('xn')
+     with @('(back1 x1)'), ..., @('(backn xn)');
+     the resulting term is the code of the new function's body (see below).
+     Then we construct an @(tsee if) as follows.
+     The test is the conjunction of @('(newp1 x1)'), ..., @('(newpn xn)').
+     The `else' branch is @('nil') or @('(mv nil ... nil')),
+     depending on whether @('old') returns single or multiple results.
+     For the `then' branch, there are three cases:
+     (i) if no results are transformed, we use the core term above;
+     (ii) if @('old') is single-valued and its (only) result is transformed,
+     we apply the @('back') mapping of the result to the core term above; and
+     (iii) if @('old') is multi-valued and some results are transformed,
+     we bind the core term above to an @(tsee mv-let)
+     and we apply the @('back') mappings of the results to the bound variables.
+     The @(tsee if) is the final result,
+     unless its test is just @('t'),
+     in which case we omit test and `else' branch.
+     If the compatibility flag is set and @('old') is non-recursive,
+     we omit test and `else' branch as well;
+     this is temporary.")
+   (xdoc::p
+    "The `else' branch should use quoted @('nil')s,
+     but we use unquoted ones just so that the untranslation
+     does not turn the @(tsee if) into an @(tsee and).
+     Technically, the unquoted @('nil')s are ``variable'' (symbols),
+     and thus untranslation leaves them alone."))
   (b* ((x1...xn (formals old$ wrld))
+       (m (number-of-results old$ wrld))
        (old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
                    (ubody old$ wrld)))
        (old-body-with-new-rec-calls
         (isodata-xform-rec-calls
-         old-body old$ arg-isomaps res-isomap? new-name$))
-       (old-body-with-back-of-args
-        (isodata-gen-subst-args-with-back-of-args old-body-with-new-rec-calls
-                                                  old$
-                                                  arg-isomaps
-                                                  wrld))
-       (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps))
-       (then-branch (if res-isomap?
-                        (apply-fn-into-ifs (isodata-isomap->forth res-isomap?)
-                                           old-body-with-back-of-args)
-                      old-body-with-back-of-args))
-       (else-branch (b* ((n (number-of-results old$ wrld)))
-                      (if (> n 1)
-                          (cons 'mv (repeat n nil))
-                        nil)))
-       (newp-of-args-conj (conjoin newp-of-args)))
-    (cond ((equal newp-of-args-conj *t*) then-branch)
-          (t `(if (mbt$ ,newp-of-args-conj)
+         old-body old$ arg-isomaps res-isomaps new-name$))
+       (old-body-with-back-of-x1...xn
+        (isodata-gen-subst-x1...xn-with-back-of-x1...xn
+         old-body-with-new-rec-calls
+         old$
+         arg-isomaps
+         wrld))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (newp-of-x1...xn-conj (conjoin newp-of-x1...xn))
+       (then-branch
+        (cond ((endp res-isomaps) old-body-with-back-of-x1...xn)
+              ((endp (cdr res-isomaps))
+               (apply-fn-into-ifs (isodata-isomap->forth (cdar res-isomaps))
+                                  old-body-with-back-of-x1...xn))
+              (t (b* ((y1...ym (isodata-gen-result-vars old$ m))
+                      (forth-of-y1...ym (isodata-gen-forth-of-terms
+                                         y1...ym res-isomaps)))
+                   (make-mv-let-call 'mv y1...ym :all
+                                     old-body-with-back-of-x1...xn
+                                     (fcons-term 'mv forth-of-y1...ym))))))
+       (else-branch (if (> m 1)
+                        (fcons-term 'mv (repeat m nil))
+                      nil)))
+    (cond ((and compatibility
+                (not (recursivep old$ nil wrld)) then-branch))
+          ((equal newp-of-x1...xn-conj *t*) then-branch)
+          (t `(if (mbt$ ,newp-of-x1...xn-conj)
                   ,then-branch
                 ,else-branch)))))
 
@@ -2298,7 +2294,7 @@
 
 (define isodata-gen-new-fn-body ((old$ symbolp)
                                  (arg-isomaps isodata-symbol-isomap-alistp)
-                                 (res-isomap? isodata-maybe-isomapp)
+                                 (res-isomaps isodata-pos-isomap-alistp)
                                  (predicate$ booleanp)
                                  (new-name$ symbolp)
                                  compatibility
@@ -2307,12 +2303,9 @@
   :verify-guards nil
   :short "Generate the body of the new function."
   (if predicate$
-      (isodata-gen-new-fn-body-pred old$ arg-isomaps res-isomap? new-name$ wrld)
-    (if (recursivep old$ nil wrld)
-        (isodata-gen-new-fn-body-nonpred-rec
-         old$ arg-isomaps res-isomap? new-name$ wrld)
-      (isodata-gen-new-fn-body-nonpred-nonrec
-       old$ arg-isomaps res-isomap? compatibility wrld))))
+      (isodata-gen-new-fn-body-pred old$ arg-isomaps res-isomaps new-name$ wrld)
+    (isodata-gen-new-fn-body-nonpred
+     old$ arg-isomaps res-isomaps new-name$ compatibility wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2323,15 +2316,15 @@
   :verify-guards nil
   :short "Generate the measure of the function, if recursive."
   (b* ((old-measure (measure old$ wrld)))
-    (isodata-gen-subst-args-with-back-of-args old-measure
-                                              old$
-                                              arg-isomaps
-                                              wrld)))
+    (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-measure
+                                                    old$
+                                                    arg-isomaps
+                                                    wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-termination-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
@@ -2339,22 +2332,16 @@
   :mode :program
   :short "Generate the hints to prove the termination of the new function,
           if recursive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes,
-     taking into account that there may be multiple recursive calls,
-     while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (instance-termination-thm-old
-        (isodata-gen-lemma-instance-args-to-back-of-args
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          `(:termination-theorem ,old$) old$ arg-isomaps wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-args-to-back-of-args
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
          oldp-of-rec-call-args old$ arg-isomaps wrld))
        (instances-back-of-forth
         (isodata-gen-all-back-of-forth-instances-to-terms-back rec-calls
@@ -2372,15 +2359,14 @@
 
 (define isodata-gen-new-fn ((old$ symbolp)
                             (arg-isomaps isodata-symbol-isomap-alistp)
-                            (res-isomap? isodata-maybe-isomapp)
+                            (res-isomaps isodata-pos-isomap-alistp)
                             (predicate$ booleanp)
                             (new-name$ symbolp)
                             (new-enable$ booleanp)
-                            (non-executable$ booleanp)
                             (verify-guards$ booleanp)
                             (untranslate$ untranslate-specifier-p)
                             compatibility
-                            (app-cond-thm-names symbol-symbol-alistp)
+                            (appcond-thm-names symbol-symbol-alistp)
                             (wrld plist-worldp))
   :returns (mv (new-fn-local-event "A @(tsee pseudo-event-formp).")
                (new-fn-exported-event "A @(tsee pseudo-event-formp)."))
@@ -2391,7 +2377,8 @@
    (xdoc::p
     "The macro used to introduce the new function is determined by
      whether the new function must be
-     enabled or not, and non-executable or not.")
+     enabled or not, and non-executable or not.
+     We make it non-executable if and only if @('old') is non-executable.")
    (xdoc::p
     "The new function has the same formal arguments as the old function.")
    (xdoc::p
@@ -2405,9 +2392,9 @@
    (xdoc::p
     "If the old function returns a multi-value result,
      we adjust the body of the new function to do the same."))
-  (b* ((macro (function-intro-macro new-enable$ non-executable$))
+  (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
        (formals (formals old$ wrld))
-       (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomap?
+       (body (isodata-gen-new-fn-body old$ arg-isomaps res-isomaps
                                       predicate$ new-name$ compatibility wrld))
        (body (if (> (number-of-results old$ wrld) 1)
                  (mvify body)
@@ -2433,7 +2420,7 @@
                    nil))
        (termination-hints? (if recursive
                                (isodata-gen-new-fn-termination-hints
-                                app-cond-thm-names old$ arg-isomaps wrld)
+                                appcond-thm-names old$ arg-isomaps wrld)
                              nil))
        (local-event
         `(local
@@ -2462,7 +2449,7 @@
 (define isodata-gen-new-to-old-thm-formula
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (wrld plist-worldp))
   :returns (new-to-old-formula "A @(tsee pseudo-termp).")
@@ -2470,15 +2457,27 @@
   :short "Generate the formula of the theorem
           that expresses the new function in terms of the old function."
   (b* ((x1...xn (formals old$ wrld))
-       (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps))
-       (back-of-args (isodata-gen-back-of-terms x1...xn arg-isomaps))
-       (old-call (fcons-term old$ back-of-args)))
-    (implicate (conjoin newp-of-args)
-               `(equal (,new-name$ ,@x1...xn)
-                       ,(if res-isomap?
-                            (apply-term* (isodata-isomap->forth res-isomap?)
-                                         old-call)
-                          old-call)))))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (old-call (fcons-term old$ back-of-x1...xn))
+       (new-call (fcons-term new-name$ x1...xn))
+       (consequent
+        (case (len res-isomaps)
+          (0 `(equal ,new-call ,old-call))
+          (1 (b* ((forth-res (isodata-isomap->forth (cdar res-isomaps)))
+                  (forth-of-old-call (apply-term* forth-res old-call)))
+               `(equal ,new-call ,forth-of-old-call)))
+          (t (b* ((mv-nths-of-new-call (make-mv-nth-calls new-call
+                                                          (len res-isomaps)))
+                  (mv-nths-of-old-call (make-mv-nth-calls old-call
+                                                          (len res-isomaps)))
+                  (forth-of-mv-nths-of-old-call
+                   (isodata-gen-forth-of-terms mv-nths-of-old-call
+                                               res-isomaps)))
+               (conjoin-equalities mv-nths-of-new-call
+                                   forth-of-mv-nths-of-old-call))))))
+    (implicate (conjoin newp-of-x1...xn)
+               consequent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2492,8 +2491,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-to-old-thm-hints-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-new-to-old-thm-hints-rec-0res
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-name$ symbolp)
@@ -2505,17 +2504,18 @@
   :short "Generate the hints to prove the theorem
           that expresses the new function in terms of the old function,
           when the functions are recursive
-          and @('args/res') does not include @(':result')."
+          and no result is being transformed."
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         oldp-of-rec-call-args
+         old$
+         arg-isomaps
+         wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-image
         (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
                                                              old$
@@ -2538,11 +2538,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-to-old-thm-hints-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-new-to-old-thm-hints-rec-1res
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap isodata-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
@@ -2552,24 +2552,26 @@
   :short "Generate the hints to prove the theorem
           that expresses the new function in terms of the old function,
           when the functions are recursive
-          and @('args/res') includes @(':result')."
+          and the result of a single-value function is being transformed."
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
-       (oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
+       (oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         oldp-of-rec-call-args
+         old$
+         arg-isomaps
+         wrld))
        (instances-oldp-of-old
-        (isodata-gen-lemma-instances-args-to-rec-call-args-back oldp-of-old
-                                                                rec-calls
-                                                                old$
-                                                                arg-isomaps
-                                                                wrld))
+        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back
+         oldp-of-old
+         rec-calls
+         old$
+         arg-isomaps
+         wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-image
         (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
                                                              old$
@@ -2580,6 +2582,7 @@
                                                                old$
                                                                arg-isomaps
                                                                wrld))
+       (res-isomap (cdar res-isomaps))
        (back-of-forth-res (isodata-isomap->back-of-forth res-isomap))
        (var (isodata-formal-of-forth res-isomap wrld))
        (instances-back-of-forth-res
@@ -2603,11 +2606,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-to-old-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-new-to-old-thm-hints-rec-mres
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new-name$ symbolp)
+   (old-fn-unnorm-name symbolp)
+   (new-fn-unnorm-name symbolp)
+   (wrld plist-worldp))
+  :returns (hints "A @(tsee true-listp).")
+  :mode :program
+  :short "Generate the hints to prove the theorem
+          that expresses the new function in terms of the old function,
+          when the functions are recursive
+          and some result of a multi-value function is being transformed."
+  (b* ((rec-calls (recursive-calls old$ wrld))
+       (oldp-of-rec-call-args
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
+       (oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
+       (instance-oldp-of-rec-call-args
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         oldp-of-rec-call-args
+         old$
+         arg-isomaps
+         wrld))
+       (instances-oldp-of-old
+        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back
+         oldp-of-old
+         rec-calls
+         old$
+         arg-isomaps
+         wrld))
+       (instances-back-image
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
+       (instances-forth-image
+        (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
+                                                             old$
+                                                             arg-isomaps
+                                                             wrld))
+       (instances-back-of-forth
+        (isodata-gen-all-back-of-forth-instances-to-terms-back rec-calls
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
+       (instances-back-of-forth-res
+        (isodata-gen-all-back-of-forth-instances-to-mv-nth rec-calls
+                                                           res-isomaps
+                                                           wrld)))
+    `(("Goal"
+       :in-theory '(,old-fn-unnorm-name
+                    ,new-fn-unnorm-name
+                    (:induction ,new-name$))
+       :induct (,new-name$ ,@(formals old$ wrld)))
+      '(:use (,instance-oldp-of-rec-call-args
+              ,@instances-oldp-of-old
+              ,@instances-back-image
+              ,@instances-forth-image
+              ,@instances-back-of-forth
+              ,@instances-back-of-forth-res)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-new-to-old-thm-hints
+  ((appcond-thm-names symbol-symbol-alistp)
+   (old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
@@ -2617,22 +2682,30 @@
   :short "Generate the hints to prove the theorem
           that expresses the new function in terms of the old function."
   (if (recursivep old$ nil wrld)
-      (if res-isomap?
-          (isodata-gen-new-to-old-thm-hints-rec-res app-cond-thm-names
-                                                    old$
-                                                    arg-isomaps
-                                                    res-isomap?
-                                                    new-name$
-                                                    old-fn-unnorm-name
-                                                    new-fn-unnorm-name
-                                                    wrld)
-        (isodata-gen-new-to-old-thm-hints-rec-nonres app-cond-thm-names
-                                                     old$
-                                                     arg-isomaps
-                                                     new-name$
-                                                     old-fn-unnorm-name
-                                                     new-fn-unnorm-name
-                                                     wrld))
+      (case (len res-isomaps)
+        (0 (isodata-gen-new-to-old-thm-hints-rec-0res appcond-thm-names
+                                                      old$
+                                                      arg-isomaps
+                                                      new-name$
+                                                      old-fn-unnorm-name
+                                                      new-fn-unnorm-name
+                                                      wrld))
+        (1 (isodata-gen-new-to-old-thm-hints-rec-1res appcond-thm-names
+                                                      old$
+                                                      arg-isomaps
+                                                      res-isomaps
+                                                      new-name$
+                                                      old-fn-unnorm-name
+                                                      new-fn-unnorm-name
+                                                      wrld))
+        (t (isodata-gen-new-to-old-thm-hints-rec-mres appcond-thm-names
+                                                      old$
+                                                      arg-isomaps
+                                                      res-isomaps
+                                                      new-name$
+                                                      old-fn-unnorm-name
+                                                      new-fn-unnorm-name
+                                                      wrld)))
     (isodata-gen-new-to-old-thm-hints-nonrec old-fn-unnorm-name
                                              new-fn-unnorm-name)))
 
@@ -2641,10 +2714,10 @@
 (define isodata-gen-new-to-old-thm
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
@@ -2663,14 +2736,14 @@
                                                 wrld))
        (formula (isodata-gen-new-to-old-thm-formula old$
                                                     arg-isomaps
-                                                    res-isomap?
+                                                    res-isomaps
                                                     new-name$
                                                     wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-new-to-old-thm-hints app-cond-thm-names
+       (hints (isodata-gen-new-to-old-thm-hints appcond-thm-names
                                                 old$
                                                 arg-isomaps
-                                                res-isomap?
+                                                res-isomaps
                                                 new-name$
                                                 old-fn-unnorm-name
                                                 new-fn-unnorm-name
@@ -2686,27 +2759,40 @@
 (define isodata-gen-old-to-new-thm-formula
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (wrld plist-worldp))
   :returns (old-to-new-formula "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the formula of the theorem
-          that relates the old and new function."
+          that expresses the old function in terms of the new function."
   (b* ((x1...xn (formals old$ wrld))
-       (oldp-of-args (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
-       (forth-of-args (isodata-gen-forth-of-terms x1...xn arg-isomaps))
-       (new-call (fcons-term new-name$ forth-of-args)))
-    (implicate (conjoin oldp-of-args)
-               `(equal (,old$ ,@x1...xn)
-                       ,(if res-isomap?
-                            (apply-term* (isodata-isomap->back res-isomap?)
-                                         new-call)
-                          new-call)))))
+       (oldp-of-x1...xn (isodata-gen-oldp-of-terms x1...xn arg-isomaps))
+       (forth-of-x1...xn (isodata-gen-forth-of-terms x1...xn arg-isomaps))
+       (new-call (fcons-term new-name$ forth-of-x1...xn))
+       (old-call (fcons-term old$ x1...xn))
+       (consequent
+        (case (len res-isomaps)
+          (0 `(equal ,old-call ,new-call))
+          (1 (b* ((back-res (isodata-isomap->back (cdar res-isomaps)))
+                  (back-of-new-call (apply-term* back-res new-call)))
+               `(equal ,old-call ,back-of-new-call)))
+          (t (b* ((mv-nths-of-old-call (make-mv-nth-calls old-call
+                                                          (len res-isomaps)))
+                  (mv-nths-of-new-call (make-mv-nth-calls new-call
+                                                          (len res-isomaps)))
+                  (back-of-mv-nths-of-new-call
+                   (isodata-gen-back-of-terms mv-nths-of-new-call
+                                              res-isomaps)))
+               (conjoin-equalities mv-nths-of-old-call
+                                   back-of-mv-nths-of-new-call))))))
+
+    (implicate (conjoin oldp-of-x1...xn)
+               consequent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-old-to-new-thm-nonres-hints
+(define isodata-gen-old-to-new-thm-hints-0res
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -2715,16 +2801,16 @@
   :mode :program
   :short "Generate the hints to prove the theorem
           that relates the old and new function,
-          when @('args/res') does not include @(':result')."
+          when no result is being transformed."
   (b* ((instances-forth-image
-        (isodata-gen-forth-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
-        (isodata-gen-back-of-forth-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-of-forth-instances-to-x1...xn arg-isomaps wrld))
        (instance-new-to-old
-        (isodata-gen-lemma-instance-args-to-forth-of-args new-to-old
-                                                          old$
-                                                          arg-isomaps
-                                                          wrld)))
+        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old
+                                                                old$
+                                                                arg-isomaps
+                                                                wrld)))
     `(("Goal"
        :in-theory nil
        :use (,@instances-forth-image
@@ -2733,33 +2819,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-old-to-new-thm-res-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-old-to-new-thm-hints-1res
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap isodata-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
   :short "Generate the hints to prove the theorem
           that relates the old and new function,
-          when @('args/res') includes @(':result')."
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+          when the result of a single-valued function is being transformed."
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-forth-image
-        (isodata-gen-forth-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
-        (isodata-gen-back-of-forth-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-of-forth-instances-to-x1...xn arg-isomaps wrld))
        (instance-new-to-old
-        (isodata-gen-lemma-instance-args-to-forth-of-args new-to-old
-                                                          old$
-                                                          arg-isomaps
-                                                          wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old
+                                                                old$
+                                                                arg-isomaps
+                                                                wrld))
+       (res-isomap (cdar res-isomaps))
        (back-of-forth-res (isodata-isomap->back-of-forth res-isomap))
        (var (isodata-formal-of-forth res-isomap wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call (fcons-term old$ x1...xn))
        (instance-back-of-forth-res
-        `(:instance ,back-of-forth-res
-          :extra-bindings-ok (,var (,old$ ,@(formals old$ wrld))))))
+        `(:instance ,back-of-forth-res :extra-bindings-ok (,var ,old-call))))
     `(("Goal"
        :in-theory nil
        :use (,@instances-forth-image
@@ -2770,36 +2858,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-old-to-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-old-to-new-thm-hints-mres
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
+   (new-to-old symbolp)
+   (wrld plist-worldp))
+  :returns (hints "A @(tsee true-listp).")
+  :mode :program
+  :short "Generate the hints to prove the theorem
+          that relates the old and new function,
+          when some result of a multi-valued function is being transformed."
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
+       (instances-forth-image
+        (isodata-gen-forth-image-instances-to-x1...xn arg-isomaps wrld))
+       (instances-back-of-forth
+        (isodata-gen-back-of-forth-instances-to-x1...xn arg-isomaps wrld))
+       (instance-new-to-old
+        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old
+                                                                old$
+                                                                arg-isomaps
+                                                                wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call (fcons-term old$ x1...xn))
+       (instances-back-of-forth-res
+        (isodata-gen-back-of-forth-instances-to-mv-nth
+         (repeat (len res-isomaps) old-call)
+         res-isomaps
+         wrld)))
+    `(("Goal"
+       :in-theory nil
+       :use (,@instances-forth-image
+             ,@instances-back-of-forth
+             ,instance-new-to-old
+             ,oldp-of-old
+             ,@instances-back-of-forth-res)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-gen-old-to-new-thm-hints
+  ((appcond-thm-names symbol-symbol-alistp)
+   (old$ symbolp)
+   (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
   :short "Generate the hints to prove the theorem
           that relates the old and new function."
-  (if res-isomap?
-      (isodata-gen-old-to-new-thm-res-hints app-cond-thm-names
-                                            old$
-                                            arg-isomaps
-                                            res-isomap?
-                                            new-to-old
-                                            wrld)
-    (isodata-gen-old-to-new-thm-nonres-hints old$
-                                             arg-isomaps
-                                             new-to-old
-                                             wrld)))
+  (case (len res-isomaps)
+    (0 (isodata-gen-old-to-new-thm-hints-0res old$
+                                              arg-isomaps
+                                              new-to-old
+                                              wrld))
+    (1 (isodata-gen-old-to-new-thm-hints-1res appcond-thm-names
+                                              old$
+                                              arg-isomaps
+                                              res-isomaps
+                                              new-to-old
+                                              wrld))
+    (t (isodata-gen-old-to-new-thm-hints-mres appcond-thm-names
+                                              old$
+                                              arg-isomaps
+                                              res-isomaps
+                                              new-to-old
+                                              wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-old-to-new-thm
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
@@ -2815,12 +2948,12 @@
     whether the theorem must be enabled or not.")
   (b* ((macro (theorem-intro-macro thm-enable$))
        (formula (isodata-gen-old-to-new-thm-formula
-                 old$ arg-isomaps res-isomap? new-name$ wrld))
+                 old$ arg-isomaps res-isomaps new-name$ wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-old-to-new-thm-hints app-cond-thm-names
+       (hints (isodata-gen-old-to-new-thm-hints appcond-thm-names
                                                 old$
                                                 arg-isomaps
-                                                res-isomap?
+                                                res-isomaps
                                                 new-to-old
                                                 wrld))
        (local-event `(local
@@ -2836,10 +2969,10 @@
 (define isodata-gen-newp-of-new-thm-formula
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (wrld plist-worldp))
-  :guard res-isomap?
+  :guard (consp res-isomaps)
   :returns (formula "A @(tsee pseudo-termp).")
   :verify-guards nil
   :short "Generate the formula of the theorem
@@ -2849,22 +2982,33 @@
   :long
   (xdoc::topstring-p
    "This is the theorem @($f'A'B'$) in the design notes.
-    It is generated only if @('args/res') includes @(':result').")
+    It is generated only if some result is being transformed.")
   (b* ((x1...xn (formals old$ wrld))
-       (newp-of-args (isodata-gen-newp-of-terms x1...xn arg-isomaps)))
-    (implicate (conjoin newp-of-args)
-               `(,(isodata-isomap->newp res-isomap?)
-                 (,new-name$ ,@x1...xn)))))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (newp-of-x1...xn-conj (conjoin newp-of-x1...xn))
+       (new-call (fcons-term new-name$ x1...xn))
+       (m (len res-isomaps)))
+    (if (= m 1)
+        (b* ((res-isomap (cdar res-isomaps))
+             (newp-res (isodata-isomap->newp res-isomap)))
+          (implicate newp-of-x1...xn-conj
+                     (fcons-term* newp-res new-call)))
+      (b* ((y1...ym (isodata-gen-result-vars new-name$ m))
+           (newp-of-y1...ym (isodata-gen-newp-of-terms y1...ym res-isomaps)))
+        (implicate newp-of-x1...xn-conj
+                   (make-mv-let-call 'mv y1...ym :all new-call
+                                     (conjoin newp-of-y1...ym)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-newp-of-new-thm-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap isodata-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-to-old symbolp)
    (wrld plist-worldp))
+  :guard (consp res-isomaps)
   :returns (hints true-listp)
   :verify-guards nil
   :short "Generate the hints to prove the theorem
@@ -2874,29 +3018,34 @@
   :long
   (xdoc::topstring-p
    "This is the theorem @($f'A'B'$) in the design notes.
-    It is generated only if @('args/res') includes @(':result').")
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+    It is generated only if some result is being transformed.")
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instance-oldp-of-old
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-old
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
-       (args (formals old$ wrld))
-       (old-call (fcons-term old$ args))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (old-call-of-back-args (subcor-var args back-of-args old-call))
-       (forth-image-res (isodata-isomap->forth-image res-isomap))
-       (var (isodata-formal-of-forth res-isomap wrld))
-       (instance-forth-image
-        `(:instance ,forth-image-res
-          :extra-bindings-ok (,var ,old-call-of-back-args))))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn oldp-of-old
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call (fcons-term old$ x1...xn))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (old-call-of-back-x1...xn (subcor-var x1...xn back-of-x1...xn old-call))
+       (instances-forth-image
+        (if (= (len res-isomaps) 1)
+            (b* ((res-isomap (cdar res-isomaps))
+                 (forth-image-res (isodata-isomap->forth-image res-isomap))
+                 (var (isodata-formal-of-forth res-isomap wrld)))
+              `((:instance ,forth-image-res
+                 :extra-bindings-ok (,var ,old-call-of-back-x1...xn))))
+          (isodata-gen-forth-image-instances-to-mv-nth old-call-of-back-x1...xn
+                                                       res-isomaps
+                                                       wrld))))
     `(("Goal"
        :in-theory nil
        :use (,@instances-back-image
              ,instance-oldp-of-old
-             ,instance-forth-image
+             ,@instances-forth-image
              ,new-to-old)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2904,12 +3053,13 @@
 (define isodata-gen-newp-of-new-thm
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (new-to-old symbolp)
    (names-to-avoid symbol-listp)
-   (app-cond-thm-names symbol-symbol-alistp)
+   (appcond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
+  :guard (consp res-isomaps)
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp) that names the theorem."))
   :mode :program
@@ -2919,21 +3069,21 @@
   :long
   (xdoc::topstring-p
    "This is the theorem @($f'A'B'$) in the design notes.
-    It is generated only if @('args/res') includes @(':result').")
+    It is generated only if some result is being transformed.")
   (b* ((name (fresh-logical-name-with-$s-suffix 'newp-of-new
                                                 nil
                                                 names-to-avoid
                                                 wrld))
        (formula (isodata-gen-newp-of-new-thm-formula old$
                                                      arg-isomaps
-                                                     res-isomap?
+                                                     res-isomaps
                                                      new-name$
                                                      wrld))
        (formula (untranslate formula t wrld))
-       (hints (isodata-gen-newp-of-new-thm-hints app-cond-thm-names
+       (hints (isodata-gen-newp-of-new-thm-hints appcond-thm-names
                                                  old$
                                                  arg-isomaps
-                                                 res-isomap?
+                                                 res-isomaps
                                                  new-to-old
                                                  wrld))
        (event `(local
@@ -2945,7 +3095,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-nonrec
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
@@ -2957,23 +3107,24 @@
   (xdoc::topstring
    (xdoc::p
     "This is according to the design notes."))
-  (b* ((old-guard-pred (cdr (assoc-eq :old-guard-pred app-cond-thm-names)))
+  (b* ((old-guard-pred (cdr (assoc-eq :old-guard-pred appcond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn `(:guard-theorem
+                                                                 ,old$)
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instances-newp-guard
-        (isodata-gen-newp-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-newp-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-guard
-        (isodata-gen-back-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instance-old-guard-pred
-        (isodata-gen-lemma-instance-args-to-back-of-args old-guard-pred
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld)))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn old-guard-pred
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld)))
     `(("Goal"
        :in-theory nil
        :use (,instance-guard-thm-old
@@ -2985,7 +3136,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred-rec
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -3002,48 +3153,51 @@
      while the design notes only assume one."))
   (b* ((rec-calls (recursive-calls old$ wrld))
        (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
-                                     app-cond-thm-names)))
+                                     appcond-thm-names)))
        (old-guard-pred (cdr (assoc-eq :old-guard-pred
-                              app-cond-thm-names)))
+                              appcond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn `(:guard-theorem
+                                                                 ,old$)
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instances-newp-guard
-        (isodata-gen-newp-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-newp-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-guard
-        (isodata-gen-forth-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-forth-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-guard
-        (isodata-gen-back-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-image
         (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
                                                              old$
                                                              arg-isomaps
                                                              wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
         (isodata-gen-all-back-of-forth-instances-to-terms-back rec-calls
                                                                old$
                                                                arg-isomaps
                                                                wrld))
        (instance-old-guard-pred
-        (isodata-gen-lemma-instance-args-to-back-of-args old-guard-pred
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn old-guard-pred
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         oldp-of-rec-call-args
+         old$
+         arg-isomaps
+         wrld))
        (instances-new-to-old
-        (isodata-gen-lemma-instances-args-to-forth-rec-call-args-back new-to-old
-                                                                      rec-calls
-                                                                      old$
-                                                                      arg-isomaps
-                                                                      wrld)))
+        (isodata-gen-lemma-instances-x1...xn-to-forth-rec-call-args-back
+         new-to-old
+         rec-calls
+         old$
+         arg-isomaps
+         wrld)))
     `(("Goal"
        :in-theory nil
        :use (,@instances-newp-guard
@@ -3060,7 +3214,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-pred
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (new-to-old symbolp)
@@ -3070,19 +3224,19 @@
   :short "Generate the hints to verify the guards of the new function,
           when @(':predicate') is @('t')."
   (if (recursivep old$ nil wrld)
-      (isodata-gen-new-fn-verify-guards-hints-pred-rec app-cond-thm-names
+      (isodata-gen-new-fn-verify-guards-hints-pred-rec appcond-thm-names
                                                        old$
                                                        arg-isomaps
                                                        new-to-old
                                                        wrld)
-    (isodata-gen-new-fn-verify-guards-hints-pred-nonrec app-cond-thm-names
+    (isodata-gen-new-fn-verify-guards-hints-pred-nonrec appcond-thm-names
                                                         old$
                                                         arg-isomaps
                                                         wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-nonres
+(define isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-0res
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (wrld plist-worldp))
@@ -3091,20 +3245,17 @@
   :short "Generate the hints to verify the guards of the new function,
           when the function is not recursive,
           when @(':predicate') is @('nil'),
-          and when @('args/res') does not include @(':result')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes."))
+          and no result is being transformed."
   (b* ((instance-guard-thm-old
-        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn `(:guard-theorem
+                                                                 ,old$)
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instances-newp-guard
-        (isodata-gen-newp-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-newp-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-guard
-        (isodata-gen-back-guard-instances-to-args arg-isomaps wrld)))
+        (isodata-gen-back-guard-instances-to-x1...xn arg-isomaps wrld)))
     `(("Goal"
        :in-theory nil
        :use (,instance-guard-thm-old
@@ -3113,44 +3264,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-1res/mres
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (old-fn-unnorm-name symbolp)
    (wrld plist-worldp))
+  :guard (consp res-isomaps)
   :returns (hints true-listp)
   :verify-guards nil
   :short "Generate the hints to verify the guards of the new function,
           when the function is not recursive,
           when @(':predicate') is @('nil'),
-          and when @('args/res') includes @(':result')."
+          and some result is being transformed."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is according to the design notes."))
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn `(:guard-theorem
+                                                                 ,old$)
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instances-newp-guard
-        (isodata-gen-newp-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-newp-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-guard
-        (isodata-gen-back-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instance-oldp-of-old
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-old
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn oldp-of-old
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call (fcons-term old$ x1...xn))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (old-call-of-back-x1...xn (subcor-var x1...xn back-of-x1...xn old-call))
+       (instances-forth-guard-res
+        (if (= (len res-isomaps) 1)
+            (b* ((res-isomap (cdar res-isomaps))
+                 (forth-guard-res (isodata-isomap->forth-guard res-isomap))
+                 (var (isodata-formal-of-forth res-isomap wrld)))
+              `((:instance ,forth-guard-res
+                 :extra-bindings-ok (,var ,old-call-of-back-x1...xn))))
+          (isodata-gen-forth-guard-instances-to-mv-nth old-call-of-back-x1...xn
+                                                       res-isomaps
+                                                       wrld)))
        (instance-old-fn-unnorm-name
-        (isodata-gen-lemma-instance-args-to-back-of-args old-fn-unnorm-name
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld)))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         old-fn-unnorm-name
+         old$
+         arg-isomaps
+         wrld)))
     `(("Goal"
        :in-theory nil
        :use (,instance-guard-thm-old
@@ -3158,12 +3327,13 @@
              ,@instances-back-guard
              ,@instances-back-image
              ,instance-oldp-of-old
+             ,@instances-forth-guard-res
              ,instance-old-fn-unnorm-name)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-nonres
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-0res
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (thm-name$ symbolp)
@@ -3173,53 +3343,49 @@
   :short "Generate the hints to verify the guards of the new function,
           when the function is recursive,
           when @(':predicate') is @('nil'),
-          and when @('args/res') does not include @(':result')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes,
-     taking into account that there may be multiple recursive calls,
-     while the design notes only assume one."))
+          and when @('isomaps') does not include @(':result')."
   (b* ((rec-calls (recursive-calls old$ wrld))
-       (oldp-of-rec-call-args (cdr (assoc-eq :oldp-of-rec-call-args
-                                     app-cond-thm-names)))
+       (oldp-of-rec-call-args
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn `(:guard-theorem
+                                                                 ,old$)
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instances-newp-guard
-        (isodata-gen-newp-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-newp-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-guard
         (isodata-gen-all-forth-guard-instances-to-terms-back rec-calls
                                                              old$
                                                              arg-isomaps
                                                              wrld))
        (instances-back-guard
-        (isodata-gen-back-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-image
         (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
                                                              old$
                                                              arg-isomaps
                                                              wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
         (isodata-gen-all-back-of-forth-instances-to-terms-back rec-calls
                                                                old$
                                                                arg-isomaps
                                                                wrld))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         oldp-of-rec-call-args
+         old$
+         arg-isomaps
+         wrld))
        (instances-old-to-new
-        (isodata-gen-lemma-instances-args-to-rec-call-args-back thm-name$
-                                                                rec-calls
-                                                                old$
-                                                                arg-isomaps
-                                                                wrld)))
+        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back thm-name$
+                                                                   rec-calls
+                                                                   old$
+                                                                   arg-isomaps
+                                                                   wrld)))
     `(("Goal"
        :in-theory nil
        :use (,@instances-newp-guard
@@ -3234,105 +3400,117 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
-  ((app-cond-thm-names symbol-symbol-alistp)
+(define isodata-gen-new-fn-verify-guards-hints-nonpred-rec-1res/mres
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap isodata-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (old-fn-unnorm-name symbolp)
    (newp-of-new symbolp)
    (wrld plist-worldp))
+  :guard (consp res-isomaps)
   :returns (hints "A @(tsee true-listp).")
   :mode :program
   :short "Generate the hints to verify the guards of the new function,
           when the function is recursive,
           when @(':predicate') is @('nil'),
-          and when @('args/res') includes @(':result')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is according to the design notes,
-     taking into account that there may be multiple recursive calls,
-     while the design notes only assume one."))
-  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old app-cond-thm-names)))
+          and when @('isomaps') includes @(':result')."
+  (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (oldp-of-rec-call-args
-        (cdr (assoc-eq :oldp-of-rec-call-args app-cond-thm-names)))
+        (cdr (assoc-eq :oldp-of-rec-call-args appcond-thm-names)))
        (rec-calls (recursive-calls old$ wrld))
        (instance-guard-thm-old
-        (isodata-gen-lemma-instance-args-to-back-of-args `(:guard-theorem ,old$)
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn `(:guard-theorem
+                                                                 ,old$)
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instances-newp-guard
-        (isodata-gen-newp-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-newp-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-guard
         (isodata-gen-all-forth-guard-instances-to-terms-back rec-calls
                                                              old$
                                                              arg-isomaps
                                                              wrld))
        (instances-back-guard
-        (isodata-gen-back-guard-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-guard-instances-to-x1...xn arg-isomaps wrld))
        (instances-forth-image
         (isodata-gen-all-forth-image-instances-to-terms-back rec-calls
                                                              old$
                                                              arg-isomaps
                                                              wrld))
        (instances-back-image
-        (isodata-gen-back-image-instances-to-args arg-isomaps wrld))
+        (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
        (instances-back-of-forth
         (isodata-gen-all-back-of-forth-instances-to-terms-back rec-calls
                                                                old$
                                                                arg-isomaps
                                                                wrld))
        (instance-oldp-of-rec-call-args
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-rec-call-args
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         oldp-of-rec-call-args
+         old$
+         arg-isomaps
+         wrld))
        (instances-old-to-new
-        (isodata-gen-lemma-instances-args-to-rec-call-args-back thm-name$
-                                                                rec-calls
-                                                                old$
-                                                                arg-isomaps
-                                                                wrld))
+        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back thm-name$
+                                                                   rec-calls
+                                                                   old$
+                                                                   arg-isomaps
+                                                                   wrld))
        (instance-oldp-of-old
-        (isodata-gen-lemma-instance-args-to-back-of-args oldp-of-old
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn oldp-of-old
+                                                               old$
+                                                               arg-isomaps
+                                                               wrld))
        (instance-old-fn-unnorm-name
-        (isodata-gen-lemma-instance-args-to-back-of-args old-fn-unnorm-name
-                                                         old$
-                                                         arg-isomaps
-                                                         wrld))
+        (isodata-gen-lemma-instance-x1...xn-to-back-of-x1...xn
+         old-fn-unnorm-name
+         old$
+         arg-isomaps
+         wrld))
        (instances-newp-of-new
-        (isodata-gen-lemma-instances-args-to-forth-rec-call-args-back newp-of-new
-                                                                      rec-calls
-                                                                      old$
-                                                                      arg-isomaps
-                                                                      wrld))
-       (args (formals old$ wrld))
-       (old-call (fcons-term old$ args))
-       (back-of-args (isodata-gen-back-of-terms args arg-isomaps))
-       (old-call-of-back-args (subcor-var args back-of-args old-call))
-       (forth-guard-res (isodata-isomap->forth-guard res-isomap))
-       (var (isodata-formal-of-forth res-isomap wrld))
-       (instance-forth-guard-res
-        `(:instance ,forth-guard-res
-          :extra-bindings-ok (,var ,old-call-of-back-args)))
-       (back-guard (isodata-isomap->back-guard res-isomap))
-       (var (isodata-formal-of-back res-isomap wrld))
-       (instances-back-guard-res
-        (isodata-gen-lemma-instances-var-to-new-forth-rec-call-args-back
-         back-guard
-         var
+        (isodata-gen-lemma-instances-x1...xn-to-forth-rec-call-args-back
+         newp-of-new
          rec-calls
          old$
          arg-isomaps
-         new-name$
-         wrld)))
+         wrld))
+       (x1...xn (formals old$ wrld))
+       (old-call (fcons-term old$ x1...xn))
+       (back-of-x1...xn (isodata-gen-back-of-terms x1...xn arg-isomaps))
+       (old-call-of-back-x1...xn (subcor-var x1...xn back-of-x1...xn old-call))
+       (instances-forth-guard-res
+        (if (= (len res-isomaps) 1)
+            (b* ((res-isomap (cdar res-isomaps))
+                 (forth-guard-res (isodata-isomap->forth-guard res-isomap))
+                 (var (isodata-formal-of-forth res-isomap wrld)))
+              `((:instance ,forth-guard-res
+                 :extra-bindings-ok (,var ,old-call-of-back-x1...xn))))
+          (isodata-gen-forth-guard-instances-to-mv-nth old-call-of-back-x1...xn
+                                                       res-isomaps
+                                                       wrld)))
+       (instances-back-guard-res
+        (if (= (len res-isomaps) 1)
+            (b* ((res-isomap (cdar res-isomaps))
+                 (back-guard-res (isodata-isomap->back-guard res-isomap))
+                 (var (isodata-formal-of-back res-isomap wrld)))
+              (isodata-gen-lemma-instances-var-to-new-forth-rec-call-args-back
+               back-guard-res
+               var
+               rec-calls
+               old$
+               arg-isomaps
+               new-name$
+               wrld))
+          (isodata-gen-all-back-guard-instances-to-mv-nth old$
+                                                          rec-calls
+                                                          arg-isomaps
+                                                          res-isomaps
+                                                          new-name$
+                                                          wrld))))
     `(("Goal"
        :in-theory nil
        :use (,@instances-newp-guard
@@ -3347,16 +3525,16 @@
              ,instance-oldp-of-old
              ,instance-old-fn-unnorm-name
              ,@instances-newp-of-new
-             ,instance-forth-guard-res
+             ,@instances-forth-guard-res
              ,@instances-back-guard-res)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints-nonpred
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (thm-name$ symbolp)
    (old-fn-unnorm-name symbolp)
@@ -3367,41 +3545,42 @@
   :short "Generate the hints to verify the guards of the new function,
           when @(':predicate') is @('nil')."
   (if (recursivep old$ nil wrld)
-      (if res-isomap?
-          (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-res
-           app-cond-thm-names
+      (if (consp res-isomaps)
+          (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-1res/mres
+           appcond-thm-names
            old$
            arg-isomaps
-           res-isomap?
+           res-isomaps
            new-name$
            thm-name$
            old-fn-unnorm-name
            newp-of-new
            wrld)
-        (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-nonres
-         app-cond-thm-names
+        (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-0res
+         appcond-thm-names
          old$
          arg-isomaps
          thm-name$
          wrld))
-    (if res-isomap?
-        (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-res
-         app-cond-thm-names
+    (if (consp res-isomaps)
+        (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-1res/mres
+         appcond-thm-names
          old$
          arg-isomaps
+         res-isomaps
          old-fn-unnorm-name
          wrld)
-      (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-nonres old$
-                                                                    arg-isomaps
-                                                                    wrld))))
+      (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-0res old$
+                                                                  arg-isomaps
+                                                                  wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards-hints
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (predicate$ booleanp)
    (new-to-old symbolp)
    (new-name$ symbolp)
@@ -3413,15 +3592,15 @@
   :mode :program
   :short "Generate the hints to verify the guards of the new function."
   (if predicate$
-      (isodata-gen-new-fn-verify-guards-hints-pred app-cond-thm-names
+      (isodata-gen-new-fn-verify-guards-hints-pred appcond-thm-names
                                                    old$
                                                    arg-isomaps
                                                    new-to-old
                                                    wrld)
-    (isodata-gen-new-fn-verify-guards-hints-nonpred app-cond-thm-names
+    (isodata-gen-new-fn-verify-guards-hints-nonpred appcond-thm-names
                                                     old$
                                                     arg-isomaps
-                                                    res-isomap?
+                                                    res-isomaps
                                                     new-name$
                                                     thm-name$
                                                     old-fn-unnorm-name
@@ -3431,10 +3610,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-gen-new-fn-verify-guards
-  ((app-cond-thm-names symbol-symbol-alistp)
+  ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (predicate$ booleanp)
    (new-name$ symbolp)
    (new-to-old symbolp)
@@ -3462,14 +3641,14 @@
    (xdoc::p
     "The guard verification event
      is local to the @(tsee encapsulate) generated by the transformation.
-     This keeps the event history after the transformation &ldquo;clean&rdquo;,
+     This keeps the event history after the transformation ``clean'',
      without implementation-specific proof hints
      that may refer to local events of the @(tsee encapsulate)
      that do not exist in the history after the transformation."))
-  (b* ((hints (isodata-gen-new-fn-verify-guards-hints app-cond-thm-names
+  (b* ((hints (isodata-gen-new-fn-verify-guards-hints appcond-thm-names
                                                       old$
                                                       arg-isomaps
-                                                      res-isomap?
+                                                      res-isomaps
                                                       predicate$
                                                       new-to-old
                                                       new-name$
@@ -3485,13 +3664,12 @@
 (define isodata-gen-everything
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (res-isomap? isodata-maybe-isomapp)
+   (res-isomaps isodata-pos-isomap-alistp)
    (predicate$ booleanp)
    (new-name$ symbolp)
    (new-enable$ booleanp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
-   (non-executable$ booleanp)
    (verify-guards$ booleanp)
    (untranslate$ untranslate-specifier-p)
    (hints$ symbol-truelist-alistp)
@@ -3499,11 +3677,10 @@
    (show-only$ booleanp)
    compatibility
    (names-to-avoid symbol-listp)
-   (app-conds isodata-app-cond-keyword-listp)
    (call pseudo-event-formp)
    ctx
    state)
-  :returns (event "A @(tsee pseudo-event-formp).")
+  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
   :short "Generate the top-level event."
   :long
@@ -3561,22 +3738,20 @@
      for visual separation."))
   (b* ((wrld (w state))
        (isomaps (append (strip-cdrs arg-isomaps)
-                        (and res-isomap? (list res-isomap?))))
+                        (strip-cdrs res-isomaps)))
        (isomaps (remove-duplicates-equal isomaps))
        (defiso-events (isodata-gen-defisos isomaps verify-guards$ print$))
-       ((mv app-cond-thm-events
-            app-cond-thm-names)
-        (isodata-gen-app-conds app-conds
-                               old$
-                               arg-isomaps
-                               res-isomap?
-                               hints$
-                               print$
-                               names-to-avoid
-                               ctx
-                               state))
-       (names-to-avoid (append names-to-avoid
-                               (strip-cdrs app-cond-thm-names)))
+       (appconds (isodata-gen-appconds old$
+                                       arg-isomaps
+                                       res-isomaps
+                                       predicate$
+                                       verify-guards$
+                                       wrld))
+       ((er (list appcond-thm-events
+                  appcond-thm-names
+                  names-to-avoid))
+        (evmac-appcond-theorems-no-extra-hints
+         appconds hints$ names-to-avoid print$ ctx state))
        ((mv old-fn-unnorm-event
             old-fn-unnorm-name)
         (install-not-normalized-event old$ t names-to-avoid wrld))
@@ -3585,15 +3760,14 @@
             new-fn-exported-event)
         (isodata-gen-new-fn old$
                             arg-isomaps
-                            res-isomap?
+                            res-isomaps
                             predicate$
                             new-name$
                             new-enable$
-                            non-executable$
                             verify-guards$
                             untranslate$
                             compatibility
-                            app-cond-thm-names
+                            appcond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
             new-fn-unnorm-name)
@@ -3602,34 +3776,34 @@
             new-to-old)
         (isodata-gen-new-to-old-thm old$
                                     arg-isomaps
-                                    res-isomap?
+                                    res-isomaps
                                     new-name$
                                     names-to-avoid
-                                    app-cond-thm-names
+                                    appcond-thm-names
                                     old-fn-unnorm-name
                                     new-fn-unnorm-name
                                     wrld))
        (names-to-avoid (cons new-to-old names-to-avoid))
        ((mv newp-of-new-thm-event?
             newp-of-new?)
-        (if res-isomap?
+        (if (consp res-isomaps)
             (isodata-gen-newp-of-new-thm old$
                                          arg-isomaps
-                                         res-isomap?
+                                         res-isomaps
                                          new-name$
                                          new-to-old
                                          names-to-avoid
-                                         app-cond-thm-names
+                                         appcond-thm-names
                                          wrld)
           (mv nil nil)))
        (newp-of-new-thm-event? (and newp-of-new-thm-event?
                                     (list newp-of-new-thm-event?)))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event)
-        (isodata-gen-old-to-new-thm app-cond-thm-names
+        (isodata-gen-old-to-new-thm appcond-thm-names
                                     old$
                                     arg-isomaps
-                                    res-isomap?
+                                    res-isomaps
                                     new-name$
                                     thm-name$
                                     thm-enable$
@@ -3638,10 +3812,10 @@
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
                                           (isodata-gen-new-fn-verify-guards
-                                           app-cond-thm-names
+                                           appcond-thm-names
                                            old$
                                            arg-isomaps
-                                           res-isomap?
+                                           res-isomaps
                                            predicate$
                                            new-name$
                                            new-to-old
@@ -3654,7 +3828,7 @@
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
                              ,@defiso-events
-                             ,@app-cond-thm-events
+                             ,@appcond-thm-events
                              (set-default-hints nil)
                              (set-override-hints nil)
                              ,old-fn-unnorm-event
@@ -3672,7 +3846,7 @@
         (if (member-eq print$ '(:info :all))
             (cw "~%~x0~|" encapsulate)
           (cw "~x0~|" encapsulate))
-        '(value-triple :invisible))
+        (value '(value-triple :invisible)))
        (encapsulate+ (restore-output? (eq print$ :all) encapsulate))
        (transformation-table-event (record-transformation-call-event
                                     call encapsulate wrld))
@@ -3682,22 +3856,22 @@
                                '((cw-event "~%")))
                         (cw-event "~x0~|" ',new-fn-exported-event)
                         (cw-event "~x0~|" ',old-to-new-thm-exported-event)))))
-    `(progn
-       ,encapsulate+
-       ,transformation-table-event
-       ,@print-result
-       (value-triple :invisible))))
+    (value
+     `(progn
+        ,encapsulate+
+        ,transformation-table-event
+        ,@print-result
+        (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-fn (old
-                    args/res-iso
+                    isomaps
                     predicate
                     new-name
                     new-enable
                     thm-name
                     thm-enable
-                    non-executable
                     verify-guards
                     untranslate
                     hints
@@ -3729,23 +3903,20 @@
           (value '(value-triple :invisible))))
        ((er (list old$
                   arg-isomaps
-                  res-isomap?
+                  res-isomaps
                   new-name$
                   new-enable$
                   thm-name$
-                  non-executable$
                   verify-guards$
                   hints$
-                  app-cond-keywords
                   names-to-avoid))
         (isodata-process-inputs old
-                                args/res-iso
+                                isomaps
                                 predicate
                                 new-name
                                 new-enable
                                 thm-name
                                 thm-enable
-                                non-executable
                                 verify-guards
                                 untranslate
                                 hints
@@ -3753,26 +3924,24 @@
                                 show-only
                                 ctx
                                 state))
-       (event (isodata-gen-everything old$
-                                      arg-isomaps
-                                      res-isomap?
-                                      predicate
-                                      new-name$
-                                      new-enable$
-                                      thm-name$
-                                      thm-enable
-                                      non-executable$
-                                      verify-guards$
-                                      untranslate
-                                      hints$
-                                      print
-                                      show-only
-                                      compatibility
-                                      names-to-avoid
-                                      app-cond-keywords
-                                      call
-                                      ctx
-                                      state)))
+       ((er event) (isodata-gen-everything old$
+                                           arg-isomaps
+                                           res-isomaps
+                                           predicate
+                                           new-name$
+                                           new-enable$
+                                           thm-name$
+                                           thm-enable
+                                           verify-guards$
+                                           untranslate
+                                           hints$
+                                           print
+                                           show-only
+                                           compatibility
+                                           names-to-avoid
+                                           call
+                                           ctx
+                                           state)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3797,7 +3966,6 @@
                      (new-enable ':auto)
                      (thm-name ':auto)
                      (thm-enable 't)
-                     (non-executable ':auto)
                      (verify-guards ':auto)
                      (untranslate ':nice)
                      (hints 'nil)
@@ -3811,7 +3979,6 @@
                                    ',new-enable
                                    ',thm-name
                                    ',thm-enable
-                                   ',non-executable
                                    ',verify-guards
                                    ',untranslate
                                    ',hints

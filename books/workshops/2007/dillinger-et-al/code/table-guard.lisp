@@ -4,7 +4,6 @@
 
 (acl2::begin-book t :ttags ((defcode) (table-guard)));$ACL2s-Preamble$|#
 
-
 (in-package "ACL2")
 
 (defttag table-guard) ; need to do some evil stuff

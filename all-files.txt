@@ -130,7 +130,6 @@ windows-gcl-jared.html
 # The following is distributed but is not under source control
 doc/manual:
 download
-HTML
 LICENSE
 # Makefile -- not distributed
 res
@@ -138,11 +137,6 @@ res
 
 # The following is distributed but is not under source control
 doc/manual/download:
-
-# The following is currently empty.  Perhaps HTML should be generated
-# before running "make copy-distribution".
-# doc/manual/HTML:
-# *
 
 # The following is distributed but is not under source control
 doc/manual/lib:
@@ -174,6 +168,7 @@ doc/manual/res/tours:
 *.gif
 
 emacs:
+acl2-doc-open-url.el
 acl2-doc.el
 emacs-acl2.el
 monitor.el

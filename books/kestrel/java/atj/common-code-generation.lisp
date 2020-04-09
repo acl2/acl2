@@ -992,60 +992,60 @@
      of the local variable that stores the value."))
   (atj-test-value-case
    tvalue
-   :avalue (b* (((mv block expr jvar-value-index)
-                 (atj-gen-value tvalue.get jvar-value-base jvar-value-index)))
-             (mv block
-                 expr
-                 (atj-type-of-value tvalue.get)
-                 jvar-value-index))
-   :jvalue-boolean (mv nil
-                       (atj-gen-jboolean (boolean-value->bool tvalue.get))
-                       (atj-type-jprim (primitive-type-boolean))
-                       jvar-value-index)
-   :jvalue-char (mv nil
-                    (atj-gen-jchar (char-value->nat tvalue.get))
-                    (atj-type-jprim (primitive-type-char))
-                    jvar-value-index)
-   :jvalue-byte (mv nil
-                    (atj-gen-jbyte (byte-value->int tvalue.get))
-                    (atj-type-jprim (primitive-type-byte))
-                    jvar-value-index)
-   :jvalue-short (mv nil
-                     (atj-gen-jshort (short-value->int tvalue.get))
-                     (atj-type-jprim (primitive-type-short))
-                     jvar-value-index)
-   :jvalue-int (mv nil
-                   (atj-gen-jint (int-value->int tvalue.get))
-                   (atj-type-jprim (primitive-type-int))
+   :acl2 (b* (((mv block expr jvar-value-index)
+               (atj-gen-value tvalue.get jvar-value-base jvar-value-index)))
+           (mv block
+               expr
+               (atj-type-of-value tvalue.get)
+               jvar-value-index))
+   :jboolean (mv nil
+                 (atj-gen-jboolean (boolean-value->bool tvalue.get))
+                 (atj-type-jprim (primitive-type-boolean))
+                 jvar-value-index)
+   :jchar (mv nil
+              (atj-gen-jchar (char-value->nat tvalue.get))
+              (atj-type-jprim (primitive-type-char))
+              jvar-value-index)
+   :jbyte (mv nil
+              (atj-gen-jbyte (byte-value->int tvalue.get))
+              (atj-type-jprim (primitive-type-byte))
+              jvar-value-index)
+   :jshort (mv nil
+               (atj-gen-jshort (short-value->int tvalue.get))
+               (atj-type-jprim (primitive-type-short))
+               jvar-value-index)
+   :jint (mv nil
+             (atj-gen-jint (int-value->int tvalue.get))
+             (atj-type-jprim (primitive-type-int))
+             jvar-value-index)
+   :jlong (mv nil
+              (atj-gen-jlong (long-value->int tvalue.get))
+              (atj-type-jprim (primitive-type-long))
+              jvar-value-index)
+   :jboolean[] (mv nil
+                   (atj-gen-jboolean-array tvalue.get)
+                   (atj-type-jprimarr (primitive-type-boolean))
                    jvar-value-index)
-   :jvalue-long (mv nil
-                    (atj-gen-jlong (long-value->int tvalue.get))
-                    (atj-type-jprim (primitive-type-long))
-                    jvar-value-index)
-   :jvalue-boolean-array (mv nil
-                             (atj-gen-jboolean-array tvalue.get)
-                             (atj-type-jprimarr (primitive-type-boolean))
-                             jvar-value-index)
-   :jvalue-char-array (mv nil
-                          (atj-gen-jchar-array tvalue.get)
-                          (atj-type-jprimarr (primitive-type-char))
-                          jvar-value-index)
-   :jvalue-byte-array (mv nil
-                          (atj-gen-jbyte-array tvalue.get)
-                          (atj-type-jprimarr (primitive-type-byte))
-                          jvar-value-index)
-   :jvalue-short-array (mv nil
-                           (atj-gen-jshort-array tvalue.get)
-                           (atj-type-jprimarr (primitive-type-short))
-                           jvar-value-index)
-   :jvalue-int-array (mv nil
-                         (atj-gen-jint-array tvalue.get)
-                         (atj-type-jprimarr (primitive-type-int))
-                         jvar-value-index)
-   :jvalue-long-array (mv nil
-                          (atj-gen-jlong-array tvalue.get)
-                          (atj-type-jprimarr (primitive-type-long))
-                          jvar-value-index)))
+   :jchar[] (mv nil
+                (atj-gen-jchar-array tvalue.get)
+                (atj-type-jprimarr (primitive-type-char))
+                jvar-value-index)
+   :jbyte[] (mv nil
+                (atj-gen-jbyte-array tvalue.get)
+                (atj-type-jprimarr (primitive-type-byte))
+                jvar-value-index)
+   :jshort[] (mv nil
+                 (atj-gen-jshort-array tvalue.get)
+                 (atj-type-jprimarr (primitive-type-short))
+                 jvar-value-index)
+   :jint[] (mv nil
+               (atj-gen-jint-array tvalue.get)
+               (atj-type-jprimarr (primitive-type-int))
+               jvar-value-index)
+   :jlong[] (mv nil
+                (atj-gen-jlong-array tvalue.get)
+                (atj-type-jprimarr (primitive-type-long))
+                jvar-value-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

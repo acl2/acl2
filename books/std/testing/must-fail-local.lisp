@@ -15,13 +15,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection must-fail-local
+
   :parents (std/testing errors must-fail)
+
   :short "A @(see local) variant of @(tsee must-fail)."
+
   :long
-  "<p>
-   This is useful to overcome the problem discussed in the caveat
-   in the documentation of @(tsee must-fail).
-   </p>
+
+  "<p>This is useful to overcome the problem discussed in the caveat
+   in the documentation of @(tsee must-fail).</p>
+
    @(def must-fail-local)"
+
   (defmacro must-fail-local (&rest args)
     `(local (must-fail ,@args))))

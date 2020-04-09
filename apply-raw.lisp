@@ -517,9 +517,9 @@
 ;    :GOOD.  If the line's status is not :GOOD, the :absolute-event-number is
 ;    nil.
 
-; - :extracts is a tuple (satisfies-exprs guard body) that allows us to
-;    re-check well-formedness and guard verification without re-parsing the
-;    lambda expression
+; - :extracts is a list of 3-tuples (satisfies-exprs guard . body) that allows
+;    us to re-check well-formedness and guard verification without re-parsing
+;    the lambda expression
 
 ; - :problem is an object that indicates why the :status isn't :GOOD
 
@@ -581,8 +581,10 @@
 ; whether the object is well-formed in w.  This can be done more efficiently
 ; than might at first appear since we know the object had status :GOOD or :BAD
 ; in some other world and hence is basically the right shape.  The :extracts of
-; the cache line give us the relevant TYPE expressions, guard, and body without
-; having to re-parse the object.  We basically make termp checks on these
+; the cache line give us the relevant TYPE expressions, guards, and bodies
+; without having to re-parse the object.  (:Extracts is a list of 3-tuples,
+; (satisfies-exprs guard . body), and extracted from the lambda object and from
+; every lambda object within it.)  We basically make termp checks on these
 ; components, additionally checking Common Lisp compliant symbol-classes for
 ; the functions involved in the guard and body, and tameness of the body.
 ; Provided these checks succeed we generate the guard obligations of the
@@ -928,8 +930,8 @@
 ; - :absolute-event-number is nil or a number.  This entry is a number iff the
 ;    status is :GOOD and the number is the greatest absolute-event-number of
 ;    the world at the time the line was detected as :GOOD.
-; - :extracts is a tuple (list type-exprs guard body)
-;    that allows us to re-check well-formedness and guard verification without
+; - :extracts is a list of 3-tuples, (satisfies-exprs guard . body), that
+;    allows us to re-check well-formedness and guard verification without
 ;    re-parsing the lambda expression
 ; - :problem is an object that indicates why the :status is :BAD
 ; - :hits is the number of times we have fetched this line
@@ -1194,6 +1196,28 @@
          (setq *cl-cache* cl-cache)
          nil)))
 
+(defun collect-from-extracts (key extracts acc)
+
+; Key should be one of :satisfies-exprs, :guard, or :body.  Extracts is a list
+; of 3-tuples (satisfies-exprs guard . body).  We map over exports and collect
+; all the terms in the key slot and union them into acc.  The order of the terms
+; is reversed from their appearance-order in extracts.
+
+  (cond
+   ((endp extracts) acc)
+   (t (collect-from-extracts
+       key
+       (cdr extracts)
+       (case key
+         (:satisfies-exprs
+; We use the -removing-duplicates version here to reverse the satisfies-exprs
+; as they're added to the accumulator.
+          (union-equal-removing-duplicates (car (car extracts)) acc))
+         (:guard
+          (add-to-set-equal (cadr (car extracts)) acc))
+         (otherwise
+          (add-to-set-equal (cddr (car extracts)) acc)))))))
+
 (defun maybe-re-validate-cl-cache-line (line w state)
 
 ; We know line once had :status :GOOD or :BAD but it now has :status :UNKNOWN.
@@ -1242,24 +1266,25 @@
 ; recompile anyway.
 
   (let* ((ens (ens state))
-         (formals (lambda-object-formals
-                   (access cl-cache-line line :lambda-object)))
-         (extracts (access cl-cache-line line :extracts))
-         (type-exprs (car extracts))
-         (guard (cadr extracts))
-         (body (caddr extracts)))
+         (extracts (access cl-cache-line line :extracts)))
     (assert (eq (access-cl-cache-line line :status) :UNKNOWN))
     (setf (access-cl-cache-line line :problem) 're-validation-interrupted)
     (cond
-     ((well-formed-lambda-objectp1 formals type-exprs guard body w)
+     ((well-formed-lambda-objectp1 extracts w)
       (let* ((non-compliant-fns1
               (collect-non-common-lisp-compliants
-               (all-fnnames-exec guard)
+               (all-fnnames1-exec
+                t
+                (collect-from-extracts :guard extracts nil)
+                nil)
                w))
              (non-compliant-fns2
               (or non-compliant-fns1
                   (collect-non-common-lisp-compliants
-                   (all-fnnames-exec body)
+                   (all-fnnames1-exec
+                    t
+                    (collect-from-extracts :body extracts nil)
+                    nil)
                    w))))
         (cond
          ((null non-compliant-fns2)
@@ -1540,10 +1565,14 @@
 ; :GOOD and :BAD lambdas but for the moment we just do the full syntactic
 ; plausibility check.
 
-    (mv-let (flg formals satisfies-exprs guard body)
-      (syntactically-plausible-lambda-objectp fn)
+    (let ((extracts (syntactically-plausible-lambda-objectp fn)))
+
+; Extracts is either nil, indicating that fn is not syntactically plausible, or
+; a list of 3-tuples, (satisfies-exprs guard . body), to further check wrt
+; wrld.
+
       (cond
-       ((null flg)
+       ((null extracts)
         (cond ((or (eq status :GOOD) (eq status :BAD))
                (er hard 'make-new-cl-cache-line
                    "The caller of make-new-cl-cache-line said the status of ~
@@ -1551,6 +1580,11 @@
                     :UGLY.  Please contact the ACL2 developers."
                    fn status))
               (t
+; Note that the :extracts field below is nil, upon which
+; well-formed-lambda-objectp1 would return t if it were called on it, when in
+; fact fn is syntactically ill-formed.  Because fn's :status is :UGLY,
+; well-formed-lambda-objectp1 should never be called on these extracts.
+
                (make cl-cache-line
                      :lambda-object fn
                      :status :UGLY
@@ -1574,7 +1608,7 @@
                 :lambda-object fn
                 :status status
                 :absolute-event-number (+ 1 (max-absolute-event-number w))
-                :extracts (list satisfies-exprs guard body)
+                :extracts extracts
                 :problem nil
                 :hits 1
                 :guard-code (compile nil guard-lambda)
@@ -1592,7 +1626,7 @@
               :lambda-object fn
               :status :BAD
               :absolute-event-number nil
-              :extracts (list satisfies-exprs guard body)
+              :extracts extracts
               :problem nil
               :hits 1
               :guard-code nil
@@ -1600,7 +1634,7 @@
 
 ; Otherwise, the caller says the status is :UNKNOWN.
 
-       ((well-formed-lambda-objectp1 formals satisfies-exprs guard body w)
+       ((well-formed-lambda-objectp1 extracts w)
 
 ; We create a cache line with status :UNKNOWN and then re-validate it, which
 ; leaves its status :GOOD or :BAD.  Re-validation also compiles the guard and
@@ -1611,16 +1645,25 @@
                :lambda-object fn
                :status :UNKNOWN
                :absolute-event-number nil
-               :extracts (list satisfies-exprs guard body)
+               :extracts extracts
                :problem nil
                :hits 1
                :guard-code nil
                :lambda-code nil)
          w state))
-       ((eq (potential-term-listp (append satisfies-exprs
-                                          (list guard body))
-                                  nil
-                                  w)
+       ((eq (potential-term-listp
+             (collect-from-extracts
+              :satisfies-exprs
+              extracts
+              (collect-from-extracts
+               :guard
+               extracts
+               (collect-from-extracts
+                :body
+                extracts
+                nil)))
+             nil
+             w)
             :illegal)
         (make cl-cache-line
               :lambda-object fn
@@ -1640,7 +1683,7 @@
               :lambda-object fn
               :status :BAD
               :absolute-event-number nil
-              :extracts (list satisfies-exprs guard body)
+              :extracts extracts
               :problem 'not-well-formed
               :hits 1
               :guard-code nil
@@ -4079,8 +4122,8 @@
          (list 'ev-fncall-guard-er
                fn
                args
-               (untranslate ; guard
-                (cadr (access cl-cache-line line :extracts))
+               (untranslate ; guard of first 3-tuple
+                (cadr (car (access cl-cache-line line :extracts)))
                 t
                 (w *the-live-state*))
                (make-list ; stobjs-in = (nil ... nil)

@@ -16,7 +16,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ xdoc::evmac-constructors
+(defxdoc+ event-macro-xdoc-constructors
   :parents (event-macros xdoc::composite-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url event-macros)'>event macros</see>
@@ -24,8 +24,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ xdoc::evmac-constructors-user-level
-  :parents (xdoc::evmac-constructors)
+(defxdoc+ event-macro-xdoc-constructors-user-level
+  :parents (event-macro-xdoc-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document <see topic='@(url event-macros)'>event macros</see>
           at the user level."
@@ -284,22 +284,23 @@
       `(xdoc::&&
         (xdoc::h3 xdoc::*evmac-section-appconds-title*)
         (xdoc::p
-         (concatenate
-          'string
-          "In order for "
-          ,macro-ref
-          " to apply,
-           in addition to the requirements on the inputs
-           stated in the "
-          ,inputs-ref
-          ", the following conditions must be proved.
-           The proofs are attempted when "
-          ,macro-ref
-          " is called,
-           using the hints optionally supplied as the @(':hints') input
-           described in the "
-          ,inputs-ref
-          "."))
+         "In order for "
+         ,macro-ref
+         " to apply,
+          in addition to the requirements on the inputs
+          stated in the "
+         ,inputs-ref
+         ", the following "
+         (xdoc::seetopic "acl2::event-macro-applicability-conditions"
+                         "applicability conditions")
+         " must be proved.
+          The proofs are attempted when "
+         ,macro-ref
+         " is called,
+          using the hints optionally supplied as the @(':hints') input
+          described in the "
+         ,inputs-ref
+         ".")
         ,@content))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -389,29 +390,31 @@
         (xdoc::p
          "Hints to prove the applicability conditions.")
         (xdoc::p
-         (concatenate
-          'string
-          "It must be a
-           <see topic='@(url acl2::keyword-value-listp)'>keyword-value
-           list</see> @('(appcond1 hints1 ... appcondp hintsp)'),
+         "It must be one of the following:")
+        (xdoc::ul
+         (xdoc::li
+          "A "
+          (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
+          " @('(appcond1 hints1 appcond2 hints2 ...)'),
            where each @('appcondk') is a keyword
            that identifies one of the applicability conditions
            listed in the "
           ,appconds-ref
-          ", and each @('hintsk') consists of hints that may appear
-           just after @(':hints') in a @(tsee defthm).
+          " and each @('hintsk') is a list of hints of the kind
+           that may appear just after @(':hints') in a @(tsee defthm).
            The hints @('hintsk') are used
-           to prove applicability condition @('appcondk')."))
-        (xdoc::p
-         "The @('appcond1'), ..., @('appcondp') keywords must be all distinct.")
-        (xdoc::p
-         (concatenate
-          'string
-          "An @('appcondk') keyword is allowed in the @(':hints') input iff
+           to prove applicability condition @('appcondk').
+           The @('appcond1'), @('appcond2'), ... keywords must be all distinct.
+           An @('appcondk') keyword is allowed only if
            the corresponding applicability condition is present,
            as specified in the "
           ,appconds-ref
-          "."))
+          ".")
+         (xdoc::li
+          "A list of hints of the kind
+           that may appear just after @(':hints') in a @(tsee defthm).
+           In this case, these same hints are used
+           to prove every applicability condition,."))
         ,@additional))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -917,8 +920,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ xdoc::evmac-constructors-implementation-level
-  :parents (xdoc::evmac-constructors)
+(defxdoc+ event-macro-xdoc-constructors-implementation-level
+  :parents (event-macro-xdoc-constructors)
   :short "Utilities to construct <see topic='@(url xdoc)'>XDOC</see> strings
           to document the implementation of
           <see topic='@(url event-macros)'>event macros</see>."
@@ -941,6 +944,8 @@
     "Certain common items, like the @('state') variable,
      can be included among the items just by setting
      the corresponding keyword options to @('t').")
+   (xdoc::p
+    "If there are items, the list is omitted altogether.")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -975,24 +980,25 @@
                   (and item-ctx
                        '("@('ctx') is the context used for errors."))
                   items))
-         (long `(xdoc::topstring
-                 (xdoc::p
-                  "The implementation functions have arguments,
-                   as well as results (in the "
-                  (xdoc::seetopic "std::returns-specifiers"
-                                  "@(':returns') specifiers")
-                  "), consistently named as follows:")
-                 (xdoc::ul
-                  ,@(xdoc::evmac-topic-implementation-li-wrap all-items))
-                 (xdoc::p
-                  "Implementation functions' arguments and results
-                   that are not listed above
-                   are described in, or clear from,
-                   those functions' documentation."))))
+         (long (and all-items
+                    `(xdoc::topstring
+                      (xdoc::p
+                       "The implementation functions have arguments,
+                        as well as results (in the "
+                       (xdoc::seetopic "std::returns-specifiers"
+                                       "@(':returns') specifiers")
+                       "), consistently named as follows:")
+                      (xdoc::ul
+                       ,@(xdoc::evmac-topic-implementation-li-wrap all-items))
+                      (xdoc::p
+                       "Implementation functions' arguments and results
+                        that are not listed above
+                        are described in, or clear from,
+                        those functions' documentation.")))))
       `(defxdoc+ ,this-topic
          :parents (,parent-topic)
          :short ,short
-         :long ,long
+         ,@(and long (list :long long))
          :order-subtopics t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1046,10 +1052,10 @@
          (long `(xdoc::topstring
                  (xdoc::p
                   "This involves validating the inputs.
-                 When validation fails, "
+                   When validation fails, "
                   (xdoc::seetopic "acl2::er" "soft errors")
                   " occur.
-                 Thus, generally the input processing functions return "
+                   Thus, generally the input processing functions return "
                   (xdoc::seetopic "acl2::error-triple" "error triples")
                   ".")
                  ,@additional)))
@@ -1073,7 +1079,8 @@
      An event macro may generate some events both locally and non-locally,
      where the local variant has proof hints and the non-local variant does not;
      in this case, the @(':some-local-nonlocal-p') argument must be @('t').
-     These arguments are used to customize the generated @(':long')."))
+     These arguments are used to customize the generated @(':long').")
+   (xdoc::@def "xdoc::evmac-topic-event-generation"))
 
   (defmacro xdoc::evmac-topic-event-generation (macro
                                                 &key

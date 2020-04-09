@@ -2829,25 +2829,28 @@
      (t wrld)))
    (t (scan-past-deeper-event-landmarks depth (cdr wrld)))))
 
-(defun puffable-encapsulate-p (cddr-car-wrld installed-wrld)
+(defun puffable-encapsulate-p (cddr-car-wrld installed-wrld ntep)
 
-; An encapsulate is puffable unless it is a encapsulate that introduces a
-; function symbol with unknown-constraints -- equivalently, a non-trivial
-; encapsulate all of whose function symbols are introduced with
-; unknown-constraints.
+; An encapsulate is puffable if it has an empty signature.  If on the other
+; hand it has a non-empty signature and ntep (Non-Trivial-Encapsulate Property)
+; is false, then it is not puffable.  The remaining case is that ntep is true
+; and the signature is non-empty.  Then the encapsulate is puffable if and only
+; if any of its signature's function symbols are have unknown-constraints
+; (equivalently, all of them).
 
   (and (eq (access-event-tuple-type cddr-car-wrld) 'encapsulate)
        (let* ((encap (access-event-tuple-form cddr-car-wrld))
               (signatures (cadr encap))
               (fns (signature-fns signatures)))
          (not (and (consp fns)
-                   (mv-let
-                     (name x)
-                     (constraint-info (car fns) installed-wrld)
-                     (declare (ignore name))
-                     (unknown-constraints-p x)))))))
+                   (or (not ntep) ; don't puff non-trivial encapsulates
+                       (mv-let
+                         (name x)
+                         (constraint-info (car fns) installed-wrld)
+                         (declare (ignore name))
+                         (unknown-constraints-p x))))))))
 
-(defun puffable-command-blockp (wrld cmd-form installed-wrld)
+(defun puffable-command-blockp (wrld cmd-form ntep installed-wrld)
 
 ; Initially, wrld should be the cdr of a world starting at some
 ; command-landmark.  Cmd-form should be the command-tuple form of that landmark
@@ -2881,11 +2884,12 @@
           ((eq (car cmd-form) 'encapsulate)
            (and (puffable-encapsulate-p
                  (cddr (car wrld))
-                 installed-wrld)
+                 installed-wrld
+                 ntep)
                 'encapsulate))
           (t (not (equal cmd-form
                          (access-event-tuple-form (cddr (car wrld))))))))
-   (t (puffable-command-blockp (cdr wrld) cmd-form installed-wrld))))
+   (t (puffable-command-blockp (cdr wrld) cmd-form ntep installed-wrld))))
 
 (defun puffable-command-numberp (i state)
 
@@ -2901,9 +2905,14 @@
                  (puffable-command-blockp
                   (cdr wrld)
                   (access-command-tuple-form (cddr (car wrld)))
+
+; We don't puff non-trivial encapsulates with puff*.  See relevant comment in
+; puffed-command-sequence.
+
+                  nil
                   (w state))))))
 
-(defun puff-include-book (wrld final-cmds ctx state)
+(defun puff-include-book (wrld include-book-alist-entry final-cmds ctx state)
 
 ; This function should only be called under puff-fn1; see comments about
 ; puff-fn1 below.
@@ -2912,51 +2921,55 @@
 ; and return the events in it.  Recursive include-books are not flattened here.
 
   (let ((full-book-name (access-event-tuple-namex (cddr (car wrld)))))
-    (er-progn
-     (chk-input-object-file full-book-name ctx state)
-     (chk-book-name full-book-name full-book-name ctx state)
-     (er-let*
-         ((ev-lst (read-object-file full-book-name ctx state))
-          (cert-obj (chk-certificate-file
-                     full-book-name
-                     nil
-                     'puff
-                     ctx
-                     state
-                     '((:uncertified-okp . t)
-                       (:defaxioms-okp t)
-                       (:skip-proofs-okp t))
-                     nil)))
-       (let* ((old-book-hash
+    (cond
+     ((assoc-equal full-book-name (table-alist 'puff-included-books (w state)))
+      (value final-cmds))
+     (t
+      (er-progn
+       (chk-input-object-file full-book-name ctx state)
+       (chk-book-name full-book-name full-book-name ctx state)
+       (er-let*
+           ((ev-lst (read-object-file full-book-name ctx state))
+            (cert-obj (chk-certificate-file
+                       full-book-name
+                       nil
+                       'puff
+                       ctx
+                       state
+                       '((:uncertified-okp . t)
+                         (:defaxioms-okp t)
+                         (:skip-proofs-okp t))
+                       nil)))
+         (let* ((old-book-hash
 
 ; The assoc-equal just below is of the form (full-book-name user-book-name
 ; familiar-name cert-annotations . book-hash).
 
-               (cddddr (assoc-equal full-book-name
-                                    (global-val 'include-book-alist
-                                                (w state)))))
+                 (cddddr (assoc-equal full-book-name
+                                      (global-val 'include-book-alist
+                                                  (w state)))))
 
 ; We include the expansion-alist and cert-data only if the book appears to be
 ; certified.
 
-              (expansion-alist
-               (and old-book-hash
-                    cert-obj
-                    (access cert-obj cert-obj :expansion-alist)))
-              (cert-data
-               (and old-book-hash
-                    cert-obj
-                    (access cert-obj cert-obj :cert-data)))
-              (cmds (and cert-obj
-                         (access cert-obj cert-obj :cmds))))
-         (er-let* ((ev-lst-book-hash
-                    (if old-book-hash ; otherwise, don't care
-                        (book-hash old-book-hash full-book-name cmds
-                                   expansion-alist cert-data ev-lst state)
-                      (value nil))))
-           (cond
-            ((and old-book-hash
-                  (not (equal ev-lst-book-hash old-book-hash)))
+                (expansion-alist
+                 (and old-book-hash
+                      cert-obj
+                      (access cert-obj cert-obj :expansion-alist)))
+                (cert-data
+                 (and old-book-hash
+                      cert-obj
+                      (access cert-obj cert-obj :cert-data)))
+                (cmds (and cert-obj
+                           (access cert-obj cert-obj :cmds))))
+           (er-let* ((ev-lst-book-hash
+                      (if old-book-hash ; otherwise, don't care
+                          (book-hash old-book-hash full-book-name cmds
+                                     expansion-alist cert-data ev-lst state)
+                        (value nil))))
+             (cond
+              ((and old-book-hash
+                    (not (equal ev-lst-book-hash old-book-hash)))
 
 ; It is possible that the book is no longer certified.  It seems possible that
 ; the reason the book-hash has changed is only that somehow expansion-alist or
@@ -2966,44 +2979,48 @@
 ; function is supporting the lightly-supported puff operation, so we can live
 ; with that, especially given the "weasel word" below, "presumably".
 
-             (er soft ctx
-                 "When the certified book ~x0 was included, its book-hash was ~
-                  ~x1.  The book-hash for ~x0 is now ~x2.  The book has thus ~
-                  presumably been modified since it was last included and we ~
-                  cannot now recover the events that created the current ~
-                  logical world."
-                 full-book-name
-                 old-book-hash
-                 ev-lst-book-hash))
-            (t (let ((fixed-cmds
-                      (append
-                       cmds
-                       (cons (assert$
+               (er soft ctx
+                   "When the certified book ~x0 was included, its book-hash ~
+                    was ~x1.  The book-hash for ~x0 is now ~x2.  The book has ~
+                    thus presumably been modified since it was last included ~
+                    and we cannot now recover the events that created the ~
+                    current logical world."
+                   full-book-name
+                   old-book-hash
+                   ev-lst-book-hash))
+              (t (let ((fixed-cmds
+                        (append
+                         cmds
+                         (cons (assert$
 
 ; We want to execute the in-package here.  But we don't need to restore the
 ; package, as that is done with a state-global-let* binding in puff-fn1.
 
-                              (and (consp (car ev-lst))
-                                   (eq (caar ev-lst) 'in-package))
-                              (car ev-lst))
-                             (subst-by-position expansion-alist
-                                                (cdr ev-lst)
-                                                1)))))
-                 (value
-                  `((ld
+                                (and (consp (car ev-lst))
+                                     (eq (caar ev-lst) 'in-package))
+                                (car ev-lst))
+                               (subst-by-position expansion-alist
+                                                  (cdr ev-lst)
+                                                  1)))))
+                   (value
+                    `((ld
 
 ; We are comfortable setting the cbd here because when ld returns, it will set
 ; the cbd to its starting value (because ld calls ld-fn with bind-flg t).
 
-                     ',(cons `(set-cbd
-                               ,(directory-of-absolute-pathname
-                                 full-book-name))
-                             fixed-cmds)
-                     :ld-error-action :error)
-                    (maybe-install-acl2-defaults-table
-                     ',(table-alist 'acl2-defaults-table wrld)
-                     state)
-                    ,@final-cmds)))))))))))
+                       '((set-cbd
+                          ,(directory-of-absolute-pathname
+                            full-book-name))
+                         ,@fixed-cmds
+                         ,@(and include-book-alist-entry ; always true?
+                                `((table puff-included-books
+                                         ,full-book-name
+                                         ',include-book-alist-entry))))
+                       :ld-error-action :error)
+                      (maybe-install-acl2-defaults-table
+                       ',(table-alist 'acl2-defaults-table wrld)
+                       state)
+                      ,@final-cmds)))))))))))))
 
 (defun puff-command-block1 (wrld immediate ans ctx state)
 
@@ -3030,11 +3047,13 @@
    ((and (eq (car (car wrld)) 'event-landmark)
          (eq (cadr (car wrld)) 'global-value))
     (let* ((event-tuple (cddr (car wrld)))
-           (event-type (access-event-tuple-type event-tuple)))
+           (event-type (access-event-tuple-type event-tuple))
+           (include-book-alist-entry
+            (car (global-val 'include-book-alist wrld))))
       (cond
        ((and (eq immediate 'certify-book)
              (eq event-type 'include-book)
-             (equal (caar (global-val 'include-book-alist wrld))
+             (equal (car include-book-alist-entry)
                     (access-event-tuple-namex event-tuple)))
 
 ; The include-book here represents the evaluation of all events after the final
@@ -3043,7 +3062,7 @@
 ; precede that final local event, instead doing a direct collection of all
 ; events in the book.
 
-        (puff-include-book wrld ans ctx state))
+        (puff-include-book wrld include-book-alist-entry ans ctx state))
        ((eq immediate 'encapsulate)
 
 ; In the case of an encapsulate event, flattening means to do the body of the
@@ -3057,7 +3076,10 @@
         (assert$
          (eq event-type 'encapsulate)
          (value (append (cddr (access-event-tuple-form (cddr (car wrld))))
-                        ans))))
+                        (cons `(maybe-install-acl2-defaults-table
+                                ',(table-alist 'acl2-defaults-table wrld)
+                                state)
+                              ans)))))
        (t
         (puff-command-block1
          (cond ((member-eq event-type
@@ -3083,24 +3105,88 @@
 
   (case cmd-type
     (encapsulate (puff-command-block1 wrld 'encapsulate final-cmds ctx state))
-    (include-book (puff-include-book wrld final-cmds ctx state))
+    (include-book (puff-include-book wrld
+                                     (car (global-val 'include-book-alist
+                                                      wrld))
+                                     final-cmds ctx state))
     (certify-book (puff-command-block1 wrld 'certify-book final-cmds ctx state))
     (otherwise    (puff-command-block1 wrld nil final-cmds ctx state))))
 
-(defun commands-back-to (wrld1 wrld2 ans)
+(defun commands-back-to-1 (wrld1 wrld2 cbd cbd0 ans)
 
 ; Wrld2 is a tail of wrld1.  Each starts with a command-landmark initially.  We
 ; collect all the non-eviscerated commands back to (but not including) the one
-; at wrld2.
+; at wrld2, in reverse order.  The idea is to evaluate the resulting list of
+; commands on top of wrld2 to get a world that is roughly equivalent to wrld1.
+
+; To understand the algorithm here, consider the following example of wrld1: it
+; starts with wrld2 and is following by the two include-book commands below,
+; each stored with the indicated cbd.
+
+;   wrld2
+;   (include-book "book1") ; cbd "cbd1"
+;   (include-book "book2") ; cbd "cbd2"
+
+; When we puff, we generate the commands shown below.  Thus "cbd" is the
+; current cbd if wrld1 is the currently installed world, and otherwise it is
+; the cbd of the next command.  The blank lines show accumulating into ans on
+; successive calls of commands-back-to-1.
+
+;   <wrld2>
+
+;   (set-cbd "cbd1")
+
+;   (include-book "book1") ; cbd "cbd1" in the command tuple
+;   (set-cbd "cbd2")
+
+;   (include-book "book2") ; cbd "cbd2" in the command tuple
+;   (set-cbd "cbd") ; where "cbd" is the cbd we started with
+
+;   <post-wrld1>
+
+; However, if cbd1 is the same as the cbd in place in wrld2 when the first
+; include-book was executed, then we can omit (set-cbd "cbd1").  Similarly, we
+; can omit (set-cbd "cbd2") if "cbd1" and "cbd2" are equal.  And finally, we
+; can omit the final (set-cbd "cbd") if "cbd2" and "cbd" are equal.
+
+; We carry out this optimization by passing cbd as the cbd to be in place after
+; wrld1.  At the top level, this is the current cbd.
 
   (cond
-   ((equal wrld1 wrld2) ans)
+   ((equal wrld1 wrld2)
+    (assert$ (and (eq (car (car wrld1)) 'command-landmark)
+                  (eq (cadr (car wrld1)) 'global-value))
+             (if (equal cbd cbd0)
+                 ans
+               (cons `(set-cbd ,cbd) ans))))
    ((and (eq (car (car wrld1)) 'command-landmark)
          (eq (cadr (car wrld1)) 'global-value))
-    (commands-back-to (cdr wrld1) wrld2
-                      (cons (access-command-tuple-form (cddr (car wrld1)))
-                            ans)))
-   (t (commands-back-to (cdr wrld1) wrld2 ans))))
+    (let* ((next-cbd (access-command-tuple-cbd (cddr (car wrld1))))
+           (ans
+
+; Possibly set the cbd for the top of the current value of ans.  Except: if ans
+; is nil, then set the cbd to the value of formal parameter cbd, which is the
+; cbd for the next command after wrld1.
+
+            (if (equal cbd next-cbd)
+                ans
+              (cons `(set-cbd ,cbd) ans))))
+      (commands-back-to-1
+       (cdr wrld1) wrld2 next-cbd cbd0
+       (cons (access-command-tuple-form (cddr (car wrld1)))
+             ans))))
+   (t (commands-back-to-1 (cdr wrld1) wrld2 cbd cbd0 ans))))
+
+(defun commands-back-to (wrld1 wrld2 state)
+
+; Wrld2 is a tail of wrld1.  See commands-back-to-1 for more explanation.
+
+  (let ((cbd (f-get-global 'connected-book-directory state)))
+    (commands-back-to-1
+     wrld1 wrld2 cbd cbd
+     (cond ((equal cbd (access-command-tuple-cbd (cddr (car wrld1))))
+            nil)
+           (t (list `(set-cbd ,cbd)))))))
 
 (defun puffed-command-sequence (cd ctx wrld state)
 
@@ -3112,8 +3198,25 @@
     (let ((cmd-type (puffable-command-blockp
                      (cdr cmd-wrld)
                      (access-command-tuple-form (cddr (car cmd-wrld)))
+
+; A non-trivial encapsulate is puffabble by :puff but not by :puff*.  There are
+; two reasons why we are nervous about puffing non-trivial encapsulates.  One
+; reason is that this will mess up the recording of constraints, in particular
+; for later functional-instantiation.  The other is that in a non-trivial
+; encapsulate from a book, local definitions of the signature functions may be
+; elided due to the use of make-event, in which case puffing will fail.  In
+; this latter case the user has a much better chance of understanding the error
+; when using :puff than when using :puff*.  (Arguably, it's not really more
+; difficult when using puff* with a non-nil optional argument; but let's keep
+; things simple.)
+
+; For both of these reasons, it seems best that if one wishes to puff a
+; non-trivial encapsulate, one should use :puff directly on that form, rather
+; than having the puffing happen rather invisibly under :puff*.
+
+                     (eq ctx :puff)
                      (w state)))
-          (final-cmds (commands-back-to wrld cmd-wrld nil)))
+          (final-cmds (commands-back-to wrld cmd-wrld state)))
       (cond
        (cmd-type
         (puff-command-block cmd-type
@@ -3236,7 +3339,7 @@
                              (ld-query-control-alist state))))
                      (ld-loop-simple state)))
 
-(defun puff-fn1 (cd state)
+(defun puff-fn1 (cd ctx state)
 
 ; This function is essentially :puff except that it does no printing.
 ; It returns a pair, (i . j), where i and j are the relative command numbers
@@ -3271,7 +3374,7 @@
 
       t))
     (let ((wrld (w state)))
-      (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff state)))
+      (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state)))
         (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
                    (access command-number-baseline-info
                            (global-val 'command-number-baseline-info wrld)
@@ -3284,15 +3387,15 @@
                      (access command-number-baseline-info
                              (global-val 'command-number-baseline-info wrld)
                              :original))
-                 (er soft :puff
+                 (er soft ctx
                      "Can't puff a command within the system initialization."))
                 (t
-                 (er soft :puff
+                 (er soft ctx
                      "Can't puff a command within prehistory.  See :DOC ~
                      reset-prehistory."))))
               (t
                (er-let*
-                   ((cmds (puffed-command-sequence cd :puff wrld state)))
+                   ((cmds (puffed-command-sequence cd ctx wrld state)))
                  (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
                         (i (absolute-to-relative-command-number
                             (max-absolute-command-number cmd-wrld)
@@ -3327,7 +3430,7 @@
         (t (pcs-fn new-cd1 new-cd2 t state))))
 
 (defun puff-fn (cd state)
-  (er-let* ((pair (puff-fn1 cd state)))
+  (er-let* ((pair (puff-fn1 cd :puff state)))
            (puff-report :puff (car pair) (cdr pair) cd state)))
 
 (defun puff*-fn11 (ptr k i j state)
@@ -3343,7 +3446,7 @@
    ((puffable-command-numberp i state)
     (mv-let
      (erp val state)
-     (puff-fn1 i state)
+     (puff-fn1 i :puff* state)
      (declare (ignore val))
      (cond
       (erp ; See puff* for how this value is used.

@@ -416,8 +416,8 @@
 ; symbols, but is t in the second pass, where we are allowed to generate
 ; include-book forms.  We recur through the given set of injections from the
 ; variables of old-measure into the indicated formals of the function symbol of
-; the proposed definition, `(defun ,(car names) (declare (xargs :measure
-; ,new-measure :ruler-extenders ,(car ruler-extenders-lst))) ,formals
+; the proposed definition, `(defun ,(car names) ,formals (declare (xargs :measure
+; ,new-measure :ruler-extenders ,(car ruler-extenders-lst))) 
 ; ,@declares ,body), where mp and rel are the measure predicate and the
 ; well-founded relation, and tbodies is a one-element list containing the
 ; translation of body.
@@ -428,7 +428,14 @@
     (or (b* ((new-measure (sublis-var (car injections) old-measure))
              (clause-set
               (termination-theorem-clauses
+               nil nil ; loop$-recursion-checkedp and loop$-recursion value
                names
+               nil ; arglists
+
+; Note: A comment in termination-machine, which this function ultimately calls,
+; says that the arglists argument (here nil) is of use only when
+; loop$-recursion-checkedp is t, and we have supplied nil above.
+
                tbodies
                (acons (car names) new-measure nil)
                mp rel

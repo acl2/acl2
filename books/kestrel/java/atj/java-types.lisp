@@ -408,7 +408,7 @@
                                         (jtype-array (jtype-long))
                                         (jtype-array (jtype-float))
                                         (jtype-array (jtype-double)))) nil)
-                  (t y)))
+                 (t y)))
           ((equal x (jtype-boolean))
            (cond ((equal y (jtype-boolean)) (jtype-boolean))
                  (t nil)))
@@ -526,8 +526,85 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-jitype-meet ((x atj-jitypep) (y atj-jitypep))
+  :returns (glb atj-maybe-jitypep)
+  :short "Greatest lower bound of two ATJ Java input types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We have defined @(tsee atj-maybe-jitype-meet)
+     in order to exhibit and prove the semilattice structure,
+     but we always want to use ATJ Java input types as arguments,
+     never @('nil').
+     So we introduce this function,
+     which operates on ATJ Java input types but may return @('nil'),
+     which can be also interpreted as saying that
+     the two ATJ Java input types have
+     no (greatest) lower bound w.r.t @(tsee atj-jitype-<=)."))
+  (atj-maybe-jitype-meet x y))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jitype-list-<= ((sub atj-jitype-listp) (sup atj-jitype-listp))
+  :returns (yes/no booleanp)
+  :short "Lift @(tsee atj-jitype-<=) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lists are ordered element-wise.
+     Given two lists of different lengths
+     such that the shorter one is a prefix of the longer one
+     (i.e. the two lists cannot be ordered based on their initial elements),
+     the shorter one is smaller than the longer one.")
+   (xdoc::p
+    "We show that the resulting relation is a partial order,
+     i.e. reflexive, anti-symmetric, and transitive."))
+  (cond ((endp sub) t)
+        ((endp sup) nil)
+        (t (and (atj-jitype-<= (car sub) (car sup))
+                (atj-jitype-list-<= (cdr sub) (cdr sup)))))
+  :hooks (:fix)
+  ///
+
+  (defrule atj-jitype-list-<=-reflexive
+    (implies (atj-jitype-listp x)
+             (atj-jitype-list-<= x x)))
+
+  (defrule atj-jitype-list-<=-antisymmetric
+    (implies (and (atj-jitype-listp x)
+                  (atj-jitype-listp y)
+                  (atj-jitype-list-<= x y)
+                  (atj-jitype-list-<= y x))
+             (equal x y))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-jitype-<=-antisymmetric
+                    (x (car x)) (y (car y))))))
+
+  (defrule atj-jitype-list-<=-transitive
+    (implies (and (atj-jitype-listp x)
+                  (atj-jitype-listp y)
+                  (atj-jitype-listp z)
+                  (atj-jitype-list-<= x y)
+                  (atj-jitype-list-<= y z))
+             (atj-jitype-list-<= x z))
+    :rule-classes nil
+    :hints ('(:use (:instance atj-jitype-<=-transitive
+                    (x (car x)) (y (car y)) (z (car z)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jitype-list-< ((sub atj-jitype-listp)
+                           (sup atj-jitype-listp))
+  :returns (yes/no booleanp)
+  :short "Irreflexive kernel (i.e. strict version)
+          of @(tsee atj-jitype-list-<=)."
+  (and (atj-jitype-list-<= sub sup)
+       (not (equal sub sup))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-maybe-jitype-list-<= ((sub atj-maybe-jitype-listp)
-                                 (sup atj-maybe-jitype-listp))
+                                  (sup atj-maybe-jitype-listp))
   :returns (yes/no booleanp)
   :short "Lift @(tsee atj-maybe-jitype-<=) to lists."
   :long
@@ -574,18 +651,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-maybe-jitype-list-< ((sub atj-maybe-jitype-listp)
-                                (sup atj-maybe-jitype-listp))
-  :returns (yes/no booleanp)
-  :short "Irreflexive kernel (i.e. strict version)
-          of @(tsee atj-maybe-jitype-list-<=)."
-  (and (atj-maybe-jitype-list-<= sub sup)
-       (not (equal sub sup))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-maybe-jitype-list-meet ((x atj-maybe-jitype-listp)
-                                   (y atj-maybe-jitype-listp))
+                                    (y atj-maybe-jitype-listp))
   :returns (glb atj-maybe-jitype-listp)
   :short "Lift @(tsee atj-maybe-jitype-meet) to lists."
   :long
@@ -618,3 +685,38 @@
                   (atj-maybe-jitype-list-<= z y))
              (atj-maybe-jitype-list-<= z (atj-maybe-jitype-list-meet x y)))
     :enable atj-maybe-jitype-list-<=))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jitype-list-meet ((x atj-jitype-listp)
+                              (y atj-jitype-listp))
+  :guard (= (len x) (len y))
+  :returns (glb atj-maybe-jitype-listp)
+  :short "Lift @(tsee atj-jitype-meet) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done element-wise,
+     stopping when the shorter list is exhausted,
+     and thus discarding the rest of the longer list.")
+   (xdoc::p
+    "We show that this agrees with @(tsee atj-maybe-jitype-list-meet)
+     over lists of ATJ Java input types.
+     Note that @(tsee atj-maybe-jitype-list-meet) has been defined
+     just to show the semilattice properties,
+     but we always want to use, as arguments,
+     lists of ATJ Java input types without @('nil')s of the same length
+     (so we add a length equality requirement to the guard)."))
+  (cond ((endp x) nil)
+        ((endp y) nil)
+        (t (cons (atj-jitype-meet (car x) (car y))
+                 (atj-jitype-list-meet (cdr x) (cdr y)))))
+  ///
+
+  (defruled atj-jitype-list-meet-alt-def
+    (implies (and (atj-jitype-listp x)
+                  (atj-jitype-listp y))
+             (equal (atj-jitype-list-meet x y)
+                    (atj-maybe-jitype-list-meet x y)))
+    :enable (atj-maybe-jitype-list-meet
+             atj-jitype-meet)))

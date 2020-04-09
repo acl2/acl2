@@ -67,10 +67,16 @@
               (acl2-count x)))
   :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n x))))))
 
-;; (defthm nthcdr-iff
-;;   (implies (true-listp x)
-;;            (iff (nthcdr n x)
-;;                 (< n (len x)))))
+(defthm nthcdr-iff
+  (iff (nthcdr n x)
+       (if (< (nfix n) (len x))
+           t
+         (if (equal (nfix n) (len x))
+             ;; If we know true-listp, this simplifies to nil and get merged
+             ;; with the nil branch below.
+             (not (true-listp x))
+           nil)))
+  :hints (("Goal" :in-theory (enable nthcdr))))
 
 (local
  (defthmd not-equal-when-<-of-lens
@@ -163,28 +169,6 @@
 (defthm nthcdr-of-1
   (equal (nthcdr 1 lst)
          (cdr lst))
-  :hints (("Goal" :in-theory (enable nthcdr))))
-
-(defthm nthcdr-iff
-  (implies (and (natp n)
-                (true-listp x))
-           (iff (nthcdr n x)
-                (< n (len x))))
-  :hints (("Goal" :in-theory (enable nthcdr))))
-
-(defthm nthcdr-iff-2
-  (implies (and (natp n)
-                (< n (len x)))
-           (iff (nthcdr n x)
-                t))
-  :hints (("Goal" :in-theory (enable nthcdr))))
-
-(defthm nthcdr-iff-3
-  (implies (and (natp n)
-                (not (true-listp x))
-                (<= n (len x)))
-           (iff (nthcdr n x)
-                t))
   :hints (("Goal" :in-theory (enable nthcdr))))
 
 (defthm equal-of-len-of-nthcdr-and-len

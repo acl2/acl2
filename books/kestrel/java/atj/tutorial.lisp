@@ -15,6 +15,10 @@
 
 ; (depends-on "images/values.png")
 ; (depends-on "images/value-classes.png")
+; (depends-on "images/aij-api.png")
+; (depends-on "images/atj-aij-api.png")
+; (depends-on "images/term-classes.png")
+; (depends-on "images/package-classes.png")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,6 +54,12 @@
 
 (defconst *atj-tutorial-translated*
   "ACL2 Functions Translated To Java")
+
+(defconst *atj-tutorial-deep-guards*
+  "Guards in the Deep Embedding Approach")
+
+(defconst *atj-tutorial-tests*
+  "Generation of Tests")
 
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
@@ -133,9 +143,10 @@
      but it may be already useful in its current incomplete form.
      This tutorial's goal is to provide user-level information
      on how ATJ works and how to use ATJ effectively.
-     The ATJ reference documentation is "
-    (xdoc::seetopic "atj" "here")
-    ", along with some additional information
+     See "
+    (xdoc::seetopic "atj" "the ATJ manual page")
+    " for the ATJ reference documentation,
+     which currently contains some additional information
      that will likely be moved to this tutorial.")
 
    (atj-tutorial-section "Structure of the Tutorial")
@@ -147,14 +158,18 @@
      Both main and auxiliary pages are subtopics of this top-level page.
      The main pages may be navigated sequentially,
      using the `Next' and `Previous' links;
-     these pages should contain all the user-level information
+     these pages contain all the user-level information
      that is necessary to use ATJ effecively.
-     The auxiliary pages are referenced from the main pages as needed;
+     The auxiliary pages are referenced from the main pages;
      they contain additional information
      that may not be strictly necessary to ATJ users,
      such as implementation details;
      however, this information may be useful,
-     and thus users are encouraged to read the auxiliary pages as well.")
+     and thus users are encouraged to read the auxiliary pages as well.
+     When reading this tutorial for the first time,
+     it is suggested to read the main pages sequentially,
+     and (optionally) read the auxiliary pages
+     only when they are referenced by the main pages.")
 
    (atj-tutorial-section "Relationship with the ACL2-2018 Workshop Paper")
 
@@ -876,7 +891,10 @@
    (xdoc::p
     "where @(':deep t') specifies the deep embedding approach
      and @(':guards nil') specifies not to assume the guards' satisfaction
-     (more on this in subsequent tutorial pages).")
+     (more on this in "
+    (xdoc::seetopic "atj-tutorial-deep-guards"
+                    "the tutorial page about guards in the deep embedding")
+    ").")
 
    (xdoc::p
     "As conveyed by the message shown on the screen by ATJ,
@@ -1004,8 +1022,8 @@
    (xdoc::p
     "where @('[books]/...') must be replaced with
      a proper path to the AIJ jar file
-     (see the documentation of "
-    (xdoc::seetopic "aij" "AIJ")
+     (see "
+    (xdoc::seetopic "aij" "the documentation of AIJ")
     " for instructions on how to obtain that jar file.")
 
    (xdoc::p
@@ -1062,7 +1080,7 @@
    (xdoc::p
     "ATJ provides some options to customize the generated Java code,
      in the form of keyword inputs, which are listed in "
-    (xdoc::seetopic "atj" "the reference documentation")
+    (xdoc::seetopic "atj" "the ATJ reference documentation")
     ". This tutorial page covers the simpler options,
      which apply to both "
     (xdoc::seetopic "atj-tutorial-deep-shallow"
@@ -1074,7 +1092,8 @@
 
    (xdoc::p
     "The Java code generated for the factorial function in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " has no @('package') declaration [JLS:7.4],
      which means that the generated class is in an unnamed package [JLS:7.4.2].
      This (i.e. the absence of a @('package') declaration) is the default,
@@ -1082,7 +1101,8 @@
 
    (xdoc::p
     "For the example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", the ATJ call")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :java-package \"mypkg\")")
@@ -1097,7 +1117,8 @@
    (xdoc::p
     "Now that the generated code is in the @('mypkg') package,
      the external Java code exemplified in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " must be adapted, e.g. by putting it into @('mypkg') as well,
      or by referencing the generated Java class
      via the fully qualified name @('mypkg.Acl2Code'),
@@ -1121,7 +1142,8 @@
 
    (xdoc::p
     "The Java class generated for the factorial function in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " is called @('Acl2Code');
      the generated file is called @('Acl2Code.java'),
      thus satisfying the constraint that a public class resides in a file
@@ -1132,7 +1154,8 @@
 
    (xdoc::p
     "For the example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", the ATJ call")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :java-class \"Fact\")")
@@ -1143,7 +1166,8 @@
    (xdoc::p
     "Now that the generated class is called @('Fact'),
      the external Java code exemplified in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " must be adapted, by referencing the generated Java class as @('Fact').")
 
    (xdoc::p
@@ -1157,14 +1181,16 @@
 
    (xdoc::p
     "The Java file generated for the factorial function in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     " resides in the current directory.
      This is the default,
      which can be overridden via ATJ's @(':output-dir') option.")
 
    (xdoc::p
     "For the example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", the ATJ call")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :output-dir \"java\")")
@@ -1230,10 +1256,14 @@
     "When @(':verbose') is @('nil'), which is the default,
      ATJ just prints a short completion message
      about the generated Java file(s).
-     This is mentioned in the factorial function example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+     This is mentioned in the factorial function example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", where a single file is generated.
-     (The generation of multiple files is discussed elsewhere.)")
+     (The generation of multiple files is discussed in "
+    (xdoc::seetopic "atj-tutorial-tests"
+                    "the tutorial page on test generation")
+    ".)")
 
    (atj-tutorial-section "Verbose Screen Output")
 
@@ -1245,10 +1275,13 @@
      and also for debugging.")
 
    (xdoc::p
-    "As discussed in the factorial example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
-    ", and more generally and systematically "
-    (xdoc::seetopic "atj-tutorial-translated" "in this page")
+    "As discussed in the factorial example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ", and more generally and systematically in "
+    (xdoc::seetopic
+     "atj-tutorial-translated"
+     "the tutorial page on the ACL2 functions translated to Java")
     ", ATJ translates to Java not only
      the explicitly supplied target function(s),
      but also the functions that they call directly or indirectly.
@@ -1256,8 +1289,9 @@
      ATJ displays the list of all such functions.")
 
    (xdoc::p
-    "As discussed in the factorial example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    "As discussed in the factorial example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", ATJ generates Java code to build
      Java representations of all the ACL2 packages
      known when ATJ is called.
@@ -1277,8 +1311,9 @@
      messages as it generating Java classes, compilation units, and files.")
 
    (xdoc::p
-    "In the factorial example "
-    (xdoc::seetopic "atj-tutorial-deep" "in this page")
+    "In the factorial example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", verbose screen output can be displayed via ")
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :verbose t)")
@@ -1310,7 +1345,8 @@
 
    (xdoc::p
     "In the factorial function example in "
-    (xdoc::seetopic "atj-tutorial-deep" "this tutorial page")
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
     ", ATJ is called with a single target ACL2 function, @('fact'), as argument.
      As noted in that page, ATJ generates a Java representation
      not only of the @('fact') function,
@@ -1406,8 +1442,9 @@
     (xdoc::li
      "Each function must have no input or output stobjs.
       The reason is that stobjs entail side effects,
-      as explained "
-     (xdoc::seetopic "atj-tutorial-background" "here")
+      as explained in "
+     (xdoc::seetopic "atj-tutorial-background"
+                     "the tutorial page on the ACL2 evaluation semantics")
      ", and side effects are not yet supported by ATJ.")
     (xdoc::li
      "Each function must not have raw Lisp code,
@@ -1488,8 +1525,10 @@
       ATJ treats the call as if it were just @('y');
       if instead ATJ's @(':guards') input is @('t').
       ATJ treats the call as if it were just @('x').
-      The reason for this is explained in more detail elsewhere.
-      However, the other subterm
+      The reason for this is explained in more detail in "
+     (xdoc::seetopic "atj-tutorial-deep-guards"
+                     "the tutorial page on guards in the deep embedding")
+     ". However, the other subterm
       (i.e. @('x') if @(':guards') is @('nil'),
       and @('y') if @(':guards') is @('t'))
       is not completely ignored:
@@ -1526,8 +1565,397 @@
      as also mentioned earlier in this tutorial page.
      This is future work.")
 
-   (atj-tutorial-previous "atj-tutorial-screen-output"
-                          *atj-tutorial-screen-output*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-deep-guards" *atj-tutorial-deep-guards*
+    "atj-tutorial-screen-output" *atj-tutorial-screen-output*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-deep-guards
+
+  :short (atj-tutorial-short *atj-tutorial-deep-guards*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page describes the effect of ATJ's @(':guards') option
+     when @(':deep') is @('t'), i.e. in the "
+    (xdoc::seetopic "atj-tutorial-deep" "deep embedding approach")
+    ". The effect of @(':guards') in the shallow embedding approach
+     is described elsewhere.")
+
+   (atj-tutorial-section "Ignoring Guards")
+
+   (xdoc::p
+    "As briefly noted in the factorial example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ", the option @(':guards nil') specifies
+     not to assume the satisfaction of guards.
+     More precisely, this option tells ATJ that the generated Java code
+     must mimic ACL2's execution in the logic, i.e. ignoring guards completely.
+     (Indeed, "
+    (xdoc::seetopic "atj-tutorial-acl2-environment"
+                    "AIJ's representation of the ACL2 function definitions")
+    " currently does not even include the functions' guards.)")
+
+   (xdoc::p
+    "ACL2's execution in the logic is described "
+    (xdoc::seetopic "acl2::evaluation"
+                    "in the manual page on ACL2 evaluation")
+    ". It means that ACL2 functions, which are total in the logic,
+     may be called on any argument values (inside or outside the guards),
+     and functions will return the corresponding results.
+     For instance, one can call @(tsee car) on a number and obtain @('nil'),
+     or call @(tsee binary-+) on a symbol and a string and obtain 0.")
+
+   (xdoc::p
+    "Accordingly, the @('call(Acl2Symbol, Acl2Value[])') method
+     generated by ATJ (see "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ") accepts any array of @('Acl2Value')s,
+     independently from the guard of the function named by the @('Acl2Symbol'),
+     and return the resulting @('Acl2Value').")
+
+   (xdoc::p
+    "When ACL2 executes in the logic,
+     calls of the form @('(mbe :logic a :exec b)')
+     are executed as just @('a'), ignoring @('b').
+     Untranslated ACL2 terms of the form @('(mbe :logic a :exec b)')
+     are translated to the form @('(return-last \'acl2::mbe1-raw b a)').
+     Therefore, with the option @(':guards nil'),
+     ATJ treats terms @('(return-last \'acl2::mbe1-raw b a)')
+     as if they were just @('a'),
+     for the purpose of generating Java code:
+     that is, ATJ generates Java code for @('a'), ignoring @('b').
+     This is also discussed in "
+    (xdoc::seetopic
+     "atj-tutorial-translated"
+     "the tutorial page on the ACL2 functions translated to Java")
+    ".")
+
+   (atj-tutorial-section "Assuming Guards")
+
+   (xdoc::p
+    "The @(':guards t') option tells ATJ to assume that
+     all guards are satisfied.
+     This assumption is not checked by ATJ.
+     Ideally, it should be only used when the ACL2 functions
+     that ATJ translates to Java are all guard-verified,
+     or at least when the user is confident that
+     guards should be always satisfied.
+     Furthermore, external Java code that calls ATJ-generated code
+     must do so with values that satisfy the guards of the called functions.
+     If any of these assumption of guard satisfaction is violated
+     (whether due to internal calls if guards are not verified,
+     or to external calls even if guards are verified),
+     the Java code generated by ATJ may behave in unpredictable ways.")
+
+   (xdoc::p
+    "It shoulb be possible to extend the code generated by ATJ
+     to check guards under suitable conditions,
+     in particular at the top level (i.e. for calls from external Java code),
+     as ACL2 does by default even for guard-verified code.
+     In fact, it should be possible to mimic "
+    (xdoc::seetopic "acl2::set-guard-checking"
+                    "ACL2's various guard checking modes")
+    " in ATJ-generated Java code.
+     This is future work.")
+
+   (xdoc::p
+    "Currently, in the deep embedding approach,
+     the only effect of assuming guard satisfaction is that
+     for terms @('(return-last \'acl2::mbe1-raw b a)'),
+     which result from translating @('(mbe :logic a :exec b)'),
+     ATJ generates Java code for @('b'), ignoring @('a').
+     Compare this with the description above for @(':guards nil').")
+
+   (xdoc::p
+    "When ACL2 executes in raw Lisp (i.e. not in the logic),
+     calls of the form @('(mbe :logic a :exec b)')
+     are executed as just @('b'), ignoring @('a').
+     Compare this with the description above for execution in the logic.")
+
+   (xdoc::p
+    "Even with @(':guards t'), the @('call(Acl2Symbol, Acl2Value[])') method
+     generated by ATJ (see "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ") accepts any array of @('Acl2Value')s,
+     whether they satisfy the guard of the function named by the @('Acl2Symbol')
+     or not.
+     If they do not, unpredictable behavior may occur.
+     Given that, in the deep embedding approach,
+     the ACL2 functions are executed via "
+    (xdoc::seetopic "atj-tutorial-evaluator" "AIJ's Java interpreter")
+    ", it is natural for all the ACL2 values manipulated by the interpreter
+     to have the same Java type (i.e. @('Acl2Value')),
+     rather than using narrower types derived from the guards.")
+
+   (xdoc::p
+    "Executing the @(':exec') portion of @(tsee mbe)s
+     may be much faster than executing the @(':logic') portion.
+     For example, some fixing functions use @(tsee mbe)
+     to logically fix values without any run-time penalty:
+     the @(':exec') part does nothing,
+     while the @(':logic') part may perform expensive computations,
+     e.g. fix every element of a long list.
+     As another examples, @(tsee mbt)s are really @(tsee mbe)s
+     that do nothing in the @(':exec') part
+     but may perform expensive tests in the @(':logic') part.
+     Thus, if the assumption of guard satisfaction can be supported,
+     it may be advantageous to use @(':guards t')
+     in the deep embedding approach,
+     even if the difference with @(':guards nil')
+     is just the treatment of (translated) @(tsee mbe)s.")
+
+   (xdoc::p
+    "The difference between @(':guards nil') and @(':guards t')
+     is much more significant in the shallow embedding approach.
+     This is described in detail in subsequent pages.")
+
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-tests" *atj-tutorial-tests*
+    "atj-tutorial-translated" *atj-tutorial-translated*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-tests
+
+  :short (atj-tutorial-short *atj-tutorial-tests*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page describes the @(':tests') option of ATJ,
+     which generates additional Java code to run tests specified by the user.
+     We illustrate this option via an example,
+     but also provide more general explanations.")
+
+   (atj-tutorial-section "Defining Some Tests")
+
+   (xdoc::p
+    "Consider again the factorial function @('fact') example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ". Introduce a named constant as follows:")
+   (xdoc::codeblock
+    "(defconst *tests*"
+    "  '((\"Test0\" (fact 0))"
+    "    (\"Test1\" (fact 1))"
+    "    (\"Test2\" (fact 2))"
+    "    (\"Test3\" (fact 3))"
+    "    (\"Test10\" (fact 10))"
+    "    (\"Test20\" (fact 20))"
+    "    (\"Test50\" (fact 50))"
+    "    (\"Test77\" (fact 77))"
+    "    (\"Test100\" (fact 100))))")
+
+   (xdoc::p
+    "The above is a list of tests,
+     each of which is a doublet that consists of
+     a name (a string) and a ground call of the @('fact') function.
+     The names in the list must be all distinct,
+     and may be in any order:
+     their purpose is to describe the relative tests
+     in a human-readable way.
+     Each ground call in the list
+     specifies to check whether
+     executing the ground call in Java
+     yields the same result as executing it in ACL2.
+     The arguments of the ground call must be constants:
+     they must be or translate to quoted constants;
+     they cannot be just any terms that happen to be constant.")
+
+   (xdoc::p
+    "Note that each such test does not explicitly specify
+     the expected result of the ground call.
+     The test simply compares the ACL2 result with the Java result.
+     Thus, the user can quickly define many tests
+     without specifying, or even knowing, the expected results.")
+
+   (xdoc::p
+    "Currently the names of the test must be non-empty strings
+     that only contains (uppercase and lowercase) letters and digits.
+     This makes it easy to turn these names into (parts of) methods names,
+     as explained below.")
+
+   (atj-tutorial-section "Passing the Tests to ATJ")
+
+   (xdoc::p
+    "The tests defined above can be passed to ATJ as follows:")
+   (xdoc::codeblock
+    "(java::atj fact :deep t :guards nil :tests *tests*)")
+
+   (xdoc::p
+    "ATJ's @(':tests') input is evaluated:
+     in the example above, ATJ receives
+     the list of doublets that @('*tests*') evaluates to.
+     In general, one can pass any term as the @(':tests') input,
+     so long as its evaluation yields
+     a true list of doublets in the format explained above.
+     For example, the quoted list that defines @('*tests*')
+     could be passed directly as the @(':tests') input.
+     As another example, one could define
+     several named constants like @('*tests*') above,
+     say @('*tests1*'), @('*tests2*'), etc.,
+     and pass @('(append *tests1* *tests2* ...)') as @(':tests').
+     However, passing a single named constant
+     (which may well be defined as the @(tsee append) of other constants,
+     each for a different group of tests)
+     may be the clearest approach.")
+
+   (xdoc::p
+    "The ground call in a test must be that of a target function.
+     Recall that, as described in "
+    (xdoc::seetopic
+     "atj-tutorial-translated"
+     "the tutorial page on the ACL2 functions translated to Java")
+    ", the target functions are the ones explicitly specified to ATJ
+     (just @('fact') in the example above).
+     Currently ATJ does not support tests that involve ground calls of
+     functions directly or indirectly called by the target functions
+     (such as @(tsee zp) in the @('fact') example above):
+     the rationale is that the target functions are the top-level ones,
+     and thus the one to be tested.
+     This restriction can be relaxed if it turns out to be a burden.")
+
+   (atj-tutorial-section "Generated Test Code")
+
+   (xdoc::p
+    "As conveyed by the message shown on the screen by ATJ,
+     two Java files are generated, in the current directory.
+     The first file, @('Acl2Code.java'), is the same as before.
+     The second file, @('Acl2CodeTests.java'), is new.
+     Opening the second file reveals that it contains
+     a single Java public class called @('Acl2CodeTest').
+     The file imports all the (public) AIJ classes,
+     which are in the @('edu.kestrel.acl2.aij') Java package,
+     and a few classes from the Java standard library.")
+
+   (xdoc::p
+    "The class has a @('main()') method,
+     and can be therefore run as a Java application.
+     The @('main()') method accepts
+     either no inputs or a single integer input,
+     whose meaning is explained later.
+     After validating the input(s)
+     and calling @('Acl2Code.initialize()')
+     (see "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    " for details on the latter),
+     the @('main()') method
+     runs all the tests specified in @(':tests'),
+     one after the other.
+     The class has a private method @('test_<name>()')
+     for each test with name @('<name>');
+     more details on these private methods are given later.
+     After running all the test methods,
+     the @('main()') method prints a summary message
+     saying whether there were test failures or not.")
+
+   (atj-tutorial-section "Compiling and Running the Code")
+
+   (xdoc::p
+    "Both the main file and the test file generated by ATJ
+     can be compiled via")
+   (xdoc::codeblock
+    "javac -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar \\"
+    "      Acl2Code.java Acl2CodeTests.java")
+   (xdoc::p
+    "where @('[books]/...') must be replaced with
+     a proper path to the AIJ jar file
+     (see "
+    (xdoc::seetopic "aij" "the documentation of AIJ")
+    " for instructions on how to obtain that jar file.")
+
+   (xdoc::p
+    "After compiling, the code can be run, without argument, via")
+   (xdoc::codeblock
+    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
+    "     Acl2CodeTest")
+   (xdoc::p
+    "where again @('[books]/...') must be replaced with a proper path.
+     As conveyed by the messages printed on the screen,
+     the tests are run one after the other, and they all pass.
+     The final message saying that all tests passed
+     is more useful when there is a large number of tests,
+     sparing the user from having to visually double-check every line.")
+
+   (xdoc::p
+    "Now trying running the same code with a positive integer argument:")
+   (xdoc::codeblock
+    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
+    "     Acl2CodeTest 10")
+   (xdoc::p
+    "In addition to the messages printed before,
+     now 10 running times are reported for each test,
+     along with a minimum, an average, and a maximum.
+     These tests run very quickly and thus it is likely that
+     all the reported time be @('0.000') or perhaps just @('0.001').
+     Adding and running longer tests such as @('(fact 10000)')
+     will show more interesting numbers.")
+
+   (atj-tutorial-section "A Closer Look at the Test Methods")
+
+   (xdoc::p
+    "All the private static method in the test class @('Acl2CodeTests'),
+     each of which corresponds to one of the user-supplied tests,
+     have a very similar structure.")
+
+   (xdoc::p
+    "Each test methof takes as input a non-negative integer,
+     which is the positive integer passed to the @('main()') method, if any,
+     or 0 if no argument is passed to the @('main()') method.
+     The value 0 means that no execution times should be measured and reported.
+     A positive value means that
+     execution times should be measured and reported,
+     with the positive value specifying how many times the test must be run.
+     As seen in the example above (when the value was 10),
+     the execution time of every run is measured and printed,
+     and minimum, average, and maximum are calculated
+     over those execution times.")
+
+   (xdoc::p
+    "Whether the test passes or not (aside from execution time considerations)
+     is determined by each method as follows.
+     The method first builds
+     the values of the arguments of the call being tested,
+     and the value of the expected result of the call.
+     This expected result value is determined by ATJ
+     when it processes the test in the @(':tests') input:
+     ATJ invokes the ACL2 evaluator to obtain each result value,
+     e.g. it invokes the ACL2 evaluator on the term @('(fact 10)')
+     to obtain the value 3,628,800,
+     and generates Java code, in the test method,
+     that builds the Java representation of that value.
+     For each repetition of the test,
+     the method calls the Java code for the function being tested
+     on the arguments, and compares the result with the expected one.")
+
+   (xdoc::p
+    "Each test method measures the execution time of each repetition
+     by calling @('System.currentTimeMillis()') just before and just after
+     the call of the Java code generated for the function,
+     and by subtracting the two values.
+     Note that the arguments are built once before the loop
+     and stored into local variables, which are accessed at each call.
+     Thus we measure the real time,
+     which may be affected by various kinds of ``noise'',
+     in particular any other running processes.
+     By repeating the tests a number of times (via the numeric argument),
+     and perhaps by attempting to run the tests
+     with as few other processes as possible,
+     should mitigate the noise.")
+
+   (atj-tutorial-previous "atj-tutorial-deep-guards"
+                          *atj-tutorial-deep-guards*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1608,6 +2036,8 @@
      a more specialized representation,
      described in this tutorial page.")
 
+   (atj-tutorial-section "ACL2 Translated Terms")
+
    (xdoc::p
     "The set of ACL2 "
     (xdoc::seetopic "acl2::term" "translated")
@@ -1629,6 +2059,8 @@
      and @('body') is a term,
      whose free variables are all among @('var1'), ..., @('varm')
      (i.e. lambda expressions are always closed).")
+
+   (atj-tutorial-section "Java Classes")
 
    (xdoc::p
     "AIJ represents ACL2 terms in a manner similar to ACL2 values,
@@ -1682,12 +2114,13 @@
      for each "
     (xdoc::seetopic "acl2::primitive" "ACL2 primitive function")
     ": these could not be instances of @('Acl2DefinedFunction'),
-     because they have "
-    (xdoc::seetopic "atj-tutorial-background" "no ACL2 definition")
-    ". There are also instances of @('Acl2NativeFunction')
+     because they have no ACL2 definition.
+     There are also instances of @('Acl2NativeFunction')
      for other built-in ACL2 functions,
      and more may be added in the future,
      particularly for execution efficiency.")
+
+   (atj-tutorial-section "Java Factory and Getter Methods")
 
    (xdoc::p
     "The classes for ACL2 terms (and functions) provide
@@ -1716,6 +2149,8 @@
      may need to unbuild the results obtained by evaluating
      calls of ACL2 functions.")
 
+   (atj-tutorial-section "More Information")
+
    (xdoc::p
     "For more details on AIJ's implementation and API of ACL2 terms,
      see the Javadoc in AIJ's Java code.")))
@@ -1743,6 +2178,8 @@
      this environment consists of package definitions only,
      because in this approach functions are represented as methods
      outside of AIJ.")
+
+   (atj-tutorial-section "Representation of the ACL2 Package Definitions")
 
    (xdoc::p
     "AIJ represents ACL2 packages
@@ -1782,11 +2219,15 @@
      (i.e. before any other symbol can be created).
      See AIJ's Java code and Javadoc for more details.")
 
+   (atj-tutorial-section "Building of the ACL2 Package Definitions")
+
    (xdoc::p
     "The Java code generated by ATJ repeatedly calls the method
      @('Acl2Package.define(Acl2PackageName, List<Acl2Symbol>)')
      to define all the ACL2 packages
      that are known when ATJ was called to generate the Java code.")
+
+   (atj-tutorial-section "Representation of the ACL2 Function Definitions")
 
    (xdoc::p
     "AIJ represents ACL2 functions as decribed in "
@@ -1824,6 +2265,8 @@
      @('Acl2NamedFunction.define(Acl2Symbol[], Acl2Term)')
      always defines that unique instance;
      the method sets the private instance field @('definiens').")
+
+   (atj-tutorial-section "Building of the ACL2 Function Definitions")
 
    (xdoc::p
     "In the "
@@ -1888,6 +2331,8 @@
                     "the deep and shallow embedding approaches")
     ".")
 
+   (atj-tutorial-section "Accessing the Native Implementations")
+
    (xdoc::p
     "These native implementations are run via
      the public static methods @('Acl2NativeFunction.exec...(...)');
@@ -1895,10 +2340,14 @@
     (xdoc::seetopic "atj-tutorial-acl2-terms"
                     "the Java representation of ACL2 terms")
     ". For instance, @('Acl2NativeFunction.execStringp(Acl2Value)')
-     natively implements @(tsee stringp).
-     Some of these methods have overloaded variants,
+     natively implements @(tsee stringp).")
+
+   (xdoc::p
+    "Some of these methods have overloaded variants,
      whose purpose is explained elsewhere;
      for now, just consider the ones with all @('Acl2Value') arguments.")
+
+   (atj-tutorial-section "Scope the Native Implementations")
 
    (xdoc::p
     "Besides native implementations of the ACL2 primitive functions,
@@ -1908,14 +2357,21 @@
      The main motivation is efficiency:
      a native Java implementation can be faster than
      mimicking ACL2's execution (in either the deep or shallow embedding).
-     In fact, this is also why some built-in ACL2 functions have "
-    (xdoc::seetopic "atj-tutorial-background" "raw Lisp code")
-    ", i.e. native Lisp implementations.
-     Another motivation is to avoid "
-    (xdoc::seetopic "atj-tutorial-background" "circularities")
-    " that exist in the ACL2 definitions
-     unless the raw Lisp code is taken into account.
-     More native Java implementations can be added to AIJ as needed;
+     In fact, this is also why some built-in ACL2 functions have raw Lisp code
+     (see the "
+    (xdoc::seetopic "atj-tutorial-background"
+                    "the tutorial page on the ACL2 evaluation semantics")
+    "), i.e. native Lisp implementations.
+     Another motivation is to avoid circularities
+     that exist in the ACL2 definitions
+     unless the raw Lisp code is taken into account
+     (see the "
+    (xdoc::seetopic "atj-tutorial-background"
+                    "the tutorial page on the ACL2 evaluation semantics")
+    ").")
+
+   (xdoc::p
+    "More native Java implementations can be added to AIJ as needed;
      it could be argued that all the ACL2 functions with raw Lisp code
      should be implemented natively in Java in AIJ, for symmetry.
      The only drawback, besides the effort to do that,
@@ -1927,13 +2383,17 @@
      may not entail significantly more effort,
      or at least not ``superlinear'' effort.")
 
+   (atj-tutorial-section "Implementation Approach")
+
    (xdoc::p
     "Generally, AIJ's native Java implementations of ACL2 functions
      are realized by methods in @('Acl2Value') and its subclasses,
      called by the @('Acl2NativeFunction.exec...(...)') methods.
      This takes advantage of Java's dynamic dispatch
-     to avoid checking types at run time.
-     For example, to implement @(tsee stringp),
+     to avoid checking types at run time.")
+
+   (xdoc::p
+    "For example, to implement @(tsee stringp),
      the @('Acl2Value.stringp()') method returns
      (the Java representation of) @('nil');
      this default implementation is inherited
@@ -1943,8 +2403,10 @@
      invokes @('stringp()') on its argument:
      this selects, in constant time,
      either the default implementation or the overriding one,
-     based on the run-time type type of the argument @('Acl2Value').
-     As another example, to implement @(tsee char-code),
+     based on the run-time type type of the argument @('Acl2Value').")
+
+   (xdoc::p
+    "As another example, to implement @(tsee char-code),
      the @('Acl2Value.charCode()') method returns 0,
      because this function's completion axiom says that
      this function returns 0 on non-characters;
@@ -1955,24 +2417,34 @@
      invokes @('charCode()') on its argument:
      this selects, in constant time,
      either the default implementation or the overriding one,
-     based on the run-time type type of the argument @('Acl2Value').
-     The ACL2 primitive functions for arithmetic (e.g. @(tsee binary-+))
+     based on the run-time type type of the argument @('Acl2Value').")
+
+   (xdoc::p
+    "The ACL2 primitive functions for arithmetic (e.g. @(tsee binary-+))
      are implemented by methods in @('Acl2Value') and subclasses
      that exhibit interesting patterns of dynamic dispatch
      and interplay among the methods for different operations;
      see AIJ's code and Javadoc for details.")
 
+   (atj-tutorial-section "Another Possible Implementation Approach")
+
    (xdoc::p
     "Instead of taking advantage of dynamic dispatch,
      an alternative implementation strategy could use
-     run-time type checks and casts.
-     For example, @('Acl2NativeFunction.execStringp(Acl2Value)')
+     run-time type checks and casts.")
+
+   (xdoc::p
+    "For example, @('Acl2NativeFunction.execStringp(Acl2Value)')
      could test whether the argument is an instance of @('Acl2String'),
-     and return @('t') or @('nil') accordingly.
-     As another example, @('Acl2NativeFunction.execCharCode(Acl2Value)')
+     and return @('t') or @('nil') accordingly.")
+
+   (xdoc::p
+    "As another example, @('Acl2NativeFunction.execCharCode(Acl2Value)')
      could test whether the argument is an instance of @('Acl2Character'),
-     and return the character's code or 0 accordingly.
-     It is not clear which approach is more efficient
+     and return the character's code or 0 accordingly.")
+
+   (xdoc::p
+    "It is not clear which approach is more efficient
      (dynamic dispatch or type checks/casts):
      on the one hand, it seems that dynamic dispatch should be more efficient;
      on the other hand, since type checks/casts are relatively frequent in Java,
@@ -1996,15 +2468,27 @@
     ", "
     (xdoc::seetopic "atj-tutorial-aij" "AIJ")
     " provides an ACL2 evaluator written in Java.
-     This evaluator is realized via
+     For ease of exposition and understanding,
+     we first describe
+     (key aspects of) the initial implementation of the evaluator
+     (as it was in earlier versions of AIJ),
+     and then we describe how the current implementation
+     is obtained by optimizing the initial one.")
+
+   (atj-tutorial-section "Java Methods")
+
+   (xdoc::p
+    "The evaluator is realized via
      the implementing methods of the abstract methods
-     @('Acl2Term.eval(Acl2Value[])') and @('Acl2Function.eval(Acl2Value[])';
+     @('Acl2Term.eval(Acl2Value[])') and @('Acl2Function.apply(Acl2Value[])';
      The implementing methods are
      in subclasses of @('Acl2Term') and @('Acl2Function').
      Recall that all these classes provide "
     (xdoc::seetopic "atj-tutorial-acl2-terms"
                     "the Java representation of ACL2 terms")
     ".")
+
+   (atj-tutorial-section "Initial Implementation")
 
    (xdoc::p
     "In early versions of AIJ,
@@ -2055,9 +2539,14 @@
     "This simple and typical evaluation algorithm worked,
      but the evaluation of each variable involved a map lookup.
      The use of hash maps made this lookup essentially constant-time,
-     but still a relatively large constant.
-     Thus, the current version of AIJ uses a more optimized approach,
-     described as follows.")
+     but still a relatively large constant.")
+
+   (atj-tutorial-section "Current Implementation")
+
+   (xdoc::p
+    "The current version of AIJ uses
+     a more optimized approach for variable lookup,
+     described below.")
 
    (xdoc::p
     "Each @('Acl2Variable') instance includes
@@ -2103,9 +2592,11 @@
      except that the bindings are represented as arrays instead of maps.
      The evaluation of terms is mutually recursive with
      the application of functions to values.
-     This ACL2 evaluation is ``in the logic'':
+     This ACL2 evaluation is in the logic:
      guards are completely ignored,
      and in fact not even currently represented in AIJ.")
+
+   (atj-tutorial-section "More Information")
 
    (xdoc::p
     "See the AIJ code and Javadoc for more details on the ACL2 evaluator.")))

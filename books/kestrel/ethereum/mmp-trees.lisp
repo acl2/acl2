@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -188,30 +188,8 @@
                  (enable acl2::true-listp-when-nibble-listp-rewrite)))
   ///
 
-  (fty::deffixequiv mmp-encode-c-forall
-    :args ((map nibblelist-bytelist-mapp) (x natp) (l nibble-listp))
-    :hints (("Goal"
-             :in-theory (disable mmp-encode-c-forall-necc)
-             :use (;; for MAP:
-                   (:instance mmp-encode-c-forall-necc
-                    (map (nibblelist-bytelist-mfix map))
-                    (key (mmp-encode-c-forall-witness map x l)))
-                   (:instance mmp-encode-c-forall-necc
-                    (key (mmp-encode-c-forall-witness
-                          (nibblelist-bytelist-mfix map) x l)))
-                   ;; for X:
-                   (:instance mmp-encode-c-forall-necc
-                    (x (nfix x))
-                    (key (mmp-encode-c-forall-witness map x l)))
-                   (:instance mmp-encode-c-forall-necc
-                    (key (mmp-encode-c-forall-witness map (nfix x) l)))
-                   ;; for L:
-                   (:instance mmp-encode-c-forall-necc
-                    (l (nibble-list-fix l))
-                    (key (mmp-encode-c-forall-witness map x l)))
-                   (:instance mmp-encode-c-forall-necc
-                    (key (mmp-encode-c-forall-witness
-                          map x (nibble-list-fix l))))))))
+  (fty::deffixequiv-sk mmp-encode-c-forall
+    :args ((map nibblelist-bytelist-mapp) (x natp) (l nibble-listp)))
 
   (defrule mmp-encode-c-forall-len-key-geq-x
     (implies (and (mmp-encode-c-forall map x l)
@@ -256,23 +234,10 @@
                (mmp-encode-c-forall map x l)))
   ///
 
-  (fty::deffixequiv mmp-encode-c-exists
-    :args ((map nibblelist-bytelist-mapp) (x natp))
-    :hints (("Goal"
-             :in-theory (disable mmp-encode-c-exists-suff nfix)
-             :use (;; for MAP:
-                   (:instance mmp-encode-c-exists-suff
-                    (l (mmp-encode-c-exists-witness
-                        (nibblelist-bytelist-mfix map) x)))
-                   (:instance mmp-encode-c-exists-suff
-                    (l (mmp-encode-c-exists-witness map x))
-                    (map (nibblelist-bytelist-mfix map)))
-                   ;; for X:
-                   (:instance mmp-encode-c-exists-suff
-                    (l (mmp-encode-c-exists-witness map (nfix x))))
-                   (:instance mmp-encode-c-exists-suff
-                    (l (mmp-encode-c-exists-witness map x))
-                    (x (nfix x)))))))
+  (local (in-theory (disable nfix)))
+
+  (fty::deffixequiv-sk mmp-encode-c-exists
+    :args ((map nibblelist-bytelist-mapp) (x natp)))
 
   (defrule mmp-encode-c-exists-len-key-geq-x
     (implies (and (mmp-encode-c-exists map x)
@@ -450,34 +415,11 @@
     :use (:instance mmp-encode-c-max.elementp-nat-equiv-congruence-on-x
           (x-equiv 0)))
 
-  (fty::deffixequiv mmp-encode-c-max.uboundp
-    :args ((map nibblelist-bytelist-mapp) (x natp))
-    :hints (("Goal"
-             :in-theory (enable mmp-encode-c-max.uboundp)
-             :use (;; for MAP:
-                   (:instance mmp-encode-c-max.uboundp-necc
-                    (map (nibblelist-bytelist-mfix map))
-                    (x1 (mmp-encode-c-max.uboundp-witness map x)))
-                   (:instance mmp-encode-c-max.uboundp-necc
-                    (x1 (mmp-encode-c-max.uboundp-witness
-                         (nibblelist-bytelist-mfix map) x)))
-                   ;; for X:
-                   (:instance mmp-encode-c-max.uboundp-necc
-                    (x (nfix x))
-                    (x1 (mmp-encode-c-max.uboundp-witness map x)))
-                   (:instance mmp-encode-c-max.uboundp-necc
-                    (x1 (mmp-encode-c-max.uboundp-witness map (nfix x))))))))
+  (fty::deffixequiv-sk mmp-encode-c-max.uboundp
+    :args ((map nibblelist-bytelist-mapp) (x natp)))
 
-  (fty::deffixequiv mmp-encode-c-max.existsp
-    :args ((map nibblelist-bytelist-mapp))
-    :hints (("Goal"
-             :in-theory (enable mmp-encode-c-max.existsp)
-             :use ((:instance mmp-encode-c-max.existsp-suff
-                    (x (mmp-encode-c-max.existsp-witness
-                        (nibblelist-bytelist-mfix map))))
-                   (:instance mmp-encode-c-max.existsp-suff
-                    (x (mmp-encode-c-max.existsp-witness map))
-                    (map (nibblelist-bytelist-mfix map)))))))
+  (fty::deffixequiv-sk mmp-encode-c-max.existsp
+    :args ((map nibblelist-bytelist-mapp)))
 
   (defrule mmp-encode-c-max-set-nonempty
     (mmp-encode-c-max.elementp map 0)
@@ -1315,24 +1257,8 @@
   :skolem-name mmp-encoding-witness
   ///
 
-  (fty::deffixequiv mmp-encoding-p
-    :args ((root byte-listp) (database databasep))
-    :hints (("Goal"
-             :in-theory (disable mmp-encoding-p-suff)
-             :use (;; for ROOT:
-                   (:instance mmp-encoding-p-suff
-                    (map (mmp-encoding-witness
-                          (byte-list-fix root) database)))
-                   (:instance mmp-encoding-p-suff
-                    (map (mmp-encoding-witness root database))
-                    (root (byte-list-fix root)))
-                   ;; for DATABASE:
-                   (:instance mmp-encoding-p-suff
-                    (map (mmp-encoding-witness
-                          root (database-fix database))))
-                   (:instance mmp-encoding-p-suff
-                    (map (mmp-encoding-witness root database))
-                    (database (database-fix database))))))))
+  (fty::deffixequiv-sk mmp-encoding-p
+    :args ((root byte-listp) (database databasep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

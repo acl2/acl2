@@ -146,7 +146,18 @@
   ;; Has an under-the-hood implementation
   nil)
 
-(table hons 'slow-alist-warning :break)
+(table hons 'slow-alist-warning
+
+; By default, ensure that the ACL2 user sees any violation of fast alist
+; discipline.
+
+       #-acl2-par :break
+
+; Except: In ACL2(p), when waterfall-parallelism is enabled, hons-get will fail
+; the fast alist discipline when it is called from any any thread other than
+; the top-level thread.  We avoid breaking in that case.
+
+       #+acl2-par :warning)
 
 (defmacro set-slow-alist-action (action)
   (declare (xargs :guard (or (eq action :warning)

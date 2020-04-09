@@ -401,9 +401,11 @@
        (in-types (repeat (len formals)
                          (atj-type-acl2 (atj-atype-value)))) ; irrelevant
        (out-types (list (atj-type-acl2 (atj-atype-value)))) ; irrelevant
+       (out-arrays (list nil)) ; irrelevant
        ((mv formals body &)
-        (atj-pre-translate
-         fn formals body in-types out-types nil t guards$ wrld))
+        (atj-pre-translate fn formals body
+                           in-types out-types out-arrays
+                           nil t guards$ wrld))
        (fn-block (jblock-locvar *aij-type-named-fn*
                                 jvar-function
                                 (jexpr-smethod *aij-type-named-fn*

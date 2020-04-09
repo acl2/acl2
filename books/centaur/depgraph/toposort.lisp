@@ -38,7 +38,7 @@
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 
 (local (in-theory (disable acl2::alist-keys-member-hons-assoc-equal)))
 

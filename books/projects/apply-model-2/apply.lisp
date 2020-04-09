@@ -1267,7 +1267,9 @@
       (cond
        ((symbolp (cadr term))
         (cond
-         ((eq fn (cadr term))
+         ((and (eq fn (cadr term))
+               (not (executable-badge fn wrld)))
+; If fn has a badge upon definition it could only be because of loop$-recursion.
           (mv (msg "~x0 cannot be warranted because a :FN slot in its ~
                     body is occupied by a quoted reference to ~x0 itself; ~
                     recursion through APPLY$ is not permitted!"
@@ -2196,11 +2198,13 @@
         (cond
          ((eq ilk :FN)
           (or (and (symbolp (cadr term))
-                   (not (equal fn (cadr term)))
+                   (or (not (equal fn (cadr term)))
+                       (executable-badge fn wrld))
                    (executable-tamep-functionp (cadr term) wrld))
               (and (consp (cadr term))
                    (and (well-formed-lambdap (cadr term) wrld)
-                        (not (ffnnamep fn (lambda-body (cadr term))))
+                        (or (not (ffnnamep fn (lambda-body (cadr term))))
+                            (executable-badge fn wrld))
                         (executable-tamep-lambdap (cadr term) wrld)))))
          ((eq ilk :EXPR)
           (and (termp (cadr term) wrld)
@@ -2357,7 +2361,7 @@
                      (term-listp terms wrld))
                 (check-ilks-list fn formals new-badge terms ilks wrld))
        :flag guess-ilks-alist-list)
-     :hints (("Subgoal *1/24" :use ((:instance apply$-badgep-executable-badge
+     :hints (("Subgoal *1/26" :use ((:instance apply$-badgep-executable-badge
                                                (fn (car term)))))))
    ))
 

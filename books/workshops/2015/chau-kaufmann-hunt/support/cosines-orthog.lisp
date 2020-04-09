@@ -31,9 +31,7 @@
 (include-book "utils")
 
 (local
- (include-book
-  "nonstd/workshops/2011/reid-gamboa-differentiator/support/sin-cos-minimal"
-  :dir :system))
+ (include-book "nonstd/workshops/2011/reid-gamboa-differentiator/support/sin-cos-minimal" :dir :system))
 (local (include-book "nonstd/integrals/ftc-2" :dir :system))
 
 ;; ======================================================================
@@ -113,6 +111,11 @@
         (n (ifix n))
         (c (realfix c)))
     (cos-orthog-m!=n-primitive-prime x m n c)))
+
+; Added by Matt K. after v8-2 for (HIDE (COMMENT ...)) change:
+(defattach-system ; generates (local (defattach ...))
+  hide-with-comment-p
+  constant-nil-function-arity-0)
 
 (defthm realp-cos-orthog-m!=n
   (realp (cos-orthog-m!=n x m n c))

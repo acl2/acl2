@@ -12,6 +12,8 @@
 
 (include-book "floating-point-placeholders")
 
+(include-book "kestrel/fty/defflatsum" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-values
@@ -52,7 +54,7 @@
                (equal x (boolean-value nil))))
     :enable boolean-value-p))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-value
   :short "Fixtype of Java @('char') values [JLS:4.2.1]."
@@ -68,7 +70,7 @@
              acl2::ubyte16p
              acl2::ubyte16-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod byte-value
   :short "Fixtype of Java @('byte') values [JLS:4.2.1]."
@@ -91,7 +93,7 @@
              acl2::sbyte8p
              acl2::sbyte8-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod short-value
   :short "Fixtype of Java @('short') values [JLS:4.2.1]."
@@ -114,7 +116,7 @@
              acl2::sbyte16p
              acl2::sbyte16-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod int-value
   :short "Fixtype of Java @('int') values [JLS:4.2.1]."
@@ -137,7 +139,7 @@
              acl2::sbyte32p
              acl2::sbyte32-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod long-value
   :short "Fixtype of Java @('long') values [JLS:4.2.1]."
@@ -160,7 +162,7 @@
              acl2::sbyte64p
              acl2::sbyte64-fix)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod float-value
   :short "Fixtype of Java @('float') values
@@ -169,7 +171,7 @@
   :tag :float
   :layout :list)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod double-value
   :short "Fixtype of Java @('double') values
@@ -177,6 +179,78 @@
   ((double double-value-abs))
   :tag :double
   :layout :list)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist boolean-value-list
+  :short "Fixtype of true lists of Java @('boolean') values."
+  :elt-type boolean-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred boolean-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist char-value-list
+  :short "Fixtype of true lists of Java @('char') values."
+  :elt-type char-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred char-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist byte-value-list
+  :short "Fixtype of true lists of Java @('byte') values."
+  :elt-type byte-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred byte-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist short-value-list
+  :short "Fixtype of true lists of Java @('short') values."
+  :elt-type short-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred short-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist int-value-list
+  :short "Fixtype of true lists of Java @('int') values."
+  :elt-type int-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred int-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist long-value-list
+  :short "Fixtype of true lists of Java @('long') values."
+  :elt-type long-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred long-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist float-value-list
+  :short "Fixtype of true lists of Java @('float') values."
+  :elt-type float-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred float-value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist double-value-list
+  :short "Fixtype of true lists of Java @('double') values."
+  :elt-type double-value
+  :true-listp t
+  :elementp-of-nil nil
+  :pred double-value-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,7 +322,7 @@
                       (floatx-value-abs-fix x)))
       :enable floatx-value)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection doublex-value-fns
   :short "Recognizer, fixer, constructor, and destructor of
@@ -320,88 +394,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum integral-value
+(fty::defflatsum integral-value
   :short "Fixtype of Java integral values [JLS:4.2.1]."
-  (:char
-   :fields ((get :type char-value :acc-body x))
-   :ctor-body get
-   :cond (char-value-p x))
-  (:byte
-   :fields ((get :type byte-value :acc-body x))
-   :ctor-body get
-   :cond (byte-value-p x))
-  (:short
-   :fields ((get :type short-value :acc-body x))
-   :ctor-body get
-   :cond (short-value-p x))
-  (:int
-   :fields ((get :type int-value :acc-body x))
-   :ctor-body get
-   :cond (int-value-p x))
-  (:long
-   :fields ((get :type long-value :acc-body x))
-   :ctor-body get)
-  :prepwork ((local (in-theory (enable char-value-p
-                                       byte-value-p
-                                       short-value-p
-                                       int-value-p
-                                       long-value-p
-                                       char-value-fix
-                                       byte-value-fix
-                                       short-value-fix
-                                       int-value-fix
-                                       long-value-fix))))
-  ///
-
-  (local (in-theory (enable integral-value-p)))
-
-  (defrule integral-value-p-when-char-value-p
-    (implies (char-value-p x)
-             (integral-value-p x)))
-
-  (defrule integral-value-p-when-byte-value-p
-    (implies (byte-value-p x)
-             (integral-value-p x)))
-
-  (defrule integral-value-p-when-short-value-p
-    (implies (short-value-p x)
-             (integral-value-p x)))
-
-  (defrule integral-value-p-when-int-value-p
-    (implies (int-value-p x)
-             (integral-value-p x)))
-
-  (defrule integral-value-p-when-long-value-p
-    (implies (long-value-p x)
-             (integral-value-p x))))
+  (:char char-value)
+  (:byte byte-value)
+  (:short short-value)
+  (:int int-value)
+  (:long long-value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum floating-point-value
+(fty::defflatsum floating-point-value
   :short "Fixtype of Java floating-point values [JLS:4.2.3],
           excluding extended-exponent values [JLS:4.2.3]."
-  (:float
-   :fields ((get :type float-value :acc-body x))
-   :ctor-body get
-   :cond (float-value-p x))
-  (:double
-   :fields ((get :type double-value :acc-body x))
-   :ctor-body get)
-  :prepwork ((local (in-theory (enable float-value-p
-                                       double-value-p
-                                       float-value-fix
-                                       double-value-fix))))
-  ///
-
-  (local (in-theory (enable floating-point-value-p)))
-
-  (defrule floating-point-value-p-when-float-value-p
-    (implies (float-value-p x)
-             (floating-point-value-p x)))
-
-  (defrule floating-point-value-p-when-double-value-p
-    (implies (double-value-p x)
-             (floating-point-value-p x))))
+  (:float float-value)
+  (:double double-value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -444,66 +451,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum numeric-value
+(fty::defflatsum numeric-value
   :short "Fixtype of Java numeric values [JLS:4.2],
           excluding extended-exponent values [JLS:4.2.3]."
-  (:char
-   :fields ((get :type char-value :acc-body x))
-   :ctor-body get
-   :cond (char-value-p x))
-  (:byte
-   :fields ((get :type byte-value :acc-body x))
-   :ctor-body get
-   :cond (byte-value-p x))
-  (:short
-   :fields ((get :type short-value :acc-body x))
-   :ctor-body get
-   :cond (short-value-p x))
-  (:int
-   :fields ((get :type int-value :acc-body x))
-   :ctor-body get
-   :cond (int-value-p x))
-  (:long
-   :fields ((get :type long-value :acc-body x))
-   :ctor-body get
-   :cond (long-value-p x))
-  (:float
-   :fields ((get :type float-value :acc-body x))
-   :ctor-body get
-   :cond (float-value-p x))
-  (:double
-   :fields ((get :type double-value :acc-body x))
-   :ctor-body get)
-  :prepwork ((local (in-theory (enable char-value-p
-                                       byte-value-p
-                                       short-value-p
-                                       int-value-p
-                                       long-value-p
-                                       float-value-p
-                                       double-value-p
-                                       char-value-fix
-                                       byte-value-fix
-                                       short-value-fix
-                                       int-value-fix
-                                       long-value-fix
-                                       float-value-fix
-                                       double-value-fix))))
-  ///
+  (:char char-value)
+  (:byte byte-value)
+  (:short short-value)
+  (:int int-value)
+  (:long long-value)
+  (:float float-value)
+  (:double double-value))
 
-  (local (in-theory (enable numeric-value-p)))
-
+(defsection numeric-value-ext
+  :extension numeric-value
   (defrule numeric-value-p-when-integral-value-p
     (implies (integral-value-p x)
              (numeric-value-p x))
-    :enable integral-value-p)
-
-  (defrule numeric-value-p-when-float-value-p
-    (implies (float-value-p x)
-             (numeric-value-p x)))
-
-  (defrule numeric-value-p-when-double-value-p
-    (implies (double-value-p x)
-             (numeric-value-p x))))
+    :enable integral-value-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -546,64 +510,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum primitive-value
+(fty::defflatsum primitive-value
   :short "Fixtype of Java primitive values [JLS:4.2],
           excluding extended-exponent values [JLS:4.2.3]."
-  (:boolean
-   :fields ((get :type boolean-value :acc-body x))
-   :ctor-body get
-   :cond (boolean-value-p x))
-  (:char
-   :fields ((get :type char-value :acc-body x))
-   :ctor-body get
-   :cond (char-value-p x))
-  (:byte
-   :fields ((get :type byte-value :acc-body x))
-   :ctor-body get
-   :cond (byte-value-p x))
-  (:short
-   :fields ((get :type short-value :acc-body x))
-   :ctor-body get
-   :cond (short-value-p x))
-  (:int
-   :fields ((get :type int-value :acc-body x))
-   :ctor-body get
-   :cond (int-value-p x))
-  (:long
-   :fields ((get :type long-value :acc-body x))
-   :ctor-body get
-   :cond (long-value-p x))
-  (:float
-   :fields ((get :type float-value :acc-body x))
-   :ctor-body get
-   :cond (float-value-p x))
-  (:double
-   :fields ((get :type double-value :acc-body x))
-   :ctor-body get)
-  :prepwork ((local (in-theory (enable boolean-value-p
-                                       char-value-p
-                                       byte-value-p
-                                       short-value-p
-                                       int-value-p
-                                       long-value-p
-                                       float-value-p
-                                       double-value-p
-                                       boolean-value-fix
-                                       char-value-fix
-                                       byte-value-fix
-                                       short-value-fix
-                                       int-value-fix
-                                       long-value-fix
-                                       float-value-fix
-                                       double-value-fix))))
-  ///
+  (:boolean boolean-value)
+  (:char char-value)
+  (:byte byte-value)
+  (:short short-value)
+  (:int int-value)
+  (:long long-value)
+  (:float float-value)
+  (:double double-value))
 
-  (local (in-theory (enable primitive-value-p)))
-
-  (defrule primitive-value-p-when-boolean-value-p
-    (implies (boolean-value-p x)
-             (primitive-value-p x)))
-
+(defsection primitive-value-ext
+  :extension primitive-value
   (defrule primitive-value-p-when-numeric-value-p
     (implies (numeric-value-p x)
              (primitive-value-p x))

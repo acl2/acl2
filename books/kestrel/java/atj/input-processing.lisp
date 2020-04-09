@@ -386,12 +386,12 @@
      If the checks succeed, we turn @('in') into
      the corresponding test value.
      Note that these checks imply that @('in') is ground."))
-  (b* ((irrelevant (atj-test-value-avalue :irrelevant))
+  (b* ((irrelevant (atj-test-value-acl2 :irrelevant))
        ((when (or deep$
                   (not guards$)
                   (atj-type-case type :acl2)))
         (if (quotep input)
-            (value (atj-test-value-avalue (unquote-term input)))
+            (value (atj-test-value-acl2 (unquote-term input)))
           (er-soft+ ctx t irrelevant
                     "The term ~x0 that is an argument of ~
                      the function call (~x1 ...) that translates ~
@@ -406,14 +406,14 @@
              ((when erp) (mv erp irrelevant state)))
           (value (primitive-type-case
                   ptype
-                  :boolean (atj-test-value-jvalue-boolean value)
-                  :char (atj-test-value-jvalue-char value)
-                  :byte (atj-test-value-jvalue-byte value)
-                  :short (atj-test-value-jvalue-short value)
-                  :int (atj-test-value-jvalue-int value)
-                  :long (atj-test-value-jvalue-long value)
-                  :float (atj-test-value-avalue :irrelevant)
-                  :double (atj-test-value-avalue :irrelevant)))))
+                  :boolean (atj-test-value-jboolean value)
+                  :char (atj-test-value-jchar value)
+                  :byte (atj-test-value-jbyte value)
+                  :short (atj-test-value-jshort value)
+                  :int (atj-test-value-jint value)
+                  :long (atj-test-value-jlong value)
+                  :float (atj-test-value-acl2 :irrelevant)
+                  :double (atj-test-value-acl2 :irrelevant)))))
        (ptype (atj-type-jprimarr->comp type))
        ((when (or (primitive-type-case ptype :float)
                   (primitive-type-case ptype :double)))
@@ -456,18 +456,12 @@
     (value
      (primitive-type-case
       ptype
-      :boolean (atj-test-value-jvalue-boolean-array
-                (boolean-array-with-comps values))
-      :char (atj-test-value-jvalue-char-array
-             (char-array-with-comps values))
-      :byte (atj-test-value-jvalue-byte-array
-             (byte-array-with-comps values))
-      :short (atj-test-value-jvalue-short-array
-              (short-array-with-comps values))
-      :int (atj-test-value-jvalue-int-array
-            (int-array-with-comps values))
-      :long (atj-test-value-jvalue-long-array
-             (long-array-with-comps values))
+      :boolean (atj-test-value-jboolean[] (boolean-array-with-comps values))
+      :char (atj-test-value-jchar[] (char-array-with-comps values))
+      :byte (atj-test-value-jbyte[] (byte-array-with-comps values))
+      :short (atj-test-value-jshort[] (short-array-with-comps values))
+      :int (atj-test-value-jint[] (int-array-with-comps values))
+      :long (atj-test-value-jlong[] (long-array-with-comps values))
       :float irrelevant
       :double irrelevant))))
 
@@ -620,22 +614,23 @@
                     (list output/outputs)
                   output/outputs))
        ((when (or deep$ (not guards$)))
-        (b* ((test-outputs (atj-test-value-avalue-list outputs)))
+        (b* ((test-outputs (atj-test-value-acl2-list outputs)))
           (value (atj-test name fn test-inputs test-outputs))))
        (in-types (atj-test-values-to-types test-inputs))
        (all-fn-types (cons main-fn-type other-fn-types))
-       (out-types? (atj-output-types-of-min-input-types in-types all-fn-types))
-       ((when (null out-types?))
+       (fn-type? (atj-function-type-of-min-input-types in-types all-fn-types))
+       ((when (null fn-type?))
         (value (raise "Internal error: ~
                        the test term ~x0 in the :TESTS input ~
                        does not have a corresponding Java overloaded method."
                       call)))
-       ((unless (= (len outputs) (len out-types?)))
+       (out-types (atj-function-type->outputs fn-type?))
+       ((unless (= (len outputs) (len out-types)))
         (value (raise "Internal error: ~
                        the number of results ~x0 of ~x1 ~
                        does not match the number ~x2 of its output types."
-                      (len outputs) fn (len out-types?))))
-       (test-outputs (atj-test-values-of-types outputs out-types?)))
+                      (len outputs) fn (len out-types))))
+       (test-outputs (atj-test-values-of-types outputs out-types)))
     (value (atj-test name fn test-inputs test-outputs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
