@@ -314,7 +314,9 @@
                            ;; accessors.  XDOC will put them at the end in
                            ;; alphabetical order.
                            `((xdoc::order-subtopics ,foo
-                             (,foo-p ,foo-fix ,make-foo ,change-foo))))))
+                             (,foo-p ,foo-fix
+                                     ,@(and (not prod.no-ctor-macros)
+                                            `(,make-foo ,change-foo))))))))
     (mv doc-events state)))
 
 (defun deftagsum-prod-doc (sum  ; the containing sum type
@@ -349,7 +351,8 @@
        )
     (mv (append top-doc
                 make/change
-                `((xdoc::order-subtopics ,prod.type-name (,make-foo ,change-foo)))
+                (and (not prod.no-ctor-macros)
+                     `((xdoc::order-subtopics ,prod.type-name (,make-foo ,change-foo))))
                 )
         state)))
 
