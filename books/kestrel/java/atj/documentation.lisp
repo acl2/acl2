@@ -485,7 +485,7 @@
        (xdoc::li
         "If the type is @(':jboolean[]'),
          then @('in') must be a term
-         @('(java::boolean-array-with-comps <booleans>)')
+         @('(java::boolean-array <booleans>)')
          where @('<booleans>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::boolean-value <boolean>)')
@@ -493,7 +493,7 @@
        (xdoc::li
         "If the type is @(':jchar[]'),
          then @('in') must be a term
-         @('(java::char-array-with-comps <chars>)')
+         @('(java::char-array <chars>)')
          where @('<chars>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::char-value <char>)')
@@ -501,7 +501,7 @@
        (xdoc::li
         "If the type is @(':jbyte[]'),
          then @('in') must be a term
-         @('(java::byte-array-with-comps <bytes>)')
+         @('(java::byte-array <bytes>)')
          where @('<bytes>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::byte-value <byte>)')
@@ -509,7 +509,7 @@
        (xdoc::li
         "If the type is @(':jshort[]'),
          then @('in') must be a term
-         @('(java::short-array-with-comps <short>)')
+         @('(java::short-array <short>)')
          where @('<short>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::short-value <short>)')
@@ -517,7 +517,7 @@
        (xdoc::li
         "If the type is @(':jint[]'),
          then @('in') must be a term
-         @('(java::int-array-with-comps <ints>)')
+         @('(java::int-array <ints>)')
          where @('<ints>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::int-value <int>)')
@@ -525,7 +525,7 @@
        (xdoc::li
         "If the type is @(':jlong[]'),
          then @('in') must be a term
-         @('(java::long-array-with-comps <longs>)')
+         @('(java::long-array <longs>)')
          where @('<longs>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::long-value <long>)')
@@ -549,12 +549,12 @@
       @('(java::short-value <short>)'),
       @('(java::int-value <int>)'),
       @('(java::long-value <long>)'),
-      @('(java::boolean-array-with-comps <booleans>)'),
-      @('(java::char-array-with-comps <chars>)'),
-      @('(java::byte-array-with-comps <bytes>)'),
-      @('(java::short-array-with-comps <shorts>)'),
-      @('(java::int-array-with-comps <ints>)'), or
-      @('(java::long-array-with-comps <longs>)')
+      @('(java::boolean-array <booleans>)'),
+      @('(java::char-array <chars>)'),
+      @('(java::byte-array <bytes>)'),
+      @('(java::short-array <shorts>)'),
+      @('(java::int-array <ints>)'), or
+      @('(java::long-array <longs>)')
       can be used only for ACL2 functions that have
       the ATJ type
       @(':jboolean'),
