@@ -1637,6 +1637,22 @@
 ; advantage of ruler-extenders.  If merge-p is false, then the first returned
 ; value is irrelevant.
 
+; Here are some ideas we expressed about merge-p in the "to do" list, which we
+; may want to consider at some point:
+
+;   At the end of Oct. 2009 we modified induction-machine-for-fn1 by giving
+;   prog2$ and some other ruler-extenders special handling to avoid the
+;   merge-p=t heuristic when there is only one argument with recursive calls.
+;   It might be good to re-think the merge-p argument entirely -- maybe for
+;   example we could eliminate it, and simply do the merge-p on the fly when
+;   appropriate -- e.g., if there is only one argument with recursive calls,
+;   just throw out the tests-and-cases for the other arguments, and otherwise
+;   do the merging (either by recomputing or by merging on-the-fly) for all
+;   arguments before cross-tests-and-calls.
+;
+;   At any rate, maybe we should add a bit of documentation to the end of
+;   ruler-extenders about merge-p.
+
 ; Note: Perhaps some calls of reverse can be omitted, though that might ruin
 ; some regressions.  Our main concern for replayability has probably been the
 ; order of the tests, not so much the order of the calls.
@@ -2050,7 +2066,7 @@
   (case-match p
     (('IF ('IF q ''NIL ''T) ''NIL ''T) q)
     (('NOT ('IF q ''NIL ''T)) q)
-    (('IF ('NOT q) ''NIL ''T) q)    
+    (('IF ('NOT q) ''NIL ''T) q)
     (('NOT ('NOT q)) q)
     (('IF q ''NIL ''T) `(NOT ,q))
     (& p)))
@@ -9749,7 +9765,7 @@
                                    names
                                    arglists
                                    (get-bodies fives)
-; bindings0 = 
+; bindings0 =
                                    (if (car loop$-recursion-lst)
                                        (list (cons (car names) '(NIL)))
                                        (pairlis$ names names))
