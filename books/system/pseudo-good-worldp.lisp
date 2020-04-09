@@ -2646,7 +2646,8 @@
 ; The form of an untranslated theorem is quite arbitrary, because of macros.
 
   (declare (ignore sym))
-  (true-listp val))
+  (or (atom val)
+      (true-listp val)))
 
 ; -----------------------------------------------------------------
 
