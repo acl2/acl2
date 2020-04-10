@@ -49,8 +49,10 @@
   :short "Compilation from (sized) @(see vl::vl) expressions into @(see
 sv::svex) expressions."
 
-  :long "<p>The top-level function for converting a VL expression into a @(see
-sv::svex) expression is @(see vl-expr-to-svex).</p>
+  :long "<p>There are several top-level functions for converting a VL
+expression into a @(see sv::svex) expression, including @(see
+vl-expr-to-svex-untyped), @(see vl-expr-to-svex-selfdet), and @(see
+vl-expr-to-svex-maybe-typed).</p>
 
 <p>We assume that the expressions we are dealing with are sized.</p>
 
@@ -5100,6 +5102,7 @@ functions can assume all bits of it are good.</p>"
                                      (ss vl-scopestack-p)
                                      (scopes vl-elabscopes-p)
                                      &key ((compattype vl-typecompat-p) ':equiv))
+  :short "Convert an expression to svex, maybe given a datatype that it needs to match."
   :guard (or (not type) (vl-datatype-resolved-p type))
   :guard-debug t
   :guard-hints (("goal" :in-theory (enable vl-maybe-datatype-p)))

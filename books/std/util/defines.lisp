@@ -729,7 +729,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                      (xdoc::get-default-parents world)))
        (fnnames    (collect-names-from-guts gutslist))
 
-       (want-xdoc-p (or short long parents))
+       (want-xdoc-p (or short long parents-p))
 
        ((mv short long parents kwd-alist gutslist)
         (if (and want-xdoc-p (member name fnnames))
@@ -817,7 +817,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
     `(,@(if prognp '(progn) '(encapsulate nil))
        (with-output :stack :pop (progn . ,prepwork))
        (defsection-progn ,name
-         ,@(and parents `(:parents ,parents))
+         ,@(and parents-p `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
          (with-output :on (error) (progn . ,macros))
