@@ -628,5 +628,5 @@ rp::preserve-current-theory). This utility will work with current theory of any 
 (xdoc::defxdoc
  rp-other-utilities
  :short "Some names that are aliases to other tools"
- :parent (rp-utilities)
+ :parents (rp-utilities)
  )
