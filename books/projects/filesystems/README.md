@@ -24,15 +24,7 @@ ACL2 (the ACL2 executable, likely to be $ACL2/saved_acl2) below.
 
 $ ACL2_DIR/books/build/cert.pl --acl2 ACL2 *.lisp
 
-Alternatively, the filesystem models can be certified through the
-normal process of building the ACL2 books, explained on the ACL2
-[installation
-page](http://www.cs.utexas.edu/users/moore/acl2/v8-2/HTML/installation/installation.html). Replacing
-the "make basic" command in step 4 with "make regression-everything"
-will build the filesystem books; this is simpler than using cert.pl
-although it takes longer.
-
-Either way, the certification must be completed before attempting the
+This certification must be completed before attempting the co-simulation
 tests, which are located in the test/ subdirectory. This subdirectory
 has its own Makefile, which can be invoked as follows, again
 substituting a proper value for ACL2.
@@ -57,7 +49,7 @@ implementation (SBCL) causes some tests to fail, on account of
 inconsistent handling of command line arguments by
 [oslib::argv](http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=OSLIB____ARGV). The
 ACL2 installation page points to instructions for
-[obtaining](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/requirements.html#Obtaining-CCL)
+[obtaining](http://www.cs.utexas.edu/users/moore/acl2/v8-2/HTML/installation/requirements.html#Obtaining-CCL)
 and
-[installing](http://www.cs.utexas.edu/users/moore/acl2/v8-1/HTML/installation/ccl.html)
+[installing](http://www.cs.utexas.edu/users/moore/acl2/v8-2/HTML/installation/ccl.html)
 CCL.

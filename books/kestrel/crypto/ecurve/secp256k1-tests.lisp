@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,8 @@
 (include-book "secp256k1")
 
 (include-book "kestrel/crypto/sha-2/sha-256" :dir :system) ; for pseudo-random
+
+(include-book "std/testing/assert-equal" :dir :system)
 
 
 ;; --------------------------------

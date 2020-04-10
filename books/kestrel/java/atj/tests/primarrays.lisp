@@ -33,42 +33,54 @@
   (declare
    (xargs :guard (and (java::boolean-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i)))))
+                      (integer-range-p 0
+                                       (len (java::boolean-array->components a))
+                                       (java::int-value->int i)))))
   (java::boolean-array-read a i))
 
 (defun test-char-array-read (a i)
   (declare
    (xargs :guard (and (java::char-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i)))))
+                      (integer-range-p 0
+                                       (len (java::char-array->components a))
+                                       (java::int-value->int i)))))
   (java::char-array-read a i))
 
 (defun test-byte-array-read (a i)
   (declare
    (xargs :guard (and (java::byte-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i)))))
+                      (integer-range-p 0
+                                       (len (java::byte-array->components a))
+                                       (java::int-value->int i)))))
   (java::byte-array-read a i))
 
 (defun test-short-array-read (a i)
   (declare
    (xargs :guard (and (java::short-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i)))))
+                      (integer-range-p 0
+                                       (len (java::short-array->components a))
+                                       (java::int-value->int i)))))
   (java::short-array-read a i))
 
 (defun test-int-array-read (a i)
   (declare
    (xargs :guard (and (java::int-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i)))))
+                      (integer-range-p 0
+                                       (len (java::int-array->components a))
+                                       (java::int-value->int i)))))
   (java::int-array-read a i))
 
 (defun test-long-array-read (a i)
   (declare
    (xargs :guard (and (java::long-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i)))))
+                      (integer-range-p 0
+                                       (len (java::long-array->components a))
+                                       (java::int-value->int i)))))
   (java::long-array-read a i))
 
 ;; array length operations:
@@ -103,7 +115,9 @@
   (declare
    (xargs :guard (and (java::boolean-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (integer-range-p 0
+                                       (len (java::boolean-array->components a))
+                                       (java::int-value->int i))
                       (java::boolean-value-p e))))
   (java::boolean-array-write a i e))
 
@@ -111,7 +125,9 @@
   (declare
    (xargs :guard (and (java::char-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (integer-range-p 0
+                                       (len (java::char-array->components a))
+                                       (java::int-value->int i))
                       (java::char-value-p e))))
   (java::char-array-write a i e))
 
@@ -119,7 +135,9 @@
   (declare
    (xargs :guard (and (java::byte-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (integer-range-p 0
+                                       (len (java::byte-array->components a))
+                                       (java::int-value->int i))
                       (java::byte-value-p e))))
   (java::byte-array-write a i e))
 
@@ -127,7 +145,9 @@
   (declare
    (xargs :guard (and (java::short-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (integer-range-p 0
+                                       (len (java::short-array->components a))
+                                       (java::int-value->int i))
                       (java::short-value-p e))))
   (java::short-array-write a i e))
 
@@ -135,7 +155,9 @@
   (declare
    (xargs :guard (and (java::int-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (integer-range-p 0
+                                       (len (java::int-array->components a))
+                                       (java::int-value->int i))
                       (java::int-value-p e))))
   (java::int-array-write a i e))
 
@@ -143,7 +165,9 @@
   (declare
    (xargs :guard (and (java::long-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0 (len a) (java::int-value->int i))
+                      (integer-range-p 0
+                                       (len (java::long-array->components a))
+                                       (java::int-value->int i))
                       (java::long-value-p e))))
   (java::long-array-write a i e))
 
@@ -182,80 +206,80 @@
 ;; array creation with no components:
 
 (defun test-boolean-array-with-comps-0 ()
-  (java::boolean-array-with-comps nil))
+  (java::boolean-array nil))
 
 (defun test-char-array-with-comps-0 ()
-  (java::char-array-with-comps nil))
+  (java::char-array nil))
 
 (defun test-byte-array-with-comps-0 ()
-  (java::byte-array-with-comps nil))
+  (java::byte-array nil))
 
 (defun test-short-array-with-comps-0 ()
-  (java::short-array-with-comps nil))
+  (java::short-array nil))
 
 (defun test-int-array-with-comps-0 ()
-  (java::int-array-with-comps nil))
+  (java::int-array nil))
 
 (defun test-long-array-with-comps-0 ()
-  (java::long-array-with-comps nil))
+  (java::long-array nil))
 
 ;; array creation with one component:
 
 (defun test-boolean-array-with-comps-1 (x)
   (declare (xargs :guard (java::boolean-value-p x)))
-  (java::boolean-array-with-comps (list x)))
+  (java::boolean-array (list x)))
 
 (defun test-char-array-with-comps-1 (x)
   (declare (xargs :guard (java::char-value-p x)))
-  (java::char-array-with-comps (list x)))
+  (java::char-array (list x)))
 
 (defun test-byte-array-with-comps-1 (x)
   (declare (xargs :guard (java::byte-value-p x)))
-  (java::byte-array-with-comps (list x)))
+  (java::byte-array (list x)))
 
 (defun test-short-array-with-comps-1 (x)
   (declare (xargs :guard (java::short-value-p x)))
-  (java::short-array-with-comps (list x)))
+  (java::short-array (list x)))
 
 (defun test-int-array-with-comps-1 (x)
   (declare (xargs :guard (java::int-value-p x)))
-  (java::int-array-with-comps (list x)))
+  (java::int-array (list x)))
 
 (defun test-long-array-with-comps-1 (x)
   (declare (xargs :guard (java::long-value-p x)))
-  (java::long-array-with-comps (list x)))
+  (java::long-array (list x)))
 
 ;; array creation with two components:
 
 (defun test-boolean-array-with-comps-2 (x y)
   (declare (xargs :guard (and (java::boolean-value-p x)
                               (java::boolean-value-p y))))
-  (java::boolean-array-with-comps (list x y)))
+  (java::boolean-array (list x y)))
 
 (defun test-char-array-with-comps-2 (x y)
   (declare (xargs :guard (and (java::char-value-p x)
                               (java::char-value-p y))))
-  (java::char-array-with-comps (list x y)))
+  (java::char-array (list x y)))
 
 (defun test-byte-array-with-comps-2 (x y)
   (declare (xargs :guard (and (java::byte-value-p x)
                               (java::byte-value-p y))))
-  (java::byte-array-with-comps (list x y)))
+  (java::byte-array (list x y)))
 
 (defun test-short-array-with-comps-2 (x y)
   (declare (xargs :guard (and (java::short-value-p x)
                               (java::short-value-p y))))
-  (java::short-array-with-comps (list x y)))
+  (java::short-array (list x y)))
 
 (defun test-int-array-with-comps-2 (x y)
   (declare (xargs :guard (and (java::int-value-p x)
                               (java::int-value-p y))))
-  (java::int-array-with-comps (list x y)))
+  (java::int-array (list x y)))
 
 (defun test-long-array-with-comps-2 (x y)
   (declare (xargs :guard (and (java::long-value-p x)
                               (java::long-value-p y))))
-  (java::long-array-with-comps (list x y)))
+  (java::long-array (list x y)))
 
 ;; array creation with three components:
 
@@ -263,37 +287,37 @@
   (declare (xargs :guard (and (java::boolean-value-p x)
                               (java::boolean-value-p y)
                               (java::boolean-value-p z))))
-  (java::boolean-array-with-comps (list x y z)))
+  (java::boolean-array (list x y z)))
 
 (defun test-char-array-with-comps-3 (x y z)
   (declare (xargs :guard (and (java::char-value-p x)
                               (java::char-value-p y)
                               (java::char-value-p z))))
-  (java::char-array-with-comps (list x y z)))
+  (java::char-array (list x y z)))
 
 (defun test-byte-array-with-comps-3 (x y z)
   (declare (xargs :guard (and (java::byte-value-p x)
                               (java::byte-value-p y)
                               (java::byte-value-p z))))
-  (java::byte-array-with-comps (list x y z)))
+  (java::byte-array (list x y z)))
 
 (defun test-short-array-with-comps-3 (x y z)
   (declare (xargs :guard (and (java::short-value-p x)
                               (java::short-value-p y)
                               (java::short-value-p z))))
-  (java::short-array-with-comps (list x y z)))
+  (java::short-array (list x y z)))
 
 (defun test-int-array-with-comps-3 (x y z)
   (declare (xargs :guard (and (java::int-value-p x)
                               (java::int-value-p y)
                               (java::int-value-p z))))
-  (java::int-array-with-comps (list x y z)))
+  (java::int-array (list x y z)))
 
 (defun test-long-array-with-comps-3 (x y z)
   (declare (xargs :guard (and (java::long-value-p x)
                               (java::long-value-p y)
                               (java::long-value-p z))))
-  (java::long-array-with-comps (list x y z)))
+  (java::long-array (list x y z)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,8 +329,12 @@
                   (java::int-array-p array)
                   (java::int-value-p i)
                   (java::int-value-p j)
-                  (integer-range-p 0 (len array) (java::int-value->int i))
-                  (integer-range-p 0 (len array) (java::int-value->int j)))))
+                  (integer-range-p 0
+                                   (len (java::int-array->components array))
+                                   (java::int-value->int i))
+                  (integer-range-p 0
+                                   (len (java::int-array->components array))
+                                   (java::int-value->int j)))))
   (java::int-add (java::int-array-read array i)
                  (java::int-array-read array j)))
 
@@ -333,10 +361,12 @@
                               (java::int-value-p i)
                               (java::int-value-p j)
                               (integer-range-p 0
-                                               (len floatarray)
+                                               (len (java::float-array->components
+                                                     floatarray))
                                                (java::int-value->int i))
                               (integer-range-p 0
-                                               (len doublearray)
+                                               (len (java::double-array->components
+                                                     doublearray))
                                                (java::int-value->int j)))))
   (java::double-rem (java::float-to-double
                      (java::float-array-read floatarray i))
@@ -347,9 +377,15 @@
                               (java::byte-array-p bytes2)
                               (java::int-value-p i1)
                               (java::int-value-p i2)
-                              (integer-range-p 0 (len bytes1)
+                              (integer-range-p 0
+                                               (len
+                                                (java::byte-array->components
+                                                 bytes1))
                                                (java::int-value->int i1))
-                              (integer-range-p 0 (len bytes2)
+                              (integer-range-p 0
+                                               (len
+                                                (java::byte-array->components
+                                                 bytes2))
                                                (java::int-value->int i2)))))
   (let* ((x1 (java::byte-array-read bytes1 i1))
          (x2 (java::byte-array-read bytes2 i2))
@@ -365,89 +401,89 @@
 (defconst *shallow-guarded-basic-tests*
   '(;; array read operations:
     ("BooleanArrayRead" (test-boolean-array-read
-                         (java::boolean-array-with-comps
+                         (java::boolean-array
                           (list (java::boolean-value t)
                                 (java::boolean-value nil)
                                 (java::boolean-value nil)))
                          (java::int-value 2)))
     ("CharArrayRead" (test-char-array-read
-                      (java::char-array-with-comps
+                      (java::char-array
                        (list (java::char-value 722)
                              (java::char-value 9990)
                              (java::char-value 1)))
                       (java::int-value 1)))
     ("ByteArrayRead" (test-byte-array-read
-                      (java::byte-array-with-comps
+                      (java::byte-array
                        (list (java::byte-value -100)
                              (java::byte-value 100)))
                       (java::int-value 0)))
     ("ShortArrayRead" (test-short-array-read
-                       (java::short-array-with-comps
+                       (java::short-array
                         (list (java::short-value -100)
                               (java::short-value 100)
                               (java::short-value 32001)
                               (java::short-value -5000)))
                        (java::int-value 2)))
     ("IntArrayRead" (test-int-array-read
-                     (java::int-array-with-comps
+                     (java::int-array
                       (list (java::int-value 1000000000)))
                      (java::int-value 0)))
     ("LongArrayRead" (test-long-array-read
-                      (java::long-array-with-comps
+                      (java::long-array
                        (list (java::long-value 1000000000)
                              (java::long-value 1000000000000000000)))
                       (java::int-value 1)))
     ;; array length operations:
     ("BooleanArrayLength" (test-boolean-array-length
-                           (java::boolean-array-with-comps
+                           (java::boolean-array
                             (list (java::boolean-value t)
                                   (java::boolean-value nil)
                                   (java::boolean-value nil)))))
     ("CharArrayLength" (test-char-array-length
-                        (java::char-array-with-comps
+                        (java::char-array
                          (list (java::char-value 722)
                                (java::char-value 9990)
                                (java::char-value 1)))))
     ("ByteArrayLength" (test-byte-array-length
-                        (java::byte-array-with-comps
+                        (java::byte-array
                          (list (java::byte-value -100)
                                (java::byte-value 100)))))
     ("ShortArrayLength" (test-short-array-length
-                         (java::short-array-with-comps
+                         (java::short-array
                           (list (java::short-value -100)
                                 (java::short-value 100)
                                 (java::short-value 32001)
                                 (java::short-value -5000)))))
     ("IntArrayLength" (test-int-array-length
-                       (java::int-array-with-comps
+                       (java::int-array
                         (list (java::int-value 1000000000)))))
     ("LongArrayLength" (test-long-array-length
-                        (java::long-array-with-comps
+                        (java::long-array
                          (list (java::long-value 1000000000)
                                (java::long-value 1000000000000000000)))))
     ;; array write operations:
     ("BooleanArrayWrite" (test-boolean-array-write
-                          (java::boolean-array-with-comps
+                          (java::boolean-array
                            (list (java::boolean-value t)
                                  (java::boolean-value nil)
                                  (java::boolean-value nil)))
                           (java::int-value 2)
                           (java::boolean-value t)))
     ("CharArrayWrite" (test-char-array-write
-                       (java::char-array-with-comps
+                       (java::char-array
                         (list (java::char-value 722)
                               (java::char-value 9990)
                               (java::char-value 1)))
                        (java::int-value 1)
                        (java::char-value 88)))
     ("ByteArrayWrite" (test-byte-array-write
-                       (java::byte-array-with-comps
+                       (java::byte-array
                         (list (java::byte-value -100)
                               (java::byte-value 100)))
                        (java::int-value 0)
                        (java::byte-value -10)))
     ("ShortArrayWrite" (test-short-array-write
-                        (java::short-array-with-comps
+                        (java::short-array
                          (list (java::short-value -100)
                                (java::short-value 100)
                                (java::short-value 32001)
@@ -455,12 +491,12 @@
                         (java::int-value 2)
                         (java::short-value 1)))
     ("IntArrayWrite" (test-int-array-write
-                      (java::int-array-with-comps
+                      (java::int-array
                        (list (java::int-value 1000000000)))
                       (java::int-value 0)
                       (java::int-value -100000)))
     ("LongArrayWrite" (test-long-array-write
-                       (java::long-array-with-comps
+                       (java::long-array
                         (list (java::long-value 1000000000)
                               (java::long-value 1000000000000000000)))
                        (java::int-value 1)
@@ -557,51 +593,51 @@
 
 (defconst *shallow-guarded-more-tests*
   '(;; F:
-    ("F0" (f (java::int-array-with-comps (list (java::int-value 0)
-                                               (java::int-value 1)
-                                               (java::int-value 2)
-                                               (java::int-value 3)
-                                               (java::int-value 4)
-                                               (java::int-value 5)
-                                               (java::int-value 6)
-                                               (java::int-value 7)))
+    ("F0" (f (java::int-array (list (java::int-value 0)
+                                    (java::int-value 1)
+                                    (java::int-value 2)
+                                    (java::int-value 3)
+                                    (java::int-value 4)
+                                    (java::int-value 5)
+                                    (java::int-value 6)
+                                    (java::int-value 7)))
              (java::int-value 6)
              (java::int-value 2)))
-    ("F1" (f (java::int-array-with-comps (list (java::int-value -100)
-                                               (java::int-value -200)
-                                               (java::int-value -300)
-                                               (java::int-value -400)
-                                               (java::int-value -500)))
+    ("F1" (f (java::int-array (list (java::int-value -100)
+                                    (java::int-value -200)
+                                    (java::int-value -300)
+                                    (java::int-value -400)
+                                    (java::int-value -500)))
              (java::int-value 0)
              (java::int-value 3)))
     ;; G:
-    ("G0" (g (java::byte-array-with-comps (list (java::byte-value 63)
-                                                (java::byte-value 0)))
-             (java::short-array-with-comps (list (java::short-value 11)
-                                                 (java::short-value 22)
-                                                 (java::short-value 33)))))
-    ("G1" (g (java::byte-array-with-comps (list (java::byte-value -100)))
-             (java::short-array-with-comps (list))))
+    ("G0" (g (java::byte-array (list (java::byte-value 63)
+                                     (java::byte-value 0)))
+             (java::short-array (list (java::short-value 11)
+                                      (java::short-value 22)
+                                      (java::short-value 33)))))
+    ("G1" (g (java::byte-array (list (java::byte-value -100)))
+             (java::short-array (list))))
     ;; H:
     ("H0" (h (java::byte-value 0)))
     ("H1" (h (java::byte-value 10)))
     ("H2" (h (java::byte-value 100)))
     ;; J:
-    ("J0" (j (java::byte-array-with-comps (list (java::byte-value 0)
-                                                (java::byte-value 1)
-                                                (java::byte-value 2)
-                                                (java::byte-value 3)))
-             (java::byte-array-with-comps (list (java::byte-value 0)
-                                                (java::byte-value -1)
-                                                (java::byte-value -2)
-                                                (java::byte-value -3)))
+    ("J0" (j (java::byte-array (list (java::byte-value 0)
+                                     (java::byte-value 1)
+                                     (java::byte-value 2)
+                                     (java::byte-value 3)))
+             (java::byte-array (list (java::byte-value 0)
+                                     (java::byte-value -1)
+                                     (java::byte-value -2)
+                                     (java::byte-value -3)))
              (java::int-value 1)
              (java::int-value 3)))
-    ("J1" (j (java::byte-array-with-comps (list (java::byte-value 10)
-                                                (java::byte-value 10)
-                                                (java::byte-value 10)))
-             (java::byte-array-with-comps (list (java::byte-value 100)
-                                                (java::byte-value 100)))
+    ("J1" (j (java::byte-array (list (java::byte-value 10)
+                                     (java::byte-value 10)
+                                     (java::byte-value 10)))
+             (java::byte-array (list (java::byte-value 100)
+                                     (java::byte-value 100)))
              (java::int-value 0)
              (java::int-value 1)))))
 

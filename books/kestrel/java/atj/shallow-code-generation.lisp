@@ -1489,7 +1489,7 @@
    (xdoc::p
     "This function is used to generate
      Java array creation expressions with initializers
-     from terms @('(<T>-array-with-comps (list ...))'),
+     from terms @('(<T>-array (list ...))'),
      where @('<T>') is a Java primitive type.
      In this case, we want to retrieve the elements of the list
      and use the corresponding Java expressions for the array initializer."))
@@ -2028,7 +2028,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-constr-to-comp-jtype ((fn atj-java-primarray-constr-p))
+(define atj-jprimarr-lenconstr-to-comp-jtype ((fn
+                                               atj-java-primarray-lenconstr-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models a Java primitive array constructor
           to the Java array component type."
@@ -2042,48 +2043,42 @@
     (float-array-of-length (jtype-float))
     (double-array-of-length (jtype-double))
     (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-lenconstr-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-constr-init-to-comp-jtype
-  ((fn atj-java-primarray-constr-init-p))
+(define atj-jprimarr-constr-to-comp-jtype ((fn atj-java-primarray-constr-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models
           a Java primitive array constructor with initializer
           to the Java array component type."
   (case fn
-    (boolean-array-with-comps (jtype-boolean))
-    (char-array-with-comps (jtype-char))
-    (byte-array-with-comps (jtype-byte))
-    (short-array-with-comps (jtype-short))
-    (int-array-with-comps (jtype-int))
-    (long-array-with-comps (jtype-long))
-    (float-array-with-comps (jtype-float))
-    (double-array-with-comps (jtype-double))
+    (boolean-array (jtype-boolean))
+    (char-array (jtype-char))
+    (byte-array (jtype-byte))
+    (short-array (jtype-short))
+    (int-array (jtype-int))
+    (long-array (jtype-long))
     (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-init-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-constr-init-to-comp-type
-  ((fn atj-java-primarray-constr-init-p))
+(define atj-jprimarr-constr-to-comp-type ((fn atj-java-primarray-constr-p))
   :returns (type primitive-typep)
   :short "Map an ACL2 function that models
           a Java primitive array constructor with initializer
           to the corresponding primitive type."
   (case fn
-    (boolean-array-with-comps (primitive-type-boolean))
-    (char-array-with-comps (primitive-type-char))
-    (byte-array-with-comps (primitive-type-byte))
-    (short-array-with-comps (primitive-type-short))
-    (int-array-with-comps (primitive-type-int))
-    (long-array-with-comps (primitive-type-long))
-    (float-array-with-comps (primitive-type-float))
-    (double-array-with-comps (primitive-type-double))
+    (boolean-array (primitive-type-boolean))
+    (char-array (primitive-type-char))
+    (byte-array (primitive-type-byte))
+    (short-array (primitive-type-short))
+    (int-array (primitive-type-int))
+    (long-array (primitive-type-long))
     (otherwise (prog2$ (impossible)
                        (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-init-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primarray-constr-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2869,6 +2864,106 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count operand) 2))
 
+  (define atj-gen-shallow-jprimarr-constr-call
+    ((fn atj-java-primarray-constr-p)
+     (arg pseudo-termp)
+     (src-types atj-type-listp)
+     (dst-types atj-type-listp)
+     (jvar-tmp-base stringp)
+     (jvar-tmp-index posp)
+     (pkg-class-names string-string-alistp)
+     (fn-method-names symbol-string-alistp)
+     (curr-pkg stringp)
+     (qpairs cons-pos-alistp)
+     (wrld plist-worldp))
+    :guard (and (consp src-types)
+                (consp dst-types)
+                (not (equal curr-pkg "")))
+    :returns (mv (block jblockp)
+                 (expr jexprp)
+                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :short "Generate a shallowly embedded
+            ACL2 call of a Java primitive array constructor
+            from a list of components."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This code generation function is called
+       only if @(':guards') is @('t').")
+     (xdoc::p
+      "If the @(':guards') input is @('t'),
+       the functions that model
+       Java primitive array constructors from components
+       (i.e. @(tsee byte-array) etc.) are treated specially.
+       If the argument has the form @('(list ...)')
+       (in translated form,
+       i.e. it is a nest of @(tsee cons)es ending in a quoted @('nil'),
+       as checked by the library function used here),
+       we generate expressions for all the list elements,
+       and then we generate a Java array creation expression
+       with an initializer consisting of those generated expressions.
+       If the argument has a different form,
+       we first translate it to a Java expression in the general way;
+       we then wrap the expression with code
+       to convert it to the appropriate Java primitive type.
+       In all cases, we convert the resulting expression, as needed,
+       to match the destination type.")
+     (xdoc::p
+      "Note that we are dealing with annotated terms,
+       so the argument of the constructor must be unwrapped
+       to be examined."))
+    (b* (((mv list-call? elements) (atj-check-type-annotated-list-call arg)))
+      (if list-call?
+          (b* ((type (atj-jprimarr-constr-to-comp-type fn))
+               (elements
+                (atj-type-rewrap-array-initializer-elements elements type))
+               ((mv blocks
+                    exprs
+                    jvar-tmp-index)
+                (atj-gen-shallow-terms elements
+                                       jvar-tmp-base
+                                       jvar-tmp-index
+                                       pkg-class-names
+                                       fn-method-names
+                                       curr-pkg
+                                       qpairs
+                                       t ; GUARDS$
+                                       wrld))
+               (block (flatten blocks))
+               (jtype (atj-jprimarr-constr-to-comp-jtype fn))
+               (expr (jexpr-newarray-init jtype exprs)))
+            (mv block
+                (atj-adapt-expr-to-type expr
+                                        (atj-type-list-to-type src-types)
+                                        (atj-type-list-to-type dst-types))
+                jvar-tmp-index))
+        (b* (((mv block
+                  expr
+                  jvar-tmp-index)
+              (atj-gen-shallow-term arg
+                                    jvar-tmp-base
+                                    jvar-tmp-index
+                                    pkg-class-names
+                                    fn-method-names
+                                    curr-pkg
+                                    qpairs
+                                    t ; GUARDS$
+                                    wrld))
+             (type (atj-type-jprimarr
+                    (atj-jprimarr-constr-to-comp-type fn)))
+             (expr (atj-adapt-expr-to-type expr
+                                           (atj-type-acl2 (atj-atype-value))
+                                           type)))
+          (mv block
+              (atj-adapt-expr-to-type expr
+                                      (atj-type-list-to-type src-types)
+                                      (atj-type-list-to-type dst-types))
+              jvar-tmp-index))))
+    ;; 2nd component is greater than 1
+    ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
+    :measure (two-nats-measure (acl2-count arg) 2))
+
   (define atj-gen-shallow-jprimarr-read-call
     ((array pseudo-termp)
      (index pseudo-termp)
@@ -3090,8 +3185,8 @@
                                   (acl2-count component))
                                2))
 
-  (define atj-gen-shallow-jprimarr-constr-call
-    ((fn atj-java-primarray-constr-p)
+  (define atj-gen-shallow-jprimarr-lenconstr-call
+    ((fn atj-java-primarray-lenconstr-p)
      (length pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -3136,7 +3231,7 @@
                                 t ; GUARDS$
                                 wrld))
          (block length-block)
-         (jtype (atj-jprimarr-constr-to-comp-jtype fn))
+         (jtype (atj-jprimarr-lenconstr-to-comp-jtype fn))
          (expr (jexpr-newarray jtype length-expr)))
       (mv block
           (atj-adapt-expr-to-type expr
@@ -3146,106 +3241,6 @@
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count length) 2))
-
-  (define atj-gen-shallow-jprimarr-constr-init-call
-    ((fn atj-java-primarray-constr-init-p)
-     (arg pseudo-termp)
-     (src-types atj-type-listp)
-     (dst-types atj-type-listp)
-     (jvar-tmp-base stringp)
-     (jvar-tmp-index posp)
-     (pkg-class-names string-string-alistp)
-     (fn-method-names symbol-string-alistp)
-     (curr-pkg stringp)
-     (qpairs cons-pos-alistp)
-     (wrld plist-worldp))
-    :guard (and (consp src-types)
-                (consp dst-types)
-                (not (equal curr-pkg "")))
-    :returns (mv (block jblockp)
-                 (expr jexprp)
-                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded
-            ACL2 call of a Java primitive array constructor
-            from a list of components."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This code generation function is called
-       only if @(':guards') is @('t').")
-     (xdoc::p
-      "If the @(':guards') input is @('t'),
-       the functions that model
-       Java primitive array constructors from components
-       (i.e. @(tsee byte-array) etc.) are treated specially.
-       If the argument has the form @('(list ...)')
-       (in translated form,
-       i.e. it is a nest of @(tsee cons)es ending in a quoted @('nil'),
-       as checked by the library function used here),
-       we generate expressions for all the list elements,
-       and then we generate a Java array creation expression
-       with an initializer consisting of those generated expressions.
-       If the argument has a different form,
-       we first translate it to a Java expression in the general way;
-       we then wrap the expression with code
-       to convert it to the appropriate Java primitive type.
-       In all cases, we convert the resulting expression, as needed,
-       to match the destination type.")
-     (xdoc::p
-      "Note that we are dealing with annotated terms,
-       so the argument of the constructor must be unwrapped
-       to be examined."))
-    (b* (((mv list-call? elements) (atj-check-type-annotated-list-call arg)))
-      (if list-call?
-          (b* ((type (atj-jprimarr-constr-init-to-comp-type fn))
-               (elements
-                (atj-type-rewrap-array-initializer-elements elements type))
-               ((mv blocks
-                    exprs
-                    jvar-tmp-index)
-                (atj-gen-shallow-terms elements
-                                       jvar-tmp-base
-                                       jvar-tmp-index
-                                       pkg-class-names
-                                       fn-method-names
-                                       curr-pkg
-                                       qpairs
-                                       t ; GUARDS$
-                                       wrld))
-               (block (flatten blocks))
-               (jtype (atj-jprimarr-constr-init-to-comp-jtype fn))
-               (expr (jexpr-newarray-init jtype exprs)))
-            (mv block
-                (atj-adapt-expr-to-type expr
-                                        (atj-type-list-to-type src-types)
-                                        (atj-type-list-to-type dst-types))
-                jvar-tmp-index))
-        (b* (((mv block
-                  expr
-                  jvar-tmp-index)
-              (atj-gen-shallow-term arg
-                                    jvar-tmp-base
-                                    jvar-tmp-index
-                                    pkg-class-names
-                                    fn-method-names
-                                    curr-pkg
-                                    qpairs
-                                    t ; GUARDS$
-                                    wrld))
-             (type (atj-type-jprimarr
-                    (atj-jprimarr-constr-init-to-comp-type fn)))
-             (expr (atj-adapt-expr-to-type expr
-                                           (atj-type-acl2 (atj-atype-value))
-                                           type)))
-          (mv block
-              (atj-adapt-expr-to-type expr
-                                      (atj-type-list-to-type src-types)
-                                      (atj-type-list-to-type dst-types))
-              jvar-tmp-index))))
-    ;; 2nd component is greater than 1
-    ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg) 2))
 
   (define atj-gen-shallow-mv-call ((args pseudo-term-listp)
                                    (src-types atj-type-listp)
@@ -3477,6 +3472,20 @@
                                            qpairs
                                            wrld))
          ((when (and guards$
+                     (atj-java-primarray-constr-p fn)
+                     (int= (len args) 1))) ; should be always true
+          (atj-gen-shallow-jprimarr-constr-call fn
+                                                (car args)
+                                                src-types
+                                                dst-types
+                                                jvar-tmp-base
+                                                jvar-tmp-index
+                                                pkg-class-names
+                                                fn-method-names
+                                                curr-pkg
+                                                qpairs
+                                                wrld))
+         ((when (and guards$
                      (atj-java-primarray-read-p fn)
                      (int= (len args) 2))) ; should be always true
           (atj-gen-shallow-jprimarr-read-call (first args)
@@ -3520,33 +3529,19 @@
                                                qpairs
                                                wrld))
          ((when (and guards$
-                     (atj-java-primarray-constr-p fn)
+                     (atj-java-primarray-lenconstr-p fn)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-constr-call fn
-                                                (car args)
-                                                src-types
-                                                dst-types
-                                                jvar-tmp-base
-                                                jvar-tmp-index
-                                                pkg-class-names
-                                                fn-method-names
-                                                curr-pkg
-                                                qpairs
-                                                wrld))
-         ((when (and guards$
-                     (atj-java-primarray-constr-init-p fn)
-                     (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-constr-init-call fn
-                                                     (car args)
-                                                     src-types
-                                                     dst-types
-                                                     jvar-tmp-base
-                                                     jvar-tmp-index
-                                                     pkg-class-names
-                                                     fn-method-names
-                                                     curr-pkg
-                                                     qpairs
-                                                     wrld))
+          (atj-gen-shallow-jprimarr-lenconstr-call fn
+                                                   (car args)
+                                                   src-types
+                                                   dst-types
+                                                   jvar-tmp-base
+                                                   jvar-tmp-index
+                                                   pkg-class-names
+                                                   fn-method-names
+                                                   curr-pkg
+                                                   qpairs
+                                                   wrld))
          ((when (eq fn 'mv))
           (atj-gen-shallow-mv-call args
                                    src-types

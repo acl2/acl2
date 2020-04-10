@@ -751,15 +751,15 @@
 
 (defthm
   put-assoc-equal-without-change
-  (implies (consp (assoc-equal name alist))
-           (iff (equal (put-assoc-equal name val alist)
-                       alist)
-                (equal (cdr (assoc-equal name alist))
-                       val)))
+  (iff (equal (put-assoc-equal name val alist)
+              alist)
+       (and (consp (assoc-equal name alist))
+            (equal (cdr (assoc-equal name alist))
+                   val)))
   :rule-classes
   ((:rewrite
-    :corollary (implies (and (consp (assoc-equal name alist))
-                             (not (equal (cdr (assoc-equal name alist))
+    :corollary (implies (not (and (consp (assoc-equal name alist))
+                                  (equal (cdr (assoc-equal name alist))
                                          val)))
                         (not (equal (put-assoc-equal name val alist)
                                     alist))))
@@ -878,7 +878,7 @@
 (defthm stringp-of-append
   (equal (stringp (append x y)) (and (atom x) (stringp y))))
 
-(defthm remove-assoc-equal-of-put-assoc-equal
+(defthm remove-assoc-of-put-assoc
   (equal (remove-assoc key (put-assoc name val alist))
          (if
              (equal key name)
@@ -988,6 +988,12 @@
                       (assoc-equal x1 x2)
                       (assoc-equal x1 y)))))
 
+(defthm assoc-equal-of-append-2
+  (implies (and (atom (assoc-equal nil x))
+                (atom (assoc-equal nil y)))
+           (atom (assoc-equal nil (append x y))))
+  :rule-classes :type-prescription)
+
 (encapsulate
   ()
 
@@ -1088,3 +1094,109 @@
                        (strip-cars (remove-equal x2 lst))))))
   :hints (("goal" :in-theory (e/d (intersectp-equal)
                                   (intersectp-is-commutative)))))
+
+(defthm intersectp-of-remove
+  (implies (not (intersectp-equal l1 l2))
+	   (not (intersectp-equal (remove-equal x l1)
+				  l2)))
+  :hints (("goal" :in-theory (enable intersectp-equal)))
+  :rule-classes
+  (:type-prescription
+   (:type-prescription
+    :corollary
+    (implies (not (intersectp-equal l1 l2))
+	     (not (intersectp-equal l2
+				    (remove-equal x l1)))))))
+
+(defthm remove-of-remove
+  (equal (remove-equal x1 (remove-equal x2 l))
+	 (remove-equal x2 (remove-equal x1 l))))
+
+(defthm remove1-assoc-of-append
+  (equal (remove1-assoc key (append x y))
+         (if (equal (remove1-assoc key x)
+                    (true-list-fix x))
+             (append x (remove1-assoc key y))
+             (append (remove1-assoc key x) y))))
+
+(defthm remove1-assoc-when-absent
+  (implies (not (null key))
+           (iff
+            (equal (remove1-assoc key alist) (true-list-fix alist))
+            (atom (assoc key alist))))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies (and
+              (not (null key))
+              (atom (assoc key alist)))
+             (equal (remove1-assoc key alist) (true-list-fix alist))))
+   (:rewrite
+    :corollary
+    (implies (and
+              (not (null key))
+              (consp (assoc key alist)))
+             (not
+              (equal (remove1-assoc key alist) (true-list-fix alist)))))
+   (:rewrite
+    :corollary
+    (implies (and
+              (not (null key))
+              (consp (assoc key alist))
+              (true-listp alist))
+             (not
+              (equal (remove1-assoc key alist) alist))))))
+
+(defthm put-assoc-of-put-assoc-1
+  (equal (put-assoc-equal name val2 (put-assoc-equal name val1 alist))
+         (put-assoc-equal name val2 alist)))
+
+(defthm
+  put-assoc-of-put-assoc-2
+  (implies (and (or (consp (assoc-equal name1 alist))
+                    (consp (assoc-equal name2 alist)))
+                (not (equal name1 name2)))
+           (equal (put-assoc-equal name1
+                                   val1 (put-assoc-equal name2 val2 alist))
+                  (put-assoc-equal name2 val2
+                                   (put-assoc-equal name1 val1 alist)))))
+
+(defthm put-assoc-of-append
+  (implies (not (null name))
+           (equal (put-assoc-equal name val (append x y))
+                  (if (atom (assoc-equal name x))
+                      (append x (put-assoc-equal name val y))
+                      (append (put-assoc-equal name val x)
+                              y)))))
+
+;; This is disabled because I cannot decide on a normal form.
+(defthmd put-assoc-of-remove
+  (implies (and (not (null name)) (atom x))
+           (equal (remove-equal x (put-assoc-equal name val alist))
+                  (put-assoc-equal name val (remove-equal x alist)))))
+
+(defthm member-of-put-assoc
+  (implies (and (atom x) (force (not (null name))))
+           (iff (member x (put-assoc-equal name val alist))
+                (member x alist))))
+
+;; Move later.
+(defthm
+  consp-of-remove-assoc-1
+  (implies (and (not (equal x2 x1))
+                (consp (assoc-equal x1 alist)))
+           (consp (remove-assoc-equal x2 alist))))
+
+;; The following is redundant with the eponymous theorem in
+;;  books/kestrel/lists-light/nthcdr.lisp, from where it was taken after a
+;;  discussion with Eric Smith.
+(defthm nthcdr-iff
+  (iff (nthcdr n x)
+       (if (< (nfix n) (len x))
+           t
+         (if (equal (nfix n) (len x))
+             ;; If we know true-listp, this simplifies to nil and get merged
+             ;; with the nil branch below.
+             (not (true-listp x))
+           nil)))
+  :hints (("Goal" :in-theory (enable nthcdr))))

@@ -164,7 +164,8 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('boolean') array."
   (jexpr-newarray-init (jtype-boolean)
-                       (atj-gen-jboolean-array-aux boolean-array))
+                       (atj-gen-jboolean-array-aux
+                        (boolean-array->components boolean-array)))
   :prepwork
   ((define atj-gen-jboolean-array-aux ((booleans boolean-value-listp))
      :returns (exprs jexpr-listp)
@@ -178,7 +179,8 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('char') array."
   (jexpr-newarray-init (jtype-char)
-                       (atj-gen-jchar-array-aux char-array))
+                       (atj-gen-jchar-array-aux
+                        (char-array->components char-array)))
   :prepwork
   ((define atj-gen-jchar-array-aux ((chars char-value-listp))
      :returns (exprs jexpr-listp)
@@ -192,7 +194,8 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('byte') array."
   (jexpr-newarray-init (jtype-byte)
-                       (atj-gen-jbyte-array-aux byte-array))
+                       (atj-gen-jbyte-array-aux
+                        (byte-array->components byte-array)))
   :prepwork
   ((define atj-gen-jbyte-array-aux ((bytes byte-value-listp))
      :returns (exprs jexpr-listp)
@@ -206,7 +209,8 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('short') array."
   (jexpr-newarray-init (jtype-short)
-                       (atj-gen-jshort-array-aux short-array))
+                       (atj-gen-jshort-array-aux
+                        (short-array->components short-array)))
   :prepwork
   ((define atj-gen-jshort-array-aux ((shorts short-value-listp))
      :returns (exprs jexpr-listp)
@@ -220,7 +224,8 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('int') array."
   (jexpr-newarray-init (jtype-int)
-                       (atj-gen-jint-array-aux int-array))
+                       (atj-gen-jint-array-aux
+                        (int-array->components int-array)))
   :prepwork
   ((define atj-gen-jint-array-aux ((ints int-value-listp))
      :returns (exprs jexpr-listp)
@@ -234,7 +239,8 @@
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('long') array."
   (jexpr-newarray-init (jtype-long)
-                       (atj-gen-jlong-array-aux long-array))
+                       (atj-gen-jlong-array-aux
+                        (long-array->components long-array)))
   :prepwork
   ((define atj-gen-jlong-array-aux ((longs long-value-listp))
      :returns (exprs jexpr-listp)
