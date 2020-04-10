@@ -53,6 +53,7 @@
 
 (xdoc::defxdoc
  acl2::rp-rewriter
+ :parents (acl2::projects)
  :short "See @(see rp::rp-rewriter)")
                
 

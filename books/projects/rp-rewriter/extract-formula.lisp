@@ -676,31 +676,38 @@ This submits an event and disables all the rewrite rules.
 
 (xdoc::defxdoc
  add-rp-rule
+ :parents (rp-other-utilities)
  :short "@(see rp::rp-ruleset)")
 
 
 (xdoc::defxdoc
  rp::def-rp-rule
+ :parents (rp-other-utilities)
  :short "Documentation under @(see rp::rp-ruleset).")
 
 (xdoc::defxdoc
  rp::disable-rules
+ :parents (rp-other-utilities)
  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
  rp::enable-rules
+ :parents (rp-other-utilities)
  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
  disable-all-rules
+ :parents (rp-other-utilities)
  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
  rp::disable-exc-counterpart
+ :parents (rp-other-utilities)
  :short "Documentation under @(see rp::rp-ruleset)")
 
 (xdoc::defxdoc
  rp::enable-exc-counterpart
+ :parents (rp-other-utilities)
  :short "Documentation under @(see rp::rp-ruleset)")
 
 
