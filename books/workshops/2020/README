@@ -47,6 +47,7 @@ Cauchy-Schwarz for ACL2 Abstract Vector Spaces
 
 Yan Peng and Mark Greenstreet
 Type Inference Using Meta-extract for Smtlink and Beyond
+peng-greenstreet/
 
 ------------------------------
 
@@ -70,5 +71,6 @@ sswords-rewriter/
 
 Mertcan Temel
 RP-Rewriter: An Optimized Rewriter for Large Terms in ACL2
+mert/
 
 ------------------------------
