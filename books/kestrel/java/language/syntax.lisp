@@ -35,6 +35,7 @@
 (include-book "escape-sequences")
 (include-book "character-literals")
 (include-book "string-literals")
+(include-book "literals")
 (include-book "primitive-types")
 (include-book "unicode-escapes")
 
