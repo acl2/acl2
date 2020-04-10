@@ -450,6 +450,7 @@ RP-Rewriter will throw an eligible error.</p>"
 
 (xdoc::defxdoc
  def-rp-thm
+ :parents (rp-other-utilities)
  :short "Same as @(see rp::defthmrp)")
 
 (xdoc::defxdoc
@@ -621,4 +622,11 @@ rp::preserve-current-theory). This utility will work with current theory of any 
  included, and retains the current theory"
  :parents (rp-utilities)
  :long "See @(see rp::fetch-new-events)"
+ )
+
+
+(xdoc::defxdoc
+ rp-other-utilities
+ :short "Some names that are aliases to other tools"
+ :parent (rp-utilities)
  )
