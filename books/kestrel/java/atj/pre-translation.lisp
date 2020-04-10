@@ -810,8 +810,8 @@
      we also allow singleton lists of @(':jprim') types
      to be converted to the singleton list of @(':avalue').
      This is needed in order to handle the translation to Java
-     of Java primitive array constructions via functions like
-     @(tsee byte-array-with-comps),
+     of Java primitive array constructions
+     via functions like @(tsee byte-array),
      which may take as inputs lists of primitive values like
      @('((byte-value 33) (byte-value 0) ...)'):
      when the elements of these lists are type-annotated,

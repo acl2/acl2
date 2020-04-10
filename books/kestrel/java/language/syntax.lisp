@@ -34,6 +34,7 @@
 (include-book "escape-sequences")
 (include-book "primitive-types")
 (include-book "unicode-escapes")
+(include-book "unicode-input-characters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

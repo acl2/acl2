@@ -51,6 +51,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-java-primarray-constrs*
+  :short "List of (the names of) the ACL2 functions that model
+          the construction of Java primitive arrays from their components."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When the argument of one of these constructors is
+     a list of calls of primitive value constructors on suitable constants,
+     the call of the array constructor models
+     the construction of a Java primitive array with initializer.
+     For instance, a call
+     @('(byte-array (list (byte-value 1) (byte-value 2) (byte-value 3)))')
+     models the Java expression @('new byte[]{1, 2, 3}').
+     In fact, for now this kind of calls of these constructors
+     are the only allowed uses of these constructors.")
+   (xdoc::p
+    "We exclude the constructors for @('float') and @('double') arrays
+     from this list for now,
+     because our model of those two Java types is still abstract
+     and thus we cannot support calls of the form just described."))
+  '(boolean-array
+    char-array
+    byte-array
+    short-array
+    int-array
+    long-array))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *atj-java-primarray-reads*
   :short "List of (the names of) the ACL2 functions that model
           the reading of components from Java primitive arrays."
@@ -93,9 +122,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-constrs*
+(defval *atj-java-primarray-lenconstrs*
   :short "List of (the names of) the ACL2 functions that model
-          the construction of Java primitive arrays."
+          the construction of Java primitive arrays from lengths."
   '(boolean-array-of-length
     char-array-of-length
     byte-array-of-length
@@ -107,36 +136,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-constrs-init*
-  :short "List of (the names of) the ACL2 functions that model
-          the construction of Java primitive arrays with initializers."
-  :long
-  (xdoc::topstring-p
-   "We exclude the functions that model
-    the construction of @('float') and @('double') arrays with initializers,
-    because we only have abstract models of those values for now.")
-  '(boolean-array-with-comps
-    char-array-with-comps
-    byte-array-with-comps
-    short-array-with-comps
-    int-array-with-comps
-    long-array-with-comps))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defval *atj-java-primarray-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive array operations."
-  (append *atj-java-primarray-reads*
+  (append *atj-java-primarray-constrs*
+          *atj-java-primarray-reads*
           *atj-java-primarray-lengths*
           *atj-java-primarray-writes*
-          *atj-java-primarray-constrs*
-          *atj-java-primarray-constrs-init*)
+          *atj-java-primarray-lenconstrs*)
   ///
   (assert-event (function-name-listp *atj-java-primarray-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-java-primarray-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-java-primarray-constr-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the construction of Java primitive arrays from components."
+  (and (member-eq fn *atj-java-primarray-constrs*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-java-primarray-read-p (fn)
   :returns (yes/no booleanp)
@@ -162,19 +182,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-constr-p (fn)
+(define atj-java-primarray-lenconstr-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
-          the construction of Java primitive arrays."
-  (and (member-eq fn *atj-java-primarray-constrs*) t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-java-primarray-constr-init-p (fn)
-  :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
-          the construction of Java primitive arrays with initializers."
-  (and (member-eq fn *atj-java-primarray-constrs-init*) t))
+          the construction of Java primitive arrays from lengths."
+  (and (member-eq fn *atj-java-primarray-lenconstrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,6 +200,20 @@
 
 (defsection atj-types-for-java-primitive-arrays
   :short "ATJ types for the Java primitive array operations."
+
+  ;; constructors from components:
+
+  (atj-main-function-type boolean-array (:avalue) :jboolean[])
+
+  (atj-main-function-type char-array (:avalue) :jchar[])
+
+  (atj-main-function-type byte-array (:avalue) :jbyte[])
+
+  (atj-main-function-type short-array (:avalue) :jshort[])
+
+  (atj-main-function-type int-array (:avalue) :jint[])
+
+  (atj-main-function-type long-array (:avalue) :jlong[])
 
   ;; read operations:
 
@@ -275,18 +301,4 @@
 
   (atj-main-function-type float-array-of-length (:jint) :jfloat[])
 
-  (atj-main-function-type double-array-of-length (:jint) :jdouble[])
-
-  ;; constructors from components:
-
-  (atj-main-function-type boolean-array-with-comps (:avalue) :jboolean[])
-
-  (atj-main-function-type char-array-with-comps (:avalue) :jchar[])
-
-  (atj-main-function-type byte-array-with-comps (:avalue) :jbyte[])
-
-  (atj-main-function-type short-array-with-comps (:avalue) :jshort[])
-
-  (atj-main-function-type int-array-with-comps (:avalue) :jint[])
-
-  (atj-main-function-type long-array-with-comps (:avalue) :jlong[]))
+  (atj-main-function-type double-array-of-length (:jint) :jdouble[]))

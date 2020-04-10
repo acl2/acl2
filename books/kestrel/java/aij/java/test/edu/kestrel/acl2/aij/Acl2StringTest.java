@@ -26,4 +26,14 @@ class Acl2StringTest {
                 () -> Acl2String.make("ABC\u0100abc"));
     }
 
+    @Test
+    void makeRight() {
+        assertDoesNotThrow(() -> Acl2String.make(""));
+        assertDoesNotThrow(() -> Acl2String.make("string"));
+        assertDoesNotThrow(() -> Acl2String.make("TWO WORDS"));
+        assertDoesNotThrow(() -> Acl2String.make("\0\1\2"));
+        assertDoesNotThrow(() -> Acl2String.make("\u00ff\u00a8"));
+        assertDoesNotThrow(() -> Acl2String.make(".ab#$\n"));
+    }
+
 }
