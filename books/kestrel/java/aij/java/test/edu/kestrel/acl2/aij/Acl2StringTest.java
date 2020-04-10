@@ -36,4 +36,10 @@ class Acl2StringTest {
         assertDoesNotThrow(() -> Acl2String.make(".ab#$\n"));
     }
 
+    @Test
+    void getJavaStringFromConstant() {
+        assertEquals(Acl2String.EMPTY.getJavaString(), "");
+        assertEquals(Acl2String.ACL2.getJavaString(), "ACL2");
+    }
+
 }
