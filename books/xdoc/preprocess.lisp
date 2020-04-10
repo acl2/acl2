@@ -38,7 +38,7 @@
 (include-book "unsound-eval")
 (include-book "verbosep")
 (include-book "xdoc-error")
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (set-state-ok t)
 (program)
 

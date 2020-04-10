@@ -17,6 +17,12 @@
      gen-sym-pkg
      eqlable-2-alistp
      make-symbl
+     rquotep
+     rfquotep
+     unrquote-lst
+     rquote-listp
+     unrquote-lst
+     def-const
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -29,6 +35,12 @@
      gen-sym-pkg
      eqlable-2-alistp
      make-symbl
+     rquotep
+     rfquotep
+     unrquote-lst
+     rquote-listp
+     unrquote-lst
+     def-const
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))

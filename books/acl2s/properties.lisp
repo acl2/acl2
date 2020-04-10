@@ -97,16 +97,16 @@ as follows.
 ;; Generate events for a table containing settings relevant to
 ;; properties. Use :trans1 to see what this generates.
 
-(defconst *property-thm-keywords*
+(def-const *property-thm-keywords*
   '(:hints :otf-flg))
 
-(defconst *property-just-defthm-keywords*
+(def-const *property-just-defthm-keywords*
   '(:rule-classes :instructions))
 
-(defconst *property-core-keywords*
+(def-const *property-core-keywords*
   '(:proofs? :proof-timeout :testing? :testing-timeout :doc))
   
-(defconst *property-keywords*
+(def-const *property-keywords*
   (append *property-core-keywords*
           *property-thm-keywords*
           *property-just-defthm-keywords*))

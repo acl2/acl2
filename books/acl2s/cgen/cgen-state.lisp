@@ -20,9 +20,10 @@
   NIL)
 
 
-(defconst *initial-gcs%* (acl2::make gcs% :cts 0 :wts 0 :runs 0 :vacs 0 :dups 0))
+(def-const *initial-gcs%*
+  (acl2::make gcs% :cts 0 :wts 0 :runs 0 :vacs 0 :dups 0))
 
-(defconst *gcs-fields* '(cts wts runs dups vacs))
+(def-const *gcs-fields* '(cts wts runs dups vacs))
 (defun gcs%-p (v)
   (declare (xargs :guard T))
   (case-match v
@@ -41,10 +42,17 @@
              (acl2::|1+F| (access gcs% ,fld-nm))))
                                    
 
-(defconst *cgen-state-givens*  '(start-time user-supplied-term displayed-goal top-ctx params))
-(defconst *cgen-state-derived* '(top-vt-alist))
-(defconst *cgen-state-transient* '(gcs processor-hist s-hist stopping-condition-p proof-aborted-p end-time))
-(defconst *cgen-state-fields* (append *cgen-state-transient* *cgen-state-givens* *cgen-state-derived*))
+(def-const *cgen-state-givens*
+  '(start-time user-supplied-term displayed-goal top-ctx params))
+
+(def-const *cgen-state-derived*
+  '(top-vt-alist))
+
+(def-const *cgen-state-transient*
+  '(gcs processor-hist s-hist stopping-condition-p proof-aborted-p end-time))
+
+(def-const *cgen-state-fields*
+  (append *cgen-state-transient* *cgen-state-givens* *cgen-state-derived*))
 
 (defun cgen-state-p (v)
   (declare (xargs :guard T))

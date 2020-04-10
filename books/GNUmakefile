@@ -1631,10 +1631,11 @@ all: centaur/getopt/demo2-test.ok
 # These regular expressions may include things more appropriate for
 # raw Lisp.  May want to remove some of these or extend them to
 # support new types of definitions.
-ETAGS = etags --language=none \
- --ignore-case-regex='/ *set[ \t]?\([^ =]*\)[ \n]*=/\1/' \
- --ignore-case-regex='/(set[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/' \
- --ignore-case-regex='/ *(\(memoize\|def[^tc]\|defttag\|deftheory\)[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/'
+ETAGS=etags --language=none \
+  --regex='/ *set[ \t]?\([^ =]*\)[ \n]*=/\1/i' \
+  --regex='/(set[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/i' \
+  --regex='/ *(memoize[ \t]+\([^ \t\)]*\)[ \t\)]/\1/i' \
+  --regex='/ *(\(def[^t]\|deft[^h]\|defth[^m]\)[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/i'
 
 TAGS : $(CERT_PL_SOURCES)
 	@echo "Making TAGS"

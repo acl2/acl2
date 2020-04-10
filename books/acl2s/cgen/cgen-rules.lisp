@@ -27,9 +27,11 @@ date created: [2016-03-22 Tue]
 ; preserved after the fixing. [2016-03-22 Tue]
 
 ;; [2017-10-11 Wed] :test-hyp restricts the checking of the rule with extra "test" hypotheses.
-(defconst *cgen-rule-keywords* '(:test-hyp :hyp :meta-precondition :rule :rule-classes :override-check :verbose))
-(defconst *cgen-rule-classes* '(:fixer :preservation))
+(def-const *cgen-rule-keywords*
+  '(:test-hyp :hyp :meta-precondition :rule :rule-classes :override-check :verbose))
 
+(def-const *cgen-rule-classes*
+  '(:fixer :preservation))
 
 (defmacro define-rule  (name &rest keys)
   (b* ((verbosep (let ((lst (member :verbose keys)))

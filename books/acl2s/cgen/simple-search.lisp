@@ -285,11 +285,10 @@
       (declare (xargs :guard T :verify-guards ,(not programp)))
       (ec-call (hyp-val-list-current A)))))
 
-
-
-
 (set-verify-guards-eagerness 2)
-(defconst *sampling-method-values* '(:random :uniform-random :be :mixed)) ;redundant if not for package diff
+
+(def-const *sampling-method-values*
+  '(:random :uniform-random :be :mixed)) ;redundant if not for package diff
 
 (defun local-sampling-method-builtin (sampling-method i N)
   (declare (xargs :guard (and (natp N)

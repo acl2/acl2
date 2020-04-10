@@ -35,7 +35,7 @@ data last modified: [2014-08-06]
 ; combinator table.
 
 
-(defconst *register-type-keywords*
+(def-const *register-type-keywords*
   '(:predicate :enumerator ;mandatory names
                :enum/acc
                :domain-size

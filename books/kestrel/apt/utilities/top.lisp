@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "defaults-table")
 (include-book "input-processing")
 (include-book "pattern-matching")
 (include-book "pattern-matching-ext")

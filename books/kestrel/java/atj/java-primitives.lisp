@@ -147,7 +147,7 @@
 
 (defval *atj-java-primitive-constrs*
   :short "List of (the names of) the ACL2 functions that model
-          the construction of Java primitive types."
+          the construction of Java primitive values."
   :long
   (xdoc::topstring-p
    "We exclude the functions that model

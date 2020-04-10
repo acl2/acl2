@@ -29,7 +29,7 @@
 
 (xdoc::evmac-topic-implementation
 
- deffixequiv
+ deffixequiv-sk
 
  :item-wrld t
 
@@ -53,6 +53,8 @@
    from the names of the arguments
    to their corresponding predicates.
    In other words, it is @('args') in alist form."))
+
+(local (xdoc::set-default-parents deffixequiv-sk-implementation))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -9,7 +9,6 @@
 (include-book "defexec/other-apps/records/records" :dir :system)
 ;(include-book "finite-set-theory/osets/sets" :dir :system)
 ;; (include-book "std/osets/top" :dir :system)
-(include-book "make-event/defconst-fast" :dir :system)
 
 ;GETTING RECORDS TO behave nicely here are some
 ;;RECORDS THMS proven

@@ -18,11 +18,9 @@ data last modified: [2014-08-06]
 (include-book "tools/templates" :dir :system)
 (include-book "register-combinator")
 
-(defconst *map-local-events* '())
+(def-const *map-local-events* '())
 
-
-
-(defconst *map-export-defthms*
+(def-const *map-export-defthms*
   '((defthm _pred_-IMPLIES-GOOD-MAP
       (implies (_pred_ x)
                (acl2::good-map x))

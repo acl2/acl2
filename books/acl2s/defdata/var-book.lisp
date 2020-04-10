@@ -51,7 +51,7 @@ is accepted by ACL2s, but this is not
           #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\-)))
 
 ; What to replace nil and t by
-(defconst *non-nil-non-t-fix* '(#\X)) 
+(def-const *non-nil-non-t-fix* '(#\X)) 
 
 ; The numeric characters
 (defdata var-char-num 
