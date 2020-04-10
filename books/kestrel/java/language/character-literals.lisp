@@ -40,12 +40,12 @@
     "Since @('unicode-input-character') is captured
      by @(tsee unicode-input-char-p) in our formalization,
      we define a Unicode character for a character literal
-     (as conveyed by the @('charlit') part of the type and function names)
+     (as conveyed by the @('charlit') part of the type name)
      as a Unicode input character
      that is not CR, LF, single quote, and backslash.")
    (xdoc::p
     "We prefer the nomenclature `Unicode character for a character literal',
-     on which these type and function names are based,
+     on which this type name is based,
      to the nomenclature `single character' suggested by the grammar."))
 
   (define unicode-charlit-char-p (x)
@@ -87,7 +87,7 @@
      between single quotes.
      Abstractly, but without losing any information,
      we leave the surrounding single quotes implicit,
-     and define character literals as a tagged sum.")
+     and define character literals via a tagged sum.")
    (xdoc::p
     "The set of values of this fixtype should be isomorphic to
      the set of strings (or parse trees) defined by

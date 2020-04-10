@@ -34,6 +34,7 @@
 (include-book "binary-digits-validation")
 (include-book "escape-sequences")
 (include-book "character-literals")
+(include-book "string-literals")
 (include-book "primitive-types")
 (include-book "unicode-escapes")
 
