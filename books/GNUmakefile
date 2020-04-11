@@ -259,16 +259,18 @@ space =  # just a space
 EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
 endif # ifneq ($(EXCLUDED_PREFIXES), )
 
-# We exclude some directories because there are subdirectories and it's just
-# easiest to stop at the root.
-
-# We also exclude centaur/satlink/solvers because it depends on all kinds of
-# extra SAT solvers.
+# We exclude some directories because there are subdirectories and
+# it's just easiest to stop at the root.  We also exclude
+# centaur/satlink/solvers because it depends on all kinds of extra SAT
+# solvers.  We exclude projects/milawa/ACL2 because of the large
+# amount of disk space otherwise consumed, and we exclude
+# workshops/2020/gamboa-cowles-gamboa/number-field.lisp because it
+# takes quite a few hours to certify
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|workshops/2020/gamboa-cowles-gamboa/number-field.lisp|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
