@@ -243,11 +243,13 @@
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
-    "A new library for standard system utilities has been started.  This is
-     currently under the Kestrel books, but it could be moved directly under
-     @('[books]/std/system') eventually.  This new library is being populated
-     with existing utilities factored out of some Kestrel Books with system
-     utilities, as well as with some new utilities.")
+    "A new library for standard system utilities has been started.
+     This is currently mostly under the Kestrel books,
+     but it will be gradually moved directly under @('[books]/std/system').
+     This new library is being populated
+     with existing utilities factored out of
+     some Kestrel Books with system utilities,
+     as well as with some new utilities.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
