@@ -1086,6 +1086,14 @@ BOOKS_SKIP_COMP += system/tests/apply-timings.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += oslib/tests/ls.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += oslib/tests/mkdir.$(ACL2_COMP_EXT)
 
+# Has readtime conditionals for different Lisps:
+BOOKS_SKIP_COMP += system/tests/stobj-issues.$(ACL2_COMP_EXT)
+
+# GCL couldn't handle this one (tested 4/10/2020), saying "[GC Hole
+# overrun]" and then "Unrecoverable error: Segmentation violation.."
+# It's not clear why, but it doesn't seem important to figure it out.
+BOOKS_SKIP_COMP += workshops/2011/verbeek-schmaltz/sources/invariants2.$(ACL2_COMP_EXT)
+
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
 # Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
