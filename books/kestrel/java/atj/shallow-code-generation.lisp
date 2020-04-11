@@ -812,27 +812,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-gen-cond-exprs*
-  :short "Flag saying whether ATJ should attempt to
-          generate Java conditional expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is an internal flag, developer-oriented.
-     If @('t'), ATJ will generate shallowly embedded
-     Java conditional expressions @('... ? ... : ...')
-     under suitable conditions;
-     see the code generation functions that reference this flag.")
-   (xdoc::p
-    "This flag is currently @('nil'),
-     because, with the current tests,
-     the code looked less readable overall
-     then when this flag is @('t').
-     This flag may be removed eventually."))
-  nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-check-type-annotated-list-call ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (elements pseudo-term-listp :hyp :guard))
@@ -1608,6 +1587,27 @@
                                                  (cdr blocks)
                                                  (cdr exprs))))
     (append first-block rest-block)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-gen-cond-exprs*
+  :short "Flag saying whether ATJ should attempt to
+          generate Java conditional expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an internal flag, developer-oriented.
+     If @('t'), ATJ will generate shallowly embedded
+     Java conditional expressions @('... ? ... : ...')
+     under suitable conditions;
+     see the code generation functions that reference this flag.")
+   (xdoc::p
+    "This flag is currently @('nil'),
+     because, with the current tests,
+     the code looked less readable overall
+     then when this flag is @('t').
+     This flag may be removed eventually."))
+  nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
