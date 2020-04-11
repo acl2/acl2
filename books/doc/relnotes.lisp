@@ -138,20 +138,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "defarbrec" "Arbitrary Recursion Library"))
-
-   (xdoc::p
-    "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
-     has been added, to introduce recursive functions
-     without having to prove termination right away.
-     There exist similar macros in the community books,
-     but the specifics of this new macro are motivated for use with "
-    (xdoc::seetopic "apt::apt" "APT")
-    ". See the `Related Tools' section
-     of the documentation of @(tsee defarbrec) for more information.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 "Arithmetic-light library")
 
    (xdoc::p "A new library, @('arithmetic-light') has been added.  It aims to
@@ -944,6 +930,18 @@
    (xdoc::p
     "@(csee std::defret) now substitutes the list of return value names for
      symbols named @('<VALUES>') in the body and hints.")
+
+   (xdoc::p
+    "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
+     has been added, to introduce recursive functions
+     without having to prove termination right away.
+     There exist similar macros in the community books,
+     but the specifics of this new macro are motivated for use with "
+    (xdoc::seetopic "apt::apt" "APT")
+    ". See the `Related Tools' section
+     of the documentation of @(tsee defarbrec) for more information.
+     This macro is currently in the Std/util extensions in the Kestrel Books,
+     but could be moved to @('[books]/std/util') at some point.")
 
    (xdoc::p
     "A new macro @(tsee std::deffixer) has been added
