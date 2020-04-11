@@ -259,11 +259,11 @@ space =  # just a space
 EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
 endif # ifneq ($(EXCLUDED_PREFIXES), )
 
-# We exclude some directories because there are subdirectories and it's just
-# easiest to stop at the root.
-
-# We also exclude centaur/satlink/solvers because it depends on all kinds of
-# extra SAT solvers.
+# We exclude some directories because there are subdirectories and
+# it's just easiest to stop at the root.  We also exclude
+# centaur/satlink/solvers because it depends on all kinds of extra SAT
+# solvers.  We exclude projects/milawa/ACL2 because of the large
+# amount of disk space otherwise consumed.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
