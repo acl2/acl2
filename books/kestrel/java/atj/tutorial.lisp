@@ -61,6 +61,9 @@
 (defconst *atj-tutorial-tests*
   "Generation of Tests")
 
+(defconst *atj-tutorial-shallow*
+  "Shallow Embedding Approach")
+
 (defconst *atj-tutorial-uml*
   "About the Simplified UML Class Diagrams")
 
@@ -1714,8 +1717,9 @@
 
    (xdoc::p
     "The difference between @(':guards nil') and @(':guards t')
-     is much more significant in the shallow embedding approach.
-     This is described in detail in subsequent pages.")
+     is much more significant in "
+    (xdoc::seetopic "atj-tutorial-evaluator" "the shallow embedding approach")
+    ". This is described in detail in subsequent pages.")
 
    (atj-tutorial-next-and-previous
     "atj-tutorial-tests" *atj-tutorial-tests*
@@ -1954,8 +1958,356 @@
      with as few other processes as possible,
      should mitigate the noise.")
 
-   (atj-tutorial-previous "atj-tutorial-deep-guards"
-                          *atj-tutorial-deep-guards*)))
+   (atj-tutorial-next-and-previous
+    "atj-tutorial-shallow" *atj-tutorial-shallow*
+    "atj-tutorial-deep-guards" *atj-tutorial-deep-guards*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-shallow
+
+  :short (atj-tutorial-short *atj-tutorial-shallow*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page introduces
+     the use of AIJ with the shallow embedding approach.
+     This approach provides much richer features than the "
+    (xdoc::seetopic "atj-tutorial-deep" "deep embedding approach")
+    ". These features will be presented throughout several tutorial pages.
+     This page describes the more basic features.")
+
+   (atj-tutorial-section "AIJ's Role")
+
+   (xdoc::p
+    "In the shallow embedding, "
+    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
+    " plays a more limited role than in th deep embedding.
+     The shallow embedding uses "
+    (xdoc::seetopic "atj-tutorial-acl2-values"
+                    "AIJ' default Java representation of the ACL2 values")
+    " and "
+    (xdoc::seetopic "atj-tutorial-native-functions"
+                    "AIJ's natively implemented ACL2 functions")
+    ", but it does not use "
+    (xdoc::seetopic "atj-tutorial-acl2-terms"
+                    "AIJ's representation of the ACL2 terms")
+    " and "
+    (xdoc::seetopic "atj-tutorial-evaluator"
+                    "AIJ's evaluator")
+    "."
+    (xdoc::seetopic "atj-tutorial-acl2-environment"
+                    "AIJ's representation of the ACL2 environment")
+    " is used partially by the shallow embedding,
+     which uses the package definitions but not the function definitions.")
+
+   (xdoc::p
+    "Thus, in the shallow embedding only a portion of the AIJ API is used,
+     namely the one to build and unbuild ACL2 values,
+     the one to invoke the native implementations,
+     and the one to build package definitions.
+     The portions to build function definitions
+     and to execute functions via interpretation are not used.")
+
+   (atj-tutorial-section "ATJ's Role")
+
+   (xdoc::p
+    "In the shallow embedding, ATJ plays a different role,
+     compared to the deep embedding.
+     The only commonality is that, in both shallow and deep embedding,
+     ATJ generates Java code
+     to build the ACL2 package definitions via AIJ's API.")
+
+   (xdoc::p
+    "However, in the shallow embedding,
+     ATJ does not generate Java code
+     to build the ACL2 function definitions via AIJ's API,
+     because ACL2 functions have a different Java representation
+     in the shallow embedding.
+     Furthermore, in the shallow embedding,
+     ATJ does not generate Java code that provides a wrapper API
+     to invoke AIJ's interpreter,
+     because ACL2 functions are not executed via interpretation
+     in the shallow embedding.")
+
+   (xdoc::p
+    "Instead, in the shallow embedding,
+     ATJ generates Java code that ``resembles''
+     the code of the ACL2 functions.
+     ATJ generates, in essence,
+     a Java method for each ACL2 function.
+     The method takes the same inputs and returns the same outputs
+     as the corresponding ACL2 function
+     (in the sense of the Java representations of such inputs and ouputs);
+     it calculates the outputs from the inputs
+     by mimicking the computation steps performed by the ACL2 function.
+     This is best explained through an example.")
+
+   (atj-tutorial-section "Example of Generated Code")
+
+   (xdoc::p
+    "Consider the factorial function example in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ":")
+   (xdoc::codeblock
+    "(defun fact (n)"
+    "  (declare (xargs :guard (natp n)))"
+    "  (if (zp n)"
+    "      1"
+    "    (* n (fact (1- n)))))")
+
+   (xdoc::p
+    "To generate shallowly embedded Java code for that function,
+     include ATJ via")
+   (xdoc::codeblock
+    "(include-book \"kestrel/java/atj/top\" :dir :system)")
+   (xdoc::p
+    "as before, and call ATJ via")
+   (xdoc::codeblock
+    "(java::atj fact :deep nil :guards nil)")
+   (xdoc::p
+    "where @(':deep nil') specifies the shallow embedding approach
+     and @(':guards nil') specifies not to assume the guards' satisfaction
+     (more on this in subsequent tutorial pages).")
+
+   (xdoc::p
+    "As in the deep embedding approach,
+     a single Java file @('Acl2Code.java') is generated
+     (in the current directory),
+     which contains a single Java public class called @('Acl2Code').
+     Also as in the deep embedding,
+     the file imports all the (public) AIJ classes,
+     which are in the @('edu.kestrel.acl2.aij') Java package,
+     and a few classes from the Java standard library.")
+
+   (xdoc::p
+    "The static initializer at the beginning of the class
+     calls a number of methods to define ACL2 packages
+     as in the deep embedding approach,
+     but it does not call any methods to define ACL2 functions.
+     The static initializer is followed by
+     the declarations of the (private) methods that it calls,
+     as in the deep embedding approach:
+     these methods that define the packages are identical
+     in the shallow and deep embedding approaches.")
+
+   (xdoc::p
+    "At the end of the class there is the same empty @('initialize()') method
+     as in the deep embedding; see "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    " for details.
+     However, unlike the deep embedding approach,
+     there is no @('call(Acl2Symbol, Acl2Value[])') method,
+     because, as explained below,
+     (the Java representations of) the ACL2 functions
+     are called directly as methods.")
+
+   (xdoc::p
+    "After the methods that define ACL2 packages, described above,
+     there are eight methods to write elements to, and return,
+     arrays of Java primitive types;
+     there is one such method for each of Java's primitive types.
+     Their purpose is explained elsewhere;
+     they can be ignored for now.")
+
+   (xdoc::p
+    "The array write methods are followed by
+     three constants (i.e. final static fields)
+     for the ACL2 integers 0, 1, and -1.
+     These are all the quoted constants that occur in the unnormalized bodies
+     of @('fact') and of the non-primitive functions
+     directly or indirectly called by @('fact'),
+     namely @(tsee zp) and @(tsee not);
+     these are discussed also in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    ". The quoted constants @('1') and @('-1') occur in @('fact'),
+     and the quoted constant @('0') occurs in @(tsee zp);
+     no quoted constant appears in @(tsee not).")
+
+   (xdoc::p
+    "The rest of the class (up to the @('initialize()') method)
+     consists of a number of nested static classes,
+     each of which corresponds to an ACL2 package.
+     These are a strict subset of the packages
+     whose Java representation is built in the static initializer;
+     for instance, there is no nested class for the @('\"KEYWORD\"') package.")
+
+   (xdoc::p
+    "The nested class @('ACL2') is for the @('\"ACL2\"') package.
+     Its @('fact(Acl2Value)') method is generated from the @('fact') function;
+     the correspondence of its Java body
+     with the ACL2 unnormalized body
+     (visible via @('(ubody 'fact nil (w state))'), or via @(':props fact'))
+     should be apparent.
+     This method is in the @('ACL2') class because
+     the @(tsee symbol-package-name) of the (function) symbol @('fact')
+     is @('\"ACL2\"').
+     For the same reason, this class includes a method @('zp(Acl2Value)')
+     generated from the @(see zp) function;
+     again the correspondence of its Java body
+     with the ACL2 unnormalized body should be apparent.
+     The nested class @('ACL2') also contains methods
+     that correspond to Java primitive functions
+     (which have no unnormalized body)
+     such as @('binary_star(Acl2Value,Acl2Value)'),
+     whose Java body calls AIJ's native Java implementation.
+     (The reason for introducing wrappers of the native Java implementations
+     such as @('binary_star(Acl2Value,Acl2Value)')
+     is that they are more readable than
+     the qualified method references in @('Acl2NativeFunction');
+     presumably a JIT could remove the run-time penalty of the wrappers.)")
+
+   (xdoc::p
+    "The nested class @('COMMON_LISP') is for the @('\"COMMON-LISP\"') package.
+     Its @('not(Acl2Value)') method is generated from the @(tsee not) function;
+     again, the correspondence of this method's body
+     with the unnormalized body of @(tsee not) should be apparent.
+     This method is in the @('COMMON_LISP') class because
+     the @(tsee symbol-package-name) of the (function) symbol @(tsee not)
+     is @('\"COMMON_LISP\"').")
+
+   (xdoc::p
+    "Note that the function @('acl2::fact') is translated
+     to the method @('ACL2.fact(...)'),
+     the function @('acl2::zp') is translated
+     to the method @('ACL2.zp(...)'),
+     the function @('common-lisp::not') is translated
+     to the method @('COMMON_LISP.not(...)'),
+     and so on:
+     package to class, double colon to dot, and name to method.
+     Running ATJ with @(':verbose t') as explained in "
+    (xdoc::seetopic "atj-tutorial-screen-output"
+                    "the tutorial page about the screen output")
+    " displays the exact correspondence
+     between ACL2 package names and Java class names,
+     and between ACL2 function symbol names and Java method names.
+     Since ACL2 is more liberal
+     about the characters in package and symbol names
+     than Java is about the characters in class and method names,
+     sometimes there must be differences between the ACL2 and Java names.")
+
+   (xdoc::p
+    "Since the @('zp(Acl2Value)') method is in the @('ACL2') class
+     while the @('not(Acl2Value)') method is in the @('COMMON_LISP') class,
+     it seems that the body of @('zp(Acl2Value)') should call
+     @('COMMON_LISP.not(...)') instead of just @('not(...)').
+     However, in ACL2 the package @('\"ACL2\"') imports
+     the symbol with name @('\"NOT\"') from the package @('\"COMMON-LISP\"').
+     This is reflected in the Java code generated by ATJ:
+     the class @('ACL2') has a method @('not(Acl2Value')
+     that calls the method in the @('COMMON_LISP') class.
+     This is the case for all the methods generated from
+     function symbols imported in packages:
+     the importing package has a synonym method
+     that calls the one in the class corresponding to
+     the @(tsee symbol-package-name) of the function symbol.
+     Introducing these synonym methods may be the closest way
+     to mimic ACL2's ability to refer to the same symbol
+     using different package prefixes:
+     while @('acl2::not') and @('common-list::not') denote the same ACL2 symbol,
+     in the generated Java code the method calls
+     @('ACL2.not(x)') and @('COMMON_LISP.not(x)') have the same effect
+     (presumably a JIT could remove the run-time penalty of these synonyms).")
+
+   (atj-tutorial-section "Example of External Code")
+
+   (xdoc::p
+    "Similarly to "
+    (xdoc::seetopic "atj-tutorial-deep" "the deep embedding approach")
+    ", external Java code must call @('initialize()')
+     before calling (the Java methods corresponding to) the ACL2 functions,
+     and also before using AIJ's API to build the values
+     to pass as arguments to the functions.")
+
+   (xdoc::p
+    "The following simple example of external Java code
+     is similar to the one for the deep embedding,
+     with a few differences explained below:")
+   (xdoc::codeblock
+    "import edu.kestrel.acl2.aij.*;"
+    ""
+    "public class Test {"
+    "    public static void main(String[] args)"
+    "        throws Acl2UndefinedPackageException {"
+    "        Acl2Code.initialize();"
+    "        Acl2Value argument = Acl2Integer.make(100);"
+    "        Acl2Value result = Acl2Code.ACL2.fact(argument);"
+    "        System.out.println(\"Result: \" + result + \".\");"
+    "    }"
+    "}")
+   (xdoc::p
+    "With the shallow embedding,
+     we do not build the symbol that names the function.
+     We build the arguments of the function (just one in this case),
+     but not an array to hold them.
+     And instead of calling @('Acl2Code.call(function, arguments)'),
+     we call directly the method that corresponds to the ACL2 function.")
+
+   (atj-tutorial-section "Example of Compiling and Running the Code")
+
+   (xdoc::p
+    "The code can be compiled and run in the same way as in the "
+    (xdoc::seetopic "atj-tutorial-deep" "deep embedding")
+    ".")
+
+   (atj-tutorial-section "Java Stack Space Considerations")
+
+   (xdoc::p
+    "The Java stack space considerations made in "
+    (xdoc::seetopic "atj-tutorial-deep"
+                    "the tutorial page on the deep embedding approach")
+    " partially apply to the shallow embedding approach.
+     The Java methods generated from recursive ACL2 functions are recursive,
+     unless the ACL2 functions are tail-recursive
+     (in which case, as described elsewhere,
+     the generated Java methods use loops instead of recursion).
+     This is the case for the method generated from the @('fact') function,
+     which is (non-tail-)recursive.
+     If these recursive methods are called with sufficiently large numbers,
+     the JVM may run out of stack space.")
+
+   (xdoc::p
+    "However, this should happen more rarely than in the deep embedding.
+     The reason is that, in the shallow embedding,
+     the Java stack frames correspond to the ACL2/Lisp stack frames,
+     i.e. there is one for every method/function call.
+     In contrast, when AIJ's recursive interpreter is run,
+     there may be many Java stack frames for each ACL2 function,
+     corresponding to the terms and subterms of the function body.")
+
+   (xdoc::p
+    "Furthermore, as hinted above, if an ACL2 function is tail-recursive,
+     the generated Java method uses a loop.
+     ATJ uses the well-known technique of tail recursion elimination.
+     Thus, in an ACL2 development, one can write tail-recursive functions,
+     or perhaps use APT's tail recursion transformation "
+    (xdoc::seetopic "apt::tailrec" "@('tailrec')")
+    " to turn non-tail-recursive functions into equivalent tail-recursive ones,
+     prior to invoking ATJ.")
+
+   (atj-tutorial-section "Test Generation")
+
+   (xdoc::p
+    "ATJ's "
+    (xdoc::seetopic "atj-tutorial-tests" "test generation facility")
+    " is available for the shallow embedding in the same way as
+     it is available for the deep embedding.
+     The examples in "
+    (xdoc::seetopic "atj-tutorial-tests" "the tutorial page on test generation")
+    ", which were described for the deep embedding,
+     also apply to the shallow embedding.
+     The generated testing code is slightly different
+     in the way that it calls the functions being tested;
+     the difference is the same as illustrated in the example above
+     of external code that calls the Java method for the factorial function.")
+
+   (atj-tutorial-previous "atj-tutorial-tests" *atj-tutorial-tests*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2174,8 +2526,9 @@
     (xdoc::seetopic "defpkg" "ACL2 package definitions")
     " and "
     (xdoc::seetopic "defun" "ACL2 function definitions")
-    "; for the shallow embedding approach,
-     this environment consists of package definitions only,
+    "; for the "
+    (xdoc::seetopic "atj-tutorial-shallow" "shallow embedding approach")
+    ", this environment consists of package definitions only,
      because in this approach functions are represented as methods
      outside of AIJ.")
 
