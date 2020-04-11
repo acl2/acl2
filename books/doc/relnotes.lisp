@@ -325,36 +325,36 @@
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
 
    (xdoc::p
-    "A new APT-specific XDOC constructor has been added.")
+    "A new transformation, @(tsee apt::casesplit),
+     has been added to rephrase a function by cases.")
 
    (xdoc::p
-    "Some APT-specific XDOC constructors have been extended and improved.")
+    "A new transformation, @(tsee apt::isodata),
+     has been added to transform data between isomorphic representations.")
 
    (xdoc::p
-    "An input has been added to @(tsee apt::tailrec) to control whether
-     the wrapper function is generated or not.")
+    "@(tsee apt::parteval) now provides better support
+     for recursive functions whose static arguments
+     do not change across recursive calls.
+     @(tsee apt::parteval) has also been extended to support "
+    (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
+    ".")
 
    (xdoc::p
     "@(tsee apt::restrict) now supports reflexive functions,
      i.e. functions that occur in their termination theorem.")
 
    (xdoc::p
-    "A new transformation, @(tsee apt::casesplit),
-     has been added to rephrase a function by cases.")
+    "An input has been added to @(tsee apt::tailrec) to control whether
+     the wrapper function is generated or not.")
 
    (xdoc::p
-    "@(tsee apt::parteval) now provides better support
-     for recursive functions whose static arguments
-     do not change across recursive calls.")
+    "A table of APT defaults has been started.
+     See @('[books]/kestrel/apt/utilities/defaults-table.lisp').")
 
    (xdoc::p
-    "@(tsee apt::parteval) has been extended to support "
-    (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
-    ".")
-
-   (xdoc::p
-    "A new transformation, @(tsee apt::isodata),
-     has been added to transform data between isomorphic representations.")
+    "New APT-specific XDOC constructors have been added.
+     Some APT-specific XDOC constructors have been extended and improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
