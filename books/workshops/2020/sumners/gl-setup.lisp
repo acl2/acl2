@@ -4,6 +4,10 @@
 
 (in-package "GL")
 
+; Matt K. mod: Avoid ACL2(p) error from a clause-processor that returns one or
+; more stobjs.
+(set-waterfall-parallelism nil)
+
 ; this book is just a standard GL-setup book including the relevant
 ; GL and SV books and rebuilding the clause-processor to get g-aig-eval:
 
@@ -15,7 +19,7 @@
 (include-book "centaur/aignet/top" :dir :system)
 (include-book "centaur/sv/svex/top" :dir :system)
 
-;; Now, let's go ahead and load up GL and add the g-aig-eval mapping of aig-eval-list 
+;; Now, let's go ahead and load up GL and add the g-aig-eval mapping of aig-eval-list
 ;; to the current clause-processor:
 
 (include-book "centaur/gl/gl" :dir :system)

@@ -1055,6 +1055,10 @@
      characters (see @(see standard-char-p)), except that tabs are also
      permitted.")
 
+   (xdoc::p
+    "Supporting materials for ACL2 Workshop 2020 have been added.  They are in
+    directory @('workshops/2020/'); see the @('README') file there.")
+
    ))
 
 (defxdoc note-8-2-books
