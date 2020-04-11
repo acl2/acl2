@@ -273,9 +273,7 @@
     "A new library has been added,
      to collect recognizers and theorems for typed alists,
      i.e. alists whose keys and values have specified types.
-     This is analogous to "
-    (xdoc::seetopic "std/typed-lists" "the library for typed lists")
-    ".")
+     This is analogous to @(csee std/typed-lists).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
