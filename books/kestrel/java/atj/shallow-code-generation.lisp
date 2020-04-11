@@ -1647,7 +1647,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) test."
     :long
     (xdoc::topstring
@@ -1748,7 +1748,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) call."
     :long
     (xdoc::topstring
@@ -1889,7 +1889,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @('or') call."
     :long
     (xdoc::topstring
@@ -1978,7 +1978,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive constructor."
     :long
@@ -2053,7 +2053,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive deconstructor."
     :long
@@ -2116,7 +2116,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive unary operation."
     :long
@@ -2174,7 +2174,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive binary operation."
     :long
@@ -2246,7 +2246,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive conversion."
     :long
@@ -2305,7 +2305,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array constructor
             from a list of components."
@@ -2405,7 +2405,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array read operation."
     :long
@@ -2474,7 +2474,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array length operation."
     :long
@@ -2540,7 +2540,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive write operation."
     :long
@@ -2626,7 +2626,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array constructor
             from a length."
@@ -2682,7 +2682,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 call of @(tsee mv)."
     :long
     (xdoc::topstring
@@ -2760,7 +2760,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 function call."
     :long
     (xdoc::topstring
@@ -3062,7 +3062,7 @@
     :returns (mv (block jblockp :hyp (jblock-listp arg-blocks))
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 lambda expression,
             applied to given Java expressions as arguments."
     :long
@@ -3117,6 +3117,7 @@
                  (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee mv-let)."
     :long
     (xdoc::topstring
@@ -3213,7 +3214,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 term."
     :long
     (xdoc::topstring
@@ -3307,7 +3308,7 @@
                  (exprs (and (jexpr-listp exprs)
                              (equal (len exprs) (len terms))))
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Lift @(tsee atj-gen-shallow-term) to lists."
     (if (endp terms)
         (mv nil nil jvar-tmp-index)
