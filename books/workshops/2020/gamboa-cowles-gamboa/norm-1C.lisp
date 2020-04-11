@@ -2,7 +2,6 @@
 
 ; cert_param: (uses-acl2r)
 
-
 ;;===========norm-1C.lisp================= 
 ;; ACL2 & ACL2(r) book for 
 ;; norm-1C(a+bi) = |a|+|b| [Manhattan norm] 

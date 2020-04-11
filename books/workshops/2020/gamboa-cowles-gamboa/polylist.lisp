@@ -156,7 +156,6 @@
 
 ;; 15 FEB 2019 
 
-
 (local 
  (include-book "arithmetic/top-with-meta" :dir :system 
                :uncertified-okp nil 

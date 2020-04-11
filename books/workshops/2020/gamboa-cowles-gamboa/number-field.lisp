@@ -4313,4 +4313,3 @@
            :use ((:instance cos-pi/9-is-root-of-trisect-angle)
                  (:instance roots-not-in-quadratic-extension-trisect-angle
                             (x (acl2-cosine (/ (acl2-pi) 9))))))))
-
