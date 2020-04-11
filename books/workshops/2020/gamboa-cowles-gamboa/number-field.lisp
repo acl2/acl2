@@ -603,7 +603,7 @@
 
 (encapsulate
   nil
-  
+
   (local
    (defthmd lemma-1
      (implies (and (quadratic-extensions-p exts)
@@ -633,7 +633,7 @@
                                        coords2))
                           (expt 2 (len (cdr exts))))
                    (rational-listp (nthcdr (expt 2 (len (cdr exts)))
-                                           coords2))                
+                                           coords2))
                    (equal (len (is-linear-combination-p-witness (expt (car exts) 2)
                                                                 (cdr exts)))
                           (expt 2 (len (cdr exts))))
@@ -715,7 +715,7 @@
                                                        coords2)
                                                (cdr exts)))))))
 
-  
+
 
 
   (defthm product-of-linear-combinations
@@ -915,7 +915,6 @@
 
 
 (defthmd is-linear-combination-eval-linear-combination-lemma-1
-  ;; SLOW
   (implies (and (is-linear-combination-listp coords exts)
                 (quadratic-extensions-p exts)
                 (is-linear-combination-listp l exts))
@@ -932,8 +931,106 @@
                             (x (* (first coords) (first l)))
                             (y (eval-linear-combination (rest coords) (rest l)))))
            :in-theory (disable is-linear-combination-p-is-closed-multiplication
-                               is-linear-combination-p-is-closed-addition)))
-  )
+                               is-linear-combination-p-is-closed-addition
+; Matt K. additions, found using accumulated-persistence:
+                               (:LINEAR LEN-ALL-PRODUCTS-CDR-EXTS)
+                               (:LINEAR EXPT-2-LEN-N-MONOTONIC)
+                               (:REWRITE IS-LINEAR-COMBINATION-IS-TOWER)
+                               (:LINEAR EXPT-X->-X)
+                               (:LINEAR EXPT-X->=-X)
+                               (:REWRITE REDUCE-ADDITIVE-CONSTANT-<)
+                               (:REWRITE |(equal (expt x m) (expt x n))|)
+                               (:REWRITE TAKE-OF-LEN-FREE)
+                               (:DEFINITION TAKE)
+                               (:LINEAR EXPT->-1-ONE)
+                               (:REWRITE |(equal (+ (- c) x) y)|)
+                               (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT-REAL-CASE)
+                               (:LINEAR EXPT-<=-1-TWO)
+                               (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT-REAL-CASE)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT-REAL-CASE)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT-REAL-CASE)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B)
+                               (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)
+                               (:LINEAR EXPT->=-1-ONE)
+                               (:REWRITE DEFAULT-PLUS-2)
+                               (:REWRITE DEFAULT-PLUS-1)
+                               (:REWRITE DEFAULT-EXPT-2)
+                               (:REWRITE DEFAULT-CDR)
+                               (:DEFINITION ALL-ZEROS-P)
+                               (:REWRITE |(equal (expt 2 n) c)|)
+                               (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B)
+                               (:REWRITE |(+ c (+ d x))|)
+                               (:REWRITE DEFAULT-EXPT-1)
+                               (:REWRITE |(expt 1/c n)|)
+                               (:REWRITE |(expt (- x) n)|)
+                               (:REWRITE SECOND-OF-TAKE)
+                               (:REWRITE CONSP-OF-NTHCDR)
+                               (:REWRITE DEFAULT-LESS-THAN-2)
+                               (:DEFINITION NTHCDR)
+                               (:REWRITE NTHCDR-WHEN-ZP)
+                               (:REWRITE ZP-OPEN)
+                               (:REWRITE EXPT-2-N-IS-EVEN)
+                               (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL)
+                               (:REWRITE PREFER-POSITIVE-ADDENDS-<)
+                               (:REWRITE |(equal (- x) (- y))|)
+                               (:REWRITE |(equal (- x) c)|)
+                               (:REWRITE |(equal c (/ x))|)
+                               (:REWRITE |(equal (/ x) (/ y))|)
+                               (:REWRITE |(equal c (- x))|)
+                               (:LINEAR EXPT-<-1-TWO)
+                               (:LINEAR EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1)
+                               (:LINEAR EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1)
+                               (:LINEAR EXPT-IS-INCREASING-FOR-BASE->-1)
+                               (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1)
+                               (:LINEAR EXPT-LINEAR-LOWER-<=)
+                               (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<)
+                               (:REWRITE EQUAL-OF-PREDICATES-REWRITE)
+                               (:REWRITE DEFAULT-LESS-THAN-1)
+                               (:REWRITE THE-FLOOR-BELOW)
+                               (:REWRITE THE-FLOOR-ABOVE)
+                               (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<)
+                               (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<)
+                               (:LINEAR EXPT-LINEAR-UPPER-<=)
+                               (:REWRITE SIMPLIFY-SUMS-<)
+                               (:LINEAR EXPT-LINEAR-LOWER-<)
+                               (:LINEAR EXPT-LINEAR-UPPER-<)
+                               (:LINEAR EXPT->=-1-TWO)
+                               (:LINEAR EXPT->-1-TWO)
+                               (:LINEAR EXPT-<=-1-ONE)
+                               (:LINEAR EXPT-<-1-ONE)
+                               (:REWRITE |(< (- x) c)|)(:REWRITE |(< (- x) (- y))|)
+                               (:REWRITE REMOVE-STRICT-INEQUALITIES)
+                               (:REWRITE INTEGERP-<-CONSTANT)
+                               (:REWRITE CONSTANT-<-INTEGERP)
+                               (:REWRITE |(< c (/ x)) positive c --- present in goal|)
+                               (:REWRITE |(< c (/ x)) positive c --- obj t or nil|)
+                               (:REWRITE |(< c (/ x)) negative c --- present in goal|)
+                               (:REWRITE |(< c (/ x)) negative c --- obj t or nil|)
+                               (:REWRITE |(< c (- x))|)
+                               (:REWRITE |(< (/ x) c) positive c --- present in goal|)
+                               (:REWRITE |(< (/ x) c) positive c --- obj t or nil|)
+                               (:REWRITE |(< (/ x) c) negative c --- present in goal|)
+                               (:REWRITE |(< (/ x) c) negative c --- obj t or nil|)
+                               (:REWRITE |(< (/ x) (/ y))|)
+                               (:REWRITE |(< 0 (* x y))|)
+                               (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER)
+                               (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON)
+                               (:REWRITE |(< 0 (/ x))|)
+                               (:REWRITE |(< x (+ c/d y))|)
+                               (:DEFINITION NFIX)
+                               (:REWRITE EXPT-X->=-X)
+                               (:REWRITE REALP-IMPLIES-ACL2-NUMBERP)
+                               (:REWRITE ACL2-NUMBER-IF-REAL/RATIONALP-X)
+                               (:REWRITE ODD-EXPT-THM)
+                               (:TYPE-PRESCRIPTION BUBBLE-DOWN)
+                               (:REWRITE REAL/RATIONALP-X)
+                               (:REWRITE LEN-OF-NTHCDR)
+                               ))))
 
 (defthm is-linear-combination-listp-append
   (implies (and (is-linear-combination-listp x exts)
@@ -1629,7 +1726,7 @@
                                quadratic-extensions-p
                                subfield-extension-parts-1)
            )
-          ))                  
+          ))
 
 
 (defthmd subfield-means-zero-extension-part
@@ -1718,7 +1815,7 @@
                                             x
                                             (if (quadratic-extensions-p (rest exts))
                                                 (rest exts)
-                                              nil)))))                                        
+                                              nil)))))
                   (alpha (+ (SUBFIELD-PART X EXTS) (- ALPHA)))
                   (beta (+ (EXTENSION-PART X EXTS) (- BETA)))
                   (gamma (car exts)))
@@ -1730,7 +1827,7 @@
                                             x
                                             (if (quadratic-extensions-p (rest exts))
                                                 (rest exts)
-                                              nil)))))                                        
+                                              nil)))))
                   (alpha (+ (SUBFIELD-PART X EXTS) (- ALPHA)))
                   (beta (+ (EXTENSION-PART X EXTS) (- BETA)))
                   (gamma (car exts)))
@@ -2917,7 +3014,7 @@
   (implies (and (quadratic-extensions-p exts)
                 (is-linear-combination-p x exts)
                 (is-linear-combination-listp poly (rest exts))
-                (acl2-numberp x) 
+                (acl2-numberp x)
                 (equal (eval-polynomial poly x) 0)
                 (equal (qef-conjugate x exts) x))
            (exists-root-in-field-extension poly (rest exts)))
@@ -2936,7 +3033,7 @@
   (implies (and (quadratic-extensions-p exts)
                 (is-linear-combination-p x exts)
                 (is-linear-combination-listp poly (rest exts))
-                (acl2-numberp x) 
+                (acl2-numberp x)
                 (equal (eval-polynomial poly x) 0)
                 (not (equal (qef-conjugate x exts) x))
                 (polynomial-p poly)
@@ -2979,7 +3076,7 @@
   (implies (and (quadratic-extensions-p exts)
                 (is-linear-combination-p x exts)
                 (is-linear-combination-listp poly (rest exts))
-                (acl2-numberp x) 
+                (acl2-numberp x)
                 (equal (eval-polynomial poly x) 0)
                 (not (equal (qef-conjugate x exts) x))
                 (polynomial-p poly)
@@ -3123,7 +3220,7 @@
   (implies (and (quadratic-extensions-p exts)
                 (is-linear-combination-p x exts)
                 (is-linear-combination-listp poly (rest exts))
-                (acl2-numberp x) 
+                (acl2-numberp x)
                 (equal (eval-polynomial poly x) 0)
                 (not (equal (qef-conjugate x exts) x))
                 (polynomial-p poly)
@@ -3157,7 +3254,7 @@
   (implies (and (quadratic-extensions-p exts)
                 (is-linear-combination-p x exts)
                 (is-linear-combination-listp poly (rest exts))
-                (acl2-numberp x) 
+                (acl2-numberp x)
                 (equal (eval-polynomial poly x) 0)
                 (polynomial-p poly)
                 (equal (len poly) 4)
@@ -3292,7 +3389,7 @@
            :do-not-induct t
            :use ((:instance rational-implies1)
                  (:instance rational-implies2))
-           :in-theory (disable rational-implies2))))  
+           :in-theory (disable rational-implies2))))
 
 (defthmd rational-root-theorem-lemma-3
   (implies (and (polynomial-p poly)
@@ -4254,7 +4351,7 @@
               :in-theory (disable cosine-2x)
               ))))
 
-  
+
   (local
    (defthmd cosine-3x-lemma-8
      (equal (acl2-cosine (* 3 x))

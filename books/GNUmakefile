@@ -263,14 +263,12 @@ endif # ifneq ($(EXCLUDED_PREFIXES), )
 # it's just easiest to stop at the root.  We also exclude
 # centaur/satlink/solvers because it depends on all kinds of extra SAT
 # solvers.  We exclude projects/milawa/ACL2 because of the large
-# amount of disk space otherwise consumed, and we exclude
-# workshops/2020/gamboa-cowles-gamboa/number-field.lisp because it
-# takes quite a few hours to certify
+# amount of disk space otherwise consumed.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|workshops/2020/gamboa-cowles-gamboa/number-field.lisp|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
@@ -550,7 +548,6 @@ ADDED_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
-  workshops/2020/gamboa-cowles-gamboa/number-field.cert \
   doc/top-slow.cert
 
 # The following could well be considered as slow books, too.
