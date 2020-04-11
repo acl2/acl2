@@ -1170,16 +1170,17 @@
   :returns (expr jexprp)
   :short "Map an ACL2 function that models a Java primitive constructor
           to the Java expression that constructs the primitive value,
-          when the argument of the constructor is non a quoted constant."
+          when the argument of the constructor is not a quoted constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The parameter @('arg') is the Java expression for the argument,
-     which is an @('Acl2Symbol') for @(tsee boolean-value)
+    "The parameter @('arg-expr') is the Java expression for the argument,
+     which must be an @('Acl2Symbol') for @(tsee boolean-value)
      and an @('Acl2Integer') for the other constructors.")
    (xdoc::p
     "If the constructor is @(tsee boolean-value),
-     we turn it into a Java @('boolean') by comparing it with @('nil').")
+     we turn the argument ACL2 symbol into a Java @('boolean')
+     by comparing it with @('nil').")
    (xdoc::p
     "If the constructor is @(tsee long-value),
      we extract a Java @('long') from the ACL2 integer.")
@@ -1989,15 +1990,15 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model the construction of Java primitive values
-       (i.e. @(tsee boolean-value) etc.)
+       (i.e. @(tsee byte-value) etc.)
        are treated specially.
        If the argument is a quoted constant,
        the function call is translated
        to the constant Java primitive expression
        whose value is the quoted constant.
        If the argument is not a quoted constant,
-       we first translate it to a Java expression in the general way;
-       we then wrap the expression with code
+       first we translate it to a Java expression in the general way,
+       and then we wrap the expression with code
        to convert it to the appropriate Java primitive type.
        In all cases, we convert the resulting expression, as needed,
        to match the destination type.")
@@ -2064,14 +2065,23 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model the deconstruction of Java primitive values
-       (i.e. @(tsee boolean-value->bool) etc.)
+       (i.e. @(tsee byte-value->bool) etc.)
        are treated specially.
-       Their argument terms are translated to Java primitive values,
-       consistently with the input types of these deconstructors
-       and the fact that automatic conversions
-       from Java primitive values to any other types are disallowed.
-       Thus, we generate code to convert the Java primitive values
-       to the corresponding (Java representations of) ACL2 values."))
+       First we translate the argument,
+       which must yield a Java expression
+       of the appropriate Java primitive type,
+       because of the input ATJ types of the deconstructor.
+       If the deconstructor is @(tsee boolean-value->bool),
+       we convert it to the ACL2 symbol @('t') or @('nil')
+       via a Java conditional expression.
+       Otherwise, we call a factory method of @('Acl2Integer')
+       with the @('char'), @('byte'), @('short'), @('int'), or @('long')
+       argument;
+       if the argument is @('long'),
+       the method @('Acl2Integer.make(long)') is called,
+       otherwise the method @('Acl2Integer.make(int)')
+       (@('char'), @('byte'), and @('short')
+       are all automatically subjected to widening conversions to @('int')."))
     (b* (((mv arg-block
               arg-expr
               jvar-tmp-index)
@@ -2257,7 +2267,7 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model Java primitive conversions
-       are treated specially.
+       (i.e. @(tsee int-to-char) etc.) are treated specially.
        We generate a cast to the target type:
        for widening conversions, this is unnecessary,
        but for now we use this simple scheme
