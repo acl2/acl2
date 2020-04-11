@@ -146,24 +146,27 @@
 
    (xdoc::h4 "Arithmetic-light library")
 
-   (xdoc::p "The @('[books]/kestrel/arithmetic-light') directory contains a
-   library about arithmetic that aims to be as lightweight as possible.")
+   (xdoc::p "A new library, @('arithmetic-light') has been added.  It aims to
+   provide basic arithmetic reasoning while being as lightweight as possible.  See
+   the directory @('[books]/kestrel/arithmetic-light').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "BV (bit vector) library")
 
-   (xdoc::p "The @('[books]/kestrel/bv') directory contains a formalization of
-   bit vectors as natural numbers that underlies several tools developed by
-   Kestrel researchers.")
+   (xdoc::p "A new library, @('bv'), has been added.  It contains a
+   formalization of bit vectors as natural numbers.  The library underlies
+   several tools developed by Kestrel researchers. See the directory
+   @('[books]/kestrel/bv').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "BV-Lists library")
 
-   (xdoc::p "The @('[books]/kestrel/bv-lists') directory contains a library
-   about lists of bit vectors, including packing, unpacking, and conversions
-   between lists of bits and lists of bytes.")
+   (xdoc::p "A new library, @('bv-lists'), has been added. It formalizes
+   notions related to lists of bit vectors from the @('bv') library, including
+   packing, unpacking, and conversions between lists of bits and lists of
+   bytes. See the directory @('[books]/kestrel/bv-lists').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,24 +197,27 @@
 
    (xdoc::h4 "Library-wrappers library")
 
-   (xdoc::p "The @('[books]/kestrel/library-wrappers') directory contains books
-   that aim to improve other libraries by including them and then disabling
-   or replacing rules that may be problematic.")
+   (xdoc::p "A new library, @('library-wrappers'), has been added. It contains
+   books that aim to improve other libraries by including them and then
+   disabling or replacing rules that may be problematic. See the directory
+   @('[books]/kestrel/library-wrappers').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Lists-light library")
 
-   (xdoc::p "The @('[books]/kestrel/lists-light') directory contains a
-   library about lists that aims to be as lightweight as possible.")
+   (xdoc::p "A new library, @('lists-light') has been added.  It aims to
+   provide basic reasoning about lists while being as lightweight as possible.  See
+   the directory @('[books]/kestrel/lists-light').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Prime-fields library")
 
-   (xdoc::p "The @('[books]/kestrel/prime-fields') directory contains a
+   (xdoc::p "A new library, @('prime-fields') has been added.  It contains a
    formalization of prime fields and associated operations.  A prime field is a
-   finite field consisting of the integers modulo some prime p.")
+   finite field consisting of the integers modulo some prime. See the directory
+   @('[books]/kestrel/prime-fields').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
