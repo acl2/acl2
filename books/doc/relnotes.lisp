@@ -130,6 +130,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Alists-light library")
+
+   (xdoc::p "A new library, @('alists-light') has been added.  It aims to
+   provide basic reasoning about alists while being as lightweight as possible.
+   See the directory @('[books]/kestrel/alists-light').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "defarbrec" "Arbitrary Recursion Library"))
 
    (xdoc::p
@@ -146,24 +154,43 @@
 
    (xdoc::h4 "Arithmetic-light library")
 
-   (xdoc::p "The @('[books]/kestrel/arithmetic-light') directory contains a
-   library about arithmetic that aims to be as lightweight as possible.")
+   (xdoc::p "A new library, @('arithmetic-light') has been added.  It aims to
+   provide basic arithmetic reasoning while being as lightweight as possible.  See
+   the directory @('[books]/kestrel/arithmetic-light').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Axe")
+
+   (xdoc::p "A directory has been started to contain the implementation of
+   Kestrel's Axe tool.  This will be populated over time as we open source Axe.
+   See the directory @('[books]/kestrel/axe').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Booleans library")
+
+   (xdoc::p "A new library, @('booleans') has been added.  It provides
+   definitions and rules about operations on booleans.  See the directory
+   @('[books]/kestrel/booleans').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "BV (bit vector) library")
 
-   (xdoc::p "The @('[books]/kestrel/bv') directory contains a formalization of
-   bit vectors as natural numbers that underlies several tools developed by
-   Kestrel researchers.")
+   (xdoc::p "A new library, @('bv'), has been added.  It contains a
+   formalization of bit vectors as natural numbers.  The library underlies
+   several tools developed by Kestrel researchers. See the directory
+   @('[books]/kestrel/bv').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "BV-Lists library")
 
-   (xdoc::p "The @('[books]/kestrel/bv-lists') directory contains a library
-   about lists of bit vectors, including packing, unpacking, and conversions
-   between lists of bits and lists of bytes.")
+   (xdoc::p "A new library, @('bv-lists'), has been added. It formalizes
+   notions related to lists of bit vectors from the @('bv') library, including
+   packing, unpacking, and conversions between lists of bits and lists of
+   bytes. See the directory @('[books]/kestrel/bv-lists').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,26 +219,38 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "File-io-light library")
+
+   (xdoc::p "A new library, @('file-io-light') has been added.  It aims to
+   provide rules about basic input/output operations on files, while being as
+   lightweight as possible.  See the directory
+   @('[books]/kestrel/file-io-light').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Library-wrappers library")
 
-   (xdoc::p "The @('[books]/kestrel/library-wrappers') directory contains books
-   that aim to improve other libraries by including them and then disabling
-   or replacing rules that may be problematic.")
+   (xdoc::p "A new library, @('library-wrappers'), has been added. It contains
+   books that aim to improve other libraries by including them and then
+   disabling or replacing rules that may be problematic. See the directory
+   @('[books]/kestrel/library-wrappers').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Lists-light library")
 
-   (xdoc::p "The @('[books]/kestrel/lists-light') directory contains a
-   library about lists that aims to be as lightweight as possible.")
+   (xdoc::p "A new library, @('lists-light') has been added.  It aims to
+   provide basic reasoning about lists while being as lightweight as possible.  See
+   the directory @('[books]/kestrel/lists-light').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Prime-fields library")
 
-   (xdoc::p "The @('[books]/kestrel/prime-fields') directory contains a
+   (xdoc::p "A new library, @('prime-fields') has been added.  It contains a
    formalization of prime fields and associated operations.  A prime field is a
-   finite field consisting of the integers modulo some prime p.")
+   finite field consisting of the integers modulo some prime. See the directory
+   @('[books]/kestrel/prime-fields').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -669,13 +708,111 @@
    (xdoc::h4 "Kestrel Utilities")
 
    (xdoc::p
-    "A new book, @('[books]/kestrel/utilities/smaller-termp'), contains
-     a utility to compare the sizes of terms.")
+    "Note that some of the books below are not as polished as they could be.
+    Such books contain the text @('STATUS: IN-PROGRESS') near the top of the
+    file.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/conjunctions') contains
+     utilities for manipulating conjunctions.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/declares0') contains
+     utilities for manipulating @(tsee declare)s .")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/def-constant-opener')
+    contains a utility that generates an opener theorem for a function when all
+    arguments are constant (this is used by Axe).")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/defopeners') contains a
+    utility for making opener rules for recursive functions.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/deftest'), contains a utility,
+     @('deftest') for isolating tests and running them with extensive guard
+     checking.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/defthm-events') contains
+    utilities for processing @(tsee defthm) forms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/defun-events') contains
+    utilities for processing @(tsee defun) forms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/disables') disables some
+    built-in functions that may be convenient to have disabled from the
+    start.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/doublets2') contains
+    utilities that deal with doublets (true lists of length 2).")
 
    (xdoc::p
     "A new book, @('[books]/kestrel/utilities/equal-of-booleans'), contains
      rules to break an equality of two booleans into the equivalent conjunction
      of two implications.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/erp') contains utilities
+    for returning errors (which are often assigned to a variable called @('erp').")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/forms') contains basic
+    utilities about forms that look like function calls.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/keyword-value-lists2')
+    contains utilities about keyword-value-lists.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-and') contains a
+    utility to make an untranslated conjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-and-nice') contains a
+    utility to make a, possibly simplified, untranslated conjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-or') contains a
+    utility to make an untranslated disjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-or-nice') contains a
+    utility to make a, possibly simplified, untranslated disjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/my-get-event') contains a utility
+    to get the (untranslated) event that introduced a function.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/pack') contains utilities for
+    making symbols from strings, natural numbers, characters, and other
+    symbols.")
+
+   (xdoc::p
+    "A new book,
+    @('[books]/kestrel/utilities/remove-duplicates-equal-dollar') contains a
+    utility to remove duplicates, keeping the first of each set.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/smaller-termp'), contains
+     a utility to compare the sizes of terms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/substitution') contains
+   utilities that perform substitution.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/terms') contains various
+    utilities for manipulating terms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/world') contains utilities
+    for querying the ACL2 logical world.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,7 +833,7 @@
    (xdoc::h4 "Pseudo-good-world")
 
    (xdoc::p
-    "Some functions have been factored ouf of the file
+    "Some functions have been factored out of the file
      @('[book]/system/pseudo-good-worldp.lisp'),
      and put into new individual files,
      for greater modularity.")
