@@ -54,7 +54,7 @@
   (xdoc::topstring
    (xdoc::p
     "As we collect quoted constants for the purposes described "
-    (xdoc::seetopic "atj-shallow-quoted-constants" "here")
+    (xdoc::seetopic "atj-shallow-quoted-constant-generation" "here")
     ", we store their values (without quotes)
      in a record where they are partitioned into:
      (i) integers;

@@ -2128,7 +2128,7 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model the deconstruction of Java primitive values
-       (i.e. @(tsee byte-value->bool) etc.)
+       (i.e. @(tsee byte-value->int) etc.)
        are treated specially.
        First we translate the argument in the general way
        and then we convert that from the Java appropriate primitive type."))

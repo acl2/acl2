@@ -97,7 +97,7 @@
    (xdoc::p
     "According to the grammar rule for @('string-literal') [JLS:3.10.5],
      a string literal consists of zero or more @('string-character')s
-     (which we formalize via @(tsee stringlit-char))
+     (which we formalize via @(tsee string-literal-char))
      between double quotes.
      Abstractly, but without losing any information,
      we leave the surrounding double quotes implicit,
