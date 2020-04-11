@@ -1,10 +1,14 @@
+(in-package "ACL2") 
+
+; cert_param: (uses-acl2r)
+
+
 ;;===========norm-1C.lisp================= 
 ;; ACL2 & ACL2(r) book for 
 ;; norm-1C(a+bi) = |a|+|b| [Manhattan norm] 
 
 ;; 15 FEB 2019 
 
-(in-package "ACL2") 
 #|================================ 
 norm-1C is a norm on the set of acl2-numberps. 
 
@@ -44,43 +48,15 @@ i-large(norm-1C(x)) = i-large(x)
 For i-limited x, 
 standard-part(norm-1C(x)) = norm-1C(standard-part(x)) 
 =================================|# 
-#|==================================== 
-To certify: 
-(certify-book "norm-1C" 
-0 ;; world with no commands 
-) 
-=============================== 
-To use: 
-(include-book "norm-1C" 
-:uncertified-okp nil 
-:defaxioms-okp nil 
-:skip-proofs-okp nil 
-) 
-============================== 
-(LD "norm-1C.lisp") ; read and evaluate each form in file 
-======================================== 
-:set-gag-mode t ; enable gag-mode, suppressing most proof commentary 
-(set-gag-mode t) ; same as above 
-:set-gag-mode :goals ; same as above, but print names of goals when produced 
-:set-gag-mode nil ; disable gag-mode 
-=================================== 
-ACL2 Version 8.1 built February 11, 2019 15:37:06. 
-System books directory "/home/acl2/acl2-8.1/acl2-8.1/books/". 
-------------------------------------------------- 
-ACL2 Version 8.1(r) built September 21, 2018 08:17:49. 
-System books directory "/home/acl2/acl2-8.1r/acl2-8.1/books/". 
-=================================|# 
 
 (local 
- (include-book "arithmetic/top-with-meta" 
-               :dir :system 
+ (include-book "arithmetic/top-with-meta" :dir :system 
                :uncertified-okp nil 
                :defaxioms-okp nil 
                :skip-proofs-okp nil)) 
 
 #+:non-standard-analysis 
-(include-book "nonstd/nsa/nsa" 
-              :dir :system 
+(include-book "nonstd/nsa/nsa" :dir :system 
               :uncertified-okp nil 
               :defaxioms-okp nil 
               :skip-proofs-okp nil) 

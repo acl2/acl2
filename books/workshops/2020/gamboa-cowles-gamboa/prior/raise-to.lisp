@@ -1,5 +1,7 @@
 (in-package "ACL2")
 
+; cert_param: (uses-acl2r)
+
 (local (include-book "arithmetic/idiv" :dir :system))
 (local (include-book "arithmetic/realp" :dir :system))
 

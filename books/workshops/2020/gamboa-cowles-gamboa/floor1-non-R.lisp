@@ -8,33 +8,10 @@
 
 (in-package "ACL2") 
 
-#|============================ 
-To certify: 
-(certify-book "floor1-non-R" 
-0 ;; world with no commands 
-) 
-=============================== 
-To use: 
-(include-book "floor1-non-R" 
-:uncertified-okp nil 
-:defaxioms-okp nil 
-:skip-proofs-okp nil 
-) 
-================================ 
-(LD "floor1-non-R.lisp") ; read and evaluate each form in file 
-=============================== 
-:set-gag-mode t ; enable gag-mode, suppressing most proof commentary 
-(set-gag-mode t) ; same as above 
-:set-gag-mode :goals ; same as above, but print names of goals when produced 
-:set-gag-mode nil ; disable gag-mode 
-================================ 
-ACL2 Version 8.1 built February 11, 2019 15:37:06. 
-System books directory "/home/acl2/acl2-8.1/acl2-8.1/books/". 
-================================|# 
+; cert_param: (uses-acl2r)
 
 (local 
- (include-book "arithmetic-5/top" 
-               :dir :system 
+ (include-book "arithmetic-5/top" :dir :system 
                :uncertified-okp nil 
                :defaxioms-okp nil 
                :skip-proofs-okp nil)) 

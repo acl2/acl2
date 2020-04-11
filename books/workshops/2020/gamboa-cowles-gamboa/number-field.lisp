@@ -1,5 +1,7 @@
 (in-package "ACL2")
 
+; cert_param: (uses-acl2r)
+
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
@@ -4311,3 +4313,4 @@
            :use ((:instance cos-pi/9-is-root-of-trisect-angle)
                  (:instance roots-not-in-quadratic-extension-trisect-angle
                             (x (acl2-cosine (/ (acl2-pi) 9))))))))
+

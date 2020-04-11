@@ -548,6 +548,7 @@ ADDED_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
+  workshops/2020/gamboa-cowles-gamboa/number-field.cert \
   doc/top-slow.cert
 
 # The following could well be considered as slow books, too.
