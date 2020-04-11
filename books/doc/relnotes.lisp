@@ -702,7 +702,7 @@
    (xdoc::h4 "Pseudo-good-world")
 
    (xdoc::p
-    "Some functions have been factored ouf of the file
+    "Some functions have been factored out of the file
      @('[book]/system/pseudo-good-worldp.lisp'),
      and put into new individual files,
      for greater modularity.")
