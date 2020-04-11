@@ -193,62 +193,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-let-bindings ((vars symbol-listp)
-                                      (blocks jblock-listp)
-                                      (exprs jexpr-listp))
-  :guard (and (int= (len blocks) (len vars))
-              (int= (len exprs) (len vars)))
-  :returns (block jblockp :hyp (jblock-listp blocks))
-  :short "Generate shallowly embedded ACL2 @(tsee let) bindings."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the shallow embedding approach,
-     ACL2 lambda expressions (i.e. @(tsee let)s)
-     are handled by assigning the Java expressions
-     generated from the actual parameters of the lambda expression
-     to Java local variables corresponding to the formal parameters.
-     This function generates these bindings,
-     given the ACL2 variables that are the formal arguments
-     and the Java expressions to assign to them.
-     Each binding is preceded by the block (if any)
-     generated for the corresponding actual argument of the lambda expression.")
-   (xdoc::p
-    "Prior to calling this function,
-     the variables of all the lambda expressiona have been marked
-     as `new' or `old' via @(tsee atj-mark-term).
-     We extract this mark and use it to generate
-     either a variable declaration with initializer (for `new')
-     or an assignment to an existing variable (for `old').")
-   (xdoc::p
-    "Prior to calling this function,
-     the variables of all the lambda expressions have been annotated
-     via @(tsee atj-type-annotate-term).
-     Thus, each ACL2 variable name carries its own non-empty list of types,
-     which we use to determine the Java type of the Java variable.")
-   (xdoc::p
-    "Prior to calling this function,
-     the variables of all the lambda expressions have been renamed
-     via @(tsee atj-rename-term).
-     Thus, we directly turn each ACL2 variable into a Java variable name
-     (after removing the type annotations)."))
-  (b* (((when (endp vars)) nil)
-       (var (car vars))
-       (expr (car exprs))
-       ((mv var new?) (atj-unmark-var var))
-       ((mv var types) (atj-type-unannotate-var var))
-       (jvar (symbol-name var))
-       (var-block (if new?
-                      (jblock-locvar (atj-gen-shallow-jtype types) jvar expr)
-                    (jblock-asg (jexpr-name jvar) expr)))
-       (first-block (append (car blocks) var-block))
-       (rest-block (atj-gen-shallow-let-bindings (cdr vars)
-                                                 (cdr blocks)
-                                                 (cdr exprs))))
-    (append first-block rest-block)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-adapt-expr-from-jprim-to-cons ((expr jexprp)
                                            (type primitive-typep))
   :returns (new-expr jexprp)
@@ -1608,6 +1552,62 @@
      (double-array-write (primitive-type-double))
      (t (prog2$ (impossible) ""))))
   :guard-hints (("Goal" :in-theory (enable atj-java-primarray-write-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-let-bindings ((vars symbol-listp)
+                                      (blocks jblock-listp)
+                                      (exprs jexpr-listp))
+  :guard (and (int= (len blocks) (len vars))
+              (int= (len exprs) (len vars)))
+  :returns (block jblockp :hyp (jblock-listp blocks))
+  :short "Generate shallowly embedded ACL2 @(tsee let) bindings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding approach,
+     ACL2 lambda expressions (i.e. @(tsee let)s)
+     are handled by assigning the Java expressions
+     generated from the actual parameters of the lambda expression
+     to Java local variables corresponding to the formal parameters.
+     This function generates these bindings,
+     given the ACL2 variables that are the formal arguments
+     and the Java expressions to assign to them.
+     Each binding is preceded by the block (if any)
+     generated for the corresponding actual argument of the lambda expression.")
+   (xdoc::p
+    "Prior to calling this function,
+     the variables of all the lambda expressiona have been marked
+     as `new' or `old' via @(tsee atj-mark-term).
+     We extract this mark and use it to generate
+     either a variable declaration with initializer (for `new')
+     or an assignment to an existing variable (for `old').")
+   (xdoc::p
+    "Prior to calling this function,
+     the variables of all the lambda expressions have been annotated
+     via @(tsee atj-type-annotate-term).
+     Thus, each ACL2 variable name carries its own non-empty list of types,
+     which we use to determine the Java type of the Java variable.")
+   (xdoc::p
+    "Prior to calling this function,
+     the variables of all the lambda expressions have been renamed
+     via @(tsee atj-rename-term).
+     Thus, we directly turn each ACL2 variable into a Java variable name
+     (after removing the type annotations)."))
+  (b* (((when (endp vars)) nil)
+       (var (car vars))
+       (expr (car exprs))
+       ((mv var new?) (atj-unmark-var var))
+       ((mv var types) (atj-type-unannotate-var var))
+       (jvar (symbol-name var))
+       (var-block (if new?
+                      (jblock-locvar (atj-gen-shallow-jtype types) jvar expr)
+                    (jblock-asg (jexpr-name jvar) expr)))
+       (first-block (append (car blocks) var-block))
+       (rest-block (atj-gen-shallow-let-bindings (cdr vars)
+                                                 (cdr blocks)
+                                                 (cdr exprs))))
+    (append first-block rest-block)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
