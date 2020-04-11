@@ -330,6 +330,95 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-convert-expr-to-jprim ((expr jexprp) (type primitive-typep))
+  :returns (new-expr jexprp)
+  :short "Convert a Java expression to a Java primitive type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to translate calls of
+     Java primitive constructors like @(tsee byte-value).")
+   (xdoc::p
+    "If the type is @('boolean'),
+     the input expression must have type @('Acl2Symbol');
+     see the input and output types of @(tsee boolean-value).
+     In this case, we convert the expression
+     by comparing it with (the Java representation of) @('nil').")
+   (xdoc::p
+    "If the type is @('char'), @('byte'), or @('short'),
+     the input expression must have type @('Acl2Integer');
+     see the input and output types of
+     @(tsee char-value), @(tsee byte-value), and @(tsee short-value).
+     In this case, we convert the input expression
+     by extracting a Java @('int') from the @('Acl2Integer')
+     and we cast to the appropriate primitive type.")
+   (xdoc::p
+    "If the type is @('int'),
+     the input expression must have type @('Acl2Integer');
+     see the input and output types of @(tsee int-value).
+     In this case, we convert the input expression
+     by extracting a Java @('int') from the @('Acl2Integer').")
+   (xdoc::p
+    "If the type is @('long'),
+     the input expression must have type @('Acl2Integer');
+     see the input and output types of @(tsee long-value).
+     In this case, we convert the input expression
+     by extracting a Java @('long') from the @('Acl2Integer').")
+   (xdoc::p
+    "If the type is @('float') and @('double'), an error occurs.
+     These conversions are not supported yet,
+     because we have only an abstract model of these two types for now."))
+  (case (primitive-type-kind type)
+    (:boolean (jexpr-binary (jbinop-ne) expr (atj-gen-symbol nil)))
+    ((:char :byte :short) (jexpr-cast (jtype-prim type)
+                                      (jexpr-smethod *aij-type-int*
+                                                     "getJavaInt"
+                                                     (list expr))))
+    (:int (jexpr-smethod *aij-type-int* "getJavaInt" (list expr)))
+    (:long (jexpr-smethod *aij-type-int* "getJavaLong" (list expr)))
+    (t (prog2$ (raise "Internal error: ~
+                       cannot convert expression ~x0 to type ~x1."
+                      expr type)
+               (ec-call (jexpr-fix :irrelevant)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-convert-expr-from-jprim ((expr jexprp) (type primitive-typep))
+  :returns (new-expr jexprp)
+  :short "Convert a Java expression from a Java primitive type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to translate calls of
+     Java primitive deconstructors like @(tsee byte-value->int).")
+   (xdoc::p
+    "If the type is @('boolean'),
+     we convert it to the @('Acl2Symbol') @('t') or @('nil')
+     via a Java conditional expression.")
+   (xdoc::p
+    "If the type is @('char'), @('byte'), @('short'), @('int'), or @('long'),
+     we convert it to an @('Acl2Integer') by calling @('make').
+     The method called is @('Acl2Integer.make(int)')
+     if the type is @('char'), @('byte'), @('short'), or @('int'),
+     while it is @('Acl2Integer.make(long)') if the type is @('long').")
+   (xdoc::p
+    "If the type is @('float') and @('double'), an error occurs.
+     These conversions are not supported yet,
+     because we have only an abstract model of these two types for now."))
+  (case (primitive-type-kind type)
+    (:boolean (jexpr-cond expr (atj-gen-symbol t) (atj-gen-symbol nil)))
+    ((:char :byte :short :int :long) (jexpr-smethod *aij-type-int*
+                                                    "make"
+                                                    (list expr)))
+    (t (prog2$ (raise "Internal error: ~
+                       cannot convert expression ~x0 to type ~x1."
+                      expr type)
+               (ec-call (jexpr-fix :irrelevant)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-convert-from-primarray-method-name ((type primitive-typep))
   :returns (method-name stringp :hyp :guard)
   :short "Name of the method to convert
@@ -1165,63 +1254,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-of-nonqconst-to-expr ((fn atj-java-primitive-constr-p)
-                                               (arg-expr jexprp))
-  :returns (expr jexprp)
+(define atj-jprim-constr-to-ptype ((fn atj-java-primitive-constr-p))
+  :returns (ptype primitive-typep)
   :short "Map an ACL2 function that models a Java primitive constructor
-          to the Java expression that constructs the primitive value,
-          when the argument of the constructor is not a quoted constant."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The parameter @('arg-expr') is the Java expression for the argument,
-     which must be an @('Acl2Symbol') for @(tsee boolean-value)
-     and an @('Acl2Integer') for the other constructors.")
-   (xdoc::p
-    "If the constructor is @(tsee boolean-value),
-     we turn the argument ACL2 symbol into a Java @('boolean')
-     by comparing it with @('nil').")
-   (xdoc::p
-    "If the constructor is @(tsee long-value),
-     we extract a Java @('long') from the ACL2 integer.")
-   (xdoc::p
-    "For the other constructors,
-     we extract a Java @('int') from the ACL2 integer,
-     and we cast to the appropriate primitive type
-     unless the constructor is @(tsee int-value)."))
-  (b* (((when (eq fn 'boolean-value))
-        (jexpr-binary (jbinop-ne) arg-expr (atj-gen-symbol nil)))
-       ((when (eq fn 'long-value))
-        (jexpr-smethod *aij-type-int* "getJavaLong" (list arg-expr)))
-       (expr (jexpr-smethod *aij-type-int* "getJavaInt" (list arg-expr))))
-    (case fn
-      (char-value (jexpr-cast (jtype-char) expr))
-      (byte-value (jexpr-cast (jtype-byte) expr))
-      (short-value (jexpr-cast (jtype-short) expr))
-      (int-value expr)
-      (t (prog2$ (impossible)
-                 (ec-call (jexpr-fix :irrelevant))))))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p))))
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-value (primitive-type-boolean))
+    (char-value (primitive-type-char))
+    (byte-value (primitive-type-byte))
+    (short-value (primitive-type-short))
+    (int-value (primitive-type-int))
+    (long-value (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-type ((fn atj-java-primitive-constr-p))
-  :returns (type atj-typep)
-  :short "Map an ACL2 function that models a Java primitive constructor
-          to the ATJ type of the function's argument."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to translate to Java a call of @('fn')
-     whose argument is not a quoted constant term.
-     In this case, the Java expression resulting from the argument term
-     is adapted (converted) to the Java primitive type.
-     In this conversion the source ATJ type is
-     @(':asymbol') for the @(tsee boolean-value) constructor,
-     @(':ainteger') for the other constructors."))
-  (if (eq fn 'boolean-value)
-      (atj-type-acl2 (atj-atype-symbol))
-    (atj-type-acl2 (atj-atype-integer))))
+(define atj-jprim-deconstr-to-ptype ((fn atj-java-primitive-deconstr-p))
+  :returns (ptype primitive-typep)
+  :short "Map an ACL2 function that models a Java primitive deconstructor
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-value->bool$inline (primitive-type-boolean))
+    (char-value->nat$inline (primitive-type-char))
+    (byte-value->int$inline (primitive-type-byte))
+    (short-value->int$inline (primitive-type-short))
+    (int-value->int$inline (primitive-type-int))
+    (long-value->int$inline (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-deconstr-p)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1998,8 +2061,7 @@
        whose value is the quoted constant.
        If the argument is not a quoted constant,
        first we translate it to a Java expression in the general way,
-       and then we wrap the expression with code
-       to convert it to the appropriate Java primitive type.
+       and then we convert it to the appropriate Java primitive type.
        In all cases, we convert the resulting expression, as needed,
        to match the destination type.")
      (xdoc::p
@@ -2028,7 +2090,8 @@
                                     qpairs
                                     t ; GUARDS$
                                     wrld))
-             (expr (atj-jprim-constr-of-nonqconst-to-expr fn arg-expr)))
+             (expr (atj-convert-expr-to-jprim arg-expr
+                                              (atj-jprim-constr-to-ptype fn))))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
               jvar-tmp-index))))
@@ -2067,21 +2130,8 @@
        the functions that model the deconstruction of Java primitive values
        (i.e. @(tsee byte-value->bool) etc.)
        are treated specially.
-       First we translate the argument,
-       which must yield a Java expression
-       of the appropriate Java primitive type,
-       because of the input ATJ types of the deconstructor.
-       If the deconstructor is @(tsee boolean-value->bool),
-       we convert it to the ACL2 symbol @('t') or @('nil')
-       via a Java conditional expression.
-       Otherwise, we call a factory method of @('Acl2Integer')
-       with the @('char'), @('byte'), @('short'), @('int'), or @('long')
-       argument;
-       if the argument is @('long'),
-       the method @('Acl2Integer.make(long)') is called,
-       otherwise the method @('Acl2Integer.make(int)')
-       (@('char'), @('byte'), and @('short')
-       are all automatically subjected to widening conversions to @('int')."))
+       First we translate the argument in the general way
+       and then we convert that from the Java appropriate primitive type."))
     (b* (((mv arg-block
               arg-expr
               jvar-tmp-index)
@@ -2094,11 +2144,8 @@
                                 qpairs
                                 t ; GUARDS$
                                 wrld))
-         (expr (if (eq fn 'boolean-value->bool$inline)
-                   (jexpr-cond arg-expr
-                               (atj-gen-symbol t)
-                               (atj-gen-symbol nil))
-                 (jexpr-smethod *aij-type-int* "make" (list arg-expr))))
+         (expr (atj-convert-expr-from-jprim arg-expr
+                                            (atj-jprim-deconstr-to-ptype fn)))
          (src-type (atj-type-list-to-type src-types))
          (dst-type (atj-type-list-to-type dst-types)))
       (mv arg-block
@@ -2339,7 +2386,7 @@
        If the argument has a different form,
        we first translate it to a Java expression in the general way;
        we then wrap the expression with code
-       to convert it to the appropriate Java primitive type.
+       to convert it to the appropriate Java primitive array type.
        In all cases, we convert the resulting expression, as needed,
        to match the destination type.")
      (xdoc::p
