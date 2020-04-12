@@ -528,6 +528,9 @@
    (xdoc::h4 (xdoc::seetopic "event-macros" "Event Macros Library"))
 
    (xdoc::p
+    "Utilities for applicability conditions have been added.")
+
+   (xdoc::p
     "XDOC constructors for documenting the implementation of event macros
      have been added.")
 
