@@ -560,7 +560,7 @@
    (xdoc::p
     "A new macro @(tsee fty::deffixequiv-sk) has been added
      to automate the proof of @(tsee fty::deffixequiv) theorems
-     for @(tsee defun-sk) (including @(tsee define-sk)) functions.")
+     for @(tsee defun-sk) (including @(tsee std::define-sk)) functions.")
 
    (xdoc::p
     "A new macro @(tsee fty::defflatsum) has been added
