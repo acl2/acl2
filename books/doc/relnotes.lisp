@@ -916,7 +916,8 @@
    (xdoc::h4 (xdoc::seetopic "std/lists" "Standard Lists Library"))
 
    (xdoc::p
-    "Added a file @('union.lisp') with theorems about @(tsee union-equal).")
+    "A file @('union.lisp') has been added
+     with theorems about @(tsee union-equal).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
