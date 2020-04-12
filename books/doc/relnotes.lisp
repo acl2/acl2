@@ -557,6 +557,15 @@
      similar to @(tsee std::deflist),
      which results in some better theorems when supplied.")
 
+   (xdoc::p
+    "A new macro @(tsee fty::deffixequiv-sk) has been added
+     to automate the proof of @(tsee fty::deffixequiv) theorems
+     for @(tsee defun-sk) (including @(tsee define-sk)) functions.")
+
+   (xdoc::p
+    "A new macro @(tsee fty::defflatsum) has been added
+     to introduce ``flat'' (i.e. not tagged) sums of disjoint types.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "gl::gl" "GL"))
