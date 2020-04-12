@@ -890,13 +890,13 @@
    (xdoc::p
     "The function @(tsee symbol-package-name-lst)
      has been moved to the Std extensions in the Kestrel Books,
-     under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
+     under @('[books]/kestrel/std/basic/').")
 
    (xdoc::p
     "The function @(tsee symbol-package-name-non-cl),
      originally called @('symbol-package-name-safe') but now renamed,
      has been moved to the Std extensions in the Kestrel Books,
-     under @('[books]/kestrel/std/basic/symbol-package-name-non-cl.lisp').")
+     under @('[books]/kestrel/std/basic/').")
 
    (xdoc::p
     "The functions @(tsee organize-symbols-by-name)
@@ -907,7 +907,9 @@
    (xdoc::p
     "A variant @(tsee mbt$) of @(tsee mbt) has been introduced,
      which requires the argument to be just non-@('nil')
-     instead of exactly @('t').")
+     instead of exactly @('t').
+     This is in the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
