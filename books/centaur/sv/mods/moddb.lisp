@@ -5146,6 +5146,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     :measure (mod-meas (modname-fix modname) modalist)
     :ruler-extenders :all
     :verify-guards nil
+    :short "Copy the wire hierarchy of an SV module into a moddb."
     (b* ((modalist (mbe :logic (modalist-fix modalist) :exec modalist))
          (modname (mbe :logic (modname-fix modname) :exec modname))
          ((when (moddb-modname-get-index modname moddb))
@@ -7699,6 +7700,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                  ;;                                       svex-modinsts->flatten)
                  ;;                   :expand ((svex-mod->flatten scope modalist moddb)))))
                  )
+    :short "Flatten an SV module into a list of assignments and aliases."
     (b* (((modscope scope))
          ((stobj-get name ninsts)
           ((elab-mod (moddb->modsi scope.modidx moddb)))

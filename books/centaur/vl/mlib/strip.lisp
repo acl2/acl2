@@ -82,3 +82,8 @@ details.</p>")
           vl-taskdecl
           vl-alias
           vl-stmt))
+
+(defxdoc vl-expr-strip
+  :parents (stripping-functions)
+  :short "Strip an expression, removing attributes and code locations."
+  :long "See @(see stripping-functions).")

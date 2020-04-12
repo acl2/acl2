@@ -438,7 +438,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        (parents    (getarg :parents        nil guts.kwd-alist))
        (parents    (if (assoc :parents guts.kwd-alist)
                        parents
-                     (and cliquename (list cliquename)))))
+                     (and cliquename
+                          (not (eq cliquename guts.name))
+                          (list cliquename)))))
 
     `((defsection ,guts.name
         ,@(and parents `(:parents ,parents))
@@ -686,7 +688,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        (kwd-alist (remove1-assoc :parents kwd-alist))
        (kwd-alist (acons :short (or short sub-short) kwd-alist))
        (kwd-alist (acons :long  (or long  sub-long) kwd-alist))
-       (kwd-alist (acons :parents (or parents sub-parents) kwd-alist))
+       (kwd-alist (acons :parents (if parentsp parents sub-parents) kwd-alist))
        (new-guts (change-defguts guts1 :kwd-alist kwd-alist)))
     (cons new-guts rest)))
 
@@ -727,7 +729,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                      (xdoc::get-default-parents world)))
        (fnnames    (collect-names-from-guts gutslist))
 
-       (want-xdoc-p (or short long parents))
+       (want-xdoc-p (or short long parents-p))
 
        ((mv short long parents kwd-alist gutslist)
         (if (and want-xdoc-p (member name fnnames))
@@ -815,7 +817,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
     `(,@(if prognp '(progn) '(encapsulate nil))
        (with-output :stack :pop (progn . ,prepwork))
        (defsection-progn ,name
-         ,@(and parents `(:parents ,parents))
+         ,@(and parents-p `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
          (with-output :on (error) (progn . ,macros))

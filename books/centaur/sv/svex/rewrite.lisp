@@ -1068,11 +1068,13 @@ functions) and that it is being given the right number of arguments.</p>
 
 (defines svex-rewrite
   :verify-guards nil
+  :parents (rewriting)
   (define svex-rewrite ((x svex-p)
                         (masks svex-mask-alist-p)
                         (multirefs svex-key-alist-p)
                         (out-multirefs svex-key-alist-p)
                         (memo svex-svex-memo-p))
+    :short "Recursively rewrite an @(see svex) expression."
     :returns (mv (xx svex-p)
                  (out-multirefs svex-key-alist-p)
                  (memo svex-svex-memo-p))
@@ -1112,6 +1114,7 @@ functions) and that it is being given the right number of arguments.</p>
                             (multirefs svex-key-alist-p)
                             (out-multirefs svex-key-alist-p)
                             (memo svex-svex-memo-p))
+    :short "Recursively rewrite a list of @(see svex) expressions."
     :returns (mv (xx svexlist-p)
                  (out-multirefs svex-key-alist-p)
                  (memo svex-svex-memo-p))
