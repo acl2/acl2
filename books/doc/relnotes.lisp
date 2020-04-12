@@ -586,7 +586,7 @@
    (xdoc::p
     "The implementation of ATJ has been improved
      to use a more general abstract syntax and pretty-printer for Java
-     (which are part of the implementation of ATJ),
+     (which are currently part of the implementation of ATJ),
      instead of writing directly to the output channel piecewise.
      This provides more flexibility, and the ability to have more code
      in logic mode and guard-verified.")
@@ -605,19 +605,20 @@
 
    (xdoc::p
     "ATJ has been extended with the ability to generate Java code
+     that operates on narrower types than the one for all ACL2 values.
+     This ability is available in the shallow embedding approach,
+     when guards are assumed satisfied.")
+
+   (xdoc::p
+    "ATJ has been extended with the ability to generate Java code
      that uses Java primitive values and operations.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
 
    (xdoc::p
     "ATJ has been extended with the ability to generate Java code
-     that uses Java primitive arrays and operations.
-     This ability is available in the shallow embedding approach,
-     when guards are assumed satisfied.")
-
-   (xdoc::p
-    "ATJ has been extended with the ability to generate Java code
-     that operates on narrower types than the one for all ACL2 values.
+     that uses Java primitive arrays and operations,
+     and to destructively update arrays.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
 
@@ -626,6 +627,10 @@
      from tail-recursive ACL2 functions.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
+
+   (xdoc::p
+    "A comprehensive tutorial on ATJ has been started.
+     It is available at @(tsee java::atj-tutorial).")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -651,10 +656,19 @@
      (see release notes about ATJ).")
 
    (xdoc::p
+    "Native Java implementations of a few more ACL2 built-in functions
+     have been added.")
+
+   (xdoc::p
     "The documentation of AIJ has been extended and improved.
      In particular, explicit preconditions have been added for public methods,
      and explicit invariants have been added for non-public fields
      and for arguments and results of non-public methods.")
+
+   (xdoc::p
+    "A number of JUnit unit tests have been added
+     for some of the AIJ Java code.
+     More unit tests are planned.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -687,7 +701,11 @@
 
    (xdoc::p
     "Models have been added
-     of the decimal, hexadecimal, octal, and binary integer literals.")
+     of the decimal, hexadecimal, octal, and binary integer literals.
+     Abstract models have been added
+     of the floating-point literals.
+     Models have been added
+     of the character and string literals.")
 
    (xdoc::p
     "A model of the processing of Unicode escapes has been added.
@@ -699,6 +717,13 @@
      Abstract models have also been added of all the floating-point operations,
      as well as of all the primitive conversions
      involving floating-point values.")
+
+   (xdoc::p
+    "A model of (opaque) pointers has been added.
+     A model of reference values (consisting of pointers and a null reference)
+     has been added.
+     A model of all values, consisting of primitive and reference values,
+     has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
