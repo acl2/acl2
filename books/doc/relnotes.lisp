@@ -994,6 +994,14 @@
      This macro is currently in the Std/util extensions in the Kestrel Books,
      but could be moved to @('[books]/std/util') at some point.")
 
+   (xdoc::p
+    "A new macro @(tsee defiso) has been added,
+     to establish isomorphic mappings by verification.")
+
+   (xdoc::p
+    "A new macro @(tsee defmax-nat) has been added,
+     to introduce functions to return maxima of sets of natural numbers.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Tools")
