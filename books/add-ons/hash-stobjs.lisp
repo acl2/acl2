@@ -423,7 +423,7 @@
            (bigstobj (honshash-put (list 0) 0 bigstobj)))
       (mv nil '(value-triple :invisible) state bigstobj)))
 
-   (include-book "misc/assert" :dir :system)
+   (include-book "std/testing/assert" :dir :system)
 
    (assert! (equal (bighash-get 0 bigstobj) 0))
    (assert! (equal (slowhash-get '(0) bigstobj) 0))

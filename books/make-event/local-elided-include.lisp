@@ -107,7 +107,7 @@
 (include-book "local-elided")
 
 ; Define must-succeed (used below).
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; Define read-list (used below).
 (include-book "misc/file-io" :dir :system)

@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 ; Define must-succeed and must-fail:
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; A simple test:
 (must-succeed

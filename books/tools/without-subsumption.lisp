@@ -167,7 +167,7 @@
                   (k-params-badguy n (- k 1) params))))))))
 
 
-(local (include-book "misc/eval" :dir :system))
+(local (include-book "std/testing/eval" :dir :system))
 
 ;; As formulated, the following proof fails.  I'm turning off (zp)
 ;; related rules to help show what is happening.

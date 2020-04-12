@@ -528,7 +528,7 @@
 
 (logic)
 
-(local (include-book "misc/eval" :dir :system))
+(local (include-book "std/testing/eval" :dir :system))
 
 (local
  (encapsulate

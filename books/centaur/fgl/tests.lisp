@@ -33,7 +33,7 @@
 (include-book "top")
 
 (include-book "centaur/ipasir/ipasir-backend" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (value-triple (acl2::tshell-ensure))
 
 ; cert_param: (uses-glucose)

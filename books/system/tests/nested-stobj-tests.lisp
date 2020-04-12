@@ -21,8 +21,8 @@
 
 (in-package "ACL2")
 
-(include-book "misc/eval" :dir :system) ; defines must-fail
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/eval" :dir :system) ; defines must-fail
+(include-book "std/testing/assert" :dir :system)
 
 (defmacro local-test (&key defs run check)
 

@@ -98,7 +98,7 @@
 (assert-event (equal (list (halt1 st1) (halt2 st1) (halt2 st2) (halt1 st2))
                      '(7 7 3 3)))
 
-(include-book "eval")
+(include-book "std/testing/eval" :dir :system)
 
 ; ERROR!  Not congruent.
 (must-fail

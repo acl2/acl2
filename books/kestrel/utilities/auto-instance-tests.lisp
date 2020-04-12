@@ -16,10 +16,10 @@
 ; We use assert! instead of assert-event, because :program-mode functions such
 ; as previous-subsumer-hints run slowly in safe-mode, and assert-event does its
 ; evaluation in safe-mode.
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 ; For testing:
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; We include the following books in order to add more theorems to the world.
 (include-book "kestrel/utilities/lists/intersection-theorems" :dir :system)

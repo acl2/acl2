@@ -207,7 +207,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "misc/bash" :dir :system)
 (include-book "misc/defmac" :dir :system)
 (include-book "misc/defopener" :dir :system)
@@ -215,7 +215,7 @@
 (include-book "misc/defpun" :dir :system)
 (include-book "misc/dft" :dir :system)
 (include-book "misc/dump-events" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (include-book "misc/expander" :dir :system)
 (include-book "misc/file-io" :dir :system)
 (include-book "misc/find-lemmas" :dir :system)

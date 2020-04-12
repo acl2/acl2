@@ -36,7 +36,7 @@
 (local (progn
 
 (include-book "aig-sat")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (defun my-glucose-config ()
   (declare (xargs :guard t))

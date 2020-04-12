@@ -60,7 +60,7 @@
 (include-book "encryption")
 (include-book "diffie-helman")
 (include-book "random")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (defun identityp (x)
   (declare (xargs :guard t))

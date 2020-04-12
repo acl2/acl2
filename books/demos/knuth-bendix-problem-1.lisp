@@ -40,7 +40,7 @@
 
 ; Include a book defining the MUST-FAIL macro.
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (must-fail
 

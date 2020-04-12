@@ -8,8 +8,8 @@
 (in-package "ACL2")
 
 (include-book "projects/apply/top" :dir :system)
-(include-book "misc/assert" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (assert-event
  (equal (loop$ for x in '(1 2 3 4) sum (* x x))

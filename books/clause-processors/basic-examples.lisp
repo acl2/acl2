@@ -8,7 +8,7 @@
 (in-package "ACL2")
 
 ; Define must-succeed and must-fail macros.
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; A very basic example.
 

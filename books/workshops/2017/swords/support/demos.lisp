@@ -5,7 +5,7 @@
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "misc/records" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (include-book "centaur/bitops/install-bit" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 

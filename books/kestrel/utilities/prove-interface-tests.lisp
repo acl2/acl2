@@ -6,7 +6,7 @@
 
 (include-book "prove-interface")
 
-(include-book "misc/eval" :dir :system) ; for assert!-stobj
+(include-book "std/testing/eval" :dir :system) ; for assert!-stobj
 
 (defmacro must-succeed-pi (form) ; prove-interface version of must-succeed
   `(local (must-eval-to-t ,form)))
