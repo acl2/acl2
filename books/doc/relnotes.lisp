@@ -378,7 +378,7 @@
    (xdoc::h4 (xdoc::seetopic "bitcoin::bitcoin" "Bitcoin Library"))
 
    (xdoc::p
-    "Some theorems have been added to the BIP 32 formalization.")
+    "Some theorems have been added.")
 
    (xdoc::p
     "Verified executable attachments have been added
