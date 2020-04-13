@@ -15,7 +15,7 @@
 
 (in-package "ACL2")
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (defun add-measures1 (vars name formals rest)
   (declare (xargs :mode :program))

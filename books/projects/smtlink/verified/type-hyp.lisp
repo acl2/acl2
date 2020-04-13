@@ -6,7 +6,7 @@
 ;;
 (in-package "SMT")
 (include-book "std/util/bstar" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (include-book "clause-processors/join-thms" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)

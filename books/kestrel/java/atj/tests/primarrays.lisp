@@ -33,54 +33,42 @@
   (declare
    (xargs :guard (and (java::boolean-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::boolean-array->components a))
-                                       (java::int-value->int i)))))
+                      (java::boolean-array-index-in-range-p a i))))
   (java::boolean-array-read a i))
 
 (defun test-char-array-read (a i)
   (declare
    (xargs :guard (and (java::char-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::char-array->components a))
-                                       (java::int-value->int i)))))
+                      (java::char-array-index-in-range-p a i))))
   (java::char-array-read a i))
 
 (defun test-byte-array-read (a i)
   (declare
    (xargs :guard (and (java::byte-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::byte-array->components a))
-                                       (java::int-value->int i)))))
+                      (java::byte-array-index-in-range-p a i))))
   (java::byte-array-read a i))
 
 (defun test-short-array-read (a i)
   (declare
    (xargs :guard (and (java::short-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::short-array->components a))
-                                       (java::int-value->int i)))))
+                      (java::short-array-index-in-range-p a i))))
   (java::short-array-read a i))
 
 (defun test-int-array-read (a i)
   (declare
    (xargs :guard (and (java::int-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::int-array->components a))
-                                       (java::int-value->int i)))))
+                      (java::int-array-index-in-range-p a i))))
   (java::int-array-read a i))
 
 (defun test-long-array-read (a i)
   (declare
    (xargs :guard (and (java::long-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::long-array->components a))
-                                       (java::int-value->int i)))))
+                      (java::long-array-index-in-range-p a i))))
   (java::long-array-read a i))
 
 ;; array length operations:
@@ -115,9 +103,7 @@
   (declare
    (xargs :guard (and (java::boolean-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::boolean-array->components a))
-                                       (java::int-value->int i))
+                      (java::boolean-array-index-in-range-p a i)
                       (java::boolean-value-p e))))
   (java::boolean-array-write a i e))
 
@@ -125,9 +111,7 @@
   (declare
    (xargs :guard (and (java::char-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::char-array->components a))
-                                       (java::int-value->int i))
+                      (java::char-array-index-in-range-p a i)
                       (java::char-value-p e))))
   (java::char-array-write a i e))
 
@@ -135,9 +119,7 @@
   (declare
    (xargs :guard (and (java::byte-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::byte-array->components a))
-                                       (java::int-value->int i))
+                      (java::byte-array-index-in-range-p a i)
                       (java::byte-value-p e))))
   (java::byte-array-write a i e))
 
@@ -145,9 +127,7 @@
   (declare
    (xargs :guard (and (java::short-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::short-array->components a))
-                                       (java::int-value->int i))
+                      (java::short-array-index-in-range-p a i)
                       (java::short-value-p e))))
   (java::short-array-write a i e))
 
@@ -155,9 +135,7 @@
   (declare
    (xargs :guard (and (java::int-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::int-array->components a))
-                                       (java::int-value->int i))
+                      (java::int-array-index-in-range-p a i)
                       (java::int-value-p e))))
   (java::int-array-write a i e))
 
@@ -165,9 +143,7 @@
   (declare
    (xargs :guard (and (java::long-array-p a)
                       (java::int-value-p i)
-                      (integer-range-p 0
-                                       (len (java::long-array->components a))
-                                       (java::int-value->int i))
+                      (java::long-array-index-in-range-p a i)
                       (java::long-value-p e))))
   (java::long-array-write a i e))
 
@@ -329,12 +305,8 @@
                   (java::int-array-p array)
                   (java::int-value-p i)
                   (java::int-value-p j)
-                  (integer-range-p 0
-                                   (len (java::int-array->components array))
-                                   (java::int-value->int i))
-                  (integer-range-p 0
-                                   (len (java::int-array->components array))
-                                   (java::int-value->int j)))))
+                  (java::int-array-index-in-range-p array i)
+                  (java::int-array-index-in-range-p array j))))
   (java::int-add (java::int-array-read array i)
                  (java::int-array-read array j)))
 
@@ -356,18 +328,13 @@
     (java::char-array-of-length length)))
 
 (defun i (floatarray doublearray i j)
-  (declare (xargs :guard (and (java::float-array-p floatarray)
-                              (java::double-array-p doublearray)
-                              (java::int-value-p i)
-                              (java::int-value-p j)
-                              (integer-range-p 0
-                                               (len (java::float-array->components
-                                                     floatarray))
-                                               (java::int-value->int i))
-                              (integer-range-p 0
-                                               (len (java::double-array->components
-                                                     doublearray))
-                                               (java::int-value->int j)))))
+  (declare
+   (xargs :guard (and (java::float-array-p floatarray)
+                      (java::double-array-p doublearray)
+                      (java::int-value-p i)
+                      (java::int-value-p j)
+                      (java::float-array-index-in-range-p floatarray i)
+                      (java::double-array-index-in-range-p doublearray j))))
   (java::double-rem (java::float-to-double
                      (java::float-array-read floatarray i))
                     (java::double-array-read doublearray j)))
@@ -377,16 +344,8 @@
                               (java::byte-array-p bytes2)
                               (java::int-value-p i1)
                               (java::int-value-p i2)
-                              (integer-range-p 0
-                                               (len
-                                                (java::byte-array->components
-                                                 bytes1))
-                                               (java::int-value->int i1))
-                              (integer-range-p 0
-                                               (len
-                                                (java::byte-array->components
-                                                 bytes2))
-                                               (java::int-value->int i2)))))
+                              (java::byte-array-index-in-range-p bytes1 i1)
+                              (java::byte-array-index-in-range-p bytes2 i2))))
   (let* ((x1 (java::byte-array-read bytes1 i1))
          (x2 (java::byte-array-read bytes2 i2))
          (bytes1 (java::byte-array-write bytes1 i1 x2))

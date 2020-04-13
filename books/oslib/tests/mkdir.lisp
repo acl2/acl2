@@ -34,7 +34,7 @@
 (include-book "../rmtree")
 (include-book "std/util/defconsts" :dir :system)
 (include-book "std/osets/top" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (local (defthm true-listp-when-string-listp
          (implies (string-listp x)

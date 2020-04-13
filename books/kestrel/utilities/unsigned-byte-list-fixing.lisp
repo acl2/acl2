@@ -1,6 +1,6 @@
 ; Fixing Function for Lists of Unsigned Bytes
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,8 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "unsigned-byte-fixing")
+
+(include-book "std/lists/rev" :dir :system)
+(include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
 
@@ -32,7 +35,6 @@
                     (t (cons (unsigned-byte-fix bits (car x))
                              (unsigned-byte-list-fix bits (cdr x)))))
        :exec x)
-  :hooks (:fix)
   ///
 
   (more-returns

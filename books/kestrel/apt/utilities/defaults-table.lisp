@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -56,7 +57,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection set-default-input-new-to-old
-  :short "Set the default @('new-to-old') input of APT transformations."
+  :short "Set the default @(':new-to-old') input of APT transformations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -88,6 +89,26 @@
   (defmacro set-default-input-new-to-old (kwd)
     (declare (xargs :guard (keywordp kwd)))
     `(table ,*defaults-table-name* :new-to-old ,kwd)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-new-to-old ((wrld plist-worldp))
+  :returns (kwd keywordp)
+  :short "Get the default @(':new-to-old') input of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-new-to-old).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :new-to-old table))
+       ((unless (consp pair))
+        (prog2$ (raise "No :NEW-TO-OLD found in APT defaults table.")
+                :irrelevant-keyword-for-unconditional-returns-theorem))
+       (kwd (cdr pair))
+       ((unless (keywordp kwd))
+        (prog2$ (raise
+                 "The default :NEW-TO-OLD is ~x0, which is not a keyword.")
+                :irrelevant-keyword-for-unconditional-returns-theorem)))
+    kwd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

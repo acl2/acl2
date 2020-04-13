@@ -25,7 +25,7 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
 (include-book "xdoc/top" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "object-representations")
 (include-book "grammar-reader" :skip-proofs-okp t)
 (include-book "strings")

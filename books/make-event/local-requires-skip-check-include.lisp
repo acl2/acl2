@@ -11,7 +11,7 @@
 
 (local (include-book "local-requires-skip-check"))
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (must-succeed
  (er-let* ((forms (read-list "local-requires-skip-check.cert" 'top state)))

@@ -369,6 +369,27 @@
 
     (xdoc::desc-apt-input-thm-enable :never)
 
+    (xdoc::desc
+     "@(':new-to-old') &mdash; default @('nil')"
+     (xdoc::p
+      "Determines the name of the theorem that
+       relates the new function to the old function:")
+     (xdoc::ul
+      (xdoc::li
+       "@('nil'), to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-new-to-old).")
+      (xdoc::li
+       "A keyword, to use as separator between
+        the names of @('new') and @('old').
+        A keyword @(':kwd') specifies the theorem name @('newkwdold'),
+        in the same package as @('new').")
+      (xdoc::li
+       "A non-@('nil'), non-keyword symbol,
+        to use as the name of the theorem."))
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('new-to-old') be the name of this theorem."))
+
     (xdoc::desc-apt-input-verify-guards :never)
 
     (xdoc::desc-apt-input-untranslate)
@@ -664,142 +685,162 @@
       "        (mv (forth_r1 y1) ... (forth_rm ym)))"
       "    (mv nil ... nil)))")
      (xdoc::p
-      "Note that:")
-     (xdoc::ul
-      (xdoc::li
-       (xdoc::p
-        "When @(':predicate') is @('nil'),
-         @('new') is defined to map
-         each argument tuple in the new representation
-         to the same or isomorphic value that @('old') maps
-         the isomorphic argument tuple in the old representation.
-         The following is a theorem:")
-       (xdoc::codeblock
-        ";; when isomaps includes no :resultj:"
-        "(implies (and (newp1 x1)"
-        "              ..."
-        "              (newpn xn))"
-        "         (equal (new x1 ... xn)"
-        "                (old (back1 x1) ... (backn xn))))"
-        ""
-        ";; when m = 1 and isomaps includes :result1 (or :result):"
-        "(implies (and (newp1 x1)"
-        "              ..."
-        "              (newp1 xn))"
-        "         (equal (new x1 ... xn)"
-        "                (forth_r1 (old (back1 x1) ... (backn xn)))))"
-        ""
-        ";; when m > 1 and isomaps includes some :resultj:"
-        "(implies (and (newp1 x1)"
-        "              ..."
-        "              (newp1 xn))"
-        "         (and (equal (mv-nth 0 (new x1 ... xn))"
-        "                     (forth_r1 (mv-nth 0 (old (back1 x1)"
-        "                                              ..."
-        "                                              (backn xn)))))"
-        "              ..."
-        "              (equal (mv-nth m-1 (new x1 ... xn))"
-        "                     (forth_rm (mv-nth m-1 (old (back1 x1)"
-        "                                                ..."
-        "                                                (backn xn)))))))")
-       (xdoc::li
-        (xdoc::p
-         "When @(':predicate') is @('t'),
-         @('new') is defined to hold exactly
-         on the argument tuples in the new representation
-         that are isomorphic the argument tuples in the old representation
-         on which @('old') holds.
-         The following is a theorem:")
-        (xdoc::codeblock
-         "(equal (new x1 ... xn)"
-         "       (and (newp1 x1)"
-         "            ..."
-         "            (newpn xn)"
-         "            (old (back1 x1) ... (backn xn))))")))
-      (xdoc::p
-       "If @('old') is recursive,
+      "If @('old') is recursive,
        the measure term of @('new') is
        @('measure<(back1 x1),...,(backn xn)>')
        and the well-founded relation of @('new') is
        the same as @('old').")
-      (xdoc::p
-       "The guard of @('new') is:")
-      (xdoc::codeblock
-       ";; when :predicate is nil:"
-       "(and (newp1 x1)"
-       "     ..."
-       "     (newpn xn)"
-       "     old-guard<(back1 x1),...,(backn xn)>)"
-       ""
-       ";; when :predicate is t:"
-       "(and (newp1 x1)"
-       "     ..."
-       "     (newpn xn))")
-      (xdoc::p
-       "That is, when @(':predicate') is @('t')
+     (xdoc::p
+      "The guard of @('new') is:")
+     (xdoc::codeblock
+      ";; when :predicate is nil:"
+      "(and (newp1 x1)"
+      "     ..."
+      "     (newpn xn)"
+      "     old-guard<(back1 x1),...,(backn xn)>)"
+      ""
+      ";; when :predicate is t:"
+      "(and (newp1 x1)"
+      "     ..."
+      "     (newpn xn))")
+     (xdoc::p
+      "That is, when @(':predicate') is @('t')
        the guard consists of the new representation;
        when @(':predicate') is @('nil'),
        the guard consists of the argument tuples
        that are isomorphic to the ones in the guard of @('old').")
-      (xdoc::p
-       "In the " *isodata-design-notes* ",
+     (xdoc::p
+      "In the " *isodata-design-notes* ",
        @('new') is denoted by
        @($f'$) when @(':predicate') is @('nil'),
-       and @($p'$) when @(':predicate') is @('t')."))
+       and @($p'$) when @(':predicate') is @('t').")
+     (xdoc::p
+      "Note that:")
+     (xdoc::ul
+      (xdoc::li
+       "When @(':predicate') is @('t'),
+        @('new') is defined to hold exactly
+        on the argument tuples in the new representation
+        that are isomorphic the argument tuples in the old representation
+        on which @('old') holds.")
+      (xdoc::li
+       "When @(':predicate') is @('nil'),
+        @('new') is defined to map
+        each argument tuple in the new representation
+        to the same or isomorphic value that @('old') maps
+        the isomorphic argument tuple in the old representation.")))
 
-     (xdoc::desc
-      "@('old-to-new')"
-      (xdoc::p
-       "Theorem that relates @('old') to @('new'):")
-      (xdoc::codeblock
-       ";; when :predicate is t:"
-       "(defthm old-to-new"
-       "  (implies (and (oldp1 x1)"
-       "                ..."
-       "                (oldpn xn))"
-       "           (equal (old x1 ... xn)"
-       "                  (new (forth1 x1) ... (forthn xn)))))"
-       ""
-       ";; when :predicate is nil"
-       ";; and isomaps includes no :resultj:"
-       "(defthm old-to-new"
-       "  (implies (and (oldp1 x1)"
-       "                ..."
-       "                (oldpn xn))"
-       "           (equal (old x1 ... xn)"
-       "                  (new (forth1 x1) ... (forthn xn)))))"
-       ""
-       ";; when :predicate is nil,"
-       ";; m = 1,"
-       ";; and isomaps includes :result1 (or :result):"
-       "(defthm old-to-new"
-       "  (implies (and (oldp1 x1)"
-       "                ..."
-       "                (oldpn xn))"
-       "           (equal (old x1 ... xn)"
-       "                  (back_r1 (new (forth1 x1) ... (forthn xn))))))"
-       ""
-       ";; when :predicate is nil,"
-       ";; m > 1,"
-       ";; and isomaps includes some :resultj:"
-       "(defthm old-to-new"
-       "  (implies (and (oldp1 x1)"
-       "                ..."
-       "                (oldpn xn))"
-       "           (and (equal (mv-nth 0 (old x1 ... xn))"
-       "                       (back_r1 (mv-nth 0 (new (forth1 x1)"
-       "                                               ..."
-       "                                               (forthn xn)))))"
-       "                ..."
-       "                (equal (mv-nth m-1 (old x1 ... xn))"
-       "                       (back_rm (mv-nth m-1 (new (forth1 x1)"
-       "                                                 ..."
-       "                                                 (forthn xn))))))))")
+    (xdoc::desc
+     "@('new-to-old')"
+     (xdoc::p
+      "Theorem that relates @('new') to @('old'):")
+     (xdoc::codeblock
+      ";; when :predicate is t:"
+      "(defthm new-to-old"
+      "  (implies (and (newp1 x1)"
+      "                ..."
+      "                (newpn xn))"
+      "           (equal (new x1 ... xn)"
+      "                  (old (back1 x1) ... (backn xn)))))"
+      ""
+      ";; when :predicate is nil"
+      ";; and isomaps includes no :resultj:"
+      "(implies (and (newp1 x1)"
+      "              ..."
+      "              (newpn xn))"
+      "         (equal (new x1 ... xn)"
+      "                (old (back1 x1) ... (backn xn))))"
+      ""
+      ";; when :predicate is nil,"
+      ";; m = 1,"
+      ";; and isomaps includes :result1 (or :result):"
+      "(implies (and (newp1 x1)"
+      "              ..."
+      "              (newp1 xn))"
+      "         (equal (new x1 ... xn)"
+      "                (forth_r1 (old (back1 x1) ... (backn xn)))))"
+      ""
+      ";; when :predicate is nil,"
+      ";; m > 1,"
+      ";; and isomaps includes some :resultj:"
+      "(implies (and (newp1 x1)"
+      "              ..."
+      "              (newp1 xn))"
+      "         (and (equal (mv-nth 0 (new x1 ... xn))"
+      "                     (forth_r1 (mv-nth 0 (old (back1 x1)"
+      "                                              ..."
+      "                                              (backn xn)))))"
+      "              ..."
+      "              (equal (mv-nth m-1 (new x1 ... xn))"
+      "                     (forth_rm (mv-nth m-1 (old (back1 x1)"
+      "                                                ..."
+      "                                                (backn xn)))))))")
+     (xdoc::p
+      "In the " *isodata-design-notes* ",
+       @('new-to-old') is denoted by
+       @($f'f$) when @(':predicate') is @('nil'),
+       and @($'pp$) when @(':predicate') is @('t').")
+     (xdoc::p
+      "This theorem is disabled by default."))
+
+    (xdoc::desc
+     "@('old-to-new')"
+     (xdoc::p
+      "Theorem that relates @('old') to @('new'):")
+     (xdoc::codeblock
+      ";; when :predicate is t:"
+      "(defthm old-to-new"
+      "  (implies (and (oldp1 x1)"
+      "                ..."
+      "                (oldpn xn))"
+      "           (equal (old x1 ... xn)"
+      "                  (new (forth1 x1) ... (forthn xn)))))"
+      ""
+      ";; when :predicate is nil"
+      ";; and isomaps includes no :resultj:"
+      "(defthm old-to-new"
+      "  (implies (and (oldp1 x1)"
+      "                ..."
+      "                (oldpn xn))"
+      "           (equal (old x1 ... xn)"
+      "                  (new (forth1 x1) ... (forthn xn)))))"
+      ""
+      ";; when :predicate is nil,"
+      ";; m = 1,"
+      ";; and isomaps includes :result1 (or :result):"
+      "(defthm old-to-new"
+      "  (implies (and (oldp1 x1)"
+      "                ..."
+      "                (oldpn xn))"
+      "           (equal (old x1 ... xn)"
+      "                  (back_r1 (new (forth1 x1) ... (forthn xn))))))"
+      ""
+      ";; when :predicate is nil,"
+      ";; m > 1,"
+      ";; and isomaps includes some :resultj:"
+      "(defthm old-to-new"
+      "  (implies (and (oldp1 x1)"
+      "                ..."
+      "                (oldpn xn))"
+      "           (and (equal (mv-nth 0 (old x1 ... xn))"
+      "                       (back_r1 (mv-nth 0 (new (forth1 x1)"
+      "                                               ..."
+      "                                               (forthn xn)))))"
+      "                ..."
+      "                (equal (mv-nth m-1 (old x1 ... xn))"
+      "                       (back_rm (mv-nth m-1 (new (forth1 x1)"
+      "                                                 ..."
+      "                                                 (forthn xn))))))))")
      (xdoc::p
       "In the " *isodata-design-notes* ",
        @('old-to-new') is denoted by
        @($ff'$) when @(':predicate') is @('nil'),
-       and @($pp'$) when @(':predicate') is @('t')."))))
+       and @($pp'$) when @(':predicate') is @('t')."))
+
+    (xdoc::p
+     "A theory invariant is also generated to prevent
+       both @('new-to-old') and @('old-to-new')
+       from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

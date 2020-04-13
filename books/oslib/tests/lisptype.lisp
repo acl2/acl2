@@ -31,7 +31,7 @@
 (in-package "ACL2")
 (include-book "../lisptype")
 (include-book "std/util/defconsts" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (defconsts (*type* state)
   (oslib::lisp-type))

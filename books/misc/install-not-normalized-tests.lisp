@@ -8,7 +8,7 @@
 
 (include-book "install-not-normalized")
 
-(local (include-book "misc/eval" :dir :system))
+(local (include-book "std/testing/eval" :dir :system))
 
 (defmacro my-test (&rest forms)
   `(local (encapsulate

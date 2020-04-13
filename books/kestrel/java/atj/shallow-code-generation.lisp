@@ -10,18 +10,17 @@
 
 (in-package "JAVA")
 
-(include-book "common-code-generation")
 (include-book "pre-translation")
 (include-book "post-translation")
 (include-book "java-primitives")
 (include-book "java-primitive-arrays")
+(include-book "shallow-quoted-constant-generation")
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
-(include-book "std/typed-alists/cons-pos-alistp" :dir :system)
 
 (local (include-book "kestrel/std/basic/symbol-name-lst" :dir :system))
 
@@ -32,582 +31,6 @@
   :short "Code generation that is specific to the shallow embedding approach."
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc atj-shallow-quoted-constants
-  :short "Representation of quoted constants in the shallow embedding."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the shallow embedding approach,
-     each quoted constant in the ACL2 code
-     is translated to a Java static final field
-     that is calculated once at class initialization time
-     and then just referenced in the Java code.
-     Since ACL2 values are objects,
-     this avoids recalculating the object
-     (whether it is created or reused, e.g. when interned)
-     every time the shallowly embedded quoted constant
-     is executed in the Java code.")
-   (xdoc::p
-    "We extract all the quoted constants
-     from the pre-translated bodies of the ACL2 functions,
-     and we create a static final field for each.
-     For now we only do this for quoted numbers, characters, and strings,
-     but we will cover the other quoted values soon.
-     The fields for these quoted constants
-     are declared in the generated main class;
-     they are named in a way that describes their value,
-     e.g. see @(tsee atj-gen-shallow-number-field-name).")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defaggregate atj-qconstants
-  :short "Recognize a structured collection of quoted constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As we collect quoted constants for the purposes described "
-    (xdoc::seetopic "atj-shallow-quoted-constants" "here")
-    ", we store their values (without quotes)
-     in a record where they are partitioned into:
-     (i) integers;
-     (ii) other (i.e. non-integer) rationals;
-     (iii) other (i.e. non-rational) numbers;
-     (iv) characters;
-     (v) strings;
-     (vi) symbols;
-     (vii) @(tsee cons) pairs.
-     The first six are duplicate-free lists of appropriate types.
-     The seventh is an alist from the pairs to positive integer indices:
-     the first collected pair gets index 1,
-     the second one gets index 2,
-     and so on;
-     we organize this as an alist instead of a list
-     so that the indices are explicit
-     and so that we can more easily optimize this with a fast alist
-     in the future.
-     The index for the next @(tsee cons) pair is stored in this record.
-     The use of the indices is explained in
-     @(tsee atj-gen-shallow-cons-field-name).
-     The alist has unique keys, by construction."))
-  ((integers (and (integer-listp integers)
-                  (no-duplicatesp integers)))
-   (rationals (and (rational-listp rationals)
-                   (no-duplicatesp rationals)))
-   (numbers (and (acl2-number-listp numbers)
-                 (no-duplicatesp numbers)))
-   (chars (and (character-listp chars)
-               (no-duplicatesp chars)))
-   (strings (and (string-listp strings)
-                 (no-duplicatesp-equal strings)))
-   (symbols (and (symbol-listp symbols)
-                 (no-duplicatesp-eq symbols)))
-   (pairs cons-pos-alistp)
-   (next-index posp))
-  ///
-
-  (defrule posp-of-atj-qconstants->next-index
-    (implies (atj-qconstants-p record)
-             (posp (atj-qconstants->next-index record)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-add-qconstant (value (record atj-qconstants-p))
-  :returns (new-record atj-qconstants-p :hyp :guard)
-  :short "Add (the value of) a quoted constant to a structured collection."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We add the value to the appropriate list, unless it is already present.
-     The process is slightly more complicated for @(tsee cons) pairs,
-     as it involves an alist;
-     if the pair is not already in the alist,
-     we add it, associated with the next index to use,
-     and we increment the next index to use in the record."))
-  (b* (((atj-qconstants record) record))
-    (cond ((integerp value)
-           (change-atj-qconstants
-            record
-            :integers (add-to-set value record.integers)))
-          ((rationalp value)
-           (change-atj-qconstants
-            record
-            :rationals (add-to-set value record.rationals)))
-          ((acl2-numberp value)
-           (change-atj-qconstants
-            record
-            :numbers (add-to-set value record.numbers)))
-          ((characterp value)
-           (change-atj-qconstants
-            record
-            :chars (add-to-set value record.chars)))
-          ((stringp value)
-           (change-atj-qconstants
-            record
-            :strings (add-to-set-equal value record.strings)))
-          ((symbolp value)
-           (change-atj-qconstants
-            record
-            :symbols (add-to-set-eq value record.symbols)))
-          ((consp value)
-           (b* ((value+index? (assoc-equal value record.pairs)))
-             (if (consp value+index?)
-                 record
-               (change-atj-qconstants
-                record
-                :pairs (acons value record.next-index record.pairs)
-                :next-index (1+ record.next-index)))))
-          (t (prog2$
-              (raise "Internal error: ~x0 is not a recognized value." value)
-              record))))
-  :guard-hints (("Goal" :in-theory (disable posp)))
-  :prepwork
-  ((defrulel verify-guards-lemma
-     (implies (posp x)
-              (posp (1+ x))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines atj-add-qconstants-in-term
-  :short "Collect all the quoted constants in a term."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return all the values of the quoted constants
-     that appear directly quoted in the term.
-     That is, for each sub-term of the form @('(quote <value>)'),
-     we return @('<value>').
-     This excludes value that occur (only) inside other quoted values,
-     e.g. @('(quote (<value> . ...))').")
-   (xdoc::p
-    "The record that stores the collected constants
-     is threaded through the recursive functions."))
-
-  (define atj-add-qconstants-in-term ((term pseudo-termp)
-                                      (qconsts atj-qconstants-p))
-    :returns (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
-    (b* (((when (variablep term)) qconsts)
-         ((when (fquotep term)) (atj-add-qconstant (unquote-term term) qconsts))
-         (fn (ffn-symb term))
-         (qconsts (if (flambdap fn)
-                      (atj-add-qconstants-in-term (lambda-body fn) qconsts)
-                    qconsts)))
-      (atj-add-qconstants-in-terms (fargs term) qconsts)))
-
-  (define atj-add-qconstants-in-terms ((terms pseudo-term-listp)
-                                       (qconsts atj-qconstants-p))
-    :returns (new-qconsts atj-qconstants-p :hyp (atj-qconstants-p qconsts))
-    (b* (((when (endp terms)) qconsts)
-         (qconsts (atj-add-qconstants-in-term (car terms) qconsts)))
-      (atj-add-qconstants-in-terms (cdr terms) qconsts)))
-
-  :verify-guards nil ; done below
-  ///
-  (verify-guards atj-add-qconstants-in-term))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-integer-id-part ((integer integerp))
-  :returns (core stringp)
-  :short "Turn an ACL2 integer into a Java identifier part."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is part of the names of the static final fields for quoted numbers.")
-   (xdoc::p
-    "We turn the integer into its (base 10) digits,
-     prepended by @('minus') if negative."))
-  (if (>= integer 0)
-      (str::natstr integer)
-    (str::cat "minus" (str::natstr (- integer)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-rational-id-part ((rational rationalp))
-  :returns (core stringp)
-  :short "Turn an ACL2 rational into a Java identifier part."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is part of the names of the static final fields for quoted numbers.")
-   (xdoc::p
-    "If the rational is an integer,
-     we use @(tsee atj-gen-shallow-integer-id-part).
-     Otherwise, we generate the integer numerator,
-     followed by @('_over_') to denote the fraction,
-     followed by the integer denominator (always greater than 1)."))
-  (if (integerp rational)
-      (atj-gen-shallow-integer-id-part rational)
-    (str::cat (atj-gen-shallow-integer-id-part (numerator rational))
-              "_over_"
-              (atj-gen-shallow-integer-id-part (denominator rational)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-number-id-part ((number acl2-numberp))
-  :returns (core stringp)
-  :short "Turn an ACL2 number into a Java identifier part."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is part of the names of the static final fields for quoted numbers.")
-   (xdoc::p
-    "If the number is a rational,
-     we use @(tsee atj-gen-shallow-rational-id-part).
-     Otherwise, we generate the rational real part,
-     followed by @('_plus_i_') to denote the formal complex sum,
-     followed by the rational imaginary part (never 0)."))
-  (if (rationalp number)
-      (atj-gen-shallow-rational-id-part number)
-    (str::cat (atj-gen-shallow-rational-id-part (realpart number))
-              "_plus_i_"
-              (atj-gen-shallow-rational-id-part (imagpart number)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-number-field-name ((number acl2-numberp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field for an ACL2 quoted number."
-  :long
-  (xdoc::topstring-p
-   "We prepend @('$N_') (for `number')
-    to the representation of the number.")
-  (str::cat "$N_" (atj-gen-shallow-number-id-part number)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-number-field ((number acl2-numberp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 quoted number."
-  :long
-  (xdoc::topstring-p
-   "This is a private static final field with an initializer,
-    which constructs the number value.
-    The type and the initializer are the most specific applicable.")
-  (b* ((name (atj-gen-shallow-number-field-name number))
-       (init (cond ((integerp number) (atj-gen-integer number))
-                   ((rationalp number) (atj-gen-rational number))
-                   (t (atj-gen-number number))))
-       (type (cond ((integerp number) *aij-type-int*)
-                   ((rationalp number) *aij-type-rational*)
-                   (t *aij-type-number*))))
-    (make-jfield :access (jaccess-private)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type type
-                 :name name
-                 :init? init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-number-fields ((numbers acl2-number-listp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-number-field) to lists."
-  (cond ((endp numbers) nil)
-        (t (cons (atj-gen-shallow-number-field (car numbers))
-                 (atj-gen-shallow-number-fields (cdr numbers))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-char-field-name ((char characterp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field for an ACL2 quoted character."
-  :long
-  (xdoc::topstring-p
-   "We prepend @('$C_') (for `character')
-    to a representation of the character itself.")
-  (str::cat "$C_" (implode (atj-char-to-jchars-id char nil nil nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-char-field ((char characterp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 quoted character."
-  :long
-  (xdoc::topstring-p
-   "This is a private static final field with an initializer,
-    which constructs the character value.")
-  (b* ((name (atj-gen-shallow-char-field-name char))
-       (init (atj-gen-char char))
-       (type *aij-type-char*))
-    (make-jfield :access (jaccess-private)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type type
-                 :name name
-                 :init? init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-char-fields ((chars character-listp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-char-field) to lists."
-  (cond ((endp chars) nil)
-        (t (cons (atj-gen-shallow-char-field (car chars))
-                 (atj-gen-shallow-char-fields (cdr chars))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-string-field-name ((string stringp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field for an ACL2 quoted string."
-  :long
-  (xdoc::topstring-p
-   "We prepend @('$S_') (for `string')
-    to a representation of the string itself.")
-  (str::cat "$S_" (implode (atj-chars-to-jchars-id
-                            (explode string) nil :space nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-string-field ((string stringp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 quoted string."
-  :long
-  (xdoc::topstring-p
-   "This is a private static final field with an initializer,
-    which constructs the string value.")
-  (b* ((name (atj-gen-shallow-string-field-name string))
-       (init (atj-gen-string string))
-       (type *aij-type-string*))
-    (make-jfield :access (jaccess-private)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type type
-                 :name name
-                 :init? init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-string-fields ((strings string-listp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-string-field) to lists."
-  (cond ((endp strings) nil)
-        (t (cons (atj-gen-shallow-string-field (car strings))
-                 (atj-gen-shallow-string-fields (cdr strings))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-symbol-field-name ((symbol symbolp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field for an ACL2 quoted symbol."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We prepend @('$Q_') (for `quote')
-     to a representation of the symbol itself.
-     We only use the name of the symbol, not the package name,
-     because unlike other fields for quoted constants
-     (which go into the main class)
-     the ones for symbols go into the classes for the packages.
-     We do not flip uppercase and lowercase,
-     but we map dashes (which are very common in ACL2 symbols)
-     to underscores (which are more readable in Java).")
-   (xdoc::p
-    "However, for @('t') and @('nil'), we just generate @('T') and @('NIL').
-     These two symbols are very common, and this special treatment in Java
-     somewhat mirrors the fact that they do not need to be quoted
-     in untranslated ACL2 terms."))
-  (cond ((eq symbol t) "T")
-        ((eq symbol nil) "NIL")
-        (t (str::cat "$Q_" (implode (atj-chars-to-jchars-id
-                                     (explode (symbol-name symbol))
-                                     nil :dash nil))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-symbol-field ((symbol symbolp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 quoted symbol."
-  :long
-  (xdoc::topstring-p
-   "This is a package-private static final field with an initializer,
-    which constructs the string value.
-    Unlike the fields for other types of quoted constants,
-    this one is declared in the class for the package of the symbol
-    (or for a pacakge that imports the symbol).
-    This field cannot be private,
-    otherwise the classes for other packages could not access it.")
-  (b* ((name (atj-gen-shallow-symbol-field-name symbol))
-       (init (atj-gen-symbol symbol))
-       (type *aij-type-symbol*))
-    (make-jfield :access (jaccess-default)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type type
-                 :name name
-                 :init? init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-symbol-fields ((symbols symbol-listp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-symbol-field) to lists."
-  (cond ((endp symbols) nil)
-        (t (cons (atj-gen-shallow-symbol-field (car symbols))
-                 (atj-gen-shallow-symbol-fields (cdr symbols))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-cons-field-name ((cons consp) (qpairs cons-pos-alistp))
-  :returns (name stringp)
-  :short "Generate the name of the Java field
-          for an ACL2 quoted @(tsee cons) pair."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "When this function is called,
-     the @(tsee cons) pair in question has already been collected
-     in an @(tsee atj-qconstants) record,
-     whose alist from @(tsee cons) pairs to indices
-     is passed to this function.
-     We prepend @('$P_') (for `pair')
-     to the index associated to the @(tsee cons) pair in the alist.")
-   (xdoc::p
-    "Since @(tsee cons) pairs may be potentially large (unlike atoms),
-     there is no easy way to generate a good field name based on the value,
-     unlike in @(tsee atj-gen-shallow-number-field-name) and others.
-     Thus, as we collect @(tsee cons) pairs from terms,
-     we assign unique indices to them, stored in the alist,
-     and we use the index as the name for the field
-     that contains the associated @(tsee cons) pair."))
-  (b* ((cons+index (assoc-equal cons qpairs))
-       ((unless (consp cons+index))
-        (raise "Internal error: no index for CONS pair ~x0." cons)
-        "")
-       (index (cdr cons+index)))
-    (str::cat "$P_" (str::natstr index))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-cons-field ((cons consp) (qpairs cons-pos-alistp))
-  :returns (field jfieldp)
-  :short "Generate a Java field for an ACL2 quoted @(tsee cons) pair."
-  :long
-  (xdoc::topstring-p
-   "This is a private static final field with an initializer,
-    which constructs the @(tsee cons) value.")
-  (b* ((name (atj-gen-shallow-cons-field-name cons qpairs))
-       (init (atj-gen-value-flat cons))
-       (type *aij-type-cons*))
-    (make-jfield :access (jaccess-private)
-                 :static? t
-                 :final? t
-                 :transient? nil
-                 :volatile? nil
-                 :type type
-                 :name name
-                 :init? init)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-cons-fields ((conses alistp) (qpairs cons-pos-alistp))
-  :returns (fields jfield-listp)
-  :short "Lift @(tsee atj-gen-shallow-cons-field) to lists."
-  :long
-  (xdoc::topstring-p
-   "A true list of @(tsee consp) pairs is actually an @(tsee alistp),
-    so we use that as the type of the first argument.
-    However, it is treated as a list, not as an alist.")
-  (cond ((endp conses) nil)
-        (t (cons (atj-gen-shallow-cons-field (car conses) qpairs)
-                 (atj-gen-shallow-cons-fields (cdr conses) qpairs)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-number ((number acl2-numberp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 quoted number."
-  :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted number.")
-  (jexpr-name (atj-gen-shallow-number-field-name number)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-char ((char characterp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 quoted character."
-  :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted character.")
-  (jexpr-name (atj-gen-shallow-char-field-name char)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-string ((string stringp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 quoted string."
-  :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted string.")
-  (jexpr-name (atj-gen-shallow-string-field-name string)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-symbol ((symbol symbolp)
-                                (pkg-class-names string-string-alistp)
-                                (curr-pkg stringp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 quoted symbol."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This depends on the current package,
-     i.e. the package of the function where the quoted symbol occurs.
-     If the current package is the same as the symbol's package,
-     or if the current package imports the symbol,
-     then we just generate the simple name of the field,
-     because the field will be declared in the class for the current package.
-     Otherwise, we generate a qualified name,
-     preceded by the name of the class for the symbol's package.
-     This mirrors the rules for symbol references in ACL2."))
-  (b* ((sym-pkg (symbol-package-name symbol))
-       (simple-name (atj-gen-shallow-symbol-field-name symbol))
-       ((when (or (equal sym-pkg curr-pkg)
-                  (member-eq symbol (pkg-imports curr-pkg))))
-        (jexpr-name simple-name))
-       (class-name (atj-get-pkg-class-name sym-pkg pkg-class-names)))
-    (jexpr-name (str::cat class-name "." simple-name))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-cons ((cons consp) (qpairs cons-pos-alistp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 quoted @(tsee cons) pair."
-  :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted @(tsee cons) pair.")
-  (jexpr-name (atj-gen-shallow-cons-field-name cons qpairs)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-value (value
-                               (qpairs cons-pos-alistp)
-                               (pkg-class-names string-string-alistp)
-                               (curr-pkg stringp))
-  :returns (expr jexprp)
-  :short "Generate a shallowly embedded ACL2 value."
-  (cond ((acl2-numberp value) (atj-gen-shallow-number value))
-        ((characterp value) (atj-gen-shallow-char value))
-        ((stringp value) (atj-gen-shallow-string value))
-        ((symbolp value) (atj-gen-shallow-symbol value
-                                                 pkg-class-names
-                                                 curr-pkg))
-        ((consp value) (atj-gen-shallow-cons value qpairs))
-        (t (prog2$ (raise "Internal error: ~x0 is not a recognized value."
-                          value)
-                   (jexpr-name "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -770,62 +193,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-let-bindings ((vars symbol-listp)
-                                      (blocks jblock-listp)
-                                      (exprs jexpr-listp))
-  :guard (and (int= (len blocks) (len vars))
-              (int= (len exprs) (len vars)))
-  :returns (block jblockp :hyp (jblock-listp blocks))
-  :short "Generate shallowly embedded ACL2 @(tsee let) bindings."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the shallow embedding approach,
-     ACL2 lambda expressions (i.e. @(tsee let)s)
-     are handled by assigning the Java expressions
-     generated from the actual parameters of the lambda expression
-     to Java local variables corresponding to the formal parameters.
-     This function generates these bindings,
-     given the ACL2 variables that are the formal arguments
-     and the Java expressions to assign to them.
-     Each binding is preceded by the block (if any)
-     generated for the corresponding actual argument of the lambda expression.")
-   (xdoc::p
-    "Prior to calling this function,
-     the variables of all the lambda expressiona have been marked
-     as `new' or `old' via @(tsee atj-mark-term).
-     We extract this mark and use it to generate
-     either a variable declaration with initializer (for `new')
-     or an assignment to an existing variable (for `old').")
-   (xdoc::p
-    "Prior to calling this function,
-     the variables of all the lambda expressions have been annotated
-     via @(tsee atj-type-annotate-term).
-     Thus, each ACL2 variable name carries its own non-empty list of types,
-     which we use to determine the Java type of the Java variable.")
-   (xdoc::p
-    "Prior to calling this function,
-     the variables of all the lambda expressions have been renamed
-     via @(tsee atj-rename-term).
-     Thus, we directly turn each ACL2 variable into a Java variable name
-     (after removing the type annotations)."))
-  (b* (((when (endp vars)) nil)
-       (var (car vars))
-       (expr (car exprs))
-       ((mv var new?) (atj-unmark-var var))
-       ((mv var types) (atj-type-unannotate-var var))
-       (jvar (symbol-name var))
-       (var-block (if new?
-                      (jblock-locvar (atj-gen-shallow-jtype types) jvar expr)
-                    (jblock-asg (jexpr-name jvar) expr)))
-       (first-block (append (car blocks) var-block))
-       (rest-block (atj-gen-shallow-let-bindings (cdr vars)
-                                                 (cdr blocks)
-                                                 (cdr exprs))))
-    (append first-block rest-block)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-adapt-expr-from-jprim-to-cons ((expr jexprp)
                                            (type primitive-typep))
   :returns (new-expr jexprp)
@@ -960,6 +327,95 @@
         (jexpr-imethod acl2-integer-expr "getJavaLong" nil))
       :float (prog2$ (impossible) (ec-call (jexpr-fix :irrelevant)))
       :double (prog2$ (impossible) (ec-call (jexpr-fix :irrelevant))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-convert-expr-to-jprim ((expr jexprp) (type primitive-typep))
+  :returns (new-expr jexprp)
+  :short "Convert a Java expression to a Java primitive type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to translate calls of
+     Java primitive constructors like @(tsee byte-value).")
+   (xdoc::p
+    "If the type is @('boolean'),
+     the input expression must have type @('Acl2Symbol');
+     see the input and output types of @(tsee boolean-value).
+     In this case, we convert the expression
+     by comparing it with (the Java representation of) @('nil').")
+   (xdoc::p
+    "If the type is @('char'), @('byte'), or @('short'),
+     the input expression must have type @('Acl2Integer');
+     see the input and output types of
+     @(tsee char-value), @(tsee byte-value), and @(tsee short-value).
+     In this case, we convert the input expression
+     by extracting a Java @('int') from the @('Acl2Integer')
+     and we cast to the appropriate primitive type.")
+   (xdoc::p
+    "If the type is @('int'),
+     the input expression must have type @('Acl2Integer');
+     see the input and output types of @(tsee int-value).
+     In this case, we convert the input expression
+     by extracting a Java @('int') from the @('Acl2Integer').")
+   (xdoc::p
+    "If the type is @('long'),
+     the input expression must have type @('Acl2Integer');
+     see the input and output types of @(tsee long-value).
+     In this case, we convert the input expression
+     by extracting a Java @('long') from the @('Acl2Integer').")
+   (xdoc::p
+    "If the type is @('float') and @('double'), an error occurs.
+     These conversions are not supported yet,
+     because we have only an abstract model of these two types for now."))
+  (case (primitive-type-kind type)
+    (:boolean (jexpr-binary (jbinop-ne) expr (atj-gen-symbol nil)))
+    ((:char :byte :short) (jexpr-cast (jtype-prim type)
+                                      (jexpr-smethod *aij-type-int*
+                                                     "getJavaInt"
+                                                     (list expr))))
+    (:int (jexpr-smethod *aij-type-int* "getJavaInt" (list expr)))
+    (:long (jexpr-smethod *aij-type-int* "getJavaLong" (list expr)))
+    (t (prog2$ (raise "Internal error: ~
+                       cannot convert expression ~x0 to type ~x1."
+                      expr type)
+               (ec-call (jexpr-fix :irrelevant)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-convert-expr-from-jprim ((expr jexprp) (type primitive-typep))
+  :returns (new-expr jexprp)
+  :short "Convert a Java expression from a Java primitive type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to translate calls of
+     Java primitive deconstructors like @(tsee byte-value->int).")
+   (xdoc::p
+    "If the type is @('boolean'),
+     we convert it to the @('Acl2Symbol') @('t') or @('nil')
+     via a Java conditional expression.")
+   (xdoc::p
+    "If the type is @('char'), @('byte'), @('short'), @('int'), or @('long'),
+     we convert it to an @('Acl2Integer') by calling @('make').
+     The method called is @('Acl2Integer.make(int)')
+     if the type is @('char'), @('byte'), @('short'), or @('int'),
+     while it is @('Acl2Integer.make(long)') if the type is @('long').")
+   (xdoc::p
+    "If the type is @('float') and @('double'), an error occurs.
+     These conversions are not supported yet,
+     because we have only an abstract model of these two types for now."))
+  (case (primitive-type-kind type)
+    (:boolean (jexpr-cond expr (atj-gen-symbol t) (atj-gen-symbol nil)))
+    ((:char :byte :short :int :long) (jexpr-smethod *aij-type-int*
+                                                    "make"
+                                                    (list expr)))
+    (t (prog2$ (raise "Internal error: ~
+                       cannot convert expression ~x0 to type ~x1."
+                      expr type)
+               (ec-call (jexpr-fix :irrelevant)))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1445,27 +901,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-gen-cond-exprs*
-  :short "Flag saying whether ATJ should attempt to
-          generate Java conditional expressions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is an internal flag, developer-oriented.
-     If @('t'), ATJ will generate shallowly embedded
-     Java conditional expressions @('... ? ... : ...')
-     under suitable conditions;
-     see the code generation functions that reference this flag.")
-   (xdoc::p
-    "This flag is currently @('nil'),
-     because, with the current tests,
-     the code looked less readable overall
-     then when this flag is @('t').
-     This flag may be removed eventually."))
-  nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-check-type-annotated-list-call ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (elements pseudo-term-listp :hyp :guard))
@@ -1819,62 +1254,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-of-nonqconst-to-expr ((fn atj-java-primitive-constr-p)
-                                               (arg-expr jexprp))
-  :returns (expr jexprp)
+(define atj-jprim-constr-to-ptype ((fn atj-java-primitive-constr-p))
+  :returns (ptype primitive-typep)
   :short "Map an ACL2 function that models a Java primitive constructor
-          to the Java expression that constructs the primitive value,
-          when the argument of the constructor is non a quoted constant."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The parameter @('arg') is the Java expression for the argument,
-     which is an @('Acl2Symbol') for @(tsee boolean-value)
-     and an @('Acl2Integer') for the other constructors.")
-   (xdoc::p
-    "If the constructor is @(tsee boolean-value),
-     we turn it into a Java @('boolean') by comparing it with @('nil').")
-   (xdoc::p
-    "If the constructor is @(tsee long-value),
-     we extract a Java @('long') from the ACL2 integer.")
-   (xdoc::p
-    "For the other constructors,
-     we extract a Java @('int') from the ACL2 integer,
-     and we cast to the appropriate primitive type
-     unless the constructor is @(tsee int-value)."))
-  (b* (((when (eq fn 'boolean-value))
-        (jexpr-binary (jbinop-ne) arg-expr (atj-gen-symbol nil)))
-       ((when (eq fn 'long-value))
-        (jexpr-smethod *aij-type-int* "getJavaLong" (list arg-expr)))
-       (expr (jexpr-smethod *aij-type-int* "getJavaInt" (list arg-expr))))
-    (case fn
-      (char-value (jexpr-cast (jtype-char) expr))
-      (byte-value (jexpr-cast (jtype-byte) expr))
-      (short-value (jexpr-cast (jtype-short) expr))
-      (int-value expr)
-      (t (prog2$ (impossible)
-                 (ec-call (jexpr-fix :irrelevant))))))
-  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p))))
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-value (primitive-type-boolean))
+    (char-value (primitive-type-char))
+    (byte-value (primitive-type-byte))
+    (short-value (primitive-type-short))
+    (int-value (primitive-type-int))
+    (long-value (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-constr-p)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-type ((fn atj-java-primitive-constr-p))
-  :returns (type atj-typep)
-  :short "Map an ACL2 function that models a Java primitive constructor
-          to the ATJ type of the function's argument."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to translate to Java a call of @('fn')
-     whose argument is not a quoted constant term.
-     In this case, the Java expression resulting from the argument term
-     is adapted (converted) to the Java primitive type.
-     In this conversion the source ATJ type is
-     @(':asymbol') for the @(tsee boolean-value) constructor,
-     @(':ainteger') for the other constructors."))
-  (if (eq fn 'boolean-value)
-      (atj-type-acl2 (atj-atype-symbol))
-    (atj-type-acl2 (atj-atype-integer))))
+(define atj-jprim-deconstr-to-ptype ((fn atj-java-primitive-deconstr-p))
+  :returns (ptype primitive-typep)
+  :short "Map an ACL2 function that models a Java primitive deconstructor
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-value->bool$inline (primitive-type-boolean))
+    (char-value->nat$inline (primitive-type-char))
+    (byte-value->int$inline (primitive-type-byte))
+    (short-value->int$inline (primitive-type-short))
+    (int-value->int$inline (primitive-type-int))
+    (long-value->int$inline (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-java-primitive-deconstr-p)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2188,6 +1598,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-let-bindings ((vars symbol-listp)
+                                      (blocks jblock-listp)
+                                      (exprs jexpr-listp))
+  :guard (and (int= (len blocks) (len vars))
+              (int= (len exprs) (len vars)))
+  :returns (block jblockp :hyp (jblock-listp blocks))
+  :short "Generate shallowly embedded ACL2 @(tsee let) bindings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding approach,
+     ACL2 lambda expressions (i.e. @(tsee let)s)
+     are handled by assigning the Java expressions
+     generated from the actual parameters of the lambda expression
+     to Java local variables corresponding to the formal parameters.
+     This function generates these bindings,
+     given the ACL2 variables that are the formal arguments
+     and the Java expressions to assign to them.
+     Each binding is preceded by the block (if any)
+     generated for the corresponding actual argument of the lambda expression.")
+   (xdoc::p
+    "Prior to calling this function,
+     the variables of all the lambda expressiona have been marked
+     as `new' or `old' via @(tsee atj-mark-term).
+     We extract this mark and use it to generate
+     either a variable declaration with initializer (for `new')
+     or an assignment to an existing variable (for `old').")
+   (xdoc::p
+    "Prior to calling this function,
+     the variables of all the lambda expressions have been annotated
+     via @(tsee atj-type-annotate-term).
+     Thus, each ACL2 variable name carries its own non-empty list of types,
+     which we use to determine the Java type of the Java variable.")
+   (xdoc::p
+    "Prior to calling this function,
+     the variables of all the lambda expressions have been renamed
+     via @(tsee atj-rename-term).
+     Thus, we directly turn each ACL2 variable into a Java variable name
+     (after removing the type annotations)."))
+  (b* (((when (endp vars)) nil)
+       (var (car vars))
+       (expr (car exprs))
+       ((mv var new?) (atj-unmark-var var))
+       ((mv var types) (atj-type-unannotate-var var))
+       (jvar (symbol-name var))
+       (var-block (if new?
+                      (jblock-locvar (atj-gen-shallow-jtype types) jvar expr)
+                    (jblock-asg (jexpr-name jvar) expr)))
+       (first-block (append (car blocks) var-block))
+       (rest-block (atj-gen-shallow-let-bindings (cdr vars)
+                                                 (cdr blocks)
+                                                 (cdr exprs))))
+    (append first-block rest-block)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-gen-cond-exprs*
+  :short "Flag saying whether ATJ should attempt to
+          generate Java conditional expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an internal flag, developer-oriented.
+     If @('t'), ATJ will generate shallowly embedded
+     Java conditional expressions @('... ? ... : ...')
+     under suitable conditions;
+     see the code generation functions that reference this flag.")
+   (xdoc::p
+    "This flag is currently @('nil'),
+     because, with the current tests,
+     the code looked less readable overall
+     then when this flag is @('t').
+     This flag may be removed eventually."))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-gen-shallow-term-fns
   :short "Functions to generate shallowly embedded ACL2 terms."
   :long
@@ -2224,7 +1711,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) test."
     :long
     (xdoc::topstring
@@ -2325,7 +1812,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee if) call."
     :long
     (xdoc::topstring
@@ -2466,7 +1953,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @('or') call."
     :long
     (xdoc::topstring
@@ -2555,7 +2042,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive constructor."
     :long
@@ -2566,16 +2053,15 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model the construction of Java primitive values
-       (i.e. @(tsee boolean-value) etc.)
+       (i.e. @(tsee byte-value) etc.)
        are treated specially.
        If the argument is a quoted constant,
        the function call is translated
        to the constant Java primitive expression
        whose value is the quoted constant.
        If the argument is not a quoted constant,
-       we first translate it to a Java expression in the general way;
-       we then wrap the expression with code
-       to convert it to the appropriate Java primitive type.
+       first we translate it to a Java expression in the general way,
+       and then we convert it to the appropriate Java primitive type.
        In all cases, we convert the resulting expression, as needed,
        to match the destination type.")
      (xdoc::p
@@ -2604,7 +2090,8 @@
                                     qpairs
                                     t ; GUARDS$
                                     wrld))
-             (expr (atj-jprim-constr-of-nonqconst-to-expr fn arg-expr)))
+             (expr (atj-convert-expr-to-jprim arg-expr
+                                              (atj-jprim-constr-to-ptype fn))))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
               jvar-tmp-index))))
@@ -2630,7 +2117,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive deconstructor."
     :long
@@ -2641,14 +2128,10 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model the deconstruction of Java primitive values
-       (i.e. @(tsee boolean-value->bool) etc.)
+       (i.e. @(tsee byte-value->int) etc.)
        are treated specially.
-       Their argument terms are translated to Java primitive values,
-       consistently with the input types of these deconstructors
-       and the fact that automatic conversions
-       from Java primitive values to any other types are disallowed.
-       Thus, we generate code to convert the Java primitive values
-       to the corresponding (Java representations of) ACL2 values."))
+       First we translate the argument in the general way
+       and then we convert that from the Java appropriate primitive type."))
     (b* (((mv arg-block
               arg-expr
               jvar-tmp-index)
@@ -2661,11 +2144,8 @@
                                 qpairs
                                 t ; GUARDS$
                                 wrld))
-         (expr (if (eq fn 'boolean-value->bool$inline)
-                   (jexpr-cond arg-expr
-                               (atj-gen-symbol t)
-                               (atj-gen-symbol nil))
-                 (jexpr-smethod *aij-type-int* "make" (list arg-expr))))
+         (expr (atj-convert-expr-from-jprim arg-expr
+                                            (atj-jprim-deconstr-to-ptype fn)))
          (src-type (atj-type-list-to-type src-types))
          (dst-type (atj-type-list-to-type dst-types)))
       (mv arg-block
@@ -2693,7 +2173,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive unary operation."
     :long
@@ -2751,7 +2231,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive binary operation."
     :long
@@ -2823,7 +2303,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive conversion."
     :long
@@ -2834,7 +2314,7 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model Java primitive conversions
-       are treated specially.
+       (i.e. @(tsee int-to-char) etc.) are treated specially.
        We generate a cast to the target type:
        for widening conversions, this is unnecessary,
        but for now we use this simple scheme
@@ -2882,7 +2362,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array constructor
             from a list of components."
@@ -2906,7 +2386,7 @@
        If the argument has a different form,
        we first translate it to a Java expression in the general way;
        we then wrap the expression with code
-       to convert it to the appropriate Java primitive type.
+       to convert it to the appropriate Java primitive array type.
        In all cases, we convert the resulting expression, as needed,
        to match the destination type.")
      (xdoc::p
@@ -2982,7 +2462,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array read operation."
     :long
@@ -3051,7 +2531,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array length operation."
     :long
@@ -3117,7 +2597,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive write operation."
     :long
@@ -3203,7 +2683,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded
             ACL2 call of a Java primitive array constructor
             from a length."
@@ -3259,7 +2739,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 call of @(tsee mv)."
     :long
     (xdoc::topstring
@@ -3337,7 +2817,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 function call."
     :long
     (xdoc::topstring
@@ -3639,7 +3119,7 @@
     :returns (mv (block jblockp :hyp (jblock-listp arg-blocks))
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 lambda expression,
             applied to given Java expressions as arguments."
     :long
@@ -3694,6 +3174,7 @@
                  (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 @(tsee mv-let)."
     :long
     (xdoc::topstring
@@ -3790,7 +3271,7 @@
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Generate a shallowly embedded ACL2 term."
     :long
     (xdoc::topstring
@@ -3884,7 +3365,7 @@
                  (exprs (and (jexpr-listp exprs)
                              (equal (len exprs) (len terms))))
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-code-generation atj-gen-shallow-term-fns)
+    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
     :short "Lift @(tsee atj-gen-shallow-term) to lists."
     (if (endp terms)
         (mv nil nil jvar-tmp-index)

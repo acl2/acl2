@@ -10,7 +10,7 @@
 ; We first start with a file-system recognizer, and then we define various
 ; file-system operations.
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "bounded-nat-listp")
 (include-book "block-listp")
 (include-book "generate-index-list")

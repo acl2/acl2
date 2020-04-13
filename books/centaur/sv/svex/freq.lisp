@@ -35,7 +35,7 @@
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/osets/top" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "std/alists/alist-vals" :dir :system))
 

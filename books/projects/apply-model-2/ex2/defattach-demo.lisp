@@ -19,7 +19,7 @@
 (in-package "MODAPP")
 (include-book "user-defs")
 (include-book "doppelgangers")
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (defthm take-n-take-n
   (implies (natp n)

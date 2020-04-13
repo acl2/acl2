@@ -259,11 +259,11 @@ space =  # just a space
 EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
 endif # ifneq ($(EXCLUDED_PREFIXES), )
 
-# We exclude some directories because there are subdirectories and it's just
-# easiest to stop at the root.
-
-# We also exclude centaur/satlink/solvers because it depends on all kinds of
-# extra SAT solvers.
+# We exclude some directories because there are subdirectories and
+# it's just easiest to stop at the root.  We also exclude
+# centaur/satlink/solvers because it depends on all kinds of extra SAT
+# solvers.  We exclude projects/milawa/ACL2 because of the large
+# amount of disk space otherwise consumed.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
@@ -1085,6 +1085,14 @@ BOOKS_SKIP_COMP += system/tests/apply-timings.$(ACL2_COMP_EXT)
 # Errors (using LispWorks) involve quicklisp, so I won't bother to debug:
 BOOKS_SKIP_COMP += oslib/tests/ls.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += oslib/tests/mkdir.$(ACL2_COMP_EXT)
+
+# Has readtime conditionals for different Lisps:
+BOOKS_SKIP_COMP += system/tests/stobj-issues.$(ACL2_COMP_EXT)
+
+# GCL couldn't handle this one (tested 4/10/2020), saying "[GC Hole
+# overrun]" and then "Unrecoverable error: Segmentation violation.."
+# It's not clear why, but it doesn't seem important to figure it out.
+BOOKS_SKIP_COMP += workshops/2011/verbeek-schmaltz/sources/invariants2.$(ACL2_COMP_EXT)
 
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 

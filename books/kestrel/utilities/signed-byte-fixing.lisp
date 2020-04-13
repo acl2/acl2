@@ -1,6 +1,6 @@
 ; Fixing Function for Signed Bytes
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "centaur/fty/top" :dir :system)
+(include-book "std/basic/pos-fix" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
 
@@ -51,10 +51,19 @@
                   0))
        :exec x)
   :enabled t
-  :hooks (:fix)
   ///
 
-  (defrule signed-byte-fix-when-signed-byte-p
-    (implies (signed-byte-p (nfix bits) x)
+  (defthm signed-byte-fix-when-signed-byte-p
+    (implies (signed-byte-p (pos-fix bits) x)
              (equal (signed-byte-fix bits x)
-                    x))))
+                    x)))
+
+  (defthm signed-byte-fix-of-pos-fix-bits
+    (equal (signed-byte-fix (pos-fix bits) x)
+           (signed-byte-fix bits x)))
+
+  (defthm signed-byte-fix-of-pos-fix-bits-normalize-const
+    (implies (syntaxp (and (quotep bits)
+                           (not (natp (cadr bits)))))
+             (equal (signed-byte-fix bits x)
+                    (signed-byte-fix (pos-fix bits) x)))))

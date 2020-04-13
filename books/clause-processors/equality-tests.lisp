@@ -27,7 +27,7 @@
     (defthm p-axiom (p (g x) (g y))))
 
 ; Define must-succeed and must-fail macros.
-   (local (include-book "misc/eval" :dir :system))
+   (local (include-book "std/testing/eval" :dir :system))
 
    (must-fail ; illustrates why we need a hint
     (defthm p-thm-fail

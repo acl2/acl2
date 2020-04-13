@@ -1,6 +1,6 @@
 ; Fixing Function for Unsigned Bytes
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
 
@@ -51,10 +50,19 @@
                   0))
        :exec x)
   :enabled t
-  :hooks (:fix)
   ///
 
-  (defrule unsigned-byte-fix-when-unsigned-byte-p
+  (defthm unsigned-byte-fix-when-unsigned-byte-p
     (implies (unsigned-byte-p (nfix bits) x)
              (equal (unsigned-byte-fix bits x)
-                    x))))
+                    x)))
+
+  (defthm unsigned-byte-fix-of-nfix-bits
+    (equal (unsigned-byte-fix (nfix bits) x)
+           (unsigned-byte-fix bits x)))
+
+  (defthm unsigned-byte-fix-of-nfix-bits-normalize-const
+    (implies (syntaxp (and (quotep bits)
+                           (not (natp (cadr bits)))))
+             (equal (unsigned-byte-fix bits x)
+                    (unsigned-byte-fix (nfix bits) x)))))

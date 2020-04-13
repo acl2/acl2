@@ -186,7 +186,7 @@ Fortunately that can all be wrapped up into @(see with-local-nrev).</p>"
 
 
 (include-book "fast")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 ; Some basic sanity checks.
 

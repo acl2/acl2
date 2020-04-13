@@ -9,8 +9,8 @@
 
 (include-book "make-termination-theorem")
 (include-book "testing")
-(include-book "misc/eval" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 ; Introduce "aliases" for car and cdr, which we will disable in order to
 ; demonstrate the value of substituting, using stubs, for recursive functions

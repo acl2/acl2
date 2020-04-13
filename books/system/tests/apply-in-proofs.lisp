@@ -12,7 +12,7 @@
 
 (include-book "projects/apply/top" :dir :system)
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; Avoid distracting warnings produced by :hints in this file that insist on
 ; using executing for the proof.

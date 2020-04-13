@@ -5,7 +5,7 @@
 (in-package "ACL2")
 
 (include-book "auto-termination")
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; First, a basic test.
 
