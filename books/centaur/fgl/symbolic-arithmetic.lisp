@@ -50,7 +50,7 @@
 
 
 (defsection symbolic-arithmetic
-  :parents (reference)
+  :parents (fgl-internals)
   :short "Internal operations for computing on symbolic bit vectors."
   :long "<p>Naming convention:</p>
 <ul>

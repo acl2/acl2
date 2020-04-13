@@ -199,7 +199,6 @@ would therefore incur some overhead.</p>")
                    (vl-bitlist->offset (cdr x)))))
 
 (define vl-bitlist->4vec ((msb-bits vl-bitlist-p))
-  :parents (vl-expr-to-svex)
   :short "Turn a vl-bitlist into a 4vec.  Assumes msb-first ordering, such as in a vl-weirdint."
   :returns (val sv::4vec-p)
   (let ((lsb-bits (rev (vl-bitlist-fix msb-bits))))
@@ -212,7 +211,6 @@ would therefore incur some overhead.</p>")
 (define svex-extend ((type vl-exprsign-p)
                      (width natp)
                      (x sv::svex-p))
-  :parents (vl-expr-to-svex)
   :short "Returns an svex representing the sign- or zero-extension of x at the given width."
 
   :long "<p>We don't have to extend/truncate operands when translating VL

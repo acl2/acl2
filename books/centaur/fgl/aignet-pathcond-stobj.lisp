@@ -109,7 +109,7 @@
   (verify-guards+ nbalist-fix
                   :hints (("goal" :expand ((nbalistp x)))))
   (defsection
-    nbalist-equiv :parents (nbalist)
+    nbalist-equiv
     (fty::deffixtype nbalist
       :pred nbalistp
       :fix nbalist-fix

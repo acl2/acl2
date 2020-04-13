@@ -912,7 +912,7 @@ syntactic term using a custom evaluator, @(see fancy-ev), that can be
 instrumented to call functions that examine the ACL2 state and the FGL
 interpreter state, and even make limited modifications to them.  See the
 documentation for @(see fancy-ev) for how to use it, and see @(see
-fgl-internals) for documentation of the contents of the interpreter state. One
+fgl-interpreter-state) for documentation of the contents of the interpreter state. One
 main use of this is to examine counterexamples produced from incremental SAT
 calls.  By default, after loading @('fgl/top'), the rewrite rule
 @('show-counterexample-rw') rewrites the constant-nil function
@@ -1349,7 +1349,7 @@ under the evaluation of @('bindings') to @('f') of the evaluations of the
 arguments.  The returned @('interp-st') must satisfy several constraints
 showing that it was not invalidly modified; usually, all a primitive should do
 with the @('interp-st') is build new gates onto the @('aignet') of its
-@('logicman') (see @(see fgl-internals)).  Primitives take the same inputs but
+@('logicman') (see @(see fgl-interpreter-state)).  Primitives take the same inputs but
 return @('(mv successp obj interp-st state)'), where the evaluation of @('obj')
 must equal @('f') of the evaluations of the arguments.</p>
 
@@ -1640,6 +1640,10 @@ there exists another triple that is missing from the list.</p>
 
 (defxdoc fgl-internals
   :parents (fgl)
+  :short "Topics describing implementation-level details.")
+
+(defxdoc fgl-interpreter-state
+  :parents (fgl-internals)
   :short "Description of FGL's interpreter state object."
   :long
 "<p>The FGL interpreter state is a stobj containing, as the name suggests,

@@ -489,7 +489,7 @@
   (and x t))
 
 (defsection def-fgl-boolean-constraint
-  :parents (reference term-level-reasoning)
+  :parents (fgl)
   :short "Define a rule that recognizes constraints among FGL generated Boolean variables"
   :long "
 <p>When using FGL in a term-level style FGL
