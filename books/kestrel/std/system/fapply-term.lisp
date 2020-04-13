@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection fapply-term*
-  :parents (term-utilities)
+  :parents (std/system/term-transformations)
   :short "Variant of @(tsee apply-term*) that performs no simplification."
   :long
   (xdoc::topstring
