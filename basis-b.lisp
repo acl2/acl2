@@ -4295,60 +4295,19 @@
                flg)))
     `(f-put-global 'print-clause-ids ,flg state)))
 
-(defmacro set-saved-output (save-flg inhibit-flg)
-  (let ((save-flg-original save-flg)
-        (save-flg (if (and (consp save-flg)
-                           (eq (car save-flg) 'quote))
-                      (cadr save-flg)
-                    save-flg))
-        (inhibit-flg-original inhibit-flg)
-        (inhibit-flg (if (and (consp inhibit-flg)
-                              (eq (car inhibit-flg) 'quote))
-                         (cadr inhibit-flg)
-                       inhibit-flg)))
-    `(prog2$
-      (and (gag-mode)
-           (er hard 'set-saved-output
-               "It is illegal to call set-saved-output explicitly while ~
-                gag-mode is active.  First evaluate ~x0."
-               '(set-gag-mode nil)))
-      (pprogn ,(cond ((eq save-flg t)
-                      '(f-put-global 'saved-output-token-lst :all state))
-                     ((null save-flg)
-                      '(f-put-global 'saved-output-token-lst nil state))
-                     ((true-listp save-flg)
-                      `(f-put-global 'saved-output-token-lst ',save-flg state))
-                     (t (er hard 'set-saved-output
-                            "Illegal first argument to set-saved-output (must ~
-                             be ~x0 or a true-listp): ~x1."
-                            t save-flg-original)))
-              ,(if (eq inhibit-flg :same)
-                   'state
-                 `(f-put-global 'inhibit-output-lst
-                                ,(cond ((eq inhibit-flg t)
-                                        '(add-to-set-eq 'prove
-                                                        (f-get-global
-                                                         'inhibit-output-lst
-                                                         state)))
-                                       ((eq inhibit-flg :all)
-                                        '(set-difference-eq
-                                          *valid-output-names*
-                                          (set-difference-eq
-                                           '(error warning!)
-                                           (f-get-global
-                                            'inhibit-output-lst
-                                            state))))
-                                       ((eq inhibit-flg :normal)
-                                        ''(proof-tree))
-                                       ((true-listp inhibit-flg)
-                                        (list 'quote inhibit-flg))
-                                       (t (er hard 'set-saved-output
-                                              "Illegal second argument to ~
-                                               set-saved-output (must be ~v0, ~
-                                               or a true-listp): ~x1."
-                                              '(t :all :normal :same)
-                                              inhibit-flg-original)))
-                                state))))))
+(defun set-saved-output-token-lst (save-flg state)
+  (declare (xargs :stobjs state))
+  (cond ((member-eq save-flg '(t :all))
+         (f-put-global 'saved-output-token-lst :all state))
+        ((null save-flg)
+         (f-put-global 'saved-output-token-lst nil state))
+        ((true-listp save-flg)
+         (f-put-global 'saved-output-token-lst save-flg state))
+        (t (prog2$ (er hard 'set-saved-output
+                       "Illegal first argument to set-saved-output-token-lst ~
+                        (must be ~x0 or a true-listp): ~x1."
+                       t save-flg)
+                   state))))
 
 (defun set-gag-mode-fn (action state)
 
@@ -4361,25 +4320,22 @@
                     (cadr action)
                   action)))
     (pprogn
-     (f-put-global 'gag-mode nil state) ; to allow set-saved-output
      (case action
        ((t)
-        (pprogn (set-saved-output t :same)
-                (f-put-global 'gag-mode action state)
+        (pprogn (set-saved-output-token-lst t state)
                 (set-print-clause-ids nil)))
        (:goals
-        (pprogn (set-saved-output t :same)
-                (f-put-global 'gag-mode action state)
+        (pprogn (set-saved-output-token-lst t state)
                 (set-print-clause-ids t)))
        ((nil)
-        (pprogn ; (f-put-global 'gag-mode nil state) ; already done
-         (set-saved-output nil :same)
-         (set-print-clause-ids nil)))
+        (pprogn (set-saved-output-token-lst nil state)
+                (set-print-clause-ids nil)))
        (otherwise
         (prog2$ (er hard 'set-gag-mode
                     "Unknown set-gag-mode argument, ~x0"
                     action)
-                state))))))
+                state))) ; to allow set-saved-output
+     (f-put-global 'gag-mode action state))))
 
 (defmacro set-gag-mode (action)
   `(set-gag-mode-fn ,action state))
