@@ -325,7 +325,7 @@
      "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
       then none of the @('fni') may be
       one of the functions listed in @(tsee *atj-jprim-fns*) or
-      one of the functions listed in @(tsee *atj-primarr-fns*).
+      one of the functions listed in @(tsee *atj-jprimarr-fns*).
       These functions are treated specially
       in the shallow embedding when guard satisfaction is assumed (see below).")
     (xdoc::p

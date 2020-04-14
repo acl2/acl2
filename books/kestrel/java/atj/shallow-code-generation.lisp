@@ -290,7 +290,7 @@
           a Java expression from a Java primitive array type."
   :long
   (xdoc::topstring-p
-   "See @(tsee atj-convert-to-jprimarr-method).")
+   "See @(tsee atj-convert-expr-to-jprimarr-method).")
   (primitive-type-case type
                        :boolean "convertToBooleanArray"
                        :char "convertToCharArray"
@@ -439,7 +439,7 @@
           a Java expression from a Java primitive array type."
   :long
   (xdoc::topstring-p
-   "See @(tsee atj-convert-from-jprimarr-method).")
+   "See @(tsee atj-convert-expr-from-jprimarr-method).")
   (primitive-type-case type
                        :boolean "convertFromBooleanArray"
                        :char "convertFromCharArray"
