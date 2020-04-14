@@ -55,28 +55,34 @@
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive arrays from their components."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "When the argument of one of these constructors is
-     a list of calls of primitive value constructors on suitable constants,
-     the call of the array constructor models
-     the construction of a Java primitive array with initializer.
-     For instance, a call
-     @('(byte-array (list (byte-value 1) (byte-value 2) (byte-value 3)))')
-     models the Java expression @('new byte[]{1, 2, 3}').
-     In fact, for now this kind of calls of these constructors
-     are the only allowed uses of these constructors.")
-   (xdoc::p
-    "We exclude the constructors for @('float') and @('double') arrays
-     from this list for now,
-     because our model of those two Java types is still abstract
-     and thus we cannot support calls of the form just described."))
+  (xdoc::topstring-p
+   "We exclude the functions that model
+    the construction of @('float') and @('double') values,
+    because we only have abstract models of those values for now.")
   '(boolean-array
     char-array
     byte-array
     short-array
     int-array
     long-array))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-jprimarr-deconstrs*
+  :short "List of (the names of) the ACL2 functions that model
+          the deconstruction of Java primitive arrays."
+  :long
+  (xdoc::topstring-p
+   "These are the inverses of the functions
+    that model the construction of primitive values.
+    These deconstructors essentially convert the Java primitive arrays
+    to the corresponding ACL2 lists.")
+  '(boolean-array->components$inline
+    char-array->components$inline
+    byte-array->components$inline
+    short-array->components$inline
+    int-array->components$inline
+    long-array->components$inline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,6 +146,7 @@
   :short "List of (the names of) the ACL2 functions that model
           Java primitive array operations."
   (append *atj-jprimarr-constrs*
+          *atj-jprimarr-deconstrs*
           *atj-jprimarr-reads*
           *atj-jprimarr-lengths*
           *atj-jprimarr-writes*
@@ -155,6 +162,14 @@
   :short "Recognizer the ACL2 function symbols that model
           the construction of Java primitive arrays from components."
   (and (member-eq fn *atj-jprimarr-constrs*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-deconstr-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the deconstruction of Java primitive arrays."
+  (and (member-eq fn *atj-jprimarr-deconstrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,6 +229,26 @@
   (atj-main-function-type int-array (:avalue) :jint[])
 
   (atj-main-function-type long-array (:avalue) :jlong[])
+
+  ;; deconstructors:
+
+  (atj-main-function-type boolean-array->components$inline
+                          (:jboolean[]) :avalue)
+
+  (atj-main-function-type char-array->components$inline
+                          (:jchar[]) :avalue)
+
+  (atj-main-function-type byte-array->components$inline
+                          (:jbyte[]) :avalue)
+
+  (atj-main-function-type short-array->components$inline
+                          (:jshort[]) :avalue)
+
+  (atj-main-function-type int-array->components$inline
+                          (:jint[]) :avalue)
+
+  (atj-main-function-type long-array->components$inline
+                          (:jlong[]) :avalue)
 
   ;; read operations:
 
