@@ -2112,7 +2112,13 @@
      there are eight methods to write elements to, and return,
      arrays of Java primitive types;
      there is one such method for each of Java's primitive types.
-     Their purpose is explained elsewhere;
+     There are also six methods
+     to convert from @('Acl2Value')s to Java primitive arrays,
+     and six methods
+     to convert from Java primitive arrays to @('Acl2Value')s;
+     there are two conversion methods for each of Java's primitive types
+     except @('float') and @('double').
+     The purpose of these array methods is explained elsewhere;
      they can be ignored for now.")
 
    (xdoc::p
