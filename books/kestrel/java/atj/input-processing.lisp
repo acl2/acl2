@@ -938,8 +938,8 @@
          ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
-                     (or (atj-java-primitive-fn-p fn)
-                         (atj-java-primarray-fn-p fn))))
+                     (or (atj-jprim-fn-p fn)
+                         (atj-jprimarr-fn-p fn))))
           (mv worklist-gen worklist-chk nil)))
       (if gen?
           (if (or (member-eq fn worklist-gen)

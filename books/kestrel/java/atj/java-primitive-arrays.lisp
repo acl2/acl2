@@ -150,7 +150,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-constr-p (fn)
+(define atj-jprimarr-constr-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the construction of Java primitive arrays from components."
@@ -158,7 +158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-read-p (fn)
+(define atj-jprimarr-read-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the reading of components from Java primitive arrays."
@@ -166,7 +166,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-length-p (fn)
+(define atj-jprimarr-length-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the retrieval of lengths of Java primitive arrays."
@@ -174,7 +174,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-write-p (fn)
+(define atj-jprimarr-write-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the writing of components from Java primitive arrays."
@@ -182,7 +182,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-lenconstr-p (fn)
+(define atj-jprimarr-lenconstr-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the construction of Java primitive arrays from lengths."
@@ -190,7 +190,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primarray-fn-p (fn)
+(define atj-jprimarr-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 funcion symbols that model
           Java primitive array operations."

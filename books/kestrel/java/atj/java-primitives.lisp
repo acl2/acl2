@@ -271,7 +271,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-constr-p (fn)
+(define atj-jprim-constr-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the construction of Java primitive types."
@@ -279,7 +279,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-deconstr-p (fn)
+(define atj-jprim-deconstr-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the deconstruction of Java primitive types."
@@ -287,7 +287,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-unop-p (fn)
+(define atj-jprim-unop-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive unary operations."
@@ -295,7 +295,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-binop-p (fn)
+(define atj-jprim-binop-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive binary operations."
@@ -303,7 +303,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-conv-p (fn)
+(define atj-jprim-conv-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive conversions."
@@ -311,7 +311,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-java-primitive-fn-p (fn)
+(define atj-jprim-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 funcion (ymbols that model
           the Java primitive value constructions, operations, and conversions."
