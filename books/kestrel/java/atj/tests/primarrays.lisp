@@ -22,7 +22,7 @@
 ; As explained in the ATJ user documentation,
 ; the tests passed to :TESTS may only involve
 ; the target functions explicitly passed to ATJ,
-; which cannot include the functions in *ATJ-JAVA-PRIMITIVE-FNS*
+; which cannot include the functions in *ATJ-JPRIMARR-FNS*
 ; when :DEEP is NIL and :GUARDS is T.
 ; Thus, here we introduce wrappers for such functions,
 ; which are the ones that we want to test here.

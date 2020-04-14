@@ -324,8 +324,8 @@
     (xdoc::p
      "If the @(':deep') input is @('nil') and the @(':guards') input is @('t'),
       then none of the @('fni') may be
-      one of the functions listed in @(tsee *atj-java-primitive-fns*) or
-      one of the functions listed in @(tsee *atj-java-primarray-fns*).
+      one of the functions listed in @(tsee *atj-jprim-fns*) or
+      one of the functions listed in @(tsee *atj-primarr-fns*).
       These functions are treated specially
       in the shallow embedding when guard satisfaction is assumed (see below).")
     (xdoc::p
@@ -642,7 +642,7 @@
      for the functions among @('fn1'), ..., @('fnp'),
      the functions that they transitively call
      (except for the functions in
-     @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
+     @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*),
      when @(':deep') is @('nil') and @(':guards') is @('t'))
      and the ACL2 functions natively implemented in AIJ
      (the latter are just wrappers of the native implementations).

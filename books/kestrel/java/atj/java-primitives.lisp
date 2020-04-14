@@ -61,7 +61,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-constrs*
+(defval *atj-jprim-constrs*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive values."
   :long
@@ -78,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-deconstrs*
+(defval *atj-jprim-deconstrs*
   :short "List of (the names of) the ACL2 functions that model
           the deconstruction of Java primitive values."
   :long
@@ -96,7 +96,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-unops*
+(defval *atj-jprim-unops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive unary operations."
   :long
@@ -121,7 +121,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-binops*
+(defval *atj-jprim-binops*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive binary operations."
   :long
@@ -202,7 +202,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-convs*
+(defval *atj-jprim-convs*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive conversions."
   :long
@@ -257,17 +257,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primitive-fns*
+(defval *atj-jprim-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
-  (append *atj-java-primitive-constrs*
-          *atj-java-primitive-deconstrs*
-          *atj-java-primitive-unops*
-          *atj-java-primitive-binops*
-          *atj-java-primitive-convs*)
+  (append *atj-jprim-constrs*
+          *atj-jprim-deconstrs*
+          *atj-jprim-unops*
+          *atj-jprim-binops*
+          *atj-jprim-convs*)
   ///
-  (assert-event (function-name-listp *atj-java-primitive-fns* (w state)))
-  (assert-event (no-duplicatesp-eq *atj-java-primitive-fns*)))
+  (assert-event (function-name-listp *atj-jprim-fns* (w state)))
+  (assert-event (no-duplicatesp-eq *atj-jprim-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,7 +275,7 @@
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the construction of Java primitive types."
-  (and (member-eq fn *atj-java-primitive-constrs*) t))
+  (and (member-eq fn *atj-jprim-constrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,7 +283,7 @@
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the deconstruction of Java primitive types."
-  (and (member-eq fn *atj-java-primitive-deconstrs*) t))
+  (and (member-eq fn *atj-jprim-deconstrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -291,7 +291,7 @@
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive unary operations."
-  (and (member-eq fn *atj-java-primitive-unops*) t))
+  (and (member-eq fn *atj-jprim-unops*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,7 +299,7 @@
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive binary operations."
-  (and (member-eq fn *atj-java-primitive-binops*) t))
+  (and (member-eq fn *atj-jprim-binops*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,7 +307,7 @@
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive conversions."
-  (and (member-eq fn *atj-java-primitive-convs*) t))
+  (and (member-eq fn *atj-jprim-convs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,7 +315,7 @@
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 funcion (ymbols that model
           the Java primitive value constructions, operations, and conversions."
-  (and (member-eq fn *atj-java-primitive-fns*) t))
+  (and (member-eq fn *atj-jprim-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

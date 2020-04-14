@@ -106,7 +106,7 @@
  (xdoc::p
   "Yet another complication arises from
    calls of functions in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*),
    which are translated directly to suitable Java constructs
    when @(':deep') is @('nil') and @(':guards') is @('t').
    Under these conditions, when @('fn') is taken from a worklist,
@@ -116,7 +116,7 @@
  (xdoc::p
   "As an optimization, ACL2 functions natively implemented in Java,
    as well as functions in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
    if @(':deep') is @('nil') and @(':guards') is @('t'),
    are never added to the worklists and collected lists.
    This is because they are known to satisfy the necessary constraints,
@@ -125,13 +125,13 @@
    with possibly a subset of @('fn1'), ..., @('fnp'),
    obtained by removing any natively implemented functions
    (while the ones in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*),
    when @(':deep') is @('nil') and @(':guards') is @('t'),
    are already ruled out by input validation).
    When descending into the defining of a function,
    natively implemented functions,
    and functions in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
    when applicable,
    are skipped over, not checked against worKlists and collected lists,
    and not added to any worklist.")
@@ -167,8 +167,8 @@
        ((unless (or (eq deep nil)
                     (eq guards t))) (value nil))
        (target-prims (intersection-eq targets
-                                      (union-eq *atj-java-primitive-fns*
-                                                *atj-java-primarray-fns*)))
+                                      (union-eq *atj-jprim-fns*
+                                                *atj-jprimarr-fns*)))
        ((when (null target-prims)) (value nil)))
     (er-soft+ ctx t nil
               "Since the :DEEP input is (perhaps by default) NIL ~
@@ -822,7 +822,7 @@
    (xdoc::p
     "Otherwise, the call is of a named function (not @(tsee return-last)).
      If it is a natively implemented function,
-     or in @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+     or in @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
      when applicable,
      we do not add it to the worklist,
      because it satisfies all the necessary constraints

@@ -51,7 +51,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-constrs*
+(defval *atj-jprimarr-constrs*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive arrays from their components."
   :long
@@ -80,7 +80,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-reads*
+(defval *atj-jprimarr-reads*
   :short "List of (the names of) the ACL2 functions that model
           the reading of components from Java primitive arrays."
   '(boolean-array-read
@@ -94,7 +94,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-lengths*
+(defval *atj-jprimarr-lengths*
   :short "List of (the names of) the ACL2 functions that model
           the retrieval of lengths of Java primitive arrays."
   '(boolean-array-length
@@ -108,7 +108,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-writes*
+(defval *atj-jprimarr-writes*
   :short "List of (the names of) the ACL2 functions that model
           the writing of components from Java primitive arrays."
   '(boolean-array-write
@@ -122,7 +122,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-lenconstrs*
+(defval *atj-jprimarr-lenconstrs*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive arrays from lengths."
   '(boolean-array-of-length
@@ -136,17 +136,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-java-primarray-fns*
+(defval *atj-jprimarr-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive array operations."
-  (append *atj-java-primarray-constrs*
-          *atj-java-primarray-reads*
-          *atj-java-primarray-lengths*
-          *atj-java-primarray-writes*
-          *atj-java-primarray-lenconstrs*)
+  (append *atj-jprimarr-constrs*
+          *atj-jprimarr-reads*
+          *atj-jprimarr-lengths*
+          *atj-jprimarr-writes*
+          *atj-jprimarr-lenconstrs*)
   ///
-  (assert-event (function-name-listp *atj-java-primarray-fns* (w state)))
-  (assert-event (no-duplicatesp-eq *atj-java-primarray-fns*)))
+  (assert-event (function-name-listp *atj-jprimarr-fns* (w state)))
+  (assert-event (no-duplicatesp-eq *atj-jprimarr-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +154,7 @@
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the construction of Java primitive arrays from components."
-  (and (member-eq fn *atj-java-primarray-constrs*) t))
+  (and (member-eq fn *atj-jprimarr-constrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +162,7 @@
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the reading of components from Java primitive arrays."
-  (and (member-eq fn *atj-java-primarray-reads*) t))
+  (and (member-eq fn *atj-jprimarr-reads*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -170,7 +170,7 @@
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the retrieval of lengths of Java primitive arrays."
-  (and (member-eq fn *atj-java-primarray-lengths*) t))
+  (and (member-eq fn *atj-jprimarr-lengths*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,7 +178,7 @@
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the writing of components from Java primitive arrays."
-  (and (member-eq fn *atj-java-primarray-writes*) t))
+  (and (member-eq fn *atj-jprimarr-writes*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,7 +186,7 @@
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the construction of Java primitive arrays from lengths."
-  (and (member-eq fn *atj-java-primarray-lenconstrs*) t))
+  (and (member-eq fn *atj-jprimarr-lenconstrs*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,7 +194,7 @@
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 funcion symbols that model
           Java primitive array operations."
-  (and (member-eq fn *atj-java-primarray-fns*) t))
+  (and (member-eq fn *atj-jprimarr-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
