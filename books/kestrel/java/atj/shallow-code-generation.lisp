@@ -1235,7 +1235,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-conversion-fn-to-jtype ((fn atj-java-primitive-conv-p))
+(define atj-jprim-conv-fn-to-jtype ((fn atj-java-primitive-conv-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models a Java primitive conversion
           to the result Java type of the conversion."
@@ -2198,7 +2198,7 @@
                                 qpairs
                                 t ; GUARDS$
                                 wrld))
-         (jtype (atj-jprim-conversion-fn-to-jtype fn))
+         (jtype (atj-jprim-conv-fn-to-jtype fn))
          (expr (jexpr-cast jtype operand-expr))
          (block operand-block))
       (mv block
