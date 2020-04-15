@@ -103,7 +103,7 @@
       nil)))
 
  (must-be-redundant
-  (defthm f-~>-f1
+  (defthm f-to-f1
     (implies (oldp x)
              (equal (f x)
                     (back (f1 (forth x))))))))
@@ -213,7 +213,7 @@
       nil)))
 
  (must-be-redundant
-  (defthm f-~>-f1
+  (defthm f-to-f1
     (implies (in-oldp x)
              (equal (f x)
                     (out-back (f1 (in-forth x))))))))
@@ -799,9 +799,9 @@
 
  ;; THM-NAME is not a symbol:
  (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name "f-~>-f{1}"))
+  (isodata f ((x (natp natp identity identity))) :thm-name "f-to-f{1}"))
  (must-fail
-  (isodata f ((x nat-id)) :thm-name "f-~>-f{1}"))
+  (isodata f ((x nat-id)) :thm-name "f-to-f{1}"))
 
  ;; THM-NAME is in the main Lisp package:
  (must-fail (isodata f ((x (natp natp identity identity))) :thm-name cons))
@@ -809,19 +809,19 @@
 
  ;; THM-NAME is a keyword (other than :AUTO):
  (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name :f-~>-f{1}))
+  (isodata f ((x (natp natp identity identity))) :thm-name :f-to-f{1}))
  (must-fail
-  (isodata f ((x nat-id)) :thm-name :f-~>-f{1}))
+  (isodata f ((x nat-id)) :thm-name :f-to-f{1}))
 
  ;; THM-NAME yields an automatic name that already exists:
  (must-succeed*
-  (defun f-~>-f{1} (x) x)
+  (defun f-to-f{1} (x) x)
   (must-fail (isodata f ((x (natp natp identity identity))) :thm-name :auto))
   (must-fail (isodata f ((x nat-id)) :thm-name :auto)))
 
  ;; THM-NAME yields a default name that already exists:
  (must-succeed*
-  (defun f-~>-f{1} (x) x)
+  (defun f-to-f{1} (x) x)
   (must-fail (isodata f ((x (natp natp identity identity)))))
   (must-fail (isodata f ((x nat-id)))))
 
@@ -1622,24 +1622,24 @@
  (must-succeed*
   (isodata f ((x (natp natp identity identity))))
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id)))
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
 
  ;; default OLD-TO-NEW name for P:
  (must-succeed*
   (isodata p ((x (natp natp identity identity))) :predicate t)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id)) :predicate t)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
  ;; automatic OLD-TO-NEW name for F:
@@ -1715,26 +1715,26 @@
  ;; by default, OLD-TO-NEW is enabled:
  (must-succeed*
   (isodata f ((x (natp natp identity identity))))
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
  (must-succeed*
   (isodata f ((x nat-id)))
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable OLD-TO-NEW:
  (must-succeed*
   (isodata f ((x (natp natp identity identity))) :thm-enable t)
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
  (must-succeed*
   (isodata f ((x nat-id)) :thm-enable t)
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; disable OLD-TO-NEW:
  (must-succeed*
   (isodata f ((x (natp natp identity identity))) :thm-enable nil)
-  (assert-event (not (rune-enabledp '(:rewrite f-~>-f{1}) state))))
+  (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state))))
  (must-succeed*
   (isodata f ((x nat-id)) :thm-enable nil)
-  (assert-event (not (rune-enabledp '(:rewrite f-~>-f{1}) state)))))
+  (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

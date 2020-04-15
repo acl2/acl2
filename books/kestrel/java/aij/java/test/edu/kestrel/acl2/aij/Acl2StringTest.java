@@ -42,4 +42,18 @@ class Acl2StringTest {
         assertEquals(Acl2String.ACL2.getJavaString(), "ACL2");
     }
 
+    @Test
+    void getJavaStringFromMake() {
+        assertEquals(Acl2String.make("xyz").getJavaString(), "xyz");
+        assertEquals(Acl2String.make("").getJavaString(), "");
+        assertEquals(Acl2String.make("\0A?").getJavaString(), "\0A?");
+        assertEquals(Acl2String.make("@").getJavaString(), "@");
+    }
+
+    @Test
+    void toStringFromConstant() {
+        assertEquals(Acl2String.EMPTY.toString(), "\"\"");
+        assertEquals(Acl2String.ACL2.toString(), "\"ACL2\"");
+    }
+
 }

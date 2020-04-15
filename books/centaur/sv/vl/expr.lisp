@@ -2928,7 +2928,7 @@ the way.</li>
 
 
 (fty::defflexsum vttree
-  :parents (vl-expr-to-svex)
+  :parents (vl-expr-svex-translation)
   :short "A data structure for collecting warnings and constraints
           while translating VL expressions to svex expressions."
   :long "<p>Similar to ACL2's ttrees. A vttree is either nil, a warninglist

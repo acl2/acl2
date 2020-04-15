@@ -1,4 +1,4 @@
-; FTY -- Standard Byte List Fixtype Instances -- Tests
+; FTY Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;

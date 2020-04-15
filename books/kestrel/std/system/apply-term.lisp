@@ -33,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection apply-term*
-  :parents (term-utilities)
+  :parents (std/system/term-transformations)
   :short "Apply a function symbol or a lambda expression to zero or more terms,
           obtaining a term."
   :long

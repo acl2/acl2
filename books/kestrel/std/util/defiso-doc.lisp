@@ -26,7 +26,7 @@
 
 (defxdoc defiso
 
-  :parents (std/util-extensions std/util)
+  :parents (std::std/util-extensions std/util)
 
   :short "Establish an isomorphic mapping between two domains."
 

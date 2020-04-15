@@ -25,7 +25,7 @@
 
 (defxdoc defarbrec
 
-  :parents (std/util-extensions std/util)
+  :parents (std::std/util-extensions std/util)
 
   :short "Introduce an arbitrarily recursive function."
 
