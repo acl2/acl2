@@ -1,4 +1,4 @@
-; FTY -- Kestrel Extensions
+; FTY Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
