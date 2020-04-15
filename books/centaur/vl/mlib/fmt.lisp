@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "../util/fmt-base")
 (include-book "writer")
 (include-book "print-context")
 (local (include-book "../util/arithmetic"))
@@ -38,91 +39,27 @@
 
 (local (in-theory (disable (tau-system))))
 
-(defxdoc vl-fmt
-  :parents (verilog-printing)
-  :short "Print format strings with support for Verilog constructs."
-
-  :long "<p>@(call vl-fmt) extends the basic @(see formatted-printing) routine,
-@(see vl-basic-fmt), with new directives for more conveniently printing Verilog
-modules.  In particular, while @('vl-basic-fmt') only supports a small set of
-directives like @('~|'), @('~%'), @('~x0'), and @('~s0'), @('vl-fmt')
-additionally supports @('~a') and @('~m'), which are convenient when we want to
-tell the user about some parse-tree construct.</p>
-
-<p>Although @('vl-basic-fmt') does not yet implement many ACL2 directives, we
-might imagine wanting to support its other directives.  So we have kept our
-directives separate from those mentioned in @(':doc fmt').</p>
-
-<dl>
-
-<dt><b>~a</b>, the \"(almost) anything directive\"</dt>
-
-<dd>This directive can handle most Verilog constructs and is our preferred way
-to print things in warning messages.  It understands how to pretty-print:
-
-<ul>
-
- <li><see topic=\"@(url vl-location-p)\">locations</see>,</li>
-
- <li><see topic=\"@(url vl-expr-p)\">expressions</see> (and automatically
-prefers to print \"original expressions\" rather than \"simplified
-expressions\"),</li>
-
- <li><see topic=\"@(url vl-range-p)\">ranges</see>,</li>
-
- <li><see topic=\"@(url vl-stmt-p)\">statements</see>,</li>
-
- <li><see topic=\"@(url vl-plainarg-p)\">plain</see> or <see topic=\"@(url
- vl-namedarg-p)\">named</see> arguments,</li>
-
- <li><see topic=\"@(url vl-context-p)\">contexts</see>,</li>
-
- <li>any <see topic=\"@(url vl-modelement-p)\">module element</see>,</li>
-
- <li>or even a whole <see topic=\"@(url vl-module-p)\">module</see> (for which
-it only prints the name of the module, perhaps with links).</li>
-
-</ul>
-
-Because this directive is intended for warning messages, it only prints short
-summaries of any contexts and module elements.  On the other hand, it prints
-expressions, ranges, statements, and arguments \"in full\".</dd>
-
-<dt><b>~m</b>, the \"module name directive\"</dt>
-
-<dd>The corresponding argument should be a string that is the name of a module,
-but can also be an entire module.  In html mode, a link to this module will be
-printed.</dd>
-
-<dt><b>~w</b>, the \"wire name directive\"</dt>
-
-<dd>The corresponding argument should be a string that is the name of something
-in the module's namespace, for instance wire names.  But this can also be used
-for names of module instances, gate instances, parameters, etc.  In html mode,
-a link to this module element will be printed.</dd>
-
-</dl>
-
-<p>The <b>~l</b> directive is deprecated and is now a synonym for ~a.  It was
-formerly the \"location directive\" and printed a location.</p>")
-
-(define vl-fmt-tilde-m (x &key (ps 'ps))
+(define vl-fmt-tilde-m-default (x &key (ps 'ps))
   (cond ((stringp x)
          (vl-print-modname x))
         ((vl-module-p x)
          (vl-pp-modulename-link-aux (vl-module->name x)
                                     (vl-module->origname x)))
         (t
-         (vl-fmt-tilde-x x))))
+         (vl-fmt-tilde-x x)))
+  ///
+  (defattach vl-fmt-tilde-m-fn vl-fmt-tilde-m-default-fn))
 
-(define vl-fmt-tilde-w (x &key (ps 'ps))
+(define vl-fmt-tilde-w-default (x &key (ps 'ps))
   (cond ((stringp x)
          (vl-print-wirename x))
         ;; BOZO is there anything else this should print as a string?
         ;; ((vl-id-p x)
         ;;  (vl-print-wirename (vl-id->name x)))
         (t
-         (vl-fmt-tilde-x x))))
+         (vl-fmt-tilde-x x)))
+  ///
+  (defattach vl-fmt-tilde-w-fn vl-fmt-tilde-w-default-fn))
 
 
 
@@ -346,142 +283,9 @@ formerly the \"location directive\" and printed a location.</p>")
            ))
     :rule-classes nil))
 
-(define vl-fmt-tilde-a (x &key (ps 'ps))
+(define vl-fmt-tilde-a-default (x &key (ps 'ps))
   (b* (((mv ?type ps)
         (vl-fmt-tilde-a-aux x)))
-    ps))
-
-
-(define vl-fmt-pair-args ((args true-listp))
-  :returns (res alistp)
-  (pairlis$ (take (min (len args) 10)
-                  '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-            args)
+    ps)
   ///
-  (local (defthm strip-cdrs-of-pairlis$
-           (equal (strip-cdrs (pairlis$ a b))
-                  (take (len a) b))))
-  (local
-   (defthm acl2-count-of-take
-     (implies (<= n (len x))
-              (<= (acl2-count (take n x))
-                  (acl2-count x)))
-     :hints (("goal" :induct (nth n x)
-              :in-theory (enable acl2::take)))
-     :rule-classes :linear))
-  (defthm acl2-count-of-vl-fmt-pair-args
-    (<= (acl2-count (strip-cdrs (vl-fmt-pair-args args)))
-        (acl2-count args))
-    :rule-classes :linear))
-
-(define vl-fmt-aux ((x stringp)
-                    (n natp)
-                    (xl (eql xl (length x)))
-                    (alist alistp)
-                    &key
-                    (ps 'ps))
-  :verbosep t
-  :guard (<= n xl)
-  :ruler-extenders :all
-  :measure (two-nats-measure (acl2-count (strip-cdrs alist))
-                             (- (nfix xl) (nfix n)))
-  (b* (((when (mbe :logic (zp (- (nfix xl) (nfix n)))
-                   :exec (eql xl n)))
-        ps)
-       ((mv type val n)
-        (vl-basic-fmt-parse-tilde x n xl))
-       (ps (case type
-             (:skip   ps)
-             (:normal (vl-fmt-print-normal val))
-             (:hard-space (vl-print #\Space))
-             (:cbreak (if (zp (vl-ps->col)) ps (vl-println "")))
-             (otherwise
-              (b* ((lookup (assoc val alist))
-                   ((unless lookup)
-                    (prog2$ (raise "alist does not bind ~x0; fmt-string is ~x1." val x)
-                            ps)))
-                (case type
-                  (#\s (vl-fmt-tilde-s (cdr lookup)))
-                  (#\& (vl-fmt-tilde-& (cdr lookup)))
-                  (#\x (vl-fmt-tilde-x (cdr lookup)))
-                  (#\m (vl-fmt-tilde-m (cdr lookup)))
-                  (#\w (vl-fmt-tilde-w (cdr lookup)))
-                  (#\l (vl-fmt-tilde-a (cdr lookup)))
-                  (#\a (vl-fmt-tilde-a (cdr lookup)))
-                  (#\@ (b* ((look (cdr lookup))
-                            ((unless (vl-msg-p look))
-                             (prog2$ (raise "Bad ~~@ argument: ~x0.  fmt-string is ~x1~%" look x)
-                                     ps))
-                            ((vl-msg look)))
-                         (vl-fmt-aux look.msg 0 (length look.msg)
-                                     (vl-fmt-pair-args look.args))))
-
-                  (otherwise
-                   (prog2$ (raise "Unsupported directive: ~~~x0.  fmt-string is ~x1~%" type x)
-                           ps))))))))
-    (vl-fmt-aux x n xl alist))
-  :prepwork
-  ((local (in-theory (disable assoc-equal-elim)))
-   (local (defthm acl2-count-of-vl-msg->args
-            (implies (vl-msg-p x)
-                     (<= (acl2-count (vl-msg->args x))
-                         (acl2-count x)))
-            :hints(("Goal" :in-theory (enable vl-msg-p
-                                              vl-msg->args)))
-            :rule-classes :linear))
-   (local (defthm acl2-count-of-assoc
-            (implies (assoc key alist)
-                     (< (acl2-count (cdr (assoc key alist)))
-                        (acl2-count (strip-cdrs alist))))
-            :hints(("Goal" :in-theory (enable assoc-equal strip-cdrs)))
-            :rule-classes :linear))
-   (local (defthm assoc-when-not-consp
-            (implies (not (consp alist))
-                     (not (assoc-equal k alist)))
-            :hints(("Goal" :in-theory (enable assoc-equal)))))))
-
-(define vl-fmt ((x stringp) (alist alistp) &key (ps 'ps))
-  :inline t
-  (let ((x (string-fix x)))
-    (vl-fmt-aux x 0 (length x) alist)))
-
-
-(defsection vl-cw
-  :parents (verilog-printing)
-  :short "@(see cw)-like function for printing to @(see ps), with support for
-pretty-printing Verilog constructs as in @(see vl-fmt)."
-
-  (defmacro vl-cw (x &rest args)
-    `(vl-fmt ,x (vl-fmt-pair-args (list ,@args)))))
-
-
-(define vl-cw-obj ((msg stringp) args &key (ps 'ps))
-  :parents (verilog-printing)
-  :short "Similar to @(see vl-cw), but the arguments are given as a list
-instead of as macro arguments."
-  :long "<p>For example:</p>
-
-@({
-    (vl-cw \"hello ~x0 ~x1 ~x2\" 3 4 5)
-      --->
-    (vl-cw-obj \"hello ~x0 ~x1 ~x2\" (list 3 4 5))
-})
-
-<p>This can be useful for grouping up arguments into cons structures.</p>
-
-<p>BOZO I should probably implement something like @('~@') and use @(see msg)
-instead.</p>"
-
-  (cond ((<= (len args) 10)
-         (vl-fmt msg (pairlis$
-                      '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                      (list-fix args))))
-        (t
-         (prog2$ (raise "vl-cw-obj is limited to 10 arguments.")
-                 ps))))
-
-
-(define vl-print-msg ((x vl-msg-p) &key (ps 'ps))
-  (b* (((vl-msg x)))
-    (vl-fmt-aux x.msg 0 (length x.msg)
-                (vl-fmt-pair-args x.args))))
+  (defattach vl-fmt-tilde-a-fn vl-fmt-tilde-a-default-fn))
