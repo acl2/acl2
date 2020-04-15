@@ -56,6 +56,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection set-default-input-old-to-new
+  :short "Set the default @(':old-to-new') input of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':old-to-new') input
+     that specified the name of the generated theorem
+     that rewrites (a term involving) a call of the old function
+     to (a term involving) a call of the new function.
+     When this input is a symbol that is a valid theorem name,
+     it is used as the theorem name.
+     When this input is a keyword (which is never a valid theorem name),
+     the theorem name is the concatenation of
+     the old function name, the keyword, and the new function name,
+     e.g. @('f-to-g') if
+     @('f') is the old function name,
+     @('g') is the new function name,
+     and @(':-to-') is the keyword passed as the @(':old-to-new') input.
+     Thus, the keyword specifies a separator
+     between old and new function names.
+     The concatenated symbol is in the same package as the new function name.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':old-to-new') input.
+     It must be a keyword, which is used as a separator as described above.
+     It would not make sense to have a complete theorem name as default.")
+   (xdoc::p
+    "The initial value of this default is @(':-to-').")
+   (xdoc::@def "set-default-input-old-to-new"))
+
+  (defmacro set-default-input-old-to-new (kwd)
+    (declare (xargs :guard (keywordp kwd)))
+    `(table ,*defaults-table-name* :old-to-new ,kwd)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-old-to-new ((wrld plist-worldp))
+  :returns (kwd keywordp)
+  :short "Get the default @(':old-to-new') input of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-old-to-new).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :old-to-new table))
+       ((unless (consp pair))
+        (prog2$ (raise "No :OLD-TO-NEW found in APT defaults table.")
+                :irrelevant-keyword-for-unconditional-returns-theorem))
+       (kwd (cdr pair))
+       ((unless (keywordp kwd))
+        (prog2$ (raise
+                 "The default :OLD-TO-NEW is ~x0, which is not a keyword.")
+                :irrelevant-keyword-for-unconditional-returns-theorem)))
+    kwd))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-old-to-new :-to-)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection set-default-input-new-to-old
   :short "Set the default @(':new-to-old') input of APT transformations."
   :long
