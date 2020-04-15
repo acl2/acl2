@@ -50,4 +50,10 @@ class Acl2StringTest {
         assertEquals(Acl2String.make("@").getJavaString(), "@");
     }
 
+    @Test
+    void toStringFromConstant() {
+        assertEquals(Acl2String.EMPTY.toString(), "\"\"");
+        assertEquals(Acl2String.ACL2.toString(), "\"ACL2\"");
+    }
+
 }
