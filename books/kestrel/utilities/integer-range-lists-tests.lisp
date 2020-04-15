@@ -11,7 +11,9 @@
 (in-package "ACL2")
 
 (include-book "integer-range-lists")
-(include-book "testing")
+
+(include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

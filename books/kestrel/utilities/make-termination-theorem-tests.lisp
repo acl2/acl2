@@ -8,7 +8,6 @@
 ; we provide some tests, which also serve as further documentation.
 
 (include-book "make-termination-theorem")
-(include-book "testing")
 (include-book "std/testing/eval" :dir :system)
 (include-book "std/testing/assert" :dir :system)
 
