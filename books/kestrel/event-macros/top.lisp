@@ -13,7 +13,7 @@
 (include-book "applicability-conditions")
 (include-book "input-processing")
 (include-book "intro-macros")
-(include-book "xdoc-constructors")
+(include-book "make-event-terse")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

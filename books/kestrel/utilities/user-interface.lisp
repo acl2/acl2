@@ -17,6 +17,8 @@
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "maybe-unquote")
 
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection user-interface
@@ -129,54 +131,6 @@
   (defmacro cw-event (str &rest args)
     `(value-triple (cw ,str ,@args)
                    :on-skip-proofs :interactive)))
-
-(defsection make-event-terse
-  :parents (user-interface make-event)
-  :short "A variant of @(tsee make-event) with terser screen output."
-  :long
-  "<p>
-   We wrap a normal @(tsee make-event)
-   in a @(tsee with-output) that removes all the screen output
-   except possibly errors.
-   We also suppress the concluding error message of @(tsee make-event)
-   (when an error occurs),
-   via @(':on-behalf-of :quiet!').
-   </p>
-   <p>
-   The @(':suppress-output') argument
-   determines whether errors should be also suppressed or not.
-   If this argument is @('nil') (the default),
-   errors are not suppressed,
-   but they are not enabled either;
-   that is, they retain the suppression status they had before.
-   If this argument is non-@('nil'), errors are suppressed;
-   @('make-event-terse') will fail silently in case of an error,
-   so errors should not be suppressed in normal circumstances.
-   </p>
-   <p>
-   We save, via @(':stack :push'), the current status of the outputs,
-   so that, inside the form passed to @('make-event-terse'),
-   that output status can be selectively restored for some sub-forms.
-   That output status can be restored via @('(with-output :stack :pop ...)'),
-   or by using the @(tsee restore-output) or @(tsee restore-output?) utilities.
-   </p>
-   <p>
-   Currently @('make-event-terse') does not support
-   @(tsee make-event)'s @(':check-expansion') and @(':expansion?'),
-   but it could be extended to support them and pass them to @(tsee make-event).
-   </p>
-   <p>
-   @('make-event-terse') may be useful in event-generating macros.
-   </p>
-   @(def make-event-terse)"
-  (defmacro make-event-terse (form &key (suppress-errors 'nil))
-    `(with-output
-       :gag-mode nil
-       :off ,(if suppress-errors
-                 :all
-               (remove-eq 'error *valid-output-names*))
-       :stack :push
-       (make-event ,form :on-behalf-of :quiet!))))
 
 (define restore-output ((form pseudo-event-formp))
   :returns (form-with-output-restored pseudo-event-formp)
