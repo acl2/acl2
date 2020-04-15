@@ -370,6 +370,31 @@
     (xdoc::desc-apt-input-thm-enable :never)
 
     (xdoc::desc
+     "@(':old-to-new') &mdash; default @('nil')"
+     (xdoc::p
+      "Determines the name of the theorem that
+       relates the old function to the new function:")
+     (xdoc::ul
+      (xdoc::li
+       "@('nil'), to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-old-to-new).")
+      (xdoc::li
+       "A keyword, to use as separator between
+        the names of @('old') and @('new').
+        A keyword @(':kwd') specifies the theorem name @('oldkwdnew'),
+        in the same package as @('new').")
+      (xdoc::li
+       "A non-@('nil'), non-keyword symbol,
+        to use as the name of the theorem."))
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('old-to-new') be the name of this theorem.")
+     (xdoc::p
+      "This input is ignored if the @(':thm-name') input is supplied.
+       This situation is temporary, as @('isodata') is being modified
+       to gradually replace @(':thm-name') with @(':old-to-new')."))
+
+    (xdoc::desc
      "@(':new-to-old') &mdash; default @('nil')"
      (xdoc::p
       "Determines the name of the theorem that
