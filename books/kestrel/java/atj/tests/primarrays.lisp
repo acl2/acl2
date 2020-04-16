@@ -97,7 +97,7 @@
   (declare (xargs :guard (java::long-array-p a)))
   (java::long-array-length a))
 
-;; array length operations:
+;; array write operations:
 
 (defun test-boolean-array-write (a i e)
   (declare
