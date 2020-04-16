@@ -14,6 +14,7 @@
 (include-book "input-processing")
 (include-book "intro-macros")
 (include-book "make-event-terse")
+(include-book "restore-output")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
