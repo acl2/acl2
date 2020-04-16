@@ -365,8 +365,6 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-name :never)
-
     (xdoc::desc-apt-input-thm-enable :never)
 
     (xdoc::desc
@@ -388,11 +386,7 @@
         to use as the name of the theorem."))
      (xdoc::p
       "In the rest of this documentation page,
-       let @('old-to-new') be the name of this theorem.")
-     (xdoc::p
-      "This input is ignored if the @(':thm-name') input is supplied.
-       This situation is temporary, as @('isodata') is being modified
-       to gradually replace @(':thm-name') with @(':old-to-new')."))
+       let @('old-to-new') be the name of this theorem."))
 
     (xdoc::desc
      "@(':new-to-old') &mdash; default @('nil')"
