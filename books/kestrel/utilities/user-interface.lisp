@@ -18,6 +18,7 @@
 (include-book "maybe-unquote")
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,34 +132,6 @@
   (defmacro cw-event (str &rest args)
     `(value-triple (cw ,str ,@args)
                    :on-skip-proofs :interactive)))
-
-(define restore-output ((form pseudo-event-formp))
-  :returns (form-with-output-restored pseudo-event-formp)
-  :parents (user-interface)
-  :short "Wrap a form to have it produce screen output
-          according to previously saved screen output settings."
-  :long
-  "<p>
-   This wraps the form in a @('(with-output :stack :pop ...)').
-   It can be used on a sub-form
-   of the form passed to a @(tsee make-event-terse).
-   </p>"
-  `(with-output :stack :pop ,form))
-
-(define restore-output? ((yes/no booleanp) (form pseudo-event-formp))
-  :returns (form-maybe-with-output-restored pseudo-event-formp
-                                            :hyp (pseudo-event-formp form))
-  :parents (user-interface)
-  :short "Conditionally wrap a form to have it produce screen output
-          according to previously saved screen output settings."
-  :long
-  "<p>
-   This leaves the form unchanged if the boolean is @('nil'),
-   otherwise it calls @(tsee restore-output) on it.
-   </p>"
-  (if yes/no
-      (restore-output form)
-    form))
 
 (defsection fail-event
   :parents (user-interface)
