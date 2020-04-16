@@ -813,12 +813,11 @@
   (must-fail (isodata f ((x (natp natp identity identity))) :old-to-new nil))
   (must-fail (isodata f ((x nat-id)) :old-to-new nil)))
 
- ; uncomment this when :THM-NAME (which takes precedence) is eliminated:
- ;; ;; OLD-TO-NEW yields a default name that already exists:
- ;; (must-succeed*
- ;;  (defun f-to-f{1} (x) x)
- ;;  (must-fail (isodata f ((x (natp natp identity identity)))))
- ;;  (must-fail (isodata f ((x nat-id)))))
+ ;; OLD-TO-NEW yields a default name that already exists:
+ (must-succeed*
+  (defun f-to-f{1} (x) x)
+  (must-fail (isodata f ((x (natp natp identity identity)))))
+  (must-fail (isodata f ((x nat-id)))))
 
  ;; OLD-TO-NEW is a name that already exists:
  (must-fail
