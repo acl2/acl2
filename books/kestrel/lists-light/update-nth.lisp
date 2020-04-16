@@ -95,3 +95,12 @@
   :hints
   (("Goal" :in-theory (enable TAKE; repeat
                               update-nth))))
+
+;; Often we'll know (true-listp l) and no case split will occur.
+;; Not quite the same as true-listp-of-update-nth in std.
+(defthm true-listp-of-update-nth-2
+  (equal (true-listp (update-nth key val l))
+         (if (true-listp l)
+             t
+           (not (< (nfix key) (len l)))))
+  :hints (("Goal" :in-theory (enable update-nth))))

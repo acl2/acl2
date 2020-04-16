@@ -218,3 +218,16 @@
            (equal (nthcdr n x)
                   nil))
   :hints (("Goal" :in-theory (enable nthcdr))))
+
+;; Often we'll know (true-listp x) and no case split will occur.
+;; Not quite the same as true-listp-of-nthcdr in std.
+(defthm true-listp-of-nthcdr-2
+  (equal (true-listp (nthcdr n x))
+         (if (true-listp x)
+             t
+           (< (len x) (nfix n))))
+  :hints (("Subgoal *1/5" :cases ((< (len x) n)))
+          ("Goal"
+           :in-theory (e/d (nthcdr)
+                           (nthcdr-of-cdr-combine-strong
+                            nthcdr-of-cdr-combine)))))
