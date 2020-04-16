@@ -835,6 +835,45 @@
 
 (must-succeed*
 
+ (test-title "Check OLD-TO-NEW input.")
+
+ (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
+
+ (defiso nat-id natp natp identity identity)
+
+ ;; OLD-TO-NEW is not a symbol:
+ (must-fail
+  (isodata f ((x (natp natp identity identity))) :old-to-new "f-to-f{1}"))
+ (must-fail
+  (isodata f ((x nat-id)) :old-to-new "f-to-f{1}"))
+
+ ;; OLD-TO-NEW is in the main Lisp package:
+ (must-fail (isodata f ((x (natp natp identity identity))) :old-to-new cons))
+ (must-fail (isodata f ((x nat-id)) :old-to-new cons))
+
+ ;; OLD-TO-NEW yields an automatic name that already exists:
+ (must-succeed*
+  (defun f-to-f{1} (x) x)
+  (must-fail (isodata f ((x (natp natp identity identity))) :old-to-new nil))
+  (must-fail (isodata f ((x nat-id)) :old-to-new nil)))
+
+ ; uncomment this when :THM-NAME (which takes precedence) is eliminated:
+ ;; ;; OLD-TO-NEW yields a default name that already exists:
+ ;; (must-succeed*
+ ;;  (defun f-to-f{1} (x) x)
+ ;;  (must-fail (isodata f ((x (natp natp identity identity)))))
+ ;;  (must-fail (isodata f ((x nat-id)))))
+
+ ;; OLD-TO-NEW is a name that already exists:
+ (must-fail
+  (isodata f ((x (natp natp identity identity))) :old-to-new car-cdr-elim))
+ (must-fail
+  (isodata f ((x nat-id)) :old-to-new car-cdr-elim)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
  (test-title "Check NEW-TO-OLD input.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
