@@ -17,6 +17,7 @@
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "maybe-unquote")
 
+(include-book "kestrel/event-macros/fail-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 
@@ -132,29 +133,6 @@
   (defmacro cw-event (str &rest args)
     `(value-triple (cw ,str ,@args)
                    :on-skip-proofs :interactive)))
-
-(defsection fail-event
-  :parents (user-interface)
-  :short "An event that always fails
-          with a specified error context, flag, value, and message."
-  :long
-  "<p>
-   This is realized by always generating a soft error (via @(tsee er-soft+))
-   during the expansion phase of @(tsee make-event).
-   The error context, flag, value, and message passed to this macro
-   are not evaluated.
-   </p>
-   <p>
-   The use of @(tsee make-event-terse) instead of @(tsee make-event)
-   avoids any screen output other than the specified error message.
-   </p>
-   <p>
-   This macro is used by @(tsee try-event).
-   </p>
-   @(def fail-event)"
-  (defmacro fail-event (ctx erp val msg)
-    (declare (xargs :guard (msgp msg)))
-    `(make-event-terse (er-soft+ ',ctx ',erp ',val "~@0" ',msg))))
 
 (define try-event (form ctx erp val (msg msgp))
   :returns (event pseudo-event-formp)
