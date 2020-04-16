@@ -2,5 +2,4 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Recertification of many books may be required because of new changes to the
-raw Lisp support for defstobj array-resizing functions.
+Version 8.3 release
