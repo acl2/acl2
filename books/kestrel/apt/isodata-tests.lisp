@@ -1636,46 +1636,46 @@
    (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
- ;; automatic OLD-TO-NEW name for F:
+ ;; explicitly default OLD-TO-NEW name for F:
  (must-succeed*
   (isodata f ((x (natp natp identity identity)))
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id))
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
 
- ;; automatic OLD-TO-NEW name for P:
+ ;; explicitly default OLD-TO-NEW name for P:
  (must-succeed*
   (isodata p ((x (natp natp identity identity)))
            :predicate t
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
  ;; explicitly named OLD-TO-NEW for F:
  (must-succeed*
   (isodata f ((x (natp natp identity identity)))
-           :thm-name f{1}-correct-wrt-f)
+           :old-to-new f{1}-correct-wrt-f)
   (must-be-redundant
    (DEFTHM F{1}-CORRECT-WRT-F
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id))
-           :thm-name f{1}-correct-wrt-f)
+           :old-to-new f{1}-correct-wrt-f)
   (must-be-redundant
    (DEFTHM F{1}-CORRECT-WRT-F
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
@@ -1684,14 +1684,14 @@
  (must-succeed*
   (isodata p ((x (natp natp identity identity)))
            :predicate t
-           :thm-name p{1}-correct-wrt-p)
+           :old-to-new p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
-           :thm-name p{1}-correct-wrt-p)
+           :old-to-new p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X))))))))
