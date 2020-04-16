@@ -78,53 +78,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(make-event-terse
- '(defun a (x) x))
-
-(make-event-terse
- '(defun a1 (x) x)
- :suppress-errors nil)
-
-(make-event-terse
- '(defun a2 (x) x)
- :suppress-errors t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(make-event-terse
- `(progn
-    (defun b (x) x)
-    ,(restore-output '(defun c (x) x))))
-
-(assert! (equal (restore-output '(form))
-                '(with-output :stack :pop (form))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(make-event-terse
- `(progn
-    (defun d (x) x)
-    ,(restore-output? t '(defun e (x) x))))
-
-(make-event-terse
- `(progn
-    (defun f (x) x)
-    ,(restore-output? nil '(defun g (x) x))))
-
-(assert! (equal (restore-output? t '(form))
-                '(with-output :stack :pop (form))))
-
-(assert! (equal (restore-output? nil '(form))
-                '(form)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-fail
- (fail-event top t nil "This is a test error message.")
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (must-succeed*
  (make-event
   (try-event
