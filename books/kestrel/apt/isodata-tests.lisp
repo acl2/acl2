@@ -791,50 +791,6 @@
 
 (must-succeed*
 
- (test-title "Check THM-NAME input.")
-
- (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
-
- (defiso nat-id natp natp identity identity)
-
- ;; THM-NAME is not a symbol:
- (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name "f-to-f{1}"))
- (must-fail
-  (isodata f ((x nat-id)) :thm-name "f-to-f{1}"))
-
- ;; THM-NAME is in the main Lisp package:
- (must-fail (isodata f ((x (natp natp identity identity))) :thm-name cons))
- (must-fail (isodata f ((x nat-id)) :thm-name cons))
-
- ;; THM-NAME is a keyword (other than :AUTO):
- (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name :f-to-f{1}))
- (must-fail
-  (isodata f ((x nat-id)) :thm-name :f-to-f{1}))
-
- ;; THM-NAME yields an automatic name that already exists:
- (must-succeed*
-  (defun f-to-f{1} (x) x)
-  (must-fail (isodata f ((x (natp natp identity identity))) :thm-name :auto))
-  (must-fail (isodata f ((x nat-id)) :thm-name :auto)))
-
- ;; THM-NAME yields a default name that already exists:
- (must-succeed*
-  (defun f-to-f{1} (x) x)
-  (must-fail (isodata f ((x (natp natp identity identity)))))
-  (must-fail (isodata f ((x nat-id)))))
-
- ;; THM-NAME is a name that already exists:
- (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name car-cdr-elim))
- (must-fail
-  (isodata f ((x nat-id)) :thm-name car-cdr-elim)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
-
  (test-title "Check OLD-TO-NEW input.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
