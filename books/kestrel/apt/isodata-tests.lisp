@@ -791,45 +791,39 @@
 
 (must-succeed*
 
- (test-title "Check THM-NAME input.")
+ (test-title "Check OLD-TO-NEW input.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
  (defiso nat-id natp natp identity identity)
 
- ;; THM-NAME is not a symbol:
+ ;; OLD-TO-NEW is not a symbol:
  (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name "f-to-f{1}"))
+  (isodata f ((x (natp natp identity identity))) :old-to-new "f-to-f{1}"))
  (must-fail
-  (isodata f ((x nat-id)) :thm-name "f-to-f{1}"))
+  (isodata f ((x nat-id)) :old-to-new "f-to-f{1}"))
 
- ;; THM-NAME is in the main Lisp package:
- (must-fail (isodata f ((x (natp natp identity identity))) :thm-name cons))
- (must-fail (isodata f ((x nat-id)) :thm-name cons))
+ ;; OLD-TO-NEW is in the main Lisp package:
+ (must-fail (isodata f ((x (natp natp identity identity))) :old-to-new cons))
+ (must-fail (isodata f ((x nat-id)) :old-to-new cons))
 
- ;; THM-NAME is a keyword (other than :AUTO):
- (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name :f-to-f{1}))
- (must-fail
-  (isodata f ((x nat-id)) :thm-name :f-to-f{1}))
-
- ;; THM-NAME yields an automatic name that already exists:
+ ;; OLD-TO-NEW yields an automatic name that already exists:
  (must-succeed*
   (defun f-to-f{1} (x) x)
-  (must-fail (isodata f ((x (natp natp identity identity))) :thm-name :auto))
-  (must-fail (isodata f ((x nat-id)) :thm-name :auto)))
+  (must-fail (isodata f ((x (natp natp identity identity))) :old-to-new nil))
+  (must-fail (isodata f ((x nat-id)) :old-to-new nil)))
 
- ;; THM-NAME yields a default name that already exists:
+ ;; OLD-TO-NEW yields a default name that already exists:
  (must-succeed*
   (defun f-to-f{1} (x) x)
   (must-fail (isodata f ((x (natp natp identity identity)))))
   (must-fail (isodata f ((x nat-id)))))
 
- ;; THM-NAME is a name that already exists:
+ ;; OLD-TO-NEW is a name that already exists:
  (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name car-cdr-elim))
+  (isodata f ((x (natp natp identity identity))) :old-to-new car-cdr-elim))
  (must-fail
-  (isodata f ((x nat-id)) :thm-name car-cdr-elim)))
+  (isodata f ((x nat-id)) :old-to-new car-cdr-elim)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1642,46 +1636,46 @@
    (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
- ;; automatic OLD-TO-NEW name for F:
+ ;; explicitly default OLD-TO-NEW name for F:
  (must-succeed*
   (isodata f ((x (natp natp identity identity)))
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id))
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
 
- ;; automatic OLD-TO-NEW name for P:
+ ;; explicitly default OLD-TO-NEW name for P:
  (must-succeed*
   (isodata p ((x (natp natp identity identity)))
            :predicate t
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
-           :thm-name :auto)
+           :old-to-new nil)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
  ;; explicitly named OLD-TO-NEW for F:
  (must-succeed*
   (isodata f ((x (natp natp identity identity)))
-           :thm-name f{1}-correct-wrt-f)
+           :old-to-new f{1}-correct-wrt-f)
   (must-be-redundant
    (DEFTHM F{1}-CORRECT-WRT-F
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id))
-           :thm-name f{1}-correct-wrt-f)
+           :old-to-new f{1}-correct-wrt-f)
   (must-be-redundant
    (DEFTHM F{1}-CORRECT-WRT-F
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
@@ -1690,14 +1684,14 @@
  (must-succeed*
   (isodata p ((x (natp natp identity identity)))
            :predicate t
-           :thm-name p{1}-correct-wrt-p)
+           :old-to-new p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
-           :thm-name p{1}-correct-wrt-p)
+           :old-to-new p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X))))))))

@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1022,7 +1022,7 @@
         (cond ((ffnnamep fn (cadr term))
 
 ; We don't even allow fns admitted with :LOOP$-RECURSION T because we don't
-; think the user will ever explicitly type a call of EV$! 
+; think the user will ever explicitly type a call of EV$!
 
                (mv (msg "~x0 cannot be warranted because an :EXPR slot ~
                          in its body is occupied by a quoted term, ~x1, that ~

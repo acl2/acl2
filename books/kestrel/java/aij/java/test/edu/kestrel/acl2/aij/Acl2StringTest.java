@@ -56,4 +56,18 @@ class Acl2StringTest {
         assertEquals(Acl2String.ACL2.toString(), "\"ACL2\"");
     }
 
+    @Test
+    void toStringFromMakeNormal() {
+        assertEquals(Acl2String.make("Normal.").toString(), "\"Normal.\"");
+        assertEquals(Acl2String.make("$_()").toString(), "\"$_()\"");
+    }
+
+    @Test
+    void toStringFromMakeHex() {
+        assertEquals(Acl2String.make("  ").toString(), "\"\\20\\20\"");
+        assertEquals(Acl2String.make("O\234o").toString(), "\"O\\9co\"");
+        assertEquals(Acl2String.make("O\ro").toString(), "\"O\\0do\"");
+        assertEquals(Acl2String.make("C:\\dir").toString(), "\"C:\\\\dir\"");
+    }
+
 }

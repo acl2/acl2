@@ -268,7 +268,7 @@ $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support/input|workshops/2003/kaufmann/support/rtl|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
@@ -680,8 +680,7 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) \
-	  workshops/2003/kaufmann/support/rtl ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
 	do \
 	if [ -f $$dir/Makefile ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
@@ -768,6 +767,7 @@ ACL2_CUSTOM_TARGETS := \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
+  workshops/2003/kaufmann/support/rtl/package-defs.cert \
   workshops/2004/sumners-ray/support/success.txt
 
 # Currently, apply-model and (probably) apply-model-2 don't work for
@@ -825,11 +825,15 @@ workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-# Note that we change to the parent directory in order to pick up all
-# of support/.
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	cd $(@D)/.. ; $(STARTJOB) -c "$(MAKE)"
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+workshops/2003/kaufmann/support/rtl/package-defs.cert: \
+  workshops/2003/kaufmann/deps.cert \
+  workshops/2003/kaufmann/support/tool/simplify-defuns.cert \
+  workshops/2003/kaufmann/support/tool/wrapper.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
