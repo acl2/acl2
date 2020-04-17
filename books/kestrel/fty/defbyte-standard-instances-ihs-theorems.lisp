@@ -23,4 +23,4 @@
   :parents (defbyte-standard-instances)
   :short (xdoc::topstring
           "Theorems about @(tsee defbyte) standard instances and "
-          (xdoc::seetopic "ihs" "IHS") " functions."))
+          (xdoc::seetopic "acl2::ihs" "IHS") " functions."))
