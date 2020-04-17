@@ -928,21 +928,21 @@ implementations.")
 ;       for release instructions.
 
 ; Temporarily, for a release:
-""
+; ""
 
 ; Normally:
 
-;  (format
-;   nil
-;   "
-; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-; + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
-;~a
-; + On rare occasions development snapshots may be incomplete, fragile, +
-; + or unable to pass the usual regression tests.                       +
-; +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;"
-;   (acl2-snapshot-info))
+  (format
+   nil
+   "
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ + WARNING: This is NOT an ACL2 release; it is a development snapshot. +
+~a
+ + On rare occasions development snapshots may be incomplete, fragile, +
+ + or unable to pass the usual regression tests.                       +
+ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+"
+   (acl2-snapshot-info))
   )
 
 (defvar *saved-string*

@@ -30,12 +30,12 @@ model-eq.lisp bvecp.lisp: model-defs.lisp
 
 # The following target writes out not only file model-defs.lisp, but
 # also files model-eq.lisp and bvecp.lisp.
-model-defs.lisp: tool/simplify-defuns.cert tool/wrapper.cert bvecp-raw.cert
+model-defs.lisp: ../tool/simplify-defuns.cert ../tool/wrapper.cert bvecp-raw.cert
 	echo "Running transform-defuns."
 	echo '(acl2::value :q)' > workxxx
 	echo '(acl2::lp)' >> workxxx
-	echo '(include-book "tool/simplify-defuns")' >> workxxx
-	echo '(include-book "tool/wrapper")' >> workxxx
+	echo '(include-book "../tool/simplify-defuns")' >> workxxx
+	echo '(include-book "../tool/wrapper")' >> workxxx
 	echo '(simplify-model)' >> workxxx
 	echo '(acl2::value :q)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -121,3 +121,10 @@ model-eq.cert: package-defs.cert
 model-macros.cert: package-defs.cert
 model-raw.cert: package-defs.cert
 model.cert: package-defs.cert
+
+# make sure all these books get recertified if either certdep is updated
+UNIVERSAL_DEPS := \
+  ../../../../../build/acl2-version.certdep \
+  ../../../../../build/universal-dependency.certdep
+
+package-defs.cert: $(UNIVERSAL_DEPS)
