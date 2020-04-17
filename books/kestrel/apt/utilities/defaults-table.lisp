@@ -28,8 +28,7 @@
      It contains information about various defaults that affect
      certain aspects of the behavior of APT transformations.")
    (xdoc::p
-    "This is just an experimental start for now.
-     More defaults will be added as needed.")
+    "Support for more defaults will be added as needed.")
    (xdoc::p
     "We provide event-level macros to change the defaults.
      These should be used instead of modifying the table directly.
@@ -62,7 +61,7 @@
   (xdoc::topstring
    (xdoc::p
     "Some APT transformations include an @(':old-to-new') input
-     that specified the name of the generated theorem
+     that specifies the name of the generated theorem
      that rewrites (a term involving) a call of the old function
      to (a term involving) a call of the new function.
      When this input is a symbol that is a valid theorem name,
@@ -122,7 +121,7 @@
   (xdoc::topstring
    (xdoc::p
     "Some APT transformations include a @(':new-to-old') input
-     that specified the name of the generated theorem
+     that specifies the name of the generated theorem
      that rewrites (a term involving) a call of the new function
      to (a term involving) a call of the old function.
      When this input is a symbol that is a valid theorem name,
