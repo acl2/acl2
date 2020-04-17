@@ -150,29 +150,67 @@ rather than write something like:</p>
 extract-keywords), with default-value support."
 
   (defun getarg (arg default alist)
-    (declare (xargs :mode :program))
+    (declare (xargs :mode :program
+                    :guard (and (eqlablep arg)
+                                (alistp alist))))
     (b* ((look (assoc arg alist)))
       (if look
           (cdr look)
         default))))
 
-(defun assigns-for-getargs (args alist)
+(defsection getarg+
+  :parents (support)
+  :short "Get a value from the keyword-value alist produced by @(see
+extract-keywords), with default-value support, and additionally return a flag
+saying whether the key was bound.  Returns (mv value boundp)."
+
+  (defun getarg+ (arg default alist)
+    (declare (xargs :mode :program
+                    :guard (and (eqlablep arg)
+                                (alistp alist))))
+    (b* ((look (assoc arg alist)))
+      (if look
+          (mv (cdr look) t)
+        (mv default nil)))))
+
+(defun assigns-for-getargs (args alist lazyp)
   (if (atom args)
       nil
-    (cons (b* (((mv sym default) (if (consp (car args))
-                                     (mv (caar args) (cadar args))
-                                   (mv (car args) nil)))
-               ((mv basesym ?ign) (acl2::decode-varname-for-patbind sym)))
-            `(,sym (getarg ,(intern$ (symbol-name basesym) "KEYWORD") ,default ,alist)))
-          (assigns-for-getargs (cdr args) alist))))
+    (append (let ((arg (car args)))
+              (case-match arg
+                ((var default boundp)
+                 (b* (((mv basevar ?ign) (acl2::decode-varname-for-patbind var))
+                      (key (intern-in-package-of-symbol (symbol-name basevar) :key)))
+                   (if (and lazyp (consp default) (not (eq (car default) 'quote)))
+                       `((,boundp (assoc ,key ,alist))
+                         (,var (if boundp (cdr boundp) ,default)))
+                     `(((mv ,var ,boundp)
+                        (getarg+ ,key ,default ,alist))))))
+                ((var default)
+                 (b* (((mv basevar ?ign) (acl2::decode-varname-for-patbind var))
+                      (key (intern-in-package-of-symbol (symbol-name basevar) :key)))
+                   (if (and lazyp (consp default) (not (eq (car default) 'quote)))
+                       `((,var (let ((tmp-look (assoc ,key ,alist)))
+                                 (if tmp-look (cdr tmp-look)
+                                   (check-vars-not-free (tmp-look) ,default)))))
+                     `((,var
+                        (getarg ,key
+                                ,default ,alist))))))
+                (var (b* (((mv basevar ?ign) (acl2::decode-varname-for-patbind var))
+                          (key (intern-in-package-of-symbol (symbol-name basevar) :key)))
+                       `((,var
+                          (getarg ,key nil ,alist)))))))
+            (assigns-for-getargs (cdr args) alist lazyp))))
+
 
 (acl2::def-b*-binder getargs
   :short "@(see b*) binder for getargs on a keyword alist."
   :long "<p>Usage:</p>
 @({
-    (b* (((getargs a
+    (b* (((getargs :lazyp t
+                   a
                    (b b-default-term)
-                   c
+                   (c c-default-term cp)
                    d)
           alst))
       form)
@@ -183,22 +221,104 @@ extract-keywords), with default-value support."
 @({
     (b* ((a (getarg :a nil alst))
          (b (getarg :b b-default-term alst))
-         (c (getarg :c nil alst)))
+         ((mv c cp) (getarg+ :c nil alst))
+         (d (getarg :d nil alist)))
       form)
 })"
 
   :body
-  (mv-let (pre-bindings name rest)
-    (if (and (consp (car acl2::forms))
-             (not (eq (caar acl2::forms) 'quote)))
-        (mv `((?tmp-for-getargs ,(car acl2::forms)))
-            'tmp-for-getargs
-            `(check-vars-not-free (tmp-for-getargs)
-                                  ,acl2::rest-expr))
-      (mv nil (car acl2::forms) acl2::rest-expr))
+  (b* (((mv kwd-alist args)
+        (extract-keywords 'getargs '(:lazyp) args nil))
+       (lazyp (cdr (assoc :lazyp kwd-alist))))
+    (mv-let (pre-bindings name rest)
+      (if (and (consp (car acl2::forms))
+               (not (eq (caar acl2::forms) 'quote)))
+          (mv `((?tmp-for-getargs ,(car acl2::forms)))
+              'tmp-for-getargs
+              `(check-vars-not-free (tmp-for-getargs)
+                                    ,acl2::rest-expr))
+        (mv nil (car acl2::forms) acl2::rest-expr))
+      `(b* (,@pre-bindings
+            . ,(assigns-for-getargs args name lazyp))
+         ,rest))))
+
+
+(defun keys-for-getargs (args)
+  (if (atom args)
+      nil
+    (b* ((arg (car args))
+         (var (if (consp arg) (car arg) arg))
+         ((mv basevar ?ign) (acl2::decode-varname-for-patbind var))
+         (key (intern-in-package-of-symbol (symbol-name basevar) :key)))
+      (cons key (keys-for-getargs args)))))
+
+(acl2::def-b*-binder extract-keyword-args
+  :short "@(see b*) binder for getargs on a keyword alist."
+  :long "<p>Usage:</p>
+@({
+    (b* (((extract-keyword-args
+            :other-args other-args-var
+            :allowed-keys allowed-keys-term
+            :kwd-alist kwd-alist-var
+            :ctx context
+            :lazyp lazyp
+             a
+            (b b-default-term)
+            (c c-default-term cp)
+            d)
+          args))
+      form)
+})
+
+<p>is equivalent to</p>
+
+@({
+    (b* (((mv kwd-alist-var other-args-var)
+          (extract-keywords context
+               (append '(:a :b :c :d) allowed-keys-term) ;; allowed keys
+                args nil))
+         ((getargs :lazyp lazyp
+             a
+            (b b-default-term)
+            (c c-default-term cp)
+            d)
+          kwd-alist-var))
+      form)
+})"
+
+  :body
+  (b* (((mv keywords args)
+        (extract-keywords 'extract-keyword-args '(:lazyp :other-args :kwd-alist :ctx :allowed-keys)
+                          args nil))
+       ((getargs lazyp
+                 allowed-keys
+                 (other-args '?other-args)
+                 (kwd-alist '?kwd-alist)
+                 (ctx '__function__))
+        keywords)
+       (getarg-keys (keys-for-getargs args))
+       ((mv kwd-alist-var ?ign) (acl2::decode-varname-for-patbind kwd-alist))
+       ((mv pre-bindings name rest)
+        (if (and (consp (car acl2::forms))
+                 (not (eq (caar acl2::forms) 'quote)))
+            (mv `((?tmp-for-extract-keyword-args ,(car acl2::forms)))
+                'tmp-for-extract-keyword-args
+                `(check-vars-not-free (tmp-for-extract-keyword-args)
+                                      ,acl2::rest-expr))
+          (mv nil (car acl2::forms) acl2::rest-expr))))
     `(b* (,@pre-bindings
-          . ,(assigns-for-getargs args name))
+          ((mv ,kwd-alist ,other-args)
+           (extract-keywords ,ctx
+                             ,(if allowed-keys
+                                  (if getarg-keys
+                                      `(append ',getarg-keys ,allowed-keys)
+                                    allowed-keys)
+                                `',getarg-keys)
+                             ,name nil))
+          ((getargs :lazyp ,lazyp . ,args) ,kwd-alist-var))
        ,rest)))
+
+
 
 
 
