@@ -19,6 +19,7 @@
 (include-book "defbyte")
 (include-book "defbyte-ihs-theorems")
 (include-book "defbyte-standard-instances")
+(include-book "defbyte-standard-instances-ihs-theorems")
 (include-book "defbytelist")
 (include-book "defbytelist-standard-instances")
 (include-book "deffixequiv-sk")
