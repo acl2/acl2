@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -6147,12 +6147,12 @@
 ; follows.
 
 ;    Consider the following example.
-;  
+;
 ;      (defun mem (a x)
 ;        (if (atom x)
 ;            nil
 ;          (or (equal a (car x)) (mem a (cdr x)))))
-;  
+;
 ;    Now suppose we consider the sequence of theorems (mem a (list a)),
 ;    (mem a (list 1 a)), (mem a (list 1 2 a)), (mem a (list 1 2 3 a)),
 ;    and so on.  We will see that the :frames reported for each

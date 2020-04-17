@@ -17,6 +17,7 @@
 (include-book "byte-list32")
 (include-book "byte-list64")
 (include-book "defbyte")
+(include-book "defbyte-ihs-theorems")
 (include-book "defbyte-standard-instances")
 (include-book "defbytelist")
 (include-book "defbytelist-standard-instances")

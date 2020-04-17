@@ -975,6 +975,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-type-wrapped-variable-p ((term pseudo-termp))
+  :returns (yes/no booleanp)
+  :short "Check whether an annotated term is a variable."
+  :long
+  (xdoc::topstring-p
+   "That is, we must first unwrap the term,
+    and then check whether it is a variable.")
+  (b* (((mv term & &) (atj-type-unwrap-term term)))
+    (variablep term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-type-annotate-var ((var symbolp) (types atj-type-listp))
   :guard (consp types)
   :returns (annotated-var symbolp)
@@ -2252,12 +2264,9 @@
      in case of failure, @('atj-analyze-arrays-in-term')
      handles the other kinds of function calls,
      including calls of lambda expressions other than @(tsee mv-let)s,
-     which are already handled by @('atj-analyze-arrays-in-mv-let').")
-   (xdoc::p
-    "If the term being analyzed is neither a variable nor a quoted constant,
-     we check whether it is a call of @(tsee mv-let),
-     in which case we handle it as described below,
-     but first we explain the handling of the other kinds of function calls.")
+     which are already handled by @('atj-analyze-arrays-in-mv-let').
+     The handling of @(tsee mv-let) calls is explained later;
+     first we explain the handling of the other kinds of function calls.")
    (xdoc::p
     "If the term being analyzed is an @(tsee if) call,
      we recursively analyze its three arguments.
@@ -2281,7 +2290,34 @@
      while the latter are lists that apply to the whole term.
      The array analysis fails if two of arguments have the same array name:
      this situation means that the same array is aliased (in Java)
-     and possibly subjected to different modifications through the aliases.")
+     and possibly subjected to different modifications through the aliases.
+     We pass a flag to @('atj-analyze-arrays-in-term') indicating whether
+     the funtion called is a lambda expression or a named function:
+     in the latter case, we also ensure that arguments of array types
+     are variables, and not other function calls
+     (note that they cannot be quoted constants).
+     That is, we disallow ``nested'' calls of functions that return arrays.
+     For example,
+     if @('f') returns an array and @('g') takes an array of the same type,
+     we disallow calls @('(g ... (f ...) ...)').
+     Instead, one must assign each array returned by a named function
+     to some variable, and only pass such variables to names functions.
+     In the example of @('f') and @('g') just above,
+     one must have @('(let (... (a (f ...)) ...) (g ... a ...))')
+     for code generation to proceed.
+     It is thus important that the restriction of being variables
+     only applies to the array arguments of named functions,
+     and not to the array arguments of lambda expressions;
+     otherwise, the @(tsee let) form would be illegal as well.
+     Recall that we are dealing with annotated terms here:
+     so, when we say `variable' here, we really mean
+     a call of a (conversion) function on a variable.
+     This constraint on array arguments of named functions being variables,
+     is not needed for the safety of destructive array updates;
+     however, it is useful to simplify
+     the subsequent ``inlining'' of array writing functions
+     done in ATJ's post-translation.
+     Note that stobjs have similar restrictions in ACL2.")
    (xdoc::p
     "If the term being analyzed is an @(tsee mv) call,
      we just return the list of array arguments.
@@ -2422,7 +2458,8 @@
                 (mv (list nil) (list (atj-type-irrelevant)))))
             (mv then-arrays dst-types)))
          (args (pseudo-term-call->args term))
-         ((mv arg-arrays arg-types) (atj-analyze-arrays-in-args args wrld))
+         ((mv arg-arrays arg-types)
+          (atj-analyze-arrays-in-args args (pseudo-lambda-p fn) wrld))
          ((unless (no-duplicatesp-eq (remove-eq nil arg-arrays)))
           (raise "Array analysis failure: ~
                   the arguments of the call ~x0 ~
@@ -2467,20 +2504,30 @@
     :measure (two-nats-measure (pseudo-term-count term) 1))
 
   (define atj-analyze-arrays-in-args ((args pseudo-term-listp)
+                                      (lambdap booleanp)
                                       (wrld plist-worldp))
     :returns (mv (arrays (and (symbol-listp arrays)
                               (equal (len arrays) (len args))))
                  (types (and (atj-type-listp types)
                              (equal (len types) (len args)))))
     (b* (((when (endp args)) (mv nil nil))
-         ((mv first-arrays first-types) (atj-analyze-arrays-in-term (car args)
-                                                                    wrld))
-         (first-array (car first-arrays))
-         (first-type (atj-type-list-to-type first-types))
-         ((mv rest-arrays rest-types) (atj-analyze-arrays-in-args (cdr args)
+         (arg (car args))
+         ((mv arrays types) (atj-analyze-arrays-in-term arg wrld))
+         (array (car arrays))
+         (type (atj-type-list-to-type types))
+         ((when (and (not lambdap)
+                     (not (null array))
+                     (not (atj-type-wrapped-variable-p arg))))
+          (raise "Array analysis failure: ~
+                  the non-variable array ~x0 is passed to a named function."
+                 arg)
+          (mv (repeat (len args) nil)
+              (repeat (len args) (atj-type-acl2 (atj-atype-value)))))
+         ((mv more-arrays more-types) (atj-analyze-arrays-in-args (cdr args)
+                                                                  lambdap
                                                                   wrld)))
-      (mv (cons first-array rest-arrays)
-          (cons first-type rest-types)))
+      (mv (cons array more-arrays)
+          (cons type more-types)))
     :measure (two-nats-measure (pseudo-term-list-count args) 0))
 
   (define atj-analyze-arrays-in-mv-let ((term pseudo-termp) (wrld plist-worldp))
