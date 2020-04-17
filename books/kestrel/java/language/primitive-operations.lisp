@@ -13,19 +13,10 @@
 (include-book "primitive-values")
 (include-book "primitive-function-macros")
 
-(include-book "ihs/basic-definitions" :dir :system)
+(include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system)
+(include-book "kestrel/fty/sbyte64-ihs-theorems" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel sbyte32p-of-logext32
-  (sbyte32p (logext 32 x))
-  :enable sbyte32p
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-(defrulel sbyte64p-of-logext64
-  (sbyte64p (logext 64 x))
-  :enable sbyte64p
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 (local (in-theory (disable logext)))
 
