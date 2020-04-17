@@ -10,6 +10,8 @@
 
 (in-package "FTY")
 
+(include-book "sbyte8-ihs-theorems")
+(include-book "sbyte16-ihs-theorems")
 (include-book "sbyte32-ihs-theorems")
 (include-book "sbyte64-ihs-theorems")
 
