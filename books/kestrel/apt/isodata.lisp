@@ -1051,6 +1051,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-process-old-to-new (old-to-new
+                                    (old-to-new-suppliedp booleanp)
                                     (old$ symbolp)
                                     (new-name$ symbolp)
                                     (names-to-avoid symbol-listp)
@@ -1065,10 +1066,11 @@
   :short "Process the @(':old-to-new') input."
   (b* ((wrld (w state))
        ((er &) (ensure-symbol$ old-to-new "The :OLD-TO-NEW input" t nil))
-       (name (if (or (null old-to-new)
+       (name (if (or (not old-to-new-suppliedp)
                      (keywordp old-to-new))
-                 (b* ((kwd (or old-to-new
-                               (get-default-input-old-to-new (w state)))))
+                 (b* ((kwd (if old-to-new-suppliedp
+                               old-to-new
+                             (get-default-input-old-to-new wrld))))
                    (intern-in-package-of-symbol
                     (concatenate 'string
                                  (symbol-name old$)
@@ -1101,6 +1103,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define isodata-process-new-to-old (new-to-old
+                                    (new-to-old-suppliedp booleanp)
                                     (old$ symbolp)
                                     (new-name$ symbolp)
                                     (names-to-avoid symbol-listp)
@@ -1115,10 +1118,11 @@
   :short "Process the @(':new-to-old') input."
   (b* ((wrld (w state))
        ((er &) (ensure-symbol$ new-to-old "The :NEW-TO-OLD input" t nil))
-       (name (if (or (null new-to-old)
+       (name (if (or (not new-to-old-suppliedp)
                      (keywordp new-to-old))
-                 (b* ((kwd (or new-to-old
-                               (get-default-input-new-to-old (w state)))))
+                 (b* ((kwd (if new-to-old-suppliedp
+                               new-to-old
+                             (get-default-input-new-to-old (w state)))))
                    (intern-in-package-of-symbol
                     (concatenate 'string
                                  (symbol-name new-name$)
@@ -1157,7 +1161,9 @@
                                 new-enable
                                 thm-enable
                                 old-to-new
+                                (old-to-new-suppliedp booleanp)
                                 new-to-old
+                                (new-to-old-suppliedp booleanp)
                                 verify-guards
                                 untranslate
                                 hints
@@ -1197,6 +1203,7 @@
        (names-to-avoid (list new-name$))
        ((er (list old-to-new$ names-to-avoid))
         (isodata-process-old-to-new old-to-new
+                                    old-to-new-suppliedp
                                     old$
                                     new-name$
                                     names-to-avoid
@@ -1204,6 +1211,7 @@
                                     state))
        ((er (list new-to-old$ names-to-avoid))
         (isodata-process-new-to-old new-to-old
+                                    new-to-old-suppliedp
                                     old$
                                     new-name$
                                     names-to-avoid
@@ -3955,7 +3963,9 @@
                     new-enable
                     thm-enable
                     old-to-new
+                    (old-to-new-suppliedp booleanp)
                     new-to-old
+                    (new-to-old-suppliedp booleanp)
                     verify-guards
                     untranslate
                     hints
@@ -4002,7 +4012,9 @@
                                 new-enable
                                 thm-enable
                                 old-to-new
+                                old-to-new-suppliedp
                                 new-to-old
+                                new-to-old-suppliedp
                                 verify-guards
                                 untranslate
                                 hints
@@ -4052,8 +4064,8 @@
                      (new-name ':auto)
                      (new-enable ':auto)
                      (thm-enable 't)
-                     (old-to-new 'nil)
-                     (new-to-old 'nil)
+                     (old-to-new 'nil old-to-new-suppliedp)
+                     (new-to-old 'nil new-to-old-suppliedp)
                      (verify-guards ':auto)
                      (untranslate ':nice)
                      (hints 'nil)
@@ -4067,7 +4079,9 @@
                                    ',new-enable
                                    ',thm-enable
                                    ',old-to-new
+                                   ',old-to-new-suppliedp
                                    ',new-to-old
+                                   ',new-to-old-suppliedp
                                    ',verify-guards
                                    ',untranslate
                                    ',hints
