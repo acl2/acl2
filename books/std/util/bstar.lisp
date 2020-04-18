@@ -1648,3 +1648,35 @@ see @(see flet) for more discussion.</p>"
   `(b* ,(access-b*-bindings (car args) (car forms) (cdr args))
      ,rest-expr))
 
+(def-b*-binder unless-casematch
+  :short "@(see b*) binder for using @(see case-match) against a single pattern."
+  :long "<p>The following example shows the usage of @('unless-casematch')
+inside a @(see b*) form.  @('pattern') is a pattern for @(see case-match).</p>
+@({
+ (b* (((unless-casematch obj (a . b))
+       (er hard? 'my-form \"Expected obj to match (a . b) but it didn't\")))
+    (cw \"The car is ~x0 and the cdr is ~x1~%\" a b))
+ })
+<p>This expands to:</p>
+@({
+ (case-match obj
+   ((a . b) (cw \"The car is ~x0 and the cdr is ~x1~%\" a b))
+   (& (er hard? 'my-form \"Expected obj to match (a . b) but it didn't\")))
+ })
+"
+  :body
+  (case-match args
+    ((form pattern)
+     (b* (((mv pre-bindings var rest)
+           (if (symbolp form)
+               (mv nil form acl2::rest-expr)
+             (mv `((?__tmp-for-unless-casematch ,form))
+                 '__tmp-for-unless-casematch
+                 `(check-vars-not-free (__tmp-for-unless-casematch)
+                                       ,acl2::rest-expr)))))
+       `(b* ,pre-bindings
+          (case-match ,var
+            (,pattern ,rest)
+            (& (progn$ . ,acl2::forms))))))
+    (& (er hard? 'unless-casematch "Unless-casematch takes two args: ~x0"
+           '(unless-casematch form pattern)))))
