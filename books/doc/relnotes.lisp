@@ -160,8 +160,9 @@
 
    (xdoc::p
     "The utilities
-     @(tsee fail-event) and
-     @(tsee make-event-terse)
+     @(tsee fail-event),
+     @(tsee make-event-terse), and
+     @(tsee try-event)
      have been moved here
      from @('[books]/kestrel/utilities/user-interface.lisp').")
 

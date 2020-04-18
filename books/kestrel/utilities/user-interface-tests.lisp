@@ -75,19 +75,3 @@
 
 (progn
   (cw-event "Message."))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (make-event
-  (try-event
-   '(defthm try-event-test (acl2-numberp (+ x y)))
-   'top t nil "This is not printed."))
- (assert! (not (eq t (getpropc 'try-event-test 'theorem t (w state))))))
-
-(must-fail
- (make-event
-  (try-event
-   '(defthm try-event-test (acl2-numberp x))
-   'top t nil "This is printed."))
- :with-output-off nil)
