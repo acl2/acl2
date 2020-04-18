@@ -172,3 +172,48 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (set-default-input-new-to-old :-to-)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection set-default-input-old-to-new-enable
+  :short "Set the default @(':old-to-new-enable') input of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':old-to-new-enable') input
+     that specifies whether to enable the generated theorem
+     that rewrites (a term involving) a call of the old function
+     to (a term involving) a call of the new function.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':old-to-new-enable') input.
+     It must be a boolean.")
+   (xdoc::p
+    "The initial value of this default is @('nil').")
+   (xdoc::@def "set-default-input-old-to-new-enable"))
+
+  (defmacro set-default-input-old-to-new-enable (bool)
+    (declare (xargs :guard (booleanp bool)))
+    `(table ,*defaults-table-name* :old-to-new-enable ,bool)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-old-to-new-enable ((wrld plist-worldp))
+  :returns (bool booleanp)
+  :short "Get the default @(':old-to-new-enable') input of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-old-to-new-enable).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :old-to-new-enable table))
+       ((unless (consp pair))
+        (raise "No :OLD-TO-NEW-ENABLE found in APT defaults table."))
+       (bool (cdr pair))
+       ((unless (booleanp bool))
+        (raise
+         "The default :OLD-TO-NEW-ENABLE is ~x0, which is not a boolean.")))
+    bool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-old-to-new-enable nil)
