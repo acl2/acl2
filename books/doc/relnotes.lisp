@@ -144,10 +144,16 @@
     "The @(tsee apt::isodata) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
-     "The @(':thm-name') has been replaced with a @(':old-to-new') input,
+     "The @(':thm-name') input has been replaced
+      with a new @(':old-to-new') input,
       which, when absent, is taken from the APT defaults table.")
     (xdoc::li
-     "A @(':new-to-old') input has been added to specify the name of the theorem
+     "The @(':thm-enable') input has been replaced
+      with a new @(':old-to-new-enable') input,
+      which, when absent, is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old') input has been added
+      to specify the name of the theorem
       that rewrites calls of the new functions
       to terms involving calls of the old function.
       This theorem is now generated along with the converse one.

@@ -112,18 +112,18 @@
     (xdoc::codeblock
      " (isodata old"
      "          isomaps"
-     "          :predicate      ; default nil"
-     "          :new-name       ; default :auto"
-     "          :new-enable     ; default :auto"
-     "          :thm-enable     ; default t"
-     "          :old-to-new     ; default from table"
-     "          :new-to-old     ; default from table"
-     "          :verify-guards  ; default :auto"
-     "          :untranslate    ; default :nice"
-     "          :hints          ; default nil"
-     "          :print          ; default :result"
-     "          :show-only      ; default nil"
-     "          :compatibility  ; default nil"
+     "          :predicate          ; default nil"
+     "          :new-name           ; default :auto"
+     "          :new-enable         ; default :auto"
+     "          :old-to-new         ; default from table"
+     "          :old-to-new-enable  ; default from table"
+     "          :new-to-old         ; default from table"
+     "          :verify-guards      ; default :auto"
+     "          :untranslate        ; default :nice"
+     "          :hints              ; default nil"
+     "          :print              ; default :result"
+     "          :show-only          ; default nil"
+     "          :compatibility      ; default nil"
      "          )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -380,8 +380,6 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-enable :never)
-
     (xdoc::desc
      "@(':old-to-new') &mdash;
       default from <see topic='@(url defaults-table)'>table</see>"
@@ -405,6 +403,22 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('old-to-new') be the name of this theorem."))
+
+    (xdoc::desc
+     "@(':old-to-new-enable') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
+     (xdoc::p
+      "Determines whether @('old-to-new') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-old-to-new-enable).")))
 
     (xdoc::desc
      "@(':new-to-old') &mdash; default @('nil')

@@ -881,9 +881,10 @@
  (must-fail (isodata f ((x (natp natp identity identity))) :new-enable "t"))
  (must-fail (isodata f ((x nat-id)) :new-enable "t"))
 
- ;; THM-ENABLE is not a boolean:
- (must-fail (isodata f ((x (natp natp identity identity))) :thm-enable :auto))
- (must-fail (isodata f ((x nat-id)) :thm-enable :auto))
+ ;; OLD-TO-NEW-ENABLE is not a boolean:
+ (must-fail (isodata f ((x (natp natp identity identity)))
+                     :old-to-new-enable :auto))
+ (must-fail (isodata f ((x nat-id)) :old-to-new-enable :auto))
 
  ;; VERIFY-GUARDS is not in (T NIL :AUTO):
  (must-fail
@@ -1712,28 +1713,28 @@
 
  (defiso nat-id natp natp identity identity)
 
- ;; by default, OLD-TO-NEW is enabled:
+ ;; by default, OLD-TO-NEW is disabled:
  (must-succeed*
   (isodata f ((x (natp natp identity identity))))
-  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
+  (assert-event (rune-disabledp '(:rewrite f-to-f{1}) state)))
  (must-succeed*
   (isodata f ((x nat-id)))
-  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
+  (assert-event (rune-disabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable OLD-TO-NEW:
  (must-succeed*
-  (isodata f ((x (natp natp identity identity))) :thm-enable t)
+  (isodata f ((x (natp natp identity identity))) :old-to-new-enable t)
   (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
  (must-succeed*
-  (isodata f ((x nat-id)) :thm-enable t)
+  (isodata f ((x nat-id)) :old-to-new-enable t)
   (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; disable OLD-TO-NEW:
  (must-succeed*
-  (isodata f ((x (natp natp identity identity))) :thm-enable nil)
+  (isodata f ((x (natp natp identity identity))) :old-to-new-enable nil)
   (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state))))
  (must-succeed*
-  (isodata f ((x nat-id)) :thm-enable nil)
+  (isodata f ((x nat-id)) :old-to-new-enable nil)
   (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
