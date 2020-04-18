@@ -102,8 +102,6 @@ rather than write something like:</p>
 
 
 
-(program)
-
 (defsection extract-keywords
   :parents (support)
   :short "Extract legal keyword/value pairs from an argument list."
@@ -150,7 +148,7 @@ rather than write something like:</p>
 extract-keywords), with default-value support."
 
   (defun getarg (arg default alist)
-    (declare (xargs :mode :program
+    (declare (xargs ;; :mode :program
                     :guard (and (eqlablep arg)
                                 (alistp alist))))
     (b* ((look (assoc arg alist)))
@@ -165,13 +163,16 @@ extract-keywords), with default-value support, and additionally return a flag
 saying whether the key was bound.  Returns (mv value boundp)."
 
   (defun getarg+ (arg default alist)
-    (declare (xargs :mode :program
+    (declare (xargs ;; :mode :program
                     :guard (and (eqlablep arg)
                                 (alistp alist))))
     (b* ((look (assoc arg alist)))
       (if look
           (mv (cdr look) t)
         (mv default nil)))))
+
+(program)
+
 
 (defun assigns-for-getargs (args alist lazyp)
   (if (atom args)
@@ -250,7 +251,7 @@ saying whether the key was bound.  Returns (mv value boundp)."
          (var (if (consp arg) (car arg) arg))
          ((mv basevar ?ign) (acl2::decode-varname-for-patbind var))
          (key (intern-in-package-of-symbol (symbol-name basevar) :key)))
-      (cons key (keys-for-getargs args)))))
+      (cons key (keys-for-getargs (cdr args))))))
 
 (acl2::def-b*-binder extract-keyword-args
   :short "@(see b*) binder for getargs on a keyword alist."
@@ -260,6 +261,7 @@ saying whether the key was bound.  Returns (mv value boundp)."
             :other-args other-args-var
             :allowed-keys allowed-keys-term
             :kwd-alist kwd-alist-var
+            :defaults default-kwd-alist
             :ctx context
             :lazyp lazyp
              a
@@ -282,19 +284,20 @@ saying whether the key was bound.  Returns (mv value boundp)."
             (b b-default-term)
             (c c-default-term cp)
             d)
-          kwd-alist-var))
+          (append kwd-alist-var default-kwd-alist)))
       form)
 })"
 
   :body
   (b* (((mv keywords args)
-        (extract-keywords 'extract-keyword-args '(:lazyp :other-args :kwd-alist :ctx :allowed-keys)
+        (extract-keywords 'extract-keyword-args '(:lazyp :other-args :kwd-alist :ctx :allowed-keys :defaults)
                           args nil))
        ((getargs lazyp
                  allowed-keys
                  (other-args '?other-args)
                  (kwd-alist '?kwd-alist)
-                 (ctx '__function__))
+                 (ctx '__function__)
+                 (defaults nil))
         keywords)
        (getarg-keys (keys-for-getargs args))
        ((mv kwd-alist-var ?ign) (acl2::decode-varname-for-patbind kwd-alist))
@@ -315,7 +318,8 @@ saying whether the key was bound.  Returns (mv value boundp)."
                                     allowed-keys)
                                 `',getarg-keys)
                              ,name nil))
-          ((getargs :lazyp ,lazyp . ,args) ,kwd-alist-var))
+          ((getargs :lazyp ,lazyp . ,args)
+           ,(if defaults `(append ,kwd-alist-var ,defaults) kwd-alist-var)))
        ,rest)))
 
 
