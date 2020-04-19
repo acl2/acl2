@@ -2567,7 +2567,7 @@
  <h3>Testing</h3>
 
  <p>The documentation topics for testing have been reorganized, with
- introduction of a new topic, @(see kestrel-testing-utilities), as a parent of
+ introduction of a new topic, @('kestrel-testing-utilities'), as a parent of
  the testing utilities that are part of the @(see kestrel-books), so that now
  the topic @(see testing-utilities) is the top-level topic for the testing
  utilities.</p>
