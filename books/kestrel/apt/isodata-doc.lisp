@@ -115,9 +115,9 @@
      "          :predicate          ; default nil"
      "          :new-name           ; default :auto"
      "          :new-enable         ; default :auto"
-     "          :old-to-new         ; default from table"
+     "          :old-to-new-name    ; default from table"
      "          :old-to-new-enable  ; default from table"
-     "          :new-to-old         ; default from table"
+     "          :new-to-old-name    ; default from table"
      "          :new-to-old-enable  ; default from table"
      "          :verify-guards      ; default :auto"
      "          :untranslate        ; default :nice"
@@ -382,7 +382,7 @@
     (xdoc::desc-apt-input-new-enable)
 
     (xdoc::desc
-     "@(':old-to-new') &mdash;
+     "@(':old-to-new-name') &mdash;
       default from <see topic='@(url defaults-table)'>table</see>"
      (xdoc::p
       "Determines the name of the theorem that
@@ -400,7 +400,7 @@
         to use as the name of the theorem.")
       (xdoc::li
        "Absent, to use the value from the APT defaults table,
-        which is set via @(tsee set-default-input-old-to-new)."))
+        which is set via @(tsee set-default-input-old-to-new-name)."))
      (xdoc::p
       "In the rest of this documentation page,
        let @('old-to-new') be the name of this theorem."))
@@ -426,7 +426,7 @@
        At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc
-     "@(':new-to-old') &mdash; default @('nil')
+     "@(':new-to-old-name') &mdash; default @('nil')
       default from <see topic='@(url defaults-table)'>table</see>"
      (xdoc::p
       "Determines the name of the theorem that
@@ -444,7 +444,7 @@
         to use as the name of the theorem.")
       (xdoc::li
        "Absent, to use the value from the APT defaults table,
-        which is set via @(tsee set-default-input-new-to-old)."))
+        which is set via @(tsee set-default-input-new-to-old-name)."))
      (xdoc::p
       "In the rest of this documentation page,
        let @('new-to-old') be the name of this theorem."))

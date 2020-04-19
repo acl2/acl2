@@ -145,19 +145,19 @@
    (xdoc::ul
     (xdoc::li
      "The @(':thm-name') input has been replaced
-      with a new @(':old-to-new') input,
+      with a new @(':old-to-new-name') input,
       which, when absent, is taken from the APT defaults table.")
     (xdoc::li
      "The @(':thm-enable') input has been replaced
       with a new @(':old-to-new-enable') input,
       which, when absent, is taken from the APT defaults table.")
     (xdoc::li
-     "A new @(':new-to-old') input has been added
-      to specify the name of the theorem
+     "A new @(':new-to-old-name') input has been added
+      to specify the name of the theorem @('new-to-old')
       that rewrites calls of the new functions
       to terms involving calls of the old function.
       This theorem is now generated along with the converse one.
-      If the @(':new-to-old') input is absent,
+      If the @(':new-to-old-name') input is absent,
       it is taken from the APT defaults table.")
     (xdoc::li
      "A new @(':new-to-old-enable') input has been added

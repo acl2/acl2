@@ -1052,40 +1052,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-old-to-new (old-to-new
-                                    (old-to-new-suppliedp booleanp)
-                                    (old$ symbolp)
-                                    (new-name$ symbolp)
-                                    (names-to-avoid symbol-listp)
-                                    ctx
-                                    state)
+(define isodata-process-old-to-new-name (old-to-new-name
+                                         (old-to-new-name-suppliedp booleanp)
+                                         (old$ symbolp)
+                                         (new-name$ symbolp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
   :returns (mv erp
                (result "A list @('(old-to-new$ new-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
   :mode :program
-  :short "Process the @(':old-to-new') input."
+  :short "Process the @(':old-to-new-name') input."
   (b* ((wrld (w state))
-       ((er &) (ensure-symbol$ old-to-new "The :OLD-TO-NEW input" t nil))
-       (name (if (or (not old-to-new-suppliedp)
-                     (keywordp old-to-new))
-                 (b* ((kwd (if old-to-new-suppliedp
-                               old-to-new
-                             (get-default-input-old-to-new wrld))))
+       ((er &)
+        (ensure-symbol$ old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
+       (name (if (or (not old-to-new-name-suppliedp)
+                     (keywordp old-to-new-name))
+                 (b* ((kwd (if old-to-new-name-suppliedp
+                               old-to-new-name
+                             (get-default-input-old-to-new-name wrld))))
                    (intern-in-package-of-symbol
                     (concatenate 'string
                                  (symbol-name old$)
                                  (symbol-name kwd)
                                  (symbol-name new-name$))
                     new-name$))
-               old-to-new))
+               old-to-new-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the old function ~x1 ~
                           to the new function ~x2, ~
                           specified (perhaps by default) ~
-                          by the :OLD-TO-NEW input ~x3,"
-                         name old$ new-name$ old-to-new))
+                          by the :OLD-TO-NEW-NAME input ~x3,"
+                         name old$ new-name$ old-to-new-name))
        (error-msg? (fresh-namep-msg-weak name nil wrld))
        ((when error-msg?)
         (er-soft+ ctx t nil
@@ -1122,40 +1123,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-new-to-old (new-to-old
-                                    (new-to-old-suppliedp booleanp)
-                                    (old$ symbolp)
-                                    (new-name$ symbolp)
-                                    (names-to-avoid symbol-listp)
-                                    ctx
-                                    state)
+(define isodata-process-new-to-old-name (new-to-old-name
+                                         (new-to-old-name-suppliedp booleanp)
+                                         (old$ symbolp)
+                                         (new-name$ symbolp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
   :returns (mv erp
                (result "A list @('(new-to-old$ new-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
   :mode :program
-  :short "Process the @(':new-to-old') input."
+  :short "Process the @(':new-to-old-name') input."
   (b* ((wrld (w state))
-       ((er &) (ensure-symbol$ new-to-old "The :NEW-TO-OLD input" t nil))
-       (name (if (or (not new-to-old-suppliedp)
-                     (keywordp new-to-old))
-                 (b* ((kwd (if new-to-old-suppliedp
-                               new-to-old
-                             (get-default-input-new-to-old (w state)))))
+       ((er &)
+        (ensure-symbol$ new-to-old-name "The :NEW-TO-OLD-NAME input" t nil))
+       (name (if (or (not new-to-old-name-suppliedp)
+                     (keywordp new-to-old-name))
+                 (b* ((kwd (if new-to-old-name-suppliedp
+                               new-to-old-name
+                             (get-default-input-new-to-old-name (w state)))))
                    (intern-in-package-of-symbol
                     (concatenate 'string
                                  (symbol-name new-name$)
                                  (symbol-name kwd)
                                  (symbol-name old$))
                     new-name$))
-               new-to-old))
+               new-to-old-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the new function ~x1 ~
                           to the old function ~x2, ~
                           specified (perhaps by default) ~
-                          by the :NEW-TO-OLD input ~x3,"
-                         name new-name$ old$ new-to-old))
+                          by the :NEW-TO-OLD-NAME input ~x3,"
+                         name new-name$ old$ new-to-old-name))
        (error-msg? (fresh-namep-msg-weak name nil wrld))
        ((when error-msg?)
         (er-soft+ ctx t nil
@@ -1197,12 +1199,12 @@
                                 predicate
                                 new-name
                                 new-enable
-                                old-to-new
-                                (old-to-new-suppliedp booleanp)
+                                old-to-new-name
+                                (old-to-new-name-suppliedp booleanp)
                                 old-to-new-enable
                                 (old-to-new-enable-suppliedp booleanp)
-                                new-to-old
-                                (new-to-old-suppliedp booleanp)
+                                new-to-old-name
+                                (new-to-old-name-suppliedp booleanp)
                                 new-to-old-enable
                                 (new-to-old-enable-suppliedp booleanp)
                                 verify-guards
@@ -1247,21 +1249,21 @@
        ((er new-name$) (process-input-new-name new-name old$ ctx state))
        (names-to-avoid (list new-name$))
        ((er (list old-to-new$ names-to-avoid))
-        (isodata-process-old-to-new old-to-new
-                                    old-to-new-suppliedp
-                                    old$
-                                    new-name$
-                                    names-to-avoid
-                                    ctx
-                                    state))
+        (isodata-process-old-to-new-name old-to-new-name
+                                         old-to-new-name-suppliedp
+                                         old$
+                                         new-name$
+                                         names-to-avoid
+                                         ctx
+                                         state))
        ((er (list new-to-old$ names-to-avoid))
-        (isodata-process-new-to-old new-to-old
-                                    new-to-old-suppliedp
-                                    old$
-                                    new-name$
-                                    names-to-avoid
-                                    ctx
-                                    state))
+        (isodata-process-new-to-old-name new-to-old-name
+                                         new-to-old-name-suppliedp
+                                         old$
+                                         new-name$
+                                         names-to-avoid
+                                         ctx
+                                         state))
        ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
                              verify-guards
                              (guard-verified-p old$ wrld)
@@ -4033,12 +4035,12 @@
                     predicate
                     new-name
                     new-enable
-                    old-to-new
-                    (old-to-new-suppliedp booleanp)
+                    old-to-new-name
+                    (old-to-new-name-suppliedp booleanp)
                     old-to-new-enable
                     (old-to-new-enable-suppliedp booleanp)
-                    new-to-old
-                    (new-to-old-suppliedp booleanp)
+                    new-to-old-name
+                    (new-to-old-name-suppliedp booleanp)
                     new-to-old-enable
                     (new-to-old-enable-suppliedp booleanp)
                     verify-guards
@@ -4087,12 +4089,12 @@
                                 predicate
                                 new-name
                                 new-enable
-                                old-to-new
-                                old-to-new-suppliedp
+                                old-to-new-name
+                                old-to-new-name-suppliedp
                                 old-to-new-enable
                                 old-to-new-enable-suppliedp
-                                new-to-old
-                                new-to-old-suppliedp
+                                new-to-old-name
+                                new-to-old-name-suppliedp
                                 new-to-old-enable
                                 new-to-old-enable-suppliedp
                                 verify-guards
@@ -4144,9 +4146,9 @@
                      (predicate 'nil)
                      (new-name ':auto)
                      (new-enable ':auto)
-                     (old-to-new 'nil old-to-new-suppliedp)
+                     (old-to-new-name 'nil old-to-new-name-suppliedp)
                      (old-to-new-enable 'nil old-to-new-enable-suppliedp)
-                     (new-to-old 'nil new-to-old-suppliedp)
+                     (new-to-old-name 'nil new-to-old-name-suppliedp)
                      (new-to-old-enable 'nil new-to-old-enable-suppliedp)
                      (verify-guards ':auto)
                      (untranslate ':nice)
@@ -4159,12 +4161,12 @@
                                    ',predicate
                                    ',new-name
                                    ',new-enable
-                                   ',old-to-new
-                                   ,old-to-new-suppliedp
+                                   ',old-to-new-name
+                                   ,old-to-new-name-suppliedp
                                    ',old-to-new-enable
                                    ,old-to-new-enable-suppliedp
-                                   ',new-to-old
-                                   ,new-to-old-suppliedp
+                                   ',new-to-old-name
+                                   ,new-to-old-name-suppliedp
                                    ',new-to-old-enable
                                    ,new-to-old-enable-suppliedp
                                    ',verify-guards
