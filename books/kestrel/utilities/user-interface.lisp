@@ -17,9 +17,11 @@
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "maybe-unquote")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/fail-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
+(include-book "kestrel/event-macros/try-event" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,22 +119,6 @@
    @('(manage-screen-output verbose form)') evaluates to an event.
    </p>"
   (manage-screen-output-aux verbose form nil))
-
-(defsection cw-event
-  :parents (user-interface)
-  :short "Event form of @(tsee cw)."
-  :long
-  "<p>
-   When this macro is processed as an event,
-   its arguments are passed to @(tsee cw).
-   Exception: No printing is done while including
-   a book or during the second pass of an
-   @(tsee encapsulate) event.
-   </p>
-   @(def cw-event)"
-  (defmacro cw-event (str &rest args)
-    `(value-triple (cw ,str ,@args)
-                   :on-skip-proofs :interactive)))
 
 (define try-event (form ctx erp val (msg msgp))
   :returns (event pseudo-event-formp)
