@@ -1741,6 +1741,40 @@
 
 (must-succeed*
 
+ (test-title "Enabling of NEW-TO-OLD.")
+
+ (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
+
+ (defiso nat-id natp natp identity identity)
+
+ ;; by default, NEW-TO-OLD is disabled:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))))
+  (assert-event (rune-disabledp '(:rewrite f{1}-to-f) state)))
+ (must-succeed*
+  (isodata f ((x nat-id)))
+  (assert-event (rune-disabledp '(:rewrite f{1}-to-f) state)))
+
+ ;; enable NEW-TO-OLD:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :new-to-old-enable t)
+  (assert-event (rune-enabledp '(:rewrite f{1}-to-f) state)))
+ (must-succeed*
+  (isodata f ((x nat-id)) :new-to-old-enable t)
+  (assert-event (rune-enabledp '(:rewrite f{1}-to-f) state)))
+
+ ;; disable NEW-TO-OLD:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :new-to-old-enable nil)
+  (assert-event (not (rune-enabledp '(:rewrite f{1}-to-f) state))))
+ (must-succeed*
+  (isodata f ((x nat-id)) :new-to-old-enable nil)
+  (assert-event (not (rune-enabledp '(:rewrite f{1}-to-f) state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
  (test-title "Non-executability of NEW.")
 
  (defiso nat-id natp natp identity identity)

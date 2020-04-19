@@ -158,7 +158,11 @@
       to terms involving calls of the old function.
       This theorem is now generated along with the converse one.
       If the @(':new-to-old') input is absent,
-      it is taken from the APT defaults table."))
+      it is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-enable') input has been added
+      to specify whether the @('new-to-old') theorem should be enabled or not.
+      If this input is absent, it is taken from the APT defaults table."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

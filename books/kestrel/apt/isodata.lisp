@@ -56,6 +56,7 @@
    @('old-to-new'),
    @('old-to-new-enable'),
    @('new-to-old'),
+   @('new-to-old-enable'),
    @('verify-guards'),
    @('untranslate'),
    @('hints'),
@@ -72,6 +73,7 @@
    @('old-to-new$'),
    @('old-to-new-enable$'),
    @('new-to-old$'),
+   @('new-to-old-enable$'),
    @('verify-guards$'),
    @('untranslate$'),
    @('hints$'),
@@ -1172,6 +1174,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define isodata-process-new-to-old-enable
+  (new-to-old-enable
+   (new-to-old-enable-suppliedp booleanp)
+   ctx
+   state)
+  :returns (mv erp
+               (new-to-old-enable$ booleanp)
+               state)
+  :short "Process the @(':new-to-old-enable') input."
+  (b* (((er &) (ensure-boolean$ new-to-old-enable
+                                "The :NEW-TO-OLD-ENABLE input" t nil)))
+    (value (if new-to-old-enable-suppliedp
+               new-to-old-enable
+             (get-default-input-new-to-old-enable (w state)))))
+  :prepwork ((local (in-theory (enable acl2::ensure-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define isodata-process-inputs (old
                                 isomaps
                                 predicate
@@ -1183,6 +1203,8 @@
                                 (old-to-new-enable-suppliedp booleanp)
                                 new-to-old
                                 (new-to-old-suppliedp booleanp)
+                                new-to-old-enable
+                                (new-to-old-enable-suppliedp booleanp)
                                 verify-guards
                                 untranslate
                                 hints
@@ -1199,6 +1221,7 @@
                                     old-to-new$
                                     old-to-new-enable$
                                     new-to-old$
+                                    new-to-old-enable$
                                     verify-guards$
                                     hints$
                                     names-to-avoid)')
@@ -1211,6 +1234,7 @@
                                          symbolp
                                          booleanp
                                          symbolp
+                                         booleanp
                                          booleanp
                                          evmac-input-hints-p
                                          symbol-listp
@@ -1260,6 +1284,27 @@
                                  old-to-new-enable-suppliedp
                                  ctx
                                  state))
+       ((er new-to-old-enable$) (isodata-process-new-to-old-enable
+                                 new-to-old-enable
+                                 new-to-old-enable-suppliedp
+                                 ctx
+                                 state))
+       ((when (and old-to-new-enable$
+                   new-to-old-enable$))
+        (er-soft+ ctx t nil
+                  (if old-to-new-enable-suppliedp
+                      (if new-to-old-enable-suppliedp
+                          "The :OLD-TO-NEW-ENABLE input ~
+                           and the :NEW-TO-OLD-ENABLE inputs ~
+                           cannot be both T."
+                        "Since the default :NEW-TO-OLD-ENABLE input is T, ~
+                         the :OLD-TO-NEW-ENABLE input cannot be T.")
+                    (if new-to-old-enable-suppliedp
+                        "Since the default :OLD-TO-NEW-ENABLE input is T, ~
+                         the :NEW-TO-OLD-ENABLE input cannot be T."
+                      "Internal error: ~
+                       the default :OLD-TO-NEW-ENABLE and :NEW-TO-OLD-ENABLE ~
+                       are both T."))))
        ((er &) (ensure-is-untranslate-specifier$ untranslate
                                                  "The :UNTRANSLATE input"
                                                  t nil))
@@ -1274,6 +1319,7 @@
                  old-to-new$
                  old-to-new-enable$
                  new-to-old$
+                 new-to-old-enable$
                  verify-guards$
                  hints$
                  names-to-avoid))))
@@ -2835,6 +2881,7 @@
    (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
    (new-to-old$ symbolp)
+   (new-to-old-enable$ booleanp)
    (appcond-thm-names symbol-symbol-alistp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
@@ -2843,7 +2890,8 @@
                (new-to-old-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the @('new-to-old') theorem."
-  (b* ((formula (isodata-gen-new-to-old-thm-formula old$
+  (b* ((macro (theorem-intro-macro new-to-old-enable$))
+       (formula (isodata-gen-new-to-old-thm-formula old$
                                                     arg-isomaps
                                                     res-isomaps
                                                     new-name$
@@ -2858,11 +2906,11 @@
                                                 new-fn-unnorm-name
                                                 wrld))
        (local-event `(local
-                      (defthmd ,new-to-old$
+                      (defthm ,new-to-old$
                         ,formula
                         :hints ,hints)))
-       (exported-event `(defthmd ,new-to-old$
-                          ,formula)))
+       (exported-event `(,macro ,new-to-old$
+                                ,formula)))
     (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3053,10 +3101,6 @@
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the @('old-to-new') theorem."
-  :long
-  (xdoc::topstring-p
-   "The macro used to introduce the theorem is determined by
-    whether the theorem must be enabled or not.")
   (b* ((macro (theorem-intro-macro old-to-new-enable$))
        (formula (isodata-gen-old-to-new-thm-formula
                  old$ arg-isomaps res-isomaps new-name$ wrld))
@@ -3068,9 +3112,9 @@
                                                 new-to-old$
                                                 wrld))
        (local-event `(local
-                      (,macro ,old-to-new$
-                              ,formula
-                              :hints ,hints)))
+                      (defthm ,old-to-new$
+                        ,formula
+                        :hints ,hints)))
        (exported-event `(,macro ,old-to-new$
                                 ,formula)))
     (mv local-event exported-event)))
@@ -3782,6 +3826,7 @@
    (old-to-new$ symbolp)
    (old-to-new-enable$ booleanp)
    (new-to-old$ symbolp)
+   (new-to-old-enable$ symbolp)
    (verify-guards$ booleanp)
    (untranslate$ untranslate-specifier-p)
    (hints$ symbol-truelist-alistp)
@@ -3891,6 +3936,7 @@
                                     res-isomaps
                                     new-name$
                                     new-to-old$
+                                    new-to-old-enable$
                                     appcond-thm-names
                                     old-fn-unnorm-name
                                     new-fn-unnorm-name
@@ -3993,6 +4039,8 @@
                     (old-to-new-enable-suppliedp booleanp)
                     new-to-old
                     (new-to-old-suppliedp booleanp)
+                    new-to-old-enable
+                    (new-to-old-enable-suppliedp booleanp)
                     verify-guards
                     untranslate
                     hints
@@ -4030,6 +4078,7 @@
                   old-to-new$
                   old-to-new-enable$
                   new-to-old$
+                  new-to-old-enable$
                   verify-guards$
                   hints$
                   names-to-avoid))
@@ -4044,6 +4093,8 @@
                                 old-to-new-enable-suppliedp
                                 new-to-old
                                 new-to-old-suppliedp
+                                new-to-old-enable
+                                new-to-old-enable-suppliedp
                                 verify-guards
                                 untranslate
                                 hints
@@ -4060,6 +4111,7 @@
                                            old-to-new$
                                            old-to-new-enable$
                                            new-to-old$
+                                           new-to-old-enable$
                                            verify-guards$
                                            untranslate
                                            hints$
@@ -4095,6 +4147,7 @@
                      (old-to-new 'nil old-to-new-suppliedp)
                      (old-to-new-enable 'nil old-to-new-enable-suppliedp)
                      (new-to-old 'nil new-to-old-suppliedp)
+                     (new-to-old-enable 'nil new-to-old-enable-suppliedp)
                      (verify-guards ':auto)
                      (untranslate ':nice)
                      (hints 'nil)
@@ -4112,6 +4165,8 @@
                                    ,old-to-new-enable-suppliedp
                                    ',new-to-old
                                    ,new-to-old-suppliedp
+                                   ',new-to-old-enable
+                                   ,new-to-old-enable-suppliedp
                                    ',verify-guards
                                    ',untranslate
                                    ',hints

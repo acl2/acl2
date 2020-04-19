@@ -118,6 +118,7 @@
      "          :old-to-new         ; default from table"
      "          :old-to-new-enable  ; default from table"
      "          :new-to-old         ; default from table"
+     "          :new-to-old-enable  ; default from table"
      "          :verify-guards      ; default :auto"
      "          :untranslate        ; default :nice"
      "          :hints              ; default nil"
@@ -418,7 +419,11 @@
        "@('nil'), to disable it.")
       (xdoc::li
        "Absent, to use the value from the APT defaults table,
-        which is set via @(tsee set-default-input-old-to-new-enable).")))
+        which is set via @(tsee set-default-input-old-to-new-enable)."))
+     (xdoc::p
+      "If @(':old-to-new-enable') is @('t'),
+       then @(':new-to-old-enable') must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc
      "@(':new-to-old') &mdash; default @('nil')
@@ -443,6 +448,26 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('new-to-old') be the name of this theorem."))
+
+    (xdoc::desc
+     "@(':new-to-old-enable') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
+     (xdoc::p
+      "Determines whether @('new-to-old') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-new-to-old-enable)."))
+     (xdoc::p
+      "If @(':new-to-old-enable') is @('t'),
+       then @(':old-to-new-enable') must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc-apt-input-verify-guards :never)
 
@@ -833,9 +858,7 @@
       "In the " *isodata-design-notes* ",
        @('new-to-old') is denoted by
        @($f'f$) when @(':predicate') is @('nil'),
-       and @($'pp$) when @(':predicate') is @('t').")
-     (xdoc::p
-      "This theorem is disabled by default."))
+       and @($'pp$) when @(':predicate') is @('t')."))
 
     (xdoc::desc
      "@('old-to-new')"
