@@ -10,7 +10,9 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -187,14 +189,32 @@
    (xdoc::p
     "This macro sets an entry in the APT defaults table
      that provides the default value of the @(':old-to-new-enable') input.
-     It must be a boolean.")
+     It must be a boolean.
+     It cannot be @('t')
+     if the default @(':new-to-old-enable') is currently @('t').")
    (xdoc::p
     "The initial value of this default is @('nil').")
    (xdoc::@def "set-default-input-old-to-new-enable"))
 
+  (define set-default-input-old-to-new-enable-fn ((bool booleanp) ctx state)
+    :returns (mv erp val state)
+    :parents nil
+    (b* ((table (table-alist+ *defaults-table-name* (w state)))
+         (pair (assoc-eq :new-to-old-enable table)))
+      (if (and (consp pair)
+               (cdr pair)
+               bool)
+          (er-soft+ ctx t nil
+                    "Since the :NEW-TO-OLD-ENABLE default is T, ~
+                     the :OLD-TO-NEW-ENABLE default cannot be set to T. ~
+                     At most one of these two defaults may be T at any time.")
+        (value `(table ,*defaults-table-name* :old-to-new-enable ,bool)))))
+
   (defmacro set-default-input-old-to-new-enable (bool)
     (declare (xargs :guard (booleanp bool)))
-    `(table ,*defaults-table-name* :old-to-new-enable ,bool)))
+    (b* ((ctx (cons 'set-default-input-old-to-new-enable bool)))
+      `(make-event-terse
+        (set-default-input-old-to-new-enable-fn ,bool ',ctx state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,3 +237,66 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (set-default-input-old-to-new-enable nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection set-default-input-new-to-old-enable
+  :short "Set the default @(':new-to-old-enable') input of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':new-to-old-enable') input
+     that specifies whether to enable the generated theorem
+     that rewrites (a term involving) a call of the old function
+     to (a term involving) a call of the new function.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':new-to-old-enable') input.
+     It must be a boolean.
+     It cannot be @('t')
+     if the default @(':old-to-new-enable') is currently @('t').")
+   (xdoc::p
+    "The initial value of this default is @('nil').")
+   (xdoc::@def "set-default-input-new-to-old-enable"))
+
+  (define set-default-input-new-to-old-enable-fn ((bool booleanp) ctx state)
+    :returns (mv erp val state)
+    :parents nil
+    (b* ((table (table-alist+ *defaults-table-name* (w state)))
+         (pair (assoc-eq :old-to-new-enable table)))
+      (if (and (consp pair)
+               (cdr pair)
+               bool)
+          (er-soft+ ctx t nil
+                    "Since the :OLD-TO-NEW-ENABLE default is T, ~
+                     the :NEW-TO-OLD-ENABLE default cannot be set to T. ~
+                     At most one of these two defaults may be T at any time.")
+        (value `(table ,*defaults-table-name* :new-to-old-enable ,bool)))))
+
+  (defmacro set-default-input-new-to-old-enable (bool)
+    (declare (xargs :guard (booleanp bool)))
+    (b* ((ctx (cons 'set-default-input-new-to-old-enable bool)))
+      `(make-event-terse
+        (set-default-input-new-to-old-enable-fn ,bool ',ctx state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-new-to-old-enable ((wrld plist-worldp))
+  :returns (bool booleanp)
+  :short "Get the default @(':new-to-old-enable') input of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-new-to-old-enable).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :new-to-old-enable table))
+       ((unless (consp pair))
+        (raise "No :NEW-TO-OLD-ENABLE found in APT defaults table."))
+       (bool (cdr pair))
+       ((unless (booleanp bool))
+        (raise
+         "The default :NEW-TO-OLD-ENABLE is ~x0, which is not a boolean.")))
+    bool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-new-to-old-enable nil)
