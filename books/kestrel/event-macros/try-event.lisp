@@ -13,6 +13,8 @@
 (include-book "fail-event")
 
 (include-book "kestrel/utilities/orelse" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "system/pseudo-event-formp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -5,7 +5,7 @@
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/event-macros/fail-event" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 (defxdoc orelse
@@ -246,7 +246,6 @@
 ; orelse.
 
 #||
-(include-book "kestrel/utilities/user-interface" :dir :system)
 
 (defmacro on-failure (event &optional (erp 't) val str &rest fmt-args)
 
