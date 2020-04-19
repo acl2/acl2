@@ -166,6 +166,7 @@
 
    (xdoc::p
     "The utilities
+     @(tsee cw-event),
      @(tsee fail-event),
      @(tsee make-event-terse), and
      @(tsee try-event)
