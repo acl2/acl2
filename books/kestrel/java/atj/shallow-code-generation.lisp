@@ -1931,14 +1931,14 @@
       "Note that we are dealing with annotated terms,
        so the argument of the constructor must be unwrapped
        to be examined."))
-    (b* (((mv arg & &) (atj-type-unwrap-term arg))
-         ((unless arg) ; for termination proof
+    (b* (((mv uarg & &) (atj-type-unwrap-term arg))
+         ((unless uarg) ; for termination proof
           (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
          (src-type (atj-type-list-to-type src-types))
          (dst-type (atj-type-list-to-type dst-types)))
-      (if (quotep arg)
-          (b* ((arg (unquote-term arg))
-               (expr (atj-jprim-constr-of-qconst-to-expr fn arg))
+      (if (quotep uarg)
+          (b* ((uarg (unquote-term uarg))
+               (expr (atj-jprim-constr-of-qconst-to-expr fn uarg))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
             (mv nil expr jvar-tmp-index))
         (b* (((mv arg-block
