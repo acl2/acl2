@@ -59,6 +59,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; deconstructors:
+
+(defun test-boolean-value->bool (x)
+  (declare (xargs :guard (java::boolean-value-p x)))
+  (java::boolean-value->bool x))
+
+(defun test-char-value->nat (x)
+  (declare (xargs :guard (java::char-value-p x)))
+  (java::char-value->nat x))
+
+(defun test-byte-value->int (x)
+  (declare (xargs :guard (java::byte-value-p x)))
+  (java::byte-value->int x))
+
+(defun test-short-value->int (x)
+  (declare (xargs :guard (java::short-value-p x)))
+  (java::short-value->int x))
+
+(defun test-int-value->int (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-value->int x))
+
+(defun test-long-value->int (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-value->int x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; unary operations:
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -586,7 +614,7 @@
   '(;; boolean constructor:
     ("BooleanValueT" (test-boolean-value t))
     ("BooleanValueF" (test-boolean-value nil))
-    ;; character constructor:
+    ;; char constructor:
     ("CharValue0" (test-char-value 0))
     ("CharValue1" (test-char-value 60000))
     ("CharValue2" (test-char-value 256))
@@ -622,6 +650,46 @@
     ("LongValue4" (test-long-value 27))
     ("LongValue5" (test-long-value -27777))
     ("LongValue6" (test-long-value -292999999999))
+    ;; boolean deconstructor:
+    ("BooleanValueBoolT" (test-boolean-value->bool (java::boolean-value t)))
+    ("BooleanValueBoolF" (test-boolean-value->bool (java::boolean-value nil)))
+    ;; char deconstructor:
+    ("CharValueNat0" (test-char-value->nat (java::char-value 0)))
+    ("CharValueNat1" (test-char-value->nat (java::char-value 60000)))
+    ("CharValueNat2" (test-char-value->nat (java::char-value 256)))
+    ("CharValueNat3" (test-char-value->nat (java::char-value 32)))
+    ("CharValueNat4" (test-char-value->nat (java::char-value 65)))
+    ("CharValueNat5" (test-char-value->nat (java::char-value 12345)))
+    ;; byte deconstructor:
+    ("ByteValueInt0" (test-byte-value->int (java::byte-value 0)))
+    ("ByteValueInt1" (test-byte-value->int (java::byte-value -128)))
+    ("ByteValueInt2" (test-byte-value->int (java::byte-value 127)))
+    ("ByteValueInt3" (test-byte-value->int (java::byte-value -67)))
+    ("ByteValueInt4" (test-byte-value->int (java::byte-value 88)))
+    ("ByteValueInt5" (test-byte-value->int (java::byte-value 1)))
+    ;; short deconstructor:
+    ("ShortValueInt0" (test-short-value->int (java::short-value 0)))
+    ("ShortValueInt1" (test-short-value->int (java::short-value -32768)))
+    ("ShortValueInt2" (test-short-value->int (java::short-value 32767)))
+    ("ShortValueInt3" (test-short-value->int (java::short-value 1001)))
+    ("ShortValueInt4" (test-short-value->int (java::short-value 78)))
+    ("ShortValueInt5" (test-short-value->int (java::short-value -1)))
+    ;; int deconstructor:
+    ("IntValueInt0" (test-int-value->int (java::int-value 0)))
+    ("IntValueInt1" (test-int-value->int (java::int-value -2147483648)))
+    ("IntValueInt2" (test-int-value->int (java::int-value 2147483647)))
+    ("IntValueInt3" (test-int-value->int (java::int-value 736382)))
+    ("IntValueInt4" (test-int-value->int (java::int-value -22)))
+    ("IntValueInt5" (test-int-value->int (java::int-value 90000)))
+    ;; long deconstructor:
+    ("LongValueInt0" (test-long-value->int (java::long-value 0)))
+    ("LongValueInt1" (test-long-value->int (java::long-value
+                                            -9223372036854775808)))
+    ("LongValueInt2" (test-long-value->int (java::long-value 9223372036854775807)))
+    ("LongValueInt3" (test-long-value->int (java::long-value 882882929292)))
+    ("LongValueInt4" (test-long-value->int (java::long-value 27)))
+    ("LongValueInt5" (test-long-value->int (java::long-value -27777)))
+    ("LongValueInt6" (test-long-value->int (java::long-value -292999999999)))
     ;; boolean negation:
     ("BooleanNotT" (test-boolean-not (java::boolean-value t)))
     ("BooleanNotF" (test-boolean-not (java::boolean-value nil)))

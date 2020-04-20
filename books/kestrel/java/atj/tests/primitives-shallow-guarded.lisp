@@ -30,6 +30,20 @@
 
 (java::atj-main-function-type test-long-value (:ainteger) :jlong)
 
+; deconstructors:
+
+(java::atj-main-function-type test-boolean-value->bool (:jboolean) :asymbol)
+
+(java::atj-main-function-type test-char-value->nat (:jchar) :ainteger)
+
+(java::atj-main-function-type test-byte-value->int (:jbyte) :ainteger)
+
+(java::atj-main-function-type test-short-value->int (:jshort) :ainteger)
+
+(java::atj-main-function-type test-int-value->int (:jint) :ainteger)
+
+(java::atj-main-function-type test-long-value->int (:jlong) :ainteger)
+
 ; unary operations:
 
 (java::atj-main-function-type test-boolean-not (:jboolean) :jboolean)
@@ -224,6 +238,12 @@
            test-short-value
            test-int-value
            test-long-value
+           test-boolean-value->bool
+           test-char-value->nat
+           test-byte-value->int
+           test-short-value->int
+           test-int-value->int
+           test-long-value->int
            test-boolean-not
            test-int-plus
            test-long-plus
