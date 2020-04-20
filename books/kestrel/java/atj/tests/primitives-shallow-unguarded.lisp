@@ -17,17 +17,17 @@
 ; Generate Java code for the functions that manipulate Java primitive values.
 
 (java::atj test-boolean-not
-           test-boolean-and
-           test-boolean-xor
-           test-boolean-ior
-           test-boolean-eq
-           test-boolean-neq
            test-int-plus
            test-long-plus
            test-int-minus
            test-long-minus
            test-int-not
            test-long-not
+           test-boolean-and
+           test-boolean-xor
+           test-boolean-ior
+           test-boolean-eq
+           test-boolean-neq
            test-int-add
            test-long-add
            test-int-sub

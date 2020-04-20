@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,17 +17,17 @@
 ; Generate Java code for the functions that manipulate Java primitive values.
 
 (java::atj test-boolean-not
-           test-boolean-and
-           test-boolean-xor
-           test-boolean-ior
-           test-boolean-eq
-           test-boolean-neq
            test-int-plus
            test-long-plus
            test-int-minus
            test-long-minus
            test-int-not
            test-long-not
+           test-boolean-and
+           test-boolean-xor
+           test-boolean-ior
+           test-boolean-eq
+           test-boolean-neq
            test-int-add
            test-long-add
            test-int-sub

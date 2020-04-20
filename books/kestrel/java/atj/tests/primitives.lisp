@@ -22,16 +22,60 @@
 ; As explained in the ATJ user documentation,
 ; the tests passed to :TESTS may only involve
 ; the target functions explicitly passed to ATJ,
-; which cannot include the functions in *ATJ-JAVA-PRIMITIVE-FNS*
+; which cannot include the functions in *ATJ-JPRIM-FNS*
 ; when :DEEP is NIL and :GUARDS is T.
 ; Thus, here we introduce wrappers for such functions,
 ; which are the ones that we want to test here.
+; We exclude the floating-point operations,
+; since tests involving them are not supported yet.
 
-;; boolean operations:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; unary operations:
+
+;;;;;;;;;;;;;;;;;;;;
+
+; boolean:
 
 (defun test-boolean-not (x)
   (declare (xargs :guard (java::boolean-value-p x)))
   (java::boolean-not x))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; integer:
+
+(defun test-int-plus (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-plus x))
+
+(defun test-long-plus (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-plus x))
+
+(defun test-int-minus (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-minus x))
+
+(defun test-long-minus (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-minus x))
+
+(defun test-int-not (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-not x))
+
+(defun test-long-not (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-not x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; binary operations:
+
+;;;;;;;;;;;;;;;;;;;;
+
+; boolean:
 
 (defun test-boolean-and (x y)
   (declare (xargs :guard (and (java::boolean-value-p x)
@@ -58,31 +102,9 @@
                               (java::boolean-value-p y))))
   (java::boolean-neq x y))
 
-;; integer operations:
+;;;;;;;;;;;;;;;;;;;;
 
-(defun test-int-plus (x)
-  (declare (xargs :guard (java::int-value-p x)))
-  (java::int-plus x))
-
-(defun test-long-plus (x)
-  (declare (xargs :guard (java::long-value-p x)))
-  (java::long-plus x))
-
-(defun test-int-minus (x)
-  (declare (xargs :guard (java::int-value-p x)))
-  (java::int-minus x))
-
-(defun test-long-minus (x)
-  (declare (xargs :guard (java::long-value-p x)))
-  (java::long-minus x))
-
-(defun test-int-not (x)
-  (declare (xargs :guard (java::int-value-p x)))
-  (java::int-not x))
-
-(defun test-long-not (x)
-  (declare (xargs :guard (java::long-value-p x)))
-  (java::long-not x))
+; integer:
 
 (defun test-int-add (x y)
   (declare (xargs :guard (and (java::int-value-p x)
@@ -288,7 +310,13 @@
                               (java::long-value-p y))))
   (java::int-long-ushiftr x y))
 
-;; widening conversions:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; conversions:
+
+;;;;;;;;;;;;;;;;;;;;
+
+; widening:
 
 (defun test-byte-to-short (x)
   (declare (xargs :guard (java::byte-value-p x)))
@@ -322,7 +350,9 @@
   (declare (xargs :guard (java::char-value-p x)))
   (java::char-to-long x))
 
-;; narrowing conversions:
+;;;;;;;;;;;;;;;;;;;;
+
+; narrowing:
 
 (defun test-short-to-byte (x)
   (declare (xargs :guard (java::short-value-p x)))
@@ -368,7 +398,9 @@
   (declare (xargs :guard (java::long-value-p x)))
   (java::long-to-char x))
 
-;; widening and narrowing conversions:
+;;;;;;;;;;;;;;;;;;;;
+
+; widening and narrowing:
 
 (defun test-byte-to-char (x)
   (declare (xargs :guard (java::byte-value-p x)))
@@ -527,6 +559,42 @@
   '(;; boolean negation:
     ("BooleanNotT" (test-boolean-not (java::boolean-value t)))
     ("BooleanNotF" (test-boolean-not (java::boolean-value nil)))
+    ;; int unary plus:
+    ("IntPlus0" (test-int-plus (java::int-value 0)))
+    ("IntPlus1" (test-int-plus (java::int-value 1)))
+    ("IntPlus2" (test-int-plus (java::int-value 875753)))
+    ("IntPlus3" (test-int-plus (java::int-value -16)))
+    ("IntPlus4" (test-int-plus (java::int-value -1600000)))
+    ;; long unary plus:
+    ("LongPlus0" (test-long-plus (java::long-value 0)))
+    ("LongPlus1" (test-long-plus (java::long-value 1)))
+    ("LongPlus2" (test-long-plus (java::long-value 875753)))
+    ("LongPlus3" (test-long-plus (java::long-value -16)))
+    ("LongPlus4" (test-long-plus (java::long-value -1600000)))
+    ;; int unary minus:
+    ("IntMinus0" (test-int-minus (java::int-value 0)))
+    ("IntMinus1" (test-int-minus (java::int-value 1)))
+    ("IntMinus2" (test-int-minus (java::int-value 875753)))
+    ("IntMinus3" (test-int-minus (java::int-value -16)))
+    ("IntMinus4" (test-int-minus (java::int-value -1600000)))
+    ;; long unary minus:
+    ("LongMinus0" (test-long-minus (java::long-value 0)))
+    ("LongMinus1" (test-long-minus (java::long-value 1)))
+    ("LongMinus2" (test-long-minus (java::long-value 875753)))
+    ("LongMinus3" (test-long-minus (java::long-value -16)))
+    ("LongMinus4" (test-long-minus (java::long-value -1600000)))
+    ;; int bitwise complement:
+    ("IntNot0" (test-int-not (java::int-value 0)))
+    ("IntNot1" (test-int-not (java::int-value 1)))
+    ("IntNot2" (test-int-not (java::int-value 875753)))
+    ("IntNot3" (test-int-not (java::int-value -16)))
+    ("IntNot4" (test-int-not (java::int-value -1600000)))
+    ;; long bitwise complement:
+    ("LongNot0" (test-long-not (java::long-value 0)))
+    ("LongNot1" (test-long-not (java::long-value 1)))
+    ("LongNot2" (test-long-not (java::long-value 875753)))
+    ("LongNot3" (test-long-not (java::long-value -16)))
+    ("LongNot4" (test-long-not (java::long-value -1600000)))
     ;; boolean conjunction:
     ("BooleanAndTT" (test-boolean-and (java::boolean-value t)
                                       (java::boolean-value t)))
@@ -572,42 +640,6 @@
                                       (java::boolean-value t)))
     ("BooleanNeqFF" (test-boolean-neq (java::boolean-value nil)
                                       (java::boolean-value nil)))
-    ;; int unary plus:
-    ("IntPlus0" (test-int-plus (java::int-value 0)))
-    ("IntPlus1" (test-int-plus (java::int-value 1)))
-    ("IntPlus2" (test-int-plus (java::int-value 875753)))
-    ("IntPlus3" (test-int-plus (java::int-value -16)))
-    ("IntPlus4" (test-int-plus (java::int-value -1600000)))
-    ;; long unary plus:
-    ("LongPlus0" (test-long-plus (java::long-value 0)))
-    ("LongPlus1" (test-long-plus (java::long-value 1)))
-    ("LongPlus2" (test-long-plus (java::long-value 875753)))
-    ("LongPlus3" (test-long-plus (java::long-value -16)))
-    ("LongPlus4" (test-long-plus (java::long-value -1600000)))
-    ;; int unary minus:
-    ("IntMinus0" (test-int-minus (java::int-value 0)))
-    ("IntMinus1" (test-int-minus (java::int-value 1)))
-    ("IntMinus2" (test-int-minus (java::int-value 875753)))
-    ("IntMinus3" (test-int-minus (java::int-value -16)))
-    ("IntMinus4" (test-int-minus (java::int-value -1600000)))
-    ;; long unary minus:
-    ("LongMinus0" (test-long-minus (java::long-value 0)))
-    ("LongMinus1" (test-long-minus (java::long-value 1)))
-    ("LongMinus2" (test-long-minus (java::long-value 875753)))
-    ("LongMinus3" (test-long-minus (java::long-value -16)))
-    ("LongMinus4" (test-long-minus (java::long-value -1600000)))
-    ;; int bitwise complement:
-    ("IntNot0" (test-int-not (java::int-value 0)))
-    ("IntNot1" (test-int-not (java::int-value 1)))
-    ("IntNot2" (test-int-not (java::int-value 875753)))
-    ("IntNot3" (test-int-not (java::int-value -16)))
-    ("IntNot4" (test-int-not (java::int-value -1600000)))
-    ;; long bitwise complement:
-    ("LongNot0" (test-long-not (java::long-value 0)))
-    ("LongNot1" (test-long-not (java::long-value 1)))
-    ("LongNot2" (test-long-not (java::long-value 875753)))
-    ("LongNot3" (test-long-not (java::long-value -16)))
-    ("LongNot4" (test-long-not (java::long-value -1600000)))
     ;; int addition:
     ("IntAdd0" (test-int-add (java::int-value 2)
                              (java::int-value 3)))
