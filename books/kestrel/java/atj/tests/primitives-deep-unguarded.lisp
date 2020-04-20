@@ -16,7 +16,13 @@
 
 ; Generate Java code for the functions that manipulate Java primitive values.
 
-(java::atj test-boolean-not
+(java::atj test-boolean-value
+           test-char-value
+           test-byte-value
+           test-short-value
+           test-int-value
+           test-long-value
+           test-boolean-not
            test-int-plus
            test-long-plus
            test-int-minus

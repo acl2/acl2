@@ -16,6 +16,20 @@
 
 ; Specialize the input and output types of the tested functions.
 
+; constructors:
+
+(java::atj-main-function-type test-boolean-value (:asymbol) :jboolean)
+
+(java::atj-main-function-type test-char-value (:ainteger) :jchar)
+
+(java::atj-main-function-type test-byte-value (:ainteger) :jbyte)
+
+(java::atj-main-function-type test-short-value (:ainteger) :jshort)
+
+(java::atj-main-function-type test-int-value (:ainteger) :jint)
+
+(java::atj-main-function-type test-long-value (:ainteger) :jlong)
+
 ; unary operations:
 
 (java::atj-main-function-type test-boolean-not (:jboolean) :jboolean)
@@ -204,7 +218,13 @@
 
 ; Generate Java code for the tested functions, with testing code.
 
-(java::atj test-boolean-not
+(java::atj test-boolean-value
+           test-char-value
+           test-byte-value
+           test-short-value
+           test-int-value
+           test-long-value
+           test-boolean-not
            test-int-plus
            test-long-plus
            test-int-minus

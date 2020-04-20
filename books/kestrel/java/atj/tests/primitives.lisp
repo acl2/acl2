@@ -31,6 +31,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; constructors:
+
+(defun test-boolean-value (x)
+  (declare (xargs :guard (booleanp x)))
+  (java::boolean-value x))
+
+(defun test-char-value (x)
+  (declare (xargs :guard (ubyte16p x)))
+  (java::char-value x))
+
+(defun test-byte-value (x)
+  (declare (xargs :guard (sbyte8p x)))
+  (java::byte-value x))
+
+(defun test-short-value (x)
+  (declare (xargs :guard (sbyte16p x)))
+  (java::short-value x))
+
+(defun test-int-value (x)
+  (declare (xargs :guard (sbyte32p x)))
+  (java::int-value x))
+
+(defun test-long-value (x)
+  (declare (xargs :guard (sbyte64p x)))
+  (java::long-value x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; unary operations:
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -552,11 +580,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests for the functions above (except the ones involving floating-point),
-; when :DEEP is NIL and :GUARDS is T.
+; Tests for the functions above, when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
-  '(;; boolean negation:
+  '(;; boolean constructor:
+    ("BooleanValueT" (test-boolean-value t))
+    ("BooleanValueF" (test-boolean-value nil))
+    ;; character constructor:
+    ("CharValue0" (test-char-value 0))
+    ("CharValue1" (test-char-value 60000))
+    ("CharValue2" (test-char-value 256))
+    ("CharValue3" (test-char-value 32))
+    ("CharValue4" (test-char-value 65))
+    ("CharValue5" (test-char-value 12345))
+    ;; byte constructor:
+    ("ByteValue0" (test-byte-value 0))
+    ("ByteValue1" (test-byte-value -128))
+    ("ByteValue2" (test-byte-value 127))
+    ("ByteValue3" (test-byte-value -67))
+    ("ByteValue4" (test-byte-value 88))
+    ("ByteValue5" (test-byte-value 1))
+    ;; short constructor:
+    ("ShortValue0" (test-short-value 0))
+    ("ShortValue1" (test-short-value -32768))
+    ("ShortValue2" (test-short-value 32767))
+    ("ShortValue3" (test-short-value 1001))
+    ("ShortValue4" (test-short-value 78))
+    ("ShortValue5" (test-short-value -1))
+    ;; int constructor:
+    ("IntValue0" (test-int-value 0))
+    ("IntValue1" (test-int-value -2147483648))
+    ("IntValue2" (test-int-value 2147483647))
+    ("IntValue3" (test-int-value 736382))
+    ("IntValue4" (test-int-value -22))
+    ("IntValue5" (test-int-value 90000))
+    ;; long constructor:
+    ("LongValue0" (test-long-value 0))
+    ("LongValue1" (test-long-value -9223372036854775808))
+    ("LongValue2" (test-long-value 9223372036854775807))
+    ("LongValue3" (test-long-value 882882929292))
+    ("LongValue4" (test-long-value 27))
+    ("LongValue5" (test-long-value -27777))
+    ("LongValue6" (test-long-value -292999999999))
+    ;; boolean negation:
     ("BooleanNotT" (test-boolean-not (java::boolean-value t)))
     ("BooleanNotF" (test-boolean-not (java::boolean-value nil)))
     ;; int unary plus:
