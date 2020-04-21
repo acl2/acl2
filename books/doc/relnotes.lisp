@@ -54,13 +54,8 @@
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
 
-; Please note:
-;
-;  - Jared often has uncommitted edits to this file.  Please coordinate with
-;    him before editing these topics!
-;
-;  - Book release notes are typically very disorganized.  This shouldn't be
-;    considered a bug until we are very close to a release.
+; Book release notes are sometimes disorganized.
+; They are often cleaned up before a release.
 
 ; Starting with Version 7.3, we no longer maintain release notes
 ; note-x-x-books.  Instead, we hope that the ACL2 Community will track
