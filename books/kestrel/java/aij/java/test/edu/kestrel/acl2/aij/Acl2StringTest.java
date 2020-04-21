@@ -88,4 +88,15 @@ class Acl2StringTest {
         assertTrue(Acl2String.ACL2.compareTo(Acl2String.EMPTY) > 0);
     }
 
+    @Test
+    void compareToNumbers() { // strings come after -- see ACL2's alphorder
+        assertTrue(Acl2String.EMPTY.compareTo(Acl2Integer.ZERO) > 0);
+        assertTrue(Acl2String.make("any string").
+                compareTo(Acl2Integer.make(335)) > 0);
+        assertTrue(Acl2String.make("ABO").
+                compareTo(Acl2Rational.make(-2, 3)) > 0);
+        assertTrue(Acl2String.make("_-_-_").
+                compareTo(Acl2Number.make(0, 1)) > 0);
+    }
+
 }
