@@ -10,8 +10,11 @@
 
 (in-package "APT")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
@@ -19,7 +22,6 @@
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 

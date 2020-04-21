@@ -10,7 +10,6 @@
 
 (in-package "APT")
 
-(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -25,7 +24,6 @@
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
