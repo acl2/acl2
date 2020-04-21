@@ -13,8 +13,9 @@
 (include-book "evmac-input-hints-p")
 (include-book "evmac-input-print-p")
 
-(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/try-event" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
