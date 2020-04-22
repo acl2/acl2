@@ -79,7 +79,14 @@
                                             nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :boolean-array)
+  :tag :boolean-array
+  ///
+
+  (defrule len-of-boolean-array->components-upper-bound
+    (< (len (boolean-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable boolean-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,7 +97,14 @@
                                          nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :char-array)
+  :tag :char-array
+  ///
+
+  (defrule len-of-char-array->components-upper-bound
+    (< (len (char-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable char-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,7 +115,14 @@
                                          nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :byte-array)
+  :tag :byte-array
+  ///
+
+  (defrule len-of-byte-array->components-upper-bound
+    (< (len (byte-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable byte-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,7 +133,14 @@
                                          nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :short-array)
+  :tag :short-array
+  ///
+
+  (defrule len-of-short-array->components-upper-bound
+    (< (len (short-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable short-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,7 +151,14 @@
                                          nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :int-array)
+  :tag :int-array
+  ///
+
+  (defrule len-of-int-array->components-upper-bound
+    (< (len (int-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable int-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +169,14 @@
                                          nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :long-array)
+  :tag :long-array
+  ///
+
+  (defrule len-of-long-array->components-upper-bound
+    (< (len (long-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable long-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,7 +187,14 @@
                                          nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :float-array)
+  :tag :float-array
+  ///
+
+  (defrule len-of-float-array->components-upper-bound
+    (< (len (float-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable float-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -156,7 +205,14 @@
                                          nil)))
   :require (< (len components) (expt 2 31))
   :layout :list
-  :tag :double-array)
+  :tag :double-array
+  ///
+
+  (defrule len-of-double-array->components-upper-bound
+    (< (len (double-array->components array))
+       (expt 2 31))
+    :rule-classes :linear
+    :enable double-array->components))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -462,9 +518,11 @@
   :guard (boolean-array-index-in-range-p array index)
   :returns (new-array boolean-array-p)
   :short "Write a component to a Java @('boolean') array."
-  (boolean-array (update-nth (int-value->int index)
-                             component
-                             (boolean-array->components array)))
+  (if (mbt (boolean-array-index-in-range-p array index))
+      (boolean-array (update-nth (int-value->int index)
+                                 component
+                                 (boolean-array->components array)))
+    (boolean-array-fix array))
   :guard-hints (("Goal" :in-theory (enable boolean-array->components
                                            boolean-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -473,7 +531,21 @@
                       :elt-type boolean-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred boolean-value-listp))))
+                      :pred boolean-value-listp)))
+  ///
+
+  (defret len-of-components-of-boolean-array-write
+    (equal (len (boolean-array->components new-array))
+           (len (boolean-array->components array)))
+    :hints (("Goal" :in-theory (enable boolean-array->components
+                                       boolean-array-index-in-range-p
+                                       boolean-array
+                                       boolean-array-fix))))
+
+  (defret boolean-array-index-in-range-p-of-boolean-array-write
+    (equal (boolean-array-index-in-range-p new-array index1)
+           (boolean-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable boolean-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -483,9 +555,11 @@
   :guard (char-array-index-in-range-p array index)
   :returns (new-array char-array-p)
   :short "Write a component to a Java @('char') array."
-  (char-array (update-nth (int-value->int index)
-                          component
-                          (char-array->components array)))
+  (if (mbt (char-array-index-in-range-p array index))
+      (char-array (update-nth (int-value->int index)
+                              component
+                              (char-array->components array)))
+    (char-array-fix array))
   :guard-hints (("Goal" :in-theory (enable char-array->components
                                            char-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -494,7 +568,21 @@
                       :elt-type char-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred char-value-listp))))
+                      :pred char-value-listp)))
+  ///
+
+  (defret len-of-components-of-char-array-write
+    (equal (len (char-array->components new-array))
+           (len (char-array->components array)))
+    :hints (("Goal" :in-theory (enable char-array->components
+                                       char-array-index-in-range-p
+                                       char-array
+                                       char-array-fix))))
+
+  (defret char-array-index-in-range-p-of-char-array-write
+    (equal (char-array-index-in-range-p new-array index1)
+           (char-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable char-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -504,9 +592,11 @@
   :guard (byte-array-index-in-range-p array index)
   :returns (new-array byte-array-p)
   :short "Write a component to a Java @('byte') array."
-  (byte-array (update-nth (int-value->int index)
-                          component
-                          (byte-array->components array)))
+  (if (mbt (byte-array-index-in-range-p array index))
+      (byte-array (update-nth (int-value->int index)
+                              component
+                              (byte-array->components array)))
+    (byte-array-fix array))
   :guard-hints (("Goal" :in-theory (enable byte-array->components
                                            byte-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -515,7 +605,21 @@
                       :elt-type byte-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred byte-value-listp))))
+                      :pred byte-value-listp)))
+  ///
+
+  (defret len-of-components-of-byte-array-write
+    (equal (len (byte-array->components new-array))
+           (len (byte-array->components array)))
+    :hints (("Goal" :in-theory (enable byte-array->components
+                                       byte-array-index-in-range-p
+                                       byte-array
+                                       byte-array-fix))))
+
+  (defret byte-array-index-in-range-p-of-byte-array-write
+    (equal (byte-array-index-in-range-p new-array index1)
+           (byte-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable byte-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -525,9 +629,11 @@
   :guard (short-array-index-in-range-p array index)
   :returns (new-array short-array-p)
   :short "Write a component to a Java @('short') array."
-  (short-array (update-nth (int-value->int index)
-                           component
-                           (short-array->components array)))
+  (if (mbt (short-array-index-in-range-p array index))
+      (short-array (update-nth (int-value->int index)
+                               component
+                               (short-array->components array)))
+    (short-array-fix array))
   :guard-hints (("Goal" :in-theory (enable short-array->components
                                            short-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -536,7 +642,21 @@
                       :elt-type short-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred short-value-listp))))
+                      :pred short-value-listp)))
+  ///
+
+  (defret len-of-components-of-short-array-write
+    (equal (len (short-array->components new-array))
+           (len (short-array->components array)))
+    :hints (("Goal" :in-theory (enable short-array->components
+                                       short-array-index-in-range-p
+                                       short-array
+                                       short-array-fix))))
+
+  (defret short-array-index-in-range-p-of-short-array-write
+    (equal (short-array-index-in-range-p new-array index1)
+           (short-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable short-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -546,9 +666,11 @@
   :guard (int-array-index-in-range-p array index)
   :returns (new-array int-array-p)
   :short "Write a component to a Java @('int') array."
-  (int-array (update-nth (int-value->int index)
-                         component
-                         (int-array->components array)))
+  (if (mbt (int-array-index-in-range-p array index))
+      (int-array (update-nth (int-value->int index)
+                             component
+                             (int-array->components array)))
+    (int-array-fix array))
   :guard-hints (("Goal" :in-theory (enable int-array->components
                                            int-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -557,7 +679,21 @@
                       :elt-type int-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred int-value-listp))))
+                      :pred int-value-listp)))
+  ///
+
+  (defret len-of-components-of-int-array-write
+    (equal (len (int-array->components new-array))
+           (len (int-array->components array)))
+    :hints (("Goal" :in-theory (enable int-array->components
+                                       int-array-index-in-range-p
+                                       int-array
+                                       int-array-fix))))
+
+  (defret int-array-index-in-range-p-of-int-array-write
+    (equal (int-array-index-in-range-p new-array index1)
+           (int-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable int-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -567,9 +703,11 @@
   :guard (long-array-index-in-range-p array index)
   :returns (new-array long-array-p)
   :short "Write a component to a Java @('long') array."
-  (long-array (update-nth (int-value->int index)
-                          component
-                          (long-array->components array)))
+  (if (mbt (long-array-index-in-range-p array index))
+      (long-array (update-nth (int-value->int index)
+                              component
+                              (long-array->components array)))
+    (long-array-fix array))
   :guard-hints (("Goal" :in-theory (enable long-array->components
                                            long-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -578,7 +716,21 @@
                       :elt-type long-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred long-value-listp))))
+                      :pred long-value-listp)))
+  ///
+
+  (defret len-of-components-of-long-array-write
+    (equal (len (long-array->components new-array))
+           (len (long-array->components array)))
+    :hints (("Goal" :in-theory (enable long-array->components
+                                       long-array-index-in-range-p
+                                       long-array
+                                       long-array-fix))))
+
+  (defret long-array-index-in-range-p-of-long-array-write
+    (equal (long-array-index-in-range-p new-array index1)
+           (long-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable long-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -588,9 +740,11 @@
   :guard (float-array-index-in-range-p array index)
   :returns (new-array float-array-p)
   :short "Write a component to a Java @('float') array."
-  (float-array (update-nth (int-value->int index)
-                           component
-                           (float-array->components array)))
+  (if (mbt (float-array-index-in-range-p array index))
+      (float-array (update-nth (int-value->int index)
+                               component
+                               (float-array->components array)))
+    (float-array-fix array))
   :guard-hints (("Goal" :in-theory (enable float-array->components
                                            float-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -599,7 +753,21 @@
                       :elt-type float-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred float-value-listp))))
+                      :pred float-value-listp)))
+  ///
+
+  (defret len-of-components-of-float-array-write
+    (equal (len (float-array->components new-array))
+           (len (float-array->components array)))
+    :hints (("Goal" :in-theory (enable float-array->components
+                                       float-array-index-in-range-p
+                                       float-array
+                                       float-array-fix))))
+
+  (defret float-array-index-in-range-p-of-float-array-write
+    (equal (float-array-index-in-range-p new-array index1)
+           (float-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable float-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -609,9 +777,11 @@
   :guard (double-array-index-in-range-p array index)
   :returns (new-array double-array-p)
   :short "Write a component to a Java @('double') array."
-  (double-array (update-nth (int-value->int index)
-                            component
-                            (double-array->components array)))
+  (if (mbt (double-array-index-in-range-p array index))
+      (double-array (update-nth (int-value->int index)
+                                component
+                                (double-array->components array)))
+    (double-array-fix array))
   :guard-hints (("Goal" :in-theory (enable double-array->components
                                            double-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
@@ -620,7 +790,21 @@
                       :elt-type double-value
                       :true-listp t
                       :elementp-of-nil nil
-                      :pred double-value-listp))))
+                      :pred double-value-listp)))
+  ///
+
+  (defret len-of-components-of-double-array-write
+    (equal (len (double-array->components new-array))
+           (len (double-array->components array)))
+    :hints (("Goal" :in-theory (enable double-array->components
+                                       double-array-index-in-range-p
+                                       double-array
+                                       double-array-fix))))
+
+  (defret double-array-index-in-range-p-of-double-array-write
+    (equal (double-array-index-in-range-p new-array index1)
+           (double-array-index-in-range-p array index1))
+    :hints (("Goal" :in-theory (enable double-array-index-in-range-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
