@@ -250,16 +250,11 @@
 
 (define boolean-array-read ((array boolean-array-p) (index int-value-p))
   :guard (boolean-array-index-in-range-p array index)
-  :returns (component boolean-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable boolean-array-p
-                                       boolean-array-index-in-range-p))))
+  :returns (component boolean-value-p)
   :short "Read a component from a Java @('boolean') array."
-  (nth (int-value->int index) (boolean-array->components array))
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p
-                                           boolean-array-index-in-range-p)))
+  (boolean-value-fix
+   (nth (int-value->int index) (boolean-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable boolean-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist boolean-value-list
@@ -272,16 +267,11 @@
 
 (define char-array-read ((array char-array-p) (index int-value-p))
   :guard (char-array-index-in-range-p array index)
-  :returns (component char-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable char-array-p
-                                       char-array-index-in-range-p))))
+  :returns (component char-value-p)
   :short "Read a component from a Java @('char') array."
-  (nth (int-value->int index) (char-array->components array))
-  :guard-hints (("Goal" :in-theory (enable char-array-p
-                                           char-array-index-in-range-p)))
+  (char-value-fix
+   (nth (int-value->int index) (char-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable char-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist char-value-list
@@ -294,16 +284,11 @@
 
 (define byte-array-read ((array byte-array-p) (index int-value-p))
   :guard (byte-array-index-in-range-p array index)
-  :returns (component byte-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable byte-array-p
-                                       byte-array-index-in-range-p))))
+  :returns (component byte-value-p)
   :short "Read a component from a Java @('byte') array."
-  (nth (int-value->int index) (byte-array->components array))
-  :guard-hints (("Goal" :in-theory (enable byte-array-p
-                                           byte-array-index-in-range-p)))
+  (byte-value-fix
+   (nth (int-value->int index) (byte-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable byte-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist byte-value-list
@@ -316,16 +301,11 @@
 
 (define short-array-read ((array short-array-p) (index int-value-p))
   :guard (short-array-index-in-range-p array index)
-  :returns (component short-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable short-array-p
-                                       short-array-index-in-range-p))))
+  :returns (component short-value-p)
   :short "Read a component from a Java @('short') array."
-  (nth (int-value->int index) (short-array->components array))
-  :guard-hints (("Goal" :in-theory (enable short-array-p
-                                           short-array-index-in-range-p)))
+  (short-value-fix
+   (nth (int-value->int index) (short-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable short-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist short-value-list
@@ -338,16 +318,11 @@
 
 (define int-array-read ((array int-array-p) (index int-value-p))
   :guard (int-array-index-in-range-p array index)
-  :returns (component int-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable int-array-p
-                                       int-array-index-in-range-p))))
+  :returns (component int-value-p)
   :short "Read a component from a Java @('int') array."
-  (nth (int-value->int index) (int-array->components array))
-  :guard-hints (("Goal" :in-theory (enable int-array-p
-                                           int-array-index-in-range-p)))
+  (int-value-fix
+   (nth (int-value->int index) (int-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable int-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist int-value-list
@@ -360,16 +335,11 @@
 
 (define long-array-read ((array long-array-p) (index int-value-p))
   :guard (long-array-index-in-range-p array index)
-  :returns (component long-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable long-array-p
-                                       long-array-index-in-range-p))))
+  :returns (component long-value-p)
   :short "Read a component from a Java @('long') array."
-  (nth (int-value->int index) (long-array->components array))
-  :guard-hints (("Goal" :in-theory (enable long-array-p
-                                           long-array-index-in-range-p)))
+  (long-value-fix
+   (nth (int-value->int index) (long-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable long-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist long-value-list
@@ -382,16 +352,11 @@
 
 (define float-array-read ((array float-array-p) (index int-value-p))
   :guard (float-array-index-in-range-p array index)
-  :returns (component float-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable float-array-p
-                                       float-array-index-in-range-p))))
+  :returns (component float-value-p)
   :short "Read a component from a Java @('float') array."
-  (nth (int-value->int index) (float-array->components array))
-  :guard-hints (("Goal" :in-theory (enable float-array-p
-                                           float-array-index-in-range-p)))
+  (float-value-fix
+   (nth (int-value->int index) (float-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable float-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist float-value-list
@@ -404,16 +369,11 @@
 
 (define double-array-read ((array double-array-p) (index int-value-p))
   :guard (double-array-index-in-range-p array index)
-  :returns (component double-value-p
-                      :hyp :guard
-                      :hints (("Goal"
-                               :in-theory
-                               (enable double-array-p
-                                       double-array-index-in-range-p))))
+  :returns (component double-value-p)
   :short "Read a component from a Java @('double') array."
-  (nth (int-value->int index) (double-array->components array))
-  :guard-hints (("Goal" :in-theory (enable double-array-p
-                                           double-array-index-in-range-p)))
+  (double-value-fix
+   (nth (int-value->int index) (double-array->components array)))
+  :guard-hints (("Goal" :in-theory (enable double-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/nth" :dir :system))
              ;; generates theorems about NTH:
              (local (fty::deflist double-value-list
@@ -428,8 +388,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('boolean') array."
   (int-value (len (boolean-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p
-                                           boolean-array->components
+  :guard-hints (("Goal" :in-theory (enable boolean-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -438,8 +397,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('char') array."
   (int-value (len (char-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable char-array-p
-                                           char-array->components
+  :guard-hints (("Goal" :in-theory (enable char-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -448,8 +406,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('byte') array."
   (int-value (len (byte-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable byte-array-p
-                                           byte-array->components
+  :guard-hints (("Goal" :in-theory (enable byte-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -458,8 +415,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('short') array."
   (int-value (len (short-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable short-array-p
-                                           short-array->components
+  :guard-hints (("Goal" :in-theory (enable short-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -468,8 +424,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('int') array."
   (int-value (len (int-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable int-array-p
-                                           int-array->components
+  :guard-hints (("Goal" :in-theory (enable int-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -478,8 +433,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('long') array."
   (int-value (len (long-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable long-array-p
-                                           long-array->components
+  :guard-hints (("Goal" :in-theory (enable long-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -488,8 +442,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('float') array."
   (int-value (len (float-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable float-array-p
-                                           float-array->components
+  :guard-hints (("Goal" :in-theory (enable float-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -498,8 +451,7 @@
   :returns (length int-value-p)
   :short "Obtain the length of a Java @('double') array."
   (int-value (len (double-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable double-array-p
-                                           double-array->components
+  :guard-hints (("Goal" :in-theory (enable double-array->components
                                            sbyte32p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -508,15 +460,12 @@
                              (index int-value-p)
                              (component boolean-value-p))
   :guard (boolean-array-index-in-range-p array index)
-  :returns (new-array boolean-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable boolean-array-p))))
+  :returns (new-array boolean-array-p)
   :short "Write a component to a Java @('boolean') array."
   (boolean-array (update-nth (int-value->int index)
                              component
                              (boolean-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p
-                                           boolean-array->components
+  :guard-hints (("Goal" :in-theory (enable boolean-array->components
                                            boolean-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -532,15 +481,12 @@
                           (index int-value-p)
                           (component char-value-p))
   :guard (char-array-index-in-range-p array index)
-  :returns (new-array char-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable char-array-p))))
+  :returns (new-array char-array-p)
   :short "Write a component to a Java @('char') array."
   (char-array (update-nth (int-value->int index)
                           component
                           (char-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable char-array-p
-                                           char-array->components
+  :guard-hints (("Goal" :in-theory (enable char-array->components
                                            char-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -556,15 +502,12 @@
                           (index int-value-p)
                           (component byte-value-p))
   :guard (byte-array-index-in-range-p array index)
-  :returns (new-array byte-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable byte-array-p))))
+  :returns (new-array byte-array-p)
   :short "Write a component to a Java @('byte') array."
   (byte-array (update-nth (int-value->int index)
                           component
                           (byte-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable byte-array-p
-                                           byte-array->components
+  :guard-hints (("Goal" :in-theory (enable byte-array->components
                                            byte-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -580,15 +523,12 @@
                            (index int-value-p)
                            (component short-value-p))
   :guard (short-array-index-in-range-p array index)
-  :returns (new-array short-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable short-array-p))))
+  :returns (new-array short-array-p)
   :short "Write a component to a Java @('short') array."
   (short-array (update-nth (int-value->int index)
                            component
                            (short-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable short-array-p
-                                           short-array->components
+  :guard-hints (("Goal" :in-theory (enable short-array->components
                                            short-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -604,15 +544,12 @@
                          (index int-value-p)
                          (component int-value-p))
   :guard (int-array-index-in-range-p array index)
-  :returns (new-array int-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable int-array-p))))
+  :returns (new-array int-array-p)
   :short "Write a component to a Java @('int') array."
   (int-array (update-nth (int-value->int index)
                          component
                          (int-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable int-array-p
-                                           int-array->components
+  :guard-hints (("Goal" :in-theory (enable int-array->components
                                            int-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -628,15 +565,12 @@
                           (index int-value-p)
                           (component long-value-p))
   :guard (long-array-index-in-range-p array index)
-  :returns (new-array long-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable long-array-p))))
+  :returns (new-array long-array-p)
   :short "Write a component to a Java @('long') array."
   (long-array (update-nth (int-value->int index)
                           component
                           (long-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable long-array-p
-                                           long-array->components
+  :guard-hints (("Goal" :in-theory (enable long-array->components
                                            long-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -652,15 +586,12 @@
                            (index int-value-p)
                            (component float-value-p))
   :guard (float-array-index-in-range-p array index)
-  :returns (new-array float-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable float-array-p))))
+  :returns (new-array float-array-p)
   :short "Write a component to a Java @('float') array."
   (float-array (update-nth (int-value->int index)
                            component
                            (float-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable float-array-p
-                                           float-array->components
+  :guard-hints (("Goal" :in-theory (enable float-array->components
                                            float-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -676,15 +607,12 @@
                             (index int-value-p)
                             (component double-value-p))
   :guard (double-array-index-in-range-p array index)
-  :returns (new-array double-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable double-array-p))))
+  :returns (new-array double-array-p)
   :short "Write a component to a Java @('double') array."
   (double-array (update-nth (int-value->int index)
                             component
                             (double-array->components array)))
-  :guard-hints (("Goal" :in-theory (enable double-array-p
-                                           double-array->components
+  :guard-hints (("Goal" :in-theory (enable double-array->components
                                            double-array-index-in-range-p)))
   :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
              ;; generates theorems about UPDATE-NTH:
@@ -698,8 +626,7 @@
 
 (define boolean-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array boolean-array-p
-                  :hints (("Goal" :in-theory (enable boolean-array-p))))
+  :returns (array boolean-array-p)
   :short "Construct a Java @('boolean') array with the given size
           and with @('false') as every component."
   (boolean-array (repeat (int-value->int length) (boolean-value nil)))
@@ -715,8 +642,7 @@
 
 (define char-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array char-array-p
-                  :hints (("Goal" :in-theory (enable char-array-p))))
+  :returns (array char-array-p)
   :short "Construct a Java @('char') array with the given size
           and with 0 as every component."
   (char-array (repeat (int-value->int length) (char-value 0)))
@@ -732,8 +658,7 @@
 
 (define byte-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array byte-array-p
-                  :hints (("Goal" :in-theory (enable byte-array-p))))
+  :returns (array byte-array-p)
   :short "Construct a Java @('byte') array with the given size
           and with 0 as every component."
   (byte-array (repeat (int-value->int length) (byte-value 0)))
@@ -749,8 +674,7 @@
 
 (define short-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array short-array-p
-                  :hints (("Goal" :in-theory (enable short-array-p))))
+  :returns (array short-array-p)
   :short "Construct a Java @('short') array with the given size
           and with 0 as every component."
   (short-array (repeat (int-value->int length) (short-value 0)))
@@ -766,8 +690,7 @@
 
 (define int-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array int-array-p
-                  :hints (("Goal" :in-theory (enable int-array-p))))
+  :returns (array int-array-p)
   :short "Construct a Java @('int') array with the given size
           and with 0 as every component."
   (int-array (repeat (int-value->int length) (int-value 0)))
@@ -783,8 +706,7 @@
 
 (define long-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array long-array-p
-                  :hints (("Goal" :in-theory (enable long-array-p))))
+  :returns (array long-array-p)
   :short "Construct a Java @('long') array with the given size
           and with 0 as every component."
   (long-array (repeat (int-value->int length) (long-value 0)))
@@ -800,8 +722,7 @@
 
 (define float-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array float-array-p
-                  :hints (("Goal" :in-theory (enable float-array-p))))
+  :returns (array float-array-p)
   :short "Construct a Java @('float') array with the given size
           and with positive 0 as every component."
   (float-array (repeat (int-value->int length)
@@ -818,8 +739,7 @@
 
 (define double-array-of-length ((length int-value-p))
   :guard (>= (int-value->int length) 0)
-  :returns (array double-array-p
-                  :hints (("Goal" :in-theory (enable double-array-p))))
+  :returns (array double-array-p)
   :short "Construct a Java @('double') array with the given size
           and with positive 0 as every component."
   (double-array (repeat (int-value->int length)

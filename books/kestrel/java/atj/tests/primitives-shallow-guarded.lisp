@@ -16,21 +16,37 @@
 
 ; Specialize the input and output types of the tested functions.
 
-;; boolean operations:
+; constructors:
+
+(java::atj-main-function-type test-boolean-value (:asymbol) :jboolean)
+
+(java::atj-main-function-type test-char-value (:ainteger) :jchar)
+
+(java::atj-main-function-type test-byte-value (:ainteger) :jbyte)
+
+(java::atj-main-function-type test-short-value (:ainteger) :jshort)
+
+(java::atj-main-function-type test-int-value (:ainteger) :jint)
+
+(java::atj-main-function-type test-long-value (:ainteger) :jlong)
+
+; deconstructors:
+
+(java::atj-main-function-type test-boolean-value->bool (:jboolean) :asymbol)
+
+(java::atj-main-function-type test-char-value->nat (:jchar) :ainteger)
+
+(java::atj-main-function-type test-byte-value->int (:jbyte) :ainteger)
+
+(java::atj-main-function-type test-short-value->int (:jshort) :ainteger)
+
+(java::atj-main-function-type test-int-value->int (:jint) :ainteger)
+
+(java::atj-main-function-type test-long-value->int (:jlong) :ainteger)
+
+; unary operations:
 
 (java::atj-main-function-type test-boolean-not (:jboolean) :jboolean)
-
-(java::atj-main-function-type test-boolean-and (:jboolean :jboolean) :jboolean)
-
-(java::atj-main-function-type test-boolean-xor (:jboolean :jboolean) :jboolean)
-
-(java::atj-main-function-type test-boolean-ior (:jboolean :jboolean) :jboolean)
-
-(java::atj-main-function-type test-boolean-eq (:jboolean :jboolean) :jboolean)
-
-(java::atj-main-function-type test-boolean-neq (:jboolean :jboolean) :jboolean)
-
-;; integer operations:
 
 (java::atj-main-function-type test-int-plus (:jint) :jint)
 
@@ -43,6 +59,18 @@
 (java::atj-main-function-type test-int-not (:jint) :jint)
 
 (java::atj-main-function-type test-long-not (:jlong) :jlong)
+
+; binary operations:
+
+(java::atj-main-function-type test-boolean-and (:jboolean :jboolean) :jboolean)
+
+(java::atj-main-function-type test-boolean-xor (:jboolean :jboolean) :jboolean)
+
+(java::atj-main-function-type test-boolean-ior (:jboolean :jboolean) :jboolean)
+
+(java::atj-main-function-type test-boolean-eq (:jboolean :jboolean) :jboolean)
+
+(java::atj-main-function-type test-boolean-neq (:jboolean :jboolean) :jboolean)
 
 (java::atj-main-function-type test-int-add (:jint :jint) :jint)
 
@@ -130,7 +158,7 @@
                               (:jboolean :jboolean :jboolean)
                               :jboolean)
 
-;; widening conversions:
+;; conversions:
 
 (java::atj-main-function-type test-byte-to-short (:jbyte) :jshort)
 
@@ -147,8 +175,6 @@
 (java::atj-main-function-type test-char-to-int (:jchar) :jint)
 
 (java::atj-main-function-type test-char-to-long (:jchar) :jlong)
-
-;; narrowing conversions:
 
 (java::atj-main-function-type test-short-to-byte (:jshort) :jbyte)
 
@@ -171,8 +197,6 @@
 (java::atj-main-function-type test-int-to-char (:jint) :jchar)
 
 (java::atj-main-function-type test-long-to-char (:jlong) :jchar)
-
-;; widening and narrowing conversions:
 
 (java::atj-main-function-type test-byte-to-char (:jbyte) :jchar)
 
@@ -208,18 +232,30 @@
 
 ; Generate Java code for the tested functions, with testing code.
 
-(java::atj test-boolean-not
-           test-boolean-and
-           test-boolean-xor
-           test-boolean-ior
-           test-boolean-eq
-           test-boolean-neq
+(java::atj test-boolean-value
+           test-char-value
+           test-byte-value
+           test-short-value
+           test-int-value
+           test-long-value
+           test-boolean-value->bool
+           test-char-value->nat
+           test-byte-value->int
+           test-short-value->int
+           test-int-value->int
+           test-long-value->int
+           test-boolean-not
            test-int-plus
            test-long-plus
            test-int-minus
            test-long-minus
            test-int-not
            test-long-not
+           test-boolean-and
+           test-boolean-xor
+           test-boolean-ior
+           test-boolean-eq
+           test-boolean-neq
            test-int-add
            test-long-add
            test-int-sub

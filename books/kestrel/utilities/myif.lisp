@@ -151,6 +151,22 @@
                (equal b x)))
   :hints (("Goal" :in-theory (enable myif))))
 
+(defthm equal-of-myif-arg1-safe
+  (implies (syntaxp (quotep x))
+           (equal (equal (myif test a b) x)
+                  (myif test
+                        (equal a x)
+                        (equal b x))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm equal-of-myif-arg2-safe
+  (implies (syntaxp (quotep x))
+           (equal (equal x (myif test a b))
+                  (myif test
+                        (equal x a)
+                        (equal x b))))
+  :hints (("Goal" :in-theory (enable myif))))
+
 (defthm equal-of-myifs-same-test
   (equal (equal (myif test a b) (myif test c d))
          (myif test (equal a c) (equal b d)))

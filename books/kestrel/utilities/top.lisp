@@ -58,7 +58,6 @@
 (include-book "strings/top")
 (include-book "sublis-expr-plus")
 (include-book "system/top")
-(include-book "testing")
 (include-book "trans-eval-error-triple")
 (include-book "true-list-listp-theorems")
 (include-book "typed-lists/top")

@@ -70,4 +70,33 @@ class Acl2StringTest {
         assertEquals(Acl2String.make("C:\\dir").toString(), "\"C:\\\\dir\"");
     }
 
+    @Test
+    void compareToStrings() { // compare alphabetically -- see ACL2's alphorder
+        assertTrue(Acl2String.EMPTY.compareTo(Acl2String.EMPTY) == 0);
+        assertTrue(Acl2String.ACL2.compareTo(Acl2String.ACL2) == 0);
+        assertTrue(Acl2String.make("ab&1 Op").
+                compareTo(Acl2String.make("ab&1 Op")) == 0);
+        assertTrue(Acl2String.make("abb").
+                compareTo(Acl2String.make("zuu")) < 0);
+        assertTrue(Acl2String.make("LONG").
+                compareTo(Acl2String.make("LONGer")) < 0);
+        assertTrue(Acl2String.EMPTY.compareTo(Acl2String.ACL2) < 0);
+        assertTrue(Acl2String.make("Later.").
+                compareTo(Acl2String.make("Earlier.")) > 0);
+        assertTrue(Acl2String.make("longER").
+                compareTo(Acl2String.make("long")) > 0);
+        assertTrue(Acl2String.ACL2.compareTo(Acl2String.EMPTY) > 0);
+    }
+
+    @Test
+    void compareToNumbers() { // strings come after -- see ACL2's alphorder
+        assertTrue(Acl2String.EMPTY.compareTo(Acl2Integer.ZERO) > 0);
+        assertTrue(Acl2String.make("any string").
+                compareTo(Acl2Integer.make(335)) > 0);
+        assertTrue(Acl2String.make("ABO").
+                compareTo(Acl2Rational.make(-2, 3)) > 0);
+        assertTrue(Acl2String.make("_-_-_").
+                compareTo(Acl2Number.make(0, 1)) > 0);
+    }
+
 }

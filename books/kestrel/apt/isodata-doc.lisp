@@ -12,7 +12,6 @@
 
 (include-book "kestrel/apt/utilities/xdoc-constructors" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "isodata")
 
 ; (depends-on "design-notes/isodata.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -109,7 +108,24 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form-auto isodata)
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     " (isodata old"
+     "          isomaps"
+     "          :predicate          ; default nil"
+     "          :new-name           ; default :auto"
+     "          :new-enable         ; default :auto"
+     "          :old-to-new-name    ; default from table"
+     "          :old-to-new-enable  ; default from table"
+     "          :new-to-old-name    ; default from table"
+     "          :new-to-old-enable  ; default from table"
+     "          :verify-guards      ; default :auto"
+     "          :untranslate        ; default :nice"
+     "          :hints              ; default nil"
+     "          :print              ; default :result"
+     "          :show-only          ; default nil"
+     "          :compatibility      ; default nil"
+     "          )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -365,17 +381,15 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-enable :never)
-
     (xdoc::desc
-     "@(':old-to-new') &mdash; default @('nil')"
+     "@(':old-to-new-name') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
      (xdoc::p
       "Determines the name of the theorem that
-       relates the old function to the new function:")
+       relates the old function to the new function.")
+     (xdoc::p
+      "It must be one of the following:")
      (xdoc::ul
-      (xdoc::li
-       "@('nil'), to use the value from the APT defaults table,
-        which is set via @(tsee set-default-input-old-to-new).")
       (xdoc::li
        "A keyword, to use as separator between
         the names of @('old') and @('new').
@@ -383,20 +397,43 @@
         in the same package as @('new').")
       (xdoc::li
        "A non-@('nil'), non-keyword symbol,
-        to use as the name of the theorem."))
+        to use as the name of the theorem.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-old-to-new-name)."))
      (xdoc::p
       "In the rest of this documentation page,
        let @('old-to-new') be the name of this theorem."))
 
     (xdoc::desc
-     "@(':new-to-old') &mdash; default @('nil')"
+     "@(':old-to-new-enable') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
      (xdoc::p
-      "Determines the name of the theorem that
-       relates the new function to the old function:")
+      "Determines whether @('old-to-new') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@('nil'), to use the value from the APT defaults table,
-        which is set via @(tsee set-default-input-new-to-old).")
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-old-to-new-enable)."))
+     (xdoc::p
+      "If @(':old-to-new-enable') is @('t'),
+       then @(':new-to-old-enable') must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
+
+    (xdoc::desc
+     "@(':new-to-old-name') &mdash; default @('nil')
+      default from <see topic='@(url defaults-table)'>table</see>"
+     (xdoc::p
+      "Determines the name of the theorem that
+       relates the new function to the old function.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
       (xdoc::li
        "A keyword, to use as separator between
         the names of @('new') and @('old').
@@ -404,10 +441,33 @@
         in the same package as @('new').")
       (xdoc::li
        "A non-@('nil'), non-keyword symbol,
-        to use as the name of the theorem."))
+        to use as the name of the theorem.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-new-to-old-name)."))
      (xdoc::p
       "In the rest of this documentation page,
        let @('new-to-old') be the name of this theorem."))
+
+    (xdoc::desc
+     "@(':new-to-old-enable') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
+     (xdoc::p
+      "Determines whether @('new-to-old') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-new-to-old-enable)."))
+     (xdoc::p
+      "If @(':new-to-old-enable') is @('t'),
+       then @(':old-to-new-enable') must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc-apt-input-verify-guards :never)
 
@@ -798,9 +858,7 @@
       "In the " *isodata-design-notes* ",
        @('new-to-old') is denoted by
        @($f'f$) when @(':predicate') is @('nil'),
-       and @($'pp$) when @(':predicate') is @('t').")
-     (xdoc::p
-      "This theorem is disabled by default."))
+       and @($'pp$) when @(':predicate') is @('t')."))
 
     (xdoc::desc
      "@('old-to-new')"

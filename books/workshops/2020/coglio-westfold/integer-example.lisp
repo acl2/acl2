@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/apt/isodata" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "workshops/2017/coglio-kaufmann-smith/support/simplify-defun" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
@@ -246,72 +247,74 @@
                              int32)))
               :untranslate t)
 
-; This is the (redundant) result,
+; This is the result,
 ; which adds an INT32 conversion in front of each transformed variable
 ; (excluding the initial wrapping test added by ISODATA),
 ; and also adds an INT conversion in front of each recursive call arguments
 ; (excluding the SCREEN argument, which is not transformed).
 ; Note the terms (INT (INT32 ...)), amenable to simplification.
 
-(DEFUN DRAWLINE-LOOP{1} (A B X Y D SCREEN)
-  (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
-                  :MEASURE (NFIX (BINARY-+ (BINARY-+ '1 (INT (INT32 A)))
-                                           (UNARY-- (INT (INT32 X)))))
-                  :RULER-EXTENDERS :ALL
-                  :GUARD (AND (SIGNED-BYTE-P 32 A)
-                              (SIGNED-BYTE-P 32 B)
-                              (SIGNED-BYTE-P 32 X)
-                              (SIGNED-BYTE-P 32 Y)
-                              (SIGNED-BYTE-P 32 D)
-                              (INVARIANT (INT32 A)
-                                         (INT32 B)
-                                         (INT32 X)
-                                         (INT32 Y)
-                                         (INT32 D)))
-                  :VERIFY-GUARDS T))
-  (IF
-   (MBT$ (AND (SIGNED-BYTE-P 32 A)
-              (SIGNED-BYTE-P 32 B)
-              (SIGNED-BYTE-P 32 X)
-              (SIGNED-BYTE-P 32 Y)
-              (SIGNED-BYTE-P 32 D)))
+(must-be-redundant
+ (DEFUN DRAWLINE-LOOP{1} (A B X Y D SCREEN)
+   (DECLARE (XARGS :WELL-FOUNDED-RELATION O<
+                   :MEASURE (NFIX (BINARY-+ (BINARY-+ '1 (INT (INT32 A)))
+                                            (UNARY-- (INT (INT32 X)))))
+                   :RULER-EXTENDERS :ALL
+                   :GUARD (AND (SIGNED-BYTE-P 32 A)
+                               (SIGNED-BYTE-P 32 B)
+                               (SIGNED-BYTE-P 32 X)
+                               (SIGNED-BYTE-P 32 Y)
+                               (SIGNED-BYTE-P 32 D)
+                               (INVARIANT (INT32 A)
+                                          (INT32 B)
+                                          (INT32 X)
+                                          (INT32 Y)
+                                          (INT32 D)))
+                   :VERIFY-GUARDS T))
    (IF
-    (INVARIANT (INT32 A)
-               (INT32 B)
-               (INT32 X)
-               (INT32 Y)
-               (INT32 D))
-    (IF (NOT (LTE32 (INT32 X) (INT32 A)))
-        SCREEN
-        (DRAWLINE-LOOP{1} (INT (INT32 A))
-                          (INT (INT32 B))
-                          (INT (ADD32 (INT32 X) (INT32 1)))
-                          (INT (IF (GTE32 (INT32 D) (INT32 0))
-                                   (ADD32 (INT32 Y) (INT32 1))
-                                   (INT32 Y)))
-                          (INT (IF (GTE32 (INT32 D) (INT32 0))
-                                   (ADD32 (INT32 D)
-                                          (MUL32 (INT32 2)
-                                                 (SUB32 (INT32 B) (INT32 A))))
-                                   (ADD32 (INT32 D)
-                                          (MUL32 (INT32 2) (INT32 B)))))
-                          (DRAWPOINT (INT32 X) (INT32 Y) SCREEN)))
-    :UNDEFINED)
-   NIL))
+    (MBT$ (AND (SIGNED-BYTE-P 32 A)
+               (SIGNED-BYTE-P 32 B)
+               (SIGNED-BYTE-P 32 X)
+               (SIGNED-BYTE-P 32 Y)
+               (SIGNED-BYTE-P 32 D)))
+    (IF
+     (INVARIANT (INT32 A)
+                (INT32 B)
+                (INT32 X)
+                (INT32 Y)
+                (INT32 D))
+     (IF (NOT (LTE32 (INT32 X) (INT32 A)))
+         SCREEN
+         (DRAWLINE-LOOP{1} (INT (INT32 A))
+                           (INT (INT32 B))
+                           (INT (ADD32 (INT32 X) (INT32 1)))
+                           (INT (IF (GTE32 (INT32 D) (INT32 0))
+                                    (ADD32 (INT32 Y) (INT32 1))
+                                    (INT32 Y)))
+                           (INT (IF (GTE32 (INT32 D) (INT32 0))
+                                    (ADD32 (INT32 D)
+                                           (MUL32 (INT32 2)
+                                                  (SUB32 (INT32 B) (INT32 A))))
+                                    (ADD32 (INT32 D)
+                                           (MUL32 (INT32 2) (INT32 B)))))
+                           (DRAWPOINT (INT32 X) (INT32 Y) SCREEN)))
+     :UNDEFINED)
+    NIL)))
 
-(DEFTHM DRAWLINE-LOOP-~>-DRAWLINE-LOOP{1}
-  (IMPLIES (AND (INT32P A)
-                (INT32P B)
-                (INT32P X)
-                (INT32P Y)
-                (INT32P D))
-           (EQUAL (DRAWLINE-LOOP A B X Y D SCREEN)
-                  (DRAWLINE-LOOP{1} (INT A)
-                                    (INT B)
-                                    (INT X)
-                                    (INT Y)
-                                    (INT D)
-                                    SCREEN))))
+(must-be-redundant
+ (DEFTHM DRAWLINE-LOOP-TO-DRAWLINE-LOOP{1}
+   (IMPLIES (AND (INT32P A)
+                 (INT32P B)
+                 (INT32P X)
+                 (INT32P Y)
+                 (INT32P D))
+            (EQUAL (DRAWLINE-LOOP A B X Y D SCREEN)
+                   (DRAWLINE-LOOP{1} (INT A)
+                                     (INT B)
+                                     (INT X)
+                                     (INT Y)
+                                     (INT D)
+                                     SCREEN)))))
 
 ; Now we apply the operations' rewrite rules,
 ; and we also simplify the terms (INT (INT32 ...)),
@@ -320,68 +323,70 @@
 (simplify-defun drawline-loop{1}
                 :enable (int32-ops-to-int-ops
                          int-of-if)
-                :theorem-name drawline-loop{1}-~>-drawline-loop{2})
+                :theorem-name drawline-loop{1}-to-drawline-loop{2})
 
-; This is the (redundant) result, whose body,
+; This is the result, whose body,
 ; except for the DRAWPOINT call
 ; (which could be transformed separately in a more full-fledged example),
 ; no longer uses the bounded integer types or operations.
 
-(DEFUN DRAWLINE-LOOP{2} (A B X Y D SCREEN)
-  (DECLARE
-   (XARGS
-    :NORMALIZE NIL
-    :RULER-EXTENDERS :ALL
-    :GUARD (AND (SIGNED-BYTE-P 32 A)
-                (SIGNED-BYTE-P 32 B)
-                (SIGNED-BYTE-P 32 X)
-                (SIGNED-BYTE-P 32 Y)
-                (SIGNED-BYTE-P 32 D)
-                (INVARIANT (INT32 A)
-                           (INT32 B)
-                           (INT32 X)
-                           (INT32 Y)
-                           (INT32 D)))
-    :MEASURE (NFIX (+ (+ 1 (INT (INT32 A)))
-                      (- (INT (INT32 X)))))))
-  (IF (AND (AND (INTEGERP A)
-                (NOT (< A -2147483648))
-                (< A 2147483648))
-           (AND (INTEGERP B)
-                (NOT (< B -2147483648))
-                (< B 2147483648))
-           (AND (INTEGERP X)
-                (NOT (< X -2147483648))
-                (< X 2147483648))
-           (AND (INTEGERP Y)
-                (NOT (< Y -2147483648))
-                (< Y 2147483648))
-           (INTEGERP D)
-           (NOT (< D -2147483648))
-           (< D 2147483648))
-      (IF (AND (AND (NOT (< B 0))
-                    (NOT (< A B))
-                    (NOT (< 1000000 A)))
-               (NOT (< X 0))
-               (NOT (< (+ 1 A) X))
-               (NOT (< Y 0))
-               (NOT (< X Y))
-               (NOT (< D -2000000))
-               (NOT (< 2000000 D)))
-          (IF (< A X)
-              SCREEN
-              (DRAWLINE-LOOP{2} A B (+ 1 X)
-                                (IF (< D 0) Y (+ 1 Y))
-                                (IF (< D 0)
-                                    (+ D (* 2 B))
-                                    (+ D (- (* 2 A)) (* 2 B)))
-                                (DRAWPOINT (INT32 X) (INT32 Y) SCREEN)))
-          :UNDEFINED)
-      NIL))
+(must-be-redundant
+ (DEFUN DRAWLINE-LOOP{2} (A B X Y D SCREEN)
+   (DECLARE
+    (XARGS
+     :NORMALIZE NIL
+     :RULER-EXTENDERS :ALL
+     :GUARD (AND (SIGNED-BYTE-P 32 A)
+                 (SIGNED-BYTE-P 32 B)
+                 (SIGNED-BYTE-P 32 X)
+                 (SIGNED-BYTE-P 32 Y)
+                 (SIGNED-BYTE-P 32 D)
+                 (INVARIANT (INT32 A)
+                            (INT32 B)
+                            (INT32 X)
+                            (INT32 Y)
+                            (INT32 D)))
+     :MEASURE (NFIX (+ (+ 1 (INT (INT32 A)))
+                       (- (INT (INT32 X)))))))
+   (IF (AND (AND (INTEGERP A)
+                 (NOT (< A -2147483648))
+                 (< A 2147483648))
+            (AND (INTEGERP B)
+                 (NOT (< B -2147483648))
+                 (< B 2147483648))
+            (AND (INTEGERP X)
+                 (NOT (< X -2147483648))
+                 (< X 2147483648))
+            (AND (INTEGERP Y)
+                 (NOT (< Y -2147483648))
+                 (< Y 2147483648))
+            (INTEGERP D)
+            (NOT (< D -2147483648))
+            (< D 2147483648))
+       (IF (AND (AND (NOT (< B 0))
+                     (NOT (< A B))
+                     (NOT (< 1000000 A)))
+                (NOT (< X 0))
+                (NOT (< (+ 1 A) X))
+                (NOT (< Y 0))
+                (NOT (< X Y))
+                (NOT (< D -2000000))
+                (NOT (< 2000000 D)))
+           (IF (< A X)
+               SCREEN
+               (DRAWLINE-LOOP{2} A B (+ 1 X)
+                                 (IF (< D 0) Y (+ 1 Y))
+                                 (IF (< D 0)
+                                     (+ D (* 2 B))
+                                     (+ D (- (* 2 A)) (* 2 B)))
+                                 (DRAWPOINT (INT32 X) (INT32 Y) SCREEN)))
+           :UNDEFINED)
+       NIL)))
 
-(DEFTHM DRAWLINE-LOOP{1}-~>-DRAWLINE-LOOP{2}
-  (EQUAL (DRAWLINE-LOOP{1} A B X Y D SCREEN)
-         (DRAWLINE-LOOP{2} A B X Y D SCREEN)))
+(must-be-redundant
+ (DEFTHM DRAWLINE-LOOP{1}-TO-DRAWLINE-LOOP{2}
+   (EQUAL (DRAWLINE-LOOP{1} A B X Y D SCREEN)
+          (DRAWLINE-LOOP{2} A B X Y D SCREEN))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,68 +401,74 @@
                        int
                        int32))))
 
-; This is the (redundant) result,
+; This is the result,
 ; which adds an INT32 conversion in front of each transformed variable
 ; (excluding the initial wrapping test added by ISODATA).
 ; There are no recursive calls here.
 
-(DEFUN DRAWLINE{1} (A B SCREEN)
-  (DECLARE (XARGS :GUARD (AND (SIGNED-BYTE-P 32 A)
-                              (SIGNED-BYTE-P 32 B)
-                              (PRECONDITION (INT32 A) (INT32 B)))
-                  :VERIFY-GUARDS T))
-  (IF (MBT$ (AND (SIGNED-BYTE-P 32 A)
-                 (SIGNED-BYTE-P 32 B)))
-      (IF (PRECONDITION (INT32 A) (INT32 B))
-          (DRAWLINE-LOOP (INT32 A)
-                         (INT32 B)
-                         (INT32 0)
-                         (INT32 0)
-                         (SUB32 (MUL32 (INT32 2) (INT32 B))
-                                (INT32 A))
-                         SCREEN)
-          :UNDEFINED)
-      NIL))
+(must-be-redundant
+ (DEFUN DRAWLINE{1} (A B SCREEN)
+   (DECLARE (XARGS :GUARD (AND (SIGNED-BYTE-P 32 A)
+                               (SIGNED-BYTE-P 32 B)
+                               (PRECONDITION (INT32 A) (INT32 B)))
+                   :VERIFY-GUARDS T))
+   (IF (MBT$ (AND (SIGNED-BYTE-P 32 A)
+                  (SIGNED-BYTE-P 32 B)))
+       (IF (PRECONDITION (INT32 A) (INT32 B))
+           (DRAWLINE-LOOP (INT32 A)
+                          (INT32 B)
+                          (INT32 0)
+                          (INT32 0)
+                          (SUB32 (MUL32 (INT32 2) (INT32 B))
+                                 (INT32 A))
+                          SCREEN)
+           :UNDEFINED)
+       NIL)))
 
-(DEFTHM DRAWLINE-~>-DRAWLINE{1}
-  (IMPLIES (AND (INT32P A) (INT32P B))
-           (EQUAL (DRAWLINE A B SCREEN)
-                  (DRAWLINE{1} (INT A) (INT B) SCREEN))))
+(must-be-redundant
+ (DEFTHM DRAWLINE-TO-DRAWLINE{1}
+   (IMPLIES (AND (INT32P A) (INT32P B))
+            (EQUAL (DRAWLINE A B SCREEN)
+                   (DRAWLINE{1} (INT A) (INT B) SCREEN)))))
 
 ; Now we apply the operations' rewrite rules,
 ; and we also simplify the terms (INT (INT32 ...))
 ; that are temporarily produced by the operations' rewrite rules.
-; The application of DRAWLINE-LOOP-~>-DRAWLINE-LOOP{1}
+; The application of DRAWLINE-LOOP-TO-DRAWLINE-LOOP{1}
 ; also temporarily introduces terms (INT (INT32 ...)) here.
 
 (simplify-defun drawline{1}
-                :enable (int32-ops-to-int-ops int-of-if)
-                :theorem-name drawline{1}-~>-drawline{2})
+                :enable (int32-ops-to-int-ops
+                         int-of-if
+                         drawline-loop-to-drawline-loop{1})
+                :theorem-name drawline{1}-to-drawline{2})
 
-; This is the (redundant) result, whose body
+; This is the result, whose body
 ; no longer uses the bounded integer types or operations.
 
-(DEFUN DRAWLINE{2} (A B SCREEN)
-  (DECLARE
-   (XARGS
-    :NORMALIZE NIL
-    :GUARD (AND (SIGNED-BYTE-P 32 A)
-                (SIGNED-BYTE-P 32 B)
-                (PRECONDITION (INT32 A) (INT32 B)))))
-  (IF (AND (AND (INTEGERP A)
-                (NOT (< A -2147483648))
-                (< A 2147483648))
-           (INTEGERP B)
-           (NOT (< B -2147483648))
-           (< B 2147483648))
-      (IF (AND (NOT (< B 0))
-               (NOT (< A B))
-               (NOT (< 1000000 A)))
-          (DRAWLINE-LOOP{2} A B 0 0 (+ (- A) (* 2 B))
-                            SCREEN)
-          :UNDEFINED)
-      NIL))
+(must-be-redundant
+ (DEFUN DRAWLINE{2} (A B SCREEN)
+   (DECLARE
+    (XARGS
+     :NORMALIZE NIL
+     :GUARD (AND (SIGNED-BYTE-P 32 A)
+                 (SIGNED-BYTE-P 32 B)
+                 (PRECONDITION (INT32 A) (INT32 B)))))
+   (IF (AND (AND (INTEGERP A)
+                 (NOT (< A -2147483648))
+                 (< A 2147483648))
+            (INTEGERP B)
+            (NOT (< B -2147483648))
+            (< B 2147483648))
+       (IF (AND (NOT (< B 0))
+                (NOT (< A B))
+                (NOT (< 1000000 A)))
+           (DRAWLINE-LOOP{2} A B 0 0 (+ (- A) (* 2 B))
+                             SCREEN)
+           :UNDEFINED)
+       NIL)))
 
-(DEFTHM DRAWLINE{1}-~>-DRAWLINE{2}
-  (EQUAL (DRAWLINE{1} A B SCREEN)
-         (DRAWLINE{2} A B SCREEN)))
+(must-be-redundant
+ (DEFTHM DRAWLINE{1}-TO-DRAWLINE{2}
+   (EQUAL (DRAWLINE{1} A B SCREEN)
+          (DRAWLINE{2} A B SCREEN))))

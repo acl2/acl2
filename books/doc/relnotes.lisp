@@ -54,13 +54,8 @@
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
 
-; Please note:
-;
-;  - Jared often has uncommitted edits to this file.  Please coordinate with
-;    him before editing these topics!
-;
-;  - Book release notes are typically very disorganized.  This shouldn't be
-;    considered a bug until we are very close to a release.
+; Book release notes are sometimes disorganized.
+; They are often cleaned up before a release.
 
 ; Starting with Version 7.3, we no longer maintain release notes
 ; note-x-x-books.  Instead, we hope that the ACL2 Community will track
@@ -87,8 +82,8 @@
 (defxdoc note-8-4-books
 
 ; Please add information about your library in the appropriate
-; category below --- the category title is enclosed in <h3>..</h3>
-; tags (of course, feel free to add a new category if needed).  To
+; category below --- the category title is enclosed in (xdoc::h3 ...)
+; (of course, feel free to add a new category if needed).  To
 ; ensure consistency with the style of previous book release doc
 ; topics, please follow the following convention:
 
@@ -96,6 +91,9 @@
 ;  (xdoc::p "Details go here.")
 
 ; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; You can also use (xdoc::h5 ...) under each h4, e.g. for sub-libraries:
+; There is no need to order the h5's alphabetically,
+; but please precede each h5 by 20 semicolons.
 ; If you are stuck, see the entries about other libraries.
 
   :parents (note-8-4 release-notes-books)
@@ -115,8 +113,7 @@
     "See also @(see note-8-4) for the changes made to ACL2 itself.
      For additional details,
      you may also see the raw "
-    (xdoc::a :href "https://github.com/acl2/acl2/commits/master"
-      "commit log")
+    (xdoc::ahref "https://github.com/acl2/acl2/commits/master" "commit log")
     ".")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -126,6 +123,104 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
+
+   (xdoc::p
+    "An " (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+    " has been added, analogous to the "
+    (xdoc::seetopic "acl2-defaults-table" "ACL2 defaults table")
+    " but specific to APT.
+     Utilities to set and retrieve certain defaults have also been added.")
+
+   (xdoc::p
+    "The @(tsee apt::isodata) transformation has been improved as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "The @(':thm-name') input has been replaced
+      with a new @(':old-to-new-name') input,
+      which, when absent, is taken from the APT defaults table.")
+    (xdoc::li
+     "The @(':thm-enable') input has been replaced
+      with a new @(':old-to-new-enable') input,
+      which, when absent, is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-name') input has been added
+      to specify the name of the theorem @('new-to-old')
+      that rewrites calls of the new functions
+      to terms involving calls of the old function.
+      This theorem is now generated along with the converse one.
+      If the @(':new-to-old-name') input is absent,
+      it is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-enable') input has been added
+      to specify whether the @('new-to-old') theorem should be enabled or not.
+      If this input is absent, it is taken from the APT defaults table."))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "event-macros" "Event Macros Library"))
+
+   (xdoc::p
+    "The utilities
+     @(tsee cw-event),
+     @(tsee fail-event),
+     @(tsee make-event-terse), and
+     @(tsee try-event)
+     have been moved here
+     from @('[books]/kestrel/utilities/user-interface.lisp').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
+
+   (xdoc::p
+    "A new macro @(tsee fty::defbyte-ihs-theorems) has been added
+     to generate theorems about fixtypes introduced via @(tsee fty::defbyte)
+     and functions in the " (xdoc::seetopic "ihs" "IHS") " library.
+     This macro has been used to generate, and make available,
+     these theorems for some of the "
+     (xdoc::seetopic "fty::defbyte-standard-instances"
+                     "@('fty::defbyte') standard instances")
+     ".")
+
+   (xdoc::p
+    "More "
+    (xdoc::seetopic "fty::defbyte-standard-instances"
+                    "@('fty::defbyte') standard instances")
+    " have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "java::aij"
+                             "AIJ, the Deep Embedding of ACL2 into Java"))
+
+   (xdoc::p
+    "More " (xdoc::ahref "https://junit.org" "JUnit")
+    " unit tests have been added,
+     integrated with the IntelliJ IDEA project.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "java::atj"
+                             "ATJ, the Java Code Generator for ACL2"))
+
+   (xdoc::p
+    "Support has been added to
+     recognize ACL2 functions that model Java primitive array deconstructions
+     and translate them to Java code that converts the arrays to ACL2 lists.")
+
+   (xdoc::p
+    "A new post-translation step has been added
+     to ``inline'' (in a suitable sense) the calls of the array write methods
+     that are generated by the translation step.
+     This makes the generated Java code more idiomatic.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2472,7 +2567,7 @@
  <h3>Testing</h3>
 
  <p>The documentation topics for testing have been reorganized, with
- introduction of a new topic, @(see kestrel-testing-utilities), as a parent of
+ introduction of a new topic, @('kestrel-testing-utilities'), as a parent of
  the testing utilities that are part of the @(see kestrel-books), so that now
  the topic @(see testing-utilities) is the top-level topic for the testing
  utilities.</p>
