@@ -148,8 +148,19 @@ functions."
     :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
 
   (defcong list-equiv equal (string-append-lst x) 1
-    :hints(("Goal" :induct (cdr-cdr-induct x x-equiv)))))
+    :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
 
+  (defcong list-equiv equal (assoc-equal x l) 2
+    :hints(("Goal" :induct (cdr-cdr-induct l l-equiv))))
+
+  (defcong list-equiv equal (strip-cars x) 1
+    :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
+
+  (defcong list-equiv equal (remove-assoc-equal x l) 2
+    :hints(("Goal" :induct (cdr-cdr-induct l l-equiv))))
+
+  (defcong list-equiv list-equiv (put-assoc-equal name val alist) 3
+    :hints(("Goal" :induct (cdr-cdr-induct alist alist-equiv)))))
 
 (defsection list-equiv-reductions
   :parents (list-equiv)
@@ -166,4 +177,3 @@ functions."
    (defthm list-equiv-of-revappend-and-revappend
      (equal (list-equiv (revappend a x) (revappend a y))
             (list-equiv x y))))
-
