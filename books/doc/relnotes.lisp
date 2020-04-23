@@ -156,8 +156,25 @@
       it is taken from the APT defaults table.")
     (xdoc::li
      "A new @(':new-to-old-enable') input has been added
-      to specify whether the @('new-to-old') theorem should be enabled or not.
-      If this input is absent, it is taken from the APT defaults table."))
+      to specify whether the @('new-to-old') theorem is enabled or not.
+      If this input is absent, it is taken from the APT defaults table.")
+    (xdoc::li
+     "The @('newp-of-new') theorem,
+      which asserts that the new function maps
+      arguments in the new representation to results in the new representation,
+      is now generated not only locally to support some generated proofs,
+      but also non-locally, so that it remains in the ACL2 history.
+      This theorem is only generated if some result is being transformed.")
+    (xdoc::li
+     "A new @(':newp-of-new-name') input has been added
+      to specify the name fo the @('newp-of-new') theorem.
+      This input is allowed only if some result is being transformed,
+      because otherwise no @('newp-of-new') theorems is generated.")
+    (xdoc::li
+     "A new @(':newp-of-new-enable') input has been added
+      to specify whether the @('newp-of-new') theorem is enabled or not.
+      This input is allowed only if some result is being transformed,
+      because otherwise no @('newp-of-new') theorems is generated."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
