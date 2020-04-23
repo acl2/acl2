@@ -227,7 +227,7 @@
       flatten
       impliez
       v
-      
+
       => ;sig
       _  ;range
 
@@ -236,6 +236,11 @@
       <<
       lexp
 
+      tshell-ensure
+      tshell-call
+      tshell-start
+      tshell-run-background
+      
       enable*
       disable*
       e/d*
