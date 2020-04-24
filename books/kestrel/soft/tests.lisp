@@ -11,7 +11,11 @@
 (in-package "ACL2")
 
 (include-book "implementation")
-(include-book "kestrel/utilities/testing" :dir :system)
+
+(include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 (include-book "kestrel/std/system/theorem-namep" :dir :system)
 

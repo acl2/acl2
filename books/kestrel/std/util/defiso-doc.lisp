@@ -26,7 +26,7 @@
 
 (defxdoc defiso
 
-  :parents (std/util-extensions std/util)
+  :parents (std::std/util-extensions std/util)
 
   :short "Establish an isomorphic mapping between two domains."
 
@@ -39,10 +39,11 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "Two domains (i.e. predicates) @($A$) and @($B$) are isomorphic iff
-      there exist mutually inverse isomorphisms @($\\alpha$) and @($\\beta$)
-      between the two domains.
-      The domains and isomorphisms are illustrated in these "
+     "An isomorphic mapping between two domains (i.e. predicates)
+      @($A$) and @($B$)
+      consists of two mutually inverse conversions (i.e. functions)
+      @($\\alpha$) and @($\\beta$).
+      The domains and conversions are illustrated in these "
      *defiso-design-notes*
      ", which use this "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "notation")
@@ -50,24 +51,24 @@
 
     (xdoc::p
      "This macro attempts to verify that
-      two specified domains are isomorphic,
-      using two specified functions as the mutually inverse isomorphisms.
+      two specified conversions are mutually inverse isomorphisms
+      between two specified domains.
       The verification amounts to
       proving the applicability conditions below as theorems,
       from which additional theorems are automatically proved.")
 
     (xdoc::p
-     "The domains, isomorphisms, and theorems
+     "The domains, conversions, and theorems
       are recorded in the ACL2 @(see world),
       under a specified name that can be referenced from other tools
       (e.g. " (xdoc::seetopic "apt::apt" "APT") " transformations).")
 
     (xdoc::p
      "The domains may have multiple arguments,
-      and the isomorphisms may have multiple arguments and results.
+      and the conversions may have multiple arguments and results.
       In this case, the domains are subsets of
       cartesian products of the ACL2 universe of values,
-      and the isomorphisms map tuples to tuples,
+      and the conversions map tuples to tuples,
       as shown in the design notes."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,7 +82,7 @@
     (xdoc::desc
      "@('name')"
      (xdoc::p
-      "Name under which the domains, isomorphisms, and theorems
+      "Name under which the domains, conversions, and theorems
        are recorded in the world.")
      (xdoc::p
       "It must be a symbol that is not a keyword."))
@@ -96,8 +97,8 @@
       "Denote
        the domain @($A$),
        the domain @($B$),
-       the isomorphism @($\\alpha$) from @($A$) to @($B$), and
-       the isomorphism @($\\beta$) from @($B$) to @($A$).")
+       the conversion @($\\alpha$) from @($A$) to @($B$), and
+       the conversion @($\\beta$) from @($B$) to @($A$).")
      (xdoc::evmac-desc-function/lambda/macro
       :subject "Each"
       :guard "the @(':guard-thms') input is @('t')")
@@ -163,7 +164,7 @@
      ":alpha-image"
      (xdoc::&&
       (xdoc::p
-       "The isomorphism @($\\alpha$) maps
+       "The conversion @($\\alpha$) maps
         the domain @($A$) to the domain @($B$):")
       (xdoc::codeblock
        ";; when m = 1:"
@@ -181,7 +182,7 @@
      ":beta-image"
      (xdoc::&&
       (xdoc::p
-       "The isomorphism @($\\beta$) maps
+       "The conversion @($\\beta$) maps
         the domain @($B$) to the domain @($A$):")
       (xdoc::codeblock
        ";; when n = 1:"
@@ -199,8 +200,8 @@
      ":beta-of-alpha"
      (xdoc::&&
       (xdoc::p
-       "The isomorphism @($\\beta$) is left inverse of
-        the isomorphism @($\\alpha$):")
+       "The conversion @($\\beta$) is left inverse of
+        the conversion @($\\alpha$):")
       (xdoc::codeblock
        ";; when m = n = 1 and :unconditional is nil:"
        "(implies (doma a)"
@@ -256,8 +257,8 @@
      ":alpha-of-beta"
      (xdoc::&&
       (xdoc::p
-       "The isomorphism @($\\alpha$) is left inverse of
-        the isomorphism @($\\beta$):")
+       "The conversion @($\\alpha$) is left inverse of
+        the conversion @($\\beta$):")
       (xdoc::codeblock
        ";; when n = m = 1 and :unconditional is nil:"
        "(implies (domb b)"
@@ -311,7 +312,7 @@
 
     (xdoc::p
      "The @(':beta-image') and @(':alpha-of-beta') theorems
-      imply that the isomorphism @($\\alpha$)
+      imply that the conversion @($\\alpha$)
       is surjective over the domain @($B$):
       for every @('(b1 ... bm)') in @('domb')
       there is a @('(a1 ... an)') in @('doma'),
@@ -323,7 +324,7 @@
 
     (xdoc::p
      "The @(':alpha-image') and @(':beta-of-alpha') theorems
-      imply that the isomorphism @($\\beta$)
+      imply that the conversion @($\\beta$)
       is surjective over the domain @($A$):
       for every @('(a1 ... an)') in @('doma')
       there is a @('(b1 ... bm)') in @('domb'),
@@ -371,7 +372,7 @@
      ":alpha-guard"
      (xdoc::&&
       (xdoc::p
-       "The isomorphism @($\\alpha$) is well-defined
+       "The conversion @($\\alpha$) is well-defined
         at least over the domain @($A$):")
       (xdoc::codeblock
        "(implies (doma a1 ... an)"
@@ -390,7 +391,7 @@
      ":beta-guard"
      (xdoc::&&
       (xdoc::p
-       "The isomorphism @($\\beta$) is well-defined
+       "The conversion @($\\beta$) is well-defined
         at least over the domain @($B$):")
       (xdoc::codeblock
        "(implies (domb b1 ... bm)"
@@ -440,7 +441,7 @@
     (xdoc::desc
      "@(':alpha-injective')"
      (xdoc::p
-      "The isomorphism @($\\alpha$) is injective:")
+      "The conversion @($\\alpha$) is injective:")
      (xdoc::codeblock
       ";; when :unconditional is nil:"
       "(defthmr name.alpha-injective"
@@ -470,7 +471,7 @@
     (xdoc::desc
      "@(':beta-injective')"
      (xdoc::p
-      "The isomorphism @($\\beta$)
+      "The conversion @($\\beta$)
        is injective over the domain @($B$):")
      (xdoc::codeblock
       ";; when :unconditional is nil:"

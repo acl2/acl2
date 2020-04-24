@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -205,7 +205,7 @@
 ; a successful build and used it for (profile 'rewrite) followed by
 ; :mini-proveall and then (memsum), on top of both SBCL 1.1.11 and SBCL 1.4.7.
 
-       (not (ignore-errors (sb-vm::%read-cycle-counter)))
+       (ignore-errors (sb-vm::%read-cycle-counter))
    (pushnew :RDTSC *features*)))
 
 #+rdtsc

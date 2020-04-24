@@ -49,8 +49,10 @@
   :short "Compilation from (sized) @(see vl::vl) expressions into @(see
 sv::svex) expressions."
 
-  :long "<p>The top-level function for converting a VL expression into a @(see
-sv::svex) expression is @(see vl-expr-to-svex).</p>
+  :long "<p>There are several top-level functions for converting a VL
+expression into a @(see sv::svex) expression, including @(see
+vl-expr-to-svex-untyped), @(see vl-expr-to-svex-selfdet), and @(see
+vl-expr-to-svex-maybe-typed).</p>
 
 <p>We assume that the expressions we are dealing with are sized.</p>
 
@@ -197,7 +199,6 @@ would therefore incur some overhead.</p>")
                    (vl-bitlist->offset (cdr x)))))
 
 (define vl-bitlist->4vec ((msb-bits vl-bitlist-p))
-  :parents (vl-expr-to-svex)
   :short "Turn a vl-bitlist into a 4vec.  Assumes msb-first ordering, such as in a vl-weirdint."
   :returns (val sv::4vec-p)
   (let ((lsb-bits (rev (vl-bitlist-fix msb-bits))))
@@ -210,7 +211,6 @@ would therefore incur some overhead.</p>")
 (define svex-extend ((type vl-exprsign-p)
                      (width natp)
                      (x sv::svex-p))
-  :parents (vl-expr-to-svex)
   :short "Returns an svex representing the sign- or zero-extension of x at the given width."
 
   :long "<p>We don't have to extend/truncate operands when translating VL
@@ -2928,7 +2928,7 @@ the way.</li>
 
 
 (fty::defflexsum vttree
-  :parents (vl-expr-to-svex)
+  :parents (vl-expr-svex-translation)
   :short "A data structure for collecting warnings and constraints
           while translating VL expressions to svex expressions."
   :long "<p>Similar to ACL2's ttrees. A vttree is either nil, a warninglist
@@ -5100,6 +5100,7 @@ functions can assume all bits of it are good.</p>"
                                      (ss vl-scopestack-p)
                                      (scopes vl-elabscopes-p)
                                      &key ((compattype vl-typecompat-p) ':equiv))
+  :short "Convert an expression to svex, maybe given a datatype that it needs to match."
   :guard (or (not type) (vl-datatype-resolved-p type))
   :guard-debug t
   :guard-hints (("goal" :in-theory (enable vl-maybe-datatype-p)))

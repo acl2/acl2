@@ -38,7 +38,7 @@
 ; 92.53 sec. vs. 314.30 sec.
 (value-triple (set-gc-strategy :delay))
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "std/lists/flatten" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 

@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/apt/isodata" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "workshops/2017/coglio-kaufmann-smith/support/simplify-defun" :dir :system)
 
 (local (include-book "arithmetic/top" :dir :system))
@@ -92,7 +92,7 @@
 
 ; rewrite the loop caller to call the re-indexed loop:
 
-(simplify-defun applyten :new-name applyten1)
+(simplify-defun applyten :new-name applyten1 :enable applyn-to-applyn0)
 
 (must-be-redundant
  (defun applyten1 (x)

@@ -32,7 +32,7 @@
 (include-book "../ls")
 (include-book "../catpath")
 (include-book "std/util/defconsts" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (defconsts (*files* state)
   (oslib::ls! "."))

@@ -20,7 +20,7 @@
 (in-package "MODAPP")
 (include-book "user-defs")
 (include-book "doppelgangers")
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (defattach badge-userfn badge-userfn!)
 (defattach apply$-userfn apply$-userfn!)

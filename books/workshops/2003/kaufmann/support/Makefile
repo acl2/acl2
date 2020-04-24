@@ -1,2 +1,2 @@
-DIRS = input rtl/tool rtl
+DIRS = input tool rtl
 include ../../../../Makefile-subdirs

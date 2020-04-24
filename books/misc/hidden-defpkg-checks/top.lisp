@@ -1,5 +1,5 @@
 (in-package "ACL2")
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (include-book "sub1") ; no_port
 (must-fail
  (include-book "sub2")) ; no_port

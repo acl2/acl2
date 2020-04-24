@@ -1,6 +1,6 @@
 ; String Utilities -- Theorems about CHAR-CODE and CODE-CHAR
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
+(include-book "std/basic/defs" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,4 +45,5 @@
     (equal (equal (code-char x)
                   (code-char y))
            (equal (unsigned-byte-fix 8 x)
-                  (unsigned-byte-fix 8 y)))))
+                  (unsigned-byte-fix 8 y)))
+    :prep-books ((include-book "std/strings/char-fix" :dir :system))))

@@ -2,7 +2,8 @@
 
 ;;Utilities to test transformations, etc:
 
-(include-book "kestrel/utilities/testing" :dir :system) ;brings in MUST-BE-REDUNDANT and ASSERT-EQUAL
+(include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
 
 ;; Deftest puts all of its FORMS inside an encapsulate and makes everything
 ;; local to the deftest. It is similar to must-succeed* but also turns on

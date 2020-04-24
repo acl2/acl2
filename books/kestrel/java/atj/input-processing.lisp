@@ -106,7 +106,7 @@
  (xdoc::p
   "Yet another complication arises from
    calls of functions in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*),
    which are translated directly to suitable Java constructs
    when @(':deep') is @('nil') and @(':guards') is @('t').
    Under these conditions, when @('fn') is taken from a worklist,
@@ -116,7 +116,7 @@
  (xdoc::p
   "As an optimization, ACL2 functions natively implemented in Java,
    as well as functions in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
    if @(':deep') is @('nil') and @(':guards') is @('t'),
    are never added to the worklists and collected lists.
    This is because they are known to satisfy the necessary constraints,
@@ -125,13 +125,13 @@
    with possibly a subset of @('fn1'), ..., @('fnp'),
    obtained by removing any natively implemented functions
    (while the ones in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*),
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*),
    when @(':deep') is @('nil') and @(':guards') is @('t'),
    are already ruled out by input validation).
    When descending into the defining of a function,
    natively implemented functions,
    and functions in
-   @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
    when applicable,
    are skipped over, not checked against worKlists and collected lists,
    and not added to any worklist.")
@@ -167,8 +167,8 @@
        ((unless (or (eq deep nil)
                     (eq guards t))) (value nil))
        (target-prims (intersection-eq targets
-                                      (union-eq *atj-java-primitive-fns*
-                                                *atj-java-primarray-fns*)))
+                                      (union-eq *atj-jprim-fns*
+                                                *atj-jprimarr-fns*)))
        ((when (null target-prims)) (value nil)))
     (er-soft+ ctx t nil
               "Since the :DEEP input is (perhaps by default) NIL ~
@@ -420,12 +420,12 @@
         (er-soft+ ctx t irrelevant
                   "Internal error: type of ~x0 arrays not supported." ptype))
        (constructor (primitive-type-case ptype
-                                         :boolean 'boolean-array-with-comps
-                                         :char 'char-array-with-comps
-                                         :byte 'byte-array-with-comps
-                                         :short 'short-array-with-comps
-                                         :int 'int-array-with-comps
-                                         :long 'long-array-with-comps
+                                         :boolean 'boolean-array
+                                         :char 'char-array
+                                         :byte 'byte-array
+                                         :short 'short-array
+                                         :int 'int-array
+                                         :long 'long-array
                                          :float (impossible)
                                          :double (impossible)))
        (err-msg (msg "The term ~x0 that is an argument of ~
@@ -456,12 +456,12 @@
     (value
      (primitive-type-case
       ptype
-      :boolean (atj-test-value-jboolean[] (boolean-array-with-comps values))
-      :char (atj-test-value-jchar[] (char-array-with-comps values))
-      :byte (atj-test-value-jbyte[] (byte-array-with-comps values))
-      :short (atj-test-value-jshort[] (short-array-with-comps values))
-      :int (atj-test-value-jint[] (int-array-with-comps values))
-      :long (atj-test-value-jlong[] (long-array-with-comps values))
+      :boolean (atj-test-value-jboolean[] (boolean-array values))
+      :char (atj-test-value-jchar[] (char-array values))
+      :byte (atj-test-value-jbyte[] (byte-array values))
+      :short (atj-test-value-jshort[] (short-array values))
+      :int (atj-test-value-jint[] (int-array values))
+      :long (atj-test-value-jlong[] (long-array values))
       :float irrelevant
       :double irrelevant))))
 
@@ -822,7 +822,7 @@
    (xdoc::p
     "Otherwise, the call is of a named function (not @(tsee return-last)).
      If it is a natively implemented function,
-     or in @(tsee *atj-java-primitive-fns*) and @(tsee *atj-java-primarray-fns*)
+     or in @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
      when applicable,
      we do not add it to the worklist,
      because it satisfies all the necessary constraints
@@ -938,8 +938,8 @@
          ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
          ((when (and (eq deep$ nil)
                      (eq guards$ t)
-                     (or (atj-java-primitive-fn-p fn)
-                         (atj-java-primarray-fn-p fn))))
+                     (or (atj-jprim-fn-p fn)
+                         (atj-jprimarr-fn-p fn))))
           (mv worklist-gen worklist-chk nil)))
       (if gen?
           (if (or (member-eq fn worklist-gen)

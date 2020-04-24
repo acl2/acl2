@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "eval")
+(include-book "std/testing/eval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -382,7 +382,7 @@ into eq-constraint field and put interval into range constraint field")
       (cdr vs) vt-dlist tau-interval-alist vl wrld
       (put-defdata-type. x final-typ vl ans.)))))
 
-(defconst *empty-cs%*
+(def-const *empty-cs%*
   (acl2::make cs%
         :defdata-type 'ACL2S::ALL
         :spilled-types '()

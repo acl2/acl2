@@ -706,7 +706,7 @@ introduced.</p>"
    (warnings vl-warninglist-p)
    (modname stringp)
    (sigalist vl-unparam-sigalist-p))
-  :parents (xf-unparameterize)
+  :parents (unparameterization)
   :short "Collect parameterization signatures needed for module instances of a given module."
   :long "<p>Expects that the module is fully unparameterized, with parameter values
          substituted in everywhere.  Accumulates an unparameterization signature

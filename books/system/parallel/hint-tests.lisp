@@ -12,7 +12,7 @@
 #+acl2-par
 (progn
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ;==============================================================================
 ; Computed Hints

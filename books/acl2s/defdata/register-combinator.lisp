@@ -20,7 +20,7 @@ data last modified: [2014-08-06]
 (defun get-defconst-val (x wrld)
   (cadr (acl2-getprop x 'acl2::const wrld)))
 
-(defconst *register-user-combinator-keywords*
+(def-const *register-user-combinator-keywords*
 '(:arity :aliases :expansion :verbose
          :syntax-restriction-fn :syntax-restriction-msg 
         ; :local-theory-template :theory-template

@@ -34,7 +34,7 @@
 (in-package "ACL2")
 
 (include-book "projects/apply/top" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; -----------------------------------------------------------------
 ; Definitions

@@ -231,7 +231,7 @@ so that later transforms just need to deal with compatible assignments.</p>")
                          :vardecls (cons temp-decl delta.vardecls)))))
 
 (defines vl-stmt-stmttemps
-
+  :short "Apply the @(see stmttemps) transform to a statement"
   (define vl-stmt-stmttemps ((x     vl-stmt-p)
                              (delta vl-delta-p)
                              (elem  vl-modelement-p))

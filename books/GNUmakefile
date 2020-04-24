@@ -259,25 +259,25 @@ space =  # just a space
 EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
 endif # ifneq ($(EXCLUDED_PREFIXES), )
 
-# We exclude some directories because there are subdirectories and it's just
-# easiest to stop at the root.
-
-# We also exclude centaur/satlink/solvers because it depends on all kinds of
-# extra SAT solvers.
+# We exclude some directories because there are subdirectories and
+# it's just easiest to stop at the root.  We also exclude
+# centaur/satlink/solvers because it depends on all kinds of extra SAT
+# solvers.  We exclude projects/milawa/ACL2 because of the large
+# amount of disk space otherwise consumed.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support/input|workshops/2003/kaufmann/support/rtl|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))
 
 ifdef ACL2_PCERT
-	PCERT_OPT := "--pcert-all"	
+	PCERT_OPT := "--pcert-all"
 else
-	PCERT_OPT := 
+	PCERT_OPT :=
 endif
 
 $(info Scanning for dependencies...)
@@ -680,8 +680,7 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) \
-	  workshops/2003/kaufmann/support/rtl ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
 	do \
 	if [ -f $$dir/Makefile ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
@@ -768,6 +767,7 @@ ACL2_CUSTOM_TARGETS := \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
+  workshops/2003/kaufmann/support/rtl/package-defs.cert \
   workshops/2004/sumners-ray/support/success.txt
 
 # Currently, apply-model and (probably) apply-model-2 don't work for
@@ -825,11 +825,15 @@ workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-# Note that we change to the parent directory in order to pick up all
-# of support/.
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	cd $(@D)/.. ; $(STARTJOB) -c "$(MAKE)"
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+workshops/2003/kaufmann/support/rtl/package-defs.cert: \
+  workshops/2003/kaufmann/deps.cert \
+  workshops/2003/kaufmann/support/tool/simplify-defuns.cert \
+  workshops/2003/kaufmann/support/tool/wrapper.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
@@ -1085,6 +1089,14 @@ BOOKS_SKIP_COMP += system/tests/apply-timings.$(ACL2_COMP_EXT)
 # Errors (using LispWorks) involve quicklisp, so I won't bother to debug:
 BOOKS_SKIP_COMP += oslib/tests/ls.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += oslib/tests/mkdir.$(ACL2_COMP_EXT)
+
+# Has readtime conditionals for different Lisps:
+BOOKS_SKIP_COMP += system/tests/stobj-issues.$(ACL2_COMP_EXT)
+
+# GCL couldn't handle this one (tested 4/10/2020), saying "[GC Hole
+# overrun]" and then "Unrecoverable error: Segmentation violation.."
+# It's not clear why, but it doesn't seem important to figure it out.
+BOOKS_SKIP_COMP += workshops/2011/verbeek-schmaltz/sources/invariants2.$(ACL2_COMP_EXT)
 
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
@@ -1451,6 +1463,14 @@ BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-fast.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
+# Uses redefinition:
+BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/redef.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Includes the redef book just above:
+BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/top.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Name conflict for "INSTANCE" package between instance.lisp and
+# (included in system/pseudo-good-worldp.lisp) system book
+# std/portcullis.lisp:
+BOOKS_BKCHK_OUT := $(filter-out workshops/2004/davis/support/%, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)

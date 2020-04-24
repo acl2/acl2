@@ -246,7 +246,7 @@ with transforms.</p>"
 
 
 (define solve-lane-by-lane-masked (x y mask width)
-  :parents (fgl-and-ucode)
+  :parents (advanced-equivalence-checking-with-fgl)
   :short "Equality check that works around hard SAT/fraiging problems caused by writemasking."
   :long "<p>This addresses a problem that sometimes comes up in proving
 correctness of SIMD operations with writemasking.  Suppose an instruction
@@ -312,7 +312,7 @@ than the original, especially using fraiging.</p>
   (local (defun solve-lane-by-lane-masked+-config1 nil nil)))
 
 (define solve-lane-by-lane-masked+ (x y mask width)
-  :parents (fgl-and-ucode)
+  :parents (advanced-equivalence-checking-with-fgl)
   :short "Equality check that works around hard SAT/fraiging problems caused by
 writemasking, solving each case separately."
   :long "<p>See @(see solve-lane-by-lane-masked) for a general discussion of

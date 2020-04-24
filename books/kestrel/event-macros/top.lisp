@@ -11,9 +11,12 @@
 (in-package "ACL2")
 
 (include-book "applicability-conditions")
+(include-book "cw-event")
 (include-book "input-processing")
 (include-book "intro-macros")
-(include-book "xdoc-constructors")
+(include-book "make-event-terse")
+(include-book "restore-output")
+(include-book "try-event")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -10,7 +10,6 @@
 
 (in-package "APT")
 
-(include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -25,13 +24,13 @@
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
+(include-book "utilities/defaults-table")
 (include-book "utilities/input-processing")
-(include-book "utilities/untranslate-specifiers")
 (include-book "utilities/transformation-table")
+(include-book "utilities/untranslate-specifiers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,8 +51,12 @@
    @('predicate'),
    @('new-name'),
    @('new-enable'),
-   @('thm-name'),
-   @('thm-enable'),
+   @('old-to-new-name'),
+   @('old-to-new-enable'),
+   @('new-to-old-name'),
+   @('new-to-old-enable'),
+   @('newp-of-new-name'),
+   @('newp-of-new-enable'),
    @('verify-guards'),
    @('untranslate'),
    @('hints'),
@@ -67,8 +70,9 @@
    @('predicate$'),
    @('new-name$'),
    @('new-enable$'),
-   @('thm-name$'),
-   @('thm-enable$'),
+   @('old-to-new-enable$'),
+   @('new-to-old-enable$'),
+   @('newp-of-new-enable$'),
    @('verify-guards$'),
    @('untranslate$'),
    @('hints$'),
@@ -79,6 +83,12 @@
    Some are identical to the corresponding inputs,
    but they have types implied by their successful validation,
    performed when they are processed."
+
+  "@('old-to-new$') is the result of processing @('old-to-new-name')."
+
+  "@('new-to-old$') is the result of processing @('new-to-old-name')."
+
+  "@('newp-of-new$') is the result of processing @('newp-of-new-name')."
 
   "@('m') is the number of results of @('old')."
 
@@ -114,15 +124,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xdoc::evmac-topic-input-processing
- isodata
- (xdoc::p
-  "The input processing part of @(tsee isodata) has been already extended
-   to support the transformation of results of multi-valued functions,
-   by allowing keywords @(':resultj'), where @('j') is a positive integer,
-   as part of the @('arg/res-listk') components of the @('isomaps') input,
-   and by also allowing @(':result') as an abbreviation of @(':result1')
-   when the function is single-valued."))
+(xdoc::evmac-topic-input-processing isodata)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1047,41 +1049,191 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-thm-name (thm-name
-                                  (old$ symbolp)
-                                  (new-name$ symbolp)
-                                  ctx
-                                  state)
+(define isodata-process-old-to-new-name (old-to-new-name
+                                         (old-to-new-name-suppliedp booleanp)
+                                         (old$ symbolp)
+                                         (new-name$ symbolp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
   :returns (mv erp
-               (thm-name$ "A @(tsee symbolp)
-                           to use for the theorem
-                           that relates the old and new functions.")
+               (result "A list @('(old-to-new$ new-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp symbol-listp result)').")
                state)
   :mode :program
-  :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
-       (name (if (eq thm-name :auto)
-                 (make-paired-name old$ new-name$ 2 (w state))
-               thm-name))
+  :short "Process the @(':old-to-new-name') input."
+  (b* ((wrld (w state))
+       ((er &)
+        (ensure-symbol$ old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
+       (name (if (or (not old-to-new-name-suppliedp)
+                     (keywordp old-to-new-name))
+                 (b* ((kwd (if old-to-new-name-suppliedp
+                               old-to-new-name
+                             (get-default-input-old-to-new-name wrld))))
+                   (intern-in-package-of-symbol
+                    (concatenate 'string
+                                 (symbol-name old$)
+                                 (symbol-name kwd)
+                                 (symbol-name new-name$))
+                    new-name$))
+               old-to-new-name))
        (description (msg "The name ~x0 of the theorem ~
-                          that relates the target function ~x1 ~
+                          that relates the old function ~x1 ~
                           to the new function ~x2, ~
-                          ~@3,"
-                         name old$ new-name$
-                         (if (eq thm-name :auto)
-                             "automatically generated ~
-                              since the :THM-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :THM-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((er &) (ensure-symbol-different$
-                name new-name$
-                (msg "the name ~x0 of the new function ~
-                      (determined by the :NEW-NAME input)."
-                     new-name$)
+                          specified (perhaps by default) ~
+                          by the :OLD-TO-NEW-NAME input ~x3,"
+                         name old$ new-name$ old-to-new-name))
+       (error-msg? (fresh-namep-msg-weak name nil wrld))
+       ((when error-msg?)
+        (er-soft+ ctx t nil
+                  "~@0 must be a valid fresh theorem name. ~@1"
+                  description error-msg?))
+       ((er &) (ensure-not-member-of-list$
+                name
+                names-to-avoid
+                (msg "among the names ~x0 of other events ~
+                      generated by this transformation"
+                     names-to-avoid)
                 description
-                t nil)))
-    (value name)))
+                t
+                nil)))
+    (value (list name (cons name names-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-old-to-new-enable
+  (old-to-new-enable
+   (old-to-new-enable-suppliedp booleanp)
+   ctx
+   state)
+  :returns (mv erp
+               (old-to-new-enable$ booleanp)
+               state)
+  :short "Process the @(':old-to-new-enable') input."
+  (b* (((er &) (ensure-boolean$ old-to-new-enable
+                                "The :OLD-TO-NEW-ENABLE input" t nil)))
+    (value (if old-to-new-enable-suppliedp
+               old-to-new-enable
+             (get-default-input-old-to-new-enable (w state)))))
+  :prepwork ((local (in-theory (enable acl2::ensure-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-new-to-old-name (new-to-old-name
+                                         (new-to-old-name-suppliedp booleanp)
+                                         (old$ symbolp)
+                                         (new-name$ symbolp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
+  :returns (mv erp
+               (result "A list @('(new-to-old$ new-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp symbol-listp result)').")
+               state)
+  :mode :program
+  :short "Process the @(':new-to-old-name') input."
+  (b* ((wrld (w state))
+       ((er &)
+        (ensure-symbol$ new-to-old-name "The :NEW-TO-OLD-NAME input" t nil))
+       (name (if (or (not new-to-old-name-suppliedp)
+                     (keywordp new-to-old-name))
+                 (b* ((kwd (if new-to-old-name-suppliedp
+                               new-to-old-name
+                             (get-default-input-new-to-old-name (w state)))))
+                   (intern-in-package-of-symbol
+                    (concatenate 'string
+                                 (symbol-name new-name$)
+                                 (symbol-name kwd)
+                                 (symbol-name old$))
+                    new-name$))
+               new-to-old-name))
+       (description (msg "The name ~x0 of the theorem ~
+                          that relates the new function ~x1 ~
+                          to the old function ~x2, ~
+                          specified (perhaps by default) ~
+                          by the :NEW-TO-OLD-NAME input ~x3,"
+                         name new-name$ old$ new-to-old-name))
+       (error-msg? (fresh-namep-msg-weak name nil wrld))
+       ((when error-msg?)
+        (er-soft+ ctx t nil
+                  "~@0 must be a valid fresh theorem name. ~@1"
+                  description error-msg?))
+       ((er &) (ensure-not-member-of-list$
+                name
+                names-to-avoid
+                (msg "among the names ~x0 of other events ~
+                      generated by this transformation"
+                     names-to-avoid)
+                description
+                t
+                nil)))
+    (value (list name (cons name names-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-new-to-old-enable
+  (new-to-old-enable
+   (new-to-old-enable-suppliedp booleanp)
+   ctx
+   state)
+  :returns (mv erp
+               (new-to-old-enable$ booleanp)
+               state)
+  :short "Process the @(':new-to-old-enable') input."
+  (b* (((er &) (ensure-boolean$ new-to-old-enable
+                                "The :NEW-TO-OLD-ENABLE input" t nil)))
+    (value (if new-to-old-enable-suppliedp
+               new-to-old-enable
+             (get-default-input-new-to-old-enable (w state)))))
+  :prepwork ((local (in-theory (enable acl2::ensure-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define isodata-process-newp-of-new-name (newp-of-new-name
+                                          (new-name$ symbolp)
+                                          (names-to-avoid symbol-listp)
+                                          ctx
+                                          state)
+  :returns (mv erp
+               (result "A list @('(newp-of-new$ new-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp symbol-listp result)').")
+               state)
+  :mode :program
+  :short "Process the @(':newp-of-new-name') input."
+  (b* (((er &)
+        (ensure-symbol$ newp-of-new-name "The :NEWP-OF-NEW-NAME input" t nil))
+       (newp-of-new$ (case newp-of-new-name
+                       (:auto (add-suffix new-name$ "-NEW-REPRESENTATION"))
+                       (t newp-of-new-name)))
+       (description (msg "The name ~x0 of the theorem asserting that ~
+                          the new function ~x1 maps ~
+                          arguments in the new representation ~
+                          to results in the new representation, ~@2,"
+                         newp-of-new$
+                         new-name$
+                         (if (eq newp-of-new-name :auto)
+                             "automatically generated ~
+                              since the :NEWP-OF-NEW-NAME input ~
+                              is (perhaps by default) :AUTO"
+                           "supplied as the :NEWP-OF-NEW-NAME input")))
+       (error-msg? (fresh-namep-msg-weak newp-of-new$ nil (w state)))
+       ((when error-msg?)
+        (er-soft+ ctx t nil
+                  "~@0 must be a valid fresh theorem name. ~@1"
+                  description error-msg?))
+       ((er &) (ensure-not-member-of-list$
+                newp-of-new$
+                names-to-avoid
+                (msg "among the names ~x0 of other events ~
+                      generated by this transformation"
+                     names-to-avoid)
+                description
+                t
+                nil)))
+    (value (list newp-of-new$ (cons newp-of-new$ names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1090,8 +1242,18 @@
                                 predicate
                                 new-name
                                 new-enable
-                                thm-name
-                                thm-enable
+                                old-to-new-name
+                                (old-to-new-name-suppliedp booleanp)
+                                old-to-new-enable
+                                (old-to-new-enable-suppliedp booleanp)
+                                new-to-old-name
+                                (new-to-old-name-suppliedp booleanp)
+                                new-to-old-enable
+                                (new-to-old-enable-suppliedp booleanp)
+                                newp-of-new-name
+                                (newp-of-new-name-suppliedp booleanp)
+                                newp-of-new-enable
+                                (newp-of-new-enable-suppliedp booleanp)
                                 verify-guards
                                 untranslate
                                 hints
@@ -1105,7 +1267,12 @@
                                     res-isomaps
                                     new-name$
                                     new-enable$
-                                    thm-name$
+                                    old-to-new$
+                                    old-to-new-enable$
+                                    new-to-old$
+                                    new-to-old-enable$
+                                    newp-of-new$
+                                    newp-of-new-enable$
                                     verify-guards$
                                     hints$
                                     names-to-avoid)')
@@ -1113,6 +1280,10 @@
                         @('(typed-tuplep symbolp
                                          isodata-symbol-isomap-alistp
                                          isodata-pos-isomap-alistp
+                                         symbolp
+                                         booleanp
+                                         symbolp
+                                         booleanp
                                          symbolp
                                          booleanp
                                          symbolp
@@ -1127,23 +1298,85 @@
   (b* ((wrld (w state))
        ((er old$) (isodata-process-old old predicate verify-guards ctx state))
        ((er new-name$) (process-input-new-name new-name old$ ctx state))
-       ((er thm-name$) (isodata-process-thm-name
-                        thm-name old$ new-name$ ctx state))
+       (names-to-avoid (list new-name$))
+       ((er (list old-to-new$ names-to-avoid))
+        (isodata-process-old-to-new-name old-to-new-name
+                                         old-to-new-name-suppliedp
+                                         old$
+                                         new-name$
+                                         names-to-avoid
+                                         ctx
+                                         state))
+       ((er (list new-to-old$ names-to-avoid))
+        (isodata-process-new-to-old-name new-to-old-name
+                                         new-to-old-name-suppliedp
+                                         old$
+                                         new-name$
+                                         names-to-avoid
+                                         ctx
+                                         state))
+       ((er (list newp-of-new$ names-to-avoid))
+        (isodata-process-newp-of-new-name newp-of-new-name
+                                          new-name$
+                                          names-to-avoid
+                                          ctx
+                                          state))
        ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
                              verify-guards
                              (guard-verified-p old$ wrld)
                              "The :VERIFY-GUARDS input" t nil))
-       (names-to-avoid (list new-name$ thm-name$))
        ((er (list arg-isomaps res-isomaps names-to-avoid))
-        (isodata-process-isomaps
-         isomaps old$ verify-guards$ names-to-avoid ctx state))
+        (isodata-process-isomaps isomaps
+                                 old$
+                                 verify-guards$
+                                 names-to-avoid
+                                 ctx
+                                 state))
        ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old$ state)
                           "The :NEW-ENABLE input"
                           t nil))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
+       ((er old-to-new-enable$) (isodata-process-old-to-new-enable
+                                 old-to-new-enable
+                                 old-to-new-enable-suppliedp
+                                 ctx
+                                 state))
+       ((er new-to-old-enable$) (isodata-process-new-to-old-enable
+                                 new-to-old-enable
+                                 new-to-old-enable-suppliedp
+                                 ctx
+                                 state))
+       ((when (and old-to-new-enable$
+                   new-to-old-enable$))
+        (er-soft+ ctx t nil
+                  (if old-to-new-enable-suppliedp
+                      (if new-to-old-enable-suppliedp
+                          "The :OLD-TO-NEW-ENABLE input ~
+                           and the :NEW-TO-OLD-ENABLE inputs ~
+                           cannot be both T."
+                        "Since the default :NEW-TO-OLD-ENABLE input is T, ~
+                         the :OLD-TO-NEW-ENABLE input cannot be T.")
+                    (if new-to-old-enable-suppliedp
+                        "Since the default :OLD-TO-NEW-ENABLE input is T, ~
+                         the :NEW-TO-OLD-ENABLE input cannot be T."
+                      "Internal error: ~
+                       the default :OLD-TO-NEW-ENABLE and :NEW-TO-OLD-ENABLE ~
+                       are both T."))))
+       ((er &) (ensure-boolean$ newp-of-new-enable
+                                "The :NEWP-OF-NEW-ENABLE input"
+                                t nil))
+       ((when (and newp-of-new-name-suppliedp
+                   (not res-isomaps)))
+        (er-soft+ ctx t nil
+                  "Since no results are being transformed, ~
+                   it is an error to supply the :NEWP-OF-NEW-NAME input."))
+       ((when (and newp-of-new-enable-suppliedp
+                   (not res-isomaps)))
+        (er-soft+ ctx t nil
+                  "Since no results are being transformed, ~
+                   it is an error to supply the :NEWP-OF-NEW-ENABLE input."))
        ((er &) (ensure-is-untranslate-specifier$ untranslate
                                                  "The :UNTRANSLATE input"
                                                  t nil))
@@ -1155,7 +1388,12 @@
                  res-isomaps
                  new-name$
                  new-enable$
-                 thm-name$
+                 old-to-new$
+                 old-to-new-enable$
+                 new-to-old$
+                 new-to-old-enable$
+                 newp-of-new$
+                 newp-of-new-enable
                  verify-guards$
                  hints$
                  names-to-avoid))))
@@ -2716,24 +2954,17 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
-   (names-to-avoid symbol-listp)
+   (new-to-old$ symbolp)
+   (new-to-old-enable$ booleanp)
    (appcond-thm-names symbol-symbol-alistp)
    (old-fn-unnorm-name symbolp)
    (new-fn-unnorm-name symbolp)
    (wrld plist-worldp))
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+  :returns (mv (new-to-old-local-event "A @(tsee pseudo-event-formp).")
+               (new-to-old-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
-  :short "Generate the theorem
-          that expresses the new function in terms of the old function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is generated only locally for now."))
-  (b* ((name (fresh-logical-name-with-$s-suffix 'new-to-old
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+  :short "Generate the @('new-to-old') theorem."
+  (b* ((macro (theorem-intro-macro new-to-old-enable$))
        (formula (isodata-gen-new-to-old-thm-formula old$
                                                     arg-isomaps
                                                     res-isomaps
@@ -2748,11 +2979,13 @@
                                                 old-fn-unnorm-name
                                                 new-fn-unnorm-name
                                                 wrld))
-       (event `(local
-                (defthmd ,name
-                  ,formula
-                  :hints ,hints))))
-    (mv event name)))
+       (local-event `(local
+                      (defthm ,new-to-old$
+                        ,formula
+                        :hints ,hints)))
+       (exported-event `(,macro ,new-to-old$
+                                ,formula)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2795,7 +3028,7 @@
 (define isodata-gen-old-to-new-thm-hints-0res
   ((old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2807,7 +3040,7 @@
        (instances-back-of-forth
         (isodata-gen-back-of-forth-instances-to-x1...xn arg-isomaps wrld))
        (instance-new-to-old
-        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old
+        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old$
                                                                 old$
                                                                 arg-isomaps
                                                                 wrld)))
@@ -2824,7 +3057,7 @@
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2837,7 +3070,7 @@
        (instances-back-of-forth
         (isodata-gen-back-of-forth-instances-to-x1...xn arg-isomaps wrld))
        (instance-new-to-old
-        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old
+        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old$
                                                                 old$
                                                                 arg-isomaps
                                                                 wrld))
@@ -2863,7 +3096,7 @@
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2876,7 +3109,7 @@
        (instances-back-of-forth
         (isodata-gen-back-of-forth-instances-to-x1...xn arg-isomaps wrld))
        (instance-new-to-old
-        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old
+        (isodata-gen-lemma-instance-x1...xn-to-forth-of-x1...xn new-to-old$
                                                                 old$
                                                                 arg-isomaps
                                                                 wrld))
@@ -2902,7 +3135,7 @@
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -2911,19 +3144,19 @@
   (case (len res-isomaps)
     (0 (isodata-gen-old-to-new-thm-hints-0res old$
                                               arg-isomaps
-                                              new-to-old
+                                              new-to-old$
                                               wrld))
     (1 (isodata-gen-old-to-new-thm-hints-1res appcond-thm-names
                                               old$
                                               arg-isomaps
                                               res-isomaps
-                                              new-to-old
+                                              new-to-old$
                                               wrld))
     (t (isodata-gen-old-to-new-thm-hints-mres appcond-thm-names
                                               old$
                                               arg-isomaps
                                               res-isomaps
-                                              new-to-old
+                                              new-to-old$
                                               wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2934,19 +3167,15 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
-   (thm-name$ symbolp)
-   (thm-enable$ booleanp)
-   (new-to-old symbolp)
+   (old-to-new$ symbolp)
+   (old-to-new-enable$ booleanp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :returns (mv (old-to-new-local-event "A @(tsee pseudo-event-formp).")
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
-  :short "Generate the theorem that relates the old and new functions."
-  :long
-  (xdoc::topstring-p
-   "The macro used to introduce the theorem is determined by
-    whether the theorem must be enabled or not.")
-  (b* ((macro (theorem-intro-macro thm-enable$))
+  :short "Generate the @('old-to-new') theorem."
+  (b* ((macro (theorem-intro-macro old-to-new-enable$))
        (formula (isodata-gen-old-to-new-thm-formula
                  old$ arg-isomaps res-isomaps new-name$ wrld))
        (formula (untranslate formula t wrld))
@@ -2954,13 +3183,13 @@
                                                 old$
                                                 arg-isomaps
                                                 res-isomaps
-                                                new-to-old
+                                                new-to-old$
                                                 wrld))
        (local-event `(local
-                      (,macro ,thm-name$
-                              ,formula
-                              :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
+                      (defthm ,old-to-new$
+                        ,formula
+                        :hints ,hints)))
+       (exported-event `(,macro ,old-to-new$
                                 ,formula)))
     (mv local-event exported-event)))
 
@@ -2979,10 +3208,6 @@
           that says that the new function maps
           values in the new representation
           to values in the old representation."
-  :long
-  (xdoc::topstring-p
-   "This is the theorem @($f'A'B'$) in the design notes.
-    It is generated only if some result is being transformed.")
   (b* ((x1...xn (formals old$ wrld))
        (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
        (newp-of-x1...xn-conj (conjoin newp-of-x1...xn))
@@ -3006,7 +3231,7 @@
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :guard (consp res-isomaps)
   :returns (hints true-listp)
@@ -3015,10 +3240,6 @@
           that says that the new function maps
           values in the new representation
           to values in the old representation."
-  :long
-  (xdoc::topstring-p
-   "This is the theorem @($f'A'B'$) in the design notes.
-    It is generated only if some result is being transformed.")
   (b* ((oldp-of-old (cdr (assoc-eq :oldp-of-old appcond-thm-names)))
        (instances-back-image
         (isodata-gen-back-image-instances-to-x1...xn arg-isomaps wrld))
@@ -3046,7 +3267,7 @@
        :use (,@instances-back-image
              ,instance-oldp-of-old
              ,@instances-forth-image
-             ,new-to-old)))))
+             ,new-to-old$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3055,25 +3276,19 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
-   (new-to-old symbolp)
-   (names-to-avoid symbol-listp)
+   (new-to-old$ symbolp)
+   (newp-of-new$ symbolp)
+   (newp-of-new-enable$ booleanp)
    (appcond-thm-names symbol-symbol-alistp)
    (wrld plist-worldp))
   :guard (consp res-isomaps)
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+  :returns (mv (newp-of-new-local-event "A @(tsee pseudo-event-formp).")
+               (newp-of-new-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the theorem that says that
           the new function maps values in the new representation
           to values in the old representation."
-  :long
-  (xdoc::topstring-p
-   "This is the theorem @($f'A'B'$) in the design notes.
-    It is generated only if some result is being transformed.")
-  (b* ((name (fresh-logical-name-with-$s-suffix 'newp-of-new
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+  (b* ((macro (theorem-intro-macro newp-of-new-enable$))
        (formula (isodata-gen-newp-of-new-thm-formula old$
                                                      arg-isomaps
                                                      res-isomaps
@@ -3084,13 +3299,15 @@
                                                  old$
                                                  arg-isomaps
                                                  res-isomaps
-                                                 new-to-old
+                                                 new-to-old$
                                                  wrld))
-       (event `(local
-                (defthmd ,name
-                  ,formula
-                  :hints ,hints))))
-    (mv event name)))
+       (local-event `(local
+                      (defthm ,newp-of-new$
+                        ,formula
+                        :hints ,hints)))
+       (exported-event `(,macro ,newp-of-new$
+                                ,formula)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3139,7 +3356,7 @@
   ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -3193,7 +3410,7 @@
          wrld))
        (instances-new-to-old
         (isodata-gen-lemma-instances-x1...xn-to-forth-rec-call-args-back
-         new-to-old
+         new-to-old$
          rec-calls
          old$
          arg-isomaps
@@ -3217,7 +3434,7 @@
   ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -3227,7 +3444,7 @@
       (isodata-gen-new-fn-verify-guards-hints-pred-rec appcond-thm-names
                                                        old$
                                                        arg-isomaps
-                                                       new-to-old
+                                                       new-to-old$
                                                        wrld)
     (isodata-gen-new-fn-verify-guards-hints-pred-nonrec appcond-thm-names
                                                         old$
@@ -3336,7 +3553,7 @@
   ((appcond-thm-names symbol-symbol-alistp)
    (old$ symbolp)
    (arg-isomaps isodata-symbol-isomap-alistp)
-   (thm-name$ symbolp)
+   (old-to-new$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -3381,7 +3598,7 @@
          arg-isomaps
          wrld))
        (instances-old-to-new
-        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back thm-name$
+        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back old-to-new$
                                                                    rec-calls
                                                                    old$
                                                                    arg-isomaps
@@ -3406,9 +3623,9 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
-   (thm-name$ symbolp)
+   (old-to-new$ symbolp)
    (old-fn-unnorm-name symbolp)
-   (newp-of-new symbolp)
+   (newp-of-new$ symbolp)
    (wrld plist-worldp))
   :guard (consp res-isomaps)
   :returns (hints "A @(tsee true-listp).")
@@ -3455,7 +3672,7 @@
          arg-isomaps
          wrld))
        (instances-old-to-new
-        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back thm-name$
+        (isodata-gen-lemma-instances-x1...xn-to-rec-call-args-back old-to-new$
                                                                    rec-calls
                                                                    old$
                                                                    arg-isomaps
@@ -3473,7 +3690,7 @@
          wrld))
        (instances-newp-of-new
         (isodata-gen-lemma-instances-x1...xn-to-forth-rec-call-args-back
-         newp-of-new
+         newp-of-new$
          rec-calls
          old$
          arg-isomaps
@@ -3536,9 +3753,9 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (new-name$ symbolp)
-   (thm-name$ symbolp)
+   (old-to-new$ symbolp)
    (old-fn-unnorm-name symbolp)
-   (newp-of-new symbolp)
+   (newp-of-new$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -3552,15 +3769,15 @@
            arg-isomaps
            res-isomaps
            new-name$
-           thm-name$
+           old-to-new$
            old-fn-unnorm-name
-           newp-of-new
+           newp-of-new$
            wrld)
         (isodata-gen-new-fn-verify-guards-hints-nonpred-rec-0res
          appcond-thm-names
          old$
          arg-isomaps
-         thm-name$
+         old-to-new$
          wrld))
     (if (consp res-isomaps)
         (isodata-gen-new-fn-verify-guards-hints-nonpred-nonrec-1res/mres
@@ -3582,11 +3799,11 @@
    (arg-isomaps isodata-symbol-isomap-alistp)
    (res-isomaps isodata-pos-isomap-alistp)
    (predicate$ booleanp)
-   (new-to-old symbolp)
+   (new-to-old$ symbolp)
    (new-name$ symbolp)
-   (thm-name$ symbolp)
+   (old-to-new$ symbolp)
    (old-fn-unnorm-name symbolp)
-   (newp-of-new symbolp)
+   (newp-of-new$ symbolp)
    (wrld plist-worldp))
   :returns (hints "A @(tsee true-listp).")
   :mode :program
@@ -3595,16 +3812,16 @@
       (isodata-gen-new-fn-verify-guards-hints-pred appcond-thm-names
                                                    old$
                                                    arg-isomaps
-                                                   new-to-old
+                                                   new-to-old$
                                                    wrld)
     (isodata-gen-new-fn-verify-guards-hints-nonpred appcond-thm-names
                                                     old$
                                                     arg-isomaps
                                                     res-isomaps
                                                     new-name$
-                                                    thm-name$
+                                                    old-to-new$
                                                     old-fn-unnorm-name
-                                                    newp-of-new
+                                                    newp-of-new$
                                                     wrld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3616,10 +3833,10 @@
    (res-isomaps isodata-pos-isomap-alistp)
    (predicate$ booleanp)
    (new-name$ symbolp)
-   (new-to-old symbolp)
-   (thm-name$ symbolp)
+   (new-to-old$ symbolp)
+   (old-to-new$ symbolp)
    (old-fn-unnorm-name symbolp)
-   (newp-of-new symbolp)
+   (newp-of-new$ symbolp)
    (wrld plist-worldp))
   :returns (new-fn-verify-guards-event "A @(tsee pseudo-event-formp).")
   :mode :program
@@ -3650,11 +3867,11 @@
                                                       arg-isomaps
                                                       res-isomaps
                                                       predicate$
-                                                      new-to-old
+                                                      new-to-old$
                                                       new-name$
-                                                      thm-name$
+                                                      old-to-new$
                                                       old-fn-unnorm-name
-                                                      newp-of-new
+                                                      newp-of-new$
                                                       wrld))
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
     event))
@@ -3668,8 +3885,12 @@
    (predicate$ booleanp)
    (new-name$ symbolp)
    (new-enable$ booleanp)
-   (thm-name$ symbolp)
-   (thm-enable$ booleanp)
+   (old-to-new$ symbolp)
+   (old-to-new-enable$ booleanp)
+   (new-to-old$ symbolp)
+   (new-to-old-enable$ symbolp)
+   (newp-of-new$ symbolp)
+   (newp-of-new-enable$ symbolp)
    (verify-guards$ booleanp)
    (untranslate$ untranslate-specifier-p)
    (hints$ symbol-truelist-alistp)
@@ -3772,32 +3993,37 @@
        ((mv new-fn-unnorm-event
             new-fn-unnorm-name)
         (install-not-normalized-event new-name$ t names-to-avoid wrld))
-       ((mv new-to-old-thm-event
-            new-to-old)
+       ((mv new-to-old-thm-local-event
+            new-to-old-thm-exported-event)
         (isodata-gen-new-to-old-thm old$
                                     arg-isomaps
                                     res-isomaps
                                     new-name$
-                                    names-to-avoid
+                                    new-to-old$
+                                    new-to-old-enable$
                                     appcond-thm-names
                                     old-fn-unnorm-name
                                     new-fn-unnorm-name
                                     wrld))
-       (names-to-avoid (cons new-to-old names-to-avoid))
-       ((mv newp-of-new-thm-event?
-            newp-of-new?)
+       ((mv newp-of-new-thm-local-event?
+            newp-of-new-thm-exported-event?)
         (if (consp res-isomaps)
             (isodata-gen-newp-of-new-thm old$
                                          arg-isomaps
                                          res-isomaps
                                          new-name$
-                                         new-to-old
-                                         names-to-avoid
+                                         new-to-old$
+                                         newp-of-new$
+                                         newp-of-new-enable$
                                          appcond-thm-names
                                          wrld)
           (mv nil nil)))
-       (newp-of-new-thm-event? (and newp-of-new-thm-event?
-                                    (list newp-of-new-thm-event?)))
+       (newp-of-new-thm-local-event? (and newp-of-new-thm-local-event?
+                                          (list
+                                           newp-of-new-thm-local-event?)))
+       (newp-of-new-thm-exported-event? (and newp-of-new-thm-exported-event?
+                                             (list
+                                              newp-of-new-thm-exported-event?)))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event)
         (isodata-gen-old-to-new-thm appcond-thm-names
@@ -3805,9 +4031,9 @@
                                     arg-isomaps
                                     res-isomaps
                                     new-name$
-                                    thm-name$
-                                    thm-enable$
-                                    new-to-old
+                                    old-to-new$
+                                    old-to-new-enable$
+                                    new-to-old$
                                     wrld))
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
@@ -3818,11 +4044,14 @@
                                            res-isomaps
                                            predicate$
                                            new-name$
-                                           new-to-old
-                                           thm-name$
+                                           new-to-old$
+                                           old-to-new$
                                            old-fn-unnorm-name
-                                           newp-of-new?
+                                           newp-of-new$
                                            wrld))))
+       (theory-invariant `(theory-invariant (incompatible
+                                             (:rewrite ,new-to-old$)
+                                             (:rewrite ,old-to-new$))))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
@@ -3834,12 +4063,15 @@
                              ,old-fn-unnorm-event
                              ,new-fn-local-event
                              ,new-fn-unnorm-event
-                             ,new-to-old-thm-event
-                             ,@newp-of-new-thm-event?
+                             ,new-to-old-thm-local-event
                              ,old-to-new-thm-local-event
+                             ,@newp-of-new-thm-local-event?
                              ,@new-fn-verify-guards-event?
                              ,new-fn-exported-event
+                             ,new-to-old-thm-exported-event
                              ,old-to-new-thm-exported-event
+                             ,@newp-of-new-thm-exported-event?
+                             ,theory-invariant
                              ,new-fn-numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        ((when show-only$)
@@ -3850,12 +4082,17 @@
        (encapsulate+ (restore-output? (eq print$ :all) encapsulate))
        (transformation-table-event (record-transformation-call-event
                                     call encapsulate wrld))
-       (print-result (and
-                      (member-eq print$ '(:result :info :all))
-                      `(,@(and (member-eq print$ '(:info :all))
-                               '((cw-event "~%")))
-                        (cw-event "~x0~|" ',new-fn-exported-event)
-                        (cw-event "~x0~|" ',old-to-new-thm-exported-event)))))
+       (print-result
+        (and
+         (member-eq print$ '(:result :info :all))
+         `(,@(and (member-eq print$ '(:info :all))
+                  '((cw-event "~%")))
+           (cw-event "~x0~|" ',new-fn-exported-event)
+           (cw-event "~x0~|" ',new-to-old-thm-exported-event)
+           (cw-event "~x0~|" ',old-to-new-thm-exported-event)
+           ,@(and newp-of-new-thm-exported-event?
+                  `((cw-event "~x0~|"
+                              ',(car newp-of-new-thm-exported-event?))))))))
     (value
      `(progn
         ,encapsulate+
@@ -3870,8 +4107,18 @@
                     predicate
                     new-name
                     new-enable
-                    thm-name
-                    thm-enable
+                    old-to-new-name
+                    (old-to-new-name-suppliedp booleanp)
+                    old-to-new-enable
+                    (old-to-new-enable-suppliedp booleanp)
+                    new-to-old-name
+                    (new-to-old-name-suppliedp booleanp)
+                    new-to-old-enable
+                    (new-to-old-enable-suppliedp booleanp)
+                    newp-of-new-name
+                    (newp-of-new-name-suppliedp booleanp)
+                    newp-of-new-enable
+                    (newp-of-new-enable-suppliedp booleanp)
                     verify-guards
                     untranslate
                     hints
@@ -3906,7 +4153,12 @@
                   res-isomaps
                   new-name$
                   new-enable$
-                  thm-name$
+                  old-to-new$
+                  old-to-new-enable$
+                  new-to-old$
+                  new-to-old-enable$
+                  newp-of-new$
+                  newp-of-new-enable$
                   verify-guards$
                   hints$
                   names-to-avoid))
@@ -3915,8 +4167,18 @@
                                 predicate
                                 new-name
                                 new-enable
-                                thm-name
-                                thm-enable
+                                old-to-new-name
+                                old-to-new-name-suppliedp
+                                old-to-new-enable
+                                old-to-new-enable-suppliedp
+                                new-to-old-name
+                                new-to-old-name-suppliedp
+                                new-to-old-enable
+                                new-to-old-enable-suppliedp
+                                newp-of-new-name
+                                newp-of-new-name-suppliedp
+                                newp-of-new-enable
+                                newp-of-new-enable-suppliedp
                                 verify-guards
                                 untranslate
                                 hints
@@ -3930,8 +4192,12 @@
                                            predicate
                                            new-name$
                                            new-enable$
-                                           thm-name$
-                                           thm-enable
+                                           old-to-new$
+                                           old-to-new-enable$
+                                           new-to-old$
+                                           new-to-old-enable$
+                                           newp-of-new$
+                                           newp-of-new-enable$
                                            verify-guards$
                                            untranslate
                                            hints$
@@ -3964,8 +4230,12 @@
                      (predicate 'nil)
                      (new-name ':auto)
                      (new-enable ':auto)
-                     (thm-name ':auto)
-                     (thm-enable 't)
+                     (old-to-new-name 'nil old-to-new-name-suppliedp)
+                     (old-to-new-enable 'nil old-to-new-enable-suppliedp)
+                     (new-to-old-name 'nil new-to-old-name-suppliedp)
+                     (new-to-old-enable 'nil new-to-old-enable-suppliedp)
+                     (newp-of-new-name ':auto newp-of-new-name-suppliedp)
+                     (newp-of-new-enable 't newp-of-new-enable-suppliedp)
                      (verify-guards ':auto)
                      (untranslate ':nice)
                      (hints 'nil)
@@ -3977,8 +4247,18 @@
                                    ',predicate
                                    ',new-name
                                    ',new-enable
-                                   ',thm-name
-                                   ',thm-enable
+                                   ',old-to-new-name
+                                   ,old-to-new-name-suppliedp
+                                   ',old-to-new-enable
+                                   ,old-to-new-enable-suppliedp
+                                   ',new-to-old-name
+                                   ,new-to-old-name-suppliedp
+                                   ',new-to-old-enable
+                                   ,new-to-old-enable-suppliedp
+                                   ',newp-of-new-name
+                                   ,newp-of-new-name-suppliedp
+                                   ',newp-of-new-enable
+                                   ,newp-of-new-enable-suppliedp
                                    ',verify-guards
                                    ',untranslate
                                    ',hints

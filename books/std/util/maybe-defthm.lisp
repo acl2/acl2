@@ -128,7 +128,7 @@
 
    ;; Some basic tests
 
-   (include-book "misc/assert" :dir :system)
+   (include-book "std/testing/assert" :dir :system)
 
    (maybe-defthm-as-rewrite foo (equal (car (cons x y)) x))
    (maybe-defthm-as-rewrite bar (equal (not 'nil) 't))

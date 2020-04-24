@@ -419,7 +419,7 @@
   (cond
    ((endp alist) *nil*)
    ((eq scion (cadr (car alist)))
-; A :plain loop$ scion call.  
+; A :plain loop$ scion call.
     (case (car (car alist))
       (sum ''(LAMBDA (E) (DECLARE (IGNORE E)) '0))
       (always ''(LAMBDA (E) (DECLARE (IGNORE E)) 'T))
@@ -432,7 +432,7 @@
 
       (otherwise ''(LAMBDA (E) (DECLARE (IGNORE E)) 'NIL))))
    ((eq scion (caddr (car alist)))
-; A :fancy loop$ scion call.  
+; A :fancy loop$ scion call.
     (case (car (car alist))
       (sum ''(LAMBDA (LOOP$-GVARS LOOP$-IVARS)
                      (DECLARE (IGNORE LOOP$-GVARS LOOP$-IVARS))
@@ -575,7 +575,8 @@
 
 (set-state-ok t)
 
-(defun definductor-fn1 (fn inductor-fn measure rel ruler-extenders hints state)
+(defun definductor-fn1 (fn inductor-fn measure well-founded-relation
+                           ruler-extenders hints state)
   (let ((wrld (w state)))
     (cond
      ((or (not (symbolp fn))
@@ -598,24 +599,27 @@
           (let* ((tmeasure (car measures))) ; translated measure
             (mv-let (erp encap)
               (make-inductor-defun-and-rule
-               fn inductor-fn tmeasure rel ruler-extenders hints wrld)
+               fn inductor-fn tmeasure well-founded-relation ruler-extenders
+               hints wrld)
               (cond
                (erp (er soft 'definductor
                         "We cannot construct an inductor for ~x0 because ~@1"
                         fn erp))
                (t (value encap))))))))))
 
-(defun definductor-fn (fn inductor-fn measure rel ruler-extenders hints)
+(defun definductor-fn (fn inductor-fn measure well-founded-relation
+                          ruler-extenders hints)
   (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode
   `(definductor-fn1 ',fn
      ',inductor-fn
      ',measure
-     ',rel
+     ',well-founded-relation
      ',ruler-extenders
      ',hints
      state))
 
-(defmacro definductor (fn &key inductor-fn measure rel ruler-extenders hints)
+(defmacro definductor (fn &key inductor-fn measure well-founded-relation
+                          ruler-extenders hints)
   `(with-output
      :off
 ; *valid-output-names* except for error
@@ -626,7 +630,8 @@
      (make-event
       (with-output
         :stack :pop
-        ,(definductor-fn fn inductor-fn measure rel ruler-extenders hints))
+        ,(definductor-fn fn inductor-fn measure well-founded-relation
+           ruler-extenders hints))
       :on-behalf-of :quiet!
 ; See note below.
       :check-expansion t)))

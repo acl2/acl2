@@ -1,6 +1,6 @@
-; FTY -- Alias Generator -- Tests
+; FTY Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,8 @@
 (in-package "ACL2")
 
 (include-book "deffixtype-alias")
-(include-book "kestrel/utilities/testing" :dir :system)
+
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

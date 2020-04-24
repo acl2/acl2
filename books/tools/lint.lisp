@@ -36,7 +36,7 @@
 (include-book "system/origin" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "tools/rulesets" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "clause-processors/unify-subst" :dir :system)
 (set-state-ok t)

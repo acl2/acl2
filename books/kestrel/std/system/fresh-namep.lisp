@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2019 Regents of the University of Texas
+; Copyright (C) 2020 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -52,7 +52,8 @@
                                        (const "constant")
                                        (stobj "stobj")
                                        (constrained-function
-                                        "constrained function"))))
+                                        "constrained function")
+                                       (theorem "theorem"))))
                                (t
                                 (msg "~x0 has properties in the world; it is ~
                                       not a new name."

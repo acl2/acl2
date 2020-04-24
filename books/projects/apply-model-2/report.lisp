@@ -467,7 +467,7 @@
 
 ; Now we illustrate some G2 functions we cannot warrant.
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; We insist that if the function is justified with a natural number measure
 ; then the relation must be O<.

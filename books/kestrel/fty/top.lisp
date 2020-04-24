@@ -1,4 +1,4 @@
-; FTY -- Kestrel Extensions
+; FTY Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -17,7 +17,9 @@
 (include-book "byte-list32")
 (include-book "byte-list64")
 (include-book "defbyte")
+(include-book "defbyte-ihs-theorems")
 (include-book "defbyte-standard-instances")
+(include-book "defbyte-standard-instances-ihs-theorems")
 (include-book "defbytelist")
 (include-book "defbytelist-standard-instances")
 (include-book "deffixequiv-sk")

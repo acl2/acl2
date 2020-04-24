@@ -36,7 +36,7 @@
 (include-book "cw-unformatted")
 (include-book "std/strings/pretty" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "std/io/base" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (std::add-default-post-define-hook :fix))

@@ -31,7 +31,7 @@
 (in-package "XDOC")
 (include-book "parse-xml")
 (include-book "save-classic")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "centaur/vl/util/cwtime" :dir :system)
 (set-state-ok t)
 (program)

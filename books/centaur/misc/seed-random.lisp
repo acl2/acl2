@@ -149,7 +149,7 @@ session by just calling @('(seed-random 'seed)').</p>")
 
    (include-book "std/util/defconsts" :dir :system)
    (include-book "std/util/bstar" :dir :system)
-   (include-book "misc/assert" :dir :system)
+   (include-book "std/testing/assert" :dir :system)
 
 ; Matt K. mod: Replace random-list with the tail-recursive version from
 ; system/random.lisp, to avoid a stack overflow in LispWorks.

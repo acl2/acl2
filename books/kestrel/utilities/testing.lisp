@@ -23,7 +23,8 @@
   (xdoc::topstring
    (xdoc::p
     "The utilities that used to be here have been moved into
-     @('[books]/misc/eval.lisp') and @('[books]/misc/assert.lisp').
-     They can be found under the @(see testing-utilities) topic in the manual.")
+     @('[books]/std/testing/eval.lisp') and
+     @('[books]/std/testing/assert.lisp').  They can be found under the @(see
+     std/testing) topic in the manual.")
    (xdoc::p
     "New utilities may be (perhaps temporarily) added here in the future.")))

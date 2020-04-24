@@ -31,7 +31,7 @@
 
 (include-book "xdoc/top" :dir :system)
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "user-interface") ;for cw-event
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 ;; These include-books are not strictly needed but are convenient for users of
 ;; deftest:
 (include-book "std/testing/eval" :dir :system) ;brings in MUST-BE-REDUNDANT

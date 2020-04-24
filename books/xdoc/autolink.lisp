@@ -35,7 +35,7 @@
 (include-book "fmt-to-str")
 (include-book "names")
 (include-book "std/strings/printtree-concat" :dir :system)
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (set-state-ok t)
 (program)
 

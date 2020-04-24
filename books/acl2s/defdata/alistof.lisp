@@ -19,7 +19,7 @@ data last modified: [2014-08-06]
 (include-book "register-combinator")
 
 
-(defconst *alistof-export-defthms*
+(def-const *alistof-export-defthms*
   '((defthm _pred_-IMPLIES-ALISTP
       (implies (_PRED_ x)
                (alistp x))

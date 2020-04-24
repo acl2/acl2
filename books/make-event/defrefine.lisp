@@ -344,7 +344,7 @@ Future Work
 
 ;; But look that the following fails.
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (must-fail
  (defrefine flawed-more-concrete-fn generic-fn

@@ -15,7 +15,7 @@
       ((print-case :downcase set-print-case))
       (ld
        '((INCLUDE-BOOK
-          "tool/simplify-defuns")
+          "../tool/simplify-defuns")
          (INCLUDE-BOOK
           "bvecp-raw")
          (INCLUDE-BOOK

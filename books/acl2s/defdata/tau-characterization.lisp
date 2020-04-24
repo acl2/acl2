@@ -371,8 +371,6 @@ data last modified: [2014-08-06]
       `((IMPLIES (AND (,P ,x) ,@neg-prod-recogs)
                  (OR . ,base-terms))))))
 
-
-
 (defun shallow-prod-p (texp C)
   (and (consp texp)
        (assoc-equal (car texp) C)))
@@ -380,10 +378,6 @@ data last modified: [2014-08-06]
 (defloop filter-shallow-prods (xs C)
   (for ((x in xs)) (append (and (shallow-prod-p x C)
                                 (list x)))))
-
-(defloop var-or-quoted-listp (xs)
-  (for ((x in xs)) (always (or (proper-symbolp x)
-                               (quotep x)))))
 
 (defun shallow-union-of-prods-p (texp C)
   (and (consp texp)

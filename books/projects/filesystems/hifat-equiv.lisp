@@ -152,10 +152,11 @@
                   (car y)))
   :hints (("Goal" :in-theory (enable hifat-no-dups-p)) ))
 
-(defthm hifat-subsetp-reflexive-lemma-2
-  (implies (not (hifat-no-dups-p y))
-           (not (hifat-no-dups-p (append x y))))
-  :hints (("Goal" :in-theory (enable hifat-no-dups-p)) ))
+(local
+ (defthm hifat-subsetp-reflexive-lemma-2
+   (implies (not (hifat-no-dups-p y))
+            (not (hifat-no-dups-p (append x y))))
+   :hints (("Goal" :in-theory (enable hifat-no-dups-p)) )))
 
 (defthm hifat-subsetp-reflexive-lemma-3
   (implies (and (m1-file-alist-p y)

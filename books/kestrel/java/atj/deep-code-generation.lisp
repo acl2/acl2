@@ -84,7 +84,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-term-fns)
+    :parents (atj-deep-code-generation atj-gen-deep-term-fns)
     :short "Generate Java code to build
             a deeply embedded ACL2 function call."
     :long
@@ -187,7 +187,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-term-fns)
+    :parents (atj-deep-code-generation atj-gen-deep-term-fns)
     :short "Generate Java code to build
             a deeply embedded ACL2 lambda expression."
     :long
@@ -245,7 +245,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-term-fns)
+    :parents (atj-deep-code-generation atj-gen-deep-term-fns)
     :short "Generate Java code to build a deeply embedded ACL2 term."
     (cond ((variablep term) (mv nil
                                 (atj-gen-deep-var term)
@@ -287,7 +287,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index))
                  (new-jvar-term-index posp :hyp (posp jvar-term-index))
                  (new-jvar-lambda-index posp :hyp (posp jvar-lambda-index)))
-    :parents (atj-code-generation atj-gen-deep-term-fns)
+    :parents (atj-deep-code-generation atj-gen-deep-term-fns)
     :short "Lift @(tsee atj-gen-deep-term) to lists."
     (if (endp terms)
         (mv nil

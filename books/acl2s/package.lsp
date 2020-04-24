@@ -17,6 +17,12 @@
      gen-sym-pkg
      eqlable-2-alistp
      make-symbl
+     rquotep
+     rfquotep
+     unrquote-lst
+     rquote-listp
+     unrquote-lst
+     def-const
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -29,6 +35,12 @@
      gen-sym-pkg
      eqlable-2-alistp
      make-symbl
+     rquotep
+     rfquotep
+     unrquote-lst
+     rquote-listp
+     unrquote-lst
+     def-const
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -215,7 +227,7 @@
       flatten
       impliez
       v
-      
+
       => ;sig
       _  ;range
 
@@ -224,6 +236,11 @@
       <<
       lexp
 
+      tshell-ensure
+      tshell-call
+      tshell-start
+      tshell-run-background
+      
       enable*
       disable*
       e/d*

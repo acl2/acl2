@@ -31,7 +31,7 @@
 (in-package "VL2014")
 (include-book "emodwire")
 (include-book "centaur/vl2014/util/merge-indices" :dir :system)
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert" :dir :system))
 (local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 
 

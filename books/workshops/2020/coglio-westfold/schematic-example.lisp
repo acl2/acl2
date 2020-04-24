@@ -105,7 +105,7 @@
      nil)))
 
 (must-be-redundant
- (defthm f-~>-f1
+ (defthm f-to-f1
    (implies (old x)
             (equal (f x)
                    (osi (f1 (iso x)))))))

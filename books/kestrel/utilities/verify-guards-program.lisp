@@ -32,9 +32,9 @@
 ; - Consider adding an option that proves both termination and guards for the
 ;   given function, rather than skipping the termination proof.
 
-; - Consider including the book misc/eval.lisp and use must-fail and perhaps
-;   must-succeed to incorporate the tests at the end, below.  Perhaps the
-;   successes could simply be local encapsulates.  Maybe create
+; - Consider including the book std/testing/eval.lisp and use must-fail and
+;   perhaps must-succeed to incorporate the tests at the end, below.  Perhaps
+;   the successes could simply be local encapsulates.  Maybe create
 ;   verify-guards-program-tests.lisp for this.  Maybe add bigger tests.
 
 ; - Here we document a potential problem, which may not occur (it apparently

@@ -142,6 +142,7 @@ hierarchical identifiers.</p>"
                                         acl2::member-of-cons
                                         default-car default-cdr))))
   (define vl-expr-welltyped-p ((x vl-expr-p))
+    :short "Check that an expression is @(see welltyped)"
     :measure (vl-expr-count x)
     :returns (welltyped-p booleanp :rule-classes :type-prescription)
     :verify-guards nil

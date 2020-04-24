@@ -746,6 +746,7 @@ accumulator-style functions to do the collection.  Under the hood, we also use
     :returns (names string-listp)
     :measure (vl-expr-count x)
     :flag :expr
+    :short "Extract all the variable names from a VL expression."
     (mbe :logic (if (vl-fast-atom-p x)
                     (let ((guts (vl-atom->guts x)))
                       (if (vl-id-p guts)

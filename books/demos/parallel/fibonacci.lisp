@@ -6,7 +6,7 @@
 (include-book "matrix-multiplication-parallel")
 ||#
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 
 (set-compile-fns t)
 

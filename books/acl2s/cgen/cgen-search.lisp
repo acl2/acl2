@@ -52,7 +52,7 @@
 ;;             state)))
 
 
-(defconst *initial-test-outcomes%* 
+(def-const *initial-test-outcomes%* 
   (acl2::make test-outcomes% 
               :cts '() :wts '() :vacs '() 
               :|#wts| 0 :|#cts| 0 

@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 (defstobj st1 fld1)
 (defstobj st2 fld2 :congruent-to st1)

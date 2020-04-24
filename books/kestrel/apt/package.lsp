@@ -119,6 +119,7 @@
                          ensure-list-no-duplicates$
                          ensure-list-subset$
                          ensure-named-formulas
+                         ensure-not-member-of-list$
                          ensure-symbol$
                          ensure-symbol-different$
                          ensure-symbol-list$
@@ -172,6 +173,7 @@
                          fquotep
                          fresh-logical-name-with-$s-suffix
                          fresh-name-in-world-with-$s
+                         fresh-namep-msg-weak
                          fsublis-fn-lst-simple
                          fsublis-fn-simple
                          fsublis-var
@@ -274,6 +276,7 @@
                          symbol-package-name-non-cl
                          symbol-symbol-alistp
                          symbol-truelist-alistp
+                         table-alist+
                          term-guard-obligation
                          termify-clause-set
                          tests-and-call

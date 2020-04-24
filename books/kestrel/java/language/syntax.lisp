@@ -14,6 +14,7 @@
 ; the order of the subtopics of the SYNTAX topic below:
 (include-book "unicode")
 (include-book "grammar")
+(include-book "unicode-input-characters")
 (include-book "floating-point-literals")
 (include-book "integer-literals")
 (include-book "null-literal")
@@ -32,6 +33,9 @@
 (include-book "binary-digits")
 (include-book "binary-digits-validation")
 (include-book "escape-sequences")
+(include-book "character-literals")
+(include-book "string-literals")
+(include-book "literals")
 (include-book "primitive-types")
 (include-book "unicode-escapes")
 
