@@ -89,6 +89,18 @@ class Acl2StringTest {
     }
 
     @Test
+    void compareToCharacters() { // strings come after -- see ACL2's alphorder
+        assertTrue(Acl2String.EMPTY.compareTo(Acl2Character.CODE_0) > 0);
+        assertTrue(Acl2String.ACL2.compareTo(Acl2Character.CODE_0) > 0);
+        assertTrue(Acl2String.make("theorem").
+                compareTo(Acl2Character.make('q')) > 0);
+        assertTrue(Acl2String.make("PROVER").
+                compareTo(Acl2Character.make('e')) > 0);
+        assertTrue(Acl2String.make("").
+                compareTo(Acl2Character.make('d')) > 0);
+    }
+
+    @Test
     void compareToNumbers() { // strings come after -- see ACL2's alphorder
         assertTrue(Acl2String.EMPTY.compareTo(Acl2Integer.ZERO) > 0);
         assertTrue(Acl2String.make("any string").
