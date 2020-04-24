@@ -868,13 +868,6 @@
                     (make-list-ac n1 val nil)))
     :hints (("goal" :induct (dec-dec-induct n1 n2)))))
 
-(defthm
-  remove-assoc-when-absent
-  (implies (and (alistp alist)
-                (atom (assoc-equal x alist)))
-           (equal (remove-assoc-equal x alist)
-                  alist)))
-
 (defthm stringp-of-append
   (equal (stringp (append x y)) (and (atom x) (stringp y))))
 
@@ -907,18 +900,62 @@
                       (len alist)
                       (+ 1 (len alist))))))
 
-(defthm len-of-remove-assoc-equal-2
+(defthm remove-assoc-when-absent-1
   (implies (and (not (null x))
                 (atom (assoc-equal x alist)))
            (equal (remove-assoc-equal x alist)
                   (true-list-fix alist))))
 
-(defthm len-of-remove-assoc-equal-1
+(defthm remove-assoc-when-absent-2
   (implies (and (not (null x))
-                (consp (assoc-equal x alist)))
+                (atom (assoc-equal x alist)))
+           (equal (remove-assoc-equal x (remove-assoc-equal y alist))
+                  (remove-assoc-equal y alist)))
+  :hints (("Goal" :in-theory (disable)
+           :use (:instance remove-assoc-when-absent-1
+                           (alist (remove-assoc-equal y alist)))) ))
+
+(defthm
+  remove-assoc-of-remove-assoc
+  (equal (remove-assoc x1 (remove-assoc x2 alist))
+         (remove-assoc x2 (remove-assoc x1 alist))))
+
+(defthm len-of-remove-assoc-1
+  (<= (len (remove-assoc-equal x alist))
+      (len alist))
+  :rule-classes :linear)
+
+(defthm len-of-remove-assoc-2
+  (implies (consp (assoc-equal x alist))
            (< (len (remove-assoc-equal x alist))
               (len alist)))
   :rule-classes :linear)
+
+(defthm
+  len-of-remove-assoc-3
+  (implies (consp (assoc-equal x (remove-assoc-equal y alist)))
+           (< (len (remove-assoc-equal y (remove-assoc-equal x alist)))
+              (len (remove-assoc-equal y alist))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable len-of-remove-assoc-2)
+           :use (:instance len-of-remove-assoc-2
+                           (alist (remove-assoc-equal y alist)))))
+  :rule-classes :linear)
+
+(defthm
+  member-of-strip-cars
+  (implies (case-split (not (null x)))
+           (iff
+            (member-equal x (strip-cars alist))
+            (consp (assoc-equal x alist)))))
+
+(defthm len-of-remove-assoc-when-no-duplicatesp-strip-cars
+  (implies (and (no-duplicatesp-equal (strip-cars alist))
+                (not (null x)))
+           (equal (len (remove-assoc-equal x alist))
+                  (if (atom (assoc-equal x alist))
+                      (len alist)
+                    (- (len alist) 1)))))
 
 (defthm strip-cars-of-remove-assoc
   (equal (strip-cars (remove-assoc-equal x alist))
@@ -928,18 +965,6 @@
   (implies (consp (assoc-equal name alist))
            (equal (strip-cars (put-assoc-equal name val alist))
                   (strip-cars alist))))
-
-(defthm
-  member-of-strip-cars t
-  :rule-classes
-  ((:type-prescription
-    :corollary (implies (consp (assoc-equal x alist))
-                        (member-equal x (strip-cars alist))))
-   (:type-prescription
-    :corollary
-    (implies (and (not (null x))
-                  (not (consp (assoc-equal x alist))))
-             (not (member-equal x (strip-cars alist)))))))
 
 (defthm remove-when-absent
   (implies (not (member-equal x l))
@@ -981,8 +1006,9 @@
            (equal (remove-equal nil (strip-cars (remove-equal x alist)))
                   (remove-equal nil (strip-cars alist)))))
 
-(defthm assoc-equal-of-append-1
-  (implies (not (null x1))
+;; Rename and add a case-split to the hypothesis about x1.
+(defthm assoc-of-append-1
+  (implies (case-split (not (null x1)))
            (equal (assoc-equal x1 (append x2 y))
                   (if (consp (assoc-equal x1 x2))
                       (assoc-equal x1 x2)
@@ -1030,7 +1056,7 @@
                          val2))))))
 
 (defthm assoc-of-remove
-  (implies (and (atom x1) (not (null x2)))
+  (implies (and (atom x1) (case-split (not (null x2))))
            (equal (assoc-equal x2 (remove-equal x1 l))
                   (assoc-equal x2 l))))
 
@@ -1074,11 +1100,6 @@
   (implies (and (true-listp l)
                 (>= (nfix n) (len l)))
            (equal (nth n l) nil)))
-
-(defthm
-  remove-assoc-of-remove-assoc
-  (equal (remove-assoc x1 (remove-assoc x2 alist))
-         (remove-assoc x2 (remove-assoc x1 alist))))
 
 (defthm strip-cars-of-remove1-assoc
   (equal (strip-cars (remove1-assoc-equal key alist))
@@ -1176,11 +1197,10 @@
                   (put-assoc-equal name val (remove-equal x alist)))))
 
 (defthm member-of-put-assoc
-  (implies (and (atom x) (force (not (null name))))
+  (implies (and (atom x) (case-split (not (null name))))
            (iff (member x (put-assoc-equal name val alist))
                 (member x alist))))
 
-;; Move later.
 (defthm
   consp-of-remove-assoc-1
   (implies (and (not (equal x2 x1))
@@ -1188,8 +1208,8 @@
            (consp (remove-assoc-equal x2 alist))))
 
 ;; The following is redundant with the eponymous theorem in
-;;  books/kestrel/lists-light/nthcdr.lisp, from where it was taken after a
-;;  discussion with Eric Smith.
+;; books/kestrel/lists-light/nthcdr.lisp, from where it was taken after a
+;; discussion with Eric Smith.
 (defthm nthcdr-iff
   (iff (nthcdr n x)
        (if (< (nfix n) (len x))
@@ -1200,3 +1220,19 @@
              (not (true-listp x))
            nil)))
   :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm assoc-of-true-list-fix
+  (equal (assoc-equal x (true-list-fix l))
+         (assoc-equal x l))
+  :hints (("goal" :in-theory (enable true-list-fix))))
+
+(defthm strip-cars-of-true-list-fix
+  (equal (strip-cars (true-list-fix x)) (strip-cars x)))
+
+(defthm remove-assoc-of-true-list-fix
+  (equal (remove-assoc-equal x (true-list-fix alist))
+         (remove-assoc-equal x alist)))
+
+(defthm put-assoc-equal-of-true-list-fix
+  (equal (put-assoc-equal name val (true-list-fix alist))
+         (true-list-fix (put-assoc-equal name val alist))))
