@@ -101,7 +101,7 @@ class Acl2CharacterTest {
         assertTrue(Acl2Character.make('a').
                 compareTo(Acl2Integer.make(-45)) > 0);
         assertTrue(Acl2Character.make('^').
-                compareTo(Acl2Rational.make(-45,4)) > 0);
+                compareTo(Acl2Rational.make(-45, 4)) > 0);
         assertTrue(Acl2Character.make('{').
                 compareTo(Acl2Number.make(1, 1)) > 0);
     }
@@ -157,13 +157,13 @@ class Acl2CharacterTest {
         assertFalse(Acl2Character.make('~').equals(Acl2Symbol.IF));
         // numbers:
         assertFalse(Acl2Character.make('-').equals(Acl2Integer.make(473)));
-        assertFalse(Acl2Character.make('-').equals(Acl2Rational.make(3,4)));
-        assertFalse(Acl2Character.make('-').equals(Acl2Number.make(3,4)));
+        assertFalse(Acl2Character.make('-').equals(Acl2Rational.make(3, 4)));
+        assertFalse(Acl2Character.make('-').equals(Acl2Number.make(3, 4)));
         // cons pairs:
         assertFalse(Acl2Character.CODE_0.
                 equals(Acl2ConsPair.make(Acl2Character.make('a'),
-                        Acl2Number.make(Acl2Rational.make(2,3),
-                                Acl2Rational.make(-3,4)))));
+                        Acl2Number.make(Acl2Rational.make(2, 3),
+                                Acl2Rational.make(-3, 4)))));
     }
 
 }
