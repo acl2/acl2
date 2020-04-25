@@ -643,16 +643,7 @@
     "The function to pretty-print lists of expressions
      takes a single rank argument,
      because we only need to pretty-print lists of expressions
-     that all have the same required rank.")
-   (xdoc::p
-    "According to the grammar,
-     the target of a field access expression should be a primary
-     (or a possibly type-qualified @('super')) [JLS:15.11],
-     but that would prevent it from being an expression name [JLS:15.8];
-     thus, here we pretend that the target of a field access expression
-     is a postfix expression, which includes expression names
-     (similarly to array access expressions);
-     this should be investigated further in [JLS]."))
+     that all have the same required rank."))
 
   (define print-jexpr ((expr jexprp) (expected-rank jexpr-rankp))
     :returns (part msgp)
