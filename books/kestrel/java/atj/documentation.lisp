@@ -485,7 +485,7 @@
        (xdoc::li
         "If the type is @(':jboolean[]'),
          then @('in') must be a term
-         @('(java::boolean-array <booleans>)')
+         @('(java::boolean-array-new-with-components <booleans>)')
          where @('<booleans>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::boolean-value <boolean>)')
@@ -493,7 +493,7 @@
        (xdoc::li
         "If the type is @(':jchar[]'),
          then @('in') must be a term
-         @('(java::char-array <chars>)')
+         @('(java::char-array-new-with-components <chars>)')
          where @('<chars>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::char-value <char>)')
@@ -501,7 +501,7 @@
        (xdoc::li
         "If the type is @(':jbyte[]'),
          then @('in') must be a term
-         @('(java::byte-array <bytes>)')
+         @('(java::byte-array-new-with-components <bytes>)')
          where @('<bytes>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::byte-value <byte>)')
@@ -509,7 +509,7 @@
        (xdoc::li
         "If the type is @(':jshort[]'),
          then @('in') must be a term
-         @('(java::short-array <short>)')
+         @('(java::short-array-new-with-components <short>)')
          where @('<short>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::short-value <short>)')
@@ -517,7 +517,7 @@
        (xdoc::li
         "If the type is @(':jint[]'),
          then @('in') must be a term
-         @('(java::int-array <ints>)')
+         @('(java::int-array-new-with-components <ints>)')
          where @('<ints>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::int-value <int>)')
@@ -525,7 +525,7 @@
        (xdoc::li
         "If the type is @(':jlong[]'),
          then @('in') must be a term
-         @('(java::long-array <longs>)')
+         @('(java::long-array-new-with-components <longs>)')
          where @('<longs>') is the translation of
          a term @('(list <elem1> <elem2> ...)')
          where each @('<elem>') is a term @('(java::long-value <long>)')
@@ -549,12 +549,12 @@
       @('(java::short-value <short>)'),
       @('(java::int-value <int>)'),
       @('(java::long-value <long>)'),
-      @('(java::boolean-array <booleans>)'),
-      @('(java::char-array <chars>)'),
-      @('(java::byte-array <bytes>)'),
-      @('(java::short-array <shorts>)'),
-      @('(java::int-array <ints>)'), or
-      @('(java::long-array <longs>)')
+      @('(java::boolean-array-new-with-components <booleans>)'),
+      @('(java::char-array-new-with-components <chars>)'),
+      @('(java::byte-array-new-with-components <bytes>)'),
+      @('(java::short-array-new-with-components <shorts>)'),
+      @('(java::int-array-new-with-components <ints>)'), or
+      @('(java::long-array-new-with-components <longs>)')
       can be used only for ACL2 functions that have
       the ATJ type
       @(':jboolean'),

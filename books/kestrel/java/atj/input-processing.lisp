@@ -419,15 +419,16 @@
                   (primitive-type-case ptype :double)))
         (er-soft+ ctx t irrelevant
                   "Internal error: type of ~x0 arrays not supported." ptype))
-       (constructor (primitive-type-case ptype
-                                         :boolean 'boolean-array
-                                         :char 'char-array
-                                         :byte 'byte-array
-                                         :short 'short-array
-                                         :int 'int-array
-                                         :long 'long-array
-                                         :float (impossible)
-                                         :double (impossible)))
+       (constructor (primitive-type-case
+                     ptype
+                     :boolean 'boolean-array-new-with-components
+                     :char 'char-array-new-with-components
+                     :byte 'byte-array-new-with-components
+                     :short 'short-array-new-with-components
+                     :int 'int-array-new-with-components
+                     :long 'long-array-new-with-components
+                     :float (impossible)
+                     :double (impossible)))
        (err-msg (msg "The term ~x0 that is an argument of ~
                       the function call (~x1 ...) that translates ~
                       the test term ~x2 in the :TESTS input, ~
@@ -456,12 +457,13 @@
     (value
      (primitive-type-case
       ptype
-      :boolean (atj-test-value-jboolean[] (boolean-array values))
-      :char (atj-test-value-jchar[] (char-array values))
-      :byte (atj-test-value-jbyte[] (byte-array values))
-      :short (atj-test-value-jshort[] (short-array values))
-      :int (atj-test-value-jint[] (int-array values))
-      :long (atj-test-value-jlong[] (long-array values))
+      :boolean (atj-test-value-jboolean[] (boolean-array-new-with-components
+                                           values))
+      :char (atj-test-value-jchar[] (char-array-new-with-components values))
+      :byte (atj-test-value-jbyte[] (byte-array-new-with-components values))
+      :short (atj-test-value-jshort[] (short-array-new-with-components values))
+      :int (atj-test-value-jint[] (int-array-new-with-components values))
+      :long (atj-test-value-jlong[] (long-array-new-with-components values))
       :float irrelevant
       :double irrelevant))))
 

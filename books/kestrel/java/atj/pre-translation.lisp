@@ -438,7 +438,7 @@
   (verify-guards atj-restore-mv-calls-in-term
     :hints (("Goal" :in-theory (disable posp)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-restore-mv-calls-in-body ((body pseudo-termp)
                                       (out-types atj-type-listp)
@@ -810,8 +810,8 @@
      we also allow singleton lists of @(':jprim') types
      to be converted to the singleton list of @(':avalue').
      This is needed in order to handle the translation to Java
-     of Java primitive array constructions
-     via functions like @(tsee byte-array),
+     of Java primitive array creations
+     via functions like @(tsee byte-array-new-with-components),
      which may take as inputs lists of primitive values like
      @('((byte-value 33) (byte-value 0) ...)'):
      when the elements of these lists are type-annotated,
@@ -2249,8 +2249,6 @@
     "If the term being analyzed is a quoted constant,
      we return the singleton list with @('nil').
      A quoted constant is never an array:
-     we exclusively use ACL2 functions like @(tsee byte-array-of-length)
-     to construct arrays;
      a quoted constant always has an @(':acl2') type,
      according to the type annotations.")
    (xdoc::p
