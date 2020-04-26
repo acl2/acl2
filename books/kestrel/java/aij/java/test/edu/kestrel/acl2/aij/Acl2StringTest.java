@@ -132,4 +132,14 @@ class Acl2StringTest {
                 compareTo(Acl2ConsPair.make(Acl2Symbol.T, Acl2Symbol.NIL)) < 0);
     }
 
+    @Test
+    void equalsToStrings() { // equality of underlying character sequences
+        assertTrue(Acl2String.EMPTY.equals(Acl2String.EMPTY));
+        assertTrue(Acl2String.ACL2.equals(Acl2String.ACL2));
+        assertTrue(Acl2String.make("same").equals(Acl2String.make("same")));
+        assertFalse(Acl2String.EMPTY.equals(Acl2String.ACL2));
+        assertFalse(Acl2String.make("acl2").equals(Acl2String.ACL2));
+        assertFalse(Acl2String.make("!@#").equals(Acl2String.make("{}")));
+    }
+
 }
