@@ -1,4 +1,4 @@
-; Ordered Maps (Omaps) Library
+; Ordered Bags (Obags) Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -8,4 +8,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+
 (ld "package.lsp")
+
+(reset-prehistory)
+
+(in-package "OBAG")

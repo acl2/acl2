@@ -1,4 +1,4 @@
-; Ordered Maps (Omaps) Library
+; Ordered Bags (Obags) Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -14,14 +14,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "OMAP" (set-difference-eq
+(defpkg "OBAG" (set-difference-eq
                 (append *std-pkg-symbols*
                         '(defxdoc+
                           fast-<<))
-                '(map
-                  values
-                  set::empty
+                '(set::cardinality
                   set::delete
+                  set::difference
+                  set::empty
                   set::head
                   set::in
-                  set::tail)))
+                  set::insert
+                  set::intersect
+                  set::tail
+                  set::union)))

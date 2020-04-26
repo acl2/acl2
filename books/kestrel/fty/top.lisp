@@ -10,6 +10,7 @@
 
 (in-package "FTY")
 
+(include-book "bag")
 (include-book "bit-list")
 (include-book "byte")
 (include-book "byte-list")

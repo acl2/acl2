@@ -1,4 +1,4 @@
-; Ordered Maps (Omaps) -- Tests
+; Ordered Maps (Omaps) Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
