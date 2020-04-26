@@ -16,7 +16,8 @@
 
 (defpkg "OMAP" (set-difference-eq
                 (append *std-pkg-symbols*
-                        '(fast-<<))
+                        '(defxdoc+
+                          fast-<<))
                 '(map
                   values
                   set::empty

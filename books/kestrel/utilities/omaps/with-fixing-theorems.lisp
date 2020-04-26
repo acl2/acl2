@@ -10,9 +10,9 @@
 
 (in-package "OMAP")
 
-(include-book "centaur/fty/top" :dir :system)
-
 (include-book "core")
+
+(include-book "centaur/fty/top" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
