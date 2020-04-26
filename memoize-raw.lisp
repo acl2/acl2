@@ -205,7 +205,7 @@
 ; a successful build and used it for (profile 'rewrite) followed by
 ; :mini-proveall and then (memsum), on top of both SBCL 1.1.11 and SBCL 1.4.7.
 
-       (not (ignore-errors (sb-vm::%read-cycle-counter)))
+       (ignore-errors (sb-vm::%read-cycle-counter))
    (pushnew :RDTSC *features*)))
 
 #+rdtsc
