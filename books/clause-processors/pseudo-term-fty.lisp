@@ -108,50 +108,50 @@ of term and access the fields; see its documentation for examples.</p>
 
 ")
 
-(define remove-non-symbols (x)
+;; Historical note: We used to fix pseudo-term lambda formals/actuals by
+;;    1) removing all non-symbols from the formals
+;;    2) removing all elements corresponding to non-symbols in the formals from
+;;       the actuals.
+;; This was a little ugly and complicated.  Dave Greve suggested we instead
+;; replace all non-symbols in the formals with NIL.  Since NIL is never looked
+;; up as a variable by an evaluator, these extra NIL bindings are harmless.  We
+;; can therefore leave the corresponding elements from the actuals alone; the
+;; only thing we need to do to the actuals is fix their length, which can be
+;; done using (take (len formals) actuals).  A nice property of this is that
+;; the length of the new formals and actuals is the same as the length of the
+;; original formals.  The indexed positions of actuals are also preserved.
+
+(define replace-non-symbols-with-nil (x)
+  :returns (new-x symbol-listp)
   (if (atom x)
       nil
-    (if (symbolp (car x))
-        (cons (car x)
-              (remove-non-symbols (cdr x)))
-      (remove-non-symbols (cdr x))))
+    (cons (and (symbolp (car x))
+               (car x))
+          (replace-non-symbols-with-nil (cdr x))))
   ///
-  (defthm symbol-listp-of-remove-non-symbols
-    (symbol-listp (remove-non-symbols x)))
+  (defret len-of-<fn>
+    (equal (len new-x) (len x)))
 
-  (defthm remove-non-symbols-when-symbol-listp
+  (defret <fn>-when-symbol-listp
     (implies (symbol-listp x)
-             (equal (remove-non-symbols x) x))))
+             (equal (replace-non-symbols-with-nil x) x))))
 
-(define remove-corresp-non-symbols (x (y true-listp))
-  (if (atom x)
-      nil
-    (if (symbolp (car x))
-        (cons (car y)
-              (remove-corresp-non-symbols (cdr x) (cdr y)))
-      (remove-corresp-non-symbols (cdr x) (cdr y))))
-  ///
 
-  (defthm pseudo-term-listp-of-remove-corresp-non-symbols
-    (implies (pseudo-term-listp y)
-             (pseudo-term-listp (remove-corresp-non-symbols x y))))
 
-  (defthm len-of-remove-corresp-non-symbols
-    (equal (len (remove-corresp-non-symbols x y))
-           (len (remove-non-symbols x)))
-    :hints(("Goal" :in-theory (enable remove-non-symbols))))
+;; (local (defthm pseudo-term-listp-of-resize-list
+;;          (implies (pseudo-term-listp x)
+;;                   (pseudo-term-listp (resize-list x n nil)))
+;;          :hints(("Goal" :in-theory (enable resize-list)))))
 
-  (defthm remove-corresp-non-symbols-when-symbol-listp
-    (implies (symbol-listp x)
-             (equal (remove-corresp-non-symbols x y)
-                    (take (len x) y))))
+;; (local (defthm resize-list-identity
+;;          (implies (and (true-listp x)
+;;                        (equal n (len x)))
+;;                   (equal (resize-list x n d)
+;;                          x))))
 
-  (defthm lookup-in-remove-non-symbols-alist
-    (implies (symbolp x)
-             (equal (assoc x (pairlis$ (remove-non-symbols formals)
-                                       (remove-corresp-non-symbols formals actuals)))
-                    (assoc x (pairlis$ formals actuals))))
-    :hints(("Goal" :in-theory (enable remove-non-symbols)))))
+;; (local (defthm len-of-resize-list
+;;          (equal (len (resize-list x n d))
+;;                 (nfix n))))
 
 (defines pseudo-term-fix
   (define pseudo-term-fix ((x pseudo-termp))
@@ -171,9 +171,8 @@ of term and access the fields; see its documentation for examples.</p>
                ((atom (car x)) nil)
                (t (let* ((body (pseudo-term-fix (third (car x))))
                          (formals1 (cadr (car x)))
-                         (actuals1 (pseudo-term-list-fix (cdr x)))
-                         (formals (remove-non-symbols formals1))
-                         (actuals (remove-corresp-non-symbols formals1 actuals1)))
+                         (actuals (take (len formals1) (pseudo-term-list-fix (cdr x))))
+                         (formals (replace-non-symbols-with-nil formals1)))
                     (cons (list 'lambda formals body) actuals))))
          :exec x))
 
@@ -207,6 +206,23 @@ of term and access the fields; see its documentation for examples.</p>
   (local (defthm len-equal-0
            (equal (equal (len x) 0)
                   (not (consp x)))))
+
+  ;; (defthm-pseudo-term-fix-flag
+  ;;   (defthm len-of-pseudo-term-list-fix
+  ;;     (equal (len (pseudo-term-list-fix x)) (len x))
+  ;;     :hints ('(:expand ((pseudo-term-list-fix x))))
+  ;;     :flag pseudo-term-list-fix)
+  ;;   :skip-others t)
+
+  ;; (defthm-pseudo-term-fix-flag
+  ;;   (defthm pseudo-termp-of-pseudo-term-fix
+  ;;     (pseudo-termp (pseudo-term-fix x))
+  ;;     :hints ('(:expand ((pseudo-term-fix x))))
+  ;;     :flag pseudo-term-fix)
+  ;;   (defthm pseudo-term-listp-of-pseudo-term-list-fix
+  ;;     (pseudo-term-listp (pseudo-term-list-fix x))
+  ;;     :hints ('(:expand ((pseudo-term-list-fix x))))
+  ;;     :flag pseudo-term-list-fix))
 
   (defthm-pseudo-term-fix-flag
     (defthm pseudo-term-fix-when-pseudo-termp
@@ -246,11 +262,11 @@ of term and access the fields; see its documentation for examples.</p>
     :equiv pseudo-term-list-equiv
     :define t :forward t)
 
-  (fty::deffixcong pseudo-term-list-equiv
-    pseudo-term-list-equiv
-    (remove-corresp-non-symbols formals args) args
-    :hints(("Goal" :in-theory (enable remove-corresp-non-symbols
-                                      pseudo-term-list-fix))))
+  ;; (fty::deffixcong pseudo-term-list-equiv
+  ;;   pseudo-term-list-equiv
+  ;;   (remove-corresp-non-symbols formals args) args
+  ;;   :hints(("Goal" :in-theory (enable remove-corresp-non-symbols
+  ;;                                     pseudo-term-list-fix))))
 
   (fty::deffixcong pseudo-term-list-equiv
     pseudo-term-list-equiv (cons x y) y
@@ -282,28 +298,43 @@ of term and access the fields; see its documentation for examples.</p>
 
 (local (def-ev-ind base-ev base-ev-list))
 
+;; (local (defthm resize-list-of-atom
+;;          (implies (and (syntaxp (not (equal x ''nil)))
+;;                        (not (consp x)))
+;;                   (equal (resize-list x n d)
+;;                          (resize-list nil n d)))
+;;          :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+(local (defthm assoc-of-replace-non-symbols-with-nil
+         (implies (and x (symbolp x))
+                  (equal (assoc-equal x (pairlis$ (replace-non-symbols-with-nil formals)
+                                                  (take (len formals) actuals)))
+                         (assoc-equal x (pairlis$ formals actuals))))
+         :hints(("Goal" :in-theory (enable replace-non-symbols-with-nil
+                                           pairlis$)
+                 :induct (pairlis$ formals actuals)))))
+
 
 (local
  (defthm-base-ev-flag
-   (defthm base-ev-of-remove-non-symbols
-     (equal (base-ev x (pairlis$ (remove-non-symbols formals)
-                                 (remove-corresp-non-symbols formals actuals)))
+   (defthm base-ev-of-replace-non-symbols-with-nil
+     (equal (base-ev x (pairlis$ (replace-non-symbols-with-nil formals)
+                                 (take (len formals) actuals)))
             (base-ev x (pairlis$ formals actuals)))
      :hints('(:in-theory (enable base-ev-of-nonsymbol-atom
                                  base-ev-of-bad-fncall
                                  base-ev-of-fncall-args)))
      :flag base-ev)
    (defthm base-ev-list-of-remove-non-symbols
-     (equal (base-ev-list x (pairlis$ (remove-non-symbols formals)
-                                      (remove-corresp-non-symbols formals actuals)))
+     (equal (base-ev-list x (pairlis$ (replace-non-symbols-with-nil formals)
+                                      (take (len formals) actuals)))
             (base-ev-list x (pairlis$ formals actuals)))
      :flag base-ev-list)))
 
 (local
- (defthm base-ev-lst-of-remove-corresp-non-symbols
-   (equal (base-ev-list (remove-corresp-non-symbols x y) a)
-          (remove-corresp-non-symbols x (base-ev-list y a)))
-   :hints(("Goal" :in-theory (enable remove-corresp-non-symbols)))))
+ (defthm base-ev-list-of-take
+   (equal (base-ev-list (take n x) a)
+          (take n (base-ev-list x a)))))
 
 
 (defthm-base-ev-flag
@@ -447,7 +478,7 @@ introduced by it.</p>")
   (mbe :logic (b* ((formals (cadr x))
                    (body (caddr x)))
                 (list 'lambda
-                      (remove-non-symbols formals)
+                      (replace-non-symbols-with-nil formals)
                       (pseudo-term-fix body)))
        :exec x)
   ///
@@ -471,7 +502,7 @@ introduced by it.</p>")
   :returns (formals symbol-listp)
   :guard-hints (("goal" :in-theory (enable pseudo-lambda-p)))
   :hooks ((:fix :hints(("Goal" :in-theory (enable pseudo-lambda-fix)))))
-  (mbe :logic (remove-non-symbols (cadr x))
+  (mbe :logic (replace-non-symbols-with-nil (cadr x))
        :exec (cadr x)))
 
 (define pseudo-lambda->body ((x pseudo-lambda-p))
@@ -490,13 +521,13 @@ introduced by it.</p>")
              :hints(("Goal" :in-theory (enable pseudo-lambda-p)))
              :rule-classes (:rewrite (:type-prescription :typed-term lambda)))
   (mbe :logic (list 'lambda
-                    (remove-non-symbols formals)
+                    (replace-non-symbols-with-nil formals)
                     (pseudo-term-fix body))
        :exec (list 'lambda formals body))
   ///
   (defthm pseudo-lambda->formals-of-pseudo-lambda
     (equal (pseudo-lambda->formals (pseudo-lambda formals body))
-           (remove-non-symbols formals))
+           (replace-non-symbols-with-nil formals))
     :hints(("Goal" :in-theory (enable pseudo-lambda->formals))))
 
   (defthm pseudo-lambda->body-of-pseudo-lambda
@@ -662,7 +693,8 @@ introduced by it.</p>")
   :guard (eq (pseudo-term-kind x) :var)
   :guard-hints (("goal" :in-theory (enable pseudo-term-kind)))
   :returns (name pseudo-var-p :rule-classes :type-prescription)
-  :hooks ((:fix :hints(("Goal" :expand ((pseudo-term-fix x))
+  :hooks ((:fix :hints(("Goal" :expand ((:free (a b) (pseudo-term-fix (cons a b)))
+                                        (pseudo-term-fix x))
                         :in-theory (enable pseudo-term-kind)))))
   (mbe :logic (pseudo-var-fix (and (eq (pseudo-term-kind x) :var) x))
        :exec x)
@@ -707,6 +739,11 @@ introduced by it.</p>")
     (std::da-patbind-fn 'pseudo-term-var
                         '((name . pseudo-term-var->name))
                         args forms rest-expr)))
+
+
+(defthm pseudo-term-listp-take
+  (implies (pseudo-term-listp x)
+           (pseudo-term-listp (take n x))))
 
 
 
@@ -895,7 +932,7 @@ introduced by it.</p>")
   :returns (formals symbol-listp :rule-classes (:rewrite :type-prescription))
   :hooks ((:fix :hints(("Goal" :in-theory (enable pseudo-term-fix)))))
   (mbe :logic (and (eq (pseudo-term-kind x) :lambda)
-                   (remove-non-symbols (cadr (car x))))
+                   (replace-non-symbols-with-nil (cadr (car x))))
        :exec (cadr (car x)))
   ///
 
@@ -965,7 +1002,7 @@ introduced by it.</p>")
   :returns (term pseudo-termp
                  :hints(("Goal" :in-theory (enable pseudo-lambda))))
   (mbe :logic (cons (pseudo-lambda formals body)
-                    (remove-corresp-non-symbols formals (pseudo-term-list-fix args)))
+                    (take (len formals) (pseudo-term-list-fix args)))
        :exec (cons (list 'lambda formals body) args))
   ///
 
@@ -992,14 +1029,14 @@ introduced by it.</p>")
 
   (defthm pseudo-term-call->args-of-pseudo-term-lambda
     (equal (pseudo-term-call->args (pseudo-term-lambda formals body args))
-           (remove-corresp-non-symbols formals (pseudo-term-list-fix args)))
+           (take (len formals) (pseudo-term-list-fix args)))
     :hints(("Goal" :in-theory (enable pseudo-term-call->args
                                       pseudo-lambda)
             :expand ((:free (a b) (pseudo-term-fix (cons a b)))))))
 
   (defthm pseudo-term-lambda->formals-of-pseudo-term-lambda
     (equal (pseudo-term-lambda->formals (pseudo-term-lambda formals body args))
-           (remove-non-symbols formals))
+           (replace-non-symbols-with-nil formals))
     :hints(("Goal" :in-theory (enable pseudo-term-lambda->formals
                                       pseudo-lambda)
             :expand ((:free (a b) (pseudo-term-fix (cons a b)))))))
@@ -1316,6 +1353,8 @@ all the cases and all the accessors that can be used in each case.</p>
                              (:lambda pseudo-term-lambda)
                              (:call (:fncall :lambda) pseudo-term-call))))
 
+(fty::deffixcong pseudo-term-list-equiv pseudo-term-list-equiv (take n x) x)
+
 (defines pseudo-term-count
   (define pseudo-term-count ((x pseudo-termp))
     :parents (pseudo-term-fty)
@@ -1359,7 +1398,7 @@ all the cases and all the accessors that can be used in each case.</p>
 
   (defthm pseudo-term-count-of-pseudo-term-lambda
     (< (+ (pseudo-term-count body) (pseudo-term-list-count
-                                    (remove-corresp-non-symbols formals args)))
+                                    (take (len formals) args)))
        (pseudo-term-count (pseudo-term-lambda formals body args)))
     :hints (("goal" :expand ((pseudo-term-count (pseudo-term-lambda formals body args)))))
     :rule-classes :linear)

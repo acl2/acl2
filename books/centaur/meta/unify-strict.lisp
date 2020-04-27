@@ -44,17 +44,19 @@
 
 (local (in-theory (disable pseudo-termp)))
 
-(local (defthm remove-corresp-non-symbols-of-pseudo-term-list-fix
-         (equal (remove-corresp-non-symbols formals (pseudo-term-list-fix args))
-                (pseudo-term-list-fix (remove-corresp-non-symbols formals args)))
-         :hints(("Goal" :in-theory (enable remove-corresp-non-symbols pseudo-term-list-fix)))))
-
 (local (include-book "std/lists/take" :dir :system))
 
-(local (defthm pseudo-term-lambda-of-remove-corresp-non-symbols
-         (equal (pseudo-term-lambda (remove-non-symbols formals)
+(local (defthm take-of-pseudo-term-list-fix
+         (equal (take n (pseudo-term-list-fix args))
+                (pseudo-term-list-fix (take n args)))
+         :hints(("Goal" :in-theory (enable pseudo-term-list-fix)))))
+
+
+
+(local (defthm pseudo-term-lambda-of-replace-non-symbols
+         (equal (pseudo-term-lambda (replace-non-symbols-with-nil formals)
                                     body
-                                    (remove-corresp-non-symbols formals args))
+                                    (take (len formals) args))
                 (pseudo-term-lambda formals body args))
          :hints(("Goal" :in-theory (enable pseudo-term-lambda
                                            pseudo-lambda)))))
@@ -63,15 +65,14 @@
   (equal (equal (pseudo-term-lambda formals body args) x)
          (and (pseudo-termp x)
               (pseudo-term-case x :lambda)
-              (equal (pseudo-term-lambda->formals x) (remove-non-symbols formals))
-              (equal (pseudo-term-call->args x) (remove-corresp-non-symbols formals
-                                                                            (pseudo-term-list-fix args)))
+              (equal (pseudo-term-lambda->formals x) (replace-non-symbols-with-nil formals))
+              (equal (pseudo-term-call->args x) (take (len formals) (pseudo-term-list-fix args)))
               (equal (pseudo-term-lambda->body x) (pseudo-term-fix body))))
   :hints (("goal" :use ((:instance ACL2::PSEUDO-TERM-LAMBDA-OF-ACCESSORS)
-                        (:instance pseudo-term-lambda-of-remove-corresp-non-symbols))
+                        (:instance pseudo-term-lambda-of-replace-non-symbols))
            :in-theory (e/d ()
                            (ACL2::PSEUDO-TERM-LAMBDA-OF-ACCESSORS
-                            pseudo-term-lambda-of-remove-corresp-non-symbols))))
+                            pseudo-term-lambda-of-replace-non-symbols))))
   :otf-flg t)
 
 
