@@ -111,4 +111,35 @@ class Acl2StringTest {
                 compareTo(Acl2Number.make(0, 1)) > 0);
     }
 
+    @Test
+    void compareToSymbols() { // strings come before -- see ACL2's alphorder
+        assertTrue(Acl2String.EMPTY.compareTo(Acl2Symbol.T) < 0);
+        assertTrue(Acl2String.ACL2.compareTo(Acl2Symbol.CONSP) < 0);
+        assertTrue(Acl2String.make("one two three").
+                compareTo(Acl2Symbol.IF) < 0);
+    }
+
+    @Test
+    void compareToConsPairs() { // strings come before -- see ACL2's lexorder
+        assertTrue(Acl2String.EMPTY.
+                compareTo(Acl2ConsPair.make(Acl2String.EMPTY,
+                        Acl2String.EMPTY)) < 0);
+        assertTrue(Acl2String.ACL2.
+                compareTo(Acl2ConsPair.make(Acl2Integer.make(33),
+                        Acl2ConsPair.make(Acl2Character.make('a'),
+                                Acl2Character.make('b')))) < 0);
+        assertTrue(Acl2String.make("a STRing").
+                compareTo(Acl2ConsPair.make(Acl2Symbol.T, Acl2Symbol.NIL)) < 0);
+    }
+
+    @Test
+    void equalsToStrings() { // equality of underlying character sequences
+        assertTrue(Acl2String.EMPTY.equals(Acl2String.EMPTY));
+        assertTrue(Acl2String.ACL2.equals(Acl2String.ACL2));
+        assertTrue(Acl2String.make("same").equals(Acl2String.make("same")));
+        assertFalse(Acl2String.EMPTY.equals(Acl2String.ACL2));
+        assertFalse(Acl2String.make("acl2").equals(Acl2String.ACL2));
+        assertFalse(Acl2String.make("!@#").equals(Acl2String.make("{}")));
+    }
+
 }

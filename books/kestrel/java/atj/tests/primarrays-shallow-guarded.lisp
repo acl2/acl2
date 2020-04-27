@@ -18,99 +18,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; constructors from components, applied to LIST calls:
-
-(java::atj-main-function-type test-boolean-array-of-list-0 () :jboolean[])
-
-(java::atj-main-function-type test-char-array-of-list-0 () :jchar[])
-
-(java::atj-main-function-type test-byte-array-of-list-0 () :jbyte[])
-
-(java::atj-main-function-type test-short-array-of-list-0 () :jshort[])
-
-(java::atj-main-function-type test-int-array-of-list-0 () :jint[])
-
-(java::atj-main-function-type test-long-array-of-list-0 () :jlong[])
-
-(java::atj-main-function-type test-boolean-array-of-list-1
-                              (:jboolean)
-                              :jboolean[])
-
-(java::atj-main-function-type test-char-array-of-list-1 (:jchar) :jchar[])
-
-(java::atj-main-function-type test-byte-array-of-list-1 (:jbyte) :jbyte[])
-
-(java::atj-main-function-type test-short-array-of-list-1 (:jshort) :jshort[])
-
-(java::atj-main-function-type test-int-array-of-list-1 (:jint) :jint[])
-
-(java::atj-main-function-type test-long-array-of-list-1 (:jlong) :jlong[])
-
-(java::atj-main-function-type test-boolean-array-of-list-2
-                              (:jboolean :jboolean)
-                              :jboolean[])
-
-(java::atj-main-function-type test-char-array-of-list-2
-                              (:jchar :jchar)
-                              :jchar[])
-
-(java::atj-main-function-type test-byte-array-of-list-2
-                              (:jbyte :jbyte)
-                              :jbyte[])
-
-(java::atj-main-function-type test-short-array-of-list-2
-                              (:jshort :jshort)
-                              :jshort[])
-
-(java::atj-main-function-type test-int-array-of-list-2
-                              (:jint :jint)
-                              :jint[])
-
-(java::atj-main-function-type test-long-array-of-list-2
-                              (:jlong :jlong)
-                              :jlong[])
-
-(java::atj-main-function-type test-boolean-array-of-list-3
-                              (:jboolean :jboolean :jboolean)
-                              :jboolean[])
-
-(java::atj-main-function-type test-char-array-of-list-3
-                              (:jchar :jchar :jchar)
-                              :jchar[])
-
-(java::atj-main-function-type test-byte-array-of-list-3
-                              (:jbyte :jbyte :jbyte)
-                              :jbyte[])
-
-(java::atj-main-function-type test-short-array-of-list-3
-                              (:jshort :jshort :jshort)
-                              :jshort[])
-
-(java::atj-main-function-type test-int-array-of-list-3
-                              (:jint :jint :jint)
-                              :jint[])
-
-(java::atj-main-function-type test-long-array-of-list-3
-                              (:jlong :jlong :jlong)
-                              :jlong[])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; read operations:
 
 (java::atj-main-function-type test-boolean-array-read
-                              (:jboolean[] :jint)
-                              :jboolean)
+                              (:jboolean[] :jint) :jboolean)
 
-(java::atj-main-function-type test-char-array-read (:jchar[] :jint) :jchar)
+(java::atj-main-function-type test-char-array-read
+                              (:jchar[] :jint) :jchar)
 
-(java::atj-main-function-type test-byte-array-read (:jbyte[] :jint) :jbyte)
+(java::atj-main-function-type test-byte-array-read
+                              (:jbyte[] :jint) :jbyte)
 
-(java::atj-main-function-type test-short-array-read (:jshort[] :jint) :jshort)
+(java::atj-main-function-type test-short-array-read
+                              (:jshort[] :jint) :jshort)
 
-(java::atj-main-function-type test-int-array-read (:jint[] :jint) :jint)
+(java::atj-main-function-type test-int-array-read
+                              (:jint[] :jint) :jint)
 
-(java::atj-main-function-type test-long-array-read (:jlong[] :jint) :jlong)
+(java::atj-main-function-type test-long-array-read
+                              (:jlong[] :jint) :jlong)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,17 +86,93 @@
 
 ; constructors from length:
 
-(java::atj-main-function-type test-boolean-array-of-length (:jint) :jboolean[])
+(java::atj-main-function-type test-boolean-array-new-len (:jint) :jboolean[])
 
-(java::atj-main-function-type test-char-array-of-length (:jint) :jchar[])
+(java::atj-main-function-type test-char-array-new-len (:jint) :jchar[])
 
-(java::atj-main-function-type test-byte-array-of-length (:jint) :jbyte[])
+(java::atj-main-function-type test-byte-array-new-len (:jint) :jbyte[])
 
-(java::atj-main-function-type test-short-array-of-length (:jint) :jshort[])
+(java::atj-main-function-type test-short-array-new-len (:jint) :jshort[])
 
-(java::atj-main-function-type test-int-array-of-length (:jint) :jint[])
+(java::atj-main-function-type test-int-array-new-len (:jint) :jint[])
 
-(java::atj-main-function-type test-long-array-of-length (:jint) :jlong[])
+(java::atj-main-function-type test-long-array-new-len (:jint) :jlong[])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; creation operation with initializer:
+
+(java::atj-main-function-type test-boolean-array-new-init-0
+                              () :jboolean[])
+
+(java::atj-main-function-type test-char-array-new-init-0
+                              () :jchar[])
+
+(java::atj-main-function-type test-byte-array-new-init-0
+                              () :jbyte[])
+
+(java::atj-main-function-type test-short-array-new-init-0
+                              () :jshort[])
+
+(java::atj-main-function-type test-int-array-new-init-0
+                              () :jint[])
+
+(java::atj-main-function-type test-long-array-new-init-0
+                              () :jlong[])
+
+(java::atj-main-function-type test-boolean-array-new-init-1
+                              (:jboolean) :jboolean[])
+
+(java::atj-main-function-type test-char-array-new-init-1
+                              (:jchar) :jchar[])
+
+(java::atj-main-function-type test-byte-array-new-init-1
+                              (:jbyte) :jbyte[])
+
+(java::atj-main-function-type test-short-array-new-init-1
+                              (:jshort) :jshort[])
+
+(java::atj-main-function-type test-int-array-new-init-1
+                              (:jint) :jint[])
+
+(java::atj-main-function-type test-long-array-new-init-1
+                              (:jlong) :jlong[])
+
+(java::atj-main-function-type test-boolean-array-new-init-2
+                              (:jboolean :jboolean) :jboolean[])
+
+(java::atj-main-function-type test-char-array-new-init-2
+                              (:jchar :jchar) :jchar[])
+
+(java::atj-main-function-type test-byte-array-new-init-2
+                              (:jbyte :jbyte) :jbyte[])
+
+(java::atj-main-function-type test-short-array-new-init-2
+                              (:jshort :jshort) :jshort[])
+
+(java::atj-main-function-type test-int-array-new-init-2
+                              (:jint :jint) :jint[])
+
+(java::atj-main-function-type test-long-array-new-init-2
+                              (:jlong :jlong) :jlong[])
+
+(java::atj-main-function-type test-boolean-array-new-init-3
+                              (:jboolean :jboolean :jboolean) :jboolean[])
+
+(java::atj-main-function-type test-char-array-new-init-3
+                              (:jchar :jchar :jchar) :jchar[])
+
+(java::atj-main-function-type test-byte-array-new-init-3
+                              (:jbyte :jbyte :jbyte) :jbyte[])
+
+(java::atj-main-function-type test-short-array-new-init-3
+                              (:jshort :jshort :jshort) :jshort[])
+
+(java::atj-main-function-type test-int-array-new-init-3
+                              (:jint :jint :jint) :jint[])
+
+(java::atj-main-function-type test-long-array-new-init-3
+                              (:jlong :jlong :jlong) :jlong[])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -211,36 +213,36 @@
            test-short-array-write
            test-int-array-write
            test-long-array-write
-           test-boolean-array-of-length
-           test-char-array-of-length
-           test-byte-array-of-length
-           test-short-array-of-length
-           test-int-array-of-length
-           test-long-array-of-length
-           test-boolean-array-of-list-0
-           test-char-array-of-list-0
-           test-byte-array-of-list-0
-           test-short-array-of-list-0
-           test-int-array-of-list-0
-           test-long-array-of-list-0
-           test-boolean-array-of-list-1
-           test-char-array-of-list-1
-           test-byte-array-of-list-1
-           test-short-array-of-list-1
-           test-int-array-of-list-1
-           test-long-array-of-list-1
-           test-boolean-array-of-list-2
-           test-char-array-of-list-2
-           test-byte-array-of-list-2
-           test-short-array-of-list-2
-           test-int-array-of-list-2
-           test-long-array-of-list-2
-           test-boolean-array-of-list-3
-           test-char-array-of-list-3
-           test-byte-array-of-list-3
-           test-short-array-of-list-3
-           test-int-array-of-list-3
-           test-long-array-of-list-3
+           test-boolean-array-new-len
+           test-char-array-new-len
+           test-byte-array-new-len
+           test-short-array-new-len
+           test-int-array-new-len
+           test-long-array-new-len
+           test-boolean-array-new-init-0
+           test-char-array-new-init-0
+           test-byte-array-new-init-0
+           test-short-array-new-init-0
+           test-int-array-new-init-0
+           test-long-array-new-init-0
+           test-boolean-array-new-init-1
+           test-char-array-new-init-1
+           test-byte-array-new-init-1
+           test-short-array-new-init-1
+           test-int-array-new-init-1
+           test-long-array-new-init-1
+           test-boolean-array-new-init-2
+           test-char-array-new-init-2
+           test-byte-array-new-init-2
+           test-short-array-new-init-2
+           test-int-array-new-init-2
+           test-long-array-new-init-2
+           test-boolean-array-new-init-3
+           test-char-array-new-init-3
+           test-byte-array-new-init-3
+           test-short-array-new-init-3
+           test-int-array-new-init-3
+           test-long-array-new-init-3
            f
            g
            h

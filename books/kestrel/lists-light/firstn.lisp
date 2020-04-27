@@ -111,3 +111,8 @@
              (true-list-fix x)
            x))
   :hints (("Goal" :in-theory (e/d (nthcdr firstn append) (firstn-becomes-take-gen)))))
+
+(defthm consp-of-firstn
+  (equal (consp (firstn n l))
+         (and (posp n)
+              (consp l))))

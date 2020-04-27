@@ -419,15 +419,16 @@
                   (primitive-type-case ptype :double)))
         (er-soft+ ctx t irrelevant
                   "Internal error: type of ~x0 arrays not supported." ptype))
-       (constructor (primitive-type-case ptype
-                                         :boolean 'boolean-array
-                                         :char 'char-array
-                                         :byte 'byte-array
-                                         :short 'short-array
-                                         :int 'int-array
-                                         :long 'long-array
-                                         :float (impossible)
-                                         :double (impossible)))
+       (constructor (primitive-type-case
+                     ptype
+                     :boolean 'boolean-array-new-init
+                     :char 'char-array-new-init
+                     :byte 'byte-array-new-init
+                     :short 'short-array-new-init
+                     :int 'int-array-new-init
+                     :long 'long-array-new-init
+                     :float (impossible)
+                     :double (impossible)))
        (err-msg (msg "The term ~x0 that is an argument of ~
                       the function call (~x1 ...) that translates ~
                       the test term ~x2 in the :TESTS input, ~
@@ -456,12 +457,12 @@
     (value
      (primitive-type-case
       ptype
-      :boolean (atj-test-value-jboolean[] (boolean-array values))
-      :char (atj-test-value-jchar[] (char-array values))
-      :byte (atj-test-value-jbyte[] (byte-array values))
-      :short (atj-test-value-jshort[] (short-array values))
-      :int (atj-test-value-jint[] (int-array values))
-      :long (atj-test-value-jlong[] (long-array values))
+      :boolean (atj-test-value-jboolean[] (boolean-array-new-init values))
+      :char (atj-test-value-jchar[] (char-array-new-init values))
+      :byte (atj-test-value-jbyte[] (byte-array-new-init values))
+      :short (atj-test-value-jshort[] (short-array-new-init values))
+      :int (atj-test-value-jint[] (int-array-new-init values))
+      :long (atj-test-value-jlong[] (long-array-new-init values))
       :float irrelevant
       :double irrelevant))))
 

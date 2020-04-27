@@ -229,9 +229,13 @@
                              "ATJ, the Java Code Generator for ACL2"))
 
    (xdoc::p
-    "Support has been added to
-     recognize ACL2 functions that model Java primitive array deconstructions
-     and translate them to Java code that converts the arrays to ACL2 lists.")
+    "The model of Java primitive arrays has been extended
+     with functions to convert between arrays and corresponding ACL2 lists.")
+
+   (xdoc::p
+    "Support has been added to recognize ACL2 functions
+     that convert between Java primitive arrays and ACL2 lists,
+     and translate them to Java code that converts between arrays and lists.")
 
    (xdoc::p
     "A new post-translation step has been added

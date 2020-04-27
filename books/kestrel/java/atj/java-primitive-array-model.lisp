@@ -12,6 +12,12 @@
 
 (include-book "../language/primitive-values")
 
+(include-book "kestrel/fty/ubyte16-list" :dir :system)
+(include-book "kestrel/fty/sbyte8-list" :dir :system)
+(include-book "kestrel/fty/sbyte16-list" :dir :system)
+(include-book "kestrel/fty/sbyte32-list" :dir :system)
+(include-book "kestrel/fty/sbyte64-list" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atj-java-primitive-array-model
@@ -29,9 +35,8 @@
      a perhaps more general model from the Java language formalization.
      The current model only serves ATJ's needs;
      it is not meant to model all aspects of Java primitive arrays.
-     ATJ's use of this model of Java primitive arrays is described "
-    (xdoc::seetopic "atj-java-primitive-arrays" "here")
-    ".")
+     ATJ's use of this model of Java primitive arrays
+     is described in @(see atj-java-primitive-arrays).")
    (xdoc::p
     "We model a Java primitive array essentially as
      a list of Java primitive values whose length is below @($2^{31}$).
@@ -39,34 +44,73 @@
      the @('length') field of an array has type @('int') [JLS:10.7],
      and the maximum integer representable with @('int') is @($2^{31}-1$).
      We tag the list, via @(tsee fty::defprod),
-     with an indication of the primitive types.
-     This gives us, for each of the right Java primitive types,
-     a constructor from lists to arrays,
-     and a deconstructor from arrays to lists.")
+     with an indication of the primitive types.")
    (xdoc::p
     "We introduce the following functions,
      eight of each kind, for the eight Java primitive types:")
    (xdoc::ul
     (xdoc::li
-     "Operations to read components of Java primitive arrays.
+     "Operations to read components of Java primitive arrays:
+      these model array accesses whose results are used as values.
       The index is (our ACL2 model of) a Java @('int'),
       and the result is (our ACL2 model of) the array component type.")
     (xdoc::li
-     "Operations to obtain the lengths of Java primitive arrays.
+     "Operations to obtain the lengths of Java primitive arrays:
+      these model accesses of the @('length') field of arrays.
       The result is (our ACL2 model of) a Java @('int').")
     (xdoc::li
-     "Operations to write components of Java primitive arrays.
+     "Operations to write components of Java primitive arrays:
+      these model the assignment of values
+      to array access expressions whose results are used as variables
+      (these operations functionally return updated arrays).
       The index is (our ACL2 model of) a Java @('int'),
       the new component value is (our ACL2 model of) the array component type,
       and the result is the new Java primitive array.")
     (xdoc::li
-     "Operations to construct Java primitive arrays of given sizes
-      and with every component the default value for the component type,
+     "Operations to create new Java primitive arrays of given lengths
+      (and with every component the default value for the component type,
       i.e. @('false') for @('boolean') and 0 for the integral types
-      [JLS:4.12.5].
-      The size is (our ACL2 model of) a Java @('int').
-      These operations can be recognized by ATJ
-      and translated to array creation expressions without initializers.")))
+      [JLS:4.12.5]):
+      these model array creation expressions
+      with lengths and without initializers.
+      The size is (our ACL2 model of) a Java @('int'),
+      and the result is the newly created Java primitive array.")
+    (xdoc::li
+     "Operations to create new Java primitive arrays with given components:
+      these model array creation expressions
+      without lengths and with initializers.
+      The inputs are lists of (our ACL2 models of) Java primitive values
+      (of the arrays' component types),
+      and the outputs are the newly created Java primitive arrays.
+      These operations are the same as the constructors of the array fixtypes,
+      but introducing them provides future flexibility,
+      should the definition of the fixtype change in some way.")
+    (xdoc::li
+     "Operations to convert from Java primitive arrays to ACL2 lists,
+      component-wise:
+      a Java @('boolean') array is converted to
+      the list of corresponding ACL2 @(tsee booleanp) values;
+      a Java @('char') array is converted to
+      the list of corresponding ACL2 @(tsee ubyte16p) values;
+      a Java @('byte') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte8p) values;
+      a Java @('short') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte16p) values;
+      a Java @('int') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte32p) values; and
+      a Java @('long') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte64p) values.")
+    (xdoc::li
+     "Operations to convert to Java primitive arrays from ACL2 lists,
+      component-wise; these are the inverse conversions of
+      those described just above."))
+   (xdoc::p
+    "Note that the convertions between Java arrays and ACL2 lists
+     involve lists of ACL2 values, not of Java primitive values.
+     The reason is that ACL2 lists of (our model of) Java primitive values
+     do not really have a place in the generated Java code,
+     which separates Java primitive values and arrays from built-in ACL2 values,
+     through the ATJ types."))
   :order-subtopics t
   :default-parent t)
 
@@ -808,10 +852,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-array-of-length ((length int-value-p))
+(define boolean-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array boolean-array-p)
-  :short "Construct a Java @('boolean') array with the given size
+  :short "Construct a Java @('boolean') array with the given length
           and with @('false') as every component."
   (boolean-array (repeat (int-value->int length) (boolean-value nil)))
   :prepwork ((local (include-book "std/lists/repeat" :dir :system))
@@ -824,10 +868,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char-array-of-length ((length int-value-p))
+(define char-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array char-array-p)
-  :short "Construct a Java @('char') array with the given size
+  :short "Construct a Java @('char') array with the given length
           and with 0 as every component."
   (char-array (repeat (int-value->int length) (char-value 0)))
   :prepwork ((local (include-book "std/lists/repeat" :dir :system))
@@ -840,10 +884,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define byte-array-of-length ((length int-value-p))
+(define byte-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array byte-array-p)
-  :short "Construct a Java @('byte') array with the given size
+  :short "Construct a Java @('byte') array with the given length
           and with 0 as every component."
   (byte-array (repeat (int-value->int length) (byte-value 0)))
   :prepwork ((local (include-book "std/lists/repeat" :dir :system))
@@ -856,10 +900,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define short-array-of-length ((length int-value-p))
+(define short-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array short-array-p)
-  :short "Construct a Java @('short') array with the given size
+  :short "Construct a Java @('short') array with the given length
           and with 0 as every component."
   (short-array (repeat (int-value->int length) (short-value 0)))
   :prepwork ((local (include-book "std/lists/repeat" :dir :system))
@@ -872,10 +916,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define int-array-of-length ((length int-value-p))
+(define int-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array int-array-p)
-  :short "Construct a Java @('int') array with the given size
+  :short "Construct a Java @('int') array with the given length
           and with 0 as every component."
   (int-array (repeat (int-value->int length) (int-value 0)))
   :prepwork ((local (include-book "std/lists/repeat" :dir :system))
@@ -888,10 +932,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define long-array-of-length ((length int-value-p))
+(define long-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array long-array-p)
-  :short "Construct a Java @('long') array with the given size
+  :short "Construct a Java @('long') array with the given length
           and with 0 as every component."
   (long-array (repeat (int-value->int length) (long-value 0)))
   :prepwork ((local (include-book "std/lists/repeat" :dir :system))
@@ -904,10 +948,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define float-array-of-length ((length int-value-p))
+(define float-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array float-array-p)
-  :short "Construct a Java @('float') array with the given size
+  :short "Construct a Java @('float') array with the given length
           and with positive 0 as every component."
   (float-array (repeat (int-value->int length)
                        (float-value (float-value-abs-pos-zero))))
@@ -921,10 +965,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define double-array-of-length ((length int-value-p))
+(define double-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array double-array-p)
-  :short "Construct a Java @('double') array with the given size
+  :short "Construct a Java @('double') array with the given length
           and with positive 0 as every component."
   (double-array (repeat (int-value->int length)
                         (double-value (double-value-abs-pos-zero))))
@@ -935,3 +979,343 @@
                       :true-listp t
                       :elementp-of-nil nil
                       :pred double-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define boolean-array-new-init ((comps boolean-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array boolean-array-p)
+  :short "Construct a Java @('boolean') array
+          with the given initializer (i.e. components)."
+  (boolean-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-array-new-init ((comps char-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array char-array-p)
+  :short "Construct a Java @('char') array
+          with the given initializer (i.e. components)."
+  (char-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-array-new-init ((comps byte-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array byte-array-p)
+  :short "Construct a Java @('byte') array
+          with the given initializer (i.e. components)."
+  (byte-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-array-new-init ((comps short-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array short-array-p)
+  :short "Construct a Java @('short') array
+          with the given initializer (i.e. components)."
+  (short-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-array-new-init ((comps int-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array int-array-p)
+  :short "Construct a Java @('int') array
+          with the given initializer (i.e. components)."
+  (int-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-array-new-init ((comps long-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array long-array-p)
+  :short "Construct a Java @('long') array
+          with the given initializer (i.e. components)."
+  (long-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define float-array-new-init ((comps float-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array float-array-p)
+  :short "Construct a Java @('float') array
+          with the given initializer (i.e. components)."
+  (float-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define double-array-new-init ((comps double-value-listp))
+  :guard (< (len comps) (expt 2 31))
+  :returns (array double-array-p)
+  :short "Construct a Java @('double') array
+          with the given initializer (i.e. components)."
+  (double-array comps))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define boolean-array-to-boolean-list ((array boolean-array-p))
+  :returns (list boolean-listp)
+  :short "Convert a Java @('boolean') array to an ACL2 list of booleans."
+  (boolean-array-to-boolean-list-aux (boolean-array->components array))
+
+  :prepwork
+  ((define boolean-array-to-boolean-list-aux ((comps boolean-value-listp))
+     :returns (list boolean-listp)
+     (cond ((endp comps) nil)
+           (t (cons (boolean-value->bool (car comps))
+                    (boolean-array-to-boolean-list-aux (cdr comps)))))
+     ///
+     (defret len-of-boolean-array-to-boolean-list-aux
+       (equal (len list)
+              (len comps)))))
+
+  ///
+
+  (defret len-of-boolean-array-to-boolean-list
+    (equal (len list)
+           (len (boolean-array->components array)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-array-to-ubyte16-list ((array char-array-p))
+  :returns (list ubyte16-listp)
+  :short "Convert a Java @('char') array to
+          an ACL2 list of unsigned 16-bit integers."
+  (char-array-to-ubyte16-list-aux (char-array->components array))
+
+  :prepwork
+  ((define char-array-to-ubyte16-list-aux ((comps char-value-listp))
+     :returns (list ubyte16-listp)
+     (cond ((endp comps) nil)
+           (t (cons (char-value->nat (car comps))
+                    (char-array-to-ubyte16-list-aux (cdr comps)))))
+     ///
+     (defret len-of-char-array-to-ubyte16-list-aux
+       (equal (len list)
+              (len comps)))))
+
+  ///
+
+  (defret len-of-char-array-to-ubyte16-list
+    (equal (len list)
+           (len (char-array->components array)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-array-to-sbyte8-list ((array byte-array-p))
+  :returns (list sbyte8-listp)
+  :short "Convert a Java @('byte') array to
+          an ACL2 list of signed 8-bit integers."
+  (byte-array-to-sbyte8-list-aux (byte-array->components array))
+
+  :prepwork
+  ((define byte-array-to-sbyte8-list-aux ((comps byte-value-listp))
+     :returns (list sbyte8-listp)
+     (cond ((endp comps) nil)
+           (t (cons (byte-value->int (car comps))
+                    (byte-array-to-sbyte8-list-aux (cdr comps)))))
+     ///
+     (defret len-of-byte-array-to-sbyte8-list-aux
+       (equal (len list)
+              (len comps)))))
+
+  ///
+
+  (defret len-of-byte-array-to-sbyte8-list
+    (equal (len list)
+           (len (byte-array->components array)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-array-to-sbyte16-list ((array short-array-p))
+  :returns (list sbyte16-listp)
+  :short "Convert a Java @('short') array to
+          an ACL2 list of signed 16-bit integers."
+  (short-array-to-sbyte16-list-aux (short-array->components array))
+
+  :prepwork
+  ((define short-array-to-sbyte16-list-aux ((comps short-value-listp))
+     :returns (list sbyte16-listp)
+     (cond ((endp comps) nil)
+           (t (cons (short-value->int (car comps))
+                    (short-array-to-sbyte16-list-aux (cdr comps)))))
+     ///
+     (defret len-of-short-array-to-sbyte16-list-aux
+       (equal (len list)
+              (len comps)))))
+
+  ///
+
+  (defret len-of-short-array-to-sbyte16-list
+    (equal (len list)
+           (len (short-array->components array)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-array-to-sbyte32-list ((array int-array-p))
+  :returns (list sbyte32-listp)
+  :short "Convert a Java @('int') array to
+          an ACL2 list of signed 32-bit integers."
+  (int-array-to-sbyte32-list-aux (int-array->components array))
+
+  :prepwork
+  ((define int-array-to-sbyte32-list-aux ((comps int-value-listp))
+     :returns (list sbyte32-listp)
+     (cond ((endp comps) nil)
+           (t (cons (int-value->int (car comps))
+                    (int-array-to-sbyte32-list-aux (cdr comps)))))
+     ///
+     (defret len-of-int-array-to-sbyte32-list-aux
+       (equal (len list)
+              (len comps)))))
+
+  ///
+
+  (defret len-of-int-array-to-sbyte32-list
+    (equal (len list)
+           (len (int-array->components array)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-array-to-sbyte64-list ((array long-array-p))
+  :returns (list sbyte64-listp)
+  :short "Convert a Java @('long') array to
+          an ACL2 list of signed 64-bit integers."
+  (long-array-to-sbyte64-list-aux (long-array->components array))
+
+  :prepwork
+  ((define long-array-to-sbyte64-list-aux ((comps long-value-listp))
+     :returns (list sbyte64-listp)
+     (cond ((endp comps) nil)
+           (t (cons (long-value->int (car comps))
+                    (long-array-to-sbyte64-list-aux (cdr comps)))))
+     ///
+     (defret len-of-long-array-to-sbyte64-list-aux
+       (equal (len list)
+              (len comps)))))
+
+  ///
+
+  (defret len-of-long-array-to-sbyte64-list
+    (equal (len list)
+           (len (long-array->components array)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define boolean-array-from-boolean-list ((list boolean-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array boolean-array-p)
+  :short "Convert an ACL2 list of booleans to a Java @('boolean') array."
+  (boolean-array (boolean-array-from-boolean-list-aux list))
+
+  :prepwork
+  ((define boolean-array-from-boolean-list-aux ((list boolean-listp))
+     :returns (comps boolean-value-listp)
+     (cond ((endp list) nil)
+           (t (cons (boolean-value (car list))
+                    (boolean-array-from-boolean-list-aux (cdr list)))))
+     ///
+     (defret len-of-boolean-array-from-boolean-list-aux
+       (equal (len comps)
+              (len list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-array-from-ubyte16-list ((list ubyte16-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array char-array-p)
+  :short "Convert an ACL2 list of unsigned 16-bit integers
+          to a Java @('char') array."
+  (char-array (char-array-from-ubyte16-list-aux list))
+
+  :prepwork
+  ((define char-array-from-ubyte16-list-aux ((list ubyte16-listp))
+     :returns (comps char-value-listp)
+     (cond ((endp list) nil)
+           (t (cons (char-value (car list))
+                    (char-array-from-ubyte16-list-aux (cdr list)))))
+     ///
+     (defret len-of-char-array-from-ubyte16-list-aux
+       (equal (len comps)
+              (len list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-array-from-sbyte8-list ((list sbyte8-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array byte-array-p)
+  :short "Convert an ACL2 list of signed 8-bit integers
+          to a Java @('byte') array."
+  (byte-array (byte-array-from-sbyte8-list-aux list))
+
+  :prepwork
+  ((define byte-array-from-sbyte8-list-aux ((list sbyte8-listp))
+     :returns (comps byte-value-listp)
+     (cond ((endp list) nil)
+           (t (cons (byte-value (car list))
+                    (byte-array-from-sbyte8-list-aux (cdr list)))))
+     ///
+     (defret len-of-byte-array-from-sbyte8-list-aux
+       (equal (len comps)
+              (len list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-array-from-sbyte16-list ((list sbyte16-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array short-array-p)
+  :short "Convert an ACL2 list of signed 16-bit integers
+          to a Java @('short') array."
+  (short-array (short-array-from-sbyte16-list-aux list))
+
+  :prepwork
+  ((define short-array-from-sbyte16-list-aux ((list sbyte16-listp))
+     :returns (comps short-value-listp)
+     (cond ((endp list) nil)
+           (t (cons (short-value (car list))
+                    (short-array-from-sbyte16-list-aux (cdr list)))))
+     ///
+     (defret len-of-short-array-from-sbyte16-list-aux
+       (equal (len comps)
+              (len list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-array-from-sbyte32-list ((list sbyte32-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array int-array-p)
+  :short "Convert an ACL2 list of signed 32-bit integers
+          to a Java @('int') array."
+  (int-array (int-array-from-sbyte32-list-aux list))
+
+  :prepwork
+  ((define int-array-from-sbyte32-list-aux ((list sbyte32-listp))
+     :returns (comps int-value-listp)
+     (cond ((endp list) nil)
+           (t (cons (int-value (car list))
+                    (int-array-from-sbyte32-list-aux (cdr list)))))
+     ///
+     (defret len-of-int-array-from-sbyte32-list-aux
+       (equal (len comps)
+              (len list))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-array-from-sbyte64-list ((list sbyte64-listp))
+  :guard (< (len list) (expt 2 31))
+  :returns (array long-array-p)
+  :short "Convert an ACL2 list of signed 64-bit integers
+          to a Java @('long') array."
+  (long-array (long-array-from-sbyte64-list-aux list))
+
+  :prepwork
+  ((define long-array-from-sbyte64-list-aux ((list sbyte64-listp))
+     :returns (comps long-value-listp)
+     (cond ((endp list) nil)
+           (t (cons (long-value (car list))
+                    (long-array-from-sbyte64-list-aux (cdr list)))))
+     ///
+     (defret len-of-long-array-from-sbyte64-list-aux
+       (equal (len comps)
+              (len list))))))
