@@ -49,7 +49,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-reads*
+(defval *atj-jprimarr-read-fns*
   :short "List of (the names of) the ACL2 functions that model
           the reading of components of Java primitive arrays."
   '(boolean-array-read
@@ -63,7 +63,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-lengths*
+(defval *atj-jprimarr-length-fns*
   :short "List of (the names of) the ACL2 functions that model
           the retrieval of lengths of Java primitive arrays."
   '(boolean-array-length
@@ -77,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-writes*
+(defval *atj-jprimarr-write-fns*
   :short "List of (the names of) the ACL2 functions that model
           the writing of components of Java primitive arrays."
   '(boolean-array-write
@@ -91,7 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-len-news*
+(defval *atj-jprimarr-new-len-fns*
   :short "List of (the names of) the ACL2 functions that model
           the creation of Java primitive arrays from lengths."
   '(boolean-array-new-with-length
@@ -105,7 +105,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-comp-news*
+(defval *atj-jprimarr-new-init-fns*
   :short "List of (the names of) the ACL2 functions that model
           the creation of Java primitive arrays from components."
   :long
@@ -122,7 +122,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-tolist-convs*
+(defval *atj-jprimarr-conv-tolist-fns*
   :short "List of (the names of) the ACL2 functions that model
           the conversion from Java primitive arrays to ACL2 lists."
   '(boolean-array-to-boolean-list
@@ -134,7 +134,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-fromlist-convs*
+(defval *atj-jprimarr-conv-fromlist-fns*
   :short "List of (the names of) the ACL2 functions that model
           the conversion to Java primitive arrays from ACL2 lists."
   '(boolean-array-from-boolean-list
@@ -149,72 +149,72 @@
 (defval *atj-jprimarr-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive array operations."
-  (append *atj-jprimarr-reads*
-          *atj-jprimarr-lengths*
-          *atj-jprimarr-writes*
-          *atj-jprimarr-len-news*
-          *atj-jprimarr-comp-news*
-          *atj-jprimarr-tolist-convs*
-          *atj-jprimarr-fromlist-convs*)
+  (append *atj-jprimarr-read-fns*
+          *atj-jprimarr-length-fns*
+          *atj-jprimarr-write-fns*
+          *atj-jprimarr-new-len-fns*
+          *atj-jprimarr-new-init-fns*
+          *atj-jprimarr-conv-tolist-fns*
+          *atj-jprimarr-conv-fromlist-fns*)
   ///
   (assert-event (function-name-listp *atj-jprimarr-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-jprimarr-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-read-p (fn)
+(define atj-jprimarr-read-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the reading of components from Java primitive arrays."
-  (and (member-eq fn *atj-jprimarr-reads*) t))
+  (and (member-eq fn *atj-jprimarr-read-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-length-p (fn)
+(define atj-jprimarr-length-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the retrieval of lengths of Java primitive arrays."
-  (and (member-eq fn *atj-jprimarr-lengths*) t))
+  (and (member-eq fn *atj-jprimarr-length-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-write-p (fn)
+(define atj-jprimarr-write-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the writing of components from Java primitive arrays."
-  (and (member-eq fn *atj-jprimarr-writes*) t))
+  (and (member-eq fn *atj-jprimarr-write-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-len-new-p (fn)
+(define atj-jprimarr-new-len-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the creation of Java primitive arrays from lengths."
-  (and (member-eq fn *atj-jprimarr-len-news*) t))
+  (and (member-eq fn *atj-jprimarr-new-len-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-comp-new-p (fn)
+(define atj-jprimarr-new-init-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the creation of Java primitive arrays from components."
-  (and (member-eq fn *atj-jprimarr-comp-news*) t))
+  (and (member-eq fn *atj-jprimarr-new-init-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-tolist-conv-p (fn)
+(define atj-jprimarr-conv-tolist-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the conversions from Java primitive arrays to ACL2 lists."
-  (and (member-eq fn *atj-jprimarr-tolist-convs*) t))
+  (and (member-eq fn *atj-jprimarr-conv-tolist-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-fromlist-conv-p (fn)
+(define atj-jprimarr-conv-fromlist-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the conversions to Java primitive arrays from ACL2 lists."
-  (and (member-eq fn *atj-jprimarr-fromlist-convs*) t))
+  (and (member-eq fn *atj-jprimarr-conv-fromlist-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

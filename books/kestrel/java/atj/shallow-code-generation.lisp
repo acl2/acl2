@@ -1055,7 +1055,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-of-qconst-to-expr ((fn atj-jprim-constr-p) arg)
+(define atj-jprim-constr-of-qconst-to-expr ((fn atj-jprim-constr-fn-p) arg)
   :returns (expr jexprp)
   :short "Map an ACL2 function that models a Java primitive constructor
           to the Java expression that constructs the primitive value,
@@ -1098,11 +1098,11 @@
                    (ec-call (jexpr-fix :irrelevant)))))
     (t (prog2$ (impossible)
                (ec-call (jexpr-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-constr-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-constr-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-ptype ((fn atj-jprim-constr-p))
+(define atj-jprim-constr-to-ptype ((fn atj-jprim-constr-fn-p))
   :returns (ptype primitive-typep)
   :short "Map an ACL2 function that models a Java primitive constructor
           to the corresponding Java primitive type."
@@ -1114,12 +1114,12 @@
     (int-value (primitive-type-int))
     (long-value (primitive-type-long))
     (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-constr-p)))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-constr-fn-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-deconstr-to-ptype ((fn atj-jprim-deconstr-p))
+(define atj-jprim-deconstr-to-ptype ((fn atj-jprim-deconstr-fn-p))
   :returns (ptype primitive-typep)
   :short "Map an ACL2 function that models a Java primitive deconstructor
           to the corresponding Java primitive type."
@@ -1131,12 +1131,12 @@
     (int-value->int$inline (primitive-type-int))
     (long-value->int$inline (primitive-type-long))
     (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-deconstr-p)))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-deconstr-fn-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-unop-fn-to-junop ((fn atj-jprim-unop-p))
+(define atj-jprim-unop-fn-to-junop ((fn atj-jprim-unop-fn-p))
   :returns (unop junopp)
   :short "Map an ACL2 function that models a Java primitive unary operation
           to the corresponding unary operator in the Java abstract syntax."
@@ -1153,11 +1153,11 @@
     (float-minus (junop-uminus))
     (double-minus (junop-uminus))
     (t (prog2$ (impossible) (ec-call (junop-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-unop-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-unop-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-binop-fn-to-jbinop ((fn atj-jprim-binop-p))
+(define atj-jprim-binop-fn-to-jbinop ((fn atj-jprim-binop-fn-p))
   :returns (binop jbinopp)
   :short "Map an ACL2 function that models a Java primitive binary operation
           to the corresponding binary operator in the Java abstract syntax."
@@ -1230,11 +1230,11 @@
     (float-greateq (jbinop-ge))
     (double-greateq (jbinop-ge))
     (t (prog2$ (impossible) (ec-call (jbinop-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-binop-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-binop-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-conv-fn-to-jtype ((fn atj-jprim-conv-p))
+(define atj-jprim-conv-fn-to-jtype ((fn atj-jprim-conv-fn-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models a Java primitive conversion
           to the result Java type of the conversion."
@@ -1282,11 +1282,11 @@
     (double-to-float (jtype-float))
     (byte-to-char (jtype-char))
     (t (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-conv-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-conv-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-len-new-to-comp-jtype ((fn atj-jprimarr-len-new-p))
+(define atj-jprimarr-new-len-to-comp-jtype ((fn atj-jprimarr-new-len-fn-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models
           a Java primitive array creation with length
@@ -1301,11 +1301,11 @@
     (float-array-new-with-length (jtype-float))
     (double-array-new-with-length (jtype-double))
     (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-len-new-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-len-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-comp-new-to-comp-jtype ((fn atj-jprimarr-comp-new-p))
+(define atj-jprimarr-comp-new-to-comp-jtype ((fn atj-jprimarr-new-init-fn-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models
           a Java primitive array creation with initializer
@@ -1318,11 +1318,11 @@
     (int-array-new-with-components (jtype-int))
     (long-array-new-with-components (jtype-long))
     (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-comp-new-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-init-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-comp-new-to-ptype ((fn atj-jprimarr-comp-new-p))
+(define atj-jprimarr-comp-new-to-ptype ((fn atj-jprimarr-new-init-fn-p))
   :returns (type primitive-typep)
   :short "Map an ACL2 function that models
           a Java primitive array constructor with initializer
@@ -1336,11 +1336,12 @@
     (long-array-new-with-components (primitive-type-long))
     (otherwise (prog2$ (impossible)
                        (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-comp-new-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-init-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-fromlist-conv-to-ptype ((fn atj-jprimarr-fromlist-conv-p))
+(define atj-jprimarr-fromlist-conv-to-ptype ((fn
+                                              atj-jprimarr-conv-fromlist-fn-p))
   :returns (ptype primitive-typep)
   :short "Map a list-to-array conversion function
           to the corresponding Java primitive type."
@@ -1352,12 +1353,12 @@
     (int-array-from-sbyte32-list (primitive-type-int))
     (long-array-from-sbyte64-list (primitive-type-long))
     (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-fromlist-conv-p)))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-conv-fromlist-fn-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-tolist-conv-to-ptype ((fn atj-jprimarr-tolist-conv-p))
+(define atj-jprimarr-tolist-conv-to-ptype ((fn atj-jprimarr-conv-tolist-fn-p))
   :returns (ptype primitive-typep)
   :short "Map an array-to-list conversion function
           to the corresponding Java primitive type."
@@ -1369,7 +1370,7 @@
     (int-array-to-sbyte32-list (primitive-type-int))
     (long-array-to-sbyte64-list (primitive-type-long))
     (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-tolist-conv-p)))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-conv-tolist-fn-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1441,7 +1442,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-write-to-method-name ((fn atj-jprimarr-write-p))
+(define atj-jprimarr-write-to-method-name ((fn atj-jprimarr-write-fn-p))
   :returns (method stringp)
   :short "Map an ACL2 function that models
           a Java primitive array write operation
@@ -1457,7 +1458,7 @@
      (float-array-write (primitive-type-float))
      (double-array-write (primitive-type-double))
      (t (prog2$ (impossible) ""))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-write-p))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-write-fn-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1888,7 +1889,7 @@
                                2))
 
   (define atj-gen-shallow-jprim-constr-call
-    ((fn atj-jprim-constr-p)
+    ((fn atj-jprim-constr-fn-p)
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -1963,7 +1964,7 @@
     :measure (two-nats-measure (acl2-count arg) 2))
 
   (define atj-gen-shallow-jprim-deconstr-call
-    ((fn atj-jprim-deconstr-p)
+    ((fn atj-jprim-deconstr-fn-p)
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2019,7 +2020,7 @@
     :measure (two-nats-measure (acl2-count arg) 2))
 
   (define atj-gen-shallow-jprim-unop-call
-    ((fn atj-jprim-unop-p)
+    ((fn atj-jprim-unop-fn-p)
      (operand pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2076,7 +2077,7 @@
     :measure (two-nats-measure (acl2-count operand) 2))
 
   (define atj-gen-shallow-jprim-binop-call
-    ((fn atj-jprim-binop-p)
+    ((fn atj-jprim-binop-fn-p)
      (left pseudo-termp)
      (right pseudo-termp)
      (src-types atj-type-listp)
@@ -2149,7 +2150,7 @@
                                2))
 
   (define atj-gen-shallow-jprim-conv-call
-    ((fn atj-jprim-conv-p)
+    ((fn atj-jprim-conv-fn-p)
      (operand pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2341,7 +2342,7 @@
     :measure (two-nats-measure (acl2-count array) 2))
 
   (define atj-gen-shallow-jprimarr-write-call
-    ((fn atj-jprimarr-write-p)
+    ((fn atj-jprimarr-write-fn-p)
      (array pseudo-termp)
      (index pseudo-termp)
      (component pseudo-termp)
@@ -2428,8 +2429,8 @@
                                   (acl2-count component))
                                2))
 
-  (define atj-gen-shallow-jprimarr-len-new-call
-    ((fn atj-jprimarr-len-new-p)
+  (define atj-gen-shallow-jprimarr-new-len-call
+    ((fn atj-jprimarr-new-len-fn-p)
      (length pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2474,7 +2475,7 @@
                                 t ; GUARDS$
                                 wrld))
          (block length-block)
-         (jtype (atj-jprimarr-len-new-to-comp-jtype fn))
+         (jtype (atj-jprimarr-new-len-to-comp-jtype fn))
          (expr (jexpr-newarray jtype length-expr)))
       (mv block
           (atj-adapt-expr-to-type expr
@@ -2485,8 +2486,8 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count length) 2))
 
-  (define atj-gen-shallow-jprimarr-comp-new-call
-    ((fn atj-jprimarr-comp-new-p)
+  (define atj-gen-shallow-jprimarr-new-init-call
+    ((fn atj-jprimarr-new-init-fn-p)
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2564,8 +2565,8 @@
           jvar-tmp-index))
     :measure (two-nats-measure (acl2-count arg) 0))
 
-  (define atj-gen-shallow-jprimarr-fromlist-conv-call
-    ((fn atj-jprimarr-fromlist-conv-p)
+  (define atj-gen-shallow-jprimarr-conv-fromlist-call
+    ((fn atj-jprimarr-conv-fromlist-fn-p)
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2623,8 +2624,8 @@
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
     :measure (two-nats-measure (acl2-count arg) 2))
 
-  (define atj-gen-shallow-jprimarr-tolist-conv-call
-    ((fn atj-jprimarr-tolist-conv-p)
+  (define atj-gen-shallow-jprimarr-conv-tolist-call
+    ((fn atj-jprimarr-conv-tolist-fn-p)
      (arg pseudo-termp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
@@ -2841,7 +2842,7 @@
                                        guards$
                                        wrld))))
          ((when (and guards$
-                     (atj-jprim-constr-p fn)
+                     (atj-jprim-constr-fn-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-constr-call fn
                                              (car args)
@@ -2855,7 +2856,7 @@
                                              qpairs
                                              wrld))
          ((when (and guards$
-                     (atj-jprim-deconstr-p fn)
+                     (atj-jprim-deconstr-fn-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-deconstr-call fn
                                                (car args)
@@ -2869,7 +2870,7 @@
                                                qpairs
                                                wrld))
          ((when (and guards$
-                     (atj-jprim-unop-p fn)
+                     (atj-jprim-unop-fn-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-unop-call fn
                                            (car args)
@@ -2883,7 +2884,7 @@
                                            qpairs
                                            wrld))
          ((when (and guards$
-                     (atj-jprim-binop-p fn)
+                     (atj-jprim-binop-fn-p fn)
                      (int= (len args) 2))) ; should be always true
           (atj-gen-shallow-jprim-binop-call fn
                                             (first args)
@@ -2898,7 +2899,7 @@
                                             qpairs
                                             wrld))
          ((when (and guards$
-                     (atj-jprim-conv-p fn)
+                     (atj-jprim-conv-fn-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprim-conv-call fn
                                            (car args)
@@ -2912,7 +2913,7 @@
                                            qpairs
                                            wrld))
          ((when (and guards$
-                     (atj-jprimarr-read-p fn)
+                     (atj-jprimarr-read-fn-p fn)
                      (int= (len args) 2))) ; should be always true
           (atj-gen-shallow-jprimarr-read-call (first args)
                                               (second args)
@@ -2926,7 +2927,7 @@
                                               qpairs
                                               wrld))
          ((when (and guards$
-                     (atj-jprimarr-length-p fn)
+                     (atj-jprimarr-length-fn-p fn)
                      (int= (len args) 1))) ; should be always true
           (atj-gen-shallow-jprimarr-length-call (car args)
                                                 src-types
@@ -2939,7 +2940,7 @@
                                                 qpairs
                                                 wrld))
          ((when (and guards$
-                     (atj-jprimarr-write-p fn)
+                     (atj-jprimarr-write-fn-p fn)
                      (int= (len args) 3))) ; should be always true
           (atj-gen-shallow-jprimarr-write-call fn
                                                (first args)
@@ -2955,9 +2956,9 @@
                                                qpairs
                                                wrld))
          ((when (and guards$
-                     (atj-jprimarr-len-new-p fn)
+                     (atj-jprimarr-new-len-fn-p fn)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-len-new-call fn
+          (atj-gen-shallow-jprimarr-new-len-call fn
                                                  (car args)
                                                  src-types
                                                  dst-types
@@ -2969,9 +2970,9 @@
                                                  qpairs
                                                  wrld))
          ((when (and guards$
-                     (atj-jprimarr-comp-new-p fn)
+                     (atj-jprimarr-new-init-fn-p fn)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-comp-new-call fn
+          (atj-gen-shallow-jprimarr-new-init-call fn
                                                   (car args)
                                                   src-types
                                                   dst-types
@@ -2983,9 +2984,9 @@
                                                   qpairs
                                                   wrld))
          ((when (and guards$
-                     (atj-jprimarr-fromlist-conv-p fn)
+                     (atj-jprimarr-conv-fromlist-fn-p fn)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-fromlist-conv-call fn
+          (atj-gen-shallow-jprimarr-conv-fromlist-call fn
                                                        (car args)
                                                        src-types
                                                        dst-types
@@ -2997,9 +2998,9 @@
                                                        qpairs
                                                        wrld))
          ((when (and guards$
-                     (atj-jprimarr-tolist-conv-p fn)
+                     (atj-jprimarr-conv-tolist-fn-p fn)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprimarr-tolist-conv-call fn
+          (atj-gen-shallow-jprimarr-conv-tolist-call fn
                                                      (car args)
                                                      src-types
                                                      dst-types
