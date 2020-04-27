@@ -29,134 +29,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; constructors from components, applied to LIST calls:
-
-;;;;;;;;;;;;;;;;;;;;
-
-; lists of length 0:
-
-(defun test-boolean-array-new-with-components-0 ()
-  (java::boolean-array-new-with-components nil))
-
-(defun test-char-array-new-with-components-0 ()
-  (java::char-array-new-with-components nil))
-
-(defun test-byte-array-new-with-components-0 ()
-  (java::byte-array-new-with-components nil))
-
-(defun test-short-array-new-with-components-0 ()
-  (java::short-array-new-with-components nil))
-
-(defun test-int-array-new-with-components-0 ()
-  (java::int-array-new-with-components nil))
-
-(defun test-long-array-new-with-components-0 ()
-  (java::long-array-new-with-components nil))
-
-;;;;;;;;;;;;;;;;;;;;
-
-; lists of length 1:
-
-(defun test-boolean-array-new-with-components-1 (x)
-  (declare (xargs :guard (java::boolean-value-p x)))
-  (java::boolean-array-new-with-components (list x)))
-
-(defun test-char-array-new-with-components-1 (x)
-  (declare (xargs :guard (java::char-value-p x)))
-  (java::char-array-new-with-components (list x)))
-
-(defun test-byte-array-new-with-components-1 (x)
-  (declare (xargs :guard (java::byte-value-p x)))
-  (java::byte-array-new-with-components (list x)))
-
-(defun test-short-array-new-with-components-1 (x)
-  (declare (xargs :guard (java::short-value-p x)))
-  (java::short-array-new-with-components (list x)))
-
-(defun test-int-array-new-with-components-1 (x)
-  (declare (xargs :guard (java::int-value-p x)))
-  (java::int-array-new-with-components (list x)))
-
-(defun test-long-array-new-with-components-1 (x)
-  (declare (xargs :guard (java::long-value-p x)))
-  (java::long-array-new-with-components (list x)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-; lists of length 2:
-
-(defun test-boolean-array-new-with-components-2 (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
-  (java::boolean-array-new-with-components (list x y)))
-
-(defun test-char-array-new-with-components-2 (x y)
-  (declare (xargs :guard (and (java::char-value-p x)
-                              (java::char-value-p y))))
-  (java::char-array-new-with-components (list x y)))
-
-(defun test-byte-array-new-with-components-2 (x y)
-  (declare (xargs :guard (and (java::byte-value-p x)
-                              (java::byte-value-p y))))
-  (java::byte-array-new-with-components (list x y)))
-
-(defun test-short-array-new-with-components-2 (x y)
-  (declare (xargs :guard (and (java::short-value-p x)
-                              (java::short-value-p y))))
-  (java::short-array-new-with-components (list x y)))
-
-(defun test-int-array-new-with-components-2 (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
-  (java::int-array-new-with-components (list x y)))
-
-(defun test-long-array-new-with-components-2 (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
-  (java::long-array-new-with-components (list x y)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-; lists of length 3:
-
-(defun test-boolean-array-new-with-components-3 (x y z)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y)
-                              (java::boolean-value-p z))))
-  (java::boolean-array-new-with-components (list x y z)))
-
-(defun test-char-array-new-with-components-3 (x y z)
-  (declare (xargs :guard (and (java::char-value-p x)
-                              (java::char-value-p y)
-                              (java::char-value-p z))))
-  (java::char-array-new-with-components (list x y z)))
-
-(defun test-byte-array-new-with-components-3 (x y z)
-  (declare (xargs :guard (and (java::byte-value-p x)
-                              (java::byte-value-p y)
-                              (java::byte-value-p z))))
-  (java::byte-array-new-with-components (list x y z)))
-
-(defun test-short-array-new-with-components-3 (x y z)
-  (declare (xargs :guard (and (java::short-value-p x)
-                              (java::short-value-p y)
-                              (java::short-value-p z))))
-  (java::short-array-new-with-components (list x y z)))
-
-(defun test-int-array-new-with-components-3 (x y z)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y)
-                              (java::int-value-p z))))
-  (java::int-array-new-with-components (list x y z)))
-
-(defun test-long-array-new-with-components-3 (x y z)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y)
-                              (java::long-value-p z))))
-  (java::long-array-new-with-components (list x y z)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; read operations:
 
 (defun test-boolean-array-read (a i)
@@ -283,37 +155,165 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; constructors from length:
+; creation operations with length:
 
-(defun test-boolean-array-new-with-length (l)
+(defun test-boolean-array-new-len (l)
   (declare (xargs :guard (and (java::int-value-p l)
                               (<= 0 (java::int-value->int l)))))
-  (java::boolean-array-new-with-length l))
+  (java::boolean-array-new-len l))
 
-(defun test-char-array-new-with-length (l)
+(defun test-char-array-new-len (l)
   (declare (xargs :guard (and (java::int-value-p l)
                               (<= 0 (java::int-value->int l)))))
-  (java::char-array-new-with-length l))
+  (java::char-array-new-len l))
 
-(defun test-byte-array-new-with-length (l)
+(defun test-byte-array-new-len (l)
   (declare (xargs :guard (and (java::int-value-p l)
                               (<= 0 (java::int-value->int l)))))
-  (java::byte-array-new-with-length l))
+  (java::byte-array-new-len l))
 
-(defun test-short-array-new-with-length (l)
+(defun test-short-array-new-len (l)
   (declare (xargs :guard (and (java::int-value-p l)
                               (<= 0 (java::int-value->int l)))))
-  (java::short-array-new-with-length l))
+  (java::short-array-new-len l))
 
-(defun test-int-array-new-with-length (l)
+(defun test-int-array-new-len (l)
   (declare (xargs :guard (and (java::int-value-p l)
                               (<= 0 (java::int-value->int l)))))
-  (java::int-array-new-with-length l))
+  (java::int-array-new-len l))
 
-(defun test-long-array-new-with-length (l)
+(defun test-long-array-new-len (l)
   (declare (xargs :guard (and (java::int-value-p l)
                               (<= 0 (java::int-value->int l)))))
-  (java::long-array-new-with-length l))
+  (java::long-array-new-len l))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; creation operation with initializer:
+
+;;;;;;;;;;;;;;;;;;;;
+
+; initializers with 0 components:
+
+(defun test-boolean-array-new-init-0 ()
+  (java::boolean-array-new-init nil))
+
+(defun test-char-array-new-init-0 ()
+  (java::char-array-new-init nil))
+
+(defun test-byte-array-new-init-0 ()
+  (java::byte-array-new-init nil))
+
+(defun test-short-array-new-init-0 ()
+  (java::short-array-new-init nil))
+
+(defun test-int-array-new-init-0 ()
+  (java::int-array-new-init nil))
+
+(defun test-long-array-new-init-0 ()
+  (java::long-array-new-init nil))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; initializers with 1 component:
+
+(defun test-boolean-array-new-init-1 (x)
+  (declare (xargs :guard (java::boolean-value-p x)))
+  (java::boolean-array-new-init (list x)))
+
+(defun test-char-array-new-init-1 (x)
+  (declare (xargs :guard (java::char-value-p x)))
+  (java::char-array-new-init (list x)))
+
+(defun test-byte-array-new-init-1 (x)
+  (declare (xargs :guard (java::byte-value-p x)))
+  (java::byte-array-new-init (list x)))
+
+(defun test-short-array-new-init-1 (x)
+  (declare (xargs :guard (java::short-value-p x)))
+  (java::short-array-new-init (list x)))
+
+(defun test-int-array-new-init-1 (x)
+  (declare (xargs :guard (java::int-value-p x)))
+  (java::int-array-new-init (list x)))
+
+(defun test-long-array-new-init-1 (x)
+  (declare (xargs :guard (java::long-value-p x)))
+  (java::long-array-new-init (list x)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; initializers with 2 components:
+
+(defun test-boolean-array-new-init-2 (x y)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y))))
+  (java::boolean-array-new-init (list x y)))
+
+(defun test-char-array-new-init-2 (x y)
+  (declare (xargs :guard (and (java::char-value-p x)
+                              (java::char-value-p y))))
+  (java::char-array-new-init (list x y)))
+
+(defun test-byte-array-new-init-2 (x y)
+  (declare (xargs :guard (and (java::byte-value-p x)
+                              (java::byte-value-p y))))
+  (java::byte-array-new-init (list x y)))
+
+(defun test-short-array-new-init-2 (x y)
+  (declare (xargs :guard (and (java::short-value-p x)
+                              (java::short-value-p y))))
+  (java::short-array-new-init (list x y)))
+
+(defun test-int-array-new-init-2 (x y)
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y))))
+  (java::int-array-new-init (list x y)))
+
+(defun test-long-array-new-init-2 (x y)
+  (declare (xargs :guard (and (java::long-value-p x)
+                              (java::long-value-p y))))
+  (java::long-array-new-init (list x y)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; initializers with 3 components:
+
+(defun test-boolean-array-new-init-3 (x y z)
+  (declare (xargs :guard (and (java::boolean-value-p x)
+                              (java::boolean-value-p y)
+                              (java::boolean-value-p z))))
+  (java::boolean-array-new-init (list x y z)))
+
+(defun test-char-array-new-init-3 (x y z)
+  (declare (xargs :guard (and (java::char-value-p x)
+                              (java::char-value-p y)
+                              (java::char-value-p z))))
+  (java::char-array-new-init (list x y z)))
+
+(defun test-byte-array-new-init-3 (x y z)
+  (declare (xargs :guard (and (java::byte-value-p x)
+                              (java::byte-value-p y)
+                              (java::byte-value-p z))))
+  (java::byte-array-new-init (list x y z)))
+
+(defun test-short-array-new-init-3 (x y z)
+  (declare (xargs :guard (and (java::short-value-p x)
+                              (java::short-value-p y)
+                              (java::short-value-p z))))
+  (java::short-array-new-init (list x y z)))
+
+(defun test-int-array-new-init-3 (x y z)
+  (declare (xargs :guard (and (java::int-value-p x)
+                              (java::int-value-p y)
+                              (java::int-value-p z))))
+  (java::int-array-new-init (list x y z)))
+
+(defun test-long-array-new-init-3 (x y z)
+  (declare (xargs :guard (and (java::long-value-p x)
+                              (java::long-value-p y)
+                              (java::long-value-p z))))
+  (java::long-array-new-init (list x y z)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,7 +345,7 @@
                                                            sbyte32-fix)))))
   (b* ((length (java::byte-to-short length))
        (length (java::short-to-int length)))
-    (java::char-array-new-with-length length)))
+    (java::char-array-new-len length)))
 
 (defun i (floatarray doublearray i j)
   (declare
@@ -378,155 +378,91 @@
 ; when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
-  '(;; constructors from components applied to LIST calls of length 0:
-    ("BooleanArrayOfList0" (test-boolean-array-new-with-components-0))
-    ("CharArrayOfList0" (test-char-array-new-with-components-0))
-    ("ByteArrayOfList0" (test-byte-array-new-with-components-0))
-    ("ShortArrayOfList0" (test-short-array-new-with-components-0))
-    ("IntArrayOfList0" (test-int-array-new-with-components-0))
-    ("LongArrayOfList0" (test-long-array-new-with-components-0))
-    ;; constructors from components applied to LIST calls of length 1:
-    ("BooleanArrayOfList1" (test-boolean-array-new-with-components-1
-                            (java::boolean-value t)))
-    ("CharArrayOfList1" (test-char-array-new-with-components-1
-                         (java::char-value 8888)))
-    ("ByteArrayOfList1" (test-byte-array-new-with-components-1
-                         (java::byte-value -1)))
-    ("ShortArrayOfList1" (test-short-array-new-with-components-1
-                          (java::short-value 8000)))
-    ("IntArrayOfList1" (test-int-array-new-with-components-1
-                        (java::int-value 2000000000)))
-    ("LongArrayOfList1" (test-long-array-new-with-components-1
-                         (java::long-value -8000000000000000000)))
-    ;; constructors from components applied to LIST calls of length 2:
-    ("BooleanArrayOfList2" (test-boolean-array-new-with-components-2
-                            (java::boolean-value t)
-                            (java::boolean-value nil)))
-    ("CharArrayOfList2" (test-char-array-new-with-components-2
-                         (java::char-value 736)
-                         (java::char-value 18000)))
-    ("ByteArrayOfList2" (test-byte-array-new-with-components-2
-                         (java::byte-value -10)
-                         (java::byte-value 69)))
-    ("ShortArrayOfList2" (test-short-array-new-with-components-2
-                          (java::short-value 900)
-                          (java::short-value -8000)))
-    ("IntArrayOfList2" (test-int-array-new-with-components-2
-                        (java::int-value 0)
-                        (java::int-value 282828)))
-    ("LongArrayOfList2" (test-long-array-new-with-components-2
-                         (java::long-value -348792734089274032)
-                         (java::long-value 837483)))
-    ;; constructors from components applied to LIST calls of length 3:
-    ("BooleanArrayOfList3" (test-boolean-array-new-with-components-3
-                            (java::boolean-value t)
-                            (java::boolean-value t)
-                            (java::boolean-value nil)))
-    ("CharArrayOfList3" (test-char-array-new-with-components-3
-                         (java::char-value 7361)
-                         (java::char-value 0)
-                         (java::char-value 1800)))
-    ("ByteArrayOfList3" (test-byte-array-new-with-components-3
-                         (java::byte-value -10)
-                         (java::byte-value 1)
-                         (java::byte-value 69)))
-    ("ShortArrayOfList3" (test-short-array-new-with-components-3
-                          (java::short-value 32767)
-                          (java::short-value 900)
-                          (java::short-value -8000)))
-    ("IntArrayOfList3" (test-int-array-new-with-components-3
-                        (java::int-value 10)
-                        (java::int-value 2828288)
-                        (java::int-value -9)))
-    ("LongArrayOfList3" (test-long-array-new-with-components-3
-                         (java::long-value -1134834089274032)
-                         (java::long-value 202)
-                         (java::long-value -10000000)))
-    ;; read operations:
+  '(;; read operations:
     ("BooleanArrayRead" (test-boolean-array-read
-                         (java::boolean-array-new-with-components
+                         (java::boolean-array-new-init
                           (list (java::boolean-value t)
                                 (java::boolean-value nil)
                                 (java::boolean-value nil)))
                          (java::int-value 2)))
     ("CharArrayRead" (test-char-array-read
-                      (java::char-array-new-with-components
+                      (java::char-array-new-init
                        (list (java::char-value 722)
                              (java::char-value 9990)
                              (java::char-value 1)))
                       (java::int-value 1)))
     ("ByteArrayRead" (test-byte-array-read
-                      (java::byte-array-new-with-components
+                      (java::byte-array-new-init
                        (list (java::byte-value -100)
                              (java::byte-value 100)))
                       (java::int-value 0)))
     ("ShortArrayRead" (test-short-array-read
-                       (java::short-array-new-with-components
+                       (java::short-array-new-init
                         (list (java::short-value -100)
                               (java::short-value 100)
                               (java::short-value 32001)
                               (java::short-value -5000)))
                        (java::int-value 2)))
     ("IntArrayRead" (test-int-array-read
-                     (java::int-array-new-with-components
+                     (java::int-array-new-init
                       (list (java::int-value 1000000000)))
                      (java::int-value 0)))
     ("LongArrayRead" (test-long-array-read
-                      (java::long-array-new-with-components
+                      (java::long-array-new-init
                        (list (java::long-value 1000000000)
                              (java::long-value 1000000000000000000)))
                       (java::int-value 1)))
     ;; length operations:
     ("BooleanArrayLength" (test-boolean-array-length
-                           (java::boolean-array-new-with-components
+                           (java::boolean-array-new-init
                             (list (java::boolean-value t)
                                   (java::boolean-value nil)
                                   (java::boolean-value nil)))))
     ("CharArrayLength" (test-char-array-length
-                        (java::char-array-new-with-components
+                        (java::char-array-new-init
                          (list (java::char-value 722)
                                (java::char-value 9990)
                                (java::char-value 1)))))
     ("ByteArrayLength" (test-byte-array-length
-                        (java::byte-array-new-with-components
+                        (java::byte-array-new-init
                          (list (java::byte-value -100)
                                (java::byte-value 100)))))
     ("ShortArrayLength" (test-short-array-length
-                         (java::short-array-new-with-components
+                         (java::short-array-new-init
                           (list (java::short-value -100)
                                 (java::short-value 100)
                                 (java::short-value 32001)
                                 (java::short-value -5000)))))
     ("IntArrayLength" (test-int-array-length
-                       (java::int-array-new-with-components
+                       (java::int-array-new-init
                         (list (java::int-value 1000000000)))))
     ("LongArrayLength" (test-long-array-length
-                        (java::long-array-new-with-components
+                        (java::long-array-new-init
                          (list (java::long-value 1000000000)
                                (java::long-value 1000000000000000000)))))
     ;; write operations:
     ("BooleanArrayWrite" (test-boolean-array-write
-                          (java::boolean-array-new-with-components
+                          (java::boolean-array-new-init
                            (list (java::boolean-value t)
                                  (java::boolean-value nil)
                                  (java::boolean-value nil)))
                           (java::int-value 2)
                           (java::boolean-value t)))
     ("CharArrayWrite" (test-char-array-write
-                       (java::char-array-new-with-components
+                       (java::char-array-new-init
                         (list (java::char-value 722)
                               (java::char-value 9990)
                               (java::char-value 1)))
                        (java::int-value 1)
                        (java::char-value 88)))
     ("ByteArrayWrite" (test-byte-array-write
-                       (java::byte-array-new-with-components
+                       (java::byte-array-new-init
                         (list (java::byte-value -100)
                               (java::byte-value 100)))
                        (java::int-value 0)
                        (java::byte-value -10)))
     ("ShortArrayWrite" (test-short-array-write
-                        (java::short-array-new-with-components
+                        (java::short-array-new-init
                          (list (java::short-value -100)
                                (java::short-value 100)
                                (java::short-value 32001)
@@ -534,45 +470,109 @@
                         (java::int-value 2)
                         (java::short-value 1)))
     ("IntArrayWrite" (test-int-array-write
-                      (java::int-array-new-with-components
+                      (java::int-array-new-init
                        (list (java::int-value 1000000000)))
                       (java::int-value 0)
                       (java::int-value -100000)))
     ("LongArrayWrite" (test-long-array-write
-                       (java::long-array-new-with-components
+                       (java::long-array-new-init
                         (list (java::long-value 1000000000)
                               (java::long-value 1000000000000000000)))
                        (java::int-value 1)
                        (java::long-value -55555555555555555)))
-    ;; constructors from length:
-    ("BooleanArrayFromLength0" (test-boolean-array-new-with-length
-                                (java::int-value 0)))
-    ("BooleanArrayFromLength1" (test-boolean-array-new-with-length
-                                (java::int-value 80)))
-    ("CharArrayFromLength0" (test-char-array-new-with-length
-                             (java::int-value 8)))
-    ("CharArrayFromLength1" (test-char-array-new-with-length
-                             (java::int-value 19)))
-    ("ByteArrayFromLength0" (test-byte-array-new-with-length
-                             (java::int-value 73)))
-    ("ByteArrayFromLength1" (test-byte-array-new-with-length
-                             (java::int-value 1)))
-    ("ShortArrayFromLength0" (test-short-array-new-with-length
-                              (java::int-value 7)))
-    ("ShortArrayFromLength1" (test-short-array-new-with-length
-                              (java::int-value 111)))
-    ("IntArrayFromLength0" (test-int-array-new-with-length
+    ;; creation operations with length:
+    ("BooleanArrayNewLen0" (test-boolean-array-new-len
                             (java::int-value 0)))
-    ("IntArrayFromLength1" (test-int-array-new-with-length
-                            (java::int-value 9)))
-    ("LongArrayFromLength0" (test-long-array-new-with-length
-                             (java::int-value 20)))
-    ("LongArrayFromLength1" (test-long-array-new-with-length
-                             (java::int-value 23)))))
+    ("BooleanArrayNewLen1" (test-boolean-array-new-len
+                            (java::int-value 80)))
+    ("CharArrayNewLen0" (test-char-array-new-len
+                         (java::int-value 8)))
+    ("CharArrayNewLen1" (test-char-array-new-len
+                         (java::int-value 19)))
+    ("ByteArrayNewLen0" (test-byte-array-new-len
+                         (java::int-value 73)))
+    ("ByteArrayNewLen1" (test-byte-array-new-len
+                         (java::int-value 1)))
+    ("ShortArrayNewLen0" (test-short-array-new-len
+                          (java::int-value 7)))
+    ("ShortArrayNewLen1" (test-short-array-new-len
+                          (java::int-value 111)))
+    ("IntArrayNewLen0" (test-int-array-new-len
+                        (java::int-value 0)))
+    ("IntArrayNewLen1" (test-int-array-new-len
+                        (java::int-value 9)))
+    ("LongArrayNewLen0" (test-long-array-new-len
+                         (java::int-value 20)))
+    ("LongArrayNewLen1" (test-long-array-new-len
+                         (java::int-value 23)))
+    ;; creation operations with initializers of 0 components:
+    ("BooleanArrayNewInit0" (test-boolean-array-new-init-0))
+    ("CharArrayNewInit0" (test-char-array-new-init-0))
+    ("ByteArrayNewInit0" (test-byte-array-new-init-0))
+    ("ShortArrayNewInit0" (test-short-array-new-init-0))
+    ("IntArrayNewInit0" (test-int-array-new-init-0))
+    ("LongArrayNewInit0" (test-long-array-new-init-0))
+    ;; creation operations with initializers of 1 component:
+    ("BooleanArrayNewInit1" (test-boolean-array-new-init-1
+                             (java::boolean-value t)))
+    ("CharArrayNewInit1" (test-char-array-new-init-1
+                          (java::char-value 8888)))
+    ("ByteArrayNewInit1" (test-byte-array-new-init-1
+                          (java::byte-value -1)))
+    ("ShortArrayNewInit1" (test-short-array-new-init-1
+                           (java::short-value 8000)))
+    ("IntArrayNewInit1" (test-int-array-new-init-1
+                         (java::int-value 2000000000)))
+    ("LongArrayNewInit1" (test-long-array-new-init-1
+                          (java::long-value -8000000000000000000)))
+    ;; creation operations with initializers of 2 components:
+    ("BooleanArrayNewInit2" (test-boolean-array-new-init-2
+                             (java::boolean-value t)
+                             (java::boolean-value nil)))
+    ("CharArrayNewInit2" (test-char-array-new-init-2
+                          (java::char-value 736)
+                          (java::char-value 18000)))
+    ("ByteArrayNewInit2" (test-byte-array-new-init-2
+                          (java::byte-value -10)
+                          (java::byte-value 69)))
+    ("ShortArrayNewInit2" (test-short-array-new-init-2
+                           (java::short-value 900)
+                           (java::short-value -8000)))
+    ("IntArrayNewInit2" (test-int-array-new-init-2
+                         (java::int-value 0)
+                         (java::int-value 282828)))
+    ("LongArrayNewInit2" (test-long-array-new-init-2
+                          (java::long-value -348792734089274032)
+                          (java::long-value 837483)))
+    ;; creation operations with initializers of 3 components:
+    ("BooleanArrayNewInit3" (test-boolean-array-new-init-3
+                             (java::boolean-value t)
+                             (java::boolean-value t)
+                             (java::boolean-value nil)))
+    ("CharArrayNewInit3" (test-char-array-new-init-3
+                          (java::char-value 7361)
+                          (java::char-value 0)
+                          (java::char-value 1800)))
+    ("ByteArrayNewInit3" (test-byte-array-new-init-3
+                          (java::byte-value -10)
+                          (java::byte-value 1)
+                          (java::byte-value 69)))
+    ("ShortArrayNewInit3" (test-short-array-new-init-3
+                           (java::short-value 32767)
+                           (java::short-value 900)
+                           (java::short-value -8000)))
+    ("IntArrayNewInit3" (test-int-array-new-init-3
+                         (java::int-value 10)
+                         (java::int-value 2828288)
+                         (java::int-value -9)))
+    ("LongArrayNewInit3" (test-long-array-new-init-3
+                          (java::long-value -1134834089274032)
+                          (java::long-value 202)
+                          (java::long-value -10000000)))))
 
 (defconst *shallow-guarded-more-tests*
   '(;; F:
-    ("F0" (f (java::int-array-new-with-components
+    ("F0" (f (java::int-array-new-init
               (list (java::int-value 0)
                     (java::int-value 1)
                     (java::int-value 2)
@@ -583,7 +583,7 @@
                     (java::int-value 7)))
              (java::int-value 6)
              (java::int-value 2)))
-    ("F1" (f (java::int-array-new-with-components
+    ("F1" (f (java::int-array-new-init
               (list (java::int-value -100)
                     (java::int-value -200)
                     (java::int-value -300)
@@ -592,39 +592,39 @@
              (java::int-value 0)
              (java::int-value 3)))
     ;; G:
-    ("G0" (g (java::byte-array-new-with-components
+    ("G0" (g (java::byte-array-new-init
               (list (java::byte-value 63)
                     (java::byte-value 0)))
-             (java::short-array-new-with-components
+             (java::short-array-new-init
               (list (java::short-value 11)
                     (java::short-value 22)
                     (java::short-value 33)))))
-    ("G1" (g (java::byte-array-new-with-components
+    ("G1" (g (java::byte-array-new-init
               (list (java::byte-value -100)))
-             (java::short-array-new-with-components
+             (java::short-array-new-init
               (list))))
     ;; H:
     ("H0" (h (java::byte-value 0)))
     ("H1" (h (java::byte-value 10)))
     ("H2" (h (java::byte-value 100)))
     ;; J:
-    ("J0" (j (java::byte-array-new-with-components
+    ("J0" (j (java::byte-array-new-init
               (list (java::byte-value 0)
                     (java::byte-value 1)
                     (java::byte-value 2)
                     (java::byte-value 3)))
-             (java::byte-array-new-with-components
+             (java::byte-array-new-init
               (list (java::byte-value 0)
                     (java::byte-value -1)
                     (java::byte-value -2)
                     (java::byte-value -3)))
              (java::int-value 1)
              (java::int-value 3)))
-    ("J1" (j (java::byte-array-new-with-components
+    ("J1" (j (java::byte-array-new-init
               (list (java::byte-value 10)
                     (java::byte-value 10)
                     (java::byte-value 10)))
-             (java::byte-array-new-with-components
+             (java::byte-array-new-init
               (list (java::byte-value 100)
                     (java::byte-value 100)))
              (java::int-value 0)

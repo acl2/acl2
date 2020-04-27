@@ -811,7 +811,7 @@
      to be converted to the singleton list of @(':avalue').
      This is needed in order to handle the translation to Java
      of Java primitive array creations
-     via functions like @(tsee byte-array-new-with-components),
+     via functions like @(tsee byte-array-new-init),
      which may take as inputs lists of primitive values like
      @('((byte-value 33) (byte-value 0) ...)'):
      when the elements of these lists are type-annotated,

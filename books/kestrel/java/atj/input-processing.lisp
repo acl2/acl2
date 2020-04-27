@@ -421,12 +421,12 @@
                   "Internal error: type of ~x0 arrays not supported." ptype))
        (constructor (primitive-type-case
                      ptype
-                     :boolean 'boolean-array-new-with-components
-                     :char 'char-array-new-with-components
-                     :byte 'byte-array-new-with-components
-                     :short 'short-array-new-with-components
-                     :int 'int-array-new-with-components
-                     :long 'long-array-new-with-components
+                     :boolean 'boolean-array-new-init
+                     :char 'char-array-new-init
+                     :byte 'byte-array-new-init
+                     :short 'short-array-new-init
+                     :int 'int-array-new-init
+                     :long 'long-array-new-init
                      :float (impossible)
                      :double (impossible)))
        (err-msg (msg "The term ~x0 that is an argument of ~
@@ -457,13 +457,12 @@
     (value
      (primitive-type-case
       ptype
-      :boolean (atj-test-value-jboolean[] (boolean-array-new-with-components
-                                           values))
-      :char (atj-test-value-jchar[] (char-array-new-with-components values))
-      :byte (atj-test-value-jbyte[] (byte-array-new-with-components values))
-      :short (atj-test-value-jshort[] (short-array-new-with-components values))
-      :int (atj-test-value-jint[] (int-array-new-with-components values))
-      :long (atj-test-value-jlong[] (long-array-new-with-components values))
+      :boolean (atj-test-value-jboolean[] (boolean-array-new-init values))
+      :char (atj-test-value-jchar[] (char-array-new-init values))
+      :byte (atj-test-value-jbyte[] (byte-array-new-init values))
+      :short (atj-test-value-jshort[] (short-array-new-init values))
+      :int (atj-test-value-jint[] (int-array-new-init values))
+      :long (atj-test-value-jlong[] (long-array-new-init values))
       :float irrelevant
       :double irrelevant))))
 

@@ -94,14 +94,14 @@
 (defval *atj-jprimarr-new-len-fns*
   :short "List of (the names of) the ACL2 functions that model
           the creation of Java primitive arrays from lengths."
-  '(boolean-array-new-with-length
-    char-array-new-with-length
-    byte-array-new-with-length
-    short-array-new-with-length
-    int-array-new-with-length
-    long-array-new-with-length
-    float-array-new-with-length
-    double-array-new-with-length))
+  '(boolean-array-new-len
+    char-array-new-len
+    byte-array-new-len
+    short-array-new-len
+    int-array-new-len
+    long-array-new-len
+    float-array-new-len
+    double-array-new-len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,12 +113,12 @@
    "We exclude the functions that model
     the construction of @('float') and @('double') values,
     because we only have abstract models of those values for now.")
-  '(boolean-array-new-with-components
-    char-array-new-with-components
-    byte-array-new-with-components
-    short-array-new-with-components
-    int-array-new-with-components
-    long-array-new-with-components))
+  '(boolean-array-new-init
+    char-array-new-init
+    byte-array-new-init
+    short-array-new-init
+    int-array-new-init
+    long-array-new-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,51 +299,43 @@
                           (:jdouble[] :jint :jdouble)
                           (array :jdouble[]))
 
-  ;; creations with length:
+  ;; creation operations with length:
 
-  (atj-main-function-type boolean-array-new-with-length (:jint) :jboolean[])
+  (atj-main-function-type boolean-array-new-len (:jint) :jboolean[])
 
-  (atj-main-function-type char-array-new-with-length (:jint) :jchar[])
+  (atj-main-function-type char-array-new-len (:jint) :jchar[])
 
-  (atj-main-function-type byte-array-new-with-length (:jint) :jbyte[])
+  (atj-main-function-type byte-array-new-len (:jint) :jbyte[])
 
-  (atj-main-function-type short-array-new-with-length (:jint) :jshort[])
+  (atj-main-function-type short-array-new-len (:jint) :jshort[])
 
-  (atj-main-function-type int-array-new-with-length (:jint) :jint[])
+  (atj-main-function-type int-array-new-len (:jint) :jint[])
 
-  (atj-main-function-type long-array-new-with-length (:jint) :jlong[])
+  (atj-main-function-type long-array-new-len (:jint) :jlong[])
 
-  (atj-main-function-type float-array-new-with-length (:jint) :jfloat[])
+  (atj-main-function-type float-array-new-len (:jint) :jfloat[])
 
-  (atj-main-function-type double-array-new-with-length (:jint) :jdouble[])
+  (atj-main-function-type double-array-new-len (:jint) :jdouble[])
 
-  ;; creations with components:
+  ;; creation operations with initializer:
 
-  (atj-main-function-type boolean-array-new-with-components
-                          (:avalue) :jboolean[])
+  (atj-main-function-type boolean-array-new-init (:avalue) :jboolean[])
 
-  (atj-main-function-type char-array-new-with-components
-                          (:avalue) :jchar[])
+  (atj-main-function-type char-array-new-init (:avalue) :jchar[])
 
-  (atj-main-function-type byte-array-new-with-components
-                          (:avalue) :jbyte[])
+  (atj-main-function-type byte-array-new-init (:avalue) :jbyte[])
 
-  (atj-main-function-type short-array-new-with-components
-                          (:avalue) :jshort[])
+  (atj-main-function-type short-array-new-init (:avalue) :jshort[])
 
-  (atj-main-function-type int-array-new-with-components
-                          (:avalue) :jint[])
+  (atj-main-function-type int-array-new-init (:avalue) :jint[])
 
-  (atj-main-function-type long-array-new-with-components
-                          (:avalue) :jlong[])
+  (atj-main-function-type long-array-new-init (:avalue) :jlong[])
 
-  (atj-main-function-type float-array-new-with-components
-                          (:avalue) :jfloat[])
+  (atj-main-function-type float-array-new-init (:avalue) :jfloat[])
 
-  (atj-main-function-type double-array-new-with-components
-                          (:avalue) :jdouble[])
+  (atj-main-function-type double-array-new-init (:avalue) :jdouble[])
 
-  ;; conversions to lists:
+  ;; conversion operations to lists:
 
   (atj-main-function-type boolean-array-to-boolean-list (:jboolean[]) :avalue)
 
@@ -357,7 +349,7 @@
 
   (atj-main-function-type long-array-to-sbyte64-list (:jlong[]) :avalue)
 
-  ;; conversions from lists:
+  ;; conversion operations from lists:
 
   (atj-main-function-type boolean-array-from-boolean-list (:avalue) :jboolean[])
 

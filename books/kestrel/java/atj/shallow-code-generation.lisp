@@ -773,7 +773,7 @@
    (xdoc::p
     "This function is used to generate
      Java array creation expressions with initializers
-     from terms @('(<T>-array-new-with-components (list ...))'),
+     from terms @('(<T>-array-new-init (list ...))'),
      where @('<T>') is a Java primitive type.
      In this case, we want to retrieve the elements of the list
      and use the corresponding Java expressions for the array initializer."))
@@ -1292,14 +1292,14 @@
           a Java primitive array creation with length
           to the Java component type."
   (case fn
-    (boolean-array-new-with-length (jtype-boolean))
-    (char-array-new-with-length (jtype-char))
-    (byte-array-new-with-length (jtype-byte))
-    (short-array-new-with-length (jtype-short))
-    (int-array-new-with-length (jtype-int))
-    (long-array-new-with-length (jtype-long))
-    (float-array-new-with-length (jtype-float))
-    (double-array-new-with-length (jtype-double))
+    (boolean-array-new-len (jtype-boolean))
+    (char-array-new-len (jtype-char))
+    (byte-array-new-len (jtype-byte))
+    (short-array-new-len (jtype-short))
+    (int-array-new-len (jtype-int))
+    (long-array-new-len (jtype-long))
+    (float-array-new-len (jtype-float))
+    (double-array-new-len (jtype-double))
     (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
   :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-len-fn-p))))
 
@@ -1311,12 +1311,12 @@
           a Java primitive array creation with initializer
           to the Java component type."
   (case fn
-    (boolean-array-new-with-components (jtype-boolean))
-    (char-array-new-with-components (jtype-char))
-    (byte-array-new-with-components (jtype-byte))
-    (short-array-new-with-components (jtype-short))
-    (int-array-new-with-components (jtype-int))
-    (long-array-new-with-components (jtype-long))
+    (boolean-array-new-init (jtype-boolean))
+    (char-array-new-init (jtype-char))
+    (byte-array-new-init (jtype-byte))
+    (short-array-new-init (jtype-short))
+    (int-array-new-init (jtype-int))
+    (long-array-new-init (jtype-long))
     (otherwise (prog2$ (impossible) (ec-call (jtype-fix :irrelevant)))))
   :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-init-fn-p))))
 
@@ -1328,12 +1328,12 @@
           a Java primitive array constructor with initializer
           to the corresponding primitive type."
   (case fn
-    (boolean-array-new-with-components (primitive-type-boolean))
-    (char-array-new-with-components (primitive-type-char))
-    (byte-array-new-with-components (primitive-type-byte))
-    (short-array-new-with-components (primitive-type-short))
-    (int-array-new-with-components (primitive-type-int))
-    (long-array-new-with-components (primitive-type-long))
+    (boolean-array-new-init (primitive-type-boolean))
+    (char-array-new-init (primitive-type-char))
+    (byte-array-new-init (primitive-type-byte))
+    (short-array-new-init (primitive-type-short))
+    (int-array-new-init (primitive-type-int))
+    (long-array-new-init (primitive-type-long))
     (otherwise (prog2$ (impossible)
                        (ec-call (primitive-type-fix :irrelevant)))))
   :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-init-fn-p))))
@@ -2459,7 +2459,7 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model Java primitive array creation from lengths
-       (i.e. @(tsee byte-array-new-with-length) etc.) are treated specially.
+       (i.e. @(tsee byte-array-new-len) etc.) are treated specially.
        We generate Java code to compute the length operand,
        and generate a Java array creation expression without initializer."))
     (b* (((mv length-block
@@ -2516,7 +2516,7 @@
      (xdoc::p
       "If the @(':guards') input is @('t'),
        the functions that model Java primitive array creation from components
-       (i.e. @(tsee byte-array-new-with-components) etc.) are treated specially.
+       (i.e. @(tsee byte-array-new-init) etc.) are treated specially.
        If the argument has the form @('(list ...)')
        (in translated form,
        i.e. it is a nest of @(tsee cons)es ending in a quoted @('nil'),

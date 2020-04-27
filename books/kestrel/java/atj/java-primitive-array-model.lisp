@@ -67,18 +67,18 @@
       the new component value is (our ACL2 model of) the array component type,
       and the result is the new Java primitive array.")
     (xdoc::li
-     "Operations to create new Java primitive arrays of given sizes
+     "Operations to create new Java primitive arrays of given lengths
       (and with every component the default value for the component type,
       i.e. @('false') for @('boolean') and 0 for the integral types
       [JLS:4.12.5]):
       these model array creation expressions
-      with sizes and without initializers.
+      with lengths and without initializers.
       The size is (our ACL2 model of) a Java @('int'),
       and the result is the newly created Java primitive array.")
     (xdoc::li
      "Operations to create new Java primitive arrays with given components:
       these model array creation expressions
-      without sizes and with initializers.
+      without lengths and with initializers.
       The inputs are lists of (our ACL2 models of) Java primitive values
       (of the arrays' component types),
       and the outputs are the newly created Java primitive arrays.
@@ -852,7 +852,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-array-new-with-length ((length int-value-p))
+(define boolean-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array boolean-array-p)
   :short "Construct a Java @('boolean') array with the given length
@@ -868,7 +868,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char-array-new-with-length ((length int-value-p))
+(define char-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array char-array-p)
   :short "Construct a Java @('char') array with the given length
@@ -884,7 +884,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define byte-array-new-with-length ((length int-value-p))
+(define byte-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array byte-array-p)
   :short "Construct a Java @('byte') array with the given length
@@ -900,7 +900,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define short-array-new-with-length ((length int-value-p))
+(define short-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array short-array-p)
   :short "Construct a Java @('short') array with the given length
@@ -916,7 +916,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define int-array-new-with-length ((length int-value-p))
+(define int-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array int-array-p)
   :short "Construct a Java @('int') array with the given length
@@ -932,7 +932,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define long-array-new-with-length ((length int-value-p))
+(define long-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array long-array-p)
   :short "Construct a Java @('long') array with the given length
@@ -948,7 +948,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define float-array-new-with-length ((length int-value-p))
+(define float-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array float-array-p)
   :short "Construct a Java @('float') array with the given length
@@ -965,7 +965,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define double-array-new-with-length ((length int-value-p))
+(define double-array-new-len ((length int-value-p))
   :guard (>= (int-value->int length) 0)
   :returns (array double-array-p)
   :short "Construct a Java @('double') array with the given length
@@ -982,66 +982,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-array-new-with-components ((comps boolean-value-listp))
+(define boolean-array-new-init ((comps boolean-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array boolean-array-p)
-  :short "Construct a Java @('boolean') array with the given components."
+  :short "Construct a Java @('boolean') array
+          with the given initializer (i.e. components)."
   (boolean-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define char-array-new-with-components ((comps char-value-listp))
+(define char-array-new-init ((comps char-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array char-array-p)
-  :short "Construct a Java @('char') array with the given components."
+  :short "Construct a Java @('char') array
+          with the given initializer (i.e. components)."
   (char-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define byte-array-new-with-components ((comps byte-value-listp))
+(define byte-array-new-init ((comps byte-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array byte-array-p)
-  :short "Construct a Java @('byte') array with the given components."
+  :short "Construct a Java @('byte') array
+          with the given initializer (i.e. components)."
   (byte-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define short-array-new-with-components ((comps short-value-listp))
+(define short-array-new-init ((comps short-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array short-array-p)
-  :short "Construct a Java @('short') array with the given components."
+  :short "Construct a Java @('short') array
+          with the given initializer (i.e. components)."
   (short-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define int-array-new-with-components ((comps int-value-listp))
+(define int-array-new-init ((comps int-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array int-array-p)
-  :short "Construct a Java @('int') array with the given components."
+  :short "Construct a Java @('int') array
+          with the given initializer (i.e. components)."
   (int-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define long-array-new-with-components ((comps long-value-listp))
+(define long-array-new-init ((comps long-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array long-array-p)
-  :short "Construct a Java @('long') array with the given components."
+  :short "Construct a Java @('long') array
+          with the given initializer (i.e. components)."
   (long-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define float-array-new-with-components ((comps float-value-listp))
+(define float-array-new-init ((comps float-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array float-array-p)
-  :short "Construct a Java @('float') array with the given components."
+  :short "Construct a Java @('float') array
+          with the given initializer (i.e. components)."
   (float-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define double-array-new-with-components ((comps double-value-listp))
+(define double-array-new-init ((comps double-value-listp))
   :guard (< (len comps) (expt 2 31))
   :returns (array double-array-p)
-  :short "Construct a Java @('double') array with the given components."
+  :short "Construct a Java @('double') array
+          with the given initializer (i.e. components)."
   (double-array comps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
