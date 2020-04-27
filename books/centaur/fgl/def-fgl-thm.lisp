@@ -80,7 +80,7 @@
   (maybe-add-xdoc name
                   `(defthm ,name
                      . ,(cdr (fgl-thm-fn args)))
-                  args))
+                  (if (keywordp (car args)) args (cdr args))))
 
 (defmacro def-fgl-thm (name &rest args)
   (def-fgl-thm-fn name args))
@@ -183,7 +183,7 @@ This probably will someday need to change.</p>
   (maybe-add-xdoc name
                   `(defthm ,name
                      . ,(cdr (fgl-param-thm-fn args)))
-                  args))
+                  (if (keywordp (car args)) args (cdr args))))
 
 (defmacro def-fgl-param-thm (name &rest args)
   (def-fgl-param-thm-fn name args))
