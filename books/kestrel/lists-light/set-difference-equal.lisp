@@ -61,3 +61,14 @@
   (equal (set-difference-equal x (add-to-set-equal a y))
 	 (remove-equal a (set-difference-equal x y)))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm set-difference-equal-of-append
+  (equal (set-difference-equal x (append y z))
+         (set-difference-equal (set-difference-equal x y) z))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+;; ACL2 puts in a loop-stopper
+(defthm set-difference-equal-of-set-difference-equal-arg1
+  (equal (set-difference-equal (set-difference-equal x y) z)
+         (set-difference-equal (set-difference-equal x z) y))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
