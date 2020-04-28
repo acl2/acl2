@@ -18,7 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; read operations:
+; read:
 
 (java::atj-main-function-type test-boolean-array-read
                               (:jboolean[] :jint) :jboolean)
@@ -40,7 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; length operations:
+; length:
 
 (java::atj-main-function-type test-boolean-array-length (:jboolean[]) :jint)
 
@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; write operations:
+; write:
 
 (java::atj-main-function-type test-boolean-array-write
                               (:jboolean[] :jint :jboolean)
@@ -84,7 +84,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; constructors from length:
+; creation with length:
 
 (java::atj-main-function-type test-boolean-array-new-len (:jint) :jboolean[])
 
@@ -100,7 +100,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; creation operation with initializer:
+; creation with initializer:
 
 (java::atj-main-function-type test-boolean-array-new-init-0
                               () :jboolean[])
@@ -176,6 +176,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; conversion to list:
+
+(java::atj-main-function-type test-boolean-array-to-boolean-list
+                              (:jboolean[]) :avalue)
+
+(java::atj-main-function-type test-char-array-to-ubyte16-list
+                              (:jchar[]) :avalue)
+
+(java::atj-main-function-type test-byte-array-to-sbyte8-list
+                              (:jbyte[]) :avalue)
+
+(java::atj-main-function-type test-short-array-to-sbyte16-list
+                              (:jshort[]) :avalue)
+
+(java::atj-main-function-type test-int-array-to-sbyte32-list
+                              (:jint[]) :avalue)
+
+(java::atj-main-function-type test-long-array-to-sbyte64-list
+                              (:jlong[]) :avalue)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; conversion from list:
+
+(java::atj-main-function-type test-boolean-array-from-boolean-list
+                              (:avalue) :jboolean[])
+
+(java::atj-main-function-type test-char-array-from-ubyte16-list
+                              (:avalue) :jchar[])
+
+(java::atj-main-function-type test-byte-array-from-sbyte8-list
+                              (:avalue) :jbyte[])
+
+(java::atj-main-function-type test-short-array-from-sbyte16-list
+                              (:avalue) :jshort[])
+
+(java::atj-main-function-type test-int-array-from-sbyte32-list
+                              (:avalue) :jint[])
+
+(java::atj-main-function-type test-long-array-from-sbyte64-list
+                              (:avalue) :jlong[])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; other functions:
 
 (java::atj-main-function-type f (:jint[] :jint :jint) :jint)
@@ -243,6 +287,18 @@
            test-short-array-new-init-3
            test-int-array-new-init-3
            test-long-array-new-init-3
+           test-boolean-array-to-boolean-list
+           test-char-array-to-ubyte16-list
+           test-byte-array-to-sbyte8-list
+           test-short-array-to-sbyte16-list
+           test-int-array-to-sbyte32-list
+           test-long-array-to-sbyte64-list
+           test-boolean-array-from-boolean-list
+           test-char-array-from-ubyte16-list
+           test-byte-array-from-sbyte8-list
+           test-short-array-from-sbyte16-list
+           test-int-array-from-sbyte32-list
+           test-long-array-from-sbyte64-list
            f
            g
            h

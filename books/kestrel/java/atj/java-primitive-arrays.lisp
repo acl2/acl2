@@ -229,7 +229,7 @@
 (defsection atj-types-for-java-primitive-arrays
   :short "ATJ types for the Java primitive array operations."
 
-  ;; read operations:
+  ;; read:
 
   (atj-main-function-type boolean-array-read (:jboolean[] :jint) :jboolean)
 
@@ -247,7 +247,7 @@
 
   (atj-main-function-type double-array-read (:jdouble[] :jint) :jdouble)
 
-  ;; length operations:
+  ;; length:
 
   (atj-main-function-type boolean-array-length (:jboolean[]) :jint)
 
@@ -265,7 +265,7 @@
 
   (atj-main-function-type double-array-length (:jdouble[]) :jint)
 
-  ;; write operations:
+  ;; write:
 
   (atj-main-function-type boolean-array-write
                           (:jboolean[] :jint :jboolean)
@@ -299,7 +299,7 @@
                           (:jdouble[] :jint :jdouble)
                           (array :jdouble[]))
 
-  ;; creation operations with length:
+  ;; creation with length:
 
   (atj-main-function-type boolean-array-new-len (:jint) :jboolean[])
 
@@ -317,7 +317,7 @@
 
   (atj-main-function-type double-array-new-len (:jint) :jdouble[])
 
-  ;; creation operations with initializer:
+  ;; creation with initializer:
 
   (atj-main-function-type boolean-array-new-init (:avalue) :jboolean[])
 
@@ -335,7 +335,7 @@
 
   (atj-main-function-type double-array-new-init (:avalue) :jdouble[])
 
-  ;; conversion operations to lists:
+  ;; conversion to list:
 
   (atj-main-function-type boolean-array-to-boolean-list (:jboolean[]) :avalue)
 
@@ -349,7 +349,7 @@
 
   (atj-main-function-type long-array-to-sbyte64-list (:jlong[]) :avalue)
 
-  ;; conversion operations from lists:
+  ;; conversion from list:
 
   (atj-main-function-type boolean-array-from-boolean-list (:avalue) :jboolean[])
 
