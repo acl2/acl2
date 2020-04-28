@@ -142,4 +142,25 @@ class Acl2StringTest {
         assertFalse(Acl2String.make("!@#").equals(Acl2String.make("{}")));
     }
 
+    @Test
+    void equalsToNonStrings() {
+        // characters:
+        assertFalse(Acl2String.EMPTY.equals(Acl2Character.CODE_0));
+        assertFalse(Acl2String.ACL2.equals(Acl2Character.make('c')));
+        assertFalse(Acl2String.make("a").equals(Acl2Character.make('a')));
+        // symbols:
+        assertFalse(Acl2String.EMPTY.equals(Acl2Symbol.T));
+        assertFalse(Acl2String.ACL2.equals(Acl2Symbol.BINARY_STAR));
+        assertFalse(Acl2String.make("NIL").equals(Acl2Symbol.NIL));
+        // numbers:
+        assertFalse(Acl2String.EMPTY.equals(Acl2Integer.ONE));
+        assertFalse(Acl2String.ACL2.equals(Acl2Integer.make(11)));
+        assertFalse(Acl2String.make("STR").equals(Acl2Rational.make(1, 2)));
+        assertFalse(Acl2String.make("x").equals(Acl2Number.make(-1, -2)));
+        // cons pairs:
+        assertFalse(Acl2String.make("something").
+                equals(Acl2ConsPair.make(Acl2Integer.make(34),
+                        Acl2String.make("something"))));
+    }
+
 }
