@@ -150,6 +150,14 @@ functions."
   (defcong list-equiv equal (string-append-lst x) 1
     :hints(("Goal" :induct (cdr-cdr-induct x x-equiv))))
 
+  ;; Mihir M. mod: four congruence rules for assoc, strip-cars, remove-assoc
+  ;; and put-assoc are added. These four functions are generally associated
+  ;; with an alist context, so congruence on list-equiv may seem to be a
+  ;; surprising choice. However, remove-assoc always returns a true list, even
+  ;; when it doesn't remove anything, and so true-list-fix sometimes appears
+  ;; unexpectedly in an argument to the above four functions during
+  ;; alist-related proofs; that's where these congruences help.
+
   (defcong list-equiv equal (assoc-equal x l) 2
     :hints(("Goal" :induct (cdr-cdr-induct l l-equiv))))
 
