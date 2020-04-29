@@ -1102,40 +1102,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-fn-to-ptype ((fn atj-jprim-constr-fn-p))
-  :returns (ptype primitive-typep)
-  :short "Map an ACL2 function that models a Java primitive constructor
-          to the corresponding Java primitive type."
-  (case fn
-    (boolean-value (primitive-type-boolean))
-    (char-value (primitive-type-char))
-    (byte-value (primitive-type-byte))
-    (short-value (primitive-type-short))
-    (int-value (primitive-type-int))
-    (long-value (primitive-type-long))
-    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-constr-fn-p)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-jprim-deconstr-fn-to-ptype ((fn atj-jprim-deconstr-fn-p))
-  :returns (ptype primitive-typep)
-  :short "Map an ACL2 function that models a Java primitive deconstructor
-          to the corresponding Java primitive type."
-  (case fn
-    (boolean-value->bool$inline (primitive-type-boolean))
-    (char-value->nat$inline (primitive-type-char))
-    (byte-value->int$inline (primitive-type-byte))
-    (short-value->int$inline (primitive-type-short))
-    (int-value->int$inline (primitive-type-int))
-    (long-value->int$inline (primitive-type-long))
-    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
-  :guard-hints (("Goal" :in-theory (enable atj-jprim-deconstr-fn-p)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atj-jprim-unop-fn-to-junop ((fn atj-jprim-unop-fn-p))
   :returns (unop junopp)
   :short "Map an ACL2 function that models a Java primitive unary operation
