@@ -1055,7 +1055,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-of-qconst-to-expr ((fn atj-jprim-constr-fn-p) arg)
+(define atj-jprim-constr-fn-of-qconst-to-expr ((fn atj-jprim-constr-fn-p) arg)
   :returns (expr jexprp)
   :short "Map an ACL2 function that models a Java primitive constructor
           to the Java expression that constructs the primitive value,
@@ -1102,7 +1102,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-to-ptype ((fn atj-jprim-constr-fn-p))
+(define atj-jprim-constr-fn-to-ptype ((fn atj-jprim-constr-fn-p))
   :returns (ptype primitive-typep)
   :short "Map an ACL2 function that models a Java primitive constructor
           to the corresponding Java primitive type."
@@ -1119,7 +1119,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-deconstr-to-ptype ((fn atj-jprim-deconstr-fn-p))
+(define atj-jprim-deconstr-fn-to-ptype ((fn atj-jprim-deconstr-fn-p))
   :returns (ptype primitive-typep)
   :short "Map an ACL2 function that models a Java primitive deconstructor
           to the corresponding Java primitive type."
@@ -1286,7 +1286,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-new-len-to-comp-jtype ((fn atj-jprimarr-new-len-fn-p))
+(define atj-jprimarr-new-len-fn-to-comp-jtype ((fn atj-jprimarr-new-len-fn-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models
           a Java primitive array creation with length
@@ -1305,7 +1305,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-comp-new-to-comp-jtype ((fn atj-jprimarr-new-init-fn-p))
+(define atj-jprimarr-new-init-fn-to-comp-jtype ((fn atj-jprimarr-new-init-fn-p))
   :returns (type jtypep)
   :short "Map an ACL2 function that models
           a Java primitive array creation with initializer
@@ -1322,7 +1322,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-comp-new-to-ptype ((fn atj-jprimarr-new-init-fn-p))
+(define atj-jprimarr-new-init-fn-to-ptype ((fn atj-jprimarr-new-init-fn-p))
   :returns (type primitive-typep)
   :short "Map an ACL2 function that models
           a Java primitive array constructor with initializer
@@ -1340,8 +1340,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-fromlist-conv-to-ptype ((fn
-                                              atj-jprimarr-conv-fromlist-fn-p))
+(define atj-jprimarr-conv-fromlist-fn-to-ptype
+  ((fn atj-jprimarr-conv-fromlist-fn-p))
   :returns (ptype primitive-typep)
   :short "Map a list-to-array conversion function
           to the corresponding Java primitive type."
@@ -1358,7 +1358,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-tolist-conv-to-ptype ((fn atj-jprimarr-conv-tolist-fn-p))
+(define atj-jprimarr-conv-tolist-fn-to-ptype
+  ((fn atj-jprimarr-conv-tolist-fn-p))
   :returns (ptype primitive-typep)
   :short "Map an array-to-list conversion function
           to the corresponding Java primitive type."
@@ -1939,7 +1940,7 @@
          (dst-type (atj-type-list-to-type dst-types)))
       (if (quotep uarg)
           (b* ((uarg (unquote-term uarg))
-               (expr (atj-jprim-constr-of-qconst-to-expr fn uarg))
+               (expr (atj-jprim-constr-fn-of-qconst-to-expr fn uarg))
                (expr (atj-adapt-expr-to-type expr src-type dst-type)))
             (mv nil expr jvar-tmp-index))
         (b* (((mv arg-block
@@ -1954,8 +1955,9 @@
                                     qpairs
                                     t ; GUARDS$
                                     wrld))
-             (expr (atj-convert-expr-to-jprim arg-expr
-                                              (atj-jprim-constr-to-ptype fn))))
+             (expr (atj-convert-expr-to-jprim
+                    arg-expr
+                    (atj-jprim-constr-fn-to-ptype fn))))
           (mv arg-block
               (atj-adapt-expr-to-type expr src-type dst-type)
               jvar-tmp-index))))
@@ -2008,8 +2010,9 @@
                                 qpairs
                                 t ; GUARDS$
                                 wrld))
-         (expr (atj-convert-expr-from-jprim arg-expr
-                                            (atj-jprim-deconstr-to-ptype fn)))
+         (expr (atj-convert-expr-from-jprim
+                arg-expr
+                (atj-jprim-deconstr-fn-to-ptype fn)))
          (src-type (atj-type-list-to-type src-types))
          (dst-type (atj-type-list-to-type dst-types)))
       (mv arg-block
@@ -2475,7 +2478,7 @@
                                 t ; GUARDS$
                                 wrld))
          (block length-block)
-         (jtype (atj-jprimarr-new-len-to-comp-jtype fn))
+         (jtype (atj-jprimarr-new-len-fn-to-comp-jtype fn))
          (expr (jexpr-newarray jtype length-expr)))
       (mv block
           (atj-adapt-expr-to-type expr
@@ -2541,7 +2544,7 @@
                           but it is applied to ~x1 instead."
                          fn arg)
                   (mv nil (ec-call (jexpr-fix :irrelevant)) jvar-tmp-index)))
-         (type (atj-jprimarr-comp-new-to-ptype fn))
+         (type (atj-jprimarr-new-init-fn-to-ptype fn))
          (elements (atj-type-rewrap-array-initializer-elements elements type))
          ((mv blocks
               exprs
@@ -2556,7 +2559,7 @@
                                  t ; GUARDS$
                                  wrld))
          (block (flatten blocks))
-         (jtype (atj-jprimarr-comp-new-to-comp-jtype fn))
+         (jtype (atj-jprimarr-new-init-fn-to-comp-jtype fn))
          (expr (jexpr-newarray-init jtype exprs)))
       (mv block
           (atj-adapt-expr-to-type expr
@@ -2614,7 +2617,7 @@
                                 wrld))
          (expr (atj-convert-expr-to-jprimarr
                 expr
-                (atj-jprimarr-fromlist-conv-to-ptype fn))))
+                (atj-jprimarr-conv-fromlist-fn-to-ptype fn))))
       (mv block
           (atj-adapt-expr-to-type expr
                                   (atj-type-list-to-type src-types)
@@ -2673,7 +2676,7 @@
                                 wrld))
          (expr (atj-convert-expr-from-jprimarr
                 arg-expr
-                (atj-jprimarr-tolist-conv-to-ptype fn)))
+                (atj-jprimarr-conv-tolist-fn-to-ptype fn)))
          (src-type (atj-type-list-to-type src-types))
          (dst-type (atj-type-list-to-type dst-types)))
       (mv arg-block
