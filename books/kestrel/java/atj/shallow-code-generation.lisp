@@ -599,26 +599,6 @@
      The input @('dst-type') (for `destination type')
      is the type of the corresponding formal argument.")
    (xdoc::p
-    "These type conversions are determined from
-     the wrapping conversion functions added by the type annotation step.
-     Those prohibit any conversion between @(':j...') and @(':acl2') types
-     (see @(tsee atj-type-wrap-term) and @(tsee atj-type-conv-allowed-p)),
-     save for a temporary exception needed to accommodate
-     terms that construct Java primitive arrays
-     (the exception is described in @(tsee atj-type-conv-allowed-p)).
-     However, those conversions are changed prior to the translation to Java
-     (see @(tsee atj-type-rewrap-array-initializer-elements)).
-     So, by the time we call this function @('atj-adapt-expr-to-type'),
-     the @('src-type') and @('dst-type') inputs should never be
-     one a @(':j...') type and one a @(':acl2') type.
-     If it is, it means that such a conversion was used somewhere else
-     than in the array constructions that get rewrapped,
-     and so here we cause a (deep input validation) failure
-     if that's the case.
-     For extra safety, we also cause an implementation error
-     if we are trying to do any other disallowed conversion,
-     but this should never happen.")
-   (xdoc::p
     "To convert between the @(':acl2') types,
      if the source type is a subtype of or the same type as
      the destination type
@@ -628,12 +608,6 @@
      which is expected to always succeed
      under the assumption of guard verification."))
   (cond ((atj-type-equiv src-type dst-type) (jexpr-fix expr))
-        ((and (atj-type-case src-type :jprim)
-              (atj-type-equiv dst-type (atj-type-acl2 (atj-atype-value))))
-         (prog2$ (raise "Type annotation failure: ~
-                         attempting to convert from ~x0 to ~x1."
-                        src-type dst-type)
-                 (jexpr-fix expr)))
         ((and (atj-type-case src-type :acl2)
               (atj-type-case dst-type :acl2))
          (cond ((atj-type-<= src-type dst-type) (jexpr-fix expr))
@@ -747,116 +721,6 @@
               (if (and (natp n) (natp i))
                   (nfix (- n i))
                 0))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-check-type-annotated-list-call ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (elements pseudo-term-listp :hyp :guard))
-  :short "Check if a term is a type-annotated (translated)
-          call of @(tsee list)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In translated form, a term @('(list x y z ...)') is
-     @('(cons x (cons y (cons z ... \'nil)...)'),
-     i.e. a nest of @(tsee cons)es that ends in a quoted @('nil').
-     The nest may be empty, i.e. the term may be just a quoted @('nil').
-     But here we are looking at terms with ATJ type annotations,
-     so the term really appears as
-     @('(<C> (cons x (<C> (cons y (<C> (cons z ... (<C> \'nil)...)'),
-     where @('<C>') represents (possibly different) type conversion functions.
-     If a term has this latter form,
-     we return @('t') as first result
-     and the list @('(x y z ...)') as second result;
-     otherwise, we return @('nil') as both results.")
-   (xdoc::p
-    "This function is used to generate
-     Java array creation expressions with initializers
-     from terms @('(<T>-array-new-init (list ...))'),
-     where @('<T>') is a Java primitive type.
-     In this case, we want to retrieve the elements of the list
-     and use the corresponding Java expressions for the array initializer."))
-  (b* (((mv term & &) (atj-type-unwrap-term term))
-       ((when (variablep term)) (mv nil nil))
-       ((when (fquotep term)) (if (equal term *nil*)
-                                  (mv t nil)
-                                (mv nil nil)))
-       (fn (ffn-symb term))
-       ((unless (eq fn 'cons)) (mv nil nil))
-       (args (fargs term))
-       ((unless (= (len args) 2))
-        (raise "Internal error: found CONS with ~x0 arguments." (len args))
-        (mv nil nil))
-       (car (first args))
-       (cdr (second args))
-       ((mv yes/no-rest elements-rest) (atj-check-type-annotated-list-call cdr))
-       ((unless yes/no-rest) (mv nil nil)))
-    (mv t (cons car elements-rest)))
-  :prepwork ((local (in-theory (enable atj-type-unwrap-term))))
-  ///
-
-  (defret atj-check-type-annotated-list-call-decreases
-    (implies yes/no
-             (< (acl2-count elements)
-                (acl2-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-type-rewrap-array-initializer-elements
-  ((terms pseudo-term-listp)
-   (new-dst-type primitive-typep))
-  :returns (new-terms pseudo-term-listp :hyp :guard)
-  :short "Adjust the type conversion functions of the terms
-          to use for a Java array creation expression with initializer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This function is used on
-     the result of @(tsee atj-check-type-annotated-list-call);
-     see that function's documentation first.
-     Since the terms returned by that function are arguments of @(tsee cons),
-     they are wrapped by type conversion functions
-     whose destination type is @(':avalue'),
-     i.e. the input type of @(tsee cons).
-     However, when using the Java counterparts of these terms
-     in an array initializer,
-     we do not want to convert them to @('Acl2Value'):
-     we want the destination type to be the one corresponding to
-     the Java primitive type of the array,
-     which we pass as argument to this function.")
-   (xdoc::p
-    "Thus, here we go through the terms,
-     which must all be wrapped with a type conversion function,
-     and we re-wrap them with a type conversion function
-     with a modified destination type."))
-  (b* (((when (or (primitive-type-case new-dst-type :float)
-                  (primitive-type-case new-dst-type :double)))
-        (raise "Type ~x0 nor supported." new-dst-type))
-       ((when (endp terms)) nil)
-       (term (car terms))
-       ((mv term src-types dst-types) (atj-type-unwrap-term term))
-       ((unless term) nil) ; to prove ACL2-COUNT theorem below
-       ((unless (equal dst-types (list (atj-type-acl2 (atj-atype-value)))))
-        (raise "Internal error: ~
-                the term ~x0 is wrapped with a conversion function ~
-                from types ~x1 to types ~x2."
-               term src-types dst-types))
-       (new-term (atj-type-wrap-term term
-                                     src-types
-                                     (list (atj-type-jprim new-dst-type))))
-       (new-terms (atj-type-rewrap-array-initializer-elements (cdr terms)
-                                                              new-dst-type)))
-    (cons new-term new-terms))
-  ///
-
-  (defret atj-type-rewrap-array-initializer-elements-not-increases
-    (<= (acl2-count new-terms)
-        (acl2-count terms))
-    :rule-classes :linear
-    :hints (("Goal" :in-theory (enable atj-type-unwrap-term
-                                       atj-type-wrap-term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2403,7 +2267,7 @@
 
   (define atj-gen-shallow-jprimarr-new-init-call
     ((fn atj-jprimarr-new-init-fn-p)
-     (arg pseudo-termp)
+     (args pseudo-term-listp)
      (src-types atj-type-listp)
      (dst-types atj-type-listp)
      (jvar-tmp-base stringp)
@@ -2432,36 +2296,24 @@
       "If the @(':guards') input is @('t'),
        the functions that model Java primitive array creation from components
        (i.e. @(tsee byte-array-new-init) etc.) are treated specially.
-       If the argument has the form @('(list ...)')
-       (in translated form,
-       i.e. it is a nest of @(tsee cons)es ending in a quoted @('nil'),
-       as checked by the library function used here),
-       we generate expressions for all the list elements,
+       The type annotation pre-translation step
+       (see @(tsee atj-type-annotate-term))
+       requires these functions to be called on (translated) @(tsee list) calls,
+       and, as part of the type annotation process,
+       it ``removes'' the @(tsee list),
+       making its arguments directly arguments of the function
+       (i.e. @(tsee byte-array-new-init) etc.),
+       making it a function with a variable number of arguments
+       (syntactically).
+       We generate expressions for all these arguments,
        and then we generate a Java array creation expression
        with an initializer consisting of those generated expressions;
        we convert the resulting expression, as needed,
-       to match the destination type.
-       If the argument has a different form, it is an error:
-       code generation fails
-       (this is really an input validation check;
-       we may move to pre-translation, or even to input processing).")
-     (xdoc::p
-      "Note that we are dealing with annotated terms,
-       so the argument of the constructor must be unwrapped
-       to be examined."))
-    (b* (((mv list-call? elements) (atj-check-type-annotated-list-call arg))
-         ((unless list-call?)
-          (prog2$ (raise "Code generation failure: ~
-                          the function ~x0 can only be applied to a LIST call, ~
-                          but it is applied to ~x1 instead."
-                         fn arg)
-                  (mv nil (ec-call (jexpr-fix :irrelevant)) jvar-tmp-index)))
-         (type (atj-jprimarr-new-init-fn-to-ptype fn))
-         (elements (atj-type-rewrap-array-initializer-elements elements type))
-         ((mv blocks
+       to match the destination type."))
+    (b* (((mv blocks
               exprs
               jvar-tmp-index)
-          (atj-gen-shallow-terms elements
+          (atj-gen-shallow-terms args
                                  jvar-tmp-base
                                  jvar-tmp-index
                                  pkg-class-names
@@ -2478,7 +2330,9 @@
                                   (atj-type-list-to-type src-types)
                                   (atj-type-list-to-type dst-types))
           jvar-tmp-index))
-    :measure (two-nats-measure (acl2-count arg) 0))
+    ;; 2nd component is non-0
+    ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases:
+    :measure (two-nats-measure (acl2-count args) 1))
 
   (define atj-gen-shallow-jprimarr-conv-fromlist-call
     ((fn atj-jprimarr-conv-fromlist-fn-p)
@@ -2885,10 +2739,9 @@
                                                  qpairs
                                                  wrld))
          ((when (and guards$
-                     (atj-jprimarr-new-init-fn-p fn)
-                     (int= (len args) 1))) ; should be always true
+                     (atj-jprimarr-new-init-fn-p fn)))
           (atj-gen-shallow-jprimarr-new-init-call fn
-                                                  (car args)
+                                                  args
                                                   src-types
                                                   dst-types
                                                   jvar-tmp-base
