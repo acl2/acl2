@@ -235,7 +235,7 @@
   :pred junopp)
 
 (fty::deftagsum jbinop
-  :short "Java binary operators [JLS:15.17-26]."
+  :short "Java binary operators [JLS:15.17-24] [JLS:15.26]."
   :long
   (xdoc::topstring-p
    "We do not include @('instanceof') here because
