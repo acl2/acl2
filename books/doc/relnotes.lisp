@@ -247,7 +247,10 @@
 
    (xdoc::p
     "The model of Java primitive arrays has been extended
-     with functions to convert between arrays and corresponding ACL2 lists.")
+     with functions to convert between arrays and corresponding ACL2 lists.
+     The model has been much more compact by defining and using a macro
+     that captures the structure common to the eight
+     Java primitive array types.")
 
    (xdoc::p
     "Support has been added to recognize ACL2 functions
