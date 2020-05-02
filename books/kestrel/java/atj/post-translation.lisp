@@ -16,6 +16,7 @@
 (include-book "centaur/depgraph/toposort" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
+(include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -976,6 +977,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-primarray-write-method-names*
+  :short "List of names of the methods to write to Java primitive arrays."
+  (list (atj-primarray-write-method-name (primitive-type-boolean))
+        (atj-primarray-write-method-name (primitive-type-char))
+        (atj-primarray-write-method-name (primitive-type-byte))
+        (atj-primarray-write-method-name (primitive-type-short))
+        (atj-primarray-write-method-name (primitive-type-int))
+        (atj-primarray-write-method-name (primitive-type-long))
+        (atj-primarray-write-method-name (primitive-type-float))
+        (atj-primarray-write-method-name (primitive-type-double))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-remove-array-write-call-in-asg ((expr jexprp))
   :returns (new-expr jexprp)
   :short "Replace an assignment of an array write method call
@@ -1011,23 +1025,7 @@
        (right (jexpr-binary->right expr))
        ((unless (jexpr-case right :method)) (jexpr-fix expr))
        (method-name (jexpr-method->name right))
-       ((unless (member-equal method-name
-                              (list (atj-primarray-write-method-name
-                                     (primitive-type-boolean))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-char))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-byte))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-short))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-int))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-long))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-float))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-double)))))
+       ((unless (member-equal method-name *atj-primarray-write-method-names*))
         (jexpr-fix expr))
        (args (jexpr-method->args right))
        ((unless (= (len args) 3))
@@ -1128,23 +1126,7 @@
        (expr expr?)
        ((unless (jexpr-case expr :method)) no-change)
        (method-name (jexpr-method->name expr))
-       ((unless (member-equal method-name
-                              (list (atj-primarray-write-method-name
-                                     (primitive-type-boolean))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-char))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-byte))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-short))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-int))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-long))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-float))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-double)))))
+       ((unless (member-equal method-name *atj-primarray-write-method-names*))
         no-change)
        (args (jexpr-method->args expr))
        ((unless (= (len args) 3))
