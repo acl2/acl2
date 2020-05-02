@@ -55,4 +55,29 @@ class Acl2IntegerTest {
                         (new BigInteger("aaaabbbbccccddddeeeeffff", 16)));
     }
 
+    @Test
+    void getJavaIntFromConstant() {
+        assertEquals(Acl2Integer.ZERO.getJavaInt(), 0);
+        assertEquals(Acl2Integer.ONE.getJavaInt(), 1);
+    }
+
+    @Test
+    void getJavaIntFromMake() {
+        assertEquals(Acl2Integer.make(0).getJavaInt(), 0);
+        assertEquals(Acl2Integer.make(1).getJavaInt(), 1);
+        assertEquals(Acl2Integer.make(-1).getJavaInt(), -1);
+        assertEquals(Acl2Integer.make(2678).getJavaInt(), 2678);
+        assertEquals(Acl2Integer.make(-1000000000).getJavaInt(), -1000000000);
+    }
+
+    @Test
+    void getJavaIntFromMakeFail() {
+        assertThrows(ArithmeticException.class,
+                () -> Acl2Integer.make(44444444444444L).getJavaInt());
+        assertThrows(ArithmeticException.class,
+                () -> Acl2Integer.make
+                        (new BigInteger("72983728478274982748282710100"))
+                        .getJavaInt());
+    }
+
 }
