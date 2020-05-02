@@ -10914,24 +10914,6 @@
             x)
            nil nil nil nil nil nil nil nil))))
 
-(defun pairlis-x1 (x1 lst)
-
-; Cons x1 onto the front of each element of lst.
-
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        (t (cons (cons x1 (car lst))
-                 (pairlis-x1 x1 (cdr lst))))))
-
-(defun pairlis-x2 (lst x2)
-
-; Make an alist pairing each element of lst with x2.
-
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) nil)
-        (t (cons (cons (car lst) x2)
-                 (pairlis-x2 (cdr lst) x2)))))
-
 (defun no-duplicatesp-checks-for-stobj-let-actuals/alist (alist)
   (cond ((endp alist) nil)
         (t (let ((indices (cdar alist)))

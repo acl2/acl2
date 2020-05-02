@@ -16,6 +16,7 @@
 (include-book "centaur/depgraph/toposort" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
+(include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -976,6 +977,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *atj-primarray-write-method-names*
+  :short "List of names of the methods to write to Java primitive arrays."
+  (list (atj-primarray-write-method-name (primitive-type-boolean))
+        (atj-primarray-write-method-name (primitive-type-char))
+        (atj-primarray-write-method-name (primitive-type-byte))
+        (atj-primarray-write-method-name (primitive-type-short))
+        (atj-primarray-write-method-name (primitive-type-int))
+        (atj-primarray-write-method-name (primitive-type-long))
+        (atj-primarray-write-method-name (primitive-type-float))
+        (atj-primarray-write-method-name (primitive-type-double))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-remove-array-write-call-in-asg ((expr jexprp))
   :returns (new-expr jexprp)
   :short "Replace an assignment of an array write method call
@@ -1011,23 +1025,7 @@
        (right (jexpr-binary->right expr))
        ((unless (jexpr-case right :method)) (jexpr-fix expr))
        (method-name (jexpr-method->name right))
-       ((unless (member-equal method-name
-                              (list (atj-primarray-write-method-name
-                                     (primitive-type-boolean))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-char))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-byte))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-short))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-int))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-long))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-float))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-double)))))
+       ((unless (member-equal method-name *atj-primarray-write-method-names*))
         (jexpr-fix expr))
        (args (jexpr-method->args right))
        ((unless (= (len args) 3))
@@ -1128,23 +1126,7 @@
        (expr expr?)
        ((unless (jexpr-case expr :method)) no-change)
        (method-name (jexpr-method->name expr))
-       ((unless (member-equal method-name
-                              (list (atj-primarray-write-method-name
-                                     (primitive-type-boolean))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-char))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-byte))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-short))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-int))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-long))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-float))
-                                    (atj-primarray-write-method-name
-                                     (primitive-type-double)))))
+       ((unless (member-equal method-name *atj-primarray-write-method-names*))
         no-change)
        (args (jexpr-method->args expr))
        ((unless (= (len args) 3))
@@ -1244,6 +1226,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-ensure-no-array-write-calls ((block jblockp))
+  :returns (yes/no booleanp)
+  :short "Ensure that there are no calls of array write methods in a block."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two transformations described in
+     @(see atj-post-translation-remove-array-write-calls)
+     should remove all the calls of array write methods.
+     Since this has not been formally proved,
+     we check whether this is the case, via this predicate."))
+  (not (intersectp-equal (jblock-methods block)
+                         *atj-primarray-write-method-names*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-remove-array-write-calls ((block jblockp))
   :returns (new-block jblockp)
   :short "Remove array write method calls from a block."
@@ -1251,9 +1249,16 @@
   (xdoc::topstring
    (xdoc::p
     "This puts together the two transformations described in
-     @(see atj-post-translation-remove-array-write-calls)."))
+     @(see atj-post-translation-remove-array-write-calls).")
+   (xdoc::p
+    "We also ensure that, after the transformations,
+     no more array write method calls remain."))
   (b* ((block (atj-remove-array-write-call-asgs-in-jblock block))
-       (block (atj-remove-array-write-call-returns-in-jblock block)))
+       (block (atj-remove-array-write-call-returns-in-jblock block))
+       ((unless (atj-ensure-no-array-write-calls block))
+        (raise "Internal error: ~
+                the block ~x0 contains array write method calls."
+               block)))
     block)
   :hooks (:fix))
 
