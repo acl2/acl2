@@ -6478,13 +6478,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (member-eq (car (car rst)) '(defun defund defun-nx defund-nx))
                 (mutual-recursion-guardp (cdr rst))))))
 
-(defun collect-cadrs-when-car-eq (x alist)
-  (declare (xargs :guard (assoc-eq-equal-alistp alist)))
+(defun collect-cadrs-when-car-member-eq (x alist)
+  (declare (xargs :guard (and (symbol-listp x)
+                              (assoc-eq-equal-alistp alist))))
   (cond ((endp alist) nil)
-        ((eq x (car (car alist)))
+        ((member-eq (car (car alist)) x)
          (cons (cadr (car alist))
-               (collect-cadrs-when-car-eq x (cdr alist))))
-        (t (collect-cadrs-when-car-eq x (cdr alist)))))
+               (collect-cadrs-when-car-member-eq x (cdr alist))))
+        (t (collect-cadrs-when-car-member-eq x (cdr alist)))))
 
 (defmacro value (x)
 
@@ -6534,25 +6535,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  :check ,(or msg t)
                  :ctx 'assert-event))
 
-(defun xd-name (event-type name)
-  (declare (xargs :guard (member-eq event-type '(defund defthmd))))
-  (cond
-   ((eq event-type 'defund)
-    (list :defund  name))
-   ((eq event-type 'defthmd)
-    (list :defthmd name))
-   (t (illegal 'xd-name
-               "Unexpected event-type for xd-name, ~x0"
-               (list (cons #\0 event-type))))))
+(defun event-keyword-name (event-type name)
+  (declare (xargs :guard (member-eq event-type
+                                    '(defund defthmd defun-nx defund-nx))))
+  (list (intern (symbol-name event-type) "KEYWORD") name))
 
-(defun defund-name-list (defuns acc)
+(defun event-keyword-name-lst (defuns acc)
   (declare (xargs :guard (and (mutual-recursion-guardp defuns)
                               (true-listp acc))))
   (cond ((endp defuns) (reverse acc))
-        (t (defund-name-list
+        (t (event-keyword-name-lst
              (cdr defuns)
-             (cons (if (eq (caar defuns) 'defund)
-                       (xd-name 'defund (cadar defuns))
+             (cons (if (member-eq (caar defuns)
+                                  '(defund defthmd defun-nx defund-nx))
+                       (event-keyword-name (caar defuns) (cadar defuns))
                      (cadar defuns))
                    acc)))))
 
@@ -6602,31 +6598,49 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (error "This error is caused by what should be dead code!"))
   nil)
 
-(defun defun-nx-fn (form disabledp)
+(defun defun-nx-form (form)
   (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form)))
+                              (true-listp (caddr form))
+                              (member-eq (car form) '(defun-nx defund-nx)))
                   :verify-guards nil))
-  (let ((name (cadr form))
+  (let ((defunx (if (eq (car form) 'defun-nx) 'defun 'defund))
+        (name (cadr form))
         (formals (caddr form))
-        (rest (cdddr form))
-        (defunx (if disabledp 'defund 'defun)))
+        (rest (cdddr form)))
     `(,defunx ,name ,formals
        (declare (xargs :non-executable t :mode :logic))
        ,@(butlast rest 1)
        (prog2$ (throw-nonexec-error ',name (list ,@formals))
                ,@(last rest)))))
 
+(defun defun-nx-fn (form)
+  (declare (xargs :guard (and (true-listp form)
+                              (true-listp (caddr form))
+                              (member-eq (car form) '(defun-nx defund-nx)))
+                  :verify-guards nil))
+  `(with-output :stack :push :off :all
+       (progn (with-output :stack :pop
+                ,(defun-nx-form form))
+              (encapsulate
+                ()
+                (logic)
+                (with-output :stack :pop :off summary
+                  (in-theory (disable (:e ,(cadr form))))))
+              (with-output :stack :pop :off summary
+                (value-triple
+                 ',(event-keyword-name (car form) (cadr form)))))))
+
 (defmacro defun-nx (&whole form &rest rest)
   (declare (xargs :guard (and (true-listp form)
                               (true-listp (caddr form))))
            (ignore rest))
-  (defun-nx-fn form nil))
+  (defun-nx-fn form))
 
 (defmacro defund-nx (&whole form &rest rest)
   (declare (xargs :guard (and (true-listp form)
                               (true-listp (caddr form))))
            (ignore rest))
-  (defun-nx-fn form t))
+  (defun-nx-fn form))
 
 (defun update-mutual-recursion-for-defun-nx-1 (defs)
   (declare (xargs :guard (mutual-recursion-guardp defs)
@@ -6634,10 +6648,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp defs)
          nil)
         ((eq (caar defs) 'defun-nx)
-         (cons (defun-nx-fn (car defs) nil)
+         (cons (defun-nx-form (car defs))
                (update-mutual-recursion-for-defun-nx-1 (cdr defs))))
         ((eq (caar defs) 'defund-nx)
-         (cons (defun-nx-fn (car defs) t)
+         (cons (defun-nx-form (car defs))
                (update-mutual-recursion-for-defun-nx-1 (cdr defs))))
         (t
          (cons (car defs)
@@ -6715,31 +6729,89 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (or (program-declared-p (car defs))
                (some-program-declared-p (cdr defs))))))
 
+(defun pairlis-x1 (x1 lst)
+
+; Cons x1 onto the front of each element of lst.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (cons x1 (car lst))
+                 (pairlis-x1 x1 (cdr lst))))))
+
+(defun pairlis-x2 (lst x2)
+
+; Make an alist pairing each element of lst with x2.
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (cons (car lst) x2)
+                 (pairlis-x2 (cdr lst) x2)))))
+
+(defmacro append? (x y)
+
+; We use defmacro because defabbrev has not yet been defined at this point in
+; the boot-strap.
+
+  `(let ((x ,x) (y ,y))
+     (cond ((null y) x)
+           (t (append x y)))))
+
 #+acl2-loop-only
-(defmacro mutual-recursion (&whole event-form &rest rst)
-  (declare (xargs :guard (mutual-recursion-guardp rst)))
-  (let ((rst (update-mutual-recursion-for-defun-nx rst)))
-    (let ((defs (strip-cdrs rst)))
-      (let ((form (list 'defuns-fn
-                        (list 'quote defs)
-                        'state
-                        (list 'quote event-form)
-                        #+:non-standard-analysis ; std-p
-                        nil)))
-        (cond
-         ((and (assoc-eq 'defund rst)
-               (not (some-program-declared-p defs)))
+(defmacro mutual-recursion (&whole event-form &rest rst0)
+  (declare (xargs :guard (mutual-recursion-guardp rst0)))
+  (let ((rst (update-mutual-recursion-for-defun-nx rst0)))
+
+; It would be nice to use let* instead of nested let expressions here, but let*
+; has not been defined at this point in the file.
+
+    (let ((form (list 'defuns-fn
+                      (list 'quote (strip-cdrs rst))
+                      'state
+                      (list 'quote event-form)
+                      #+:non-standard-analysis ; std-p
+                      nil)))
+      (cond
+       ((or (and (assoc-eq 'defund rst0)
+
+; It is of course possible that the default defun-mode is :program and thus no
+; definition expicitly declares :program mode.  In that case, we might generate
+; in-theory events but they would be skipped because the default defun-mode is
+; :program.  Note by the way that all functions introduced by mutual-recursion
+; have the same defun-mode, which allows us to avoid thinking about mixed
+; defun-mode cases.
+
+                 (not (some-program-declared-p (strip-cdrs rst0))))
+            (assoc-eq 'defun-nx rst0)
+            (assoc-eq 'defund-nx rst0))
+        (let ((in-theory-form
+               (list 'in-theory
+                     (cons 'disable
+                           (append?
+                            (collect-cadrs-when-car-member-eq
+                             '(defund)
+                             rst)
+                            (pairlis-x1
+                             ':executable-counterpart
+                             (pairlis$ (collect-cadrs-when-car-member-eq
+                                        '(defun-nx defund-nx)
+                                        rst0)
+                                       nil)))))))
           (list 'er-progn
                 form
                 (list
                  'with-output
-                 :off 'summary
-                 (list 'in-theory
-                       (cons 'disable
-                             (collect-cadrs-when-car-eq 'defund rst))))
-                (list 'value-triple (list 'quote (defund-name-list rst nil)))))
-         (t
-          form))))))
+                 :off :all
+                 (if (or (assoc-eq 'defun-nx rst0)
+                         (assoc-eq 'defund-nx rst0))
+                     `(encapsulate
+                        nil
+                        (logic)
+                        ,in-theory-form)
+                   in-theory-form))
+                (list 'value-triple
+                      (list 'quote (event-keyword-name-lst rst0 nil))))))
+       (t
+        form)))))
 
 ; Now we define the weak notion of term that guards metafunctions.
 
@@ -9140,7 +9212,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (list 'in-theory
                                 (list 'disable name)))
                     (list 'value-triple
-                          (list 'quote (xd-name 'defthmd name))
+                          (list 'quote (event-keyword-name 'defthmd name))
                           :on-skip-proofs t)))))))
 
 #+(and acl2-loop-only :non-standard-analysis)
@@ -26739,6 +26811,7 @@ Lisp definition."
            (true-listp y))))
 
  (verify-guards throw-nonexec-error)
+ (verify-guards defun-nx-form)
  (verify-guards defun-nx-fn)
  (verify-guards update-mutual-recursion-for-defun-nx-1)
  (verify-guards update-mutual-recursion-for-defun-nx)

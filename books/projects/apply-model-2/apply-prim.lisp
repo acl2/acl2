@@ -538,3 +538,4 @@
       :rule-classes :forward-chaining)))
 
 (in-theory (disable apply$-prim apply$-primp))
+
