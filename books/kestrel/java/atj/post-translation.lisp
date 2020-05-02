@@ -1226,6 +1226,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-ensure-no-array-write-calls ((block jblockp))
+  :returns (yes/no booleanp)
+  :short "Ensure that there are no calls of array write methods in a block."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two transformations described in
+     @(see atj-post-translation-remove-array-write-calls)
+     should remove all the calls of array write methods.
+     Since this has not been formally proved,
+     we check whether this is the case, via this predicate."))
+  (not (intersectp-equal (jblock-methods block)
+                         *atj-primarray-write-method-names*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-remove-array-write-calls ((block jblockp))
   :returns (new-block jblockp)
   :short "Remove array write method calls from a block."
@@ -1233,9 +1249,16 @@
   (xdoc::topstring
    (xdoc::p
     "This puts together the two transformations described in
-     @(see atj-post-translation-remove-array-write-calls)."))
+     @(see atj-post-translation-remove-array-write-calls).")
+   (xdoc::p
+    "We also ensure that, after the transformations,
+     no more array write method calls remain."))
   (b* ((block (atj-remove-array-write-call-asgs-in-jblock block))
-       (block (atj-remove-array-write-call-returns-in-jblock block)))
+       (block (atj-remove-array-write-call-returns-in-jblock block))
+       ((unless (atj-ensure-no-array-write-calls block))
+        (raise "Internal error: ~
+                the block ~x0 contains array write method calls."
+               block)))
     block)
   :hooks (:fix))
 
