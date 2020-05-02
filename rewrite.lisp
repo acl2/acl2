@@ -12232,10 +12232,6 @@
                nil
                (car lst)))))))))
 
-(defabbrev append? (x y)
-  (cond ((null y) x)
-        (t (append x y))))
-
 (defun make-stack-from-alist (term alist)
 
 ; We wish to make a stack representing alist, so that term/stack is

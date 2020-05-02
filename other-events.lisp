@@ -29753,7 +29753,7 @@
 
                        :off summary
                        (in-theory (disable ,(car def))))))
-            (value-triple ',(xd-name 'defund (car def))
+            (value-triple ',(event-keyword-name 'defund (car def))
                           :on-skip-proofs t))))
 
 #-acl2-loop-only
