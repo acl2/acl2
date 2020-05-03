@@ -381,7 +381,7 @@ We used the :type-prescription rule MEMBER-EQUAL.
 Summary
 Form:  ( DEFUN |G-INV-arity-1-defpun-test| ...)
 Rules: ((:TYPE-PRESCRIPTION MEMBER-EQUAL))
-|G-INV-arity-1-defpun-test|
+(:DEFUN-NX |G-INV-arity-1-defpun-test|)
 
 
 M1 >>>(LOCAL
@@ -414,7 +414,7 @@ Summary
 Form:  ( DEFUN |G-INV-arity-1-defpun-base| ...)
 Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
-|G-INV-arity-1-defpun-base|
+(:DEFUN-NX |G-INV-arity-1-defpun-base|)
 
 
 M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC |G-INV-arity-1-step| (ACL2::X)
@@ -433,7 +433,7 @@ We used primitive type reasoning.
 Summary
 Form:  ( DEFUN |G-INV-arity-1-step| ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-|G-INV-arity-1-step|
+(:DEFUN-NX |G-INV-arity-1-step|)
 
 
 M1 >>>(LOCAL
@@ -540,7 +540,7 @@ We used the :type-prescription rule |G-INV-arity-1-step|.
 Summary
 Form:  ( DEFUN |G-INV-arity-1-defpun-stn| ...)
 Rules: ((:TYPE-PRESCRIPTION |G-INV-arity-1-step|))
-|G-INV-arity-1-defpun-stn|
+(:DEFUN-NX |G-INV-arity-1-defpun-stn|)
 
 
 M1 >>>(LOCAL (DEFCHOOSE |G-INV-arity-1-fch| (ACL2::N)
@@ -622,7 +622,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
         (:REWRITE ACL2::<-+-NEGATIVE-0-1)
         (:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-base|))
-|G-INV-arity-1-defpun-fn|
+(:DEFUN-NX |G-INV-arity-1-defpun-fn|)
 
 
 M1 >>>(LOCAL
@@ -643,7 +643,7 @@ We used the :type-prescription rule |G-INV-arity-1-defpun-fn|.
 Summary
 Form:  ( DEFUN |G-INV-arity-1| ...)
 Rules: ((:TYPE-PRESCRIPTION |G-INV-arity-1-defpun-fn|))
-|G-INV-arity-1|
+(:DEFUN-NX |G-INV-arity-1|)
 
 
 M1 >>>(LOCAL
@@ -1215,7 +1215,7 @@ no constraints on the type of G-INV.
 Summary
 Form:  ( DEFUN G-INV ...)
 Rules: NIL
-G-INV
+(:DEFUN-NX G-INV)
 
 
 M1 >>>(DEFTHM
@@ -2399,7 +2399,7 @@ We used the :type-prescription rule MEMBER-EQUAL.
 Summary
 Form:  ( DEFUN |H-INV-arity-1-defpun-test| ...)
 Rules: ((:TYPE-PRESCRIPTION MEMBER-EQUAL))
-|H-INV-arity-1-defpun-test|
+(:DEFUN-NX |H-INV-arity-1-defpun-test|)
 
 
 M1 >>>(LOCAL
@@ -2436,7 +2436,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION EVENP)
         (:TYPE-PRESCRIPTION IFF))
-|H-INV-arity-1-defpun-base|
+(:DEFUN-NX |H-INV-arity-1-defpun-base|)
 
 
 M1 >>>(LOCAL (ACL2::DEFUN-NONEXEC |H-INV-arity-1-step| (ACL2::X)
@@ -2454,7 +2454,7 @@ We used primitive type reasoning.
 Summary
 Form:  ( DEFUN |H-INV-arity-1-step| ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-|H-INV-arity-1-step|
+(:DEFUN-NX |H-INV-arity-1-step|)
 
 
 M1 >>>(LOCAL
@@ -2561,7 +2561,7 @@ We used the :type-prescription rule |H-INV-arity-1-step|.
 Summary
 Form:  ( DEFUN |H-INV-arity-1-defpun-stn| ...)
 Rules: ((:TYPE-PRESCRIPTION |H-INV-arity-1-step|))
-|H-INV-arity-1-defpun-stn|
+(:DEFUN-NX |H-INV-arity-1-defpun-stn|)
 
 
 M1 >>>(LOCAL (DEFCHOOSE |H-INV-arity-1-fch| (ACL2::N)
@@ -2643,7 +2643,7 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
         (:META ACL2::CANCEL_PLUS-LESSP-CORRECT)
         (:REWRITE ACL2::<-+-NEGATIVE-0-1)
         (:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-base|))
-|H-INV-arity-1-defpun-fn|
+(:DEFUN-NX |H-INV-arity-1-defpun-fn|)
 
 
 M1 >>>(LOCAL
@@ -2664,7 +2664,7 @@ We used the :type-prescription rule |H-INV-arity-1-defpun-fn|.
 Summary
 Form:  ( DEFUN |H-INV-arity-1| ...)
 Rules: ((:TYPE-PRESCRIPTION |H-INV-arity-1-defpun-fn|))
-|H-INV-arity-1|
+(:DEFUN-NX |H-INV-arity-1|)
 
 
 M1 >>>(LOCAL
@@ -3444,7 +3444,7 @@ no constraints on the type of H-INV.
 Summary
 Form:  ( DEFUN H-INV ...)
 Rules: NIL
-H-INV
+(:DEFUN-NX H-INV)
 
 
 M1 >>>(DEFTHM
