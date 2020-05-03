@@ -12,7 +12,6 @@
 
 (include-book "../language/primitive-types")
 
-(include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
@@ -39,7 +38,7 @@
     "This abstract syntax may be eventually superseded
      by a complete formalization under @('[books]/kestrel/java/language').")
    (xdoc::p
-    "The following remarks apply to this abstract syntax in general,
+    "The following remarks apply to this ATJ abstract syntax in general,
      and so they are stated here instead of being repeated in several places:")
    (xdoc::ul
     (xdoc::li
