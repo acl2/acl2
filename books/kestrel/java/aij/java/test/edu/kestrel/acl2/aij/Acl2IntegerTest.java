@@ -80,4 +80,33 @@ class Acl2IntegerTest {
                         .getJavaInt());
     }
 
+    @Test
+    void getJavaLongFromConstant() {
+        assertEquals(Acl2Integer.ZERO.getJavaLong(), 0L);
+        assertEquals(Acl2Integer.ONE.getJavaLong(), 1L);
+    }
+
+    @Test
+    void getJavaLongFromMake() {
+        assertEquals(Acl2Integer.make(0).getJavaLong(), 0L);
+        assertEquals(Acl2Integer.make(1).getJavaLong(), 1L);
+        assertEquals(Acl2Integer.make(-1).getJavaLong(), -1L);
+        assertEquals(Acl2Integer.make(2678).getJavaLong(), 2678L);
+        assertEquals(Acl2Integer.make(-1000000000).getJavaLong(), -1000000000L);
+        assertEquals(Acl2Integer.make(-1000000000000000000L).getJavaLong(),
+                -1000000000000000000L);
+    }
+
+    @Test
+    void getJavaLongFromMakeFail() {
+        assertThrows(ArithmeticException.class,
+                () -> Acl2Integer.make
+                        (new BigInteger("72983728478274982748282710100"))
+                        .getJavaLong());
+        assertThrows(ArithmeticException.class,
+                () -> Acl2Integer.make
+                        (new BigInteger("-72983728478274982748282710100"))
+                        .getJavaLong());
+    }
+
 }

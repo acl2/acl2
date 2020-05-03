@@ -1208,6 +1208,13 @@
 (define atj-gen-shallow-primarray-write-methods ()
   :returns (methods jmethod-listp)
   :short "Generate all the eight methods to write primitive arrays."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These methods are no longer generated,
+     because ATJ's post-translation removes all their calls,
+     and so there is no need for these methods to be generated.
+     However, we keep this code around just in case for now."))
   (list (atj-gen-shallow-primarray-write-method (primitive-type-boolean))
         (atj-gen-shallow-primarray-write-method (primitive-type-char))
         (atj-gen-shallow-primarray-write-method (primitive-type-byte))
@@ -4510,8 +4517,10 @@
         (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        (pkg-methods (mergesort-jmethods pkg-methods))
-       (jprimarr-methods (append (atj-gen-shallow-primarray-write-methods)
-                                 (atj-gen-shallow-jprimarr-conversion-methods)))
+       (jprimarr-methods (append
+                          ;; see doc of atj-gen-shallow-primarray-write-methods
+                          ;; (atj-gen-shallow-primarray-write-methods)
+                          (atj-gen-shallow-jprimarr-conversion-methods)))
        (fns+natives (append fns-to-translate *aij-natives*))
        ((unless (no-duplicatesp-eq fns+natives))
         (raise "Internal error: ~
