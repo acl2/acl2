@@ -286,37 +286,21 @@
                       (erp val bad-fn)
                       (pstk
                        (ev-fncall+ fn (strip-cadrs expanded-args) t state))
+                      (declare (ignore bad-fn))
                       (cond
                        (erp
 
-; We follow a suggestion from Matt Wilding and attempt to simplify the term
-; before applying HIDE.
+; We originally followed a suggestion from Matt Wilding and attempt to simplify
+; the term before applying HIDE.  Now, we partially follow an idea from Eric
+; Smith of avoiding the application of HIDE -- we do this only here in
+; expand-abbreviations, expecting that the rewriter will apply HIDE if
+; appropriate.
 
-                        (let ((new-term1 (cons-term fn expanded-args)))
-                          (sl-let (new-term2 ttree)
-                                  (expand-abbreviations-with-lemma
-                                   new-term1 geneqv pequiv-info
-                                   fns-to-be-ignored-by-rewrite
-                                   rdepth step-limit ens wrld state ttree)
-                                  (cond
-                                   ((equal new-term2 new-term1)
-                                    (if bad-fn
-                                        (mv step-limit
-
-; Since bad-fn is non-nil, the evaluation failure was caused by aborting when a
-; warrant was needed.  This case is handled in rewrite, so we do not want to
-; hide the term.  See the Essay on Evaluation of Apply$ and Loop$ Calls During
-; Proofs.
-
-                                            new-term1
-                                            ttree)
-                                      (mv step-limit
-                                          (hide-with-comment erp new-term1
-                                                             state)
-                                          (push-lemma (fn-rune-nume 'hide nil
-                                                                    nil wrld)
-                                                      ttree))))
-                                   (t (mv step-limit new-term2 ttree))))))
+                        (expand-abbreviations-with-lemma
+                         (cons-term fn expanded-args)
+                         geneqv pequiv-info
+                         fns-to-be-ignored-by-rewrite
+                         rdepth step-limit ens wrld state ttree))
                        (t (mv step-limit
                               (kwote val)
                               (push-lemma (fn-rune-nume fn nil t wrld)
