@@ -40,6 +40,7 @@
 
 (in-package "X86ISA")
 
+(include-book "../portcullis/utils")
 (include-book "concrete-state")
 
 ;; ======================================================================
