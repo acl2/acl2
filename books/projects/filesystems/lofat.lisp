@@ -2890,8 +2890,7 @@ Some (rather awful) testing forms are
     (e/d
      (lofat-to-hifat-helper clear-clusterchain
                             lofat-to-hifat-helper-of-stobj-set-indices-in-fa-table)
-     ((:rewrite nth-of-effective-fat)
-      (:rewrite member-of-a-nat-list))))))
+     ((:rewrite nth-of-effective-fat))))))
 
 ;; We're going to have to add a weird stipulation here about the length of a
 ;; directory file's contents being more than 0 (which is true, because dot and
