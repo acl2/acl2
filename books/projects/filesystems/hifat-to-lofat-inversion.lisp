@@ -2245,7 +2245,6 @@
                                                  dir-ent-list entry-limit)
            :in-theory (e/d (lofat-to-hifat-helper not-intersectp-list)
                            ((:rewrite nth-of-effective-fat)
-                            (:rewrite member-of-a-nat-list)
                             (:definition member-equal))))))
 
 (defthm
