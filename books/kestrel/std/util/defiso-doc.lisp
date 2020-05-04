@@ -200,8 +200,8 @@
      ":beta-of-alpha"
      (xdoc::&&
       (xdoc::p
-       "The conversion @($\\beta$) is left inverse of
-        the conversion @($\\alpha$):")
+       "The conversion @($\\beta$) is left inverse of @($\\alpha$), i.e.
+        the conversion @($\\alpha$) is right inverse of @($\\beta$):")
       (xdoc::codeblock
        ";; when m = n = 1 and :unconditional is nil:"
        "(implies (doma a)"
@@ -251,14 +251,14 @@
        "         ..."
        "         (equal aan an))))"))
      :design-notes *defiso-design-notes*
-     :design-notes-appcond "@($\\beta{}\\alpha$) or  @($\\beta{}\\alpha'$)")
+     :design-notes-appcond "@($\\beta{}\\alpha$) or @($\\beta{}\\alpha'$)")
 
     (xdoc::evmac-appcond
      ":alpha-of-beta"
      (xdoc::&&
       (xdoc::p
-       "The conversion @($\\alpha$) is left inverse of
-        the conversion @($\\beta$):")
+       "The conversion @($\\alpha$) is left inverse of @($\\beta$), i.e.
+        the conversion @($\\beta$) is right inverse of @($\\alpha$):")
       (xdoc::codeblock
        ";; when n = m = 1 and :unconditional is nil:"
        "(implies (domb b)"

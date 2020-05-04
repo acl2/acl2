@@ -16,6 +16,8 @@
 (include-book "defarbrec-doc")
 (include-book "defiso")
 (include-book "defiso-doc")
+(include-book "defmacro-plus")
+(include-book "defmacro-plus-doc")
 (include-book "defmax-nat")
 (include-book "defmax-nat-doc")
 
