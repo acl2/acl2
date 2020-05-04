@@ -16,7 +16,7 @@
 ; We use assert! instead of assert-event, because :program-mode functions such
 ; as previous-subsumer-hints run slowly in safe-mode, and assert-event does its
 ; evaluation in safe-mode.
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 ; For testing:
 (include-book "std/testing/eval" :dir :system)

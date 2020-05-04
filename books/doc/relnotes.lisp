@@ -265,13 +265,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "@(csee std/util)")
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
     "A new macro @(tsee defmacro+) has been added,
      with is like @(tsee defmacro) but with "
     (xdoc::seetopic "xdoc" "XDOC")
     "integration.")
+
+   (xdoc::p
+    "Like @(see defun-nx), now @(see define) also disables the executable
+     counterpart of a non-executable function.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
