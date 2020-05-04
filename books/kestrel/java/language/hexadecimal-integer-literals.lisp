@@ -13,6 +13,8 @@
 (include-book "optional-integer-type-suffix")
 (include-book "hexadecimal-digits")
 
+(include-book "std/util/defprojection" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ hexadecimal-integer-literals
@@ -46,6 +48,19 @@
   :true-listp t
   :elementp-of-nil nil
   :pred hexdig/uscore-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection hexdig/uscore-digit-list (x)
+  :guard (hex-digit-listp x)
+  :returns (dus hexdig/uscore-listp)
+  :short "Lift @(tsee hexdig/uscore-digit) to lists."
+  (hexdig/uscore-digit x)
+  ///
+
+  (defret hexdig/uscore-kind-of-car-of-last-of-hexdig/uscore-digit-list
+    (equal (hexdig/uscore-kind (car (last dus))) :digit)
+    :hyp (consp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
