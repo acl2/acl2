@@ -503,3 +503,54 @@
   :hints (("Goal"
            :use (:instance mul-of-inv-mul-of-inv (a z) (x y) (p p))
            :in-theory (e/d (div) (mul-of-inv-mul-of-inv)))))
+
+(defthm mul-of--1-becomes-neg
+  (equal (mul -1 x p)
+         (neg x p))
+  :hints (("Goal" :in-theory (enable mul neg sub))))
+
+;; p-1 represents -1.
+(defthm mul-of--1-becomes-neg-alt
+  (Implies (and (posp p)
+                (integerp x))
+           (equal (mul (+ -1 p) x p)
+                  (neg x p)))
+  :hints (("Goal" :in-theory (enable mul neg sub ACL2::MOD-SUM-CASES))))
+
+(defthm equal-of-add-of-neg-and-0
+  (implies (and (integerp x)
+                (integerp y)
+                (posp p))
+           (equal (equal (add x (neg y p) p) 0)
+                  (equal (mod x p) (mod y p))))
+  :hints (("Goal" :in-theory (enable add neg sub acl2::mod-sum-cases))))
+
+;; x=x*y becomes 1=y.  A cancellation rule.
+(defthm equal-of-mul-same-arg1
+  (implies (and (fep x p)
+                (fep y p)
+                (rtl::primep p))
+           (equal (equal x (mul x y p))
+                  (if (equal 0 x)
+                      t
+                    (equal 1 y))))
+  :hints (("Goal" :cases ((equal x 0))
+           :use (:instance pfield::equal-of-mul-and-mul-same
+                                  (x (inv x p))
+                                  (y x)
+                                  (z (mul x y p))
+                                  (p p)
+                                  )
+           :in-theory (disable pfield::equal-of-mul-and-mul-same))))
+
+;; x=y*x becomes 1=y.  A cancellation rule.
+(defthm equal-of-mul-same-arg2
+  (implies (and (fep x p)
+                (fep y p)
+                (rtl::primep p))
+           (equal (equal x (mul y x p))
+                  (if (equal 0 x)
+                      t
+                    (equal 1 y))))
+  :hints (("Goal" :use (:instance equal-of-mul-same-arg1)
+           :in-theory (disable equal-of-mul-same-arg1))))
