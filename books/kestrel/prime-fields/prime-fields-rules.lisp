@@ -1,6 +1,6 @@
 ; Prime fields library: additional rules
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/mod"))
+(local (include-book "../arithmetic-light/minus"))
 
 (local (in-theory (disable acl2::mod-sum-cases))) ;for speed
 
@@ -554,3 +555,25 @@
                     (equal 1 y))))
   :hints (("Goal" :use (:instance equal-of-mul-same-arg1)
            :in-theory (disable equal-of-mul-same-arg1))))
+
+;; Can be useful when p is not a constant
+(defthm sub-becomes-neg-when-constants
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep y))))
+           (equal (sub x y p)
+                  (neg (- y x) p)))
+  :hints (("Goal"  :do-not '(preprocess)
+           :in-theory (enable sub neg add))))
+
+;; Kept disabled
+(defthmd equal-of-mul-cancel
+  (implies (and (fep y p)
+                (fep z p)
+                (rtl::primep p))
+           (equal (equal x (mul y z p))
+                  (and (fep x p)
+                       (if (equal 0 z)
+                           (equal x 0)
+                         (equal (pfield::div x z p) y)))))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (enable pfield::div))))
