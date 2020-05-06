@@ -20,7 +20,7 @@
 # because AIJ's recursive evaluation uses much more stack space
 # than typical Java programs.
 
-# This file assumes that OpenJDK Java 13 is in the path,
+# This file assumes that OpenJDK Java 14 is in the path,
 # but it may well work with other Java versions or implementations.
 
 ################################################################################

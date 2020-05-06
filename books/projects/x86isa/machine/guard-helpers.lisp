@@ -41,6 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "../utils/utilities")
+(include-book "../portcullis/utils")
 (include-book "tools/rulesets" :dir :system)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 

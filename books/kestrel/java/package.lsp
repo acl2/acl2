@@ -49,6 +49,7 @@
                          cons-listp
                          cons-pos-alistp
                          define-sk
+                         defmacro+
                          defxdoc+
                          doublets-to-alist
                          dumb-occur-var-open
@@ -153,14 +154,18 @@
                          remove-progn
                          remove-trivial-vars
                          remove-unused-vars
-                         sbyte16
-                         sbyte16p
-                         sbyte32
-                         sbyte32p
-                         sbyte64
-                         sbyte64p
                          sbyte8
                          sbyte8p
+                         sbyte8-listp
+                         sbyte16
+                         sbyte16p
+                         sbyte16-listp
+                         sbyte32
+                         sbyte32p
+                         sbyte32-listp
+                         sbyte64
+                         sbyte64p
+                         sbyte64-listp
                          sort-symbol-listp
                          str-fix
                          string-downcase
@@ -186,6 +191,7 @@
                          ubyte8
                          ubyte16
                          ubyte16p
+                         ubyte16-listp
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          uguard

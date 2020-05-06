@@ -14,6 +14,7 @@
 
 (include-book "name-translation")
 (include-book "types")
+(include-book "java-primitive-arrays")
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
@@ -438,7 +439,7 @@
   (verify-guards atj-restore-mv-calls-in-term
     :hints (("Goal" :in-theory (disable posp)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-restore-mv-calls-in-body ((body pseudo-termp)
                                       (out-types atj-type-listp)
@@ -804,31 +805,9 @@
    (xdoc::p
     "The two lists should always have the same length.
      The conversion between type lists is allowed if and only if
-     it is allowed element-wise.")
-   (xdoc::p
-    "As a temporary exception,
-     we also allow singleton lists of @(':jprim') types
-     to be converted to the singleton list of @(':avalue').
-     This is needed in order to handle the translation to Java
-     of Java primitive array constructions
-     via functions like @(tsee byte-array),
-     which may take as inputs lists of primitive values like
-     @('((byte-value 33) (byte-value 0) ...)'):
-     when the elements of these lists are type-annotated,
-     they are wrapped with conversions from @(':jprim') types to @(':avalue'),
-     which are then rewrapped during the translation to Java
-     (see @(tsee atj-type-rewrap-array-initializer-elements)).
-     We plan to improve the treatment of these array constructions:
-     when that is done, we will remove the temporary exception
-     from this predicate."))
+     it is allowed element-wise."))
   (if (= (len src-types) (len dst-types))
-      (or (and ; the exception:
-           (endp (cdr src-types))
-           (endp (cdr dst-types))
-           (atj-type-case (car src-types) :jprim)
-           (atj-type-equiv (car dst-types)
-                           (atj-type-acl2 (atj-atype-value))))
-          (atj-types-conv-allowed-p-aux src-types dst-types))
+      (atj-types-conv-allowed-p-aux src-types dst-types)
     (raise "Internal error: ~
             the type lists ~x0 and ~x1 differe in length."
            src-types dst-types))
@@ -1218,8 +1197,12 @@
      the latter consists of a single type for each argument
      (more on this below).")
    (xdoc::p
-    "For a named function call other than @(tsee mv)
-     (whose treatment is described below),
+    "For a named function call
+     other than @(tsee mv)
+     (whose treatment is described below)
+     and other than the array creation functions
+     in @(tsee *atj-jprimarr-new-init-fns*)
+     (whose treatment is also described below),
      the function's types are obtained.
      We first try annotating the argument terms without required types
      (as done for a lambda expression as explained above),
@@ -1253,6 +1236,22 @@
      This list does not affect the type annotations,
      but is used by the code generation functions
      in order to determine which @(tsee mv) classes must be generated.")
+   (xdoc::p
+    "If we encounter a call of
+     an array creation function in @(tsee *atj-jprimarr-new-init-fns*),
+     we ensure that its (only) argument is a translated @(tsee list) call,
+     i.e. a (possibly empty) nest of @(tsee cons)es
+     ending with a quoted @('nil').
+     If it is not, we stop with an error,
+     which is really a (deep) input validation error.
+     If it is a @(tsee list) call, we extract its element terms.
+     We type-annotate them, and we ensure that their result types
+     are consistent with the array's component type.
+     If they are not, it is a (deep) input validation error.
+     If everything checks, then we make the annotated arguments
+     directly arguments of the array creation function,
+     which therefore is now treated
+     as a function with a variable number of arguments.")
    (xdoc::p
     "Before attempting to process lambda expression or named function calls
      as described above,
@@ -1510,6 +1509,45 @@
                 (mv (atj-type-wrap-term term types types)
                     types
                     mv-typess)))))
+         ((when (atj-jprimarr-new-init-fn-p fn))
+          (b* (((unless (= (len args) 1))
+                (raise "Internal error: ~
+                        the function ~x0 has arguments ~x1."
+                       fn args)
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+               (arg (car args))
+               ((mv list-call? args) (check-list-call arg))
+               ((unless list-call?)
+                (raise "Type annotation failure: ~
+                        the argument ~x0 of ~x1 is not ~
+                        a translated LIST call."
+                       arg fn)
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+               ((unless (< (pseudo-term-list-count args)
+                           (pseudo-term-count term)))
+                (raise "Internal error: ~
+                        the size of the subterms ~x0 of ~x1 ~
+                        does not decrease."
+                       args term)
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+               ((mv args types mv-typess) (atj-type-annotate-args args
+                                                                  var-types
+                                                                  mv-typess
+                                                                  guards$
+                                                                  wrld))
+               (ptype (atj-jprimarr-new-init-fn-to-ptype fn))
+               ((unless (equal types
+                               (repeat (len args) (atj-type-jprim ptype))))
+                (raise "Type annotation failure: ~
+                        the types ~x0 of the arguments ~x1 of ~x2 ~
+                        do not all match the array type."
+                       types args fn)
+                (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
+               (term (pseudo-term-call fn args))
+               (types (list (atj-type-jprimarr ptype))))
+            (mv (atj-type-wrap-term term types types)
+                types
+                mv-typess)))
          ((mv args types mv-typess) (atj-type-annotate-args args
                                                             var-types
                                                             mv-typess
@@ -1825,6 +1863,7 @@
     :hints (("Goal"
              :in-theory (enable pseudo-fn-args-p
                                 pseudo-var-p
+                                atj-jprimarr-new-init-fn-p
                                 len-of-fty-check-mv-let-call.indices/vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2249,8 +2288,6 @@
     "If the term being analyzed is a quoted constant,
      we return the singleton list with @('nil').
      A quoted constant is never an array:
-     we exclusively use ACL2 functions like @(tsee byte-array-of-length)
-     to construct arrays;
      a quoted constant always has an @(':acl2') type,
      according to the type annotations.")
    (xdoc::p
@@ -2322,6 +2359,11 @@
     "If the term being analyzed is an @(tsee mv) call,
      we just return the list of array arguments.
      This is a multi-valued term.")
+   (xdoc::p
+    "If the term being analyzed is a call of
+     an array creation function in @(tsee *atj-jprimarr-new-init-fns*),
+     we return a singleton list with @('nil'),
+     because it is a newly created, and thus still unnamed, array.")
    (xdoc::p
     "If the term being analyzed is a call
      of a function other than @(tsee if) and @(tsee mv),
@@ -2469,6 +2511,10 @@
          ((when (and (eq fn 'mv)
                      (>= (len args) 2))) ; always true
           (mv arg-arrays arg-types))
+         ((when (atj-jprimarr-new-init-fn-p fn))
+          (mv (list nil)
+              (list (atj-type-jprimarr
+                     (atj-jprimarr-new-init-fn-to-ptype fn)))))
          ((when (pseudo-term-case term :fncall))
           (b* ((formals (formals+ fn wrld))
                ((unless (= (len arg-arrays) (len formals)))

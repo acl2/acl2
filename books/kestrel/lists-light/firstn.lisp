@@ -1,6 +1,6 @@
 ; A lightweight book about firstn.
 ;
-; Copyright (C) 2018-2019 Kestrel Institute
+; Copyright (C) 2018-2020 Kestrel Institute
 ; See books/coi/lists/basic.lisp for the copyright on firstn itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,10 @@
 ;; if the list is too short.
 
 (local (include-book "nthcdr"))
+(local (include-book "append"))
+(local (include-book "take"))
+(local (include-book "len"))
+(local (include-book "true-list-fix"))
 
 ;; From coi/lists/basic.lisp:
 (defun firstn (n l)
@@ -111,3 +115,19 @@
              (true-list-fix x)
            x))
   :hints (("Goal" :in-theory (e/d (nthcdr firstn append) (firstn-becomes-take-gen)))))
+
+(defthm consp-of-firstn
+  (equal (consp (firstn n l))
+         (and (posp n)
+              (consp l))))
+
+(defthm firstn-of-append
+  (equal (firstn n (append l1 l2))
+         (append (firstn n l1)
+                 (firstn (- n (len l1)) l2)))
+  :hints (("Goal" :in-theory (enable firstn equal-of-append))))
+
+(defthm firstn-of-firstn
+  (equal (firstn n1 (firstn n2 l))
+         (firstn (min (nfix n1) (nfix n2)) l))
+  :hints (("Goal" :in-theory (enable firstn))))

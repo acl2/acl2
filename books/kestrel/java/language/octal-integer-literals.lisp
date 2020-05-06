@@ -13,6 +13,8 @@
 (include-book "optional-integer-type-suffix")
 (include-book "octal-digits")
 
+(include-book "std/util/defprojection" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ octal-integer-literals
@@ -46,6 +48,19 @@
   :true-listp t
   :elementp-of-nil nil
   :pred octdig/uscore-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection octdig/uscore-digit-list (x)
+  :guard (oct-digit-listp x)
+  :returns (dus octdig/uscore-listp)
+  :short "Lift @(tsee octdig/uscore-digit) to lists."
+  (octdig/uscore-digit x)
+  ///
+
+  (defret octdig/uscore-kind-of-car-of-last-of-octdig/uscore-digit-list
+    (equal (octdig/uscore-kind (car (last dus))) :digit)
+    :hyp (consp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

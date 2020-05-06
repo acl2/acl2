@@ -2890,8 +2890,7 @@ Some (rather awful) testing forms are
     (e/d
      (lofat-to-hifat-helper clear-clusterchain
                             lofat-to-hifat-helper-of-stobj-set-indices-in-fa-table)
-     ((:rewrite nth-of-effective-fat)
-      (:rewrite member-of-a-nat-list))))))
+     ((:rewrite nth-of-effective-fat))))))
 
 ;; We're going to have to add a weird stipulation here about the length of a
 ;; directory file's contents being more than 0 (which is true, because dot and
@@ -11109,7 +11108,6 @@ Some (rather awful) testing forms are
                             not-intersectp-list)
      (nth-of-effective-fat
       (:definition binary-append)
-      (:rewrite remove-assoc-when-absent)
       (:definition len)
       (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
       (:linear lofat-to-hifat-helper-correctness-3)
@@ -12110,7 +12108,6 @@ Some (rather awful) testing forms are
         (:rewrite hifat-subsetp-preserves-assoc-equal)
         (:linear hifat-entry-count-when-hifat-subsetp)
         (:rewrite lofat-remove-file-correctness-1-lemma-53)
-        (:rewrite remove-assoc-when-absent)
         (:definition remove-assoc-equal)
         (:linear lofat-remove-file-correctness-1-lemma-27)
         (:definition alistp)

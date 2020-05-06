@@ -10,11 +10,13 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/trans-eval-error-triple" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

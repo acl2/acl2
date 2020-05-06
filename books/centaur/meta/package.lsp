@@ -63,7 +63,7 @@
 
              def-b*-binder args forms rest-expr
 
-             remove-non-symbols remove-corresp-non-symbols
+             replace-non-symbols-with-nil
 
              set-equiv repeat
 

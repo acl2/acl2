@@ -61,7 +61,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprim-constrs*
+(defval *atj-jprim-constr-fns*
   :short "List of (the names of) the ACL2 functions that model
           the construction of Java primitive values."
   :long
@@ -78,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprim-deconstrs*
+(defval *atj-jprim-deconstr-fns*
   :short "List of (the names of) the ACL2 functions that model
           the deconstruction of Java primitive values."
   :long
@@ -96,7 +96,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprim-unops*
+(defval *atj-jprim-unop-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive unary operations."
   :long
@@ -121,7 +121,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprim-binops*
+(defval *atj-jprim-binop-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive binary operations."
   :long
@@ -202,7 +202,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprim-convs*
+(defval *atj-jprim-conv-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive conversions."
   :long
@@ -260,54 +260,54 @@
 (defval *atj-jprim-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive value constructions and operations."
-  (append *atj-jprim-constrs*
-          *atj-jprim-deconstrs*
-          *atj-jprim-unops*
-          *atj-jprim-binops*
-          *atj-jprim-convs*)
+  (append *atj-jprim-constr-fns*
+          *atj-jprim-deconstr-fns*
+          *atj-jprim-unop-fns*
+          *atj-jprim-binop-fns*
+          *atj-jprim-conv-fns*)
   ///
   (assert-event (function-name-listp *atj-jprim-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-jprim-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-constr-p (fn)
+(define atj-jprim-constr-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the construction of Java primitive types."
-  (and (member-eq fn *atj-jprim-constrs*) t))
+  (and (member-eq fn *atj-jprim-constr-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-deconstr-p (fn)
+(define atj-jprim-deconstr-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the deconstruction of Java primitive types."
-  (and (member-eq fn *atj-jprim-deconstrs*) t))
+  (and (member-eq fn *atj-jprim-deconstr-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-unop-p (fn)
+(define atj-jprim-unop-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive unary operations."
-  (and (member-eq fn *atj-jprim-unops*) t))
+  (and (member-eq fn *atj-jprim-unop-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-binop-p (fn)
+(define atj-jprim-binop-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive binary operations."
-  (and (member-eq fn *atj-jprim-binops*) t))
+  (and (member-eq fn *atj-jprim-binop-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprim-conv-p (fn)
+(define atj-jprim-conv-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognize the ACL2 function symbols that model
           the Java primitive conversions."
-  (and (member-eq fn *atj-jprim-convs*) t))
+  (and (member-eq fn *atj-jprim-conv-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,3 +601,37 @@
   ;; widening and narrowing conversions:
 
   (atj-main-function-type byte-to-char (:jbyte) :jchar))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprim-constr-fn-to-ptype ((fn atj-jprim-constr-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map an ACL2 function that models a Java primitive constructor
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-value (primitive-type-boolean))
+    (char-value (primitive-type-char))
+    (byte-value (primitive-type-byte))
+    (short-value (primitive-type-short))
+    (int-value (primitive-type-int))
+    (long-value (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-constr-fn-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprim-deconstr-fn-to-ptype ((fn atj-jprim-deconstr-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map an ACL2 function that models a Java primitive deconstructor
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-value->bool$inline (primitive-type-boolean))
+    (char-value->nat$inline (primitive-type-char))
+    (byte-value->int$inline (primitive-type-byte))
+    (short-value->int$inline (primitive-type-short))
+    (int-value->int$inline (primitive-type-int))
+    (long-value->int$inline (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprim-deconstr-fn-p)))
+  :hooks (:fix))

@@ -33,15 +33,13 @@
      that operate on Java primitive arrays;
      this happens only when @(':deep') is @('nil') and @(':guards') is @('t').")
    (xdoc::p
-    "The discussion "
-    (xdoc::seetopic "atj-java-primitives" "here")
-    " about derivations targeting
+    "The discussion in @(see atj-java-primitives)
+     about derivations targeting
      the ACL2 functions that represent Java primitive values
      applies to Java primitive arrays as well.")
    (xdoc::p
-    "As discussed "
-    (xdoc::seetopic "atj-java-primitive-array-model" "here")
-    ", currently the ACL2 functions that represent Java primitive arrays
+    "As discussed in @(see atj-java-primitive-array-model),
+     currently the ACL2 functions that represent Java primitive arrays
      are part of ATJ, but (perhaps some generalization of them) could be
      part of the "
     (xdoc::seetopic "language" "language formalization")
@@ -51,44 +49,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-constrs*
+(defval *atj-jprimarr-read-fns*
   :short "List of (the names of) the ACL2 functions that model
-          the construction of Java primitive arrays from their components."
-  :long
-  (xdoc::topstring-p
-   "We exclude the functions that model
-    the construction of @('float') and @('double') values,
-    because we only have abstract models of those values for now.")
-  '(boolean-array
-    char-array
-    byte-array
-    short-array
-    int-array
-    long-array))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atj-jprimarr-deconstrs*
-  :short "List of (the names of) the ACL2 functions that model
-          the deconstruction of Java primitive arrays."
-  :long
-  (xdoc::topstring-p
-   "These are the inverses of the functions
-    that model the construction of primitive values.
-    These deconstructors essentially convert the Java primitive arrays
-    to the corresponding ACL2 lists.")
-  '(boolean-array->components$inline
-    char-array->components$inline
-    byte-array->components$inline
-    short-array->components$inline
-    int-array->components$inline
-    long-array->components$inline))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atj-jprimarr-reads*
-  :short "List of (the names of) the ACL2 functions that model
-          the reading of components from Java primitive arrays."
+          the reading of components of Java primitive arrays."
   '(boolean-array-read
     char-array-read
     byte-array-read
@@ -100,7 +63,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-lengths*
+(defval *atj-jprimarr-length-fns*
   :short "List of (the names of) the ACL2 functions that model
           the retrieval of lengths of Java primitive arrays."
   '(boolean-array-length
@@ -114,9 +77,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-writes*
+(defval *atj-jprimarr-write-fns*
   :short "List of (the names of) the ACL2 functions that model
-          the writing of components from Java primitive arrays."
+          the writing of components of Java primitive arrays."
   '(boolean-array-write
     char-array-write
     byte-array-write
@@ -128,80 +91,130 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *atj-jprimarr-lenconstrs*
+(defval *atj-jprimarr-new-len-fns*
   :short "List of (the names of) the ACL2 functions that model
-          the construction of Java primitive arrays from lengths."
-  '(boolean-array-of-length
-    char-array-of-length
-    byte-array-of-length
-    short-array-of-length
-    int-array-of-length
-    long-array-of-length
-    float-array-of-length
-    double-array-of-length))
+          the creation of Java primitive arrays from lengths."
+  '(boolean-array-new-len
+    char-array-new-len
+    byte-array-new-len
+    short-array-new-len
+    int-array-new-len
+    long-array-new-len
+    float-array-new-len
+    double-array-new-len))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-jprimarr-new-init-fns*
+  :short "List of (the names of) the ACL2 functions that model
+          the creation of Java primitive arrays from components."
+  :long
+  (xdoc::topstring-p
+   "We exclude the functions that model
+    the construction of @('float') and @('double') values,
+    because we only have abstract models of those values for now.")
+  '(boolean-array-new-init
+    char-array-new-init
+    byte-array-new-init
+    short-array-new-init
+    int-array-new-init
+    long-array-new-init))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-jprimarr-conv-tolist-fns*
+  :short "List of (the names of) the ACL2 functions that model
+          the conversion from Java primitive arrays to ACL2 lists."
+  '(boolean-array-to-boolean-list
+    char-array-to-ubyte16-list
+    byte-array-to-sbyte8-list
+    short-array-to-sbyte16-list
+    int-array-to-sbyte32-list
+    long-array-to-sbyte64-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atj-jprimarr-conv-fromlist-fns*
+  :short "List of (the names of) the ACL2 functions that model
+          the conversion to Java primitive arrays from ACL2 lists."
+  '(boolean-array-from-boolean-list
+    char-array-from-ubyte16-list
+    byte-array-from-sbyte8-list
+    short-array-from-sbyte16-list
+    int-array-from-sbyte32-list
+    long-array-from-sbyte64-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atj-jprimarr-fns*
   :short "List of (the names of) the ACL2 functions that model
           Java primitive array operations."
-  (append *atj-jprimarr-constrs*
-          *atj-jprimarr-deconstrs*
-          *atj-jprimarr-reads*
-          *atj-jprimarr-lengths*
-          *atj-jprimarr-writes*
-          *atj-jprimarr-lenconstrs*)
+  (append *atj-jprimarr-read-fns*
+          *atj-jprimarr-length-fns*
+          *atj-jprimarr-write-fns*
+          *atj-jprimarr-new-len-fns*
+          *atj-jprimarr-new-init-fns*
+          *atj-jprimarr-conv-tolist-fns*
+          *atj-jprimarr-conv-fromlist-fns*)
   ///
   (assert-event (function-name-listp *atj-jprimarr-fns* (w state)))
   (assert-event (no-duplicatesp-eq *atj-jprimarr-fns*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-constr-p (fn)
-  :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
-          the construction of Java primitive arrays from components."
-  (and (member-eq fn *atj-jprimarr-constrs*) t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-jprimarr-deconstr-p (fn)
-  :returns (yes/no booleanp)
-  :short "Recognizer the ACL2 function symbols that model
-          the deconstruction of Java primitive arrays."
-  (and (member-eq fn *atj-jprimarr-deconstrs*) t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-jprimarr-read-p (fn)
+(define atj-jprimarr-read-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the reading of components from Java primitive arrays."
-  (and (member-eq fn *atj-jprimarr-reads*) t))
+  (and (member-eq fn *atj-jprimarr-read-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-length-p (fn)
+(define atj-jprimarr-length-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the retrieval of lengths of Java primitive arrays."
-  (and (member-eq fn *atj-jprimarr-lengths*) t))
+  (and (member-eq fn *atj-jprimarr-length-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-write-p (fn)
+(define atj-jprimarr-write-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
           the writing of components from Java primitive arrays."
-  (and (member-eq fn *atj-jprimarr-writes*) t))
+  (and (member-eq fn *atj-jprimarr-write-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-jprimarr-lenconstr-p (fn)
+(define atj-jprimarr-new-len-fn-p (fn)
   :returns (yes/no booleanp)
   :short "Recognizer the ACL2 function symbols that model
-          the construction of Java primitive arrays from lengths."
-  (and (member-eq fn *atj-jprimarr-lenconstrs*) t))
+          the creation of Java primitive arrays from lengths."
+  (and (member-eq fn *atj-jprimarr-new-len-fns*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-new-init-fn-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the creation of Java primitive arrays from components."
+  (and (member-eq fn *atj-jprimarr-new-init-fns*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-conv-tolist-fn-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the conversions from Java primitive arrays to ACL2 lists."
+  (and (member-eq fn *atj-jprimarr-conv-tolist-fns*) t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-conv-fromlist-fn-p (fn)
+  :returns (yes/no booleanp)
+  :short "Recognizer the ACL2 function symbols that model
+          the conversions to Java primitive arrays from ACL2 lists."
+  (and (member-eq fn *atj-jprimarr-conv-fromlist-fns*) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,41 +229,7 @@
 (defsection atj-types-for-java-primitive-arrays
   :short "ATJ types for the Java primitive array operations."
 
-  ;; constructors from components:
-
-  (atj-main-function-type boolean-array (:avalue) :jboolean[])
-
-  (atj-main-function-type char-array (:avalue) :jchar[])
-
-  (atj-main-function-type byte-array (:avalue) :jbyte[])
-
-  (atj-main-function-type short-array (:avalue) :jshort[])
-
-  (atj-main-function-type int-array (:avalue) :jint[])
-
-  (atj-main-function-type long-array (:avalue) :jlong[])
-
-  ;; deconstructors:
-
-  (atj-main-function-type boolean-array->components$inline
-                          (:jboolean[]) :avalue)
-
-  (atj-main-function-type char-array->components$inline
-                          (:jchar[]) :avalue)
-
-  (atj-main-function-type byte-array->components$inline
-                          (:jbyte[]) :avalue)
-
-  (atj-main-function-type short-array->components$inline
-                          (:jshort[]) :avalue)
-
-  (atj-main-function-type int-array->components$inline
-                          (:jint[]) :avalue)
-
-  (atj-main-function-type long-array->components$inline
-                          (:jlong[]) :avalue)
-
-  ;; read operations:
+  ;; read:
 
   (atj-main-function-type boolean-array-read (:jboolean[] :jint) :jboolean)
 
@@ -268,7 +247,7 @@
 
   (atj-main-function-type double-array-read (:jdouble[] :jint) :jdouble)
 
-  ;; length operations:
+  ;; length:
 
   (atj-main-function-type boolean-array-length (:jboolean[]) :jint)
 
@@ -286,7 +265,7 @@
 
   (atj-main-function-type double-array-length (:jdouble[]) :jint)
 
-  ;; write operations:
+  ;; write:
 
   (atj-main-function-type boolean-array-write
                           (:jboolean[] :jint :jboolean)
@@ -320,20 +299,120 @@
                           (:jdouble[] :jint :jdouble)
                           (array :jdouble[]))
 
-  ;; constructors from length:
+  ;; creation with length:
 
-  (atj-main-function-type boolean-array-of-length (:jint) :jboolean[])
+  (atj-main-function-type boolean-array-new-len (:jint) :jboolean[])
 
-  (atj-main-function-type char-array-of-length (:jint) :jchar[])
+  (atj-main-function-type char-array-new-len (:jint) :jchar[])
 
-  (atj-main-function-type byte-array-of-length (:jint) :jbyte[])
+  (atj-main-function-type byte-array-new-len (:jint) :jbyte[])
 
-  (atj-main-function-type short-array-of-length (:jint) :jshort[])
+  (atj-main-function-type short-array-new-len (:jint) :jshort[])
 
-  (atj-main-function-type int-array-of-length (:jint) :jint[])
+  (atj-main-function-type int-array-new-len (:jint) :jint[])
 
-  (atj-main-function-type long-array-of-length (:jint) :jlong[])
+  (atj-main-function-type long-array-new-len (:jint) :jlong[])
 
-  (atj-main-function-type float-array-of-length (:jint) :jfloat[])
+  (atj-main-function-type float-array-new-len (:jint) :jfloat[])
 
-  (atj-main-function-type double-array-of-length (:jint) :jdouble[]))
+  (atj-main-function-type double-array-new-len (:jint) :jdouble[])
+
+  ;; creation with initializer:
+
+  (atj-main-function-type boolean-array-new-init (:avalue) :jboolean[])
+
+  (atj-main-function-type char-array-new-init (:avalue) :jchar[])
+
+  (atj-main-function-type byte-array-new-init (:avalue) :jbyte[])
+
+  (atj-main-function-type short-array-new-init (:avalue) :jshort[])
+
+  (atj-main-function-type int-array-new-init (:avalue) :jint[])
+
+  (atj-main-function-type long-array-new-init (:avalue) :jlong[])
+
+  (atj-main-function-type float-array-new-init (:avalue) :jfloat[])
+
+  (atj-main-function-type double-array-new-init (:avalue) :jdouble[])
+
+  ;; conversion to list:
+
+  (atj-main-function-type boolean-array-to-boolean-list (:jboolean[]) :avalue)
+
+  (atj-main-function-type char-array-to-ubyte16-list (:jchar[]) :avalue)
+
+  (atj-main-function-type byte-array-to-sbyte8-list (:jbyte[]) :avalue)
+
+  (atj-main-function-type short-array-to-sbyte16-list (:jshort[]) :avalue)
+
+  (atj-main-function-type int-array-to-sbyte32-list (:jint[]) :avalue)
+
+  (atj-main-function-type long-array-to-sbyte64-list (:jlong[]) :avalue)
+
+  ;; conversion from list:
+
+  (atj-main-function-type boolean-array-from-boolean-list (:avalue) :jboolean[])
+
+  (atj-main-function-type char-array-from-ubyte16-list (:avalue) :jchar[])
+
+  (atj-main-function-type byte-array-from-sbyte8-list (:avalue) :jbyte[])
+
+  (atj-main-function-type short-array-from-sbyte16-list (:avalue) :jshort[])
+
+  (atj-main-function-type int-array-from-sbyte32-list (:avalue) :jint[])
+
+  (atj-main-function-type long-array-from-sbyte64-list (:avalue) :jlong[]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-new-init-fn-to-ptype ((fn atj-jprimarr-new-init-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map an ACL2 function that models
+          a Java primitive array constructor with initializer
+          to the corresponding primitive type."
+  (case fn
+    (boolean-array-new-init (primitive-type-boolean))
+    (char-array-new-init (primitive-type-char))
+    (byte-array-new-init (primitive-type-byte))
+    (short-array-new-init (primitive-type-short))
+    (int-array-new-init (primitive-type-int))
+    (long-array-new-init (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-init-fn-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-conv-fromlist-fn-to-ptype
+  ((fn atj-jprimarr-conv-fromlist-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map a list-to-array conversion function
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-array-from-boolean-list (primitive-type-boolean))
+    (char-array-from-ubyte16-list (primitive-type-char))
+    (byte-array-from-sbyte8-list (primitive-type-byte))
+    (short-array-from-sbyte16-list (primitive-type-short))
+    (int-array-from-sbyte32-list (primitive-type-int))
+    (long-array-from-sbyte64-list (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-conv-fromlist-fn-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-conv-tolist-fn-to-ptype
+  ((fn atj-jprimarr-conv-tolist-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map an array-to-list conversion function
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-array-to-boolean-list (primitive-type-boolean))
+    (char-array-to-ubyte16-list (primitive-type-char))
+    (byte-array-to-sbyte8-list (primitive-type-byte))
+    (short-array-to-sbyte16-list (primitive-type-short))
+    (int-array-to-sbyte32-list (primitive-type-int))
+    (long-array-to-sbyte64-list (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-conv-tolist-fn-p)))
+  :hooks (:fix))

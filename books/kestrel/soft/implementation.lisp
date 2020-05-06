@@ -10,6 +10,9 @@
 
 (in-package "SOFT")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/system/defchoose-queries" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
@@ -22,7 +25,6 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "std/util/defines" :dir :system)

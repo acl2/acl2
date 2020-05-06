@@ -112,19 +112,21 @@
     (xdoc::codeblock
      " (isodata old"
      "          isomaps"
-     "          :predicate          ; default nil"
-     "          :new-name           ; default :auto"
-     "          :new-enable         ; default :auto"
-     "          :old-to-new-name    ; default from table"
-     "          :old-to-new-enable  ; default from table"
-     "          :new-to-old-name    ; default from table"
-     "          :new-to-old-enable  ; default from table"
-     "          :verify-guards      ; default :auto"
-     "          :untranslate        ; default :nice"
-     "          :hints              ; default nil"
-     "          :print              ; default :result"
-     "          :show-only          ; default nil"
-     "          :compatibility      ; default nil"
+     "          :predicate           ; default nil"
+     "          :new-name            ; default :auto"
+     "          :new-enable          ; default :auto"
+     "          :old-to-new-name     ; default from table"
+     "          :old-to-new-enable   ; default from table"
+     "          :new-to-old-name     ; default from table"
+     "          :new-to-old-enable   ; default from table"
+     "          :newp-of-new-name    ; default :auto"
+     "          :newp-of-new-enable  ; default t"
+     "          :verify-guards       ; default :auto"
+     "          :untranslate         ; default :nice"
+     "          :hints               ; default nil"
+     "          :print               ; default :result"
+     "          :show-only           ; default nil"
+     "          :compatibility       ; default nil"
      "          )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -396,7 +398,7 @@
         A keyword @(':kwd') specifies the theorem name @('oldkwdnew'),
         in the same package as @('new').")
       (xdoc::li
-       "A non-@('nil'), non-keyword symbol,
+       "A non-keyword symbol,
         to use as the name of the theorem.")
       (xdoc::li
        "Absent, to use the value from the APT defaults table,
@@ -440,7 +442,7 @@
         A keyword @(':kwd') specifies the theorem name @('newkwdold'),
         in the same package as @('new').")
       (xdoc::li
-       "A non-@('nil'), non-keyword symbol,
+       "A non-keyword symbol,
         to use as the name of the theorem.")
       (xdoc::li
        "Absent, to use the value from the APT defaults table,
@@ -468,6 +470,43 @@
       "If @(':new-to-old-enable') is @('t'),
        then @(':old-to-new-enable') must be @('nil').
        At most one of these two inputs may be @('t') at any time."))
+
+    (xdoc::desc
+     "@(':newp-of-new-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the theorem asserting that @('new') maps
+       arguments in the new representation
+       to results in the new representation.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the concatenation of
+        the name of @('new') followed by @('-new-representation'),
+        in the same package as @('new').")
+      (xdoc::li
+       "Any other symbol, to use as the name of the theorem."))
+     (xdoc::p
+      "This input may be present only if
+       @('isomaps') includes some @(':resultj').")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('newp-of-new') be the name of this theorem."))
+
+    (xdoc::desc
+     "@(':newp-of-new-enable') &mdash; default @('t')"
+     (xdoc::p
+      "Determines whether @('newp-of-new') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable the theorem."))
+     (xdoc::p
+      "This input may be present only if
+       @('isomaps') includes some @(':resultj')."))
 
     (xdoc::desc-apt-input-verify-guards :never)
 
@@ -913,6 +952,37 @@
        @('old-to-new') is denoted by
        @($ff'$) when @(':predicate') is @('nil'),
        and @($pp'$) when @(':predicate') is @('t')."))
+
+    (xdoc::desc
+     "@('newp-of-new')"
+     (xdoc::p
+      "Theorem asserting that @('new') maps
+       arguments in the new representation
+       to results in the new representation:")
+     (xdoc::codeblock
+      ";; when m = 1:"
+      "(defthm newp-of-new"
+      "  (implies (and (newp1 x1)"
+      "                ..."
+      "                (newpn xn))"
+      "           (newp_r1 (new x1 ... xn))))"
+      ""
+      ";; when m > 1:"
+      "(defthm newp-of-new"
+      "  (implies (and (newp1 x1)"
+      "                ..."
+      "                (newpn xn))"
+      "           (mv-let (y1 ... ym)"
+      "             (new x1 ... xn)"
+      "             (and (newp_r1 y1)"
+      "                  ..."
+      "                  (newp_rm ym)))))")
+     (xdoc::p
+      "In the " *isodata-design-notes* ",
+       @('newp-of-new') is denoted by @($f'A'B'$).")
+     (xdoc::p
+      "This is generated if and only if
+       @('isomaps') includes some @(':resultj')."))
 
     (xdoc::p
      "A theory invariant is also generated to prevent

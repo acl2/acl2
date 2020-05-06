@@ -16,6 +16,8 @@
 
 ; Specialize the input and output types of the tested functions.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; constructors:
 
 (java::atj-main-function-type test-boolean-value (:asymbol) :jboolean)
@@ -30,6 +32,8 @@
 
 (java::atj-main-function-type test-long-value (:ainteger) :jlong)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; deconstructors:
 
 (java::atj-main-function-type test-boolean-value->bool (:jboolean) :asymbol)
@@ -43,6 +47,8 @@
 (java::atj-main-function-type test-int-value->int (:jint) :ainteger)
 
 (java::atj-main-function-type test-long-value->int (:jlong) :ainteger)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; unary operations:
 
@@ -59,6 +65,8 @@
 (java::atj-main-function-type test-int-not (:jint) :jint)
 
 (java::atj-main-function-type test-long-not (:jlong) :jlong)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; binary operations:
 
@@ -158,6 +166,8 @@
                               (:jboolean :jboolean :jboolean)
                               :jboolean)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; conversions:
 
 (java::atj-main-function-type test-byte-to-short (:jbyte) :jshort)
@@ -200,6 +210,8 @@
 
 (java::atj-main-function-type test-byte-to-char (:jbyte) :jchar)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; other functions:
 
 (java::atj-main-function-type f-int (:jint :jint) :jint)
@@ -221,6 +233,8 @@
 (java::atj-main-function-type f-conv (:jbyte :jshort :jlong) :jint)
 
 (java::atj-main-function-type g-conv (:jfloat :jdouble) :jdouble)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; factorial:
 

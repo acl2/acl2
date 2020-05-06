@@ -168,25 +168,50 @@
 #+sbcl
 (defun sbcl-check-tls-size ()
 
-; As of SBCL 1.4.14 (and probably many versions preceding that one),
-; sb-vm:tls-size is 4096, which is insufficient for profile-acl2 or
-; profile-all.  We could simply check the following inequality shortly before
-; profiling, replacing 5322 by the number of functions to profile.  But further
-; attempts to profile would need sb-vm::tls-size to be corresponding larger, so
-; we simply check that the default has been overridden, presumably by editing
-; an SBCL source file as suggested below.
+; On 4/24/2020, using SBCL 2.0.3 and ACL2 8.3, we found that it is currently
+; impossible to run profile-acl2 or profile-all on our linux platform.  The
+; error message says "Thread local storage exhausted.", and the error seems to
+; be due to an inherent limitation in SBCL on the number of special variables,
+; together with the factthat memoization (or profiling) a function creates
+; special variables (perhaps four of them).  A solution may be to change
+; memoize-raw.lisp to use a single array special variable where we now generate
+; a special variable for each function.  That can be investigated if anyone
+; really needs profile-acl2 or profile-all to run in SBCL.
 
-  (when (= sb-vm:tls-size 4096)
-    (error "~s will fail with default builds of SBCL.  A~%~
-            solution is to build SBCL with a larger value of ~s.~%~
-            You can do this by first editing~%~
-            src/compiler/generic/parms.lisp,~%replacing~%~
-            \"(defconstant tls-size 4096)\"~%by~%~
-            \"(defconstant tls-size 16384)\"~%~
-            and then building SBCL from source, preferably with:~%~a"
-           'profile-acl2
-           'sb-vm::tls-size
-           "sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header")))
+  (cerror "Continue at your own risk.  But you may find that Lisp quits~%~
+           with the error message, \"Thread local storage exhausted.\"  We~%~
+           know of no way to work around that problem."
+          "Profiling a large number of functions will likely fail in SBCL.~%~
+           You can try it by first executing ~s~%~
+           and then selecting \"Continue at your own risk\" from the~%~
+           debugger.  But you may find that Lisp quits with the error,~%~
+           \"Thread local storage exhausted.\"  We know of no way to work~%~
+           around that problem."
+          '(set-debugger-enable t))
+
+; Below are a comment and code that are out of date, as the constant
+; sb-vm::tls-size no longer exists in SBCL.
+
+;  ; As of SBCL 1.4.14 (and probably many versions preceding that one),
+;  ; sb-vm:tls-size is 4096, which is insufficient for profile-acl2 or
+;  ; profile-all.  We could simply check the following inequality shortly
+;  ; before profiling, replacing 5322 by the number of functions to profile.
+;  ; But further attempts to profile would need sb-vm::tls-size to be
+;  ; corresponding larger, so we simply check that the default has been
+;  ; overridden, presumably by editing an SBCL source file as suggested below.
+;
+;    (when (= sb-vm:tls-size 4096)
+;      (error "~s will fail with default builds of SBCL.  A~%~
+;              solution is to build SBCL with a larger value of ~s.~%~
+;              You can do this by first editing~%~
+;              src/compiler/generic/parms.lisp,~%replacing~%~
+;              \"(defconstant tls-size 4096)\"~%by~%~
+;              \"(defconstant tls-size 16384)\"~%~
+;              and then building SBCL from source, preferably with:~%~a"
+;             'profile-acl2
+;             'sb-vm::tls-size
+;             "sh make.sh --without-immobile-space --without-immobile-code --without-compact-instance-header"))
+  )
 
 (defun profile-acl2-fn (start lots-of-info forget)
   #+sbcl (sbcl-check-tls-size)
