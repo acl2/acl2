@@ -1320,6 +1320,24 @@
       (and (rp-meta-valid-syntaxp-sk (car meta-rules) state)
            (rp-meta-valid-syntax-listp (cdr meta-rules) state))))
 
+
+  (define simple-meta-rule-alistp (meta-rules)
+    :short "A simple trig-fnc and meta-fnc pair list recognizer."
+    :parents (rp-utilities)
+    (declare (xargs :Guard t))
+    (if (atom meta-rules)
+        (eq meta-rules nil)
+      (and (consp (car meta-rules))
+           (symbolp (cdar meta-rules))
+           (symbolp (caar meta-rules))
+           (simple-meta-rule-alistp (cdr meta-rules)))))
+
+  (define simple-meta-rule-alist-fix (x)
+    :returns (res simple-meta-rule-alistp)
+    (if (simple-meta-rule-alistp x)
+        x
+      nil))
+
   #|(defmacro rp-meta-rulesp (meta-rules &optional (state 'state))
   (declare (xargs :guard t)
   (ignorable state))

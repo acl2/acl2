@@ -69,7 +69,8 @@
 (def-formula-checks
  fast-alist-free-meta-formula-checks
  (fast-alist-free
-  fast-alist-free-meta))
+  ;;fast-alist-free-meta
+  ))
 
 
 (local
@@ -107,7 +108,7 @@
                             ())))))
 
 
-(defthm fast-alist-free-meta-is-valid-rp-meta-rulep
+#|(defthm fast-alist-free-meta-is-valid-rp-meta-rulep
   (implies (and (fast-alist-free-meta-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -124,7 +125,7 @@
                             fast-alist-free-meta
                             RP-TERM-LISTP
                             
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
 
 (rp::add-meta-rules

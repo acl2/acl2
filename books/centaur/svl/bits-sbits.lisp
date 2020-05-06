@@ -964,6 +964,15 @@
                     (sbits start size (bits new 0 size ) old)))
     :hints (("Goal"
              :in-theory (e/d (sbits
+                              4vec-part-install-of-4vec-part-select) ()))))
+
+  (def-rp-rule$ t t
+    4vec-part-install-is-sbits-without-inserting-bits
+    (implies (natp size)
+             (equal (4vec-part-install start size old new)
+                    (sbits start size new old)))
+    :hints (("Goal"
+             :in-theory (e/d (sbits
                               4vec-part-install-of-4vec-part-select) ())))))
 
 (encapsulate

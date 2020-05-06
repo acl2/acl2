@@ -142,7 +142,7 @@
 
   (def-formula-checks
    hons-acons-meta-formula-checks
-   (hons-acons-meta
+   (;;hons-acons-meta
     hons-acons)))
 
 #|(local
@@ -302,7 +302,7 @@
             :in-theory (e/d (DONT-RW-SYNTAXP)
                             ())))))
 
-(defthm hons-acons-meta-is-valid-rp-meta-rulep
+#|(defthm hons-acons-meta-is-valid-rp-meta-rulep
   (implies (and (hons-acons-meta-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -317,7 +317,7 @@
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
                            (RP-TERMP
                             hons-acons-meta
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
 (rp::add-meta-rules
  hons-acons-meta-formula-checks

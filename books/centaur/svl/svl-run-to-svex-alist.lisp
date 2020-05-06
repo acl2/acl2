@@ -25,7 +25,6 @@
 
 ;; Mertcan Temel
 
-
 (in-package "SVL")
 
 (include-book "centaur/sv/svex/eval" :dir :system)
@@ -51,6 +50,18 @@
  (implies t
           (equal (assoc-equal key (cons (cons key val) rest))
                  (cons key val))))
+
+
+;; :i-am-here
+;; (rp::def-rp-rule$
+;;  t t
+;;  bits-of-bits-exact-match
+;;  (implies (and (natp x)
+;;                (natp y))
+;;           (equal (bits (bits term x y) x y )
+;;                  (bits term x y )))
+;;  :hints (("Goal"
+;;           :in-theory (e/d () ()))))
 
 (defconst *svl-compose-rules*
   (reverse
@@ -134,8 +145,8 @@
      assoc-equal-opener-when-equal
 
      append-of-cons
-
-     4vec-part-install-is-sbits
+     4vec-part-install-is-sbits-without-inserting-bits
+     ;;4vec-part-install-is-sbits
      4vec-part-select-is-bits
 
      svexllist-correct
@@ -198,18 +209,18 @@
                     :rules)
             (access svex-simplify-preloaded rules
                     :meta-rules)))
+
+     
        ((mv rw rp::rp-state)
         (rp::rp-rw
          term nil context (rp::rw-step-limit rp::rp-state) rules-alist
          exc-rules meta-rules nil rp::rp-state state))
        (rp::rp-state (rp::update-not-simplified-action
                       tmp-rp-not-simplified-action rp::rp-state))
-       (- (and  (svl::svex-rw-free-preload rules state)))
-
+       (- (svl::svex-rw-free-preload rules))
        ((mv keys vals)
         (alist-term-to-entry-list rw))
        ((mv err svexlist) (svl::4vec-to-svex-lst vals nil t))
-
        #|((mv err svex-res)
        (svl::4vec-to-svex rw nil nil))||#
        (- (and err
@@ -218,7 +229,9 @@
                 "There was a problem while converting the term below to its ~ ; ;
          svex equivalent. Read above for the printed messages. ~p0 ~%" ; ;
                 (list (cons #\0 rw)))))
+       
        (svex-alist (pairlis$ (rp::unquote-all keys) svexlist))
+       
        )
     (mv svex-alist rp::rp-state)))
 
@@ -292,6 +305,24 @@
 
        (local
         (rp::disable-exc-counterpart fmt-to-comment-window))
+
+       (local
+        (rp::disable-all-meta-rules))
+
+       (local
+        (rp::enable-meta-rules
+         ;; bits-of-meta-fn
+         ;; concat-meta
+         ;; 4vec-rsh-of-meta
+         svex-eval-wog-meta-main
+         svexl-node-eval-wog-meta-main
+         rp::HONS-ACONS-META
+         rp::FAST-ALIST-FREE-META
+         rp::ASSOC-EQ-VALS-META
+         rp::HONS-GET-META
+         rp::RP-EQUAL-META
+         rp::MV-NTH-META))
+       
        (with-output
          :off :all
          :gag-mode nil
@@ -310,23 +341,23 @@
 
                    (defconst ,',svex-alist-name
                      ',svex-alist)
-                   (defthmd
+
+                    (defthmd
                      ,',rw-rule-name
                      (implies (and . ,hyp)
                               (equal (svl::svl-run ,',modname
-                                                   ,env
-                                                   ,',binds-ins-alist
-                                                   ,',binds-out-alist
-                                                   ,',svl-design)
+                                                    ,env
+                                                    ,',binds-ins-alist
+                                                    ,',binds-out-alist
+                                                    ,',svl-design)
                                      (sv::svex-alist-eval ,',svex-alist-name
-                                                          ,env)))
+                                                           ,env)))
 
                      :hints (("Goal"
                               :do-not-induct t
                               :rw-cache-state nil
                               :do-not '(preprocess generalize fertilize)
                               :clause-processor (rp::rp-cl :runes nil
-                                                           :cl-name-prefix with-svl-metas
                                                            :new-synps nil)))
                      )
                    #|(rp::disable-rules '(,',rw-rule-name))||#

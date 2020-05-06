@@ -70,7 +70,7 @@
    rp-rw-rule-aux
    is-rp
    (:DEFINITION RP-RW-META-RULES)
-   (:DEFINITION RP-RW-META-RULE)
+   ;(:DEFINITION RP-RW-META-RULE)
    is-synp
    ex-from-rp
    rp-equal2
@@ -112,7 +112,7 @@
                         (:TYPE-PRESCRIPTION QUOTEP)
                         (:TYPE-PRESCRIPTION RETURN-LAST)
                         (:DEFINITION RP-RW-META-RULES)
-                        (:DEFINITION RP-RW-META-RULE)
+                        ;(:DEFINITION RP-RW-META-RULE)
                         (:REWRITE DEFAULT-+-2)
                         (:REWRITE DEFAULT-+-1)
 ;(:DEFINITION O<)
@@ -312,8 +312,8 @@
            (and (iff (rp-evlt (rp-apply-bindings (rp-rhs rule) bindings) a)
                      (rp-evlt term a))
                 (iff (rp-evl (rp-apply-bindings (rp-rhs rule)
-                                                  (rp-trans-bindings bindings))
-                               a)
+                                                (rp-trans-bindings bindings))
+                             a)
                      (rp-evlt term a))))
   :hints (("goal"
            :use ((:instance valid-rulep-sk-necc
@@ -408,8 +408,6 @@
                                      hons-assoc-equal
                                      valid-rules-alistp))))
 
- 
-
 
 (local
  (defthmd rp-check-context-is-correct-iff-lemma
@@ -426,39 +424,39 @@
    (iff (rp-evlt (rp-check-context term context iff-flg) a)
         (rp-evlt term a)))
   :hints ( ("Subgoal *1/3"
-           :use ((:instance rp-evlt-of-rp-equal 
-                            (term1 (car context)) 
-                            (term2 term))))
-          ("Subgoal *1/2"
-           :use ((:instance rp-evlt-of-rp-equal ;
-                            (term2 (CADR (CAR CONTEXT))) ;
-                            (term1 term))))
-          ("goal"
-           :in-theory (e/d (rp-check-context
-                            context-syntaxp
-                            rp-check-context-is-correct-iff-lemma
-                            rp-termp
-                            eval-and-all
-                            is-falist)
-                           (rp-term-listp-is-true-listp
-                            rp-evl-of-rp-equal
-                            rp-trans
-                            rp-trans-lst
-                            (:rewrite ex-from-synp-lemma1)
-                            #|rp-trans-of-rp-equal||#
-                            (:rewrite evl-of-extract-from-rp-2)
-                            (:rewrite acl2::fn-check-def-not-quote)
+            :use ((:instance rp-evlt-of-rp-equal
+                             (term1 (car context))
+                             (term2 term))))
+           ("Subgoal *1/2"
+            :use ((:instance rp-evlt-of-rp-equal ;
+                             (term2 (CADR (CAR CONTEXT))) ;
+                             (term1 term))))
+           ("goal"
+            :in-theory (e/d (rp-check-context
+                             context-syntaxp
+                             rp-check-context-is-correct-iff-lemma
+                             rp-termp
+                             eval-and-all
+                             is-falist)
+                            (rp-term-listp-is-true-listp
+                             rp-evl-of-rp-equal
+                             rp-trans
+                             rp-trans-lst
+                             (:rewrite ex-from-synp-lemma1)
+                             #|rp-trans-of-rp-equal||#
+                             (:rewrite evl-of-extract-from-rp-2)
+                             (:rewrite acl2::fn-check-def-not-quote)
 
-                            (:rewrite
-                             rp-termp-should-term-be-in-cons-lhs)
-                            (:type-prescription booleanp)
-                            (:rewrite rp-equal2-bindings-1to1-consp)
-                            ;;all-falist-consistent-lst
-                            falist-consistent
-                            is-falist
-                            rp-evlt-of-rp-equal
-                            ;;rp-equal-is-symmetric
-                            rp-termp-implies-subterms)))))
+                             (:rewrite
+                              rp-termp-should-term-be-in-cons-lhs)
+                             (:type-prescription booleanp)
+                             (:rewrite rp-equal2-bindings-1to1-consp)
+                             ;;all-falist-consistent-lst
+                             falist-consistent
+                             is-falist
+                             rp-evlt-of-rp-equal
+                             ;;rp-equal-is-symmetric
+                             rp-termp-implies-subterms)))))
 
 (defthm rp-check-context-is-correct
   (implies
@@ -1130,7 +1128,8 @@
       (defthm rp-termp-rp-rw
         (implies (and (RP-TERMP TERM)
 
-                      (rp-meta-valid-syntax-listp meta-rules state)
+                      
+                      ;;(rp-meta-valid-syntax-listp meta-rules state)
                       (CONTEXT-SYNTAXP CONTEXT)
 
                       (SYMBOL-aLISTP EXC-RULES)
@@ -1147,7 +1146,7 @@
         (implies (and (RP-TERMP TERM)
 
                       (RULE-LIST-SYNTAXP RULES-FOR-TERM)
-                      (rp-meta-valid-syntax-listp meta-rules state)
+                      ;(rp-meta-valid-syntax-listp meta-rules state)
                       (CONTEXT-SYNTAXP CONTEXT)
 
                       (RULES-ALISTP RULES-ALIST)
@@ -1164,7 +1163,7 @@
         (implies (and (rp-termp term)
 
                       (context-syntaxp context)
-                      (rp-meta-valid-syntax-listp meta-rules state)
+                      ;;(rp-meta-valid-syntax-listp meta-rules state)
                       (rules-alistp rules-alist)
 
                       (symbol-alistp exc-rules))
@@ -1180,7 +1179,7 @@
         (implies (and (RP-TERM-LISTP SUBTERMS)
 
                       (context-syntaxp context)
-                      (rp-meta-valid-syntax-listp meta-rules state)
+                      ;;(rp-meta-valid-syntax-listp meta-rules state)
 
                       (rules-alistp rules-alist)
                       (symbol-alistp exc-rules))
@@ -1299,7 +1298,6 @@
                              rp-trans-lst)
                             ())))))
 
-
 ;; (local
 ;;  (defun rp-evl-of-trans-list (lst a)
 ;;    (if (atom lst)
@@ -1345,7 +1343,6 @@
 ;;             :do-not-induct t
 ;;             :induct (two-cdr-induct x y)
 ;;             :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
-
 
 (local
  (defthmd lemma4-lemma
@@ -1695,7 +1692,6 @@
                                valid-sc-ex-from-rp-2
                                valid-sc))))))
 
-
   (local
    (defthmd ilemma4-1
      (implies (and (is-rp term)
@@ -1910,8 +1906,7 @@
  (defthm if-is-not-falist
    (not (is-falist (cons 'if x)))
    :hints (("Goal"
-            :in-theory (e/d (is-falist) ()))))) 
-
+            :in-theory (e/d (is-falist) ())))))
 
 (local
  (defthm is-if-and-rp-trans
@@ -1921,7 +1916,7 @@
                    `(if ,(rp-trans (cadr term))
                         ,(rp-trans (caddr term))
                       ,(rp-trans (cadddr term)))))
-   
+
    :hints (("Goal"
             :expand ((RP-TRANS TERM)
                      (RP-TRANS-LST (CDR TERM))
@@ -1950,8 +1945,10 @@
                     (valid-sc term a)
                     (context-syntaxp context)
                     (valid-sc-subterms context a)
-                    (valid-rp-meta-rule-listp meta-rules state)
-                    (rp-meta-valid-syntax-listp meta-rules state)
+                   
+                    (rp-formula-checks state)
+                    ;; (valid-rp-meta-rule-listp meta-rules state)
+                    ;; (rp-meta-valid-syntax-listp meta-rules state)
                     (symbol-alistp exc-rules)
                     (valid-rules-alistp rules-alist))
                (let ((res
@@ -1973,8 +1970,10 @@
                     (context-syntaxp context)
 
                     (valid-sc-subterms context a)
-                    (valid-rp-meta-rule-listp meta-rules state)
-                    (rp-meta-valid-syntax-listp meta-rules state)
+                    
+                    (rp-formula-checks state)
+                    ;; (valid-rp-meta-rule-listp meta-rules state)
+                    ;; (rp-meta-valid-syntax-listp meta-rules state)
                     (eval-and-all context a)
                     (valid-sc term a)
                     (valid-rules-alistp rules-alist)
@@ -1997,8 +1996,11 @@
                     (context-syntaxp context)
 
                     (valid-sc-subterms context a)
-                    (valid-rp-meta-rule-listp meta-rules state)
-                    (rp-meta-valid-syntax-listp meta-rules state)
+
+                    
+                    (rp-formula-checks state)
+                    ;; (valid-rp-meta-rule-listp meta-rules state)
+                    ;; (rp-meta-valid-syntax-listp meta-rules state)
                     (eval-and-all context a)
                     (valid-sc term a)
                     (valid-rules-alistp rules-alist)
@@ -2023,8 +2025,11 @@
 
                     (eval-and-all context a)
                     (valid-rules-alistp rules-alist)
-                    (valid-rp-meta-rule-listp meta-rules state)
-                    (rp-meta-valid-syntax-listp meta-rules state)
+
+                    
+                    (rp-formula-checks state)
+                    ;; (valid-rp-meta-rule-listp meta-rules state)
+                    ;; (rp-meta-valid-syntax-listp meta-rules state)
                     (valid-sc-subterms subterms a)
                     (symbol-alistp exc-rules))
                (let ((res

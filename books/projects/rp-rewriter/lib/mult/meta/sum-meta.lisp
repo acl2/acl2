@@ -625,7 +625,7 @@
    (b+
     --
     type-fix
-    resolve-b+-order
+    ;;resolve-b+-order
     hide
     m2
     f2
@@ -1642,7 +1642,7 @@
                              (:REWRITE DEFAULT-CDR)
                              (:REWRITE DEFAULT-CAR)))))))
 
-(defthm resolve-b+-order-is-valid-rp-meta-rulep
+#|(defthm resolve-b+-order-is-valid-rp-meta-rulep
   (implies (and (sum-meta-formal-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -1660,7 +1660,7 @@
                             resolve-b+-order
                             RP-TERM-LISTP
                             
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
 (rp::add-meta-rules
  sum-meta-formal-checks

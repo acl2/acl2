@@ -1997,16 +1997,16 @@
 
     (def-formula-checks
       mult-formula-checks
-      (pp-sum-merge
-       s-sum-merge
+      (;pp-sum-merge
+       ;s-sum-merge
        binary-append
-       pp-lists-to-term-pp-lst
-       pp-term-to-pp-lists
+       ;pp-lists-to-term-pp-lst
+       ;pp-term-to-pp-lists
        --
        sum-list
-       s-c-spec-meta
-       s-spec-meta
-       c-spec-meta
+       ;s-c-spec-meta
+       ;s-spec-meta
+       ;c-spec-meta
        binary-and
        and-list
        sort-sum
@@ -2036,9 +2036,10 @@
        m2 d2 f2 times2
        s
        binary-sum
-       sort-sum-meta
+       ;sort-sum-meta
        evenpi
        d-sum
        sv::3vec-fix
        sv::4vec-fix
-       c-s-spec-meta))))
+       ;c-s-spec-meta
+       ))))

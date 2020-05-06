@@ -44,6 +44,4 @@
 (include-book "equal-meta")
 (include-book "mv-nth-meta")
 
-
-
-(update-rp-clause-proc with-metas)
+(attach-meta-fncs built-in-metas)

@@ -373,9 +373,8 @@ RP-Rewriter will throw an eligible error.</p>"
         (mv nil `(value-triple :none) state rp-state)))))
 
 (defmacro rp-cl (&key (new-synps 'nil)
-                      (cl-name-prefix '0)
                       (runes 'nil))
-  `(,(sa (if (equal cl-name-prefix 0) nil cl-name-prefix) "RP-CLAUSE-PROCESSOR")
+  `(rp-rewriter
     clause
     (make rp-cl-hints
           :runes ',runes #|,(if rules-override
@@ -400,7 +399,6 @@ RP-Rewriter will throw an eligible error.</p>"
                            )
   `(make-event
     (b* ((- (check-if-clause-processor-up-to-date (w state)))
-         (cl-name-prefix (cdr (assoc-eq 'cl-name-prefix (table-alist 'rp-rw (w state)))))
          (body `(def-rp-rule ,',name ,',term
                   :rule-classes ,',rule-classes
                   :hints (("Goal"
@@ -409,7 +407,6 @@ RP-Rewriter will throw an eligible error.</p>"
                            :do-not '(preprocess generalize fertilize)
                            :clause-processor
                            (rp-cl :runes ,,runes
-                                  :cl-name-prefix ,cl-name-prefix
                                   :new-synps ,',new-synps))))))
       ,(if (or disable-meta-rules
                enable-meta-rules

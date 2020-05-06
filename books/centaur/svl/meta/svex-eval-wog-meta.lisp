@@ -314,10 +314,10 @@
     :gag-mode nil
     (rp::def-formula-checks
      svex-eval-wog-formula-checks
-     (svex-eval-wog-meta-main
+     (;;svex-eval-wog-meta-main
       sv::4vec-fix$inline
       svex-env-fastlookup-wog
-      svexl-node-eval-wog-meta-main
+      ;;svexl-node-eval-wog-meta-main
       svexl-node-eval-wog
       svex-eval-wog))))
 
@@ -1172,7 +1172,7 @@
                                (:REWRITE LEMMA3)
                                (:DEFINITION RP::FALIST-CONSISTENT))))))))
 
-(defthm valid-rp-meta-rulep-svex-eval-wog-meta-main
+#|(defthm valid-rp-meta-rulep-svex-eval-wog-meta-main
   (implies (and (rp-evl-meta-extract-global-facts)
                 (svex-eval-wog-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -1189,10 +1189,10 @@
                             svex-eval-wog-meta-main
                             rp::rp-term-listp
                             rp::valid-sc
-                            rp::valid-sc)))))
+                            rp::valid-sc)))))||#
 
 
-(defthm valid-rp-meta-rulep-svexl-node-eval-wog-meta-main
+#|(defthm valid-rp-meta-rulep-svexl-node-eval-wog-meta-main
   (implies (and (rp-evl-meta-extract-global-facts)
                 (svex-eval-wog-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -1208,7 +1208,7 @@
                            (rp::rp-termp
                             svexl-node-eval-wog-meta-main
                             rp::rp-term-listp
-                            rp::valid-sc)))))
+                            rp::valid-sc)))))||#
 
 (rp::add-meta-rules svex-eval-wog-formula-checks
                     (list (make rp::rp-meta-rule-rec

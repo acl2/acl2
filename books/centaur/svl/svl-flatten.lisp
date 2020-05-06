@@ -1528,7 +1528,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
   ;; aliases and adding the trace for flattening.
   ;; Also call svex-simplify for both lhs and rhs of assignments.
   :stobjs (state rp::rp-state)
-  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
   :verify-guards nil
   :returns (mv (tmp-occs tmp-occ-alist-p
                          :hyp (and (sv::assigns-p assigns)
@@ -1631,7 +1631,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
   :prepwork ((local
               (in-theory (e/d ()
                               (rp::rp-statep)))))
-  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
   :verify-guards nil
   :returns (mv (res-outs module-occ-wire-list-p :hyp (wire-list-p sigs))
                (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep rp::rp-state)))
@@ -1697,7 +1697,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                               (RP::RP-STATEP)))))
   :returns (mv (tmp-occ tmp-occ-p)
                (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep rp::rp-state)))
-  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
 
   (declare (ignorable modname
                       trace
@@ -1767,7 +1767,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
 
    :verify-guards nil
    :measure (nfix limit)
-   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
 
    :returns (mv (tmp-occs tmp-occ-alist-p
                           :hyp (and (sv::modname-p modname)
@@ -1831,7 +1831,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                                  (sv::modnamelist-p mods-to-skip)
                                  (vl-insouts-sized-p vl-insouts)))
              (rp::rp-state-res rp::rp-statep :hyp (rp::rp-statep rp::rp-state)))
-   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
    :measure (nfix limit)
 
    (cond ((zp limit)
@@ -1958,7 +1958,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                                                      &key
                                                      (rp::rp-state 'rp::rp-state)
                                                      (state 'state))
-    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
     :verify-guards nil
     (if (atom inputs)
         (mv nil cnt rp::rp-state)
@@ -1996,7 +1996,7 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                                                       &key
                                                       (rp::rp-state 'rp::rp-state)
                                                       (state 'state))
-    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+    :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
     :verify-guards nil
     (if (atom outputs)
         (mv nil cnt rp::rp-state)
@@ -2825,7 +2825,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                          (rp::rp-state 'rp::rp-state)
                          (state 'state))
   (declare (xargs :mode :program))
-  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
   (b* ((- (cw "Now working on mod: ~p0 ~%" modname))
        ((mv input-wires output-wires)
         (mv (cadr (assoc-equal modname vl-insouts))
@@ -2912,7 +2912,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                           &key
                           (rp::rp-state 'rp::rp-state)
                           (state 'state))
-  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded state)
+  :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
   (declare (xargs :mode :program))
   (if (atom modnames)
       (mv nil rp::rp-state)
@@ -3142,7 +3142,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                            modules))
        (- (cw "All done! ~%"))
        (- (fast-alist-free sv-design.modalist))
-       (- (svex-rw-free-preload svex-simplify-preloaded state)))
+       (- (svex-rw-free-preload svex-simplify-preloaded)))
     (mv modules rp::rp-state)))
 
 (define svl-modules-port-info ((modules svl-module-alist-p))
