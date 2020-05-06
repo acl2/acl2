@@ -109,4 +109,10 @@ class Acl2IntegerTest {
                         .getJavaLong());
     }
 
+    @Test
+    void getJavaBigIntegerFromConstant() {
+        assertEquals(Acl2Integer.ZERO.getJavaBigInteger(), BigInteger.ZERO);
+        assertEquals(Acl2Integer.ONE.getJavaBigInteger(), BigInteger.ONE);
+    }
+
 }
