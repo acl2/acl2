@@ -1268,6 +1268,13 @@
                        lst)
                   item)))
 
+(defthm position-equal-ac-of-nth
+  (implies (and (no-duplicatesp-equal l)
+                (integerp acc)
+                (< (nfix n) (len l)))
+           (equal (position-equal-ac (nth n l) l acc)
+                  (+ acc (nfix n)))))
+
 (encapsulate
   ()
 
@@ -1311,7 +1318,14 @@
              (equal (nth (position-equal item lst) lst)
                     item))
     :hints (("goal" :in-theory (enable position-equal)
-             :use (:instance nth-of-position-equal-ac (acc 0))))))
+             :use (:instance nth-of-position-equal-ac (acc 0)))))
+
+  (defthm position-equal-of-nth
+    (implies (and (no-duplicatesp-equal l)
+                  (< (nfix n) (len l)))
+             (equal (position-equal (nth n l) l)
+                    (nfix n)))
+    :hints (("Goal" :in-theory (enable position-equal)))))
 
 (defthm
   subsetp-of-nthcdr
@@ -1325,3 +1339,8 @@
   (equal (remove-assoc-equal x (append alist1 alist2))
          (append (remove-assoc-equal x alist1)
                  (remove-assoc-equal x alist2))))
+
+(defthm nat-listp-of-take
+  (implies (nat-listp l)
+           (iff (nat-listp (take n l))
+                (<= (nfix n) (len l)))))
