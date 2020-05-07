@@ -2522,6 +2522,12 @@ same outputs when run starting at that initial state.</p>"
          (bitarr (set-bit id 1 bitarr))
          (- (cw "~@0~%" (aignet-print-gate id aignet)))
          (bitarr (aignet-print-dfs (lit-id (gate-id->fanin0 id aignet)) bitarr aignet)))
-      (aignet-print-dfs (lit-id (gate-id->fanin1 id aignet)) bitarr aignet))))
+      (aignet-print-dfs (lit-id (gate-id->fanin1 id aignet)) bitarr aignet))
+    ///
+    (defret <fn>-bitarr-len
+      (implies (< (nfix id) (len bitarr))
+               (equal (len new-bitarr) (len bitarr))))
+
+    (verify-guards aignet-print-dfs)))
 
 
