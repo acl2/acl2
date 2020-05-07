@@ -229,7 +229,7 @@
 (defsection atj-types-for-java-primitive-arrays
   :short "ATJ types for the Java primitive array operations."
 
-  ;; read operations:
+  ;; read:
 
   (atj-main-function-type boolean-array-read (:jboolean[] :jint) :jboolean)
 
@@ -247,7 +247,7 @@
 
   (atj-main-function-type double-array-read (:jdouble[] :jint) :jdouble)
 
-  ;; length operations:
+  ;; length:
 
   (atj-main-function-type boolean-array-length (:jboolean[]) :jint)
 
@@ -265,7 +265,7 @@
 
   (atj-main-function-type double-array-length (:jdouble[]) :jint)
 
-  ;; write operations:
+  ;; write:
 
   (atj-main-function-type boolean-array-write
                           (:jboolean[] :jint :jboolean)
@@ -299,7 +299,7 @@
                           (:jdouble[] :jint :jdouble)
                           (array :jdouble[]))
 
-  ;; creation operations with length:
+  ;; creation with length:
 
   (atj-main-function-type boolean-array-new-len (:jint) :jboolean[])
 
@@ -317,7 +317,7 @@
 
   (atj-main-function-type double-array-new-len (:jint) :jdouble[])
 
-  ;; creation operations with initializer:
+  ;; creation with initializer:
 
   (atj-main-function-type boolean-array-new-init (:avalue) :jboolean[])
 
@@ -335,7 +335,7 @@
 
   (atj-main-function-type double-array-new-init (:avalue) :jdouble[])
 
-  ;; conversion operations to lists:
+  ;; conversion to list:
 
   (atj-main-function-type boolean-array-to-boolean-list (:jboolean[]) :avalue)
 
@@ -349,7 +349,7 @@
 
   (atj-main-function-type long-array-to-sbyte64-list (:jlong[]) :avalue)
 
-  ;; conversion operations from lists:
+  ;; conversion from list:
 
   (atj-main-function-type boolean-array-from-boolean-list (:avalue) :jboolean[])
 
@@ -362,3 +362,57 @@
   (atj-main-function-type int-array-from-sbyte32-list (:avalue) :jint[])
 
   (atj-main-function-type long-array-from-sbyte64-list (:avalue) :jlong[]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-new-init-fn-to-ptype ((fn atj-jprimarr-new-init-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map an ACL2 function that models
+          a Java primitive array constructor with initializer
+          to the corresponding primitive type."
+  (case fn
+    (boolean-array-new-init (primitive-type-boolean))
+    (char-array-new-init (primitive-type-char))
+    (byte-array-new-init (primitive-type-byte))
+    (short-array-new-init (primitive-type-short))
+    (int-array-new-init (primitive-type-int))
+    (long-array-new-init (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-new-init-fn-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-conv-fromlist-fn-to-ptype
+  ((fn atj-jprimarr-conv-fromlist-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map a list-to-array conversion function
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-array-from-boolean-list (primitive-type-boolean))
+    (char-array-from-ubyte16-list (primitive-type-char))
+    (byte-array-from-sbyte8-list (primitive-type-byte))
+    (short-array-from-sbyte16-list (primitive-type-short))
+    (int-array-from-sbyte32-list (primitive-type-int))
+    (long-array-from-sbyte64-list (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-conv-fromlist-fn-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-jprimarr-conv-tolist-fn-to-ptype
+  ((fn atj-jprimarr-conv-tolist-fn-p))
+  :returns (ptype primitive-typep)
+  :short "Map an array-to-list conversion function
+          to the corresponding Java primitive type."
+  (case fn
+    (boolean-array-to-boolean-list (primitive-type-boolean))
+    (char-array-to-ubyte16-list (primitive-type-char))
+    (byte-array-to-sbyte8-list (primitive-type-byte))
+    (short-array-to-sbyte16-list (primitive-type-short))
+    (int-array-to-sbyte32-list (primitive-type-int))
+    (long-array-to-sbyte64-list (primitive-type-long))
+    (t (prog2$ (impossible) (ec-call (primitive-type-fix :irrelevant)))))
+  :guard-hints (("Goal" :in-theory (enable atj-jprimarr-conv-tolist-fn-p)))
+  :hooks (:fix))

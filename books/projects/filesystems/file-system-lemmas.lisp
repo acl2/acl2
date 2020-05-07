@@ -130,15 +130,10 @@
          (append a (append b c))))
 
 (defthm member-of-a-nat-list
-  (implies (and (nat-listp lst)
-                (member-equal x lst))
-           (and (integerp x) (<= 0 x)))
-  :rule-classes ((:rewrite :corollary (implies (and (nat-listp lst)
-                                                    (member-equal x lst))
-                                               (<= 0 x)))
-                 (:forward-chaining :corollary (implies (and (member-equal x lst)
-                                                             (nat-listp lst))
-                                                        (integerp x)))))
+  (implies (and (member-equal x lst)
+                (nat-listp lst))
+           (natp x))
+  :rule-classes :forward-chaining)
 
 (defthm update-nth-of-boolean-list
   (implies (boolean-listp l)
@@ -507,7 +502,7 @@
    (not (consp (assoc-equal key1 (remove1-equal x alist)))))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm assoc-equal-when-member-equal
+(defthmd assoc-equal-when-member-equal
   (implies (and (member-equal x lst)
                 (consp x)
                 (not (equal (car x) nil)))
@@ -932,17 +927,6 @@
   :rule-classes :linear)
 
 (defthm
-  len-of-remove-assoc-3
-  (implies (consp (assoc-equal x (remove-assoc-equal y alist)))
-           (< (len (remove-assoc-equal y (remove-assoc-equal x alist)))
-              (len (remove-assoc-equal y alist))))
-  :hints (("goal" :do-not-induct t
-           :in-theory (disable len-of-remove-assoc-2)
-           :use (:instance len-of-remove-assoc-2
-                           (alist (remove-assoc-equal y alist)))))
-  :rule-classes :linear)
-
-(defthm
   member-of-strip-cars
   (implies (case-split (not (null x)))
            (iff
@@ -1236,3 +1220,127 @@
 (defthm put-assoc-equal-of-true-list-fix
   (equal (put-assoc-equal name val (true-list-fix alist))
          (true-list-fix (put-assoc-equal name val alist))))
+
+(defthm len-when-consp
+  (implies (consp x) (not (zp (len x))))
+  :rule-classes :type-prescription)
+
+(defthm subsetp-of-strip-cars-of-put-assoc
+  (implies (and (subsetp-equal (strip-cars x) l)
+                (member-equal key l))
+           (subsetp-equal (strip-cars (put-assoc-equal key val x))
+                          l)))
+
+(defthm position-equal-ac-of-nthcdr
+  (implies (and (integerp ac)
+                (not (member-equal item (take n lst))))
+           (equal (position-equal-ac item (nthcdr n lst)
+                                     ac)
+                  (position-equal-ac item lst (- ac (nfix n))))))
+
+(defthm position-equal-ac-of-+
+  (equal (position-equal-ac item lst (+ acc n))
+         (if (member-equal item lst)
+             (+ n (position-equal-ac item lst acc))
+             nil)))
+
+(defthm position-equal-ac-when-member
+  (implies (and (member-equal item lst) (natp acc))
+           (and
+            (< (position-equal-ac item lst acc) (+ acc (len lst)))
+            (natp (position-equal-ac item lst acc))))
+  :rule-classes
+  ((:type-prescription
+    :corollary
+    (implies (and (member-equal item lst) (natp acc))
+             (natp (position-equal-ac item lst acc))))
+   (:linear
+    :corollary
+    (implies (and (member-equal item lst) (natp acc))
+             (and
+              (< (position-equal-ac item lst acc) (+ acc (len lst)))
+              (<= 0 (position-equal-ac item lst acc)))))))
+
+(defthmd nth-of-position-equal-ac
+  (implies (member-equal item lst)
+           (equal (nth (- (position-equal-ac item lst acc)
+                          (fix acc))
+                       lst)
+                  item)))
+
+(defthm position-equal-ac-of-nth
+  (implies (and (no-duplicatesp-equal l)
+                (integerp acc)
+                (< (nfix n) (len l)))
+           (equal (position-equal-ac (nth n l) l acc)
+                  (+ acc (nfix n)))))
+
+(encapsulate
+  ()
+
+  (local (in-theory (disable position-equal)))
+
+  (defthm position-of-nthcdr
+    (implies (and (true-listp lst)
+                  (not (member-equal item (take n lst)))
+                  (member-equal item lst))
+             (equal (position-equal item (nthcdr n lst))
+                    (- (position-equal item lst) (nfix n))))
+    :hints (("goal" :in-theory (e/d (position-equal)
+                                    ((:rewrite position-equal-ac-of-+)))
+             :do-not-induct t
+             :use (:instance (:rewrite position-equal-ac-of-+)
+                             (n (- (nfix n)))
+                             (acc 0)
+                             (lst lst)
+                             (item item)))))
+
+  (defthm position-when-member
+    (implies (member-equal item lst)
+             (and
+              (natp (position-equal item lst))
+              (< (position-equal item lst) (len lst))))
+    :hints (("goal" :in-theory (enable position-equal)))
+    :rule-classes
+    ((:type-prescription
+      :corollary
+      (implies (member-equal item lst)
+               (natp (position-equal item lst))))
+     (:linear
+      :corollary
+      (implies (member-equal item lst)
+               (and
+                (<= 0 (position-equal item lst))
+                (< (position-equal item lst) (len lst)))))))
+
+  (defthm nth-of-position-equal
+    (implies (member-equal item lst)
+             (equal (nth (position-equal item lst) lst)
+                    item))
+    :hints (("goal" :in-theory (enable position-equal)
+             :use (:instance nth-of-position-equal-ac (acc 0)))))
+
+  (defthm position-equal-of-nth
+    (implies (and (no-duplicatesp-equal l)
+                  (< (nfix n) (len l)))
+             (equal (position-equal (nth n l) l)
+                    (nfix n)))
+    :hints (("Goal" :in-theory (enable position-equal)))))
+
+(defthm
+  subsetp-of-nthcdr
+  (subsetp-equal (nthcdr n l) l))
+
+(defthm no-duplicatesp-equal-of-nthcdr
+  (implies (no-duplicatesp-equal l)
+           (no-duplicatesp-equal (nthcdr n l))))
+
+(defthm remove-assoc-of-append
+  (equal (remove-assoc-equal x (append alist1 alist2))
+         (append (remove-assoc-equal x alist1)
+                 (remove-assoc-equal x alist2))))
+
+(defthm nat-listp-of-take
+  (implies (nat-listp l)
+           (iff (nat-listp (take n l))
+                (<= (nfix n) (len l)))))

@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; read operations:
+; read:
 
 (defun test-boolean-array-read (a i)
   (declare
@@ -75,7 +75,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; length operations:
+; length:
 
 (defun test-boolean-array-length (a)
   (declare (xargs :guard (java::boolean-array-p a)))
@@ -103,7 +103,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; write operations:
+; write:
 
 (defun test-boolean-array-write (a i e)
   (declare
@@ -155,7 +155,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; creation operations with length:
+; creation with length:
 
 (defun test-boolean-array-new-len (l)
   (declare (xargs :guard (and (java::int-value-p l)
@@ -189,11 +189,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; creation operation with initializer:
+; creation with initializer:
 
 ;;;;;;;;;;;;;;;;;;;;
 
-; initializers with 0 components:
+; initializer with 0 components:
 
 (defun test-boolean-array-new-init-0 ()
   (java::boolean-array-new-init nil))
@@ -215,7 +215,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-; initializers with 1 component:
+; initializer with 1 component:
 
 (defun test-boolean-array-new-init-1 (x)
   (declare (xargs :guard (java::boolean-value-p x)))
@@ -243,7 +243,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-; initializers with 2 components:
+; initializer with 2 components:
 
 (defun test-boolean-array-new-init-2 (x y)
   (declare (xargs :guard (and (java::boolean-value-p x)
@@ -277,7 +277,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-; initializers with 3 components:
+; initializer with 3 components:
 
 (defun test-boolean-array-new-init-3 (x y z)
   (declare (xargs :guard (and (java::boolean-value-p x)
@@ -314,6 +314,68 @@
                               (java::long-value-p y)
                               (java::long-value-p z))))
   (java::long-array-new-init (list x y z)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; conversion to list:
+
+(defun test-boolean-array-to-boolean-list (array)
+  (declare (xargs :guard (java::boolean-array-p array)))
+  (java::boolean-array-to-boolean-list array))
+
+(defun test-char-array-to-ubyte16-list (array)
+  (declare (xargs :guard (java::char-array-p array)))
+  (java::char-array-to-ubyte16-list array))
+
+(defun test-byte-array-to-sbyte8-list (array)
+  (declare (xargs :guard (java::byte-array-p array)))
+  (java::byte-array-to-sbyte8-list array))
+
+(defun test-short-array-to-sbyte16-list (array)
+  (declare (xargs :guard (java::short-array-p array)))
+  (java::short-array-to-sbyte16-list array))
+
+(defun test-int-array-to-sbyte32-list (array)
+  (declare (xargs :guard (java::int-array-p array)))
+  (java::int-array-to-sbyte32-list array))
+
+(defun test-long-array-to-sbyte64-list (array)
+  (declare (xargs :guard (java::long-array-p array)))
+  (java::long-array-to-sbyte64-list array))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; conversion from list:
+
+(defun test-boolean-array-from-boolean-list (list)
+  (declare (xargs :guard (and (boolean-listp list)
+                              (< (len list) (expt 2 31)))))
+  (java::boolean-array-from-boolean-list list))
+
+(defun test-char-array-from-ubyte16-list (list)
+  (declare (xargs :guard (and (ubyte16-listp list)
+                              (< (len list) (expt 2 31)))))
+  (java::char-array-from-ubyte16-list list))
+
+(defun test-byte-array-from-sbyte8-list (list)
+  (declare (xargs :guard (and (sbyte8-listp list)
+                              (< (len list) (expt 2 31)))))
+  (java::byte-array-from-sbyte8-list list))
+
+(defun test-short-array-from-sbyte16-list (list)
+  (declare (xargs :guard (and (sbyte16-listp list)
+                              (< (len list) (expt 2 31)))))
+  (java::short-array-from-sbyte16-list list))
+
+(defun test-int-array-from-sbyte32-list (list)
+  (declare (xargs :guard (and (sbyte32-listp list)
+                              (< (len list) (expt 2 31)))))
+  (java::int-array-from-sbyte32-list list))
+
+(defun test-long-array-from-sbyte64-list (list)
+  (declare (xargs :guard (and (sbyte64-listp list)
+                              (< (len list) (expt 2 31)))))
+  (java::long-array-from-sbyte64-list list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +440,7 @@
 ; when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
-  '(;; read operations:
+  '(;; read:
     ("BooleanArrayRead" (test-boolean-array-read
                          (java::boolean-array-new-init
                           (list (java::boolean-value t)
@@ -412,7 +474,7 @@
                        (list (java::long-value 1000000000)
                              (java::long-value 1000000000000000000)))
                       (java::int-value 1)))
-    ;; length operations:
+    ;; length:
     ("BooleanArrayLength" (test-boolean-array-length
                            (java::boolean-array-new-init
                             (list (java::boolean-value t)
@@ -440,7 +502,7 @@
                         (java::long-array-new-init
                          (list (java::long-value 1000000000)
                                (java::long-value 1000000000000000000)))))
-    ;; write operations:
+    ;; write:
     ("BooleanArrayWrite" (test-boolean-array-write
                           (java::boolean-array-new-init
                            (list (java::boolean-value t)
@@ -480,7 +542,7 @@
                               (java::long-value 1000000000000000000)))
                        (java::int-value 1)
                        (java::long-value -55555555555555555)))
-    ;; creation operations with length:
+    ;; creation with length:
     ("BooleanArrayNewLen0" (test-boolean-array-new-len
                             (java::int-value 0)))
     ("BooleanArrayNewLen1" (test-boolean-array-new-len
@@ -505,14 +567,14 @@
                          (java::int-value 20)))
     ("LongArrayNewLen1" (test-long-array-new-len
                          (java::int-value 23)))
-    ;; creation operations with initializers of 0 components:
+    ;; creation with initializer of 0 components:
     ("BooleanArrayNewInit0" (test-boolean-array-new-init-0))
     ("CharArrayNewInit0" (test-char-array-new-init-0))
     ("ByteArrayNewInit0" (test-byte-array-new-init-0))
     ("ShortArrayNewInit0" (test-short-array-new-init-0))
     ("IntArrayNewInit0" (test-int-array-new-init-0))
     ("LongArrayNewInit0" (test-long-array-new-init-0))
-    ;; creation operations with initializers of 1 component:
+    ;; creation with initializer of 1 component:
     ("BooleanArrayNewInit1" (test-boolean-array-new-init-1
                              (java::boolean-value t)))
     ("CharArrayNewInit1" (test-char-array-new-init-1
@@ -525,7 +587,7 @@
                          (java::int-value 2000000000)))
     ("LongArrayNewInit1" (test-long-array-new-init-1
                           (java::long-value -8000000000000000000)))
-    ;; creation operations with initializers of 2 components:
+    ;; creation with initializer of 2 components:
     ("BooleanArrayNewInit2" (test-boolean-array-new-init-2
                              (java::boolean-value t)
                              (java::boolean-value nil)))
@@ -544,7 +606,7 @@
     ("LongArrayNewInit2" (test-long-array-new-init-2
                           (java::long-value -348792734089274032)
                           (java::long-value 837483)))
-    ;; creation operations with initializers of 3 components:
+    ;; creation with initializer of 3 components:
     ("BooleanArrayNewInit3" (test-boolean-array-new-init-3
                              (java::boolean-value t)
                              (java::boolean-value t)
@@ -568,7 +630,74 @@
     ("LongArrayNewInit3" (test-long-array-new-init-3
                           (java::long-value -1134834089274032)
                           (java::long-value 202)
-                          (java::long-value -10000000)))))
+                          (java::long-value -10000000)))
+    ;; conversion to list:
+    ("BooleanArrayToList" (test-boolean-array-to-boolean-list
+                           (java::boolean-array-new-init
+                            (list (java::boolean-value t)
+                                  (java::boolean-value nil)
+                                  (java::boolean-value nil)))))
+    ("CharArrayToList" (test-char-array-to-ubyte16-list
+                        (java::char-array-new-init
+                         (list (java::char-value 65)
+                               (java::char-value 8000)))))
+    ("ByteArrayToList" (test-byte-array-to-sbyte8-list
+                        (java::byte-array-new-init
+                         (list (java::byte-value -15)
+                               (java::byte-value -35)
+                               (java::byte-value 90)))))
+    ("ShortArrayToList" (test-short-array-to-sbyte16-list
+                         (java::short-array-new-init
+                          (list (java::short-value -32768)
+                                (java::short-value 32767)))))
+    ("IntArrayToList" (test-int-array-to-sbyte32-list
+                       (java::int-array-new-init
+                        (list (java::int-value 0)))))
+    ("LongArrayToList" (test-long-array-to-sbyte64-list
+                        (java::long-array-new-init
+                         (list (java::long-value 1)
+                               (java::long-value 888888888888888888)
+                               (java::long-value -888888888888888888)
+                               (java::long-value -100)
+                               (java::long-value 23)))))
+    ("BooleanArrayToListEmpty" (test-boolean-array-to-boolean-list
+                                (java::boolean-array-new-init nil)))
+    ("CharArrayToListEmpty" (test-char-array-to-ubyte16-list
+                             (java::char-array-new-init nil)))
+    ("ByteArrayToListEmpty" (test-byte-array-to-sbyte8-list
+                             (java::byte-array-new-init nil)))
+    ("ShortArrayToListEmpty" (test-short-array-to-sbyte16-list
+                              (java::short-array-new-init nil)))
+    ("IntArrayToListEmpty" (test-int-array-to-sbyte32-list
+                            (java::int-array-new-init nil)))
+    ("LongArrayToListEmpty" (test-long-array-to-sbyte64-list
+                             (java::long-array-new-init nil)))
+    ;; conversion from list:
+    ("BooleanArrayFromList" (test-boolean-array-from-boolean-list
+                             '(t nil nil nil t t t t nil)))
+    ("CharArrayFromList" (test-char-array-from-ubyte16-list
+                          '(0 65 66 800 8000 45000 1 2 22)))
+    ("ByteArrayFromList" (test-byte-array-from-sbyte8-list
+                          '(-67 0 1 -127 127 -128 80)))
+    ("ShortArrayFromList" (test-short-array-from-sbyte16-list
+                           '(10 -1 20 8339 32766 -282 -111)))
+    ("IntArrayFromList" (test-int-array-from-sbyte32-list
+                         '(1 1 2 3 5 8 13 21 34 45 1000000000 -1000000000)))
+    ("LongArrayFromList" (test-long-array-from-sbyte64-list
+                          '(485827452
+                            -2937193929939492394
+                            1
+                            -11
+                            0
+                            0
+                            0
+                            100)))
+    ("BooleanArrayFromListEmpty" (test-boolean-array-from-boolean-list nil))
+    ("CharArrayFromListEmpty" (test-char-array-from-ubyte16-list nil))
+    ("ByteArrayFromListEmpty" (test-byte-array-from-sbyte8-list nil))
+    ("ShortArrayFromListEmpty" (test-short-array-from-sbyte16-list nil))
+    ("IntArrayFromListEmpty" (test-int-array-from-sbyte32-list nil))
+    ("LongArrayFromListEmpty" (test-long-array-from-sbyte64-list nil))))
 
 (defconst *shallow-guarded-more-tests*
   '(;; F:

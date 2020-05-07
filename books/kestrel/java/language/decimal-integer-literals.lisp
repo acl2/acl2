@@ -13,6 +13,8 @@
 (include-book "optional-integer-type-suffix")
 (include-book "decimal-digits")
 
+(include-book "std/util/defprojection" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ decimal-integer-literals
@@ -46,6 +48,19 @@
   :true-listp t
   :elementp-of-nil nil
   :pred decdig/uscore-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection decdig/uscore-digit-list (x)
+  :guard (dec-digit-listp x)
+  :returns (dus decdig/uscore-listp)
+  :short "Lift @(tsee decdig/uscore-digit) to lists."
+  (decdig/uscore-digit x)
+  ///
+
+  (defret decdig/uscore-kind-of-car-of-last-of-decdig/uscore-digit-list
+    (equal (decdig/uscore-kind (car (last dus))) :digit)
+    :hyp (consp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

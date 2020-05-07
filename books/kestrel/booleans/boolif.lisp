@@ -72,3 +72,10 @@
   (equal (boolif x (not x) y)
          (boolif x nil y))
   :hints (("Goal" :in-theory (enable boolif))))
+
+(defthmd if-becomes-boolif
+  (implies (and (booleanp x)
+                (booleanp y))
+           (equal (if test x y)
+                  (boolif test x y)))
+  :hints (("Goal" :in-theory (enable boolif))))

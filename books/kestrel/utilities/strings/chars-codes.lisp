@@ -164,6 +164,11 @@
            (repeat n (char-code char)))
     :enable repeat)
 
+  (defrule car-of-chars=>nats
+    (equal (car (chars=>nats chars))
+           (and (consp chars)
+                (char-code (car chars)))))
+
   (defrule nth-of-chars=>nats
     (equal (nth i (chars=>nats chars))
            (if (< (nfix i) (len chars))

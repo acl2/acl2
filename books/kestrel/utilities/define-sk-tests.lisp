@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 (include-book "define-sk")
-(include-book "std/testing/assert" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/util/tests/utils" :dir :system)
 

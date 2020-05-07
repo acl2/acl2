@@ -12232,10 +12232,6 @@
                nil
                (car lst)))))))))
 
-(defabbrev append? (x y)
-  (cond ((null y) x)
-        (t (append x y))))
-
 (defun make-stack-from-alist (term alist)
 
 ; We wish to make a stack representing alist, so that term/stack is
@@ -12640,11 +12636,15 @@
                    (cdr val))))
       (cond ((null fn)
              (fcons-term* 'hide term))
-            (t (let* ((str0 "Called constrained function ")
+            (t (let* ((str0 "Failed attempt to call ")
+                      (str1 (if (getpropc fn 'non-executablep)
+                                "non-executable function "
+                              "constrained function "))
                       (str (if (symbol-in-current-package-p fn state)
-                               (concatenate 'string str0 (symbol-name fn))
+                               (concatenate 'string str0 str1 (symbol-name fn))
                              (concatenate 'string
                                           str0
+                                          str1
                                           (symbol-package-name fn)
                                           "::"
                                           (symbol-name fn)))))

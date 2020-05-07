@@ -37,8 +37,8 @@
   :short "@(call index-of) returns the index of the first occurrence of element
 @('k') in list @('x') if it exists, @('NIL') otherwise."
 
-  :long "Like the Common Lisp function @('position') but only operates on lists
-and is not (logically) tail-recursive."
+  :long "Index-of is like the Common Lisp function @(tsee position), but only
+  operates on lists and is not (logically) tail-recursive."
 
 
 
@@ -157,6 +157,3 @@ and is not (logically) tail-recursive."
            (or (index-of k x)
                (and (index-of k y)
                     (+ (len x) (index-of k y)))))))
-
-
-

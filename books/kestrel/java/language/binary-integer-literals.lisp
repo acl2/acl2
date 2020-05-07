@@ -13,6 +13,8 @@
 (include-book "optional-integer-type-suffix")
 (include-book "binary-digits")
 
+(include-book "std/util/defprojection" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ binary-integer-literals
@@ -46,6 +48,19 @@
   :true-listp t
   :elementp-of-nil nil
   :pred bindig/uscore-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection bindig/uscore-digit-list (x)
+  :guard (bin-digit-listp x)
+  :returns (dus bindig/uscore-listp)
+  :short "Lift @(tsee bindig/uscore-digit) to lists."
+  (bindig/uscore-digit x)
+  ///
+
+  (defret bindig/uscore-kind-of-car-of-last-of-bindig/uscore-digit-list
+    (equal (bindig/uscore-kind (car (last dus))) :digit)
+    :hyp (consp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
