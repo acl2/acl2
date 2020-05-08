@@ -47,7 +47,7 @@
    (defthm position-equal-ac-redef
      (equal (position-equal-ac k x n)
             (cond ((endp x) nil)
-                  ((equal k (car x)) n)
+                  ((equal k (car x)) (fix n))
                   (t (let ((res (position-equal-ac k (cdr x) 0)))
                        (and res (+ 1 n res))))))
      :hints (("goal" :induct (pos-ac-ind2 x n)))
@@ -148,7 +148,7 @@
    (assoc-equal term (pairlis$ keys vals))
    (equal (cdr (assoc-equal term (pairlis$ keys (beta-eval-list vals a1))))
           (beta-eval (cdr (assoc-equal term (pairlis$ keys vals))) a1))))
-            
+
 (defthmd beta-eval-key-beta-reduce-term-2
   (equal (beta-eval-key arg (beta-reduce-term arg term keys vals) a1)
          (beta-eval-key arg term (pairlis$ keys (beta-eval-key t vals a1))))
