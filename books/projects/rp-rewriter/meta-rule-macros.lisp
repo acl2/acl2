@@ -153,19 +153,18 @@
 ;;          (table rp-rw 'formal-checks-fn-list ',(strip-cars all-rp-rw-meta-rules))
 ;;          ,@(create-rp-clause-proc cl-name-prefix appended-meta-rules)))))
 
-;; (xdoc::defxdoc
-;;  update-rp-clause-proc
-;;  :parents (rp-rewriter/meta-rules)
-;;  :short "Creates a new clause processor function to register added meta rules."
-;;  :long "<p>
-;; After calling @(see add-meta-rules) or when different books with meta rules are
-;;  included, users need to call update-rp-clause-proc. This creates a
-;;  new clause processor function and proves it correct. Then @(see defthmrp)
-;;  automatically uses the most recently created clause processor function. </p>
-;; <code>(update-rp-clause-proc cl-name-prefix)</code>
-;; <p> cl-name-prefix: should be a unique name that will be a prefic to the name
-;;  of the new clause processor.</p>
-;; ")
+(xdoc::defxdoc
+ attach-meta-fncs
+ :parents (rp-rewriter/meta-rules)
+ :short "Creates and attaches a new meta-rule caller function to register added meta rules."
+ :long "<p>
+After calling @(see add-meta-rules) or when different books with meta rules are
+ included, users need to call attach-meta-fncs. This creates a
+ new meta function caller function and attaches it to rp::rp-rw-meta-rule. </p>
+<code>(rp::attach unique-prefix)</code>
+<p> unique-prefix should be a unique name that will be a prefix to the name
+ of the new  meta-rule caller function. </p>
+")
 
 (defun add-meta-rules-fn-aux (formula-checks-fn new-meta-rules hints)
   (declare (xargs :guard (weak-rp-meta-rule-recs-p new-meta-rules)))
@@ -290,7 +289,7 @@ same formula-checks function.  For example: <code>
 </p>
 
 <p>cl-name-prefix: An optional argument. When non-nil, the macro also calls
-@(see rp::update-rp-clause-proc) to create a new clause processor function for
+@(see rp::attach-meta-fncs) to create a new clause processor function for
 RP-Rewriter. </p>
 "
  )
@@ -418,7 +417,7 @@ RP-Rewriter. </p>
  :short "Checks if all the added meta-rules are 'registered'"
  :long "<p>
 After calling @(see add-meta-rules) or when different books with meta rules are
- included, users need to call @(see rp::update-rp-clause-proc). This function
+ included, users need to call @(see rp::attach-meta-fncs). This function
  checks if it is necessary. </p>
 <code>(is-rp-clause-processor-up-to-date world)</code>
 ")

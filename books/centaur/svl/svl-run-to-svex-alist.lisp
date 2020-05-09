@@ -432,15 +432,17 @@ the variables from binds-ins-alist.
 </p>
 
 <p> An example call to svl-run-compose is given below. It submits an event that
-exports <i>svl-run-top-module-composed</i> and <i>*svl-run-top-module-composed*</i>.
+exports svl-run-top-module-composed and *svl-run-top-module-composed*.
 
 <code>
+@('
 (svl-run->svex-alist :modname \"top_module\"
                      :binds-ins-alist *ins-alist*
                      :binds-out-alist *outs-alist*
                      :svl-design *svl-netlist*
                      :rw-rule-name svl-run-top-module-composed
                      :svex-alist-name *svl-run-top-module-composed*)
+')
 </code>
 
 </p>
