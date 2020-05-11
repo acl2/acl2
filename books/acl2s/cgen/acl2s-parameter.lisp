@@ -36,6 +36,7 @@
     :backtrack-bad-generalizations
     :use-fixers
     :recursively-fix
+    :defdata-aliasing-enabled
     ))
 
 ;All user-defined parameters are stored here
@@ -432,8 +433,25 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    "
  :guard (booleanp value))
 
-
-
+(add-acl2s-parameter 
+ defdata-aliasing-enabled t
+ :short "Enable Defdata aliasing"
+ :long
+" <p>Defdata will try and determine if proposed data definitions are
+  equivalent to existing data definitions and if so, Defdata will
+  create alias types. The advantage is that any existing theorems can
+  be used to reason about the new type. Defdata will generate macros
+  for the recognizers and enumerators, which means that during proofs,
+  you will see the recognizer for the base type. If you turn this off,
+  then you can still use defdata-alias to explicitly tell ACL2s to
+  alias types.
+ <code> Usage:
+   (acl2s-defaults :get defdata-aliasing-enabled)
+   (acl2s-defaults :set defdata-aliasing-enabled t)
+   :doc defdata-aliasing-enabled
+  </code>
+   "
+ :guard (booleanp value))
 
 (defun mem-tree (x tree)
   (declare (xargs :guard (symbolp x)))
@@ -602,13 +620,10 @@ overridden by entries in override-alist"
   `(acl2s-defaults-value-alist. (table-alist 'ACL2S-DEFAULTS-TABLE (w state))
                                 ,override-alist '()))
 
-
-
-
 (defun acl2s-parameter-p (key)
   (declare (xargs :guard t))
   (and (symbolp key)
        (member-eq (keywordify key) *acl2s-parameters*)))
 
-#|ACL2s-ToDo-Line|#
+
 
