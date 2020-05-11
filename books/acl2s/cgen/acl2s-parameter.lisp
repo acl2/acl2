@@ -444,7 +444,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   for the recognizers and enumerators, which means that during proofs,
   you will see the recognizer for the base type. If you turn this off,
   then you can still use defdata-alias to explicitly tell ACL2s to
-  alias types.
+  alias types.</p>
  <code> Usage:
    (acl2s-defaults :get defdata-aliasing-enabled)
    (acl2s-defaults :set defdata-aliasing-enabled t)
