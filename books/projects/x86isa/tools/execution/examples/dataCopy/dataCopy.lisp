@@ -169,37 +169,87 @@
 
 ;; ----------------------------------------------------------------------
 
+#||
 ;; To create a log file:
 
 ;; Read and load binary into the x86 model's memory:
-;; (binary-file-load "dataCopy.o")
+(binary-file-load "dataCopy.o")
 
-;; (trace-write-memory (wm08 wm16 wm32 wm64))
+;; Fill these in by inspecting the object file:
+(defconst *start-address* #ux1_0000_0DC0) ;; address of the first instruction of copyData routine
+(defconst *halt-address*  #ux1_0000_0DE0) ;; address of the ret instruction of copyData routine
+
+(b* ((start-address *start-address*)
+
+     (x86 (!app-view t x86))
+     ((mv flg x86)
+       ;; Initialize the x86 state:
+      (init-x86-state-64
+        ;; Status (MS and fault field)
+       nil
+        ;; Start Address --- set the RIP to this address
+       start-address
+        ;; Initial values of General-Purpose Registers
+       '((#.*RAX* . #x1)
+         (#.*RBX* . #x0)
+         (#.*RCX* . #x4B00345618D749B7)
+         (#.*RDX* . #x5)            ;; n
+         (#.*RSI* . #x7FFF5FBFF430) ;; destination
+         (#.*RDI* . #x7FFF5FBFF450) ;; source
+         (#.*RBP* . 0)
+         (#.*RSP* . #x7FFF5FBFF400)
+         (#.*R8*  . 0)
+         (#.*R9*  . 0)
+         (#.*R10* . #xA)
+         (#.*R11* . #x246)
+         (#.*R12* . #x0)
+         (#.*R13* . #x0)
+         (#.*R14* . #x0)
+         (#.*R15* . #x0))
+        ;; Control Registers
+       nil
+        ;; Model-Specific Registers
+       nil
+        ;; seg-visibles
+       nil
+        ;; seg-hiddens
+       nil nil nil
+        ;; Rflags Register
+       #x202
+
+       (append
+         ;; Halt address
+        (list (cons *halt-address* #xF4))
+        ;; Source Array
+        '((#x7FFF5FBFF450 . 6)
+          (#x7FFF5FBFF454 . 7)
+          (#x7FFF5FBFF458 . 8)
+          (#x7FFF5FBFF45C . 9)
+          (#x7FFF5FBFF460 . 10)))
+        ;; x86 state
+       x86))
+     ((when flg)
+      (cw "~%Error in initializing x86-64 state!~%")
+      x86))
+  x86)
 
 ;; Run the program for up to (2^60 - 1) steps or till the machine
 ;; halts, whatever comes first. Results logged in acl2-instrument.log.
-;; (log_instr)
+
+(trace-all-reads)
+(trace-all-writes)
+
+(!log-file-name "dataCopy.log")
+(set-print-base 16 state)
+
+(log_instr)
 
 ;; Inspect the output:
 
-;; (set-print-base 10 state)
-
 ;; Destination Array:
-;; (rb
-;;  '(#x7FFF5FBFF430
-;;    #x7FFF5FBFF434
-;;    #x7FFF5FBFF438
-;;    #x7FFF5FBFF43C
-;;    #x7FFF5FBFF440)
-;;  :r x86)
+(rb 20 #x7FFF5FBFF430 :r x86)
 
 ;; Source Array:
-;; (rb
-;;  '(#x7FFF5FBFF450
-;;    #x7FFF5FBFF454
-;;    #x7FFF5FBFF458
-;;    #x7FFF5FBFF45C
-;;    #x7FFF5FBFF460)
-;;  :r x86)
-
+(rb 20 #x7FFF5FBFF450 :r x86)
+||#
 ;; ----------------------------------------------------------------------
