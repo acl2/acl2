@@ -99,4 +99,4 @@
                       (cons x3
                             (sub (mul lamb (sub x1 x3 p) p) y1 p)   ;y3
                             )))))
-  :hints (("Goal" :in-theory (enable pfield::sub-becomes-add-of-neg curve-group-+))))
+  :hints (("Goal" :in-theory (enable curve-group-+))))

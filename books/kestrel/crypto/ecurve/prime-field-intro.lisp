@@ -193,11 +193,16 @@
            (equal (pfield::inv (- x y) p)
                   (pfield::inv (pfield::sub x y p) p)))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d (pfield::neg pfield::add pfield::sub pfield::mul
-                                        pfield::inv
-                                        pfield::pow-rewrite
-                                        pfield::minus1)
+           :in-theory (e/d (pfield::neg
+                            pfield::add
+                            pfield::sub
+                            pfield::mul
+                            ;;pfield::inv
+                            pfield::pow-rewrite
+                            pfield::minus1)
                            (mod-of-+-becomes-add
+                            ADD-OF-+-ARG2
+                            ADD-OF-+-ARG1
                             acl2::mod-sum-cases)))))
 
 (defthm inv-of-unary--
