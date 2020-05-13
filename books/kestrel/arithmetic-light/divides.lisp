@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "times"))
+(local (include-book "complex"))
 (local (include-book "../library-wrappers/arithmetic-inequalities"))
 
 ;; Exported in times-and-divides.lisp
@@ -130,3 +131,73 @@
                 (rationalp x))
            (equal (integerp (* (/ y) x))
                   (equal 0 x))))
+
+;;;
+;;; Characterize division of complex numbers
+;;;
+
+;; (a+bi)/(c+di) =
+;; ((a+bi)/(c+di))*((c-di)/(c-di)) =
+;; ((a+bi)*(c-di))/((c+di)*(c-di)) =
+;; (ac+bd+(bc-ad)i)/(c^2+d^2) =
+;; (ac+bd)/(c^2+d^2) + ((bc-ad)/(c^2+d^2))i
+
+;; Multiply both numerator and denominator by the complex conjugate
+(local
+ (defthm /-of-complex-and-complex-step1
+   (implies (and (rationalp a)
+                 (rationalp b)
+                 (rationalp c)
+                 (rationalp d))
+            (equal (/ (complex a b)
+                      (complex c d))
+                   (* (/ (complex a b)
+                         (complex c d))
+                      (/ (complex c (- d))
+                         (complex c (- d))))))
+   :rule-classes nil
+   :hints (("Goal" :in-theory (enable complex-opener)))))
+
+;;gen
+(defthm equal-of-+-of-*-of-i
+  (implies (and (rationalp a)
+                (rationalp b)
+                (rationalp k))
+           (equal (equal k (+ a (* #c(0 1) b)))
+                  (and (equal k a)
+                       (equal 0 b))))
+  :hints (("Goal" :use (:instance complex-equal
+                                  (x1 k)
+                                  (y1 0)
+                                  (x2 a)
+                                  (y2 b)))))
+
+(local
+ (defthm distributivity-alt
+   (equal (* (+ y z) x)
+          (+ (* y x) (* z x)))))
+
+(local
+ (defthm conjugate-helper
+   (implies (and (rationalp c)
+                 (rationalp d))
+            (equal (* (/ (+ c (* #c(0 1) d))) (/ (+ c (- (* #c(0 1) d)))))
+                   (/ (+ (* c c) (* d d)))))
+   :hints (("Goal" :use (:instance distributivity-of-/-over-*
+                                   (x (+ c (* #c(0 1) d)))
+                                   (y (+ c (- (* #c(0 1) d)))))
+            :in-theory (disable distributivity-of-/-over-*)))))
+
+(defthm /-of-complex-and-complex
+  (implies (and (rationalp a)
+                (rationalp b)
+                (rationalp c)
+                (rationalp d))
+           (equal (/ (complex a b)
+                     (complex c d))
+                  (complex (/ (+ (* a c) (* b d))
+                              (+ (* c c) (* d d)))
+                           (/ (- (* b c) (* a d))
+                              (+ (* c c) (* d d))))))
+  :hints (("Goal" :use (:instance /-of-complex-and-complex-step1)
+           :in-theory (enable complex-opener))))
