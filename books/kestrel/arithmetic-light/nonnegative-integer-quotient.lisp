@@ -68,6 +68,16 @@
   :rule-classes ((:linear :trigger-terms ((nonnegative-integer-quotient i j))))
   :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
 
+(defthm nonnegative-integer-quotient-upper-bound-linear-strict
+  (implies (and (not (integerp (/ i j))) ;this makes it strict
+                (integerp i)
+                (<= 0 i)
+                (integerp j)
+                (<= 0 j))
+           (< (nonnegative-integer-quotient i j) (/ i j)))
+  :rule-classes ((:linear :trigger-terms ((nonnegative-integer-quotient i j))))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
+
 ;; (local
 ;;  (defun nonnegative-integer-quotient-double-induct1 (i j1 j2)
 ;;    (if (or (= (nfix j1) 0) (< (ifix 1) j1))

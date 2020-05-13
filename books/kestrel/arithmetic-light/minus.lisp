@@ -33,6 +33,13 @@
                   (and (acl2-numberp k)
                        (equal (fix x) (- k))))))
 
+(defthm equal-of---when-variable
+  (implies (and (syntaxp (and (symbolp x)
+                              (not (symbolp k)))))
+           (equal (equal k (- x))
+                  (and (acl2-numberp k)
+                       (equal (fix x) (- k))))))
+
 ;; The (- k) in the conclusion gets computed.
 (defthm <-of-minus-and-constant
   (implies (syntaxp (quotep k))

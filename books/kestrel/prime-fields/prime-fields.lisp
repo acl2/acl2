@@ -13,6 +13,9 @@
 ;; This book defines operations on the finite field consisting of the integers
 ;; modulo some prime p.
 
+;; For reasoning about these operations, consider including the book
+;; prime-fields-rules.
+
 ;; In this version of the formalization, the prime is passed explicitly to all
 ;; of the operations.  See also prime-fields-alt.lisp, which uses a constrained
 ;; function for the prime.
@@ -664,10 +667,11 @@
                   (add x (add z (neg y p) p) p)))
   :hints (("Goal" :in-theory (enable add sub neg))))
 
-(defthmd sub-opener
-  (implies (and (fep x p)
-                (fep y p)
-                (integerp p))
+;; With this rule enabled, our normal form has no calls of sub, just add and neg.
+(defthmd sub-becomes-add-of-neg
+  (implies (and (rationalp x)
+                (rationalp y)
+                (natp p))
            (equal (sub x y p)
                   (add x (neg y p) p)))
   :hints (("Goal" :in-theory (enable add sub neg))))
@@ -783,14 +787,6 @@
   (implies (posp p)
            (fep (+ -1 p) p))
   :hints (("Goal" :in-theory (enable fep))))
-
-(defthmd sub-becomes-add-of-neg
-  (implies (and (fep x p)
-                (fep y p)
-                (integerp p))
-           (equal (sub x y p)
-                  (add x (neg y p) p)))
-  :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthm mul-of-minus1-becomes-neg
   (implies (and (fep x p)

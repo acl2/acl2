@@ -16,3 +16,15 @@
 (defthm +-of-+-of---same
   (equal (+ x (- x) y)
          (fix y)))
+
+(defthm equal-of-0-and-+-of--
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (equal 0 (+ x (- y)))
+                  (equal x y))))
+
+(defthm equal-of-0-and-+-of---alt
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (equal 0 (+ (- y) x))
+                  (equal x y))))
