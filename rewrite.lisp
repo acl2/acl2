@@ -7436,6 +7436,15 @@
         ((equal gstack (caar stack)) stack)
         (t (clean-brr-stack1 gstack (cdr stack)))))
 
+(defconst *cryptic-brr-message*
+  "If you are seeing this message after you have caused a console interrupt ~
+   (or otherwise have made a break into Lisp) or during a new prover call ~
+   made from within BRR, then it is likely that this is a bit of routine BRR ~
+   housekeeping.  (In the latter case, of a new prover call made from within ~
+   BRR, you can probably avoid this message by calling :brr nil before making ~
+   that new prover call.)  Otherwise, the ACL2 implementors would appreciate ~
+   a script showing how to reproduce this message.")
+
 (defun clean-brr-stack (gstack stack)
 
 ; See the Essay on "Break-Rewrite".  Stack is a list of frames.  Each frame is
@@ -7467,13 +7476,8 @@
     (prog2$
      (if (not (equal cleaned-stack stack))
          (cw "~%~%Cryptic BRR Message 1:  Sweeping dead frames off ~
-              brr-stack.  If this occurs in a reproducible way ~
-              without your having to cause a console interrupt or ~
-              otherwise break into Lisp, please send a script to ~
-              the authors of ACL2.  If, on the other hand, during ~
-              this proof you've caused a console interrupt and aborted ~
-              from the resulting Lisp break, it is likely that this is ~
-              a bit of routine BRR housekeeping.~%~%")
+              brr-stack.  ~@0~%~%"
+             *cryptic-brr-message*)
 
 ; If anybody ever reports the problem described above, it indicates
 ; that frames are being left on the brr-stack as though the
@@ -7556,13 +7560,8 @@
                     state))
      (t
       (prog2$
-       (cw "~%~%Cryptic BRR Message 2:  Discarding dead brr-stack.  ~
-            If this occurs in a reproducible way without your having ~
-            to cause a console interrupt or otherwise break into Lisp, ~
-            please send a script to the authors of ACL2.  If, on the ~
-            other hand, during this proof you've caused a console ~
-            interrupt and aborted from the resulting Lisp break, it is ~
-            likely that this is a bit of routine BRR housekeeping.~%~%")
+       (cw "~%~%Cryptic BRR Message 2:  Discarding dead brr-stack.  ~@0~%~%"
+           *cryptic-brr-message*)
        (f-put-global 'brr-stack
                     (cons (cons gstack (get-brr-global 'brr-alist state))
                           nil)

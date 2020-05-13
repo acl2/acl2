@@ -5,4 +5,6 @@
 ; Here is a quick test that we sometimes run.  To see what it generates,
 ; evaluate (trans1 '(mini-proveall)).
 
+(set-gag-mode :goals)
+
 (mini-proveall)

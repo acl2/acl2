@@ -20,6 +20,7 @@ data last modified: [2017-06-26 Mon]
 ; We are going to reuse code/design from Sol Sword's FTY and Bishop Brock's
 ; defstructure. Sol Sword's FTY in turn builds on Jared Davis's std/util books.
 
+(include-book "acl2s/cgen/acl2s-parameter" :dir :system)
 (include-book "data-structures/utilities" :dir :system)
 (include-book "coi/symbol-fns/symbol-fns" :dir :system)
 (include-book "tools/templates" :dir :system)
@@ -447,7 +448,10 @@ Example use
        (odef (get1 'odef (cdar d)))
        (pdef (get1 'pdef (cdar d)))
        (ndef (get1 'ndef (cdar d)))
-       (do-not-alias? (get1 :do-not-alias kwd-alist))
+       (record? (and (consp odef) (equal 'record (car odef))))
+       (global-alias-off?
+        (not (acl2s::get-acl2s-defaults :defdata-aliasing-enabled wrld)))
+       (do-not-alias? (or record? global-alias-off? (get1 :do-not-alias kwd-alist)))
        (M (type-metadata-table wrld))
        (match-def (match-alist name :DEF odef M))
        (match-def (or match-def (match-alist name :PRETTYIFIED-DEF pdef M)))

@@ -8,8 +8,9 @@
 ; we provide some tests, which also serve as further documentation.
 
 (include-book "make-termination-theorem")
-(include-book "std/testing/eval" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 ; Introduce "aliases" for car and cdr, which we will disable in order to
 ; demonstrate the value of substituting, using stubs, for recursive functions

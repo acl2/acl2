@@ -23,6 +23,8 @@
      rquote-listp
      unrquote-lst
      def-const
+     => ;sig
+     _ ;range
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -41,6 +43,8 @@
      rquote-listp
      unrquote-lst
      def-const
+     => ;sig
+     _ ;range
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -65,9 +69,6 @@
      aconsp
      
      mget mset wf-keyp good-map
-     => ;sig
-     _ ;range
-
 
      fix-pkg
      fix-sym
