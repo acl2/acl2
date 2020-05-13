@@ -38,7 +38,7 @@
 
 (in-package "XDOC")
 (include-book "std/util/bstar" :dir :system)
-(include-book "std/basic/defs" :dir :system)
+(include-book "std/strings/printtree" :dir :system)
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "make-event/acl2x-help" :dir :system))
 ; (include-book "std/lists/list-defuns" :dir :system)
@@ -108,10 +108,7 @@
                                          acl2::implode$inline
                                          str::explode
                                          acl2::explode$inline
-                                         str::rchars-to-string
                                          str::fast-concatenate
-                                         str::fast-string-append
-                                         str::fast-string-append-lst
                                          str::revappend-chars-aux
                                          str::revappend-chars
                                          str::revappend-chars$inline
