@@ -39,6 +39,9 @@
 (include-book "list-fix")
 (include-book "equiv")
 (local (include-book "std/basic/inductions" :dir :system))
+;; Mihir M. mod: The following book is included to help with
+;; no-duplicatesp-of-take.
+(local (include-book "std/lists/sets" :dir :system))
 
 (defsection std/lists/take
   :parents (std/lists take)
@@ -127,6 +130,10 @@
     (equal (take a (take a x))
            (take a x)))
 
+  (defthm no-duplicatesp-of-take
+    (implies (and (no-duplicatesp-equal l)
+                  (<= (nfix n) (len l)))
+             (no-duplicatesp-equal (take n l))))
 
   (defcong list-equiv equal (take n x) 2
     :hints(("Goal"
