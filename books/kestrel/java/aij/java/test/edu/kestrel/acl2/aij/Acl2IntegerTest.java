@@ -134,4 +134,10 @@ class Acl2IntegerTest {
                 new BigInteger("58748592475802735872046572345892645"));
     }
 
+    @Test
+    void getNumeratorFromConstant() {
+        assertEquals(Acl2Integer.ZERO.getNumerator(), Acl2Integer.ZERO);
+        assertEquals(Acl2Integer.ONE.getNumerator(), Acl2Integer.ONE);
+    }
+
 }

@@ -183,3 +183,11 @@ Skipping for now.
 (defmacro nth-number-between (n lo hi &key type)
 |#
 
+(defdata one 1)
+
+(defdata loi (listof int))
+(defdata r1 (record (a . loi)))
+
+(must-fail
+ (defdata-alias r2 r1))
+
