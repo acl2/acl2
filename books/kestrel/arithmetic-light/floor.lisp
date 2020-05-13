@@ -1055,3 +1055,16 @@
            :in-theory (e/d (floor)
                            (<=-of-denominator-of-*-of-/
                             <-of-+-arg2-when-negative-constant)))))
+
+;; Disabled since it turns floor into division
+(defthmd floor-when-integerp-of-quotient
+  (implies (integerp (* x (/ y)))
+           (equal (floor x y)
+                  (* x (/ y))))
+  :hints (("Goal" :in-theory (enable floor))))
+
+(defthm floor-when-not-rationalp-of-quotient
+  (implies (not (rationalp (* x (/ y))))
+           (equal (floor x y)
+                  0))
+  :hints (("Goal" :in-theory (enable floor))))

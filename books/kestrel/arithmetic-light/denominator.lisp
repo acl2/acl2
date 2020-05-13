@@ -37,9 +37,10 @@
                                numerator-when-integerp))))
 
 (defthm denominator-of--
-  (implies (rationalp x)
-           (equal (denominator (- x))
-                  (denominator x))))
+  (equal (denominator (- x))
+         (if (rationalp x)
+             (denominator x)
+           1)))
 
 (local (include-book "../../arithmetic/mod-gcd"))
 

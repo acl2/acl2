@@ -56,8 +56,8 @@
     charlisteqv-is-an-equivalence
 
     ;; cat.lisp
-    fast-string-append
-    fast-string-append-lst
+    ;; fast-string-append
+    ;; fast-string-append-lst
     fast-concatenate
     cat
     append-chars-aux
@@ -65,7 +65,7 @@
     revappend-chars-aux
     revappend-chars
     prefix-strings
-    rchars-to-string
+    ;; rchars-to-string
     join-aux
     join
 

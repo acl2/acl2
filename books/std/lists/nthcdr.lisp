@@ -170,7 +170,6 @@ library."
 
 
   (defthm append-of-take-and-nthcdr
-    ;; BOZO questionable forcing here
     (implies (<= (nfix n) (len x))
              (equal (append (take n x)
                             (nthcdr n x))

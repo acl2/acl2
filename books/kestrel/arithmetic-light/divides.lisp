@@ -60,7 +60,7 @@
                           (equal y 0)
                           (< (/ y) k)))))
 
-(defthm <-of-/
+(defthm <-of-0-and-/
   (implies (rationalp x)
            (equal (< 0 (/ x))
                   (< 0 x)))
@@ -72,8 +72,12 @@
                            (x2 (/ x))
                            (y (- x))))))
 
+(defthm <-of-/-and-0
+  (implies (rationalp x)
+           (equal (< (/ x) 0)
+                  (< x 0))))
 
-    ;gen
+;gen
 (defthm <-of-/-and-/
   (implies (and (< 0 x)
                 (< 0 y)
@@ -95,3 +99,34 @@
                 (rationalp x0))
            (<= (/ x) (/ x0)))
   :rule-classes :linear)
+
+(defthm complex-rationalp-of-unary-/
+  (equal (complex-rationalp (/ y))
+         (complex-rationalp y))
+  :hints (("Goal" :cases ((complex-rationalp y)))))
+
+;make an alt version
+(defthm complex-rationalp-of-*-of-/-when-rationalp-and-complex-rationalp
+  (implies (and (complex-rationalp y)
+                (rationalp x))
+           (equal (complex-rationalp (* x (/ y)))
+                  (not (equal 0 x)))))
+
+;make an alt version
+(defthm rationalp-of-*-of-/-when-rationalp-and-complex-rationalp
+  (implies (and (complex-rationalp y)
+                (rationalp x))
+           (equal (rationalp (* x (/ y)))
+                  (equal 0 x))))
+
+(defthm integerp-of-*-of-/-when-rationalp-and-complex-rationalp
+  (implies (and (complex-rationalp y)
+                (rationalp x))
+           (equal (integerp (* x (/ y)))
+                  (equal 0 x))))
+
+(defthm integerp-of-*-of-/-when-rationalp-and-complex-rationalp-alt
+  (implies (and (complex-rationalp y)
+                (rationalp x))
+           (equal (integerp (* (/ y) x))
+                  (equal 0 x))))

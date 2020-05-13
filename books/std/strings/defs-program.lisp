@@ -34,6 +34,13 @@
 (in-package "STR")
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+
+; This book needs to be included here so that there is one unique definition of
+; each of the functions with raw Lisp definitions in fast-cat.lisp.  Otherwise,
+; the definitions introduced redundantly below wouldn't be considered redundant
+; if that book was included first.
+(include-book "printtree")
+
 ;(include-book "std/lists/list-defuns" :dir :system)
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "make-event/acl2x-help" :dir :system))

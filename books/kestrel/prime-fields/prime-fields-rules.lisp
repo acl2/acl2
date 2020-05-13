@@ -16,6 +16,7 @@
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/minus"))
+(local (include-book "../arithmetic-light/plus-and-minus"))
 
 (local (in-theory (disable acl2::mod-sum-cases))) ;for speed
 
@@ -130,7 +131,7 @@
                 (posp p))
            (equal (mod (expt (mod x p) n) p)
                   (mod (expt x n) p)))
-  :hints (("Goal" :in-theory (enable expt acl2::mod-of-*-subst))))
+  :hints (("Goal" :in-theory (enable expt acl2::mod-of-*-subst-arg2))))
 
 (defthm mod-of-expt-of-+-of-mod-arg2
   (implies (and (integerp x)
@@ -363,14 +364,6 @@
                                   (acl2::mod-when-multiple ;for speed
                                    )))))
 
-(defthm sub-rewrite
-  (implies (and (rationalp x)
-                (rationalp y)
-                (posp p))
-           (equal (sub x y p)
-                  (add x (neg y p) p)))
-  :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
-
 (defthm not-equal-of-add-and-0-same
   (implies (and (integerp x1)
                 (<= 0 x1)
@@ -442,8 +435,7 @@
                 (posp p))
            (equal (neg (mul k y p) p)
                   (mul (neg k p) y p)))
-  :hints (("Goal" :in-theory (e/d (mul neg sub)
-                                  (sub-rewrite)))))
+  :hints (("Goal" :in-theory (enable mul neg sub))))
 
 ;; Solve for z in something like x=yz when x and y are constants.
 (defthm equal-of-mul-constants
@@ -577,3 +569,26 @@
                          (equal (pfield::div x z p) y)))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (enable pfield::div))))
+
+(defthm equal-of-neg-and-neg
+  (implies (and (fep x1 p)
+                (fep x2 p)
+                (integerp p))
+           (equal (equal (neg x1 p) (neg x2 p))
+                  (equal x1 x2)))
+  :hints (("Goal" :in-theory (enable neg))))
+
+(defthm equal-of-neg-and-neg-strong
+  (implies (integerp p) ;todo: drop
+           (equal (equal (neg x1 p) (neg x2 p))
+                  (equal (mod x1 p) (mod x2 p))))
+  :hints (("Goal" :in-theory (enable neg sub))))
+
+(defthm mod-when-fep
+  (implies (fep x p)
+           (equal (mod x p)
+                  x))
+  :hints (("Goal" :cases ((rationalp p))
+           :in-theory (enable fep))))
+
+(in-theory (enable sub-becomes-add-of-neg)) ;change normal form to use NEG instead of SUB
