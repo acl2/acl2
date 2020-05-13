@@ -13,6 +13,9 @@
 ;; This book defines operations on the finite field consisting of the integers
 ;; modulo some prime p.
 
+;; For reasoning about these operations, consider including the book
+;; prime-fields-rules.
+
 ;; In this version of the formalization, the prime is passed explicitly to all
 ;; of the operations.  See also prime-fields-alt.lisp, which uses a constrained
 ;; function for the prime.
