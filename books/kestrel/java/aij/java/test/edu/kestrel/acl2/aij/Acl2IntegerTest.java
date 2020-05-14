@@ -62,7 +62,7 @@ class Acl2IntegerTest {
     }
 
     @Test
-    void getJavaIntFromMake() {
+    void getJavaIntFromMakeInt() {
         assertEquals(Acl2Integer.make(0).getJavaInt(), 0);
         assertEquals(Acl2Integer.make(1).getJavaInt(), 1);
         assertEquals(Acl2Integer.make(-1).getJavaInt(), -1);
@@ -71,9 +71,22 @@ class Acl2IntegerTest {
     }
 
     @Test
-    void getJavaIntFromMakeFail() {
+    void getJavaIntFromMakeLong() {
+        assertEquals(Acl2Integer.make(0L).getJavaInt(), 0);
+        assertEquals(Acl2Integer.make(1L).getJavaInt(), 1);
+        assertEquals(Acl2Integer.make(-1000000000L).getJavaInt(), -1000000000);
         assertThrows(ArithmeticException.class,
                 () -> Acl2Integer.make(44444444444444L).getJavaInt());
+    }
+
+    @Test
+    void getJavaIntFromMakeBigInteger() {
+        assertEquals(Acl2Integer.make(BigInteger.ZERO).getJavaInt(), 0);
+        assertEquals(Acl2Integer.make(BigInteger.ONE).getJavaInt(), 1);
+        assertEquals(Acl2Integer.make(BigInteger.TWO).getJavaInt(), 2);
+        assertEquals(Acl2Integer.make(BigInteger.TEN).getJavaInt(), 10);
+        assertEquals(Acl2Integer.make
+                (new BigInteger("1234567890")).getJavaInt(), 1234567890);
         assertThrows(ArithmeticException.class,
                 () -> Acl2Integer.make
                         (new BigInteger("72983728478274982748282710100"))
