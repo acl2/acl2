@@ -327,23 +327,13 @@
            :in-theory (enable add sub))))
 
 (defthm mod-of-add
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (equal (mod (add x y p) p)
-                  (add x y p)))
+  (equal (mod (add x y p) p)
+         (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm mod-of-neg
-  (implies (and (integerp x)
-                (posp p))
-           (equal (mod (neg x p) p)
-                  (neg x p)))
-  :hints (("Goal" :in-theory (enable neg sub))))
-
 (defthm neg-of-*
-  (implies (and (rationalp x1)
-                (rationalp x2)
+  (implies (and (integerp x1)
+                (integerp x2)
                 (posp p))
            (equal (neg (* x1 x2) p)
                   (neg (mul x1 x2 p) p)))
@@ -434,15 +424,15 @@
            :in-theory (disable mod-of-expt-of-mod))))
 
 (defthm add-of-0-arg1-gen
-  (implies (integerp p)
+  (implies (posp p)
            (equal (add 0 x p)
-                  (mod x p)))
+                  (mod (ifix x) p)))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-0-arg2-gen
-  (implies (integerp p)
+  (implies (posp p)
            (equal (add x 0 p)
-                  (mod x p)))
+                  (mod (ifix x) p)))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-mul-and-mul-combine-constants
@@ -471,18 +461,13 @@
            :in-theory (disable add-of-mul-and-mul-combine-constants))))
 
 (defthm neg-of-neg-gen
-  (implies (and (integerp x)
-                (posp p))
-           (equal (neg (neg x p) p)
-                  (mod x p)))
+  (equal (neg (neg x p) p)
+         (mod (ifix x) (pos-fix p)))
   :hints (("Goal" :in-theory (enable neg sub add))))
 
 (defthm mod-of-mul
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp p))
-           (equal (mod (mul x y p) p)
-                  (mul x y p)))
+  (equal (mod (mul x y p) p)
+         (mul x y p))
   :hints (("Goal" :in-theory (enable mul))))
 
 (local
@@ -727,26 +712,18 @@
   :hints (("Goal" :in-theory (enable div))))
 
 (defthm div-of-0-arg1
-  (implies (and (integerp p)
-                (integerp y))
-           (equal (div 0 y p)
-                  0))
+  (equal (div 0 y p)
+         0)
   :hints (("Goal" :in-theory (enable div))))
 
 (defthm mul-of-mod-arg1
-  (implies (and (posp p)
-                (integerp x)
-                (integerp y))
-           (equal (mul (mod x p) y p)
-                  (mul x y p)))
+  (equal (mul (mod x p) y p)
+         (mul x y p))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-of-mod-arg2
-  (implies (and (posp p)
-                (integerp x)
-                (integerp y))
-           (equal (mul x (mod y p) p)
-                  (mul x y p)))
+  (equal (mul x (mod y p) p)
+         (mul x y p))
   :hints (("Goal" :in-theory (enable mul))))
 
 ;; x=y/z becomes xz=y.
@@ -766,9 +743,12 @@
            :use (:instance mul-of-inv-mul-of-inv (a z) (x y) (p p))
            :in-theory (e/d (div) (mul-of-inv-mul-of-inv)))))
 
+;gen?
 (defthm mul-of--1-becomes-neg
-  (equal (mul -1 x p)
-         (neg x p))
+  (implies (and (integerp x)
+                (posp p))
+           (equal (mul -1 x p)
+                  (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub))))
 
 ;; p-1 represents -1.
@@ -817,18 +797,6 @@
   :hints (("Goal" :use (:instance equal-of-mul-same-arg1)
            :in-theory (disable equal-of-mul-same-arg1))))
 
-;; Can be useful when p is not a constant
-(defthm sub-when-constants
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep y)))
-                (rationalp x)
-                (rationalp y)
-                (posp p))
-           (equal (sub x y p)
-                  (mod (- x y) p)))
-  :hints (("Goal"  :do-not '(preprocess)
-           :in-theory (enable sub neg add acl2::mod-sum-cases))))
-
 ;; Kept disabled
 (defthmd equal-of-mul-cancel
   (implies (and (fep y p)
@@ -851,9 +819,9 @@
   :hints (("Goal" :in-theory (enable neg))))
 
 (defthm equal-of-neg-and-neg-strong
-  (implies (integerp p) ;todo: drop
-           (equal (equal (neg x1 p) (neg x2 p))
-                  (equal (mod x1 p) (mod x2 p))))
+  (equal (equal (neg x1 p) (neg x2 p))
+         (equal (mod (ifix x1) (pos-fix p))
+                (mod (ifix x2) (pos-fix p))))
   :hints (("Goal" :in-theory (enable neg sub))))
 
 ;; Since some of the string rules introduce mod
@@ -866,7 +834,7 @@
 
 (defthm mul-of-1-arg1-gen
   (equal (mul 1 x p)
-         (mod x p))
+         (mod (ifix x) (pos-fix p)))
   :hints (("Goal" :in-theory (enable mul))))
 
 ;; (* -1 y) becomes (neg y)

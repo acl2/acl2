@@ -122,6 +122,21 @@
   :hints (("Goal" :in-theory (enable minus1))))
 
 ;;;
+;;; pos-fix
+;;;
+
+(defun pos-fix (x)
+  (declare (xargs :guard t))
+  (if (posp x)
+      x
+    1))
+
+(defthm pos-fix-when-posp
+  (implies (posp x)
+           (equal (pos-fix x)
+                  x)))
+
+;;;
 ;;; add
 ;;;
 
@@ -130,42 +145,18 @@
   (declare (xargs :guard (and (integerp p)
                               (fep x p)
                               (fep y p))))
-  (mod (+ x y) p))
-
-(defthm integerp-of-add
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp p))
-           (integerp (add x y p)))
-  :hints (("Goal" :in-theory (enable fep add))))
+  (mbe :exec (mod (+ x y) p)
+       :logic (mod (+ (ifix x) (ifix y)) (pos-fix p))))
 
 (defthm natp-of-add
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (natp (add x y p)))
+  (natp (add x y p))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable fep add))))
 
 (defthm fep-of-add
-  (implies (and (fep x p)
-                (fep y p)
-                (integerp p))
+  (implies (posp p)
            (fep (add x y p) p))
   :hints (("Goal" :in-theory (enable add fep))))
-
-(defthm fep-of-add-gen
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (fep (add x y p) p))
-  :hints (("Goal" :in-theory (enable add fep))))
-
-(defthm rationalp-of-add
-  (implies (and (rationalp x)
-                (rationalp y))
-           (rationalp (add x y p)))
-  :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-0-arg1
   (implies (and (fep x p)
@@ -259,23 +250,19 @@
   (implies (syntaxp (and (quotep y) ;checked first since more likely to fail
                          (quotep x)))
            (equal (add x y p)
-                  (mod (+ x y) p)))
+                  (mod (+ (ifix x) (ifix y)) (pos-fix p))))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-mod-arg1
-  (implies (and (rationalp x)
-                (rationalp y)
-                (rationalp p)
-                (< 0 p))
+  (implies (and (integerp x)
+                (posp p))
            (equal (add (mod x p) y p)
                   (add x y p)))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-mod-arg2
-  (implies (and (rationalp x)
-                (rationalp y)
-                (rationalp p)
-                (< 0 p))
+  (implies (and (integerp y)
+                (posp p))
            (equal (add x (mod y p) p)
                   (add x y p)))
   :hints (("Goal" :in-theory (enable add))))
@@ -288,19 +275,11 @@
 (defund neg (x p)
   (declare (xargs :guard (and (integerp p)
                               (fep x p))))
-  (mod (- x) p))
-
-(defthm integerp-of-neg
-  (implies (and (integerp x)
-                (integerp p))
-           (integerp (neg x p)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable fep neg))))
+  (mbe :exec (mod (- x) p)
+       :logic (mod (- (ifix x)) (pos-fix p))))
 
 (defthm natp-of-neg
-  (implies (and (integerp x)
-                (posp p))
-           (natp (neg x p)))
+  (natp (neg x p))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable fep neg))))
 
@@ -314,14 +293,7 @@
   :hints (("Goal" :in-theory (enable neg))))
 
 (defthm fep-of-neg
-  (implies (and (fep x p)
-                (integerp p))
-           (fep (neg x p) p))
-  :hints (("Goal" :in-theory (enable neg fep))))
-
-(defthm fep-of-neg-gen
-  (implies (and (integerp x)
-                (posp p))
+  (implies (posp p)
            (fep (neg x p) p))
   :hints (("Goal" :in-theory (enable neg fep))))
 
@@ -358,10 +330,8 @@
   :hints (("Goal" :in-theory (enable neg))))
 
 (defthm mod-of-neg
-  (implies (and (integerp x)
-                (posp p))
-           (equal (mod (neg x p) p)
-                  (neg x p)))
+  (equal (mod (neg x p) p)
+         (neg x p))
   :hints (("Goal" :in-theory (enable neg acl2::mod-sum-cases))))
 
 ;;;
@@ -376,34 +346,15 @@
                               (fep y p))))
   (add x (neg y p) p))
 
-(defthm integerp-of-sub
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp p))
-           (integerp (sub x y p)))
-  :hints (("Goal" :in-theory (enable fep sub))))
-
 (defthm natp-of-sub
-  (implies (and (natp x)
-                (natp y)
-                (posp p))
-           (natp (sub x y p)))
+  (natp (sub x y p))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable fep sub))))
 
 (defthm fep-of-sub
-  (implies (and (fep x p)
-                (fep y p)
-                (integerp p))
+  (implies (posp p)
            (fep (sub x y p) p))
   :hints (("Goal" :in-theory (enable sub fep))))
-
-(defthm fep-of-sub-gen
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (fep (sub x y p) p))
-  :hints (("Goal" :in-theory (enable sub))))
 
 (defthm sub-of-0
   (implies (and (fep x p)
@@ -413,7 +364,8 @@
   :hints (("Goal" :in-theory (enable sub))))
 
 (defthm sub-same
-  (implies (fep x p)
+  (implies (and (fep x p)
+                (integerp p))
            (equal (sub x x p)
                   0))
   :hints (("Goal" :in-theory (enable sub neg add))))
@@ -455,23 +407,21 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable sub add neg))))
 
-(defthm sub-of-constants
+;; Can be useful when p is not a constant
+(defthm sub-when-constants
   (implies (and (syntaxp (and (quotep y) ;; checked first since more likely to fail
                               (quotep x)))
-                (posp prime)
-                (rationalp x)
-                (rationalp y))
-           (equal (sub x y prime)
-                  (mod (- x y) prime)))
+                (posp p)
+                (integerp x)
+                (integerp y))
+           (equal (sub x y p)
+                  (mod (- x y) p)))
   :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
 (defthm mod-of-sub
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp p))
-           (equal (mod (sub x y p) p)
-                  (sub x y p)))
-  :hints (("Goal" :in-theory (enable sub add))))
+  (equal (mod (sub x y p) p)
+         (sub x y p))
+  :hints (("Goal" :in-theory (enable sub add neg))))
 
 ;;;
 ;;; mul
@@ -482,43 +432,18 @@
   (declare (xargs :guard (and (integerp p)
                               (fep x p)
                               (fep y p))))
-  (mod (* x y) p))
-
-(defthm integerp-of-mul
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp p))
-           (integerp (mul x y p)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable mul))))
+  (mbe :exec (mod (* x y) p)
+       :logic (mod (* (ifix x) (ifix y)) (pos-fix p))))
 
 (defthm natp-of-mul
-  (implies (and (natp x)
-                (natp y)
-                (posp p))
-           (natp (mul x y p)))
+  (natp (mul x y p))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable fep mul))))
 
 (defthm fep-of-mul
-  (implies (and (fep x p)
-                (fep y p)
-                (integerp p))
+  (implies (posp p)
            (fep (mul x y p) p))
   :hints (("Goal" :in-theory (enable mul fep))))
-
-(defthm fep-of-mul-gen
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (fep (mul x y p) p))
-  :hints (("Goal" :in-theory (enable mul))))
-
-(defthm rationalp-of-mul
-  (implies (and (rationalp x)
-                (rationalp y))
-           (rationalp (mul x y p)))
-  :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-of-1-arg1
   (implies (and (fep x p)
@@ -610,37 +535,16 @@
                 (mul x (pow x (+ -1 n) p) p))
        :exec (mod-expt-fast x n p)))
 
-(defthm integerp-of-pow
-  (implies (and (integerp x)
-                (integerp p))
-           (integerp (pow x n p)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable pow))))
-
 (defthm natp-of-pow
-  (implies (and (natp x)
-                (posp p))
-           (natp (pow x n p)))
+  (natp (pow x n p))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable pow))))
 
 (defthm fep-of-pow
-  (implies (and (fep x p)
+  (implies (and ;(fep x p)
                 (< 1 p) ;so that 1 is a fep
                 (integerp p))
-           (fep (pow x b p) p))
-  :hints (("Goal" :in-theory (enable pow))))
-
-(defthm fep-of-pow-gen
-  (implies (and (integerp x)
-                (< 1 p) ;so that 1 is a fep
-                (integerp p))
-           (fep (pow x b p) p))
-  :hints (("Goal" :in-theory (enable pow))))
-
-(defthm rationalp-of-pow
-  (implies (rationalp x)
-           (rationalp (pow x n p)))
+           (fep (pow x n p) p))
   :hints (("Goal" :in-theory (enable pow))))
 
 (defthm pow-of-+
@@ -701,30 +605,13 @@
                   :guard-hints (("Goal" :in-theory (enable minus1)))))
   (pow x (+ -1 (minus1 p)) p))
 
-(defthm integerp-of-inv
-  (implies (and (integerp x)
-                (integerp p))
-           (integerp (inv x p)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable inv))))
-
 (defthm natp-of-inv
-  (implies (and (natp x)
-                (posp p))
-           (natp (inv x p)))
+  (natp (inv x p))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable inv))))
 
 (defthm fep-of-inv
-  (implies (and (fep a p)
-                (< 1 p)
-                (integerp p))
-           (fep (inv a p) p))
-  :hints (("Goal" :in-theory (enable inv minus1))))
-
-(defthm fep-of-inv-gen
-  (implies (and (integerp x)
-                (< 1 p)
+  (implies (and (< 1 p)
                 (integerp p))
            (fep (inv x p) p))
   :hints (("Goal" :in-theory (enable inv minus1))))
@@ -741,34 +628,13 @@
                               (not (equal 0 y)))))
   (mul x (inv y p) p))
 
-(defthm integerp-of-div
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (integerp (div x y p)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable div))))
-
 (defthm natp-of-div
-  (implies (and (natp x)
-                (natp y)
-                (posp p))
-           (natp (div x y p)))
+  (natp (div x y p))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable div))))
 
 (defthm fep-of-div
-  (implies (and (fep x p)
-                (fep y p)
-                (< 1 p)
-                (integerp p))
-           (fep (div x y p) p))
-  :hints (("Goal" :in-theory (enable div))))
-
-(defthm fep-of-div-gen
-  (implies (and (integerp x)
-                (integerp y)
-                (< 1 p)
+  (implies (and (< 1 p)
                 (integerp p))
            (fep (div x y p) p))
   :hints (("Goal" :in-theory (enable div))))

@@ -41,12 +41,17 @@
                                      pfield::minus1))))
 
 (defthm mod-of-+-becomes-add
-  (equal (mod (+ x y) p)
-         (pfield::add x y p))
+  (implies (and (integerp x)
+                (integerp y)
+                (posp p))
+           (equal (mod (+ x y) p)
+                  (pfield::add x y p)))
   :hints (("Goal" :in-theory (enable pfield::add))))
 
+(theory-invariant (incompatible (:rewrite mod-of-+-becomes-add) (:definition add)))
+
 (defthm add-of---arg1
-  (implies (and (rationalp x)
+  (implies (and (integerp x)
                 (rationalp y)
                 (posp p))
            (equal (pfield::add (- x) y p)
@@ -56,7 +61,7 @@
                            (mod-of-+-becomes-add)))))
 
 (defthm add-of---arg2
-  (implies (and (rationalp x)
+  (implies (and (integerp x)
                 (rationalp y)
                 (posp p))
            (equal (pfield::add y (- x) p)
@@ -66,8 +71,8 @@
                            (mod-of-+-becomes-add)))))
 
 (defthm add-of-+-arg1
-  (implies (and (rationalp x1)
-                (rationalp x2)
+  (implies (and (integerp x1)
+                (integerp x2)
                 (rationalp y)
                 (posp p))
            (equal (pfield::add (+ x1 x2) y p)
@@ -78,8 +83,8 @@
 
 (defthm add-of-+-arg2
   (implies (and (rationalp x)
-                (rationalp y1)
-                (rationalp y2)
+                (integerp y1)
+                (integerp y2)
                 (posp p))
            (equal (pfield::add x (+ y1 y2) p)
                   (pfield::add x (pfield::add y1 y2 p) p)))
@@ -89,8 +94,8 @@
 
 (defthm add-of-*-arg1
   (implies (and (rationalp y)
-                (rationalp x1)
-                (rationalp x2)
+                (integerp x1)
+                (integerp x2)
                 (posp p))
            (equal (pfield::add (* x1 x2) y p)
                   (pfield::add (pfield::mul x1 x2 p) y p)))
@@ -100,8 +105,8 @@
 
 (defthm add-of-*-arg2
   (implies (and (rationalp y)
-                (rationalp x1)
-                (rationalp x2)
+                (integerp x1)
+                (integerp x2)
                 (posp p))
            (equal (pfield::add y (* x1 x2) p)
                   (pfield::add y (pfield::mul x1 x2 p) p)))
@@ -222,9 +227,14 @@
                             acl2::mod-sum-cases)))))
 
 (defthm mod-of-*-becomes-mul
-  (equal (mod (* x y) p)
-         (pfield::mul x y p))
+  (implies (and (integerp x)
+                (integerp y)
+                (posp p))
+           (equal (mod (* x y) p)
+                  (pfield::mul x y p)))
   :hints (("Goal" :in-theory (enable pfield::mul))))
+
+(theory-invariant (incompatible (:rewrite mod-of-*-becomes-mul) (:definition mul)))
 
 (defthm sub-of-p
   (implies (and (integerp x)
@@ -304,7 +314,7 @@
                     (pfield::neg x p))))
   :hints (("Goal" :in-theory (enable pfield::neg pfield::sub mod))))
 
-(defthm mod-of--
+(defthm mod-of---becomes-neg
   (implies (and (natp x)
                 (< x p)
                 (posp p))
@@ -313,12 +323,14 @@
   :hints (("Goal" :in-theory (e/d (pfield::neg pfield::sub mod)
                                   (neg-intro)))))
 
+(theory-invariant (incompatible (:rewrite mod-of---becomes-neg) (:definition neg)))
+
 (defthm neg-of-*
-  (implies (and (rationalp x1)
-                (rationalp x2)
+  (implies (and (integerp x1)
+                (integerp x2)
                 (posp p))
            (equal (pfield::neg (* x1 x2) p)
                   (pfield::neg (pfield::mul x1 x2 p) p)))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d (pfield::neg pfield::mul pfield::sub pfield::mul)
+           :in-theory (e/d (pfield::mul pfield::sub pfield::mul)
                            (mod-of-*-becomes-mul)))))
