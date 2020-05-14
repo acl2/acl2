@@ -1342,7 +1342,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      *          Precondition: not null.
      * @return The result of the function on the given argument.
      */
-    public boolean execRationalpBoolean(Acl2Value x) {
+    public static boolean execRationalpBoolean(Acl2Value x) {
         return x.rationalp() != Acl2Symbol.NIL;
     }
 
