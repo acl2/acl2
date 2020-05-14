@@ -514,7 +514,8 @@
    (xdoc::p
     "We use a short two-letter string to identify each ATJ type.
      For the @(':acl2') types,
-     the first letter is @('A') and the second letter is from the class name.
+     the first letter is @('A')
+     and the second letter is from the class name or @('B') for @(':aboolean').
      For the @(':jprim') types,
      the first letter is @('J') and the second letter is from [JVMS:4.3.2].
      For the @(':jprimarr') types,
@@ -528,6 +529,7 @@
                                        :character "AC"
                                        :string "AS"
                                        :symbol "AY"
+                                       :boolean "AB"
                                        :cons "AP"
                                        :value "AV")
                  :jprim (primitive-type-case type.get
@@ -575,6 +577,7 @@
         ((equal id "AC") (atj-type-acl2 (atj-atype-character)))
         ((equal id "AS") (atj-type-acl2 (atj-atype-string)))
         ((equal id "AY") (atj-type-acl2 (atj-atype-symbol)))
+        ((equal id "AB") (atj-type-acl2 (atj-atype-boolean)))
         ((equal id "AP") (atj-type-acl2 (atj-atype-cons)))
         ((equal id "AV") (atj-type-acl2 (atj-atype-value)))
         ((equal id "JZ") (atj-type-jprim (primitive-type-boolean)))

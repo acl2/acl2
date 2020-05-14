@@ -184,6 +184,7 @@
   (:character ())
   (:string ())
   (:symbol ())
+  (:boolean ())
   (:cons ())
   (:value ())
   :pred atj-atypep)
@@ -197,15 +198,19 @@
    (xdoc::p
     "These are used for code generation, as explained in @(see atj-types).")
    (xdoc::p
-    "Currently ATJ uses types for
-     all the AIJ public class types for ACL2 values
-     (integers, rationals, numbers,
-     characters, strings, symbols,
-     @(tsee cons) pairs, and all values),
-     whose fixtype is @(tsee atj-atype),
-     as well as types for the Java primitive types,
-     and types for Java primitive array types.
-     More types may be added in the future.")
+    "Currently ATJ uses types for:")
+   (xdoc::ul
+    (xdoc::li
+     "ACL2 integers, rationals, numbers,
+      characters, strings, symbols, booleans
+      @(tsee cons) pairs, and all values,
+      whose fixtype is @(tsee atj-atype).
+      With the exception of the type of booleans,
+      these all correspond to the AIJ public class types for ACL2 values.")
+    (xdoc::li
+     "Java primitive values and arrays."))
+   (xdoc::p
+    "More types may be added in the future.")
    (xdoc::p
     "Each ATJ type denotes
      (i) an ACL2 predicate (see @(tsee atj-type-to-pred)) and
@@ -283,6 +288,7 @@
                                        :character :acharacter
                                        :string :astring
                                        :symbol :asymbol
+                                       :boolean :aboolean
                                        :cons :acons
                                        :value :avalue)
                  :jprim (primitive-type-case type.get
@@ -334,6 +340,7 @@
     (:acharacter (atj-type-acl2 (atj-atype-character)))
     (:astring (atj-type-acl2 (atj-atype-string)))
     (:asymbol (atj-type-acl2 (atj-atype-symbol)))
+    (:aboolean (atj-type-acl2 (atj-atype-boolean)))
     (:acons (atj-type-acl2 (atj-atype-cons)))
     (:avalue (atj-type-acl2 (atj-atype-value)))
     (:jboolean (atj-type-jprim (primitive-type-boolean)))
@@ -503,6 +510,7 @@
                                        :character 'characterp
                                        :string 'stringp
                                        :symbol 'symbolp
+                                       :boolean 'booleanp
                                        :cons 'consp
                                        :value '(lambda (_) 't))
                  :jprim (primitive-type-case type.get
@@ -543,6 +551,7 @@
     :character (member-eq (atj-atype-kind sup) '(:character :value))
     :string (member-eq (atj-atype-kind sup) '(:string :value))
     :symbol (member-eq (atj-atype-kind sup) '(:symbol :value))
+    :boolean (member-eq (atj-atype-kind sup) '(:boolean :symbol :value))
     :cons (member-eq (atj-atype-kind sup) '(:cons :value))
     :value (atj-atype-case sup :value))
    t)
@@ -731,6 +740,7 @@
                       (atj-type-acl2 (atj-atype-character))
                       (atj-type-acl2 (atj-atype-string))
                       (atj-type-acl2 (atj-atype-symbol))
+                      (atj-type-acl2 (atj-atype-boolean))
                       (atj-type-acl2 (atj-atype-cons))
                       (atj-type-acl2 (atj-atype-value))
                       (atj-type-jprim (primitive-type-boolean))
@@ -1323,17 +1333,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @(':acl2') types denote
+    "The @(':acl2') types except @(':aboolean') denote
      the corresponding AIJ class types.
+     The @(':aboolean') type denotes
+     the Java primitive type @('boolean').
      The @(':jprim') types denote
      the corresponding Java primitive types.
      The @(':jprimarr') types denote
      the corresponding Java primitive array types.")
    (xdoc::p
-    "Currently this is an injective mapping,
-     each ATJ type denotes a distinct Java type.
-     This might change in the future,
-     as new ATJ types are added."))
+    "The mapping of @(':aboolean') to the Java @('boolean') type
+     means that we represent ACL2 booleans as Java booleans.
+     This only happens in the shallow embedding approach;
+     the deep embedding approach does not use ATJ types.
+     Also, @(':aboolean') is used only if @(':guards') is @('t');
+     otherwise, only the type @(':avalue') is used.
+     In other words, we represent ACL2 booleans as Java booleans
+     only when @(':guards') is @('t')."))
   (atj-type-case
    type
    :acl2 (atj-atype-case type.get
@@ -1343,6 +1359,7 @@
                          :character *aij-type-char*
                          :string *aij-type-string*
                          :symbol *aij-type-symbol*
+                         :boolean (jtype-boolean)
                          :cons *aij-type-cons*
                          :value *aij-type-value*)
    :jprim (primitive-type-case type.get
@@ -1399,6 +1416,7 @@
         ((acl2-numberp val) (atj-type-acl2 (atj-atype-number)))
         ((characterp val) (atj-type-acl2 (atj-atype-character)))
         ((stringp val) (atj-type-acl2 (atj-atype-string)))
+        ((booleanp val) (atj-type-acl2 (atj-atype-boolean)))
         ((symbolp val) (atj-type-acl2 (atj-atype-symbol)))
         ((consp val) (atj-type-acl2 (atj-atype-cons)))
         (t (prog2$ (raise "Internal errror: ~
