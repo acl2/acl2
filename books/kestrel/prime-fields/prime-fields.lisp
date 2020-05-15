@@ -173,12 +173,8 @@
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-associative
-  (implies (and (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (posp p))
-           (equal (add (add x y p) z p)
-                  (add x (add y z p) p)))
+  (equal (add (add x y p) z p)
+         (add x (add y z p) p))
   :hints (("Goal" :in-theory (enable add))))
 
 (defun strip-neg (x)
@@ -205,22 +201,14 @@
                  (strip-constant-mul (strip-neg y))))
 
 (defthm add-commutative
-  (implies (and (syntaxp (smaller-add-termp y x))
-                (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                )
+  (implies (syntaxp (smaller-add-termp y x))
            (equal (add x y p)
                   (add y x p)))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-commutative-2
-  (implies (and (syntaxp (smaller-add-termp y x))
-                (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (posp p)
-                )
+  (implies (syntaxp (smaller-add-termp y x))
            (equal (add x (add y z p) p)
                   (add y (add x z p) p)))
   :rule-classes ((:rewrite :loop-stopper nil))
@@ -488,33 +476,22 @@
                  (strip-inv y)))
 
 (defthm mul-commutative
-  (implies (and (syntaxp (smaller-mul-termp y x))
-                (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                )
+  (implies (syntaxp (smaller-mul-termp y x))
            (equal (mul x y p)
                   (mul y x p)))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-commutative-2
-  (implies (and (syntaxp (smaller-mul-termp y x))
-                (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (integerp p))
+  (implies (syntaxp (smaller-mul-termp y x))
            (equal (mul x (mul y z p) p)
                   (mul y (mul x z p) p)))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable mul))))
 
 (defthm mul-associative
-  (implies (and (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (integerp p))
-           (equal (mul (mul x y p) z p)
-                  (mul x (mul y z p) p)))
+  (equal (mul (mul x y p) z p)
+         (mul x (mul y z p) p))
   :hints (("Goal" :in-theory (enable mul))))
 
 ;;;
