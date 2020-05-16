@@ -271,13 +271,11 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable fep neg))))
 
-(defthm neg-constant-opener
-  (implies (and (syntaxp (quotep x))
-                (fep x p)
-                (integerp p))
+(defthm neg-when-constant-arg1
+  (implies (syntaxp (quotep x))
            (equal (neg x p)
                   ;; the negation here gets computed:
-                  (mod (- x) p)))
+                  (mod (- (ifix x)) (pos-fix p))))
   :hints (("Goal" :in-theory (enable neg))))
 
 (defthm fep-of-neg
