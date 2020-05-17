@@ -36,8 +36,8 @@
 (defconst *STK_EXP* 14)
 (defconst *STK_MSB* (1- *STK_EXP*))
 (defconst *STK_VAL_EXP* 63)
-(defconst *STK_MAX_NODE1* (1- (expt 2 *STK_EXP*)))           ;; 16383
-(defconst *STK_MAX_NODE* (1- *STK_MAX_NODE1*))               ;; 16382
+(defconst *STK_MAX_SZ* (1- (expt 2 *STK_EXP*)))           ;; 16383
+(defconst *STK_MAX_NODE* (1- *STK_MAX_SZ*))               ;; 16382
 (defconst *STK_MIN_VAL* (- (expt 2 *STK_VAL_EXP*)))          ;; -2**63
 (defconst *STK_MAX_VAL* (1- (expt 2 *STK_VAL_EXP*)))         ;; (2**63 - 1)
 
@@ -101,9 +101,9 @@
   (and (consp Obj)
        (integerp (ag 'nodeTop Obj))
        (<= 0 (ag 'nodeTop Obj))
-       (<= (ag 'nodeTop Obj) *STK_MAX_NODE1*)
+       (<= (ag 'nodeTop Obj) *STK_MAX_SZ*)
        (stknodeArrp (ag 'nodeArr Obj))
-       (<= (len (ag 'nodeArr Obj)) *STK_MAX_NODE1*)))
+       (<= (len (ag 'nodeArr Obj)) *STK_MAX_SZ*)))
 
 
 (defun spacep (Obj)
@@ -116,6 +116,22 @@
         (< r (expt 2 n)))
    (= (bitn r n) 0))
   :hints (("Goal" :in-theory (e/d (bitn bvecp) ()))))
+
+(in-theory (enable stk_sz stk_pop stk_top stk_push))
+
+(defthm STK_top-no-err--thm
+  (implies
+   (and
+    (stkp Obj)
+    (< (ag 'nodeTop Obj) *STK_MAX_SZ*))
+   (= (nth 0 (STK_top Obj)) 0)))
+
+(defthm STK_top-err--thm
+  (implies
+   (and
+    (stkp Obj)
+    (= (ag 'nodeTop Obj) *STK_MAX_SZ*))
+   (not (= (nth 0 (STK_top Obj)) 0))))
 
 
 (defthm STK_top-of-STK_push-no-err--thm
@@ -154,7 +170,7 @@
 
 ;;;
 
-(defthm STK_top-of-STK_pop-of-STK_push-no-err-thm
+(defthm STK_top-of-STK_pop-of-STK_push-err-val--thm
   (implies
    (and
     (stkp Obj)

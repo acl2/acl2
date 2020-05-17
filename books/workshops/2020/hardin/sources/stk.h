@@ -80,8 +80,7 @@ typedef ac_int<64,true> i64;
 #define SASN SObj =
 #endif
 
-#define STK_MAX_NODE 16382
-#define STK_MAX_NODE1 (STK_MAX_NODE + 1)
+#define STK_MAX_SZ 16383
 
 #define STK_OK 0
 #define STK_OCCUPANCY_ERR 255
@@ -89,7 +88,7 @@ typedef ac_int<64,true> i64;
 
 struct STKObj {
   ui14 nodeTop;
-  array<i64, STK_MAX_NODE1> nodeArr;
+  array<i64, STK_MAX_SZ> nodeArr;
 };
 
 
@@ -101,9 +100,9 @@ STYP STK_init (STKObj amp(SObj));
 
 STYP STK_initAll (STKObj amp(SObj));
 
-tuple<ui8, i64> STK_top (STKObj amp(SObj));
+ui14 STK_capacity (STKObj amp(SObj));
 
-tuple<ui8, i64> STK_next (STKObj amp(SObj));
+bool STK_isEmpty (STKObj amp(SObj));
 
 ui14 STK_sz (STKObj amp(SObj));
 
@@ -112,6 +111,12 @@ ui14 STK_space (STKObj amp(SObj));
 STYP STK_pop (STKObj amp(SObj));
 
 STYP STK_popTo (i64 datum, STKObj amp(SObj));
+
+tuple<ui8, i64> STK_top (STKObj amp(SObj));
+
+tuple<ui8, i64> STK_topThenPop (STKObj amp(SObj));
+
+tuple<ui8, i64> STK_next (STKObj amp(SObj));
 
 STYP STK_push (i64 n, STKObj amp(SObj));
 
