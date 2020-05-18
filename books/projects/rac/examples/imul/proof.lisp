@@ -7,7 +7,7 @@
 
 (include-book "rtl/rel11/lib/top" :dir :system)   ;; The basic RTL library
 (include-book "rtl/rel11/lib/mult" :dir :system)
-(include-book "rtl/rel11/lib/gl" :dir :system)  
+(include-book "rtl/rel11/lib/gl" :dir :system)
 
 (include-book "arithmetic-5/top" :dir :system)   ;; It's hard to do any arithmetic without this
 
