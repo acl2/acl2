@@ -38,8 +38,8 @@ This directory contains this README, Makefile, and the following subdirectories:
     LOOP-FNS-GEN, for generating functions that compute values of
     local (bound) variables of an input function.  CONST-FNS-GEN is
     applicable to functions with non-recursive definitions, while
-    LOOP-FNS-GEN can be applied to certain functions with
-    restrictively recursive definitions.
+    LOOP-FNS-GEN can be applied to certain functions with restricted
+    recursive definitions.
 
   include
 
