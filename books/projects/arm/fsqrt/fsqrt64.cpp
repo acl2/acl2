@@ -182,7 +182,7 @@ ui7 CLZ53(ui53 s) {
   return c[0];
 }
 
-// Compute Q, incremented Q, and sticky bit: 
+// Compute Q, incremented Q, and sticky bit:
 
 tuple<ui53, ui53, bool> computeQ(ui54 QP, ui54 QN, ui59 RP, ui59 RN, ui2 fmt, bool isSqrt) {
 
@@ -198,7 +198,7 @@ tuple<ui53, ui53, bool> computeQ(ui54 QP, ui54 QN, ui59 RP, ui59 RN, ui2 fmt, bo
   bool cin = !remSign;
 
   // If the sum is to be rounded up, then a rounding increment is added.  Note that
-  // the position of the increment is the lsb of the result.  For fdiv, this is bit 1 
+  // the position of the increment is the lsb of the result.  For fdiv, this is bit 1
   // for SP and bit 2 for DP and HP; for fsqrt, it is the opposite:
 
   bool lsbIs2 = isSqrt == (fmt == SP);
@@ -243,8 +243,8 @@ tuple<ui53, ui53, bool> computeQ(ui54 QP, ui54 QN, ui59 RP, ui59 RN, ui2 fmt, bo
   else {
     Q0inc.set_slc(3, Q0.slc<51>(3));
   }
-  
-  // When cin is finally available, the following selections are made: 
+
+  // When cin is finally available, the following selections are made:
 
   ui54 Q01 = cin ? Q1 : Q0;
   ui54 Q01inc = cin ? Q1inc : Q0inc;
@@ -338,7 +338,7 @@ tuple<ui64, ui8> final
 	D.set_slc(0, ui52(0));
       }
       flags[OFC] = 1; // overflow
-      flags[IXC] = 1; // inexact    
+      flags[IXC] = 1; // inexact
     }
     else if (expQ <= 0) { // subnormal
       if (fz) {
@@ -358,7 +358,7 @@ tuple<ui64, ui8> final
       flags[IXC] = flags[IXC] || inx;
     }
     break;
-    
+
   case SP:
     D[31] = sign;
     if (expQ >= 0xFF) { // overflow
@@ -371,7 +371,7 @@ tuple<ui64, ui8> final
 	D.set_slc(0, ui23(0));
       }
       flags[OFC] = 1; // overflow
-      flags[IXC] = 1; // inexact    
+      flags[IXC] = 1; // inexact
     }
     else if (expQ <= 0) { // subnormal
       if (fz) {
@@ -391,7 +391,7 @@ tuple<ui64, ui8> final
       flags[IXC] = flags[IXC] || inx;
     }
     break;
-    
+
   case HP:
     D[15] = sign;
     if (expQ >= 0x1F) { // overflow
@@ -404,7 +404,7 @@ tuple<ui64, ui8> final
 	D.set_slc(0, ui10(0));
       }
       flags[OFC] = 1; // overflow
-      flags[IXC] = 1; // inexact    
+      flags[IXC] = 1; // inexact
     }
     else if (expQ <= 0) { // subnormal
       if (fz) {
@@ -424,8 +424,8 @@ tuple<ui64, ui8> final
       flags[IXC] = flags[IXC] || inx;
     }
     break;
-  }     
- 
+  }
+
   return tuple<ui64, ui8>(D, flags);
 }
 
@@ -468,7 +468,7 @@ tuple<ui64, ui8> specialCase(bool signa, ui64 opa, Class classa, ui2 fmt, bool d
   else if (signa) {
     D = defNaN;
     flags[IOC] = 1; // invalid operand
-  }    
+  }
   else {
     D = aTrunc;
   }
@@ -538,12 +538,12 @@ tuple<ui64, ui8> sqrtPow2(ui11 expQ, bool expOdd, ui2 rmode, ui2 fmt) {
     flags[IXC] = 1;
   }
   D.set_slc(manWidth, expQ);
-  
+
   return tuple<ui64, ui8>(D, flags);
 }
 
 // First iteration:
-      
+
 tuple<ui59, ui59, ui54, int, uint> firstIter(ui53 siga, bool expOdd) {
 
   ui59 RP = 0, RN = 0;
@@ -603,7 +603,7 @@ tuple<ui59, ui59, ui54, int, uint> firstIter(ui53 siga, bool expOdd) {
 
   return tuple<ui59, ui59, ui54, int, uint> (RP, RN, QN, q, i);
 }
-  
+
 
 //   Derive the next quotient digit q_(j+1) from the root interval i and remainder R_j:
 
@@ -678,7 +678,7 @@ tuple<ui59, ui59> nextRem(ui59 RP, ui59 RN, ui54 QP, ui54 QN, int q, uint j, ui2
   ui59 RP4 = RP << 2, RN4 = RN << 2;
 
   // car1 - sum1 = RP4 - RN4 + DQcar = 4 * R + DQcar:
-  
+
   ui59 sum1 = RN4 ^ RP4 ^ DQcar;
   ui59 car1 = (~RN4 & RP4 | (~RN4 | RP4) & DQcar) << 1;
   if (fmt == HP) {
@@ -701,16 +701,16 @@ tuple<ui59, ui59> nextRem(ui59 RP, ui59 RN, ui54 QP, ui54 QN, int q, uint j, ui2
   }
   else {
     switch (fmt) {
-    case DP: 
+    case DP:
       car2[0] = 1;
-      RP = car2; 
+      RP = car2;
       RN = sum2;
       break;
     case SP:
-      car2[29] = 1; 
+      car2[29] = 1;
       RP.set_slc(29, car2.slc<30>(29));
       RN.set_slc(29, sum2.slc<30>(29));
-      break; 
+      break;
     case HP:
       car2[42] = 1;
       RP.set_slc(42, car2.slc<17>(42));
@@ -779,14 +779,14 @@ tuple<ui64, ui8> fsqrt64(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
       return sqrtPow2(expQ, expOdd, rmode, fmt);
     }
 
-    else {  
+    else {
       ui59 RP, RN;  // redundant remainder
       ui54 QP, QN;  // redundant root
       int q;        // root digit;
       uint i;       // root interval, 0 <= i <= 8
 
       // First iteration:
-      
+
       tie(RP, RN, QN, q, i) = firstIter(siga, expOdd);
       QP = 0;
 
@@ -814,7 +814,7 @@ tuple<ui64, ui8> fsqrt64(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
         tie(QP, QN) = nextRoot(QP, QN, q, j);
 
         expInc &= j < N - 1 ? q == 0 : fmt == SP ? q == -2 : q == -1;
-	/*      
+	/*
         ac::probe_map("RP", RP);
         ac::probe_map("RN", RN);
         ac::probe_map("QP", QP);
@@ -827,11 +827,11 @@ tuple<ui64, ui8> fsqrt64(ui64 opa, ui2 fmt, bool fz, bool dn, ui2 rmode) {
       // Assimilate root:
 
       switch (fmt) { // first move to low bits
-      case HP: 
+      case HP:
         QP = QP.slc<12>(42);
         QN = QN.slc<12>(42);
         break;
-      case SP: 
+      case SP:
         QP = QP.slc<26>(28);
         QN = QN.slc<26>(28);
         break;
@@ -875,7 +875,7 @@ SC_MODULE(fsqrt64) {
     if (reset.read()) {
       return;
     }
-  
+
     fz.read();
     dn.read();
     rmode.read();
@@ -896,7 +896,7 @@ SC_MODULE(fsqrt64) {
   }
 
   SC_CTOR(fsqrt64) {
-    SC_METHOD(doit);  
+    SC_METHOD(doit);
     sensitive_pos << clk;
   }
 
@@ -920,7 +920,7 @@ printf("D = %s\n", D.to_string(AC_HEX, false).c_str());
 printf("flags = %s\n", flags.to_string(AC_HEX, false).c_str());
 
  return 0;
-}	 
+}
 
 #endif
 

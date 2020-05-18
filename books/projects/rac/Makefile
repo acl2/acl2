@@ -1,5 +1,5 @@
-export ACL2?=~/acl2
-export RAC?=${ACL2}/books/projects/rac
+#export ACL2?=${ACL2_DIR}
+export RAC?=${ACL2_DIR}/books/projects/rac
 
 all:
 	(cd src; make all)
