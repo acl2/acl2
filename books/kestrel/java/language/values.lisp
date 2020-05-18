@@ -36,7 +36,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum jvalue
+(fty::defflatsum jvalue
   :short "Fixtype of Java values [JLS:4],
           excluding extended-exponent values [JLS:4.2.3]."
   :long
@@ -45,13 +45,8 @@
     we prefix @('value') with @('j') for the fixtype of Java values,
     and, for consistency,
     we do the same for recognizer, fixer, and equivalence.")
-  (:primitive
-   :fields ((get :type primitive-value :acc-body x))
-   :ctor-body get
-   :cond (primitive-value-p x))
-  (:reference
-   :fields ((get :type reference-value :acc-body x))
-   :ctor-body get)
+  (:primitive primitive-value)
+  (:reference reference-value)
   :pred jvaluep
   :prepwork
   ((defrulel lemma
@@ -70,16 +65,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum jvaluex
+(fty::defflatsum jvaluex
   :short "Fixtype of Java values [JLS:4],
           including extended-exponent values [JLS:4.2.3]."
-  (:primitive
-   :fields ((get :type primitivex-value :acc-body x))
-   :ctor-body get
-   :cond (primitivex-value-p x))
-  (:reference
-   :fields ((get :type reference-value :acc-body x))
-   :ctor-body get)
+  (:primitive primitivex-value)
+  (:reference reference-value)
   :pred jvaluexp
   :prepwork
   ((defrulel lemma
