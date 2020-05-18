@@ -81,8 +81,9 @@
 
 (defthm fl+int-rewrite
     (implies (and (integerp n)
-		  (rationalp x))
-	     (equal (fl (+ x n)) (+ (fl x) n))))
+		  (real/rationalp x))
+	     (and (equal (fl (+ x n)) (+ (fl x) n))
+                  (equal (fl (+ n x)) (+ n (fl x))))))
 
 (defthm fl/int-rewrite
   (implies (and (integerp n)
@@ -97,6 +98,20 @@
                 (rationalp x))
            (equal (fl (* (/ n) (fl x)))
                   (fl (/ x n)))))
+
+(defthm fl*1/int-rewrite
+  (implies (and (integerp (/ n))
+                (<= 0 n)
+                (real/rationalp x))
+           (equal (fl (* (fl x) n))
+                  (fl (* x n)))))
+
+(defthm fl*1/int-rewrite-alt
+  (implies (and (integerp (/ n))
+                (<= 0 n)
+                (real/rationalp x))
+           (equal (fl (* n (fl x)))
+                  (fl (* x n)))))
 
 (defthm fl-half-int
   (implies (and (integerp n)
