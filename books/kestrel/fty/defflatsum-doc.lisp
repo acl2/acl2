@@ -60,6 +60,7 @@
      "            :parents ..."
      "            :short ..."
      "            :long ..."
+     "            :prepwork ..."
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,7 +114,13 @@
       "@(':long')")
      (xdoc::p
       "These, if present, are added to
-       the XDOC topic generated for the fixtype.")))
+       the XDOC topic generated for the fixtype."))
+
+    (xdoc::desc
+     "@(':prepwork')"
+     (xdoc::p
+      "A list of preparatory event forms.
+       See the `Generated Events' section.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,6 +153,7 @@
      "  ..."
      "  (:kwdn :fields ((get :type typen :acc-body x))"
      "         :ctor-body get)"
+     "  :prepwork ..."
      "  ///"
      "  (defthm typep-when-type1p"
      "    (implies (type1p x)"
@@ -159,4 +167,10 @@
      "             (typep x))))")
     (xdoc::p
      "Note that the last summand does not have @(':cond'),
-      while all the previous ones do."))))
+      while all the previous ones do.")
+    (xdoc::p
+     "If a @(':prepwork') is supplied to @('defflatsum'),
+      it is copied to the generated @(tsee defflexsum).
+      Otherwise, the @(tsee defflexsum) is generated
+      with a default @(':prepwork') that locally enables
+      all the predicates and fixers."))))

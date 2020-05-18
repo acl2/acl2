@@ -32,7 +32,7 @@
 (include-book "../top")
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defxdoc test :short "Test of defsection")
 

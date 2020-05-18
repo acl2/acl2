@@ -38,7 +38,7 @@
 (include-book "unsound-eval")
 (include-book "verbosep")
 (include-book "xdoc-error")
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (set-state-ok t)
 (program)
 
@@ -217,7 +217,7 @@
 ;;        (kind (and (consp form) (car form))))
 ;;     (get-event-types (cdr wrld)
 ;;                      (if kind (cons kind acc) acc))))
-  
+
 
 (defun hons-acons-list-unique (keys val acc)
   (if (atom keys)
@@ -352,7 +352,7 @@
       (if (equal spec (cdar table))
           (check-get-event*-table (cdr table) wrld)
         (list (caar table) (cdar table) spec)))))
-  
+
 (assert! (equal (check-get-event*-table *table* (w state)) nil))
 
 ||#
@@ -1467,7 +1467,7 @@ baz
                                (unescape-end-delim (subseq x (+ n 3) end) #\')
                              (maybe-fix-spaces-in-sub
                               (unescape-end-delim (fancy-extract-block x (+ n 3) end) #\}))))
-                          
+
                           (acc (str::pcat acc (subseq x xbaseidx n)))
                           (acc (str::printtree-rconcat start-xml acc))
                           (acc (preprocess-encode-string sub preproc-data acc))
@@ -1532,7 +1532,7 @@ baz
               (t
                ;; @ sign in some other context.
                (preprocess-aux x (+ n 1) xl xbaseidx preproc-data state acc))))
-       
+
        ((preproc-data preproc-data))
        ((when (and (not preproc-data.archive-p)
                    (eql char #\Newline)))
@@ -1616,4 +1616,3 @@ baz
        ((mv first state) (preprocess-transform-topic (car x) topics-fal state))
        ((mv rest state)  (preprocess-transform-topics (cdr x) topics-fal state)))
     (mv (cons first rest) state)))
-

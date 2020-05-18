@@ -103,7 +103,7 @@
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
   :mode :program
   :short "Generate the @(tsee defflexsum)."
-  (b* ((allowed-keywords '(:pred :fix :equiv :parents :short :long))
+  (b* ((allowed-keywords '(:pred :fix :equiv :parents :short :long :prepwork))
        ((mv options type+summands)
         (extract-keywords 'defflatsum allowed-keywords args nil))
        ((cons type flat-summands) type+summands)
@@ -115,6 +115,8 @@
        (long (getarg :long nil options))
        ((mv flex-summands predicates fixers)
         (defflatsum-flex-summands flat-summands wrld))
+       (default-prepwork `((local (in-theory (enable ,@predicates ,@fixers)))))
+       (prepwork (getarg :prepwork default-prepwork options))
        (theorems (defflatsum-theorems predicates pred)))
     `(defflexsum ,type
        ,@(and (not (eq parents :noparents)) (list :parents parents))
@@ -124,7 +126,7 @@
        :pred ,pred
        :fix ,fix
        :equiv ,equiv
-       :prepwork ((local (in-theory (enable ,@predicates ,@fixers))))
+       :prepwork ,prepwork
        ///
        ,@theorems)))
 
