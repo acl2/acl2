@@ -31,7 +31,6 @@
 (in-package "ACL2")
 (include-book "../unsound-eval")
 (include-book "centaur/vl/util/print" :dir :system)
-(include-book "std/testing/assert" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
 
 (defmacro test-ok (sexpr expect)
