@@ -15,7 +15,8 @@
                      (:rewrite take-fewer-of-take-more)
                      (:rewrite take-when-atom)
                      (:rewrite take-of-take-split)
-                     (:rewrite take-more-of-take-fewer))))
+                     (:rewrite take-more-of-take-fewer)
+                     (:rewrite remove-assoc-of-put-assoc))))
 
 (local
  (in-theory
@@ -25,17 +26,32 @@
    (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
    (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
    (:rewrite collapse-congruence-lemma-4)
-   (:rewrite partial-collapse-correctness-lemma-49)
-   (:rewrite partial-collapse-correctness-lemma-46)
    (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
-   (:rewrite abs-addrs-of-ctx-app-1-lemma-12)
    (:rewrite partial-collapse-correctness-lemma-23)
    (:rewrite absfat-subsetp-transitivity-lemma-8)
    (:rewrite collapse-congruence-lemma-2)
    (:rewrite absfat-equiv-of-ctx-app-lemma-8)
    (:rewrite abs-addrs-of-ctx-app-2-lemma-8)
    (:rewrite abs-separate-correctness-1-lemma-19)
-   (:rewrite abs-separate-correctness-1-lemma-38))))
+   (:rewrite abs-separate-correctness-1-lemma-38)
+   (:rewrite final-val-of-collapse-this-lemma-7)
+   (:rewrite
+    partial-collapse-correctness-lemma-20)
+   (:rewrite
+    final-val-of-collapse-this-lemma-6 . 1)
+   (:rewrite m1-file-alist-p-when-subsetp-equal)
+   (:rewrite
+    m1-file-alist-p-of-final-val-seq-lemma-3)
+   (:rewrite final-val-of-collapse-this-lemma-2)
+   (:rewrite collapse-congruence-lemma-5)
+   (:rewrite
+    abs-file-alist-p-correctness-1-lemma-1)
+   (:rewrite
+    abs-find-file-helper-of-collapse-lemma-3)
+   (:rewrite
+    partial-collapse-correctness-lemma-106)
+   (:rewrite
+    abs-fs-fix-of-put-assoc-equal-lemma-2))))
 
 (defund abs-find-file-helper (fs pathname)
   (declare (xargs :guard (and (abs-file-alist-p fs)
@@ -3260,7 +3276,12 @@
         pathname))
       (mv (abs-file-fix nil) *enoent*)))
     :hints (("goal" :induct (induction-scheme frame pathname x)
-             :in-theory (enable collapse)))))
+             :in-theory
+             (e/d (collapse)
+                  ((:rewrite partial-collapse-correctness-lemma-1)
+                   (:rewrite partial-collapse-correctness-lemma-24)
+                   (:rewrite partial-collapse-correctness-lemma-33)
+                   (:rewrite partial-collapse-correctness-lemma-77)))))))
 
 (defthmd
   abs-find-file-correctness-1-lemma-15
@@ -4441,7 +4462,6 @@
                      (:rewrite prefixp-one-way-or-another . 1)
                      (:rewrite abs-find-file-correctness-1-lemma-21)
                      (:definition member-equal)
-                     (:rewrite partial-collapse-correctness-lemma-28)
                      (:rewrite abs-find-file-correctness-1-lemma-45)
                      (:rewrite abs-find-file-helper-of-collapse-lemma-2)
                      (:definition remove-equal))))))
@@ -4482,8 +4502,6 @@
                      (:rewrite
                       abs-find-file-correctness-1-lemma-21)
                      (:definition member-equal)
-                     (:rewrite
-                      partial-collapse-correctness-lemma-28)
                      (:rewrite
                       abs-find-file-correctness-1-lemma-45)
                      (:rewrite
