@@ -9,7 +9,7 @@ all: ../bin/rac ../bin/parse
 	/bin/rm parse
 
 ../bin/rac: rac-skel
-	printf "#!/bin/bash\n\nRAC=${RAC}\nACL2=${ACL2}" | cat - rac-skel > rac
+	echo "#!/bin/bash\n\nRAC=${RAC}\nACL2=${ACL2}" | cat - rac-skel > rac
 	install -m 775 rac ${RAC}/bin
 	/bin/rm rac
 

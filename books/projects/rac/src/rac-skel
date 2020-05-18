@@ -6,7 +6,7 @@
 
 parseBin=$RAC/bin/parse
 translateBook=$RAC/lisp/translate
-acl2Bin=$ACL2
+acl2Bin=$ACL2/saved_acl2
 
 # ---------------------------------------------------------------------
 # options parsing
@@ -125,7 +125,6 @@ then
       (include-book "$translateBook")
       (set-inhibit-output-lst '(prove event proof-tree))
       (translate-program "$basename.ast.lsp" "$basename.lisp" state)
-      (pretty-print "$basename.ast.lsp" "$basename.ast.pp" state)
       :u
       (include-book "rtl/rel11/lib/rac" :dir :system)
       (certify-book "$basename" 1)

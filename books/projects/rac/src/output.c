@@ -1,7 +1,7 @@
 #include "parser.h"
 
 // 6/27/18
-// I just eliminated two features that are no longer used: (1) CtoS mode, in which a
+// I just eliminated two features that are no longer used: (1) CtoS mode, in which a 
 // program was printed in a form acceptable to CtoS, and (2) SystemC registers, which
 // have been replaced by those of Algorithmic C, hence the change in the name of the
 // entire system from MASC (Modeling Algorithms in SystemC) to RAC (Restricted

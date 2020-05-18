@@ -31,9 +31,9 @@ libraries that may severely affect efficiency.  These may be
 (partially) addressed by something like the following:
 
 (in-theory (disable
-  |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)|
+  |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| 
   |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)| cancel-mod-+
-  mod-cancel-*-const simplify-products-gather-exponents-equal
+  mod-cancel-*-const simplify-products-gather-exponents-equal 
   simplify-products-gather-exponents-<
   cancel-mod-+ reduce-additive-constant-< |(floor x 2)|
   |(equal x (if a b c))| |(equal (if a b c) x)|))
@@ -113,7 +113,7 @@ Lemma 1.31       chop-int-neg
 Chapter 2        bits.lisp
 ---------        ----------
 Definition 2.1   bvecp
-Definition 2.2   bits, bitn
+Definition 2.2   bits, bitn   
 Lemma 2.1        bits-bvecp
 Lemma 2.2        mod-bits-equal
 Lemma 2.3        bits-mod
@@ -324,7 +324,7 @@ Lemma 6.36       minus-rtz-raz
 Corollary 6.37   rtz-plus-minus
 Lemma 6.38       raz-imp
 Definition 6.3   rne
-Lemma 6.39       rne-exactp-a
+Lemma 6.39       rne-exactp-a     
 Lemma 6.40       rne-exactp-b
 Lemma 6.41       rne-exactp-c, rne-exactp-d
 Lemma 6.42       expo-rne

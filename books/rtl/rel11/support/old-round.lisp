@@ -4802,6 +4802,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (local-defthmd rp-2
   (implies (and (common-mode-p mode)
                 (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z))
@@ -4817,6 +4818,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (local-defthmd rp-3
   (implies (and (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z)))
@@ -4830,6 +4832,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (local-defthmd rp-4
   (implies (and (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (equal (expo (fl z)) (expo z)))
@@ -4841,6 +4844,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (local-defthmd rp-5
   (implies (and (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z)))
@@ -4853,6 +4857,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (defthmd roundup-pos-thm-1
   (implies (and (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z)))
@@ -4863,6 +4868,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (defthmd roundup-pos-thm-2
   (implies (and (common-mode-p mode)
                 (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z))
@@ -4876,6 +4882,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 (defthmd roundup-pos-thm
   (implies (and (common-mode-p mode)
                 (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z))

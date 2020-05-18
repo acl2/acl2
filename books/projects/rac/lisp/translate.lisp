@@ -493,21 +493,17 @@ are more than one).  The test of the IF is simply the test of the loop.
 (set-state-ok t)
 
 (defun translate-program (infile outfile state)
-  (mv-let
-    (foo lst state)
-    (read-list infile () state)
-    (declare (ignore foo))
-    (write-list
-     (append
-      '((in-package "RTL")
-        "(INCLUDE-BOOK \"rtl/rel11/lib/rac\" :DIR :SYSTEM)"
-        "(INCLUDE-BOOK \"projects/rac/lisp/internal-fns-gen\" :DIR :SYSTEM)"
-        (set-ignore-ok t)
-        (set-irrelevant-formals-ok t))
-      (translate-program-list lst) )
-     outfile
-     ()
-     state)))
+  (mv-let (foo lst state)
+          (read-list infile () state)
+          (declare (ignore foo))
+          (write-list (append '((in-package "RTL")
+                                "(INCLUDE-BOOK \"rtl/rel11/lib/rac\" :DIR :SYSTEM)"
+                                (set-ignore-ok t)
+                                (set-irrelevant-formals-ok t))
+                              (translate-program-list lst) )
+                      outfile
+                      ()
+                      state)))
 
 
 ;; The following function is used to pretty-print the parser output for readability:

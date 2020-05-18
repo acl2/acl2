@@ -1566,6 +1566,7 @@
 
 (defthmd roundup-pos-thm-1
   (implies (and (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z)))
@@ -1575,6 +1576,7 @@
 (defthmd roundup-pos-thm-2
   (implies (and (common-mode-p mode)
                 (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z))
@@ -1587,6 +1589,7 @@
 (defthmd roundup-pos-thm
   (implies (and (common-mode-p mode)
                 (rationalp z)
+                (> z 0)
                 (not (zp n))
                 (<= (expt 2 n) z))
            (let ((x (fl z))

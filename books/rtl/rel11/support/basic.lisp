@@ -75,8 +75,7 @@
 (defthm fl+int-rewrite
     (implies (and (integerp n)
 		  (real/rationalp x))
-	     (and (equal (fl (+ x n)) (+ (fl x) n))
-                  (equal (fl (+ n x)) (+ n (fl x))))))
+	     (equal (fl (+ x n)) (+ (fl x) n))))
 
 (defrule fl/int-rewrite
   (implies (and (integerp n)
@@ -93,30 +92,6 @@
            (equal (fl (* (/ n) (fl x)))
                   (fl (/ x n))))
   :enable fl)
-
-(defthm fl*1/int-rewrite
-  (implies (and (integerp (/ n))
-                (<= 0 n)
-                (real/rationalp x))
-           (equal (fl (* (fl x) n))
-                  (fl (* x n))))
-  :hints (("Goal"
-           :use (:instance fl/int-rewrite
-                           (n (/ n)))
-           :in-theory (disable fl/int-rewrite))))
-
-(defthm fl*1/int-rewrite-alt
-  (implies (and (integerp (/ n))
-                (<= 0 n)
-                (real/rationalp x))
-           (equal (fl (* n (fl x)))
-                  (fl (* x n))))
-  :hints (("Goal"
-           :use (:instance fl/int-rewrite-alt
-                           (n (/ n)))
-           :in-theory (disable fl/int-rewrite-alt))))
-
-(local (in-theory (disable fl*1/int-rewrite fl*1/int-rewrite-alt)))
 
 (defrule fl-int-div-radix
   (implies (and (integerp n)

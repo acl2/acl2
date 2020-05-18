@@ -1024,16 +1024,6 @@
                      (si (mod y (expt 2 n)) n))
                   (- x y))))
 
-(defthmd si-to-fl-mod
-  (implies (and (rationalp x)
-                (integerp m)
-                (integerp n)
-                (< m n))
-           (equal (si x n)
-                  (+ (* (expt 2 m)
-                        (si (fl (/ x (expt 2 m)))
-                            (- n m)))
-                     (mod x (expt 2 m))))))
 
 ;;;**********************************************************************
 ;;;                      Fixed-Point Registers

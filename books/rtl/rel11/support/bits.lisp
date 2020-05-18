@@ -1802,7 +1802,7 @@
   :enable digitn-expt-0)
 
 (defrule bitn-plus-expt-1
-    (implies (and (real/rationalp x)
+    (implies (and (rationalp x)
 		  (integerp n))
 	     (not (equal (bitn (+ x (expt 2 n)) n)
 			 (bitn x n))))
@@ -2761,18 +2761,6 @@
   :hints
   (("subgoal 2" :in-theory (enable dvecp))
    ("subgoal 1" :in-theory (enable si-r-approx))))
-
-(defthmd si-to-fl-mod
-  (implies (and (real/rationalp x)
-                (integerp m)
-                (integerp n)
-                (< m n))
-           (equal (si x n)
-                  (+ (* (expt 2 m)
-                        (si (fl (/ x (expt 2 m)))
-                            (- n m)))
-                     (mod x (expt 2 m)))))
-  :hints (("Goal" :in-theory (enable si bitn-def))))
 
 ;;;**********************************************************************
 ;;;                      Fixed-Point Registers with radix
