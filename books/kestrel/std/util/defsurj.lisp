@@ -461,7 +461,7 @@
                         @('thm-names$') is
                         the result of @(tsee defsurj-process-thm-names), and
                         @('hints$') is
-                        the result of @(tsee defsurj-process-hints).")
+                        the result of @(tsee evmac-process-input-hints).")
                state)
   :mode :program
   :short "Process all the inputs."
