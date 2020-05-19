@@ -30,7 +30,7 @@
 
 (in-package "ACL2")
 (include-book "../defval")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defxdoc test-par1 :parents (defval))
 (defxdoc test-par2 :parents (defval))

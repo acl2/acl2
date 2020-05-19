@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "formals")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 
 (assert! (equal (remove-macro-args 'f '(a b c) nil)

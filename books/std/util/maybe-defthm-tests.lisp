@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "maybe-defthm")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 ;; Some basic tests
 

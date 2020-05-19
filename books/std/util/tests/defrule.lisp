@@ -31,7 +31,7 @@
 (in-package "STD")
 (include-book "../defrule")
 (include-book "std/strings/coerce" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (set-state-ok t)
 (logic)
 
