@@ -466,6 +466,7 @@ RP-Rewriter will throw an eligible error.</p>"
                        (enable-rules 'nil)
                        (disable-rules 'nil)
                        (runes 'nil)
+                       (time 't)
                        (not-simplified-action ':warning))
   `(encapsulate
      nil
@@ -508,13 +509,20 @@ RP-Rewriter will throw an eligible error.</p>"
            (meta-rules  (make-fast-alist (create-simple-meta-rules-alist state)))
 
            ((mv rw rp-state)
-            (time$
-             (rp-rw-aux term
-                        rules-alist
-                        exc-rules
-                        meta-rules
-                        rp-state
-                        state)))
+            (if ,time
+                (time$
+                 (rp-rw-aux term
+                            rules-alist
+                            exc-rules
+                            meta-rules
+                            rp-state
+                            state))
+              (rp-rw-aux term
+                         rules-alist
+                         exc-rules
+                         meta-rules
+                         rp-state
+                         state)))
            (rw (if ,untranslate (untranslate rw t (w state)) rw))
            (- (fast-alist-free meta-rules))
            (state (fms "~p0~%"
