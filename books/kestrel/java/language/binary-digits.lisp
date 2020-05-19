@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "unicode")
+(include-book "unicode-characters")
 
 (include-book "kestrel/std/util/deffixer" :dir :system)
 
