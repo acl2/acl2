@@ -8951,24 +8951,21 @@
        (let* ((cl-id-phrase
                (tilde-@-clause-id-phrase
                 (access assumnote (car lst) :cl-id)))
+              (rune (access assumnote (car lst) :rune))
               (x
-               (cond ((and (consp (access assumnote (car lst) :rune))
-                           (null (base-symbol (access assumnote (car lst)
-                                                      :rune))))
+               (cond ((and (consp rune)
+                           (null (base-symbol rune)))
                       (list " ~@0 by primitive type reasoning"
                             (cons #\0 cl-id-phrase)))
-                     ((eq (access assumnote (car lst) :rune) 'equal)
+                     ((eq rune 'equal)
                       (list " ~@0 by linearization"
                             (cons #\0 cl-id-phrase)))
-                     ((symbolp (access assumnote (car lst) :rune))
-                      (list " ~@0 by assuming the guard for ~x1"
-                            (cons #\0 cl-id-phrase)
-                            (cons #\1 (access assumnote (car lst) :rune))))
                      (t
-                      (list " ~@0 by applying ~x1"
-                            (cons #\0 cl-id-phrase)
-                            (cons #\1 (access assumnote (car lst)
-                                              :rune)))))))
+                      (assert$ ; Check that we no longer assume a guard.
+                       (not (symbolp rune))
+                       (list " ~@0 by applying ~x1"
+                             (cons #\0 cl-id-phrase)
+                             (cons #\1 rune)))))))
          (add-to-set-equal x acc))))))
 
 (defun tilde-*-assumnotes-column-phrase-gag-mode (assumnotes)

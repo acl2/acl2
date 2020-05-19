@@ -34,6 +34,12 @@
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 
+; This book need to be included here so that there is one unique definition of
+; each of the functions with raw Lisp definitions in fast-cat.lisp.  Otherwise,
+; the definitions introduced redundantly below wouldn't be considered redundant
+; if that book was included first.
+(include-book "printtree")
+
 (encapsulate ()
   (local (include-book "top"))
   (local (include-book "defs-aux"))

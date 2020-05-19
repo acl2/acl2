@@ -3,6 +3,8 @@
 (include-book "../paco")
 (in-package "PACO")
 
+(acl2::set-gag-mode :goals)
+
 (acl2::table acl2::theory-invariant-table nil nil :clear)
 
 (ACL2::SET-MATCH-FREE-ERROR NIL)

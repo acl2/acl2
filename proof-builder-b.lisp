@@ -2202,13 +2202,27 @@
           (new (trans0 y abbreviations :equiv))
           (equiv (if (null equiv)
                      (value 'equal)
-                   (if (equivalence-relationp equiv w)
+                   (if (and (symbolp equiv)
+                            (equivalence-relationp equiv w))
                        (value equiv)
                      (er soft :equiv
                          "The name ~x0 is not currently the name of an ACL2 ~
-                          equivalence relation.  The current list of ~
-                          ACL2 equivalence relations is ~x1."
+                          equivalence relation.~@1  The current list of ~
+                          ACL2 equivalence relations is ~x2."
                          equiv
+                         (let ((pair (and (symbolp equiv)
+                                          (assoc-eq
+                                           equiv
+                                           (table-alist 'macro-aliases-table
+                                                        w)))))
+                           (if (and pair
+                                    (equivalence-relationp (cdr pair) w))
+                               (msg "  Perhaps you intended the corresponding ~
+                                     function for which it is an ~
+                                     ``alias''(see :DOC macro-aliases-table), ~
+                                     ~x0."
+                                    (cdr pair))
+                             ""))
                          (getpropc 'equal 'coarsenings nil w))))))
          (if (find-equivalence-hyp-term old
                                         (flatten-ands-in-lit-lst assumptions)
@@ -2763,11 +2777,27 @@
                        (value :fail)))
               ((not (member-eq equiv
                                (getpropc 'equal 'coarsenings nil w)))
-               (pprogn (print-no-change
-                        "The ``equivalence relation'' that you supplied, ~p0, ~
-                         is not known to ACL2 as an equivalence relation."
-                        (list (cons #\0 equiv)))
-                       (value :fail)))
+               (pprogn
+                (print-no-change
+                 "The ``equivalence relation'' that you supplied, ~p0, is not ~
+                  known to ACL2 as an equivalence relation.~@1"
+                 (list (cons #\0 equiv)
+                       (cons #\1
+                             (let ((pair
+                                    (and (symbolp equiv)
+                                         (assoc-eq
+                                          equiv
+                                          (table-alist 'macro-aliases-table
+                                                       w)))))
+                               (if (and pair
+                                        (equivalence-relationp (cdr pair) w))
+                                   (msg "  Perhaps you intended the ~
+                                         corresponding function for which it ~
+                                         is an ``alias''(see :DOC ~
+                                         macro-aliases-table), ~x0."
+                                        (cdr pair))
+                                 "")))))
+                (value :fail)))
               ((null args)
                (mv-let (found-hyp new)
                  (find-equivalence-hyp-term-no-target

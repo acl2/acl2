@@ -65,7 +65,7 @@
                   (append (firstn n lst) (list (nth n lst)))
                   ))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (firstn append nth) ()))))
+           :in-theory (enable firstn append nth))))
 
 (defthm nth-of-firstn
   (equal (nth n1 (firstn n2 x))

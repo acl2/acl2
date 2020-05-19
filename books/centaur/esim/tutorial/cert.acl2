@@ -37,3 +37,11 @@
 (include-book "centaur/esim/portcullis" :dir :system)
 (include-book "centaur/aig/portcullis" :dir :system)
 ; cert-flags: ? t :ttags :all
+
+; Matt K. mod: If proof output is enabled and gag-mode is off, then turn on
+; gag-mode (might as well use the default of :goals) to avoid printing huge
+; object.  This happened 5/11/2020 when attempting to certify boothmul.lisp.
+(if (and (not (member-eq 'prove (f-get-global 'inhibit-output-lst state)))
+         (null (gag-mode)))
+    (set-gag-mode :goals)
+  state)
