@@ -2,6 +2,8 @@
 
 (include-book "quotient")
 
+(local (in-theory (disable fl*1/int-rewrite-alt)))
+
 (local-defund lsb () (bitn (qtrunc) 1))
 
 (local-defund grd () (bitn (qtrunc) 0))
