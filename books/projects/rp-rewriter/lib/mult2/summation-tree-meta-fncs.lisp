@@ -473,9 +473,27 @@
                  (hard-error 'c/d-fix-pp-args "" nil)
                  (mv ''nil pp)))))
 
-  (define c/d-fix-s-args-disabled ()
-    :inline t
+  
+
+  (encapsulate
+    (((c/d-remove-repeated-s) => *))
+    (local
+     (defun c/d-remove-repeated-s ()
+       nil)))
+
+  (define return-t ()
     t)
+  (define return-nil ()
+    nil)
+
+
+  (defmacro c/d-remove-repeated-s-enable ()
+    `(defattach  c/d-remove-repeated-s return-t))
+
+  (defmacro c/d-remove-repeated-s-disable ()
+    `(defattach  c/d-remove-repeated-s return-nil))
+
+  (c/d-remove-repeated-s-disable)
 
   (define c/d-fix-s-args ((s))
     ;; same as c/d-pp-fix but don't touch the negated terms
@@ -484,19 +502,19 @@
                             :hyp (rp-termp s))
                  (cleaned-s rp-termp
                             :hyp (rp-termp s)))
-    (if (c/d-fix-s-args-disabled)
-        (if (equal s '(list))
-            (mv ''nil ''nil)
-          (mv ''nil s))
-      (case-match s
-        (('list . s-lst)
-         (b* (((mv coughed-lst res-lst) (c/d-fix-arg-aux s-lst nil (expt 2 30))))
-           (mv (if coughed-lst `(list . ,coughed-lst) ''nil)
-               (if res-lst (cons-with-hint 'list res-lst s) ''nil))))
-        (''nil (mv ''nil ''nil))
-        (& (progn$ (cw "Unexpected s form= ~p0 ~%" s)
-                   (hard-error 'c/d-fix-s-args "" nil)
-                   (mv ''nil s)))))))
+    (if (c/d-remove-repeated-s)
+        (case-match s
+          (('list . s-lst)
+           (b* (((mv coughed-lst res-lst) (c/d-fix-arg-aux s-lst nil (expt 2 30))))
+             (mv (if coughed-lst `(list . ,coughed-lst) ''nil)
+                 (if res-lst (cons-with-hint 'list res-lst s) ''nil))))
+          (''nil (mv ''nil ''nil))
+          (& (progn$ (cw "Unexpected s form= ~p0 ~%" s)
+                     (hard-error 'c/d-fix-s-args "" nil)
+                     (mv ''nil s))))
+      (if (equal s '(list))
+          (mv ''nil ''nil)
+        (mv ''nil s)))))
 
 (define get-c/d-args ((c/d))
   :inline t
@@ -2043,3 +2061,10 @@
        sv::4vec-fix
        ;c-s-spec-meta
        ))))
+
+
+(defmacro ss (&rest args)
+  `(s-spec (list . ,args)))
+
+(defmacro cc (&rest args)
+  `(c-spec (list . ,args)))

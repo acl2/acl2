@@ -352,8 +352,7 @@ RP-Rewriter will throw an eligible error.</p>"
            (rp-state (rp-state-new-run rp-state))
            (old-not-simplified-action (not-simplified-action rp-state))
            (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
-           (meta-rules  (make-fast-alist (cdr (assoc-equal 'meta-rules-list (table-alist
-                                                                             'rp-rw (w state))))))
+           (meta-rules  (make-fast-alist (create-simple-meta-rules-alist state)))
 
            ((mv rw rp-state)
             (time$
