@@ -61,4 +61,9 @@ library."
            nil))
 
   (defthm empty-intersect-with-difference-of-self
-    (not (intersectp-equal a (set-difference-equal b a)))))
+    (not (intersectp-equal a (set-difference-equal b a))))
+
+  (defthm no-duplicatesp-of-set-difference-equal
+    (implies
+     (no-duplicatesp-equal l1)
+     (no-duplicatesp-equal (set-difference-equal l1 l2)))))

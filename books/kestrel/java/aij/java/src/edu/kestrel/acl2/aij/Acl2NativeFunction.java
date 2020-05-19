@@ -1234,6 +1234,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     }
 
     /**
+     * Executed the native implementation of
+     * the {@code characterp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execCharacterpBoolean(Acl2Value x) {
+        return x.characterp() != Acl2Symbol.NIL;
+    }
+
+    /**
      * Executes the native implementation of
      * the {@code stringp} ACL2 primitive function.
      *
@@ -1243,6 +1256,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Symbol execStringp(Acl2Value x) {
         return x.stringp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code stringp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execStringpBoolean(Acl2Value x) {
+        return x.stringp() != Acl2Symbol.NIL;
     }
 
     /**
@@ -1259,6 +1285,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code symbolp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execSymbolpBoolean(Acl2Value x) {
+        return x.symbolp() != Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code integerp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
@@ -1267,6 +1306,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Symbol execIntegerp(Acl2Value x) {
         return x.integerp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code integerp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execIntegerpBoolean(Acl2Value x) {
+        return x.integerp() != Acl2Symbol.NIL;
     }
 
     /**
@@ -1283,6 +1335,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code rationalp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execRationalpBoolean(Acl2Value x) {
+        return x.rationalp() != Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code complex-rationalp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
@@ -1291,6 +1356,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Symbol execComplexRationalp(Acl2Value x) {
         return x.complexRationalp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code complex-rationalp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execComplexRationalpBoolean(Acl2Value x) {
+        return x.complexRationalp() != Acl2Symbol.NIL;
     }
 
     /**
@@ -1307,6 +1385,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code acl2-numberp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execAcl2NumberpBoolean(Acl2Value x) {
+        return x.acl2Numberp() != Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code consp} ACL2 primitive function.
      *
      * @param x The actual argument to pass to the function.
@@ -1315,6 +1406,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      */
     public static Acl2Symbol execConsp(Acl2Value x) {
         return x.consp();
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code consp} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given argument.
+     */
+    public static boolean execConspBoolean(Acl2Value x) {
+        return x.consp() != Acl2Symbol.NIL;
     }
 
     /**
@@ -1867,6 +1971,22 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
 
     /**
      * Executes the native implementation of
+     * the {@code <} ACL2 primitive function,
+     * on rationals,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The first actual argument to pass to the function.
+     *          Precondition: not null.
+     * @param y The second actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given arguments.
+     */
+    public static boolean execLessThanBoolean(Acl2Rational x, Acl2Rational y) {
+        return x.compareToRational(y) < 0;
+    }
+
+    /**
+     * Executes the native implementation of
      * the {@code complex} ACL2 primitive function,
      * on any values.
      *
@@ -2057,6 +2177,21 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
             return Acl2Symbol.T;
         else
             return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code equal} ACL2 primitive function,
+     * returning a Java boolean instead of an ACL2 boolean.
+     *
+     * @param x The first actual argument to pass to the function.
+     *          Precondition: not null.
+     * @param y The second actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given arguments.
+     */
+    public static boolean execEqualBoolean(Acl2Value x, Acl2Value y) {
+        return x.equals(y);
     }
 
     /**

@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "defredundant")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert!
  (equal (let ((world (w state)))

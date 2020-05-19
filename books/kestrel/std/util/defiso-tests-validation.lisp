@@ -13,7 +13,8 @@
 (include-book "defiso")
 (include-book "defiso-templates")
 
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,8 +238,8 @@
 
 ;; lambda expression with the wrong number of results:
 (must-succeed*
- (must-fail (defiso iso dom dom (lambda (x) (- x)) id))
- (must-fail (defiso iso dom2 dom2 (lambda (x y) (mv x y)) id2)))
+ (must-fail (defiso iso dom dom (lambda (x) (mv x y)) id))
+ (must-fail (defiso iso dom2 dom2 (lambda (x y) (+ x y)) id2)))
 
 ;; non-closed lambda expression:
 (must-fail (defiso iso dom dom (lambda (x) (+ x y)) id))

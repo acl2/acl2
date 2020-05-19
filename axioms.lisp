@@ -7556,7 +7556,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond
    ((endp lst) nil)
    ((eq item (car lst))
-    acc)
+    (mbe :logic (fix acc) :exec acc))
    (t (position-ac-eq-exec item (cdr lst) (1+ acc)))))
 
 (defun-with-guard-check position-ac-eql-exec (item lst acc)
@@ -7567,7 +7567,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond
    ((endp lst) nil)
    ((eql item (car lst))
-    acc)
+    (mbe :logic (fix acc) :exec acc))
    (t (position-ac-eql-exec item (cdr lst) (1+ acc)))))
 
 (defun position-equal-ac (item lst acc)
@@ -7581,7 +7581,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond
    ((endp lst) nil)
    ((equal item (car lst))
-    acc)
+    (mbe :exec acc :logic (fix acc)))
    (t (position-equal-ac item (cdr lst) (1+ acc)))))
 
 (defmacro position-ac-equal (item lst acc)

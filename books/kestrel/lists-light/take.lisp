@@ -76,7 +76,7 @@
                       (nth n lst)
                     nil)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (take nth) ()))))
+           :in-theory (enable take nth))))
 
 (defthm nthcdr-of-take
   (equal (nthcdr i (take j x))

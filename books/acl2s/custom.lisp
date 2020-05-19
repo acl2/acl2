@@ -239,6 +239,7 @@
   ;;Cgen settings
   (acl2s::acl2s-defaults :set acl2s::testing-enabled t)
   (acl2s::acl2s-defaults :set acl2s::num-trials 500)
+  (acl2s::acl2s-defaults :set acl2s::defdata-aliasing-enabled t)
   ))
 
 #!ACL2

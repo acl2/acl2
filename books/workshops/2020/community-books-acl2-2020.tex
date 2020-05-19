@@ -1,0 +1,104 @@
+% GENERAL FORMAT OF EACH SLIDE
+% ----------------------------
+
+%\begin{frame}
+
+%\newlibtitle or \implibtitle % for new vs. improved libraries
+
+%\bookpath{path/to/the/library}: % directory or file, use macro for font
+% Short description of what this library is, 1-2 lines.
+%\begin{itemize}
+%\item
+% A highlight about this new or improved library.
+%\item
+% Another highlight.
+%\item
+% Say if it's described in a paper at this workshop,
+% in which case, there's little to say here at all.
+%\end{itemize}
+
+%\separation % to separate the next entry, if any
+
+%\bookpath{another/path}: % as above
+
+%\end{frame}
+
+% ORDER OF THE SLIDES AND ENTRIES
+% -------------------------------
+
+% First all the new libraries, in alphabetical order.
+
+% Then all the improved libraries, in alphabetical order.
+
+% Then one or more slides with additional contributions.
+
+% Don't worry about adding your contributions in order:
+% Alessandro will quickly put them in order if needed,
+% and also fix any formatting issues.
+
+% TITLE SLIDE
+% -----------
+
+% Add your name as co-author, in alphabetical order of last name.
+
+% Add your organization, in alphabetical order.
+% Renumber the \inst{n} instances as needed
+% (both inside \author{...} and inside \institute{...}.
+
+% OTHER REMARKS
+% -------------
+
+% If you want to show code block snippets,
+% add [fragile] just after \begin{frame}.
+
+% For guidelines on content and level of detail,
+% please see existing entries.
+% The goal is to provide enough information to get possible users interested.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{crane}
+\usepackage{inconsolata}
+\usepackage{alltt}
+
+\beamertemplatenavigationsymbolsempty
+
+\setbeamertemplate{footline}[frame number]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newenvironment{codeblock}{\begin{alltt}}{\end{alltt}}
+
+\newcommand{\bookpath}[1]{\textbf{\code{#1}}}
+
+\newcommand{\newlibtitle}{\frametitle{New Libraries}}
+\newcommand{\implibtitle}{\frametitle{Improved Libraries}}
+
+\newcommand{\separation}{\vspace*{1.5ex}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{What's New in the Community Books}
+
+\subtitle{Since the ACL2-2018 Workshop}
+
+\author{Alessandro Coglio\inst{1}, \\
+        \textit{and more authors to be added}}
+
+\institute{\inst{1}Kestrel Institute, \\
+           \textit{and more organizations to be added}}
+
+\date{ACL2-2020 Workshop}
+
+\frame[noframenumbering,plain]{\titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

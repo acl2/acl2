@@ -20,6 +20,8 @@
 (include-book "defmacro-plus-doc")
 (include-book "defmax-nat")
 (include-book "defmax-nat-doc")
+(include-book "defsurj")
+(include-book "defsurj-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

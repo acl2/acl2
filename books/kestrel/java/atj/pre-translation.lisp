@@ -905,8 +905,9 @@
 
 (define atj-type-rewrap-term ((term pseudo-termp)
                               (src-types atj-type-listp)
-                              (dst-types? atj-type-listp))
-  :guard (consp src-types)
+                              (dst-types atj-type-listp))
+  :guard (and (consp src-types)
+              (consp dst-types))
   :returns (rewrapped-term pseudo-termp
                            :hints (("Goal" :expand ((pseudo-termp term)))))
   :short "Re-wrap an ACL2 term with a type conversion function."
@@ -926,31 +927,31 @@
                   (fquotep term)
                   (not (consp (fargs term)))))
         (raise "Internal error: the term ~x0 has the wrong format." term))
-       ((when (and (consp dst-types?)
-                   (not (atj-types-conv-allowed-p src-types dst-types?))))
+       ((when (not (atj-types-conv-allowed-p src-types dst-types)))
         (raise "Type annotation failure: ~
                 cannot convert from ~x0 to ~x1."
-               src-types dst-types?)))
-    (atj-type-wrap-term (fargn term 1) src-types dst-types?))
+               src-types dst-types)))
+    (atj-type-wrap-term (fargn term 1) src-types dst-types))
   :guard-hints (("Goal" :expand ((pseudo-termp term)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-rewrap-terms ((terms pseudo-term-listp)
                                (src-typess atj-type-list-listp)
-                               (dst-types?s atj-type-list-listp))
+                               (dst-typess atj-type-list-listp))
   :guard (and (cons-listp src-typess)
+              (cons-listp dst-typess)
               (= (len terms) (len src-typess))
-              (= (len terms) (len dst-types?s)))
+              (= (len terms) (len dst-typess)))
   :returns (rewrapped-terms pseudo-term-listp)
   :short "Lift @(tsee atj-type-rewrap-term) to lists."
   (cond ((endp terms) nil)
         (t (cons (atj-type-rewrap-term (car terms)
                                        (car src-typess)
-                                       (car dst-types?s))
+                                       (car dst-typess))
                  (atj-type-rewrap-terms (cdr terms)
                                         (cdr src-typess)
-                                        (cdr dst-types?s))))))
+                                        (cdr dst-typess))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

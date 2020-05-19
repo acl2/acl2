@@ -36,7 +36,7 @@
 (in-package "STD")
 (include-book "../deflist")
 (include-book "std/strings/top" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (make-event
  (prog2$

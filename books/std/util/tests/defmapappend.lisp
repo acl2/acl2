@@ -32,7 +32,7 @@
 (include-book "../defmapappend")
 (include-book "../deflist")
 (include-book "../defprojection")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (deflist my-nat-listp (x)
   (natp x)

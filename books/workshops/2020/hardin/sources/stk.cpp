@@ -38,7 +38,7 @@
 // Initialize 'just enough' state
 
 STYP STK_init (STKObj amp(SObj)) {
-  SObj.nodeTop = STK_MAX_NODE1;
+  SObj.nodeTop = STK_MAX_SZ;
 
   return SVAL;
 }
@@ -47,62 +47,47 @@ STYP STK_init (STKObj amp(SObj)) {
 // Restore to factory defaults
 
 STYP STK_initAll (STKObj amp(SObj)) {
-  SObj.nodeTop = STK_MAX_NODE1;
-  for (uint i = 0; i < STK_MAX_NODE1; i++) {
+  SObj.nodeTop = STK_MAX_SZ;
+  for (uint i = 0; i < STK_MAX_SZ; i++) {
     SObj.nodeArr[i] = 0;
   }
   return SVAL;
 }
 
-
-tuple<ui8, i64> STK_top (STKObj amp(SObj)) {
-  if (SObj.nodeTop == STK_MAX_NODE1) {
-    return tuple<ui8, i64>(STK_OCCUPANCY_ERR, 0);
-  } else {
-    return tuple<ui8, i64>(STK_OK, SObj.nodeArr[SObj.nodeTop]);
-  }
+ui14 STK_capacity (STKObj amp(SObj)) {
+  return STK_MAX_SZ;
 }
 
-
-tuple<ui8, i64> STK_next (STKObj amp(SObj)) {
-  if ((STK_MAX_NODE1 - SObj.nodeTop) < 2) {
-    return tuple<ui8, i64>(STK_OCCUPANCY_ERR, 0);
-  } else {
-    return tuple<ui8, i64>(STK_OK, SObj.nodeArr[SObj.nodeTop + 1]);
-  }
+bool STK_isEmpty (STKObj amp(SObj)) {
+  return (STK_MAX_SZ == SObj.nodeTop);
 }
-
 
 ui14 STK_sz (STKObj amp(SObj)) {
-  return (STK_MAX_NODE1 - SObj.nodeTop);
+  return (STK_MAX_SZ - SObj.nodeTop);
 }
-
 
 ui14 STK_space (STKObj amp(SObj)) {
   return SObj.nodeTop;
 }
 
 
-// Remove from head of list
+// Pop the top of stack
 
 STYP STK_pop (STKObj amp(SObj)) {
-  if (SObj.nodeTop == STK_MAX_NODE1) {
-    return SVAL;
-  } else {
+  if (SObj.nodeTop < STK_MAX_SZ) {
     SObj.nodeTop++;
-    return SVAL;
   }
+  return SVAL;
 }
 
-
 STYP STK_popTo (i64 datum, STKObj amp(SObj)) {
-  if ((STK_MAX_NODE1 - SObj.nodeTop) == 0) {
+  if ((STK_MAX_SZ - SObj.nodeTop) == 0) {
     return SVAL;
   } else {
     ui14 d = 0;
     uint i;
     for (i = 0;
-         ((i < (STK_MAX_NODE1 - SObj.nodeTop)) &&
+         ((i < (STK_MAX_SZ - SObj.nodeTop)) &&
           SObj.nodeArr[i+ SObj.nodeTop] != datum);
          i++) {
       d++;
@@ -113,14 +98,39 @@ STYP STK_popTo (i64 datum, STKObj amp(SObj)) {
 }
 
 
+tuple<ui8, i64> STK_top (STKObj amp(SObj)) {
+  if (SObj.nodeTop < STK_MAX_SZ) {
+    return tuple<ui8, i64>(STK_OK, SObj.nodeArr[SObj.nodeTop]);
+  } else {
+    return tuple<ui8, i64>(STK_OCCUPANCY_ERR, 0);
+  }
+}
+
+tuple<ui8, i64> STK_topThenPop (STKObj amp(SObj)) {
+  if (SObj.nodeTop < STK_MAX_SZ) {
+    i64 tos = SObj.nodeArr[SObj.nodeTop];
+    SObj.nodeTop++;
+    return tuple<ui8, i64>(STK_OK, tos);
+  } else {
+    return tuple<ui8, i64>(STK_OCCUPANCY_ERR, 0);
+  }
+}
+
+tuple<ui8, i64> STK_next (STKObj amp(SObj)) {
+  if ((STK_MAX_SZ - SObj.nodeTop) < 2) {
+    return tuple<ui8, i64>(STK_OCCUPANCY_ERR, 0);
+  } else {
+    return tuple<ui8, i64>(STK_OK, SObj.nodeArr[SObj.nodeTop + 1]);
+  }
+}
+
+
 // Push to top of stack
 
 STYP STK_push (i64 v, STKObj amp(SObj)) {
-  if (SObj.nodeTop == 0) {
-    return SVAL;
-  } else {
+  if (SObj.nodeTop != 0) {
     SObj.nodeTop--;
     SObj.nodeArr[SObj.nodeTop] = v;
-    return SVAL;
   }
+  return SVAL;
 }
