@@ -617,11 +617,6 @@
     (alist (bindings-extract renamed-body preserved-vars nil))
     (vars (remove-equal '*** (strip-cars alist)))
     (shrunk-body (shrink-bindings preserved-vars renamed-body))
-    ;; The body of the top-level function "new-fn"
-    (new-body (replace-list-all
-               (remove-duplicates (append formal-args vars))
-               sub-pairs
-               shrunk-body))
     (distinct-vars (remove-duplicates vars))
     (renamed-alist (remove-assoc-equal
                     '***
@@ -629,7 +624,6 @@
                                           (append formal-args vars)
                                           alist
                                           pkg-name)))
-    ;;(- (cw "ckc0: ~x0~%" renamed-alist))
     (renamed-vars (strip-cars renamed-alist))
     ;; Simplify the MV-NTH forms in "renamed-alist"
     (simplified-alist (pairlis$ renamed-vars
@@ -703,6 +697,15 @@
                                (strip-cars (strip-cdrs final-alist))
                                nil))
     (- (cw "Single used functions: ~x0~%" single-used-vars))
+    ;; The body of the top-level function "new-fn"
+    (new-body (replace-list-all
+               (remove-duplicates (append elim-vars excluded-vars
+                                          formal-args vars))
+               (append elim-bindings
+                       (pairlis$ excluded-vars
+                                 (strip-cdrs substd-bindings))
+                       sub-pairs)
+               shrunk-body))
     (inter-names (remove-all
                   (append elim-vars excluded-vars)
                   (replace-list-all (strip-cars sub-pairs)
@@ -1008,7 +1011,6 @@
                                          vars
                                          alist
                                          pkg-name))
-    ;;(- (cw "ckc0: ~x0~%" renamed-alist))
     (renamed-vars (strip-cars renamed-alist))
     ;; Simplify the MV-NTH forms in "renamed-alist"
     (simplified-alist (pairlis$ renamed-vars
