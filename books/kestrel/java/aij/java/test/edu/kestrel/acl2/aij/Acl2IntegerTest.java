@@ -147,7 +147,38 @@ class Acl2IntegerTest {
     }
 
     @Test
-    void getJavaBigIntegerFromMake() {
+    void getJavaBigIntegerFromMakeInt() {
+        assertEquals(Acl2Integer.make(0).getJavaBigInteger(), BigInteger.ZERO);
+        assertEquals(Acl2Integer.make(1).getJavaBigInteger(), BigInteger.ONE);
+        assertEquals(Acl2Integer.make(2).getJavaBigInteger(), BigInteger.TWO);
+        assertEquals(Acl2Integer.make(10).getJavaBigInteger(), BigInteger.TEN);
+        assertEquals(Acl2Integer.make(-1).getJavaBigInteger(),
+                new BigInteger("-1"));
+        assertEquals(Acl2Integer.make(2678).getJavaBigInteger(),
+                new BigInteger("2678"));
+        assertEquals(Acl2Integer.make(-1000000000).getJavaBigInteger(),
+                new BigInteger("-1000000000"));
+    }
+
+    @Test
+    void getJavaBigIntegerFromMakeLong() {
+        assertEquals(Acl2Integer.make(0L).getJavaBigInteger(), BigInteger.ZERO);
+        assertEquals(Acl2Integer.make(1L).getJavaBigInteger(), BigInteger.ONE);
+        assertEquals(Acl2Integer.make(2L).getJavaBigInteger(), BigInteger.TWO);
+        assertEquals(Acl2Integer.make(10L).getJavaBigInteger(), BigInteger.TEN);
+        assertEquals(Acl2Integer.make(-1L).getJavaBigInteger(),
+                new BigInteger("-1"));
+        assertEquals(Acl2Integer.make(2678L).getJavaBigInteger(),
+                new BigInteger("2678"));
+        assertEquals(Acl2Integer.make(-1000000000L).getJavaBigInteger(),
+                new BigInteger("-1000000000"));
+        assertEquals(Acl2Integer.make(-1000000000000000000L).
+                        getJavaBigInteger(),
+                new BigInteger("-1000000000000000000"));
+    }
+
+    @Test
+    void getJavaBigIntegerFromMakeBigInteger() {
         assertEquals(Acl2Integer.make(BigInteger.ZERO).getJavaBigInteger(),
                 BigInteger.ZERO);
         assertEquals(Acl2Integer.make(BigInteger.ONE).getJavaBigInteger(),
