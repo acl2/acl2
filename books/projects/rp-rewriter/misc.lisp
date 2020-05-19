@@ -105,47 +105,93 @@
 
   (defun lambdas-to-other-rules (rule-name rule hints)
     (declare (xargs :mode :program))
-    (case-match rule
-      (('implies p ('equal a b))
-       (b* (((mv p-sigs p-fncs p-openers p-body index)
-             (search-lambda-to-fnc rule-name 0 p))
-            ((mv b-sigs b-fncs b-openers b-body &)
-             (search-lambda-to-fnc rule-name index b)))
-         `(encapsulate
-            ,(append p-sigs b-sigs)
-            ,@(append p-fncs b-fncs)
-            ,(openers-to-rule rule-name (append p-openers b-openers))
-            (def-rp-rule ,rule-name
-              (implies ,p-body
-                       (equal ,a ,b-body))
-              ,@hints))))
-      (('equal a b)
-       (b* (((mv b-sigs b-fncs b-openers b-body &)
-             (search-lambda-to-fnc rule-name 0 b)))
-         `(encapsulate
-            ,b-sigs
-            ,@(append b-fncs)
-            ,(openers-to-rule rule-name b-openers)
-            (def-rp-rule ,rule-name
-              (equal ,a
-                     ,b-body)
-              ,@hints))))
-      (('implies p b)
-       (b* (((mv p-sigs p-fncs p-openers p-body index)
-             (search-lambda-to-fnc rule-name 0 p))
-            ((mv b-sigs b-fncs b-openers b-body &)
-             (search-lambda-to-fnc rule-name index b)))
-         `(encapsulate
-            ,(append p-sigs b-sigs)
-            ,@(append p-fncs b-fncs)
-            ,(openers-to-rule rule-name (append p-openers b-openers))
-            (def-rp-rule ,rule-name
-              (implies ,p-body
-                       ,b-body)
-              ,@hints))))
-      (& `(def-rp-rule ,rule-name
+    (b* (((mv hyp lhs rhs iff)
+          (case-match rule
+            (('implies hyp ('equal lhs rhs))
+             (mv hyp lhs rhs nil))
+            (('implies hyp ('iff lhs rhs))
+             (mv hyp lhs rhs t))
+            (('implies hyp lhs)
+             (mv hyp lhs ''t t))
+            (('equal lhs rhs)
+             (mv ''t lhs rhs nil))
+            (('iff lhs rhs)
+             (mv ''t lhs rhs t))
+            (&
+             (mv ''t rule ''t t))))
+         ((mv hyp-sigs hyp-fncs hyp-openers hyp-body index)
+          (search-lambda-to-fnc rule-name 0 hyp))
+         ((mv rhs-sigs rhs-fncs rhs-openers rhs-body &)
+          (search-lambda-to-fnc rule-name index rhs))
+         (sigs (append hyp-sigs rhs-sigs))
+         (fncs (append hyp-fncs rhs-fncs))
+         (openers (append hyp-openers rhs-openers)))
+      (if (or (and sigs fncs openers)
+              (and (or sigs fncs openers)
+                   (hard-error 'lambdas-to-other-rules
+                              "something unexpected happened.... contact Mertcan Temel"
+                              nil)))
+          `(encapsulate
+             ,sigs
+             ,@fncs
+             (defthm ,rule-name
+               (and (implies ,hyp-body
+                             (,(if iff `iff `equal)
+                              ,lhs
+                              ,rhs-body))
+                    ,@openers)
+               ,@hints)
+             (add-rp-rule ,rule-name)) 
+        `(progn
+           (defthm ,rule-name
             ,rule
-            ,@hints))))
+            ,@hints)
+           (add-rp-rule ,rule-name)))))
+    
+    ;; (case-match rule
+    ;;   (('implies p ('equal a b))
+    ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
+    ;;          (search-lambda-to-fnc rule-name 0 p))
+    ;;         ((mv b-sigs b-fncs b-openers b-body &)
+    ;;          (search-lambda-to-fnc rule-name index b)))
+    ;;      `(encapsulate
+    ;;         ,(append p-sigs b-sigs)
+    ;;         ,@(append p-fncs b-fncs)
+    ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
+    ;;         (defthm ,rule-name
+    ;;           (implies ,p-body
+    ;;                    (equal ,a ,b-body))
+    ;;           ,@hints)
+    ;;         (add-rp-rule ,rule-name))))
+    ;;   (('equal a b)
+    ;;    (b* (((mv b-sigs b-fncs b-openers b-body &)
+    ;;          (search-lambda-to-fnc rule-name 0 b)))
+    ;;      `(encapsulate
+    ;;         ,b-sigs
+    ;;         ,@(append b-fncs)
+    ;;         ,(openers-to-rule rule-name b-openers)
+    ;;         (defthm ,rule-name
+    ;;           (equal ,a
+    ;;                  ,b-body)
+    ;;           ,@hints)
+    ;;         (add-rp-rule ,rule-name))))
+    ;;   (('implies p b)
+    ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
+    ;;          (search-lambda-to-fnc rule-name 0 p))
+    ;;         ((mv b-sigs b-fncs b-openers b-body &)
+    ;;          (search-lambda-to-fnc rule-name index b)))
+    ;;      `(encapsulate
+    ;;         ,(append p-sigs b-sigs)
+    ;;         ,@(append p-fncs b-fncs)
+    ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
+    ;;         (defthm ,rule-name
+    ;;           (implies ,p-body
+    ;;                    ,b-body)
+    ;;           ,@hints)
+    ;;         (add-rp-rule ,rule-name))))
+    ;;   (& `(def-rp-rule ,rule-name
+    ;;         ,rule
+    ;;         ,@hints))))
 
   (defmacro defthm-lambda (rule-name rule &rest hints)
     `(make-event
@@ -173,7 +219,114 @@
  functionality of lambda expressions for RHS of rewrite rules. defthm-lambda
  has the same signature as defthm. </p>
 
+<p> Below is an example defthm-lambda event and what it translates to:
+<code>
+@('(defthm-lambda foo-redef
+    (implies (p x)
+             (equal (foo x)
+                    (let* ((a (f1 x))
+                           (b (f2 x)))
+                      (f4 a a b)))))')
+                           
+  ;; The above event is translated into this:
+  (encapsulate
+    (((foo-redef_lambda-fnc_1 * *) => *)
+     ((foo-redef_lambda-fnc_0 * *) => *))
+    (local (defun-nx foo-redef_lambda-fnc_1 (b a)
+             (f4 a a b)))
+    (local (defun-nx foo-redef_lambda-fnc_0 (a x)
+             (foo-redef_lambda-fnc_1 (f2 x) a)))
+    (def-rp-rule foo-redef_lambda-opener
+      (and (equal (foo-redef_lambda-fnc_1 b a)
+                  (f4 a a b))
+           (equal (foo-redef_lambda-fnc_0 a x)
+                  (foo-redef_lambda-fnc_1 (f2 x) a))))
+    (def-rp-rule foo-redef
+      (implies (p x)
+               (equal (foo x)
+                      (foo-redef_lambda-fnc_0 (f1 x) x)))))
+')
+</code>
 ")
+
+(progn
+  (defund is-rhs-a-lambda-expression (body)
+    (declare (xargs :guard t))
+    (case-match body
+      (('implies & ('equal & rhs))
+       (and (consp rhs)
+            (consp (car rhs))))
+      (('implies & ('iff & rhs))
+       (and (consp rhs)
+            (consp (car rhs))))
+      (('implies & &)
+       nil)
+      (('equal & rhs)
+       (and (consp rhs)
+            (consp (car rhs))))
+      (('iff & rhs)
+       (and (consp rhs)
+            (consp (car rhs))))
+      (&
+       nil)))
+  
+  (defmacro add-rp-rule (rule-name &key
+                                   (disabled 'nil)
+                                   (beta-reduce 'nil)
+                                   (hints 'nil)
+                                   )
+    `(make-event
+      (b* ((body (and ,beta-reduce
+                      (meta-extract-formula ',rule-name state)))
+           (beta-reduce (and ,beta-reduce
+                             (is-rhs-a-lambda-expression body)))
+           (new-rule-name (if beta-reduce
+                              (intern$ (str::cat (symbol-name ',rule-name)
+                                                 "-FOR-RP")
+                                       (symbol-package-name ',rule-name))
+                            ',rule-name))
+           (rest-body 
+            `(with-output
+               :off :all
+               :gag-mode nil
+               (make-event
+                (b* ((rune (get-rune-name ',new-rule-name state))
+                     (disabled ,,disabled)
+                     (- (get-rules `(,rune) state :warning :err)))
+                  `(progn
+                     (table rp-rules-inorder ',rune nil)
+                     (table rp-rules ',rune ,(not disabled))))))))
+        (if beta-reduce
+            `(progn
+               (defthm-lambda ,new-rule-name
+                 ,body
+                 :hints ,',hints)
+               (acl2::extend-pe-table ,new-rule-name
+                                      (def-rp-rule ,new-rule-name
+                                        ,body
+                                        :hints ,',hints))
+               (in-theory (disable ,new-rule-name))
+               (value-triple (cw "This rule has a lambda expression on its RHS, ~
+and it is automatically put through rp::defthm-lambda  and a ~
+new rule is created to be used by RP-Rewriter. You can disable this by setting ~
+:beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
+               (value-triple ',new-rule-name))
+          rest-body))))
+            
+
+  (defmacro def-rp-rule (rule-name rule &rest hints)
+    `(progn
+       (defthm-lambda ,rule-name ,rule ,@hints)
+       (acl2::extend-pe-table ,rule-name
+                              (def-rp-rule ,rule-name ,rule ,@hints))))
+
+  (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
+    `(progn
+       (,(if defthmd 'defthmd 'defthm)
+        ,rule-name ,rule ,@hints)
+       (add-rp-rule  ,rule-name :disabled ,disabled))))
+
+
 
 (encapsulate
   nil
@@ -626,3 +779,6 @@ rp::preserve-current-theory). This utility will work with current theory of any 
  :short "Some names that are aliases to other tools"
  :parents (rp-utilities)
  )
+
+
+

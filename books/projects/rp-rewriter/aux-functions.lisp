@@ -1485,9 +1485,7 @@
                                                  disabled-meta-rules)))))))
 
 
-(progn
-
-  (defund get-rune-name (fn state)
+(defund get-rune-name (fn state)
     (declare (xargs :guard (and (symbolp fn))
                     :stobjs (state)
                     :verify-guards t))
@@ -1504,29 +1502,7 @@
           (cdr mapping)
         fn)))
 
-  (defmacro add-rp-rule (rule-name &optional (disabled 'nil))
-    `(make-event
-      (b* ((rune (get-rune-name ',rule-name state))
-           (- (get-rules `(,rune) state :warning :err)))
-        `(progn
-           (table rp-rules-inorder ',rune nil)
-           (table rp-rules ',rune ,,(not disabled))))))
 
-  (defmacro def-rp-rule (rule-name rule &rest hints)
-    `(progn
-       (defthm
-         ,rule-name ,rule ,@hints)
-       (add-rp-rule ,rule-name)))
-
-  (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
-    `(progn
-       (,(if defthmd 'defthmd 'defthm)
-        ,rule-name ,rule ,@hints)
-       (add-rp-rule ,rule-name ,disabled))))
-
-
-
- 
 
 
 (defun trans-list (lst)

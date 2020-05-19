@@ -627,23 +627,33 @@
  :parents (rp-rewriter)
  :short "Functions to manage RP-Rewriter's ruleset"
  :long
- "Users can use 
+ "<p>Users can use 
 the functions below to register rules to RP-Rewriter's
- ruleset:
+ ruleset:</p>
 
 <code> 
 @('(rp::add-rp-rule <rule-name> 
-                 &optional (disabled 'nil))')
+                 &key (disabled 'nil)
+                      (beta-reduce 'nil)
+                      (hints 'nil))')
 </code>
- This macro submits a table event that saves the given rule in the
+ <p>This macro submits a table event that saves the given rule in the
  ruleset. The time you use submit this event will affect the priority the rule
  will have. If you choose to add the rule as disabled, you may use the
- corresponding key.
+ corresponding key. </p>
+<p> The beta-reduce key checks the RHS of the rule to see if it is a lambda
+expression. If that is the case, then it calls @(see rp::defthm-lambda) to
+create a new rule and save that instead. The name of the new rule will be
+printed, and it will be disabled for ACL2. You need to use that new name while
+enabling/disabling the added rule for RP-Rewriter. The hints key is only relevant when
+defthm-lambda is called. </p>
+
 
 <code> @('(rp::def-rp-rule <rule-name> <conjecture> <optional-hints> ...)') </code>
 This macro has the
- same signature as defthm, and it submits a defthm event. It also submits a
- add-rp-rule event to save the rule in the rule-set.
+ same signature as defthm. It submits a @(see rp::defthm-lambda) event in case
+RHS has a lambda expression. If it doesn't then defthm-lambda translates to defthm. It also submits a
+ add-rp-rule event to save the rule in the rule-set. 
 
 <code>
 @('(rp::enable-rules <rules>)')

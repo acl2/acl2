@@ -219,10 +219,10 @@
       (:executable-counterpart svexl-eval-wog)
       (:rewrite svexl-eval-is-svexl-eval-wog)
       (:rewrite svexl-eval-wog-opener)
-      (:rewrite rp::svexl-eval-wog-opener_lambda-opener)
+      ;;(:rewrite rp::svexl-eval-wog-opener_lambda-opener)
       (:rewrite svexl-eval-aux-wog-nil)
 
-      (:rewrite RP::SVEXL-EVAL-AUX-WOG-CONS_LAMBDA-OPENER)
+      ;;(:rewrite RP::SVEXL-EVAL-AUX-WOG-CONS_LAMBDA-OPENER)
       (:rewrite svexl-eval-aux-wog-cons)
       (:rewrite svexl-eval-aux-is-svexl-eval-aux-wog)
       (:executable-counterpart svexl-eval-aux-wog)
@@ -309,7 +309,7 @@
       (:executable-counterpart sv::4vec-part-install)
 
       (:rewrite svexllist-eval-wog-opener)
-      (:rewrite rp::svexllist-eval-wog-opener_lambda-opener)
+      ;(:rewrite rp::svexllist-eval-wog-opener_lambda-opener)
       (:executable-counterpart svexllist->top-nodelist$inline)
       (:executable-counterpart svexllist->node-alist$inline)
       (:executable-counterpart svexllist-p)
