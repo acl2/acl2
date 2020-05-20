@@ -39,9 +39,28 @@
 (include-book "list-fix")
 (include-book "equiv")
 (local (include-book "std/basic/inductions" :dir :system))
-;; Mihir M. mod: The following book is included to help with
-;; no-duplicatesp-of-take.
+;; Mihir M. mod: The sets book is included to help with
+;; no-duplicatesp-of-take; and the definitions repeat, take-of-too-many, and
+;; subsetp-of-repeat from the repeat book are introduced prematurely in order
+;; to prove subsetp-of-take.
 (local (include-book "std/lists/sets" :dir :system))
+
+(local (defun repeat (n x)
+         (if (zp n)
+             nil
+           (cons x (repeat (- n 1) x)))))
+
+(local
+ (defthm take-of-too-many
+   (implies (<= (len x) (nfix n))
+            (equal (take n x)
+                   (append x (repeat (- (nfix n) (len x)) nil))))))
+
+(local
+ (defthm subsetp-of-repeat
+   (iff (subsetp-equal (repeat n x) y)
+        (or (zp n) (member-equal x y)))
+   :hints (("goal" :in-theory (enable subsetp-equal repeat)))))
 
 (defsection std/lists/take
   :parents (std/lists take)
@@ -114,8 +133,10 @@
            (list-fix x)))
 
   (defthm subsetp-of-take
-    (implies (<= (nfix n) (len x))
-             (subsetp (take n x) x)))
+    (iff (subsetp (take n x) x)
+         (or (<= (nfix n) (len x))
+             (member-equal nil x)))
+    :hints (("goal" :induct (mv (member-equal nil x) (take n x)))))
 
   (defthm take-fewer-of-take-more
     ;; Note: see also repeat.lisp for related cases and a stronger rule that
@@ -184,11 +205,6 @@ guard does not require @('(true-listp x)')."
   :long "<p><b>Reasoning Note.</b> We leave @('first-n') enabled, so it will
 just get rewritten into @('take').  You should typically never write a theorem
 about @('first-n'): write theorems about @('take') instead.</p>"
-
-  (local (defun repeat (n x)
-           (if (zp n)
-               nil
-             (cons x (repeat (- n 1) x)))))
 
   (local (defthm l0
            (equal (append (repeat n x) (cons x y))
