@@ -285,6 +285,11 @@
     "Like @(see defun-nx), now @(see define) also disables the executable
      counterpart of a non-executable function.")
 
+   (xdoc::p
+    "A new macro @(tsee defsurj) had been added,
+     to verify and record surjective mappings.
+     This is related to @(tsee defiso).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
