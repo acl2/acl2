@@ -176,6 +176,11 @@ is a simpler alternative to @(see make-list)."
     (equal (rev (repeat n a))
            (repeat n a)))
 
+  (defthm subsetp-of-repeat
+    (iff (subsetp-equal (repeat n x) y)
+         (or (zp n) (member-equal x y)))
+    :hints (("goal" :in-theory (enable subsetp-equal repeat))))
+
   (def-listp-rule element-list-p-of-repeat
     (iff (element-list-p (repeat n x))
          (or (element-p x)
