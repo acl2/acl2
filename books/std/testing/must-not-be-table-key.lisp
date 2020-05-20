@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "assert")
+(include-book "assert-bang")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
