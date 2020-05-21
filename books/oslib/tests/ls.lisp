@@ -43,26 +43,26 @@
 (assert! (not (member-equal "." *files*)))
 (assert! (not (member-equal ".." *files*)))
 
-(defconsts (*acl2-all* state)
-  (b* ((acl2-src-dir (f-get-global 'acl2::acl2-sources-dir state)))
-    (oslib::ls! acl2-src-dir)))
+;; (defconsts (*acl2-all* state)
+;;   (b* ((acl2-src-dir (f-get-global 'acl2::acl2-sources-dir state)))
+;;     (oslib::ls! acl2-src-dir)))
 
-(assert! (member-equal "axioms.lisp" *acl2-all*))  ;; Regular file with extension
-(assert! (member-equal "Makefile" *acl2-all*))     ;; Regular file without extension
-(assert! (member-equal "emacs" *acl2-all*))        ;; Directory
+;; (assert! (member-equal "axioms.lisp" *acl2-all*))  ;; Regular file with extension
+;; (assert! (member-equal "Makefile" *acl2-all*))     ;; Regular file without extension
+;; (assert! (member-equal "emacs" *acl2-all*))        ;; Directory
 
 
 (defconsts (*files2* state)
   (oslib::ls! "../"))
 
 (defconsts (*files3* state)
-  (b* ((acl2-src-dir (f-get-global 'acl2::acl2-sources-dir state))
-       (oslib-dir    (oslib::catpath acl2-src-dir "books/oslib"))) 
+  (b* ((acl2-src-dir (f-get-global 'acl2::system-books-dir state))
+       (oslib-dir    (oslib::catpath acl2-src-dir "oslib"))) 
     (oslib::ls! oslib-dir)))
 
 (defconsts (*files4* state)
-  (b* ((acl2-src-dir (f-get-global 'acl2::acl2-sources-dir state))
-       (oslib-dir    (oslib::catpath acl2-src-dir "books/oslib/../oslib")))
+  (b* ((acl2-src-dir (f-get-global 'acl2::system-books-dir state))
+       (oslib-dir    (oslib::catpath acl2-src-dir "oslib/../oslib")))
     (oslib::ls! oslib-dir)))
 
 (assert! (member-equal "ls-logic.lisp" *files2*))
@@ -74,14 +74,15 @@
     (oslib::ls-files! acl2-src-dir)))
 
 (assert! (member-equal "axioms.lisp" *acl2reg*))
-(assert! (subsetp-equal *acl2reg* *acl2-all*))
+;; (assert! (subsetp-equal *acl2reg* *acl2-all*))
 
-(defconsts (*acl2dirs* state)
-  (b* ((acl2-src-dir (f-get-global 'acl2::acl2-sources-dir state)))
-    (oslib::ls-subdirs! acl2-src-dir)))
+;; (defconsts (*acl2dirs* state)
+;;   (b* ((acl2-src-dir (f-get-global 'acl2::acl2-sources-dir state)))
+;;     (oslib::ls-subdirs! acl2-src-dir)))
 
-(assert! (member-equal "emacs" *acl2dirs*))
-(assert! (subsetp-equal *acl2dirs* *acl2-all*))
+;; (assert! (member-equal "emacs" *acl2dirs*))
+;; (assert! (subsetp-equal *acl2dirs* *acl2-all*))
+
 ;; sswords: this test fails whenever there is somethink like a broken symlink
 ;; in the acl2 directory -- and emacs sometimes leaves behind broken symlinks
 ;; named .#foobar, I think to record who is editing the file. Removing the test
@@ -91,9 +92,9 @@
 ;;                  (set-difference-equal *acl2-all*
 ;;                                        (append *acl2dirs* *acl2reg*)))))
 
-(assert! (or (not (intersection-equal *acl2dirs* *acl2reg*))
-             (cw "Oops, intersecting files and dirs?  ~x0~%"
-                 (intersection-equal *acl2dirs* *acl2reg*))))
+;; (assert! (or (not (intersection-equal *acl2dirs* *acl2reg*))
+;;              (cw "Oops, intersecting files and dirs?  ~x0~%"
+;;                  (intersection-equal *acl2dirs* *acl2reg*))))
 
 (defconsts (*err* *val* state)
   ;; There was once a bug with ls-fn's raw lisp definition where it was
