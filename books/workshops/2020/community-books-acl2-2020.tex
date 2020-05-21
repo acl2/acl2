@@ -90,11 +90,13 @@
 \subtitle{Since the ACL2-2018 Workshop}
 
 \author{Alessandro Coglio\inst{2},
+        Yan Peng\inst{3},
         Sol Swords\inst{1}, \\
         \textit{and more authors to be added}}
 
 \institute{\inst{1}Centaur,
-           \inst{2}Kestrel Institute, \\
+           \inst{2}Kestrel Institute,
+           \inst{3}University of British Columbia \\
            \textit{and more organizations to be added}}
 
 \date{ACL2-2020 Workshop}
@@ -532,6 +534,33 @@ Typed list utilities (to be eventually integrated with Std/typed-lists).
 \begin{itemize}
 \item
 Added \code{bit-listp}, with associated theorems.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/smtlink}:
+Smtlink, a framework for integrating external SMT solvers into ACL2.
+\begin{itemize}
+\item
+Allow Smtlink to handle functions using \code{cw}.
+\item
+Made it possible to use \code{:smtlink} hint inside an Smtlink proof.
+\item
+Added abstract type support for Smtlink.
+\item
+Fixed the problem of rewrite-loops by changing computed-hints structure in Smtlink.
+\item
+Fixed the {\color{red} \bf{soundness bug}} that \code{unary-/} can be interpreted as integer division in Smtlink.
+\item
+Added a link to an example using Smtlink for verifying an ASP* Pipeline. (This example will be moved to the ACL2 repository once we have the next stable version of Smtlink.)
+\item
+Made improvements to the documentation.
 \end{itemize}
 
 \end{frame}
