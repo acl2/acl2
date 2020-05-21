@@ -107,12 +107,12 @@
 \newlibtitle
 
 \bookpath{centaur/fgl}:
-Bitblasting rewriter, successor to GL
+Bitblasting rewriter, successor to GL.
 \begin{itemize}
-\item A rewriter that does bitblasting, rather than a bitblaster that has a rewriter
-\item More extensible and customizable than GL
-\item Adds incremental SAT support
-\item Some fancy rewriter features discussed in \textit{New Rewriter Features in FGL}
+\item A rewriter that does bitblasting, rather than a bitblaster that has a rewriter.
+\item More extensible and customizable than GL.
+\item Adds incremental SAT support.
+\item Some fancy rewriter features discussed in the paper \textit{New Rewriter Features in FGL} at this workshop.
 \end{itemize}
 
 \end{frame}
@@ -126,16 +126,16 @@ Bitblasting rewriter, successor to GL
 
 
 \bookpath{centaur/meta}:
-New library of metareasoning utilities
+New library of metareasoning utilities.
 \begin{itemize}
-\item Based on \bookpath{clause-processors/pseudo-term-fty}, treats pseudo-term as an FTY sum type
-\item Unification, substitution, variable collection
-\item Unconditional rewriter
-\item Let-abstraction algorithm
-\item Utilities for understanding rewrite, equivalence, and congruence rules
-\item Term measure that decreases under beta-reduction
+\item Based on \bookpath{clause-processors/pseudo-term-fty.lisp}, treats pseudo-term as an FTY sum type.
+\item Unification, substitution, variable collection.
+\item Unconditional rewriter.
+\item Let-abstraction algorithm.
+\item Utilities for understanding rewrite, equivalence, and congruence rules.
+\item Term measure that decreases under beta-reduction.
 \item Utility that uses meta-extract plus a runtime check to
-  effectively extend the functions understood by an evaluator
+  effectively extend the functions understood by an evaluator.
 \end{itemize}
 
 \end{frame}
@@ -323,13 +323,13 @@ Add more, as needed.
 \implibtitle
 
 \bookpath{build}:
-Books build system
+Books build system.
 \begin{itemize}
 \item \bookpath{build/*.certdep}: Track dependencies of books on certain ACL2 system features---see xdoc topic \code{acl2-system-feature-dependencies}.
 \item Add \code{ifdef-(un)define(!)} for setting/unsetting environment
   variables (non-)locally, with effects on \code{if(n)def} forms
-  understood by the build system
-\item \bookpath{build/cert.pl} supporting libraries refactored into proper (?) Perl modules
+  understood by the build system.
+\item \bookpath{build/cert.pl} supporting libraries refactored into proper (?) Perl modules.
 \end{itemize}
 
 \end{frame}
@@ -649,7 +649,7 @@ utilities have been moved here from the X86ISA model.
 \item
 The \code{use-termhint} utility has been moved here
 from \code{clause-processors/use-hint.lisp}.
-\item Added \code{defret-mutual-generate}, discussed in paper \textit{Generating Mutually Inductive Theorems...}
+\item Added \code{defret-mutual-generate}, discussed in the paper \textit{Generating Mutually Inductive Theorems from Concise Descriptions} at this workshop.
 \end{itemize}
 
 \end{frame}
