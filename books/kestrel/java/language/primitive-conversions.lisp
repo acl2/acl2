@@ -476,4 +476,4 @@
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
   :short "Widening and narrowing conversion
-          from @('byte') to @('char') [JLS:5.1.3].")
+          from @('byte') to @('char') [JLS:5.1.4].")
