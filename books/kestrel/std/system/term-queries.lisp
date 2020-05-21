@@ -20,6 +20,7 @@
 (include-book "all-vars")
 (include-book "all-vars-in-untranslated-term")
 (include-book "all-vars-open")
+(include-book "check-if-call")
 (include-book "check-lambda-call")
 (include-book "check-list-call")
 (include-book "check-mv-let-call")
