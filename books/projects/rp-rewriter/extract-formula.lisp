@@ -623,47 +623,65 @@
 
 
 (xdoc::defxdoc
- defthm-lambda
- :parents (rp-utilities)
- :short "A useful utility to use rewrite rules that has lambda expression on
- RHS for RP-Rewriter."
- :long "<p>RP-Rewriter does not work with terms that has lambda expressions. Every
- rewrite rule and conjectures are beta-reduced. However, for some cases, doing
- beta-reduction without rewriting subterms first can cause performance issues
- due to repetition.</p>
-<p> To mitigate this issue, we use a macro defthm-lambda that can retain the
- functionality of lambda expressions for RHS of rewrite rules. defthm-lambda
- has the same signature as defthm. </p>
+ rp-ruleset
+ :parents (rp-rewriter)
+ :short "Functions to manage RP-Rewriter's ruleset"
+ :long
+ "<p>Users can use 
+the functions below to register rules to RP-Rewriter's
+ ruleset:</p>
 
-<p> Below is an example defthm-lambda event and what it translates to:</p>
-<code>
-@('(defthm-lambda foo-redef
-    (implies (p x)
-             (equal (foo x)
-                    (let* ((a (f1 x))
-                           (b (f2 x)))
-                      (f4 a a b)))))
-                           
-  ;; The above event is translated into this:
-  (encapsulate
-    (((foo-redef_lambda-fnc_1 * *) => *)
-     ((foo-redef_lambda-fnc_0 * *) => *))
-    (local (defun-nx foo-redef_lambda-fnc_1 (b a)
-             (f4 a a b)))
-    (local (defun-nx foo-redef_lambda-fnc_0 (a x)
-             (foo-redef_lambda-fnc_1 (f2 x) a)))
-    (def-rp-rule foo-redef_lambda-opener
-      (and (equal (foo-redef_lambda-fnc_1 b a)
-                  (f4 a a b))
-           (equal (foo-redef_lambda-fnc_0 a x)
-                  (foo-redef_lambda-fnc_1 (f2 x) a))))
-    (def-rp-rule foo-redef
-      (implies (p x)
-               (equal (foo x)
-                      (foo-redef_lambda-fnc_0 (f1 x) x)))))
-')
+<code> 
+@('(rp::add-rp-rule <rule-name> 
+                 &key (disabled 'nil)
+                      (beta-reduce 'nil)
+                      (hints 'nil))')
 </code>
-")
+ <p>This macro submits a table event that saves the given rule in the
+ ruleset. The time you use submit this event will affect the priority the rule
+ will have. If you choose to add the rule as disabled, you may use the
+ corresponding key. </p>
+<p> The beta-reduce key checks the RHS of the rule to see if it is a lambda
+expression. If that is the case, then it calls @(see rp::defthm-lambda) to
+create a new rule and save that instead. The name of the new rule will be
+printed, and it will be disabled for ACL2. You need to use that new name while
+enabling/disabling the added rule for RP-Rewriter. The hints key is only relevant when
+defthm-lambda is called. </p>
+
+
+<code> @('(rp::def-rp-rule <rule-name> <conjecture> <optional-hints> ...)') </code>
+This macro has the
+ same signature as defthm. It submits a @(see rp::defthm-lambda) event in case
+RHS has a lambda expression. If it doesn't then defthm-lambda translates to defthm. It also submits a
+ add-rp-rule event to save the rule in the rule-set. 
+
+<code>
+@('(rp::enable-rules <rules>)')
+</code>
+This macro submits an event to enable a list of
+ rules from the given list.
+
+<code> 
+@('(rp::disable-rules <rules>)')
+</code>
+ The opposite of rp::enable-rules.
+
+
+<code>@('(rp::disable-all-rules)')</code>
+
+This submits an event and disables all the rewrite rules. 
+
+<code> @('(rp::disable-exc-counterpart <fnc-name>)') </code> The executable
+ counterparts are enabled by default for all functions and they belong to a
+ different rule-set for rp-rewriter. This macro submits an event to disable the
+ executable counterpart of given function.
+
+ <code> @('(rp::enable-exc-counterpart <fnc-name>)') </code>
+ The opposite of rp::disable-exc-counterpart.
+
+
+"
+ )
 
 
 (xdoc::defxdoc
