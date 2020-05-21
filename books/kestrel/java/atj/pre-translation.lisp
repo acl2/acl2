@@ -18,6 +18,7 @@
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
+(include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
@@ -906,8 +907,7 @@
 (define atj-type-rewrap-term ((term pseudo-termp)
                               (dst-types atj-type-listp))
   :guard (consp dst-types)
-  :returns (rewrapped-term pseudo-termp
-                           :hints (("Goal" :expand ((pseudo-termp term)))))
+  :returns (rewrapped-term pseudo-termp)
   :short "Re-wrap an ACL2 term with a type conversion function."
   :long
   (xdoc::topstring
@@ -923,13 +923,37 @@
     "We also check that the new conversion is allowed.
      We stop with an error if that is not the case;
      as in @(tsee atj-type-wrap-term),
-     this is a ``deep'' input validation error."))
+     this is a ``deep'' input validation error.")
+   (xdoc::p
+    "If the term is a call of @(tsee if),
+     we recursively re-wrap its branches,
+     which therefore will return the same types.
+     Then we wrap the @(tsee if) call
+     with the identity conversion.
+     The reason for descending into the @(tsee if) branches
+     is that (the least upper bound of) the types of the @(tsee if) branches
+     are used, in the translation to Java,
+     to determine the types of the Java local variables
+     that store the result of (one or the other) branch.
+     In order to allow the mapping of ATJ subtypes to Java non-subtypes,
+     we need to push the conversions into the @(tsee if) branches."))
   (b* (((mv term src-types &) (atj-type-unwrap-term term))
+       ((when (null term)) ; for termination
+        (raise "Internal error: unwrapped null term ~x0." term))
        ((when (not (atj-types-conv-allowed-p src-types dst-types)))
         (raise "Type annotation failure: ~
                 cannot convert from ~x0 to ~x1."
-               src-types dst-types)))
-    (atj-type-wrap-term term src-types dst-types)))
+               src-types dst-types))
+       ((mv ifp test then else) (check-if-call term)))
+    (if ifp
+        (atj-type-wrap-term (fcons-term* 'if
+                                         test
+                                         (atj-type-rewrap-term then dst-types)
+                                         (atj-type-rewrap-term else dst-types))
+                            dst-types
+                            dst-types)
+      (atj-type-wrap-term term src-types dst-types)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
