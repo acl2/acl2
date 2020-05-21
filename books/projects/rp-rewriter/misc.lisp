@@ -219,7 +219,7 @@
  functionality of lambda expressions for RHS of rewrite rules. defthm-lambda
  has the same signature as defthm. </p>
 
-<p> Below is an example defthm-lambda event and what it translates to:
+<p> Below is an example defthm-lambda event and what it translates to: </p>
 <code>
 @('(defthm-lambda foo-redef
     (implies (p x)
