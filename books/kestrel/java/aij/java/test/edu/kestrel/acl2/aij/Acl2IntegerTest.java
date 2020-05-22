@@ -241,4 +241,24 @@ class Acl2IntegerTest {
                 Acl2Integer.make(-1000000000000000000L));
     }
 
+    @Test
+    void genNumeratorFromMakeBigInteger() {
+        assertEquals(Acl2Integer.make(BigInteger.ZERO).getNumerator(),
+                Acl2Integer.ZERO);
+        assertEquals(Acl2Integer.make(BigInteger.ONE).getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals(Acl2Integer.make(BigInteger.TWO).getNumerator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Integer.make(BigInteger.TEN).getNumerator(),
+                Acl2Integer.make(10));
+        assertEquals(Acl2Integer.make(new BigInteger("124")).getNumerator(),
+                Acl2Integer.make(124));
+        assertEquals(Acl2Integer.make
+                        (new BigInteger("58748592475802735872046572345892645")).
+                        getNumerator(),
+                Acl2Integer.make
+                        (new BigInteger
+                                ("58748592475802735872046572345892645")));
+    }
+
 }
