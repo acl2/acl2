@@ -13,6 +13,13 @@
 (include-book "utils")
 
 (include-book "std/strings/decimal" :dir :system)
+(defthm acl2::equal-of-appends-when-true-listps
+    (implies (and (true-listp x1)
+                  (true-listp x2))
+             (equal (equal (append x1 y)
+                           (append x2 y))
+                    (equal x1 x2))))
+(in-theory (disable acl2::equal-of-append-and-append-same-arg2))
 (include-book "std/strings/istrprefixp" :dir :system)
 
 ;; ======================================================================
@@ -373,5 +380,3 @@
                               cdr-nthcdr))))
 
 (in-theory (disable sis))
-
-

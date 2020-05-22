@@ -273,6 +273,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
+
+   (xdoc::p
+    "A new utility @(tsee check-if-call) has been added,
+     to check if a term is a all of @(tsee if)
+     and to return its three arguments if that is the case.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
@@ -284,6 +293,11 @@
    (xdoc::p
     "Like @(see defun-nx), now @(see define) also disables the executable
      counterpart of a non-executable function.")
+
+   (xdoc::p
+    "A new macro @(tsee defsurj) had been added,
+     to verify and record surjective mappings.
+     This is related to @(tsee defiso).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

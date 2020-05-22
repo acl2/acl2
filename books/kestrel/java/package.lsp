@@ -41,6 +41,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         check-if-call
                          check-lambda-call
                          check-list-call
                          check-mv-let-call

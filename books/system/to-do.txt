@@ -21,6 +21,78 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Improve error message for linear rule that is illegal because of evaluation.}}
+
+Eric Smith's email just below raises that issue; some analysis is
+below that.
+
+..........
+
+[acl2-devel] improving error message about :linear rules
+Eric Smith <eric.smith@kestrel.edu>	Wed, May 20, 2020 at 1:07 AM
+Reply-To: acl2-devel@utlists.utexas.edu
+To: acl2-devel@utlists.utexas.edu
+
+Here is a weird little example of something I ran into:
+
+(defun two () 2)
+
+;fails somewhat mysteriously
+(defthm two-bound
+  (< 1 (two))
+  :rule-classes :linear)
+
+(in-theory (disable (:e two)))
+
+;same as before but succeeds!
+(defthm two-bound
+  (< 1 (two))
+  :rule-classes :linear)
+
+I presume that the first defthm fails because ACL2 evaluates the call of
+TWO and perhaps also the < (:doc linear does mention evaluation of
+ground subexpressions).  But the error message is just:
+
+ACL2 Error in ( DEFTHM TWO-BOUND ...):  No :LINEAR rule can be generated
+from TWO-BOUND.  See :DOC linear.
+
+Perhaps it could be improved to show a bit more information, e.g., that
+it is trying to make a linear rule from the constant T.
+
+Thanks,
+-Eric
+
+..........
+
+[acl2-devel] improving error message about :linear rules
+Matt Kaufmann <kaufmann@cs.utexas.edu>	Wed, May 20, 2020 at 7:13 AM
+Reply-To: acl2-devel@utlists.utexas.edu
+To: acl2-devel@utlists.utexas.edu
+
+Hi Eric,
+
+Good suggestion.  I took a quick look, and it might take a bit of work
+to pass the necessary information back.  The evaluation of ground
+subexpressions takes place in the following call chain, from top to
+bottom; the problem then is passing back the result of
+eval-ground-subexpressions to chk-acceptable-linear-rule2, so that it
+can print an extra message like "Note that the term was simplified to
+<term> before attempting to construct a linear rule; see :DOC linear."
+
+chk-acceptable-linear-rule2
+  external-linearize
+    linearize
+      linearize1
+        eval-ground-subexpressions
+
+May I incorporate your email into a note to add to
+books/system/to-do.txt?
+
+Thanks,
+Matt
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Possibly add function-symbolp to the guard of logicp.}}
 
 Currently logicp returns t on a symbol that is not a function symbol, which is

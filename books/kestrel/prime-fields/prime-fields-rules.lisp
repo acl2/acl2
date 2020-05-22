@@ -11,6 +11,7 @@
 (in-package "PFIELD")
 
 (include-book "prime-fields")
+(local (include-book "support"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt"))
@@ -204,27 +205,27 @@
   :hints (("Goal" :use (:instance mul-associative (y a) (x (inv a p)) (z x))
            :in-theory (disable mul-associative))))
 
-(defthm add-of-add-of-neg-same
-  (implies (and (fep x p)
-                (fep y p)
-                (natp p))
-           (equal (add x (add (neg x p) y p) p)
-                  y))
-  :hints (("Goal" :in-theory (enable add sub neg))))
-
 (defthm add-of-neg-same-arg2
-  (implies (and (fep x p)
-                (natp p))
-           (equal (add x (neg x p) p)
-                  0))
+  (equal (add x (neg x p) p)
+         0)
   :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthm add-of-neg-same-arg1
-  (implies (and (fep x p)
-                (natp p))
-           (equal (add (neg x p) x p)
-                  0))
+  (equal (add (neg x p) x p)
+         0)
   :hints (("Goal" :in-theory (enable add sub neg))))
+
+(defthm add-of-add-of-neg-same
+  (implies (posp p)
+           (equal (add x (add (neg x p) y p) p)
+                  (mod (ifix y) p)))
+  :hints (("Goal" :in-theory (enable add sub neg acl2::mod-sum-cases))))
+
+(defthm add-of-neg-and-add-same
+  (implies (posp p)
+           (equal (add (neg x p) (add x y p) p)
+                  (mod (ifix y) p)))
+  :hints (("Goal" :in-theory (enable neg add acl2::mod-sum-cases))))
 
 ;; If the resulting constant (* x y) is too large, the next rule below will
 ;; reduce it.
@@ -260,12 +261,8 @@
   :hints (("Goal" :in-theory (enable mul))))
 
 ;distributivity
-;move
 (defthm mul-of-add-arg2
-  (implies (and (integerp x)
-                (integerp y1)
-                (integerp y2)
-                (posp p))
+  (implies (posp p)
            (equal (mul x (add y1 y2 p) p)
                   (add (mul x y1 p)
                              (mul x y2 p)
@@ -274,57 +271,13 @@
            :in-theory (enable add mul))))
 
 (defthm mul-of-add-arg1
-  (implies (and (integerp x)
-                (integerp y1)
-                (integerp y2)
-                (posp p))
+  (implies (posp p)
            (equal (mul (add y1 y2 p) x p)
                   (add (mul y1 x p)
-                             (mul y2 x p)
-                             p)))
+                       (mul y2 x p)
+                       p)))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (enable add mul))))
-
-;move
-(defthm equal-of-add-and-add-cancel-1-gen
-  (implies (and (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (posp p))
-           (equal (equal (add x y p) (add x z p))
-                  (equal (mod y p) (mod z p))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (enable add sub))))
-
-(defthm equal-of-add-and-add-cancel-2
-  (implies (and (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (posp p))
-           (equal (equal (add x y p) (add z x p))
-                  (equal (mod y p) (mod z p))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (enable add sub))))
-
-(defthm equal-of-add-and-add-cancel-3
-  (implies (and (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (posp p))
-           (equal (equal (add y x p) (add x z p))
-                  (equal (mod y p) (mod z p))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (enable add sub))))
-
-(defthm equal-of-add-and-add-cancel-4
-  (implies (and (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (posp p))
-           (equal (equal (add y x p) (add z x p))
-                  (equal (mod y p) (mod z p))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (enable add sub))))
 
 (defthm mod-of-add
   (equal (mod (add x y p) p)
@@ -414,7 +367,6 @@
 
 (defthm mod-of-expt-of-+-of---same
   (implies (and (integerp x)
-                (integerp y)
                 (natp n)
                 (posp p))
            (equal (mod (expt (+ (- p) x) n) p)
@@ -423,23 +375,10 @@
                         (:instance mod-of-expt-of-mod (x (+ (- p) x))))
            :in-theory (disable mod-of-expt-of-mod))))
 
-(defthm add-of-0-arg1-gen
-  (implies (posp p)
-           (equal (add 0 x p)
-                  (mod (ifix x) p)))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-of-0-arg2-gen
-  (implies (posp p)
-           (equal (add x 0 p)
-                  (mod (ifix x) p)))
-  :hints (("Goal" :in-theory (enable add))))
-
 (defthm add-of-mul-and-mul-combine-constants
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (integerp x)
-                (integerp y)
                 (integerp k1)
                 (integerp k2)
                 (posp p))
@@ -459,11 +398,6 @@
                   (add (mul (+ k1 k2) x p) y p)))
   :hints (("Goal" :use (:instance add-of-mul-and-mul-combine-constants)
            :in-theory (disable add-of-mul-and-mul-combine-constants))))
-
-(defthm neg-of-neg-gen
-  (equal (neg (neg x p) p)
-         (mod (ifix x) (pos-fix p)))
-  :hints (("Goal" :in-theory (enable neg sub add))))
 
 (defthm mod-of-mul
   (equal (mod (mul x y p) p)
@@ -505,30 +439,24 @@
   :hints (("Goal" :in-theory (e/d (neg sub add mul)
                                   (+-same)))))
 
+;; k*x + x + y becomes (k+1)*x + y
+;; We could restrict this to when k is a constant
 (defthm add-of-mul-and-add-same
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp k)
-                (posp p))
-           (equal (add (mul k x p) (add x y p) p)
-                  (add (mul (+ 1 k) x p) y p)))
+  (equal (add (mul k x p) (add x y p) p)
+         (add (mul (+ 1 (ifix k)) x p) y p))
   :hints (("Goal" :in-theory (enable neg sub add mul))))
 
+;; TODO: When k is a constant, perhaps we should pull the negation in (but how
+;; should we normalize constants?)
 (defthm add-of-add-of-mul-same-negated
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp k)
-                (posp p))
-           (equal (add (neg x p) (add (neg (mul k x p) p) y p) p)
-                  (add (neg (mul (+ 1 k) x p) p) y p)))
+  (equal (add (neg x p) (add (neg (mul k x p) p) y p) p)
+         (add (neg (mul (+ 1 (ifix k)) x p) p) y p))
   :hints (("Goal" :in-theory (enable neg sub add mul
                                      acl2::mod-sum-cases))))
 
 (defthm add-of-neg-of-mul-and-add-of-neg-of-mul-same
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
-                (integerp x)
-                (integerp y)
                 (integerp k1)
                 (integerp k2)
                 (posp p))
@@ -596,33 +524,11 @@
                   0))
   :hints (("Goal" :in-theory (enable add sub neg))))
 
-(local
- (defthm equal-of-<-and-fep
+(defthmd equal-of-<-and-fep
   (implies (natp x)
            (equal (equal (< x p) (fep x p))
                   t))
-  :hints (("Goal" :in-theory (enable fep)))))
-
-;todo: use a :meta rule
-(defthm move-neg-rule-3
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
-                (integerp v)
-                (integerp w)
-                (posp p))
-           (equal (equal (add x (add y (add (neg z p) w p) p) p)
-                         v)
-                  (and (fep v p)
-                       (equal (add x (add y w p) p)
-                              (add v z p)))))
-  :hints (("Goal" :use (:instance equal-of-add-and-add-cancel-1-gen
-                                  (x z)
-                                  (y (add x (add y (add (neg z p) w p) p) p))
-                                  (z v))
-           :in-theory (disable equal-of-add-and-add-cancel-1-gen
-                               EQUAL-OF-ADD-CANCEL-1))))
-
+  :hints (("Goal" :in-theory (enable fep))))
 
 (defthm not-equal-of-add-and-0-same
   (implies (and (integerp x1)
@@ -848,90 +754,3 @@
            (equal (mul x y p)
                   (neg y p)))
   :hints (("Goal" :in-theory (enable mul neg sub acl2::mod-sum-cases))))
-
-(defthm add-of-neg-of-add-same
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (equal (add (neg x p) (add x y p) p)
-                  (mod y p)))
-  :hints (("Goal" :in-theory (enable neg add acl2::mod-sum-cases))))
-
-;todo: more like this
-(defthm equal-of-0-and-add-of-add-of-neg
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
-                (posp p))
-           (equal (equal 0 (add x (add y (neg z p) p) p))
-                  (equal (mod z p)
-                         (add x y p))))
-  :hints (("Goal" :use (:instance equal-of-add-and-add-cancel-1-gen
-                                  (x z)
-                                  (y (add x (add y (neg z p) p) p))
-                                  (z 0))
-           :in-theory (disable equal-of-add-and-add-cancel-1-gen
-                               EQUAL-OF-ADD-CANCEL-1))))
-
-(defthm equal-of-0-and-add-of-add-of-add-of-neg
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
-                (integerp w)
-                (posp p))
-           (equal (equal 0 (add x (add y (add w (neg z p) p) p) p))
-                  (equal (mod z p)
-                         (add x (add y w p) p))))
-  :hints (("Goal" :use (:instance equal-of-add-and-add-cancel-1-gen
-                                  (x z)
-                                  (y (add x (add y (add w (neg z p) p) p) p))
-                                  (z 0))
-           :in-theory (disable equal-of-add-and-add-cancel-1-gen
-                               EQUAL-OF-ADD-CANCEL-1))))
-
-(defthm equal-of-0-and-add-of-add-of-add-of-add-of-neg
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
-                (integerp w)
-                (integerp v)
-                (posp p))
-           (equal (equal 0 (add x (add y (add w (add v (neg z p) p) p) p) p))
-                  (equal (mod z p)
-                         (add x (add y (add w v p) p) p))))
-  :hints (("Goal" :use (:instance equal-of-add-and-add-cancel-1-gen
-                                  (x z)
-                                  (y (add x (add y (add w (add v (neg z p) p) p) p) p))
-                                  (z 0))
-           :in-theory (disable equal-of-add-and-add-cancel-1-gen
-                               EQUAL-OF-ADD-CANCEL-1))))
-
-(defthm equal-of-add-and-add-cancel-2+-2+
-  (implies (and (integerp x)
-                (integerp y1)
-                (integerp z1)
-                (integerp y2)
-                (integerp z2)
-                (posp p))
-           (equal (equal (add y1 (add x z1 p) p) (add y2 (add x z2 p) p))
-                  (equal (add y1 z1 p) (add y2 z2 p))))
-  :hints (("Goal" :do-not '(preprocess)
-           :in-theory (enable add sub))))
-
-(defthm equal-of-add-and-add-cancel-3+-1+
-  (implies (and (integerp x)
-                (integerp y1)
-                (integerp z1)
-                (integerp w1)
-                (integerp y2)
-                (posp p))
-           (equal (equal (add y1 (add w1 (add x z1 p) p) p)
-                         (add x y2 p))
-                  (equal (add y1 (add w1 z1 p) p)
-                         (mod y2 p))))
-  :hints (("Goal" :use (:instance equal-of-add-and-add-cancel-1-gen
-                                  (x (neg x p))
-                                  (y (add y1 (add w1 (add x z1 p) p) p))
-                                  (z (add x y2 p)))
-           :in-theory (disable equal-of-add-and-add-cancel-1-gen
-                               equal-of-add-cancel-1))))

@@ -16,6 +16,10 @@
                     (declare (xargs :guard (and (pseudo-termp term1)
                                                 (pseudo-termp term2)))))
 
+; The function steps-to-nil is no longer used in this book, because
+; merge-term-order and merge-sort-term-order now have endp tests that allow the
+; use of acl2-count for termination.  But we might as well leave this
+; definition; it's kind of nice.
 (defun steps-to-nil (x)
   (declare (xargs :measure (if x (+ 1 (len x)) 0)))
   (if (null x)
@@ -27,39 +31,39 @@
                         (pseudo-term-listp l2))))
   #+acl2-devel ; else not redundant with :? measure
   (declare (xargs
-            :measure (+ (steps-to-nil l1)
-                        (steps-to-nil l2)))))
+            :measure (+ (acl2-count l1)
+                        (acl2-count l2)))))
 
-(defthm steps-to-nil-evens
+(defthm acl2-count-evens
+  (implies (consp (cdr x))
+           (< (acl2-count (evens x))
+              (acl2-count x)))
+  :rule-classes :linear)
+
+(defthm acl2-count-cdr-weak
+  (<= (acl2-count (cdr x))
+      (acl2-count x))
+  :rule-classes :linear)
+
+(defthm acl2-count-cdr
+  (implies (consp x)
+           (< (acl2-count (cdr x))
+              (acl2-count x)))
+  :rule-classes :linear)
+
+(defthm acl2-count-odds
   (implies (cdr x)
-           (< (steps-to-nil (evens x))
-              (steps-to-nil x)))
-  :rule-classes :linear)
-
-(defthm steps-to-nil-cdr-weak
-  (<= (steps-to-nil (cdr x))
-      (steps-to-nil x))
-  :rule-classes :linear)
-
-(defthm steps-to-nil-cdr
-  (implies x
-           (< (steps-to-nil (cdr x))
-              (steps-to-nil x)))
-  :rule-classes :linear)
-
-(defthm steps-to-nil-odds
-  (implies (cdr x)
-           (< (steps-to-nil (odds x))
-              (steps-to-nil x)))
-  :hints (("goal" :in-theory (disable steps-to-nil-evens)
-           :use ((:instance steps-to-nil-evens (x (cdr x))))))
+           (< (acl2-count (odds x))
+              (acl2-count x)))
+  :hints (("goal" :in-theory (disable acl2-count-evens)
+           :use ((:instance acl2-count-evens (x (cdr x))))))
   :rule-classes :linear)
 
 (verify-termination merge-sort-term-order
   (declare (xargs :guard (pseudo-term-listp l)
                   :verify-guards nil))
   #+acl2-devel ; else not redundant with :? measure
-  (declare (xargs :measure (steps-to-nil l))))
+  (declare (xargs :measure (acl2-count l))))
 
 (defthm pseudo-term-listp-merge-term-order
   (implies (and (pseudo-term-listp l1)

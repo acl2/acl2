@@ -202,4 +202,43 @@ class Acl2IntegerTest {
         assertEquals(Acl2Integer.ONE.getNumerator(), Acl2Integer.ONE);
     }
 
+    @Test
+    void getNumeratorFromMakeInt() {
+        assertEquals(Acl2Integer.make(0).getNumerator(),
+                Acl2Integer.ZERO);
+        assertEquals(Acl2Integer.make(1).getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals(Acl2Integer.make(2).getNumerator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Integer.make(10).getNumerator(),
+                Acl2Integer.make(10));
+        assertEquals(Acl2Integer.make(-1).getNumerator(),
+                Acl2Integer.make(-1));
+        assertEquals(Acl2Integer.make(2678).getNumerator(),
+                Acl2Integer.make(2678));
+        assertEquals(Acl2Integer.make(-1000000000).getNumerator(),
+                Acl2Integer.make(-1000000000));
+    }
+
+    @Test
+    void getNumeratorFromMakeLong() {
+        assertEquals(Acl2Integer.make(0L).getNumerator(),
+                Acl2Integer.ZERO);
+        assertEquals(Acl2Integer.make(1L).getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals(Acl2Integer.make(2L).getNumerator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Integer.make(10L).getNumerator(),
+                Acl2Integer.make(10));
+        assertEquals(Acl2Integer.make(-1L).getNumerator(),
+                Acl2Integer.ONE.make(-1));
+        assertEquals(Acl2Integer.make(2678L).getNumerator(),
+                Acl2Integer.ONE.make(2678));
+        assertEquals(Acl2Integer.make(-1000000000L).getNumerator(),
+                Acl2Integer.make(-1000000000));
+        assertEquals(Acl2Integer.make(-1000000000000000000L).
+                        getNumerator(),
+                Acl2Integer.make(-1000000000000000000L));
+    }
+
 }

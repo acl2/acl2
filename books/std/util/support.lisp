@@ -114,7 +114,7 @@ rather than write something like:</p>
      )
   "Returns (mv kwd-alist other-args)"
   (declare (xargs :guard (and (symbol-listp legal-kwds)
-                              (no-duplicatesp legal-kwds)
+                              ; (no-duplicatesp legal-kwds)
                               (alistp kwd-alist))))
   (b* ((__function__ 'extract-keywords)
        ((when (atom args))

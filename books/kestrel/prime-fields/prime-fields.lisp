@@ -1,6 +1,6 @@
 ; Prime fields library
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,14 +21,17 @@
 ;; of the operations.  See also prime-fields-alt.lisp, which uses a constrained
 ;; function for the prime.
 
+(include-book "../../projects/quadratic-reciprocity/euclid") ;brings in rtl::primep
 (include-book "../../arithmetic-3/floor-mod/mod-expt-fast") ;just provides mod-expt-fast
-(include-book "support")
 (include-book "../utilities/smaller-termp")
+(local (include-book "support"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/mod"))
 
 (in-theory (disable (:e rtl::primep)))
+
+(in-theory (disable mod)) ;since some rules in this file introduce mod
 
 (defmacro primep (x) `(rtl::primep ,x))
 
@@ -172,9 +175,37 @@
                   x))
   :hints (("Goal" :in-theory (enable add))))
 
+(defthm add-of-0-arg1-gen
+  (implies (posp p)
+           (equal (add 0 x p)
+                  (mod (ifix x) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-of-0-arg2-gen
+  (implies (posp p)
+           (equal (add x 0 p)
+                  (mod (ifix x) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
 (defthm add-associative
   (equal (add (add x y p) z p)
          (add x (add y z p) p))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-when-not-integerp-arg1-cheap
+  (implies (not (integerp x))
+           (equal (add x y p)
+                  ;; could further simplify:
+                  (add 0 y p)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-when-not-integerp-arg2-cheap
+  (implies (not (integerp y))
+           (equal (add x y p)
+                  ;; could further simplify:
+                  (add 0 x p)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable add))))
 
 (defun strip-neg (x)
@@ -188,12 +219,12 @@
   (declare (xargs :guard (pseudo-termp x)))
   (if (and (consp x)
            (eq 'mul (ffn-symb x))
-           (quotep (cadr x))
-           )
+           (quotep (cadr x)))
       (caddr x)
     x))
 
-;; compare terms ignoring calls to inv
+;; compare terms ignoring calls to inv and constant factors (so that terms that
+;; can be combined are brought together)
 (defun smaller-add-termp (x y)
   (declare (xargs :guard (and (pseudo-termp x)
                               (pseudo-termp y))))
@@ -217,9 +248,6 @@
 (defthm add-combine-constants
   (implies (and (syntaxp (and (quotep x)
                               (quotep y)))
-                (fep x p)
-                (fep y p)
-                (fep z p)
                 (integerp p))
            (equal (add x (add y z p) p)
                   (add (add x y p) z p)))
@@ -254,6 +282,14 @@
            (equal (add x (mod y p) p)
                   (add x y p)))
   :hints (("Goal" :in-theory (enable add))))
+
+;; basic cancellation rule sufficient to prove the bind-free rules in other files
+(defthmd equal-of-add-and-add-cancel
+   (implies (posp p)
+            (equal (equal (add x y p) (add x z p))
+                   (equal (mod (ifix y) p) (mod (ifix z) p))))
+   :hints (("Goal" ;:do-not '(preprocess)
+            :in-theory (enable add))))
 
 ;;;
 ;;; neg
@@ -315,10 +351,22 @@
                   x))
   :hints (("Goal" :in-theory (enable neg))))
 
+(defthm neg-of-neg-gen
+  (equal (neg (neg x p) p)
+         (mod (ifix x) (pos-fix p)))
+  :hints (("Goal" :in-theory (enable neg))))
+
 (defthm mod-of-neg
   (equal (mod (neg x p) p)
          (neg x p))
   :hints (("Goal" :in-theory (enable neg acl2::mod-sum-cases))))
+
+(defthm neg-when-not-integerp-cheap
+  (implies (not (integerp x))
+           (equal (neg x p)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable neg))))
 
 ;;;
 ;;; sub
