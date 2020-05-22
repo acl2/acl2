@@ -1354,7 +1354,7 @@
 
   268435399)
 
-(defconst *check-length-exclusive-maximum*
+(defconst *check-length-exclusive-maximum*
 
 ; 2097143 is the first prime below 2^21.  We use integers modulo this number as
 ; indices into the stream we are checksumming.
