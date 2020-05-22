@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "strsplit")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (equal (strsplit "foo:bar" #\:)
                 (list "foo" "bar")))
