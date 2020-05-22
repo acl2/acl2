@@ -76,6 +76,7 @@
 (include-book "arithmetic-5/lib/basic-ops/building-blocks" :dir :system)
 (include-book "arithmetic-5/lib/floor-mod/floor-mod" :dir :system)
 (local (include-book "arithmetic-5/top" :dir :system))
+(local (set-defunc-timeout 1000))
 
 #|
 PETE: adding something like this might be useful.
@@ -1014,8 +1015,7 @@ Useful for testing defunc/definec errors
 ; The termination hint isn't need, but it saves 10 seconds and I
 ; certify this file enough that it is worth annotating.
 (definec-no-test gen-car-cdr-aux
-  (car :var cdr :var carstr :string cdrstr :string
-       depth :nat res :l-str-all) :l-str-all
+  (car :var cdr :var carstr :string cdrstr :string depth :nat res :l-str-all) :l-str-all
   (declare (xargs :consider-only-ccms (depth)))
   (cond ((endp res) (gen-car-cdr-aux
                      car
