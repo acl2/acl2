@@ -37,7 +37,9 @@
             value-expr
             jvar-value-index) (atj-gen-value qconst
                                              jvar-value-base
-                                             jvar-value-index))
+                                             jvar-value-index
+                                             t
+                                             nil))
        (block value-block)
        (expr (jexpr-smethod *aij-type-qconst*
                             "make"
@@ -51,7 +53,7 @@
   :short "Generate Java code to build a deeply embedded ACL2 variable."
   (jexpr-smethod *aij-type-var*
                  "make"
-                 (list (atj-gen-symbol var))))
+                 (list (atj-gen-symbol var t nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,7 +65,7 @@
   (xdoc::topstring-p
    "The generated code builds an array of the formals as symbols.")
   (jexpr-newarray-init *aij-type-symbol*
-                       (atj-gen-symbols formals)))
+                       (atj-gen-symbols formals t nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,7 +127,7 @@
               (mv nil
                   (jexpr-smethod *aij-type-named-fn*
                                  "make"
-                                 (list (atj-gen-symbol fn)))
+                                 (list (atj-gen-symbol fn t nil)))
                   jvar-value-index
                   jvar-term-index
                   jvar-lambda-index)
@@ -410,7 +412,8 @@
                                 jvar-function
                                 (jexpr-smethod *aij-type-named-fn*
                                                "make"
-                                               (list (atj-gen-symbol fn)))))
+                                               (list
+                                                (atj-gen-symbol fn t nil)))))
        (formals-block (jblock-locvar (jtype-array *aij-type-symbol*)
                                      jvar-formals
                                      (atj-gen-deep-formals formals)))
@@ -676,7 +679,7 @@
             arg-exprs
             &
             jvar-value-index)
-        (atj-gen-test-values test-inputs "value" 1))
+        (atj-gen-test-values test-inputs "value" 1 t nil))
        (arg-block (append arg-block
                           (jblock-locvar (jtype-array *aij-type-value*)
                                          "functionArguments"
@@ -684,12 +687,12 @@
                                                               arg-exprs))
                           (jblock-locvar *aij-type-symbol*
                                          "functionName"
-                                         (atj-gen-symbol test-function))))
+                                         (atj-gen-symbol test-function t nil))))
        ((mv ares-block
             ares-exprs
             &
             &)
-        (atj-gen-test-values test-outputs "value" jvar-value-index))
+        (atj-gen-test-values test-outputs "value" jvar-value-index t nil))
        (ares-expr (if (and (consp ares-exprs)
                            (not (consp (cdr ares-exprs))))
                       (car ares-exprs)

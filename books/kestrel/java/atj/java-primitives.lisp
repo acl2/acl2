@@ -324,7 +324,7 @@
 
   ;; constructors:
 
-  (atj-main-function-type boolean-value (:asymbol) :jboolean)
+  (atj-main-function-type boolean-value (:aboolean) :jboolean)
 
   (atj-main-function-type char-value (:ainteger) :jchar)
 
@@ -338,7 +338,7 @@
 
   ;; deconstructors:
 
-  (atj-main-function-type boolean-value->bool$inline (:jboolean) :asymbol)
+  (atj-main-function-type boolean-value->bool$inline (:jboolean) :aboolean)
 
   (atj-main-function-type char-value->nat$inline (:jchar) :ainteger)
 

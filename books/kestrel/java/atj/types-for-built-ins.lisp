@@ -23,6 +23,6 @@
 
 (atj-main-function-type mv-nth (:ainteger :avalue) :avalue)
 
-(atj-main-function-type not (:avalue) :asymbol)
+(atj-main-function-type not (:avalue) :aboolean)
 
-(atj-main-function-type zp (:ainteger) :asymbol)
+(atj-main-function-type zp (:ainteger) :aboolean)
