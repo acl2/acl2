@@ -38,7 +38,7 @@
 
 (in-package "ACL2")
 (include-book "map")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (set-verify-guards-eagerness 2)
 
 
