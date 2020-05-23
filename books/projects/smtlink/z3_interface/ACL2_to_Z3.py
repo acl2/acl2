@@ -81,17 +81,25 @@ class ACL22SMT(object):
     def rationalp(self, x): return sort(x) == RealSort()
     def booleanp(self, x): return sort(x) == BoolSort()
 
+    # manually casting integer sort to real sort
+    def to_real(self, x):
+        if(hasattr(x, 'sort') and x.sort() == IntSort()):
+            return(ToReal(x))
+        else:
+            return(x)
+
     def plus(self, *args): return reduce(lambda x, y: x+y, args)
     def times(self, *args): return reduce(lambda x, y: x*y, args)
 
     def reciprocal(self, x):
         if(type(x) is int): return(Q(1,x))
         elif(type(x) is float): return 1.0/x
-        else: return 1.0/x
+        # Casting variable of IntSort to real
+        else: return 1.0/self.to_real(x)
 
     def negate(self, x): return -x
-    def lt(self, x,y): return x<y
-    def equal(self, x,y): return x==y
+    def lt(self, x,y): return self.to_real(x) < self.to_real(y)
+    def equal(self, x,y): return self.to_real(x) == self.to_real(y)
     def notx(self, x): return Not(x)
     def implies(self, x, y): return Implies(x,y)
     def Qx(self, x, y): return Q(x,y)

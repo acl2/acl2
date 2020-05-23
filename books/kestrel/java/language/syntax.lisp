@@ -12,7 +12,7 @@
 
 ; the order of the following INCLUDE-BOOKs determines
 ; the order of the subtopics of the SYNTAX topic below:
-(include-book "unicode")
+(include-book "unicode-characters")
 (include-book "grammar")
 (include-book "unicode-input-characters")
 (include-book "floating-point-literals")

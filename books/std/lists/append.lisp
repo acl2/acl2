@@ -95,12 +95,9 @@ library."
            :hints(("Goal" :use ((:instance len (x (append x y)))
                                 (:instance len (x y)))))))
 
-  (defthm equal-of-appends-when-true-listps
-    (implies (and (true-listp x1)
-                  (true-listp x2))
-             (equal (equal (append x1 y)
-                           (append x2 y))
-                    (equal x1 x2)))
+  (defthm equal-of-append-and-append-same-arg2
+    (equal (equal (append x1 y) (append x2 y))
+           (equal (true-list-fix x1) (true-list-fix x2)))
     :hints(("Goal" :induct (cdr-cdr-induct x1 x2))))
 
   (defthm append-of-nil
@@ -163,4 +160,3 @@ library."
                 (element-list-p b)))
     :requirement true-listp
     :name element-list-p-of-append))
-

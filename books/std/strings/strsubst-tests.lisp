@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "strsubst")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (equal (strsubst "World" "Star" "Hello, World!")
                 "Hello, Star!"))

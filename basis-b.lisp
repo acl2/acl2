@@ -1347,14 +1347,19 @@
 ; due to cancellation.  Choosing primes that are smaller may lead to
 ; checksums with less information.
 
-(defconst *check-sum-exclusive-maximum* 268435399
-  "268435399 is the first prime below 2^28.  We use integers
-   modulo this number as checksums.")
+(defconst *check-sum-exclusive-maximum*
 
-(defconst *check-length-exclusive-maximum* 2097143
-  "2097143 is the first prime below 2^21.  We use integers
-   modulo this number as indices into the stream we are
-   checksumming.")
+; 268435399 is the first prime below 2^28.  We use integers modulo this number
+; as checksums.
+
+  268435399)
+
+(defconst *check-length-exclusive-maximum*
+
+; 2097143 is the first prime below 2^21.  We use integers modulo this number as
+; indices into the stream we are checksumming.
+
+  2097143)
 
 ; We actually return checksums which are in (mod
 ; *check-sum-exclusive-maximum*).

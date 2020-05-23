@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "suffixp")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (strsuffixp "" ""))
 (assert! (strsuffixp "" "foo"))

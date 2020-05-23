@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "base64")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 
 ;; Test vectors from RFC 4648, Section 10.

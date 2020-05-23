@@ -89,15 +89,649 @@
 
 \subtitle{Since the ACL2-2018 Workshop}
 
-\author{Alessandro Coglio\inst{1}, \\
+\author{Alessandro Coglio\inst{2},
+        Shilpi Goel\inst{1},
+        Yan Peng\inst{3},
+        Sol Swords\inst{1}, \\
         \textit{and more authors to be added}}
 
-\institute{\inst{1}Kestrel Institute, \\
+\institute{\inst{1}Centaur,
+           \inst{2}Kestrel Institute,
+           \inst{3}University of British Columbia \\
            \textit{and more organizations to be added}}
 
 \date{ACL2-2020 Workshop}
 
 \frame[noframenumbering,plain]{\titlepage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{centaur/fgl}:
+Bitblasting rewriter, successor to GL.
+\begin{itemize}
+\item A rewriter that does bitblasting, rather than a bitblaster that has a rewriter.
+\item More extensible and customizable than GL.
+\item Adds incremental SAT support.
+\item Some fancy rewriter features discussed in the paper \textit{New Rewriter Features in FGL} at this workshop.
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+
+\bookpath{centaur/meta}:
+New library of metareasoning utilities.
+\begin{itemize}
+\item Based on \bookpath{clause-processors/pseudo-term-fty.lisp}, treats pseudo-term as an FTY sum type.
+\item Unification, substitution, variable collection.
+\item Unconditional rewriter.
+\item Let-abstraction algorithm.
+\item Utilities for understanding rewrite, equivalence, and congruence rules.
+\item Term measure that decreases under beta-reduction.
+\item Utility that uses meta-extract plus a runtime check to
+  effectively extend the functions understood by an evaluator.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/crypto}:
+Executable specifications and abstract interfaces of cryptographic functions.
+\begin{itemize}
+\item
+ECDSA with secp256k1.
+\item
+Proofs about elliptic curves.
+\item
+Keccak.
+\item
+SHA-2.
+\item
+HMAC-SHA-256 and HMAC-SHA-512.
+\item
+PBKDF2 with HMAC-SHA-512.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/event-macros}:
+Utilities to develop event macros (i.e.\ macros at the event level)
+more quickly and consistently.
+\begin{itemize}
+\item
+Validation and elaboration of inputs of event macros.
+\item
+Handling of applicability conditions
+(i.e.\ theorems that must be proved for the event macro to apply).
+\item
+Controlling of screen output of event macros.
+\item
+XDOC constructors for both user and developer documentation of event macros.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/std/basic}:
+An extension of the Std/basic library.
+\begin{itemize}
+\item
+Added several functions to manipulate symbols.
+\item
+Added \code{mbt\$}, a variant of \code{mbt}
+that requires non-\code{nil} instead of \code{t}.
+\item
+These will be gradually moved to \code{std/basic}.
+\end{itemize}
+
+\separation
+
+\bookpath{kestrel/std/system}:
+A new Std/system library
+with standard system utilities
+that complement the built-in ones.
+\begin{itemize}
+\item
+Several utilities have been moved here from \code{kestrel/utilities/system},
+and improved in the process.
+\item
+New utilities have been added.
+\item
+This is being gradually moved to \code{std/system}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/std/util}:
+An extension of the Std/util library.
+\begin{itemize}
+\item
+Added \code{defarbrec},
+to introduce recursive functions without proving termination right away.
+Compared to similar existing tools, it is mainly aimed at use with APT.
+\item
+Added \code{deffixer}, to introduce fixers and associated theorems.
+\item
+Added \code{defiso}, to verify and record isomorphic mappings;
+described in the paper
+\textit{Isomorphic Data Type Transformations} at this workshop.
+\item
+Added \code{defsurj}, to verify and record surjective mappings.
+\item
+Added \code{defmax-nat},
+to declaratively define the maximum of
+a (possibly infinite) set of natural numbers.
+\item
+Added \code{defmacro+}, which enhances \code{defmacro} with XDOC integration.
+\item
+These will be gradually moved to \code{std/util}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/obags}:
+Ordered bags, i.e.\ finite bags represented as non-strictly ordered lists.
+Cf.\ omaps (below) and osets (in Std/osets).
+
+\separation
+
+\bookpath{kestrel/utilities/omaps}:
+Ordered maps, i.e.\ finite maps represented as strictly ordered alists.
+Cf.\ obags (above) and osets (in Std/osets).
+
+\separation
+
+\bookpath{kestrel/utilities/orelse.lisp}:
+Improved \code{orelse*}.
+
+\separation
+
+\bookpath{kestrel/utilities/sublis-expr-plus.lisp}:
+Added \code{sublis-expr+},
+which replaces terms by variables also inside lambda expressions.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{std/testing}:
+A new Std/testing library, with standard utilities for building tests.
+\begin{itemize}
+\item
+\code{misc/assert.lisp} and \code{misc/eval.lisp}
+have been moved here and refactored into smaller files.
+\item
+This library contains utilities to build tests,
+not actual tests (aside from perhaps some to test the testing utilities).
+\end{itemize}
+
+\separation
+
+\bookpath{std/typed-alists}:
+A new Std/typed-alists library, with alists of various types.
+\begin{itemize}
+\item
+Analogous to Std/typed-lists.
+\item
+Add more, as needed.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{build}:
+Books build system.
+\begin{itemize}
+\item \bookpath{build/*.certdep}: Track dependencies of books on certain ACL2 system features---see xdoc topic \code{acl2-system-feature-dependencies}.
+\item Add \code{ifdef-(un)define(!)} for setting/unsetting environment
+  variables (non-)locally, with effects on \code{if(n)def} forms
+  understood by the build system.
+\item \bookpath{build/cert.pl} supporting libraries refactored into proper (?) Perl modules.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/apt}:
+APT (Automated Program Transformations),
+a toolkit to transform programs and program specifications
+with automated support.
+\begin{itemize}
+\item
+Added \code{isodata}, an isomorphic data type transformation,
+described in the paper
+\textit{Isomorphic Data Type Transformations} at this workshop.
+\item
+Added \code{parteval}, a partial evaluation transformation.
+\item
+Added \code{casesplit}, a case splitting transformation.
+\item
+Extended \code{tailrec}, the tail recursion transformation.
+\item
+Extended \code{restrict}, the domain restriction transformation.
+\item
+Added an APT defaults table
+to customize certain behaviors of the APT transformations.
+\item
+Added some APT-specific XDOC constructors
+for both user and developer documentation.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/bitcoin}:
+A library for the Bitcoin cryptocurrency and platform.
+\begin{itemize}
+\item
+Formalized BIP (Bitcoin Improvement Proposal) 32, 39, 43, and 44.
+(These are for cryptocurrency wallets.)
+\item
+Added verified executable attachments
+for some declaratively specified functions.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/ethereum}:
+A library for the Ethereum cryptocurrency and platform.
+\begin{itemize}
+\item
+Completed the RLP development, which started before ACL2-2018.
+This development is described in the paper
+\textit{Ethereum's Recursive Length Prefix in ACL2} at this workshop.
+\item
+Formalized Modified Merkle Patricia tree and the Ethereum database.
+\item
+Formalized the construction of signed transactions.
+\item
+Formalized the calculation of an account address from a public key.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/fty}:
+Extensions of the FTY library.
+\begin{itemize}
+\item
+Added \code{deflist-of-len}, for lists of specified size.
+\item
+Added \code{defset}, for osets of specified types.
+\item
+Added \code{defomap}, for omaps of specified types.
+\item
+Improved \code{defbyte} and \code{defbytelist} to generate more theorems.
+\item
+Added \code{defbyte-ihs-theorems},
+to generate theorems about \code{defbyte} fixtypes
+and functions in the IHS library.
+\item
+Added \code{deffixequiv-sk},
+to automate the proofs of \code{deffixequiv} for \code{defun-sk} functions.
+\item
+Added \code{defflatsum},
+for flat (i.e.\ not tagged) sums of disjoint types.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/hdwallet}:
+A proof-of-concept hierarchical deterministic wallet for cryptocurrencies.
+\begin{itemize}
+\item
+Uses components from the cryptographic, Bitcoin, and Ethereum libraries.
+\item
+Holds ether, but can be extended to other currencies.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/java}:
+A library for Java.
+\begin{itemize}
+\item
+Significantly extended ATJ, the Java code generator for ACL2.
+In particular, a shallow embedding approach is now supported.
+Described in a rump talk at this workshop.
+\item
+Extended the Java language formalization with models of
+various aspects of the language's syntax and semantics.
+\item
+Added a grammar of Java written in ABNF (Augmented Backus-Naur Form),
+and processed it with the verified ABNF grammar parser in \code{kestrel/abnf}.
+(This parses the ABNF grammar of Java, not Java.)
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/soft}:
+Macros to mimic second-order functions and theorems.
+\begin{itemize}
+\item
+Simplified macros to no longer require explicit function parameters.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities/digits-any-base}:
+Conversions between natural numbers
+and their representations in arbitrary bases.
+\begin{itemize}
+\item
+Added functions to group and ungroup digits between larger and smaller bases.
+\item
+Added macros to generate specialized, more concise functions
+for specified bases.
+\end{itemize}
+
+\separation
+
+\bookpath{kestrel/utilities/strings}:
+String utilities (to be eventually integrated with Std/strings).
+\begin{itemize}
+\item
+Added functions to convert between strings or character lists
+and even-length lists of hexadecimal digits.
+\end{itemize}
+
+\separation
+
+\bookpath{kestrel/utilities/typed-lists}:
+Typed list utilities (to be eventually integrated with Std/typed-lists).
+\begin{itemize}
+\item
+Added \code{bit-listp}, with associated theorems.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/smtlink}:
+Smtlink, a framework for integrating external SMT solvers into ACL2.
+\begin{itemize}
+\item
+Allow Smtlink to handle functions using \code{cw}.
+\item
+Made it possible to use \code{:smtlink} hint inside an Smtlink proof.
+\item
+Added abstract type support for Smtlink.
+\item
+Fixed the problem of rewrite-loops by changing computed-hints structure in Smtlink.
+\item
+Fixed the {\color{red} \bf{soundness bug}} that \code{unary-/} can be interpreted as integer division in Smtlink.
+\item
+Added a link to an example using Smtlink for verifying an ASP* Pipeline. (This example will be moved to the ACL2 repository once we have the next stable version of Smtlink.)
+\item
+Made improvements to the documentation.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/x86isa}:
+X86ISA, the formal model of the x86 ISA.
+\begin{itemize}
+\item
+Improved some aspects of the model of segmented memory.
+\item
+Added support for additional forms of the
+\code{MOV}, \code{SHLD}, and \code{SHRD} instructions.
+\item
+Improved the \code{definst} macro to generate more boilerplate code.
+\item
+Updates to program instrumentation utilities to allow logging (parts of) the x86 state to a specified file in both CCL and SBCL.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{std/alists}:
+Standard association list library.
+\begin{itemize}
+\item
+Added a function \code{remove-assocs},
+which generalizes \code{remove-assoc} from single to multiple keys.
+\item
+Added functions \code{alist-map-keys} and \code{alist-map-vals},
+which ignore shadowed pairs.
+\item
+Added some theorems.
+\end{itemize}
+
+\separation
+
+\bookpath{std/basic}:
+Standard basic library.
+\begin{itemize}
+\item
+Added recognizers \code{bytep} and \code{nibblep}
+for ``standard'' bytes and nibbles.
+\item
+Added \code{pos-fix}, a fixer for \code{posp}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{std/lists}:
+Standard list library.
+\begin{itemize}
+\item
+The function \code{list-fix} has been made built-in,
+with the name \code{true-list-fix}.
+\item
+The \code{take-redefinition} theorem has been removed,
+because the built-in definition of \code{take} has been
+changed to be like that redefinition.
+\item
+Added a file with theorems about \code{union-equal}.
+\end{itemize}
+
+\separation
+
+\bookpath{std/strings}:
+Standard string library.
+\begin{itemize}
+\item
+Added a variant \code{strtok!} of \code{strtok}.
+It does not treat multiple contiguous delimiters like one.
+\item
+Added \code{printtree} library for efficiently composing large strings from pieces.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{std/typed-lists}:
+Standard typed lists library.
+\begin{itemize}
+\item
+Added lists of strings and symbols.
+(Originally in \code{system/pseudo-good-worldp.lisp}.)
+\end{itemize}
+
+\separation
+
+\bookpath{std/util}:
+Standard utility library.
+\begin{itemize}
+\item
+The
+\code{defthm-natp},
+\code{defthm-unsigned-byte-p}, and
+\code{defthm-signed-byte-p}
+utilities have been moved here from the X86ISA model.
+\item
+The \code{use-termhint} utility has been moved here
+from \code{clause-processors/use-hint.lisp}.
+\item Added \code{defret-mutual-generate}, discussed in the paper \textit{Generating Mutually Inductive Theorems from Concise Descriptions} at this workshop.
+\item
+Like \code{defun-nx}, \code{define} macro also disables the executable-counterpart of a non-executable function now.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{system/pseudo-good-worldp.lisp}:
+Factored out some reusable functions.
+\begin{itemize}
+\item
+Predicates for
+event forms,
+command forms,
+event landmarks,
+command landmarks, and
+tests-and-calls structures
+are now in separate files.
+\item
+More could be factored out.
+\item
+These could be perhaps integrated with Std/system. 
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{xdoc/constructors.lisp}:
+Made some improvements and additions.
+
+\separation
+
+\bookpath{xdoc/defxdoc-plus.lisp}:
+Added \code{defxdoc+}, an enhancement of \code{defxdoc}
+that supports more concise expression of
+ordering of subtopics and default parents.
+
+\end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

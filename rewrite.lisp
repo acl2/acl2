@@ -7910,15 +7910,15 @@
 (defun merge-term-order (l1 l2)
   (declare (xargs :guard (and (pseudo-term-listp l1)
                               (pseudo-term-listp l2))))
-  (cond ((null l1) l2)
-        ((null l2) l1)
+  (cond ((endp l1) l2)
+        ((endp l2) l1)
         ((term-order (car l1) (car l2))
          (cons (car l1) (merge-term-order (cdr l1) l2)))
         (t (cons (car l2) (merge-term-order l1 (cdr l2))))))
 
 (defun merge-sort-term-order (l)
   (declare (xargs :guard (pseudo-term-listp l)))
-  (cond ((null (cdr l)) l)
+  (cond ((endp (cdr l)) l)
         (t (merge-term-order (merge-sort-term-order (evens l))
                              (merge-sort-term-order (odds l))))))
 

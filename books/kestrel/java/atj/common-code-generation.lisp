@@ -320,34 +320,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-symbol ((symbol symbolp))
+(define atj-gen-symbol ((symbol symbolp) (deep$ symbolp) (guards$ symbolp))
   :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 symbol."
   :long
-  (xdoc::topstring-p
-   "Since AIJ has a number of constants (i.e. static final fields)
-    for certain common symbols,
-    we just reference the appropriate constant
-    if the symbol in question is among those symbols.
-    Otherwise, we build it in the general way.")
-  (b* ((pair (assoc-eq symbol *aij-symbol-constants*)))
-    (if pair
-        (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
-      (jexpr-smethod *aij-type-symbol*
-                     "make"
-                     (list (atj-gen-jstring
-                            (symbol-package-name symbol))
-                           (atj-gen-jstring
-                            (symbol-name symbol)))))))
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding with guards,
+     for the symbols @('t') and @('nil')
+     we generate the Java literals @('true') and @('false').
+     This is because, in the shallow embedding with guards,
+     ACL2 booleans are represented as Java booleans.")
+   (xdoc::p
+    "In all other cases,
+     we generate an expression of type @('Acl2Symbol').
+     Since AIJ has a number of constants (i.e. static final fields)
+     for certain common symbols,
+     we just reference the appropriate constant
+     if the symbol in question is among those symbols.
+     Otherwise, we build it in the general way."))
+  (if (and (booleanp symbol)
+           (not deep$)
+           guards$)
+      (if symbol (jexpr-literal-true) (jexpr-literal-false))
+    (b* ((pair (assoc-eq symbol *aij-symbol-constants*)))
+      (if pair
+          (jexpr-name (str::cat "Acl2Symbol." (cdr pair)))
+        (jexpr-smethod *aij-type-symbol*
+                       "make"
+                       (list (atj-gen-jstring
+                              (symbol-package-name symbol))
+                             (atj-gen-jstring
+                              (symbol-name symbol))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-symbols ((symbols symbol-listp))
+(define atj-gen-symbols ((symbols symbol-listp)
+                         (deep$ symbolp)
+                         (guards$ symbolp))
   :returns (exprs jexpr-listp)
   :short "Lift @(tsee atj-gen-symbol) to lists."
   (cond ((endp symbols) nil)
-        (t (cons (atj-gen-symbol (car symbols))
-                 (atj-gen-symbols (cdr symbols))))))
+        (t (cons (atj-gen-symbol (car symbols) deep$ guards$)
+                 (atj-gen-symbols (cdr symbols) deep$ guards$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,6 +461,15 @@
      builds the @(tsee cdr),
      sets another local variable to it,
      and then calls @('Acl2ConsValue.make()') with the two local variables.")
+   (xdoc::p
+    "The @('deep$') and @('guards$') arguments are passed
+     from @(tsee atj-gen-value) to @(tsee atj-gen-symbol)
+     only at the top level;
+     this is so that we generate Java boolean literals for @('t') and @('nil')
+     in the shallow embedding with guards.
+     But at the non-top levels, these flags are set to @('t') and @('nil'),
+     because @('t') and @('nil') inside other values (@(tsee cons)es)
+     are represented as @('Acl2Symbol')s.")
    (xdoc::@def "atj-gen-value")
    (xdoc::@def "atj-gen-values")
    (xdoc::@def "atj-gen-list")
@@ -453,7 +477,9 @@
 
   (define atj-gen-value (value
                          (jvar-value-base stringp)
-                         (jvar-value-index posp))
+                         (jvar-value-index posp)
+                         (deep$ booleanp)
+                         (guards$ booleanp))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
@@ -465,7 +491,7 @@
                                (atj-gen-string value)
                                jvar-value-index))
           ((symbolp value) (mv nil
-                               (atj-gen-symbol value)
+                               (atj-gen-symbol value deep$ guards$)
                                jvar-value-index))
           ((integerp value) (mv nil
                                 (atj-gen-integer value)
@@ -504,7 +530,9 @@
                        jvar-value-index)
                    (atj-gen-value (car values)
                                   jvar-value-base
-                                  jvar-value-index))
+                                  jvar-value-index
+                                  t
+                                  nil))
                   ((mv rest-block
                        rest-jexrps
                        jvar-value-index)
@@ -547,7 +575,9 @@
               jvar-value-index)
           (atj-gen-value (car conspair)
                          jvar-value-base
-                         jvar-value-index))
+                         jvar-value-index
+                         t
+                         nil))
          ((mv car-locvar-block
               car-jvar
               jvar-value-index)
@@ -560,7 +590,9 @@
               jvar-value-index)
           (atj-gen-value (cdr conspair)
                          jvar-value-base
-                         jvar-value-index))
+                         jvar-value-index
+                         t
+                         nil))
          ((mv cdr-locvar-block
               cdr-jvar
               jvar-value-index)
@@ -595,6 +627,13 @@
      for the @(tsee car) and @(tsee cdr) sub-expressions of a @(tsee cons).
      We generate a single expression, without blocks;
      in this sense it is ``flat''.")
+   (xdoc::p
+    "We set the @('deep$') and @('guards$') flags to @('t') and @('nil')
+     when we call @(tsee atj-gen-symbol),
+     so that we generate @('Acl2Symbol')s for the ACL2 booleans.
+     This is because @(tsee atj-gen-value-flat) is only called
+     on @(tsee cons)es at the top level;
+     see the documentation of @(tsee atj-gen-value).")
    (xdoc::@def "atj-gen-value-flat")
    (xdoc::@def "atj-gen-values-flat")
    (xdoc::@def "atj-gen-list-flat")
@@ -605,7 +644,7 @@
     :parents nil
     (cond ((characterp value) (atj-gen-char value))
           ((stringp value) (atj-gen-string value))
-          ((symbolp value) (atj-gen-symbol value))
+          ((symbolp value) (atj-gen-symbol value t nil))
           ((integerp value) (atj-gen-integer value))
           ((rationalp value) (atj-gen-rational value))
           ((acl2-numberp value) (atj-gen-number value))
@@ -615,7 +654,7 @@
                             value)
                      (jexpr-name "this-is-irrelevant"))))
     ;; 2nd component is larger than 1 and 0
-    ;; so that the calls of ATJ-GEN-LIST_FLAT and ATJ-GEN-CONS-FLAT decrease:
+    ;; so that the calls of ATJ-GEN-LIST-FLAT and ATJ-GEN-CONS-FLAT decrease:
     :measure (two-nats-measure (acl2-count value) 2))
 
   (define atj-gen-values-flat ((values true-listp))
@@ -718,7 +757,11 @@
      initialized with an empty Java list
      whose capacity is the length of the import list.
      After all the assignments, we generate a method call
-     to add the ACL2 package definition with the calculated import list."))
+     to add the ACL2 package definition with the calculated import list.")
+   (xdoc::p
+    "We set the @('deep$') and @('guards$') flag to @('t') and @('nil')
+     when we call @(tsee atj-gen-symbol),
+     so that we generate @('Acl2Symbol')s for ACL2 booleans."))
   (b* (((run-when verbose$)
         (cw "  ~s0~%" pkg))
        (jvar-imports "imports")
@@ -759,7 +802,7 @@
      :returns (block jblockp)
      :parents nil
      (cond ((endp imports) nil)
-           (t (b* ((import-expr (atj-gen-symbol (car imports)))
+           (t (b* ((import-expr (atj-gen-symbol (car imports) t nil))
                    (first-block (jblock-method (str::cat jvar-imports ".add")
                                                (list import-expr)))
                    (rest-block (atj-gen-pkg-method-aux (cdr imports)
@@ -977,7 +1020,9 @@
 
 (define atj-gen-test-value ((tvalue atj-test-value-p)
                             (jvar-value-base stringp)
-                            (jvar-value-index posp))
+                            (jvar-value-index posp)
+                            (deep$ booleanp)
+                            (guards$ booleanp))
   :returns (mv (block jblockp)
                (expr jexprp)
                (type atj-typep)
@@ -999,7 +1044,11 @@
   (atj-test-value-case
    tvalue
    :acl2 (b* (((mv block expr jvar-value-index)
-               (atj-gen-value tvalue.get jvar-value-base jvar-value-index)))
+               (atj-gen-value tvalue.get
+                              jvar-value-base
+                              jvar-value-index
+                              deep$
+                              guards$)))
            (mv block
                expr
                (atj-type-of-value tvalue.get)
@@ -1057,7 +1106,9 @@
 
 (define atj-gen-test-values ((tvalues atj-test-value-listp)
                              (jvar-value-base stringp)
-                             (jvar-value-index posp))
+                             (jvar-value-index posp)
+                             (deep$ booleanp)
+                             (guards$ booleanp))
   :returns (mv (block jblockp)
                (exprs jexpr-listp)
                (types atj-type-listp)
@@ -1065,9 +1116,17 @@
   :short "Lift @(tsee atj-gen-test-value) to lists."
   (b* (((when (endp tvalues)) (mv nil nil nil jvar-value-index))
        ((mv first-block first-expr first-type jvar-value-index)
-        (atj-gen-test-value (car tvalues) jvar-value-base jvar-value-index))
+        (atj-gen-test-value (car tvalues)
+                            jvar-value-base
+                            jvar-value-index
+                            deep$
+                            guards$))
        ((mv rest-block rest-exprs rest-types jvar-value-index)
-        (atj-gen-test-values (cdr tvalues) jvar-value-base jvar-value-index)))
+        (atj-gen-test-values (cdr tvalues)
+                             jvar-value-base
+                             jvar-value-index
+                             deep$
+                             guards$)))
     (mv (append first-block rest-block)
         (cons first-expr rest-exprs)
         (cons first-type rest-types)

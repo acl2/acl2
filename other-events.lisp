@@ -317,7 +317,7 @@
        (the (signed-byte 30)
             (fn-count-evg-max-val))))
 
-(defun defconst-fn (name form state doc event-form)
+(defun defconst-fn (name form state event-form)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -329,8 +329,7 @@
   (with-ctx-summarized
    (make-ctx-for-event event-form (cons 'defconst name))
    (let ((wrld1 (w state))
-         (event-form (or event-form (list* 'defconst name form
-                                           (if doc (list doc) nil)))))
+         (event-form (or event-form (list 'defconst name form))))
      (er-progn
       (chk-all-but-new-name name ctx 'const wrld1 state)
       (chk-legal-defconst-name name state)
@@ -1035,7 +1034,6 @@
             (list 'quote name)
             (list 'quote form)
             'state
-            (list 'quote doc)
             (list 'quote event-form)))
     (defmacro defstobj (&whole event-form name &rest args)
       (list 'defstobj-fn

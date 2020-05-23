@@ -329,6 +329,8 @@
 
 (defconst *b1* t
 
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "The constant *B1*, which has value T, plays at least four roles:
 
      (a) *B1* represents 'true'.
@@ -338,13 +340,17 @@
      (c) *B1* represents 'negative' as an arithmetic sign in a general
          integer.
 
-     (d) *B1* refers to the the CAR side of a CONSP NORMP.")
+     (d) *B1* refers to the the CAR side of a CONSP NORMP."
+|#)
 
 (defconst *b0* nil
 
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "The constant *B0*, which always has value NIL, represents 'false',
   'bit 0', 'positive as an arithmetic sign', 'CDR side', and, of
-  course, the empty list.")
+  course, the empty list."
+|#)
 
 (defconst *list-b1* (hist *b1*))
 

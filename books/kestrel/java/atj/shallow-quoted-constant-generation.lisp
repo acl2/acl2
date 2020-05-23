@@ -422,7 +422,7 @@
     This field cannot be private,
     otherwise the classes for other packages could not access it.")
   (b* ((name (atj-gen-shallow-symbol-field-name symbol))
-       (init (atj-gen-symbol symbol))
+       (init (atj-gen-symbol symbol t nil))
        (type *aij-type-symbol*))
     (make-jfield :access (jaccess-default)
                  :static? t
@@ -542,13 +542,18 @@
 
 (define atj-gen-shallow-symbol ((symbol symbolp)
                                 (pkg-class-names string-string-alistp)
-                                (curr-pkg stringp))
+                                (curr-pkg stringp)
+                                (guards$ booleanp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 quoted symbol."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This depends on the current package,
+    "If guards are assumed and the symbol is an ACL2 boolean,
+     we generate the corresponding Java boolean literal.")
+   (xdoc::p
+    "In all other cases,
+     the generated expression depends on the current package,
      i.e. the package of the function where the quoted symbol occurs.
      If the current package is the same as the symbol's package,
      or if the current package imports the symbol,
@@ -557,7 +562,10 @@
      Otherwise, we generate a qualified name,
      preceded by the name of the class for the symbol's package.
      This mirrors the rules for symbol references in ACL2."))
-  (b* ((sym-pkg (symbol-package-name symbol))
+  (b* (((when (and guards$
+                   (booleanp symbol)))
+        (if symbol (jexpr-literal-true) (jexpr-literal-false)))
+       (sym-pkg (symbol-package-name symbol))
        (simple-name (atj-gen-shallow-symbol-field-name symbol))
        ((when (or (equal sym-pkg curr-pkg)
                   (member-eq symbol (pkg-imports curr-pkg))))
@@ -580,7 +588,8 @@
 (define atj-gen-shallow-value (value
                                (qpairs cons-pos-alistp)
                                (pkg-class-names string-string-alistp)
-                               (curr-pkg stringp))
+                               (curr-pkg stringp)
+                               (guards$ booleanp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 value."
   (cond ((acl2-numberp value) (atj-gen-shallow-number value))
@@ -588,7 +597,8 @@
         ((stringp value) (atj-gen-shallow-string value))
         ((symbolp value) (atj-gen-shallow-symbol value
                                                  pkg-class-names
-                                                 curr-pkg))
+                                                 curr-pkg
+                                                 guards$))
         ((consp value) (atj-gen-shallow-cons value qpairs))
         (t (prog2$ (raise "Internal error: ~x0 is not a recognized value."
                           value)

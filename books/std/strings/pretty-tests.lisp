@@ -37,7 +37,6 @@
 
 (in-package "STR")
 (include-book "pretty")
-(include-book "std/testing/assert" :dir :system)
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
 (include-book "centaur/misc/memory-mgmt" :dir :system)
