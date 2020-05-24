@@ -139,8 +139,8 @@
 ;; using code from bvseq/packbv.lisp
 ;; This book also brings in other things we use like getbit.
 
-(include-book "kestrel/bv-lists/packbv" :dir :system)
-(include-book "kestrel/bv-lists/unpackbv" :dir :system)
+(include-book "kestrel/bv-lists/packbv-def" :dir :system)
+(include-book "kestrel/bv-lists/unpackbv-def" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits-little" :dir :system)
 (include-book "kestrel/bv-lists/bits-to-bytes-little" :dir :system)
 
@@ -173,6 +173,8 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (local (include-book "kestrel/bv-lists/packbv-and-unpackbv" :dir :system)) ;for unpackbv-of-packbv
 

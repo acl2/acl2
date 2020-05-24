@@ -1,7 +1,7 @@
-; BV Lists Library: unpackbv
+; BV Lists Library: Theorems about unpackbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,28 +11,12 @@
 
 (in-package "ACL2")
 
-;; This book contains a utility for unpacking (i.e., diassembling) larger bit
-;; vectors into smaller bit vectors.  The smaller bit vectors can of course be
-;; single bits.
-
+(include-book "unpackbv-def")
 (include-book "all-unsigned-byte-p")
-(include-book "../bv/bvcat")
+(local (include-book "../bv/bvcat"))
 (local (include-book "../../ihs/ihs-lemmas")) ;why?
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/cons"))
-
-;num is the number of chunks, size is the number of bits per chunk.
-;The higher bits of BV come first in the result.
-(defund unpackbv (num size bv)
-  (declare (type (integer 0 *) size) ;todo: disallow 0?
-           (type (integer 0 *) num)
-           (type integer bv))
-  (if (zp num)
-      nil
-    (cons (slice (+ -1 (* num size))
-                 (* (+ -1 num) size)
-                 bv)
-          (unpackbv (+ -1 num) size bv))))
 
 (defthm true-listp-of-unpackbv
   (true-listp (unpackbv num size bv)))
