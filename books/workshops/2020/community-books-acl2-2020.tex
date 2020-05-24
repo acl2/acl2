@@ -150,13 +150,13 @@ New library of metareasoning utilities.
 
 \newlibtitle
 
-\bookpath{centaur/svl/}: A  framework to simulate and  reason about Verilog
-modules with design hierarchy.
+\bookpath{centaur/svl}:
+A framework to simulate and reason about Verilog modules with design hierarchy.
 \begin{itemize}
-\item   Uses   'centaur/sv/'   and    'centaur/vl/'   books   to   generate
+\item Uses \code{centaur/sv} and \code{centaur/vl} books to generate
   simulation-ready SVL designs. May sometimes be used in lieu of SVTV. 
 \item Selected submodules may not be flattened to retain design hierarchy.
-\item  Does not support combinational loops (e.g., latches)
+\item Does not support combinational loops (e.g., latches).
 \end{itemize}
 
 \end{frame}
@@ -313,21 +313,25 @@ which replaces terms by variables also inside lambda expressions.
 
 \newlibtitle
 
-\bookpath{projects/rp-rewriter/}:  A  customized  rewriter and  a  verified
-clause  processor. Implemented  for  multiplier verification  but  it is  a
-generic rewriter.  Details are discussed  in the paper {\it RP-Rewriter: An
-  Optimized Rewriter for Large Terms in ACL2} at this workshop.
+\bookpath{projects/rp-rewriter}:
+A customized rewriter and a verified
+clause processor. Implemented for multiplier verification but it is a
+generic rewriter. Details are discussed in the paper {\it RP-Rewriter: An
+Optimized Rewriter for Large Terms in ACL2} at this workshop.
 
 \separation
 
-\bookpath{projects/rp-rewriter/lib/\{mult,mult2\}/}:    An   automated    and
-efficient tool to verify integer multipliers.
+\bookpath{projects/rp-rewriter/lib/\{mult,mult2\}}:
+An automated and efficient tool to verify integer multipliers.
 \begin{itemize}
-\item  Support   for  simple  of   Booth  encoded  partial   products,  and
+\item Support for simple of Booth encoded partial products, and
   Wallace-tree multipliers.
 \item Uses SVL and RP-Rewriter.
-\item  Two libraries,  same  functionality.   \{mult\}: more  user-friendly
-  debugging.  \{mult2\}: 30\% faster.
+\item Two libraries, same  functionality.
+  \begin{itemize}
+  \item \code{mult}: more  user-friendly debugging.
+  \item\code{mult2}: 30\% faster.
+  \end{itemize}
 \item  Very efficient:  64x64  multipliers  in less  than  2 seconds,  some
   1024x1024 multipliers in less than 10 minutes.
 \end{itemize}
