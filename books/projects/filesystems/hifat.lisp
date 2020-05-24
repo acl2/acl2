@@ -129,22 +129,6 @@
                                      (unsigned-byte-p))))))
   )
 
-(defthm
-  down-alpha-p-of-upcase-char
-  (not (str::down-alpha-p (str::upcase-char x)))
-  :hints
-  (("goal"
-    :in-theory (enable str::upcase-char str::down-alpha-p))))
-
-(defthm
-  charlist-has-some-down-alpha-p-of-upcase-charlist
-  (not (str::charlist-has-some-down-alpha-p
-        (str::upcase-charlist x)))
-  :hints
-  (("goal"
-    :in-theory (enable str::charlist-has-some-down-alpha-p
-                       str::upcase-charlist))))
-
 (defthmd integer-listp-when-unsigned-byte-listp
   (implies (not (integer-listp x))
            (not (unsigned-byte-listp n x))))
@@ -155,11 +139,6 @@
 
 ;; These two theorems cannot be moved to to file-system-lemmas.lisp, because
 ;; they're expressed in terms of explode, which is not a built-in function.
-(defthm len-of-explode-of-string-append
-  (equal (len (explode (string-append str1 str2)))
-         (+ (len (explode str1))
-            (len (explode str2)))))
-
 (defthmd length-of-empty-list
   (iff (equal (len (explode x)) 0)
        (equal (str-fix x) ""))
