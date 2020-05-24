@@ -172,17 +172,28 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 Executable specifications and abstract interfaces of cryptographic functions.
 \begin{itemize}
 \item
-ECDSA with secp256k1.
+Specification of short Weierstrass elliptic curves in a prime field.
+Proof of closure under the group operation.
+Instantiation to the secp256k1 curve used by Bitcoin and Ethereum.
 \item
-Proofs about elliptic curves.
+Specification of Deterministic ECDSA
+(Elliptic Curve Digital Signature Algorithm)
+following IETF RFC 6979.
 \item
-Keccak.
+Specification of HMAC (Hashed Key Message Authentication Code)
+following IETF RFC 2104.
+Instantiated with SHA-256 and SHA-512.
+\item
+Specification of PBKDF2 (Password-Based Key Derivation Function 2)
+following IETF RFC 8018.
+Instantiated with HMAC-SHA-512.
+\item
+Specification of the Keccak family of permutations, sponge functions,
+and hash functions, and the FIPS 202 SHA-3 hash functions based on Keccak.
 \item
 SHA-2.
 \item
-HMAC-SHA-256 and HMAC-SHA-512.
-\item
-PBKDF2 with HMAC-SHA-512.
+Padding.
 \end{itemize}
 
 \end{frame}
