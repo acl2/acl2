@@ -26,9 +26,12 @@
   (append '(test2-fast a b c) nil)
 ;; [Jared] removed the doc section here in my effort to remove the legacy
 ;; documentation system
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
  "*test2* is just a test of defconst-fast~/~/
 
-  Not much to say about *test2*.....~/")
+  Not much to say about *test2*.....~/"
+|#)
 
 (defconst *test3* ; old defconst
   (append '(test3 a b c) nil))

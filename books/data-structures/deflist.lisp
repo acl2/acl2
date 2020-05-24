@@ -878,7 +878,10 @@
 
 (defconst *deflist-options*
   '(:CAR-RULE-CLASSES :NTH-RULE-CLASSES :THEORY :OMIT-DEFUN :THEORY-NAME)
-  "This list contains all of the  valid keyword options for DEFLIST.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "This list contains all of the  valid keyword options for DEFLIST."
+|#)
 
 (defconst *deflist-theory-options*
   '((append)
@@ -903,17 +906,23 @@
     (subseq)
     (true-listp)
     (update-nth))
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "This Alist contains all of the symbols recognized as valid options for
    the DEFLIST :THEORY option. Each symbol is associated with the other functions
-   that must be present due to functional dependencies.")
+   that must be present due to functional dependencies."
+|#)
 
 (defconst *forward-chaining-elem-types*
   '(integerp rationalp complex-rationalp symbolp true-listp stringp characterp
 	     alistp acl2-numberp
              #+:non-standard-analysis realp
              #+:non-standard-analysis complexp)
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "When an element type recognizer is one of these, then CAR-RULE-CLASSES and
-NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite.")
+NTH-RULE-CLASSES defaults to :forward-chaining, otherwise :rewrite."
+|#)
 
 (defun my-set-difference (l1 l2)
   (cond ((atom l1) nil)

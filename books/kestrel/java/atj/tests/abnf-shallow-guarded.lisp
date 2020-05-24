@@ -31,7 +31,7 @@
 
 (java::atj-main-function-type nat-match-insensitive-char-p
                               (:ainteger :acharacter)
-                              :asymbol)
+                              :aboolean)
 
 (java::atj-main-function-type parse-exact
                               (:ainteger :avalue)

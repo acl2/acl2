@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "octal")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (and (equal (octal-digit-val #\0) #x0)
               (equal (octal-digit-val #\1) #x1)

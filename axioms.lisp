@@ -681,19 +681,19 @@
       ))
 
 #+acl2-loop-only
-(defconst nil 'nil
+(defconst nil
 
-; We cannot document a NIL symbol.
+; NIL, a symbol, represents in Common Lisp both the false truth value and the
+; empty list.
 
- " NIL, a symbol, represents in Common Lisp both the false truth value
- and the empty list.")
+  'nil)
 
 #+acl2-loop-only
-(defconst t 't
+(defconst t
 
-; We cannot document a NIL symbol.  So, we do not document T either.
+; T, a symbol, represents the true truth value in Common Lisp.
 
-  "T, a symbol, represents the true truth value in Common Lisp.")
+  't)
 
 (defconst *stobj-inline-declare*
 
@@ -9057,7 +9057,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro defconst (&whole event-form name form &optional doc)
+(defmacro defconst (&whole event-form name form)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -9069,7 +9069,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote name)
         (list 'quote form)
         'state
-        (list 'quote doc)
         (list 'quote event-form)))
 
 #+acl2-loop-only

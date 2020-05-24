@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "url-encode")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (equal (implode (url-encode-char #\a))           "a"))
 (assert! (equal (implode (url-encode-char #\Space))       "%20"))

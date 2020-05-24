@@ -12,8 +12,6 @@
 
 (include-book "natives")
 
-(include-book "../types-for-natives")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the natively implemented functions, with testing code.
