@@ -144,6 +144,25 @@ New library of metareasoning utilities.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Added by Mertcan Temel:
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{centaur/svl/}: A  framework to simulate and  reason about Verilog
+modules with design hierarchy.
+\begin{itemize}
+\item   Uses   'centaur/sv/'   and    'centaur/vl/'   books   to   generate
+  simulation-ready SVL designs. May sometimes be used in lieu of SVTV. 
+\item Selected submodules may not be flattened to retain design hierarchy.
+\item  Does not support combinational loops (e.g., latches)
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}
 
 \newlibtitle
@@ -290,6 +309,35 @@ which replaces terms by variables also inside lambda expressions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Added by Mertcan Temel:
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{projects/rp-rewriter/}:  A  customized  rewriter and  a  verified
+clause  processor. Implemented  for  multiplier verification  but  it is  a
+generic rewriter.  Details are discussed  in the paper {\it RP-Rewriter: An
+  Optimized Rewriter for Large Terms in ACL2} at this workshop.
+
+\separation
+
+\bookpath{projects/rp-rewriter/lib/\{mult,mult2\}/}:    An   automated    and
+efficient tool to verify integer multipliers.
+\begin{itemize}
+\item  Support   for  simple  of   Booth  encoded  partial   products,  and
+  Wallace-tree multipliers.
+\item Uses SVL and RP-Rewriter.
+\item  Two libraries,  same  functionality.   \{mult\}: more  user-friendly
+  debugging.  \{mult2\}: 30\% faster.
+\item  Very efficient:  64x64  multipliers  in less  than  2 seconds,  some
+  1024x1024 multipliers in less than 10 minutes.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{frame}
 
 \newlibtitle
@@ -314,54 +362,6 @@ A new Std/typed-alists library, with alists of various types.
 Analogous to Std/typed-lists.
 \item
 Add more, as needed.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% Added by Mertcan Temel:
-
-\begin{frame}
-
-\newlibtitle
-
-\bookpath{centaur/svl/}: A  framework to simulate and  reason about Verilog
-modules with design hierarchy.
-\begin{itemize}
-\item   Uses   'centaur/sv/'   and    'centaur/vl/'   books   to   generate
-  simulation-ready SVL designs. May sometimes be used in lieu of SVTV. 
-\item Selected submodules may not be flattened to retain design hierarchy.
-\item  Does not support combinational loops (e.g., latches)
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% Added by Mertcan Temel:
-
-\begin{frame}
-
-\newlibtitle
-
-\bookpath{projects/rp-rewriter/}:  A  customized  rewriter and  a  verified
-clause  processor. Implemented  for  multiplier verification  but  it is  a
-generic rewriter.  Details are discussed  in the paper {\it RP-Rewriter: An
-  Optimized Rewriter for Large Terms in ACL2} at this workshop.
-
-\separation
-
-\bookpath{projects/rp-rewriter/lib/\{mult,mult2\}/}:    An   automated    and
-efficient tool to verify integer multipliers.
-\begin{itemize}
-\item  Support   for  simple  of   Booth  encoded  partial   products,  and
-  Wallace-tree multipliers.
-\item Uses SVL and RP-Rewriter.
-\item  Two libraries,  same  functionality.   \{mult\}: more  user-friendly
-  debugging.  \{mult2\}: 30\% faster.
-\item  Very efficient:  64x64  multipliers  in less  than  2 seconds,  some
-  1024x1024 multipliers in less than 10 minutes.
 \end{itemize}
 
 \end{frame}
