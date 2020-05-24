@@ -11128,7 +11128,6 @@ Some (rather awful) testing forms are
       (:rewrite delete-dir-ent-correctness-1)
       (:definition non-free-index-list-listp)
       (:definition remove-assoc-equal)
-      (:rewrite subsetp-of-binary-append-3)
       (:linear count-free-clusters-correctness-1)
       (:linear make-clusters-correctness-2)
       (:rewrite clear-clusterchain-reversibility-lemma-1)
@@ -12073,7 +12072,6 @@ Some (rather awful) testing forms are
       :in-theory
       (e/d
        (lofat-to-hifat-helper lofat-to-hifat-helper-correctness-4
-                              hifat-entry-count useful-dir-ent-list-p
                               lofat-remove-file-correctness-1-lemma-61
                               lofat-remove-file-correctness-1-lemma-37
                               lofat-remove-file-correctness-1-lemma-38)

@@ -23,7 +23,6 @@
   (disable
    (:rewrite partial-collapse-correctness-lemma-29)
    (:rewrite partial-collapse-correctness-lemma-21)
-   (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
    (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
    (:rewrite collapse-congruence-lemma-4)
    (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
@@ -31,27 +30,28 @@
    (:rewrite absfat-subsetp-transitivity-lemma-8)
    (:rewrite collapse-congruence-lemma-2)
    (:rewrite absfat-equiv-of-ctx-app-lemma-8)
-   (:rewrite abs-addrs-of-ctx-app-2-lemma-8)
    (:rewrite abs-separate-correctness-1-lemma-19)
    (:rewrite abs-separate-correctness-1-lemma-38)
-   (:rewrite final-val-of-collapse-this-lemma-7)
    (:rewrite
     partial-collapse-correctness-lemma-20)
-   (:rewrite
-    final-val-of-collapse-this-lemma-6 . 1)
    (:rewrite m1-file-alist-p-when-subsetp-equal)
    (:rewrite
     m1-file-alist-p-of-final-val-seq-lemma-3)
    (:rewrite final-val-of-collapse-this-lemma-2)
    (:rewrite collapse-congruence-lemma-5)
    (:rewrite
-    abs-file-alist-p-correctness-1-lemma-1)
-   (:rewrite
     abs-find-file-helper-of-collapse-lemma-3)
    (:rewrite
     partial-collapse-correctness-lemma-106)
    (:rewrite
-    abs-fs-fix-of-put-assoc-equal-lemma-2))))
+    abs-fs-fix-of-put-assoc-equal-lemma-2)
+   final-val-of-collapse-this-lemma-3
+   abs-separate-of-frame->frame-of-collapse-this-lemma-8
+   abs-fs-fix-of-put-assoc-equal-lemma-3
+   (:rewrite
+    absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
+   (:type-prescription
+    abs-directory-file-p-when-m1-file-p-lemma-1))))
 
 (defund abs-find-file-helper (fs pathname)
   (declare (xargs :guard (and (abs-file-alist-p fs)
@@ -1308,7 +1308,7 @@
                        (abs-find-file-correctness-1-lemma-29)
                        (abs-separate-correctness-1-lemma-19
                         abs-separate-of-put-assoc-lemma-1))
-           :use ((:instance abs-separate-correctness-1-lemma-19
+           :use ((:instance abs-separate-of-frame->frame-of-collapse-this-lemma-1
                             (dir (abs-fs-fix dir)))
                  (:instance abs-separate-of-put-assoc-lemma-1
                             (dir (abs-fs-fix dir))))))
@@ -2569,10 +2569,10 @@
     :in-theory (e/d (take-of-nthcdr abs-find-file-helper
                                     abs-addrs-of-ctx-app-1-lemma-7)
                     (nthcdr-of-fat32-filename-list-fix
-                     abs-separate-correctness-1-lemma-14
+                     abs-separate-of-frame->frame-of-collapse-this-lemma-3
                      (:rewrite abs-find-file-correctness-1-lemma-6)))
     :use
-    ((:instance abs-separate-correctness-1-lemma-14
+    ((:instance abs-separate-of-frame->frame-of-collapse-this-lemma-3
                 (x (1st-complete frame))
                 (y (frame-val->src (cdr (assoc-equal (1st-complete frame)
                                                      frame)))))
