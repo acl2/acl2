@@ -1320,6 +1320,24 @@
       (and (rp-meta-valid-syntaxp-sk (car meta-rules) state)
            (rp-meta-valid-syntax-listp (cdr meta-rules) state))))
 
+
+  (define simple-meta-rule-alistp (meta-rules)
+    :short "A simple trig-fnc and meta-fnc pair list recognizer."
+    :parents (rp-utilities)
+    (declare (xargs :Guard t))
+    (if (atom meta-rules)
+        (eq meta-rules nil)
+      (and (consp (car meta-rules))
+           (symbolp (cdar meta-rules))
+           (symbolp (caar meta-rules))
+           (simple-meta-rule-alistp (cdr meta-rules)))))
+
+  (define simple-meta-rule-alist-fix (x)
+    :returns (res simple-meta-rule-alistp)
+    (if (simple-meta-rule-alistp x)
+        x
+      nil))
+
   #|(defmacro rp-meta-rulesp (meta-rules &optional (state 'state))
   (declare (xargs :guard t)
   (ignorable state))
@@ -1467,9 +1485,7 @@
                                                  disabled-meta-rules)))))))
 
 
-(progn
-
-  (defund get-rune-name (fn state)
+(defund get-rune-name (fn state)
     (declare (xargs :guard (and (symbolp fn))
                     :stobjs (state)
                     :verify-guards t))
@@ -1486,29 +1502,7 @@
           (cdr mapping)
         fn)))
 
-  (defmacro add-rp-rule (rule-name &optional (disabled 'nil))
-    `(make-event
-      (b* ((rune (get-rune-name ',rule-name state))
-           (- (get-rules `(,rune) state :warning :err)))
-        `(progn
-           (table rp-rules-inorder ',rune nil)
-           (table rp-rules ',rune ,,(not disabled))))))
 
-  (defmacro def-rp-rule (rule-name rule &rest hints)
-    `(progn
-       (defthm
-         ,rule-name ,rule ,@hints)
-       (add-rp-rule ,rule-name)))
-
-  (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
-    `(progn
-       (,(if defthmd 'defthmd 'defthm)
-        ,rule-name ,rule ,@hints)
-       (add-rp-rule ,rule-name ,disabled))))
-
-
-
- 
 
 
 (defun trans-list (lst)

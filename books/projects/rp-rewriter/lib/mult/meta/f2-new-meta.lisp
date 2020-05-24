@@ -295,8 +295,9 @@
        f2-new d2 d2-new
        d2 --
        evenp2
-       f2-meta-main
-       d2-meta-main))
+       ;;f2-meta-main
+       ;;d2-meta-main
+       ))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1295,43 +1296,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm f2-meta-main-valid-rp-meta-rulep
-  (implies (and (f2-meta-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'f2-meta-main
-                             :trig-fnc 'f2-new
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
+;; (defthm f2-meta-main-valid-rp-meta-rulep
+;;   (implies (and (f2-meta-formula-checks state)
+;;                 (rp-evl-meta-extract-global-facts :state state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 'f2-meta-main
+;;                              :trig-fnc 'f2-new
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
                             
-                            f2-meta-main
-                            valid-sc)))))
+;;                             f2-meta-main
+;;                             valid-sc)))))
 
-(defthm d2-meta-main-valid-rp-meta-rulep
-  (implies (and (f2-meta-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'd2-meta-main
-                             :trig-fnc 'd2-new
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
+;; (defthm d2-meta-main-valid-rp-meta-rulep
+;;   (implies (and (f2-meta-formula-checks state)
+;;                 (rp-evl-meta-extract-global-facts :state state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 'd2-meta-main
+;;                              :trig-fnc 'd2-new
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
                             
-                            d2-meta-main
-                            valid-sc)))))
+;;                             d2-meta-main
+;;                             valid-sc)))))
 
 (rp::add-meta-rules
  f2-meta-formula-checks

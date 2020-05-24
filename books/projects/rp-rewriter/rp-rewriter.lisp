@@ -674,7 +674,68 @@ returns (mv rule rules-rest bindings rp-context)"
       (hons-get-rp-meta term))||#
      (t (mv nil term)))))||#
 
-(encapsulate
+
+(progn
+  (encapsulate
+    ((rp-rw-meta-rule (term meta-fnc-name) (mv t t)
+                      :guard t)
+     (rp-formula-checks (state) t :stobjs (state)))
+    (local
+     (defun rp-rw-meta-rule (term meta-fnc-name)
+       (declare (ignorable meta-fnc-name)
+                (xargs :guard t))
+       (mv term nil)))
+
+    (local
+     (defun rp-formula-checks (state)
+       (declare (xargs :stobjs (state))
+                (ignorable state))
+       t))
+
+    (defthm rp-rw-meta-rule-valid-eval
+      (implies (and (rp-termp term)
+                    (valid-sc term a)
+                    (rp-evl-meta-extract-global-facts)
+                    (rp-formula-checks state))
+               (b* (((mv res-term ?dont-rw)
+                     (rp-rw-meta-rule term meta-fnc-name)))
+                 (and (valid-sc res-term a)
+                      (equal (rp-evlt res-term a)
+                             (rp-evlt term a))))))
+
+    (defthm rp-rw-meta-rule-valid-rp-termp
+      (implies (and (rp-termp term))
+               (b* (((mv res-term ?dont-rw)
+                     (rp-rw-meta-rule term meta-fnc-name)))
+                 (rp-termp res-term))))
+
+    (defthm rp-rw-meta-rule-valid-dont-rw-syntaxp
+      (implies t
+               (b* (((mv ?res-term dont-rw)
+                     (rp-rw-meta-rule term meta-fnc-name)))
+                 (dont-rw-syntaxp dont-rw))))
+
+    (defun rp-rw-meta-rules (term meta-rules rp-state)
+      (declare (xargs :guard (and (consp term)
+                                  (simple-meta-rule-alistp meta-rules))
+                      :verify-guards nil
+                      :stobjs (rp-state)))
+      (b* ((entry (hons-get (car term) meta-rules))
+           ((unless entry) (mv nil term t rp-state))
+           ((mv res-term dont-rw)
+            (rp-rw-meta-rule term (cdr entry)))
+           (term-changed (not (equal res-term term)))
+           (rp-state (if term-changed
+                         (rp-stat-add-to-rules-used-meta-cnt entry
+                                                             rp-state)
+                       rp-state))
+           (rp-state (if term-changed
+                         (rp-state-push-meta-to-rw-stack entry term res-term
+                                                         rp-state)
+                       rp-state)))
+        (mv term-changed res-term dont-rw rp-state)))))
+
+#|(encapsulate
   nil
 
   (defun rp-rw-meta-rule (term meta-rule rp-state state)
@@ -773,7 +834,7 @@ returns (mv rule rules-rest bindings rp-context)"
   (mv t (list 'quote (car (cadr (cadr term)))) t))||#
   #|((case-match term (('cdr ('quote (& . &))) t) (& nil))
   (mv t (list 'quote (cdr (cadr (cadr term)))) t))||#
-  (t (mv nil term nil))))||#)
+  (t (mv nil term nil))))||#)||#
 
 (encapsulate
   nil
@@ -858,7 +919,7 @@ returns (mv rule rules-rest bindings rp-context)"
                                ('quote evisc)
                                ('quote print-base))
        (progn$
-;(cw "here1 ~p0 ~%" term)
+        ;;(cw "here1 ~p0 ~%" term)
         (fmt-to-comment-window
          str
          (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list))
@@ -866,7 +927,7 @@ returns (mv rule rules-rest bindings rp-context)"
       (('fmt-to-comment-window ('quote str) alist
                                ('quote col) ('quote evisc) ('quote print-base))
        (progn$
-;(cw "here2 ~p0 ~%" term)
+        ;;(cw "here2 ~p0 ~%" term)
         (fmt-to-comment-window
          str (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
       (& nil))))
@@ -893,7 +954,7 @@ returns (mv rule rules-rest bindings rp-context)"
                            (natp limit)
                            (booleanp iff-flg)
                            (rule-list-syntaxp rules-for-term)
-                           (rp-meta-rule-recs-p meta-rules state)
+                           (simple-meta-rule-alistp meta-rules)
                            #|(context-syntaxp context)||#
                            (rules-alistp rules-alist)
                            (symbol-alistp exc-rules))
@@ -937,7 +998,7 @@ returns (mv rule rules-rest bindings rp-context)"
             ((mv hyp-rewritten rp-state)
              (rp-rw hyp
                     (rp-hyp rule)
-;(rp-hyp rule)  ;rp-get-dont-rw
+                    ;;(rp-hyp rule)  ;rp-get-dont-rw
                     rp-context
                     (1- limit) rules-alist exc-rules
                     meta-rules t rp-state state))
@@ -976,7 +1037,7 @@ returns (mv rule rules-rest bindings rp-context)"
                      #|(rp-stat-p rp-state)||#
                      #|(rp-syntaxp term)||#
                      (booleanp iff-flg)
-                     (rp-meta-rule-recs-p meta-rules state)
+                     (simple-meta-rule-alistp meta-rules)
                      (rules-alistp rules-alist)
                      (symbol-alistp exc-rules))
              :verify-guards nil
@@ -1054,7 +1115,7 @@ returns (mv rule rules-rest bindings rp-context)"
                            #|(context-syntaxp context)||#
                            (rules-alistp rules-alist)
                            #|(rp-stat-p rp-state)||#
-                           (rp-meta-rule-recs-p meta-rules state)
+                           (simple-meta-rule-alistp meta-rules)
                            (symbol-alistp exc-rules))
                    :mode :logic))
    ;; term: term to be rewritten.
@@ -1143,7 +1204,7 @@ returns (mv rule rules-rest bindings rp-context)"
 
           ;; run used defined meta rules
           ((mv meta-changed-term-flg term meta-dont-rw rp-state)
-           (rp-rw-meta-rules term meta-rules rp-state state))
+           (rp-rw-meta-rules term meta-rules rp-state))
           ((when meta-changed-term-flg)
            (rp-rw term meta-dont-rw context (1- limit) rules-alist exc-rules
                   meta-rules iff-flg rp-state state))
@@ -1172,7 +1233,7 @@ returns (mv rule rules-rest bindings rp-context)"
                            #|(rp-syntaxp-lst subterms)||#
                            #|(rp-stat-p rp-state)||#
                            (rules-alistp rules-alist)
-                           (rp-meta-rule-recs-p meta-rules state)
+                           (simple-meta-rule-alistp meta-rules)
                            (symbol-alistp exc-rules))
                    :verify-guards nil
                    :mode :logic))
@@ -1273,7 +1334,7 @@ returns (mv rule rules-rest bindings rp-context)"
   (declare (xargs :stobjs (state rp-state)
                   :guard (and #|(rp-termp term)||#
                           #|(rp-syntaxp term)||#
-                          (rp-meta-rule-recs-p meta-rules state)
+                          (simple-meta-rule-alistp meta-rules)
                           #|(all-falist-consistent term)||#
                           (rules-alistp rules-alist)
                           (symbol-alistp exc-rules)
@@ -1284,11 +1345,14 @@ returns (mv rule rules-rest bindings rp-context)"
         (progn$ (hard-error 'rp-rw-aux "unexpected term is given to rp-rw-aux! ~p0"
                             (list (cons #\0 term)))
                 (mv term rp-state)))
+        
        ((mv res- rp-state)
         (case-match
           term
           (('implies p q)
-           (b* (((mv newp rp-state)
+           (b* (
+                
+                ((mv newp rp-state)
                  (progn$
                   ;; (time-tracker :rp-rewriter :end)
                   ;; (time-tracker :rp-rewriter :init
@@ -1300,6 +1364,7 @@ returns (mv rule rules-rest bindings rp-context)"
                   (rp-rw p nil nil  step-limit rules-alist exc-rules
                          meta-rules
                          t rp-state state)))
+                
                 (& (time-tracker :rp-rewriter :stop))
                 (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
@@ -1311,12 +1376,22 @@ seconds~%"))
                                  :interval 5
                                  :msg "Elapsed runtime took ~st secs;~%"))
                 (context (rp-extract-context newp))
+                
                 ((mv context q)
                  (attach-sc-from-context context q))
+                
                 (& (time-tracker :rp-rewriter :start))
+                
+                ;; (- (cw "rp-rw-aux- rules-alist ~p0~%" rules-alist))
+
+                ;; (- (cw "rp-rw-aux- exc-rules ~p0 ~%" exc-rules))
+
+                ;; (- (cw "rp-rw-aux- meta-rules ~p0 ~%" meta-rules))
+                
                 ((mv newq rp-state)
                  (rp-rw q nil context  step-limit rules-alist exc-rules
                         meta-rules t rp-state state))
+                
                 (& (time-tracker :rp-rewriter :stop))
                 (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
@@ -1331,6 +1406,7 @@ seconds~%"))
                  (rp-rw term nil nil  step-limit rules-alist exc-rules
                         meta-rules t rp-state state)))
              (mv res rp-state)))))
+       
        (- (rp-state-print-rules-used rp-state))
        (- (if (not (equal res- ''t))
               (b* ((action (not-simplified-action rp-state)))

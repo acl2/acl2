@@ -744,5 +744,5 @@
                             svexl-eval-aux-is-svexl-eval-aux-wog
                             svex-eval-is-svex-eval-wog)))))
 
-(rp::add-rp-rule svexl-correct t)
-(rp::add-rp-rule svexllist-correct t)
+(rp::add-rp-rule svexl-correct :disabled t)
+(rp::add-rp-rule svexllist-correct :disabled t)

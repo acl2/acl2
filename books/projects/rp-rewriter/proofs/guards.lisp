@@ -124,13 +124,26 @@
                             (:DEFINITION VALID-SC)
                             (:REWRITE VALID-RULEP-IMPLIES-VALID-SC))))))
 
-(verify-guards rp-rw-meta-rule)
+;;(verify-guards rp-rw-meta-rule)
 
-(verify-guards rp-rw-meta-rules
-  :hints (("Goal"
-           :in-theory (e/d (WEAK-RP-META-RULE-RECS-P
-                            RP-META-VALID-SYNTAX-LISTP)
-                           (RP-META-TRIG-FNC)))))
+(progn
+  (local
+   (defthm hons-assoc-equal-of-simple-meta-rule-alistp
+     (implies (and (simple-meta-rule-alistp meta-rules)
+                   (hons-assoc-equal key meta-rules))
+              (and (symbolp (cdr (hons-assoc-equal key
+                                                   meta-rules)))
+                   (symbolp (car (hons-assoc-equal key
+                                                   meta-rules)))))
+     :hints (("goal"
+              :induct (simple-meta-rule-alistp meta-rules)
+              :in-theory (e/d (simple-meta-rule-alistp) ())))))
+
+  (verify-guards rp-rw-meta-rules
+    :hints (("Goal"
+             :in-theory (e/d (
+                              )
+                             ())))))
 
 (local
  (defthm rp-term-listp-lemma1
@@ -201,8 +214,8 @@
   :hints (("goal" :in-theory (enable rp-rw-apply-meta))))||#
 
 (defthm not-meta-changed-flg-implies-rp-rw-meta-rules
-  (implies (not (mv-nth 0 (rp-rw-meta-rules term meta-rules rp-state state)))
-           (equal (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state state))
+  (implies (not (mv-nth 0 (rp-rw-meta-rules term meta-rules rp-state )))
+           (equal (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state ))
                   term))
   :hints (("goal" :in-theory (enable rp-rw-meta-rules))))
 
@@ -571,8 +584,6 @@
                         (:TYPE-PRESCRIPTION TRUE-LIST-LISTP)
                         (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
                         (:TYPE-PRESCRIPTION SYMBOL-ALISTP))))))
-
-
 
 
 

@@ -103,7 +103,7 @@
   :hints (("Goal"
            :in-theory (e/d (rp-equal-meta) ()))))
 
-(defthm rp-equal-meta-is-valid-rp-meta-rulep
+#|(defthm rp-equal-meta-is-valid-rp-meta-rulep
   (implies (and (rp-equal-meta-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -119,7 +119,7 @@
                            (RP-TERMP
                             rp-equal-meta
                             RP-TERMP
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 (rp::add-meta-rules
  rp-equal-meta-formula-checks
  (list

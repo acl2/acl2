@@ -47,4 +47,4 @@
 (include-book "adder-rules-meta")
 ;; (include-book "pp-order-meta")
 
-(update-rp-clause-proc mult-rules)
+(attach-meta-fncs mult-rules)

@@ -183,13 +183,15 @@ which submits an event.
 
   (defund rp-stat-add-to-rules-used-meta-cnt (meta-rule rp-state)
     (declare (xargs :stobjs (rp-state)
-                    :guard (weak-rp-meta-rule-rec-p meta-rule)))
+                    :guard (and (consp meta-rule)
+                                (symbolp (car meta-rule))
+                                (symbolp (cdr meta-rule)))))
     (if (show-used-rules-flg rp-state)
         (cond
          ((count-used-rules-flg rp-state)
           (b* ((old-lst (rules-used rp-state))
-               (rule-name `(:meta ,(rp-meta-fnc meta-rule)
-                                  :trig ,(rp-meta-trig-fnc meta-rule)))
+               (rule-name `(:meta ,(cdr meta-rule)
+                                  :trig ,(car meta-rule)))
                (entry (hons-get rule-name old-lst))
                (val (if (consp entry) (1+ (nfix (cdr entry))) 1)))
             (update-rules-used
@@ -199,8 +201,8 @@ which submits an event.
              rp-state)))
          (t
           (b* ((old-lst (rules-used rp-state))
-               (rule-name `(:meta ,(rp-meta-fnc meta-rule)
-                                  :trig ,(rp-meta-trig-fnc meta-rule)))
+               (rule-name `(:meta ,(cdr meta-rule)
+                                  :trig ,(car meta-rule)))
                (entry (hons-get rule-name old-lst))
                ((when entry) rp-state))
             (update-rules-used (hons-acons rule-name nil old-lst)
@@ -249,15 +251,17 @@ which submits an event.
 
 (defund rp-state-push-meta-to-rw-stack (meta-rule old-term new-term rp-state)
   (declare (xargs :stobjs (rp-state)
-                  :guard (weak-rp-meta-rule-rec-p meta-rule)))
+                  :guard (and (consp meta-rule)
+                              (symbolp (car meta-rule))
+                              (symbolp (cdr meta-rule)))))
   (if (rp-brr rp-state)
       (b* ((old-rw-stack (rw-stack rp-state))
            (index (rw-stack-size rp-state))
            (new-rw-stack (acons index
                                 (list
                                  (list ':type 'meta-applied)
-                                 (list ':meta-fnc (rp-meta-fnc meta-rule))
-                                 (list ':trig-fnc (rp-meta-trig-fnc meta-rule))
+                                 (list ':meta-fnc (cdr meta-rule))
+                                 (list ':trig-fnc (car meta-rule))
                                  (list ':new-term new-term)
                                  (list ':old-term old-term))
                                 old-rw-stack))

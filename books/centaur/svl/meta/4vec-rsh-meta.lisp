@@ -88,7 +88,7 @@
 
   (rp::def-formula-checks
    4vec-rsh-of-formula-checks
-   (4vec-rsh-of-meta
+   (;4vec-rsh-of-meta
     bits
     4vec-rsh
     4vec-concat$
@@ -271,7 +271,7 @@
                              rp::is-if
                              rp::is-rp) ())))))
 
-(defthm valid-rp-meta-rulep-4vec-rsh-of-formula-checks
+#|(defthm valid-rp-meta-rulep-4vec-rsh-of-formula-checks
   (implies (and (rp-evl-meta-extract-global-facts)
                 (4vec-rsh-of-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -285,7 +285,7 @@
   :hints (("Goal"
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
                            (rp::RP-TERMP
-                            rp::VALID-SC)))))
+                            rp::VALID-SC)))))||#
 
 (rp::add-meta-rules 4vec-rsh-of-formula-checks
                     (list (make rp::rp-meta-rule-rec

@@ -55,7 +55,7 @@
 (local
  (include-book "lemmas"))
 
-(update-rp-clause-proc svl-mult-rules)
+(attach-meta-fncs svl-mult-rules)
 
 (local
  (rp::fetch-new-events

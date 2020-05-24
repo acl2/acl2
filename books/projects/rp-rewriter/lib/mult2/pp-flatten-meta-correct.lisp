@@ -2509,7 +2509,7 @@
                               PP-LISTS-TO-TERM-AND$-REDEF
                               EVAL-OF-SORT-PP-LISTS-IS-CORRECT)))))
 
-  (defthm sort-sum-meta-valid-rp-meta-rulep-local
+  #|(defthm sort-sum-meta-valid-rp-meta-rulep-local
     (implies (and (rp-evl-meta-extract-global-facts :state state)
                   (mult-formula-checks state))
              (let ((rule (make rp-meta-rule-rec
@@ -2524,7 +2524,7 @@
              :in-theory (e/d (rp-meta-valid-syntaxp)
                              (rp-termp
                               rp-term-listp
-                              valid-sc))))))
+                              valid-sc)))))||#)
 
 #|(defthm eval-of-sort-pp-flatten-main-is-correct
 (implies (and (mult-formula-checks state)

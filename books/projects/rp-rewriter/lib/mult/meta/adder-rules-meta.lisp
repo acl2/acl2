@@ -329,8 +329,9 @@
      merge-adder-b+
      adder-sum
      sum
-     resolve-adder-and-order
-     resolve-adder-sum-order)))
+     ;;resolve-adder-and-order
+     ;;resolve-adder-sum-order
+     )))
 
 
 (local
@@ -631,7 +632,7 @@
             :in-theory (e/d (resolve-adder-sum-order
                              resolve-adder-sum-order-rec) ())))))
 
-(defthm resolve-adder-and-order-is-valid-rp-meta-rulep
+#|(defthm resolve-adder-and-order-is-valid-rp-meta-rulep
   (implies (and (adder-rule-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -647,9 +648,9 @@
                            (RP-TERMP
                             
                             
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
-(defthm resolve-adder-sum-order-is-valid-rp-meta-rulep
+#|(defthm resolve-adder-sum-order-is-valid-rp-meta-rulep
   (implies (and (adder-rule-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -665,7 +666,7 @@
                            (RP-TERMP
                             
                             
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
 (rp::add-meta-rules
  adder-rule-formula-checks
