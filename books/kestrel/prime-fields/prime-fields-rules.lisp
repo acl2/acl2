@@ -301,9 +301,7 @@
 
 ;move
 (defthm mul-of-neg-arg1
-  (implies (and (integerp y)
-                (integerp x)
-                (posp p))
+  (implies (posp p)
            (equal (mul (neg x p) y p)
                   (neg (mul x y p) p)))
   :hints (("Goal" :do-not '(preprocess)
@@ -312,9 +310,7 @@
                               acl2::integerp-of-*-three))))
 
 (defthm mul-of-neg-arg2
-  (implies (and (integerp y)
-                (integerp x)
-                (posp p))
+  (implies (posp p)
            (equal (mul y (neg x p) p)
                   (neg (mul y x p) p)))
   :hints (("Goal" :do-not '(preprocess)
@@ -323,9 +319,7 @@
                               acl2::integerp-of-*-three))))
 
 (defthm neg-of-add
-  (implies (and (integerp y)
-                (integerp x)
-                (posp p))
+  (implies (posp p)
            (equal (neg (add x y p) p)
                   (add (neg x p)
                              (neg y p)
@@ -748,8 +742,6 @@
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
                 (equal x (+ -1 p))
-                (integerp x)
-                (integerp y)
                 (posp p))
            (equal (mul x y p)
                   (neg y p)))
