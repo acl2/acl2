@@ -311,6 +311,9 @@
      to verify and record surjective mappings.
      This is related to @(tsee defiso).")
 
+   (xdoc::p
+    "Support for @(':prepwork') has been added to @(tsee std::deflist).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
