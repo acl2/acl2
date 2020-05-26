@@ -324,4 +324,17 @@ class Acl2IntegerTest {
                 Acl2Integer.ONE);
     }
 
+    @Test
+    void compareToIntegers() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Integer.ZERO) == 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Integer.ONE) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Integer.ZERO) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Integer.ONE) == 0);
+        assertTrue(Acl2Integer.make(2728L).
+                compareTo(Acl2Integer.make(10000)) < 0);
+        assertTrue(Acl2Integer.make(BigInteger.TEN).
+                compareTo(Acl2Integer.make(-11)) > 0);
+        assertTrue(Acl2Integer.make(189).compareTo(Acl2Integer.make(189)) == 0);
+    }
+
 }
