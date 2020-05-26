@@ -30,7 +30,7 @@
 
 (in-package "BITSETS")
 (include-book "bignum-extract-opt")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defund bignum-extract-slow (x slice)
   ;; For testing, we define something equivalent to the logical
