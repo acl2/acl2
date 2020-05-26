@@ -1998,7 +1998,7 @@
     " and "
     (xdoc::seetopic "atj-tutorial-evaluator"
                     "AIJ's evaluator")
-    "."
+    ". "
     (xdoc::seetopic "atj-tutorial-acl2-environment"
                     "AIJ's representation of the ACL2 environment")
     " is used partially by the shallow embedding,
@@ -2044,7 +2044,7 @@
      (in the sense of the Java representations of such inputs and ouputs);
      it calculates the outputs from the inputs
      by mimicking the computation steps performed by the ACL2 function.
-     This is best explained through an example.")
+     This is best clarified through an example.")
 
    (atj-tutorial-section "Example of Generated Code")
 
