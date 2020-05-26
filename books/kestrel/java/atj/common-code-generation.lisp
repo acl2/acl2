@@ -19,6 +19,7 @@
 (include-book "test-structures")
 
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "kestrel/utilities/strings/hexchars" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -32,18 +33,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-chars-to-jhexcodes ((chars character-listp))
+(define atj-char-to-jhexcode ((char characterp))
+  :returns (expr jexprp)
+  :short "Turn an ACL2 character into
+          a Java hexadecimal literal expression
+          corresponding to the character code."
+  (b* ((code (char-code char))
+       ((mv hi-char lo-char) (ubyte8=>hexchars code))
+       (hi-code (char-code hi-char))
+       (lo-code (char-code lo-char)))
+    (jexpr-literal
+     (jliteral-integer
+      (integer-literal-hex
+       (make-hex-integer-literal
+        :digits/uscores (list (hexdig/uscore-digit hi-code)
+                              (hexdig/uscore-digit lo-code))
+        :prefix-upcase-p nil
+        :suffix? (optional-integer-type-suffix-none))))))
+  :guard-hints (("Goal" :in-theory (enable ubyte8=>hexchars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection atj-chars-to-jhexcodes (x)
+  :guard (character-listp x)
   :returns (exprs jexpr-listp)
-  :short "Turn a list of ACL2 characters
-          into a list of Java hexadecimal literal expressions
-          corresponding to the character codes,
-          in the same order."
-  (cond ((endp chars) nil)
-        (t (cons (jexpr-literal
-                  (make-jliteral-integer :value (char-code (car chars))
-                                         :long? nil
-                                         :base (jintbase-hexadecimal)))
-                 (atj-chars-to-jhexcodes (cdr chars))))))
+  :short "Lift @(tsee atj-char-to-jhexcode) to lists."
+  (atj-char-to-jhexcode x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,7 +118,7 @@
     Otherwise, we cast the value to @('char').")
   (if (< char 256)
       (jexpr-literal-character (code-char char))
-    (jexpr-cast (jtype-char) (jexpr-literal-integer-decimal char))))
+    (jexpr-cast (jtype-char) (jexpr-lit-int-dec-nouscores char))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,8 +128,8 @@
           from a signed 32-bit ACL2 integer."
   (if (< integer 0)
       (jexpr-unary (junop-uminus)
-                   (jexpr-literal-integer-decimal (- integer)))
-    (jexpr-literal-integer-decimal integer)))
+                   (jexpr-lit-int-dec-nouscores (- integer)))
+    (jexpr-lit-int-dec-nouscores integer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,8 +157,8 @@
           from a signed 64-bit ACL2 integer."
   (if (< integer 0)
       (jexpr-unary (junop-uminus)
-                   (jexpr-literal-integer-long-decimal (- integer)))
-    (jexpr-literal-integer-long-decimal integer)))
+                   (jexpr-lit-long-dec-nouscores (- integer)))
+    (jexpr-lit-long-dec-nouscores integer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -767,7 +782,7 @@
        (jvar-imports "imports")
        (method-name (atj-gen-pkg-method-name pkg))
        (imports (pkg-imports pkg))
-       (len-expr (jexpr-literal-integer-decimal (len imports)))
+       (len-expr (jexpr-lit-int-dec-nouscores (len imports)))
        (newlist-expr (jexpr-newclass (jtype-class "ArrayList<>")
                                      (list len-expr)))
        (imports-block (jblock-locvar (jtype-class "List<Acl2Symbol>")
