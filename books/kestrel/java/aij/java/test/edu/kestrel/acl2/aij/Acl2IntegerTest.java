@@ -307,7 +307,7 @@ class Acl2IntegerTest {
     }
 
     @Test
-    void genDenominatorFromMakeBigInteger() {
+    void getDenominatorFromMakeBigInteger() {
         assertEquals(Acl2Integer.make(BigInteger.ZERO).getDenominator(),
                 Acl2Integer.ONE);
         assertEquals(Acl2Integer.make(BigInteger.ONE).getDenominator(),
