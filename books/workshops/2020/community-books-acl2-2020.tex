@@ -89,19 +89,22 @@
 
 \subtitle{Since the ACL2-2018 Workshop}
 
-\author{Alessandro Coglio\inst{2},
-        Shilpi Goel\inst{1},
-        Eric McCarthy\inst{2}, \\
-        Mihir Mehta\inst{4},
-        Yan Peng\inst{3},
-        Sol Swords\inst{1},
-        Mertcan Temel\inst{4} \\
+\author{Alessandro Coglio\inst{3},
+        Cuong Chau\inst{1},
+        Shilpi Goel\inst{2}, \\
+        Eric McCarthy\inst{3},
+        Mihir Mehta\inst{5},
+        Yan Peng\inst{4}, \\
+        David Russinoff\inst{1},
+        Sol Swords\inst{2},
+        Mertcan Temel\inst{5} \\
         \textit{and more authors to be added}}
 
-\institute{\inst{1}Centaur,
-           \inst{2}Kestrel Institute,
-           \inst{3}University of British Columbia,
-           \inst{4}University of Texas at Austin, \\
+\institute{\inst{1}ARM,
+           \inst{2}Centaur,
+           \inst{3}Kestrel Institute, \\
+           \inst{4}University of British Columbia,
+           \inst{5}University of Texas at Austin, \\
            \textit{and more organizations to be added}}
 
 \date{ACL2-2020 Workshop}
@@ -638,6 +641,34 @@ sources.
 
 \implibtitle
 
+\bookpath{projects/rac}:
+Restricted Algorithmic C.
+\begin{itemize}
+\item
+A new book, \code{books/projects/rac/lisp/internal-fns-gen.lisp},
+which implements two tools that generate functions that compute
+values of local (bound) variables of an input function
+(to be used as described in Russinoff's workshop paper):
+  \begin{itemize}
+  \item \code{CONST-FNS-GEN} is applicable to
+        functions with non-recursive definitions.
+  \item \code{LOOP-FNS-GEN} can be applied to
+        certain functions with restricted recursive definitions.
+  \end{itemize}
+\item
+Modifications of \code{books/projects/rac/src}:
+The RAC parser has been updated to check the placement restrictions
+on return statements in RAC programs.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{projects/smtlink}:
 Smtlink, a framework for integrating external SMT solvers into ACL2.
 \begin{itemize}
@@ -677,6 +708,26 @@ Added support for additional forms of the
 Improved the \code{definst} macro to generate more boilerplate code.
 \item
 Updates to program instrumentation utilities to allow logging (parts of) the x86 state to a specified file in both CCL and SBCL.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{rtl}:
+Register transfer logic library.
+\begin{itemize}
+\item
+The book \code{books/rtl/rel11/lib/srt.lisp} now includes
+a formalization of a radix-8 SRT square root algorithm.
+\item
+The book \code{books/rtl/rel11/lib/add.lisp} now includes
+a correctness theorem for a generalized leading zero anticipator
+that does not assume an ordering of its operands.
 \end{itemize}
 
 \end{frame}
