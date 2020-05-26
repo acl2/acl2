@@ -275,6 +275,10 @@
      This makes the generated Java code more idiomatic.
      This applies to the shallow embedding with guards.")
 
+   (xdoc::p
+    "The Java abstract syntax used by the code generator is now more precise,
+     in the sense that it captures more syntactic aspects of Java.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::language" "Java Language Formalization"))
