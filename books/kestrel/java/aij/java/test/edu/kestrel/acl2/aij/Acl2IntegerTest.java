@@ -337,4 +337,16 @@ class Acl2IntegerTest {
         assertTrue(Acl2Integer.make(189).compareTo(Acl2Integer.make(189)) == 0);
     }
 
+    @Test
+    void compareToRatios() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Rational.make(2, 3)) < 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Rational.make(-2, 3)) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Rational.make(5, 3)) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Rational.make(-5, 3)) > 0);
+        assertTrue(Acl2Integer.make(7383).compareTo
+                (Acl2Rational.make(1000000, 999)) > 0);
+        assertTrue(Acl2Integer.make(-7383).compareTo
+                (Acl2Rational.make(-1000000, 999)) < 0);
+    }
+
 }
