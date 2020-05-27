@@ -18,6 +18,7 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "../../bv/unsigned-byte-p"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

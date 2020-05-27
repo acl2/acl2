@@ -56,7 +56,7 @@
      with codes 0 to 8, 14 to 27, and 127 to 159,
      as well as the ones with the @('FORMAT') general category value.")
    (xdoc::p
-    "Running OpenJDK 13's implementation of this API method
+    "Running OpenJDK 14's implementation of this API method
      on all the ASCII codes (i.e. the integers from 0 to 127),
      reveals that the ignorable ASCII characters are the ones with the codes
      0 to 8, 14 to 27, and 127, and no others.
@@ -153,7 +153,7 @@
    (xdoc::p
     "[JLS:3.8] says that this notion includes the ASCII
      uppercase and lowercase Latin letters, as well as dollar and underscore.
-     Running OpenJDK 13's
+     Running OpenJDK 14's
      implementation of @('Character.isJavaIdentifierStart(int)')
      on all the ASCII codes (i.e. the integers from 0 to 127)
      returns true for the characters with the codes
@@ -246,7 +246,7 @@
      uppercase and lowercase Latin letters,
      decimal digits, dollar, and underscore.")
    (xdoc::p
-    "Running OpenJDK 13's
+    "Running OpenJDK 14's
      implementation of @('Character.isJavaIdentifierPart(int)')
      on all the ASCII codes (i.e. the integers from 0 to 127)
      returns true for the characters with the codes
@@ -417,11 +417,11 @@
     "The exception mentioned above is that
      we allow @('transitive') to be an identifier
      even though it is also a restricted keyword.
-     The reason is that, as noted in [JLS:3.8],
+     The reason is that, as noted in [JLS:3.9],
      @('transitive') is sometimes tokenized as a keyword,
      other times as an identifier,
      based on some surrounding context.
-     Thus, is can be an identifier in a module context.
+     Thus, it can be an identifier in a module context.
      Here we are defining a recognizer
      that has no information about the surrounding context.
      Additional predicates can be used to impose restrictions

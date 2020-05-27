@@ -10,13 +10,12 @@
 
 (in-package "JAVA")
 
+(include-book "../language/integer-literals")
 (include-book "../language/primitive-types")
 
 (include-book "kestrel/std/util/deffixer" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
-
-; this is to have FTY::DEFLIST generate more theorems:
-(local (include-book "std/lists/top" :dir :system))
+(include-book "std/strings/decimal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,7 +35,10 @@
      not under @('[books]/kestrel/java/language').")
    (xdoc::p
     "This abstract syntax may be eventually superseded
-     by a complete formalization under @('[books]/kestrel/java/language').")
+     by a complete formalization under @('[books]/kestrel/java/language').
+     In fact, we have already started replacing some of this abstract syntax
+     with more complete counterparts from the language formalization,
+     namely the abstract syntax for integer literals.")
    (xdoc::p
     "The following remarks apply to this ATJ abstract syntax in general,
      and so they are stated here instead of being repeated in several places:")
@@ -71,6 +73,8 @@
 
 ; Library extensions.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection string-list
   :short "Fixtype of true lists of ACL2 strings,
           i.e. values recognized by @(tsee string-listp)."
@@ -91,6 +95,8 @@
     :equiv string-list-equiv
     :define t
     :forward t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection maybe-string
   :short "Fixtype of ACL2 strings and @('nil'),
@@ -113,31 +119,57 @@
     :define t
     :forward t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum jintbase
-  :short "Java bases for integer literals [JLS:3.10.1]."
-  (:decimal ())
-  (:hexadecimal ())
-  (:octal ())
-  (:binary ())
-  :pred jintbasep)
+(defsection natchars-theorems
+  :short "Some theorems about @(tsee str::natchars)
+          and the functions it calls."
+
+  (defrule car-of-last-of-basic-natchars-not-0
+    (not (equal (car (last (str::basic-natchars n)))
+                #\0))
+    :enable str::basic-natchars
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defrule car-of-natchars-aux-not-0
+    (implies (not (equal (car acc) #\0))
+             (not (equal (car (str::natchars-aux n acc)) #\0)))
+    :enable acl2::car-of-rev-rewrite-car-of-last
+    :prep-books ((include-book "kestrel/utilities/lists/rev-theorems" :dir :system)))
+
+  (defrule len-of-natchars-is-1-iff-value-below-10
+    (equal (equal (len (str::natchars value)) 1)
+           (< (nfix value) 10))
+    :enable (str::natchars str::basic-natchars)
+    :induct (str::basic-natchars value)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defrule natchars-aux-iff
+    (iff (str::natchars-aux n acc)
+         (or acc
+             (not (zp n)))))
+
+  (defrule car-of-natchars-is-0-iff-arg-0
+    (equal (equal (car (str::natchars n)) #\0)
+           (zp n))
+    :enable str::natchars
+    :disable str::natchars-aux))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jliteral
   :short "Java literals [JLS:3.10]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For an integer literal, we capture its value (a natural number)
-     and whether there is an integer type suffix (@('l') or @('L')) or not,
-     i.e. if the literal has type @('long').
-     We do not restrict the natural number
-     to the range of type @('int') or @('long'),
-     but ATJ always produces correct integer literals.")
+    "We use the integer literals from the language formalization.")
    (xdoc::p
     "We only support a very limited form of floating-point literals for now,
-     whose value is actually just a natural number."))
-  (:integer ((value acl2::nat) (long? bool) (base jintbase)))
+     whose value is actually just a natural number.")
+   (xdoc::p
+    "We use ACL2 characters and strings for Java character and string literals.
+     See the discussion in @(see atj-java-abstract-syntax) about that."))
+  (:integer ((get integer-literal)))
   (:floating ((value acl2::nat)))
   (:boolean ((value bool)))
   (:character ((value character)))
@@ -151,6 +183,40 @@
   :true-listp t
   :elementp-of-nil nil
   :pred jliteral-listp)
+
+(define jliteral-int-dec-nouscores ((value natp))
+  :returns (lit jliteralp)
+  :short "Build a Java @('int') literal in base 10 without underscores."
+  :long
+  (xdoc::topstring-p
+   "This is an integer decimal literal without the type suffix.")
+  (b* ((codes (chars=>nats (str::natchars value))))
+    (jliteral-integer
+     (integer-literal-dec
+      (make-dec-integer-literal
+       :digits/uscores (decdig/uscore-digit-list codes)
+       :suffix? (optional-integer-type-suffix-none)))))
+  :guard-hints (("Goal" :in-theory (enable decdig/uscore-list-wfp)))
+  :prepwork ((local (include-book "kestrel/java/language/decimal-digits-std-strings-theorems" :dir :system))))
+
+(define jliteral-long-dec-nouscores ((value natp))
+  :returns (lit jliteralp)
+  :short "Build a Java @('long') literal in base 10 without underscores."
+  :long
+  (xdoc::topstring-p
+   "This is an integer decimal literal with the type suffix @('L').
+    We use the uppercase type suffix, and not the lowercase one,
+    as recommended in [JLS:3.10.1].")
+  (b* ((codes (chars=>nats (str::natchars value))))
+    (jliteral-integer
+     (integer-literal-dec
+      (make-dec-integer-literal
+       :digits/uscores (decdig/uscore-digit-list codes)
+       :suffix? (optional-integer-type-suffix-uppercase)))))
+  :guard-hints (("Goal" :in-theory (enable decdig/uscore-list-wfp)))
+  :prepwork ((local (include-book "kestrel/java/language/decimal-digits-std-strings-theorems" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jtype
   :short "Java types [JLS:4]."
@@ -223,6 +289,8 @@
   :elementp-of-nil nil
   :pred jtype-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum junop
   :short "Java unary operators [JLS:15.15]."
   (:preinc ()) ; ++
@@ -232,6 +300,8 @@
   (:bitcompl ()) ; ~
   (:logcompl ()) ; !
   :pred junopp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jbinop
   :short "Java binary operators [JLS:15.17-24] [JLS:15.26]."
@@ -272,6 +342,8 @@
   (:asg-xor ()) ; ^=
   (:asg-ior ()) ; |=
   :pred jbinopp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes jexprs
   :short "Java expressions [JLS:15]."
@@ -364,29 +436,27 @@
   :short "Java expressions or @('nil')."
   :pred maybe-jexprp)
 
-(define jexpr-literal-integer-decimal ((value natp))
+(define jexpr-lit-int-dec-nouscores ((value natp))
   :returns (expr jexprp)
-  :short "Build a Java expression consisting of an integer literal
-          in base 10 without integer type prefix (i.e. of type @('int')."
-  (jexpr-literal
-   (make-jliteral-integer :value value :long? nil :base (jintbase-decimal))))
+  :short "Build a Java expression consisting of
+          an @('int') literal in base 10 without underscores."
+  (jexpr-literal (jliteral-int-dec-nouscores value)))
 
-(define jexpr-literal-integer-long-decimal ((value natp))
+(define jexpr-lit-long-dec-nouscores ((value natp))
   :returns (expr jexprp)
-  :short "Build a Java expression consisting of an integer literal
-          in base 10 with integer type prefix (i.e. of type @('long')."
-  (jexpr-literal
-   (make-jliteral-integer :value value :long? t :base (jintbase-decimal))))
+  :short "Build a Java expression consisting of
+          a @('long') literal in base 10 without underscores."
+  (jexpr-literal (jliteral-long-dec-nouscores value)))
 
 (define jexpr-literal-0 ()
   :returns (expr jexprp)
   :short "Build a Java expression consisting of the integer literal 0."
-  (jexpr-literal-integer-decimal 0))
+  (jexpr-lit-int-dec-nouscores 0))
 
 (define jexpr-literal-1 ()
   :returns (expr jexprp)
   :short "Build a Java expression consisting of the integer literal 1."
-  (jexpr-literal-integer-decimal 1))
+  (jexpr-lit-int-dec-nouscores 1))
 
 (define jexpr-literal-floating ((value natp))
   :returns (expr jexprp)
@@ -435,6 +505,8 @@
       (jexpr-name (str::cat (jexpr-name->get expr) "." name))
     (jexpr-field expr name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod jlocvar
   :short "Local variable declarations [JLS:14.4]."
   :long
@@ -451,6 +523,8 @@
    (name string)
    (init? maybe-jexpr))
   :pred jlocvarp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes jstatems+jblocks
   :short "Java statements and blocks [JLS:14]."
@@ -518,6 +592,19 @@
               (jblock-count block2)
               -1))
     :enable (jblock-count append)))
+
+(fty::deflist jblock-list
+  :short "True lists of Java blocks."
+  :elt-type jblock
+  :true-listp t
+  :elementp-of-nil t
+  :pred jblock-listp
+  ///
+
+  (defrule jblockp-of-flatten-when-jblock-listp
+    (implies (jblock-listp blocks)
+             (jblockp (flatten blocks)))
+    :enable flatten))
 
 (define jblock-locvar ((type jtypep) (name stringp) (init? maybe-jexprp))
   :returns (block jblockp)
@@ -610,18 +697,7 @@
   :short "Bulid a block consisting of a single Java @('for') statement."
   (list (jstatem-for init test update body)))
 
-(fty::deflist jblock-list
-  :short "True lists of Java blocks."
-  :elt-type jblock
-  :true-listp t
-  :elementp-of-nil t
-  :pred jblock-listp
-  ///
-
-  (defrule jblockp-of-flatten-when-jblock-listp
-    (implies (jblock-listp blocks)
-             (jblockp (flatten blocks)))
-    :enable flatten))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jaccess
   :short "Java access modifiers [JLS:8.1.1] [JLS:8.3.1] [JLS:8.4.3]."
@@ -630,6 +706,8 @@
   (:private ())
   (:default ())
   :pred jaccessp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jfield
   :short "Java field declarations [JLS:8.3]."
@@ -657,11 +735,15 @@
   :elementp-of-nil nil
   :pred jfield-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum jresult
   :short "Result of a Java method [JLS:8.4.5]."
   (:type ((get jtype)))
   (:void ())
   :pred jresultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jparam
   :short "Java formal parameter [JLS:8.4.1]."
@@ -708,6 +790,8 @@
            (len params))
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod jmethod
   :short "Java method declarations [JLS:8.4]."
   :long
@@ -740,6 +824,8 @@
   :elementp-of-nil nil
   :pred jmethod-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod jcinitializer
   :short "Java class initializer [JLS:8.6] [JLS:8.7]."
   :long
@@ -748,6 +834,8 @@
   ((static? bool)
    (code jblock))
   :pred jcinitializerp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes jclasses+jcmembers
 
@@ -836,6 +924,8 @@
         (t (cons (jcbody-element-member (jcmember-class (car classes)))
                  (jclasses-to-jcbody-elements (cdr classes))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod jimport
   :short "Java import declarations [JLS:7.5]."
   :long
@@ -856,6 +946,8 @@
   :true-listp t
   :elementp-of-nil nil
   :pred jimport-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jcunit
   :short "Java compilation units [JLS:7.3]."

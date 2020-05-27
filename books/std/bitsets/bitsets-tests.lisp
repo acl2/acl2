@@ -30,7 +30,7 @@
 
 (in-package "BITSETS")
 (include-book "bitsets")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (equal (bitset-union #b1 #b10 #b100) #b111))
 (assert! (equal (bitset-union #b1 #b10 #b1000 #ub1100_0001) #ub1100_1011))

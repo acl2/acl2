@@ -13,6 +13,9 @@
 
 ;; STATUS: IN-PROGRESS
 
+(include-book "symbol-term-alistp")
+(include-book "tools/flag" :dir :system)
+
 ;This version is simpler than sublis-var and, unlike sublis-var, doesn't evaluate ground terms.
 ;we could change this to not build ground terms (instead just evaluate the function on its constant arguments)
 ;also, if the test for an if is a ground term (which evals to a constant), don't build both branches of the if..
@@ -111,3 +114,28 @@
                 (pseudo-term-listp (strip-cdrs alist)))
            (pseudo-termp (my-sublis-var alist form)))
   :hints (("Goal" :use (:instance pseudo-termp-of-my-sublis-var-helper (term form) (flg nil)))))
+
+;dup
+(defthm len-of-my-sublis-var-lst
+  (equal (len (my-sublis-var-lst alist l))
+         (len l))
+  :hints (("Goal"
+           :induct (len l)
+           :in-theory (enable my-sublis-var-lst len))))
+
+(make-flag my-sublis-var)
+
+;TODO change the formals of my-sublis-var and my-sublis-var-lst to be term and terms, not form and l?
+(defthm-flag-my-sublis-var
+  (defthm pseudo-termp-of-my-sublis-var
+    (implies (and (pseudo-termp form)
+                  (symbol-term-alistp alist))
+             (pseudo-termp (my-sublis-var alist form)))
+    :flag my-sublis-var)
+  (defthm pseudo-term-listp-of-my-sublis-var-lst
+    (implies (and (pseudo-term-listp l)
+                  (symbol-term-alistp alist))
+             (pseudo-term-listp (my-sublis-var-lst alist l)))
+    :flag my-sublis-var-lst)
+  :hints (("Goal" :expand ((PSEUDO-TERMP (CONS (CAR FORM)
+                                               (MY-SUBLIS-VAR-LST ALIST (CDR FORM))))))))

@@ -307,7 +307,7 @@ class Acl2IntegerTest {
     }
 
     @Test
-    void genDenominatorFromMakeBigInteger() {
+    void getDenominatorFromMakeBigInteger() {
         assertEquals(Acl2Integer.make(BigInteger.ZERO).getDenominator(),
                 Acl2Integer.ONE);
         assertEquals(Acl2Integer.make(BigInteger.ONE).getDenominator(),
@@ -322,6 +322,31 @@ class Acl2IntegerTest {
                         (new BigInteger("58748592475802735872046572345892645")).
                         getDenominator(),
                 Acl2Integer.ONE);
+    }
+
+    @Test
+    void compareToIntegers() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Integer.ZERO) == 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Integer.ONE) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Integer.ZERO) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Integer.ONE) == 0);
+        assertTrue(Acl2Integer.make(2728L).
+                compareTo(Acl2Integer.make(10000)) < 0);
+        assertTrue(Acl2Integer.make(BigInteger.TEN).
+                compareTo(Acl2Integer.make(-11)) > 0);
+        assertTrue(Acl2Integer.make(189).compareTo(Acl2Integer.make(189)) == 0);
+    }
+
+    @Test
+    void compareToRatios() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Rational.make(2, 3)) < 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Rational.make(-2, 3)) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Rational.make(5, 3)) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Rational.make(-5, 3)) > 0);
+        assertTrue(Acl2Integer.make(7383).compareTo
+                (Acl2Rational.make(1000000, 999)) > 0);
+        assertTrue(Acl2Integer.make(-7383).compareTo
+                (Acl2Rational.make(-1000000, 999)) < 0);
     }
 
 }
