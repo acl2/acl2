@@ -129,22 +129,6 @@
                                      (unsigned-byte-p))))))
   )
 
-(defthm
-  down-alpha-p-of-upcase-char
-  (not (str::down-alpha-p (str::upcase-char x)))
-  :hints
-  (("goal"
-    :in-theory (enable str::upcase-char str::down-alpha-p))))
-
-(defthm
-  charlist-has-some-down-alpha-p-of-upcase-charlist
-  (not (str::charlist-has-some-down-alpha-p
-        (str::upcase-charlist x)))
-  :hints
-  (("goal"
-    :in-theory (enable str::charlist-has-some-down-alpha-p
-                       str::upcase-charlist))))
-
 (defthmd integer-listp-when-unsigned-byte-listp
   (implies (not (integer-listp x))
            (not (unsigned-byte-listp n x))))
@@ -153,8 +137,8 @@
   (implies (not (rational-listp x))
            (not (unsigned-byte-listp n x))))
 
-;; These two theorems cannot be moved to to file-system-lemmas.lisp, because
-;; they're expressed in terms of explode, which is not a built-in function.
+;; These two theorems are necessary, but also they're really awkward and can't
+;; be moved to other books.
 (defthm len-of-explode-of-string-append
   (equal (len (explode (string-append str1 str2)))
          (+ (len (explode str1))
@@ -164,12 +148,6 @@
   (iff (equal (len (explode x)) 0)
        (equal (str-fix x) ""))
   :hints (("goal" :expand (len (explode x)))))
-
-(defthm
-  unsigned-byte-listp-of-make-list-ac
-  (equal (unsigned-byte-listp n1 (make-list-ac n2 val ac))
-         (and (unsigned-byte-listp n1 ac)
-              (or (zp n2) (unsigned-byte-p n1 val)))))
 
 (encapsulate
   ()
@@ -418,12 +396,6 @@
 ;; This is to get the theorem about the nth element of a list of unsigned
 ;; bytes.
 (local (include-book "std/typed-lists/integer-listp" :dir :system))
-
-(defthm unsigned-byte-listp-of-revappend
-  (equal (unsigned-byte-listp width (revappend x y))
-         (and (unsigned-byte-listp width (list-fix x))
-              (unsigned-byte-listp width y)))
-  :hints (("goal" :induct (revappend x y))))
 
 (defthm subsetp-when-prefixp
   (implies (prefixp x y)

@@ -129,4 +129,16 @@
   (defthm unsigned-byte-p-of-nth-when-unsigned-byte-listp
     (implies (unsigned-byte-listp bits l)
              (iff (unsigned-byte-p bits (nth n l))
-                  (< (nfix n) (len l))))))
+                  (< (nfix n) (len l)))))
+
+  (defthm
+    unsigned-byte-listp-of-make-list-ac
+    (equal (unsigned-byte-listp n1 (make-list-ac n2 val ac))
+           (and (unsigned-byte-listp n1 ac)
+                (or (zp n2) (unsigned-byte-p n1 val)))))
+
+  (defthm unsigned-byte-listp-of-revappend
+    (equal (unsigned-byte-listp width (revappend x y))
+           (and (unsigned-byte-listp width (list-fix x))
+                (unsigned-byte-listp width y)))
+    :hints (("goal" :induct (revappend x y)))))
