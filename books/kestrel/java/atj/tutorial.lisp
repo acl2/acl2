@@ -89,14 +89,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Create the 'next' and/or 'previous' links for certain tutorial pages,
+; Create the 'previous' and/or 'next' links for certain tutorial pages,
 ; preceded by a line (an empty box) for separation with the preceding text.
-
-(define atj-tutorial-next ((topic stringp) (subtitle stringp))
-  :returns (text xdoc::treep :hyp :guard)
-  (xdoc::&&
-   (xdoc::box)
-   (xdoc::p "<b>Next:</b> " (xdoc::seetopic topic subtitle))))
 
 (define atj-tutorial-previous ((topic stringp) (subtitle stringp))
   :returns (text xdoc::treep :hyp :guard)
@@ -104,17 +98,23 @@
    (xdoc::box)
    (xdoc::p "<b>Previous:</b> " (xdoc::seetopic topic subtitle))))
 
-(define atj-tutorial-next-and-previous ((next-topic stringp)
-                                        (next-subtitle stringp)
-                                        (previous-topic stringp)
-                                        (previous-subtitle stringp))
+(define atj-tutorial-next ((topic stringp) (subtitle stringp))
   :returns (text xdoc::treep :hyp :guard)
   (xdoc::&&
    (xdoc::box)
-   (xdoc::p "<b>Next:</b> " (xdoc::seetopic next-topic
-                                            next-subtitle))
+   (xdoc::p "<b>Next:</b> " (xdoc::seetopic topic subtitle))))
+
+(define atj-tutorial-previous-and-next ((previous-topic stringp)
+                                        (previous-subtitle stringp)
+                                        (next-topic stringp)
+                                        (next-subtitle stringp))
+  :returns (text xdoc::treep :hyp :guard)
+  (xdoc::&&
+   (xdoc::box)
    (xdoc::p "<b>Previous:</b> " (xdoc::seetopic previous-topic
-                                                previous-subtitle))))
+                                                previous-subtitle))
+   (xdoc::p "<b>Next:</b> " (xdoc::seetopic next-topic
+                                            next-subtitle))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,9 +230,9 @@
      However, this ATJ tutorial will describe many aspects of AIJ
      that are necessary or useful to understand and use ATJ.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*
-    "atj-tutorial" "Top")))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial" "Top"
+    "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,9 +395,9 @@
     "For more details on AIJ's implementation and API of ACL2 values,
      see the Javadoc in AIJ's Java code.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*
-    "atj-tutorial-aij" *atj-tutorial-aij*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-aij" *atj-tutorial-aij*
+    "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -468,9 +468,9 @@
      and because some of the concepts also apply
      to the shallow embedding approach.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-deep" *atj-tutorial-deep*
-    "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*
+    "atj-tutorial-deep" *atj-tutorial-deep*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -780,9 +780,9 @@
     "runs the factorial program with 1 GiB of stack space,
      which should be larger than the defaut.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-customization" *atj-tutorial-customization*
-    "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-deep-shallow" *atj-tutorial-deep-shallow*
+    "atj-tutorial-customization" *atj-tutorial-customization*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -944,9 +944,9 @@
      As already noted above, all these directories must exist;
      ATJ does not create them.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-screen-output" *atj-tutorial-screen-output*
-    "atj-tutorial-deep" *atj-tutorial-deep*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-deep" *atj-tutorial-deep*
+    "atj-tutorial-screen-output" *atj-tutorial-screen-output*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1035,9 +1035,9 @@
    (xdoc::codeblock
     "(java::atj fact :deep t :guards nil :verbose t)")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-translated" *atj-tutorial-translated*
-    "atj-tutorial-customization" *atj-tutorial-customization*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-customization" *atj-tutorial-customization*
+    "atj-tutorial-translated" *atj-tutorial-translated*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1282,9 +1282,9 @@
      as also mentioned earlier in this tutorial page.
      This is future work.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-deep-guards" *atj-tutorial-deep-guards*
-    "atj-tutorial-screen-output" *atj-tutorial-screen-output*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-screen-output" *atj-tutorial-screen-output*
+    "atj-tutorial-deep-guards" *atj-tutorial-deep-guards*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1435,9 +1435,9 @@
     (xdoc::seetopic "atj-tutorial-evaluator" "the shallow embedding approach")
     ". This is described in detail in subsequent pages.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-tests" *atj-tutorial-tests*
-    "atj-tutorial-translated" *atj-tutorial-translated*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-translated" *atj-tutorial-translated*
+    "atj-tutorial-tests" *atj-tutorial-tests*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1672,9 +1672,9 @@
      with as few other processes as possible,
      should mitigate the noise.")
 
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-shallow" *atj-tutorial-shallow*
-    "atj-tutorial-deep-guards" *atj-tutorial-deep-guards*)))
+   (atj-tutorial-previous-and-next
+    "atj-tutorial-deep-guards" *atj-tutorial-deep-guards*
+    "atj-tutorial-shallow" *atj-tutorial-shallow*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
