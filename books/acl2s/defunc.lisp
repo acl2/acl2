@@ -925,6 +925,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      :generalize-contract-thm
      :generate-generalize-rules
      :timeout
+     :undefined-value 
      :termination-strictp :function-contract-strictp :body-contracts-strictp
      :force-ic-hyps-in-definitionp :force-ic-hyps-in-contract-thmp
      :skip-admissibilityp :skip-function-contractp :skip-body-contractsp
@@ -1671,7 +1672,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                      (if d? 'acl2s-d-undefined 'acl2s-undefined)))
        (attch-name (make-symbl `(,undef-name -attached) pkg))
        (thm-name (make-symbl `(,undef-name - ,pred) pkg))
-       (base-val (and type typed-undef (base-val-of-type type tbl)))
+       (undefined-value? (assoc :undefined-value kwd-alist))
+       (undefined-value (if undefined-value?
+                            (get1 :undefined-value kwd-alist)
+                          `',(base-val-of-type type tbl)))
+       (base-val (and type typed-undef undefined-value))
        (defthm-d? `(defthm ,thm-name (,pred (,undef-name))
                      :rule-classes ((:type-prescription) (:rewrite))))
        (defthm-d? (if skip-admissibilityp
@@ -1691,7 +1696,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                   (encapsulate
                    ((,undef-name () t))
                    (local (defun ,undef-name ()
-                            ',base-val))
+                            ,base-val))
                    ,defthm-d?)
                   (defun ,attch-name ()
                     (declare (xargs :guard t))
@@ -1699,7 +1704,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                              (show-contract-violations?)
                              "~|**Input contract violation in ~x0** ~%"
                              ',attch-name)
-                            ',base-val))
+                            ,base-val))
                   ,def-att))
        (no-d?-form `(encapsulate
                      nil
@@ -1707,7 +1712,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                       ((,undef-name (x y) t :guard (and (symbolp x) (true-listp y))))
                       (local (defun ,undef-name (x y)
                                (declare (ignorable x y))
-                               ',base-val))
+                               ,base-val))
                       ,defthm-no-d?)
                      (defun ,attch-name (x y)
                        (declare (xargs :guard (and (symbolp x) (true-listp y))))
@@ -1715,7 +1720,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                 (show-contract-violations?)
                                 "~|**Input contract  violation in ~x0**: ~x1 ~%"
                                 ',attch-name `(,x ,@y))
-                               ',base-val))
+                               ,base-val))
                      ,def-att)))
     (cond
      ((and (not do-it)
