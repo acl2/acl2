@@ -28,58 +28,58 @@
 
 ; Subtitle of each tutorial page (except the top one).
 
-(defconst *atj-tutorial-motivation*
-  "Motivation for Generating Java Code from ACL2")
-
-(defconst *atj-tutorial-background*
-  "Background on the Evaluation Semantics of ACL2")
-
-(defconst *atj-tutorial-aij*
-  "Relationship with AIJ")
-
-(defconst *atj-tutorial-acl2-values*
-  "Java Representation of the ACL2 Values")
-
-(defconst *atj-tutorial-deep-shallow*
-  "Deep and Shallow Embedding Approaches")
-
-(defconst *atj-tutorial-deep*
-  "Deep Embedding Approach")
-
-(defconst *atj-tutorial-customization*
-  "Customization Options for Generated Code")
-
-(defconst *atj-tutorial-screen-output*
-  "Control of the Screen Output")
-
-(defconst *atj-tutorial-translated*
-  "ACL2 Functions Translated To Java")
-
-(defconst *atj-tutorial-deep-guards*
-  "Guards in the Deep Embedding Approach")
-
-(defconst *atj-tutorial-tests*
-  "Generation of Tests")
-
-(defconst *atj-tutorial-shallow*
-  "Shallow Embedding Approach")
-
-(defconst *atj-tutorial-uml*
-  "About the Simplified UML Class Diagrams")
+(defconst *atj-tutorial-acl2-environment*
+  "Java Representation of the ACL2 Environment")
 
 (defconst *atj-tutorial-acl2-terms*
   "Java Representation of the ACL2 Terms")
 
-(defconst *atj-tutorial-acl2-environment*
-  "Java Representation of the ACL2 Environment")
+(defconst *atj-tutorial-acl2-values*
+  "Java Representation of the ACL2 Values")
 
-(defconst *atj-tutorial-native*
-  "Native Java Implementations of ACL2 Functions")
+(defconst *atj-tutorial-aij*
+  "Relationship with AIJ")
+
+(defconst *atj-tutorial-background*
+  "Background on the Evaluation Semantics of ACL2")
+
+(defconst *atj-tutorial-customization*
+  "Customization Options for Generated Code")
+
+(defconst *atj-tutorial-deep*
+  "Deep Embedding Approach")
+
+(defconst *atj-tutorial-deep-guards*
+  "Guards in the Deep Embedding Approach")
+
+(defconst *atj-tutorial-deep-shallow*
+  "Deep and Shallow Embedding Approaches")
 
 (defconst *atj-tutorial-evaluator*
   "ACL2 Evaluator Written in Java")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defconst *atj-tutorial-motivation*
+  "Motivation for Generating Java Code from ACL2")
+
+(defconst *atj-tutorial-native*
+  "Native Java Implementations of ACL2 Functions")
+
+(defconst *atj-tutorial-screen-output*
+  "Control of the Screen Output")
+
+(defconst *atj-tutorial-shallow*
+  "Shallow Embedding Approach")
+
+(defconst *atj-tutorial-translated*
+  "ACL2 Functions Translated To Java")
+
+(defconst *atj-tutorial-tests*
+  "Generation of Tests")
+
+(defconst *atj-tutorial-uml*
+  "About the Simplified UML Class Diagrams")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Create the :SHORT string for a tutorial page with the given subtitle.
 
@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Create the 'next' and/or 'previous' links for a tutorial page,
+; Create the 'next' and/or 'previous' links for certain tutorial pages,
 ; preceded by a line (an empty box) for separation with the preceding text.
 
 (define atj-tutorial-next ((topic stringp) (subtitle stringp))
@@ -155,24 +155,21 @@
    (atj-tutorial-section "Structure of the Tutorial")
 
    (xdoc::p
-    "This tutorial consists of this top-level page,
-     a set of <i>main</i> pages,
-     and a set of <i>auxiliary</i> pages.
-     Both main and auxiliary pages are subtopics of this top-level page.
-     The main pages may be navigated sequentially,
-     using the `Next' and `Previous' links;
-     these pages contain all the user-level information
-     that is necessary to use ATJ effecively.
-     The auxiliary pages are referenced from the main pages;
-     they contain additional information
-     that may not be strictly necessary to ATJ users,
-     such as implementation details;
-     however, this information may be useful,
-     and thus users are encouraged to read the auxiliary pages as well.
-     When reading this tutorial for the first time,
-     it is suggested to read the main pages sequentially,
-     and (optionally) read the auxiliary pages
-     only when they are referenced by the main pages.")
+    "This tutorial consists of this top-level page
+     plus a number of hyperlinked pages,
+     all of which are subtopics of this top-level page,
+     listed below alphabetically.
+     Starting from this top-level page, we provide <i>Next</i> links
+     to navigate sequentially through a subset of the tutorial pages
+     (and we also provide <i>Previous</i> links going the opposite direction).
+     The pages not in this <i>Next</i>-<i>Previous</i>-linked subset
+     are all reachable via other links from the text of the pages
+     in the <i>Next</i>-<i>Previous</i>-linked subset.
+     In other words, the <i>Next</i> and <i>Previous</i> links provide
+     a main thread to be navigated sequentially,
+     and to be temporarily deviated from
+     in order to read the other pages that are not on the main thread:
+     this is the recommended way to read this tutorial for the first time.")
 
    (atj-tutorial-section "Relationship with the ACL2-2018 Workshop Paper")
 
@@ -186,300 +183,17 @@
      it is possible that the paper will be completely subsumed by this tutorial
      once the latter is completed.")
 
-   (atj-tutorial-next "atj-tutorial-motivation" *atj-tutorial-motivation*))
+   (atj-tutorial-section "Starting the Tutorial")
 
-  :order-subtopics t
+   (xdoc::p
+    "Having discussed the above ``meta'' preliminaries,
+     the tutorial can be started via the <i>Next</i> link below.
+     However, before doing that, it is recommended to read first
+     @(see atj-tutorial-motivation) and @(see atj-tutorial-background).")
+
+   (atj-tutorial-next "atj-tutorial-aij" *atj-tutorial-aij*))
 
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Main pages of the ATJ turorial, which can be navigated sequentially.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc atj-tutorial-motivation
-
-  :short (atj-tutorial-short *atj-tutorial-motivation*)
-
-  :long
-
-  (xdoc::topstring
-
-   (xdoc::p
-    "This tutorial page provides motivation for ATJ,
-     and more in general for code generators for ACL2,
-     especially in light of ACL2's code ability to run as Common Lisp code.")
-
-   (atj-tutorial-section "Code Generation in Theorem Provers")
-
-   (xdoc::p
-    "A benefit of writing code in a theorem prover like ACL2
-     is the ability to prove properties about it,
-     such as the satisfaction of requirements specifications.
-     A facility to generate code in one or more programming languages
-     from an executable subset of the prover's logical language
-     enables the possibly verified code to run as, and interoperate with,
-     code written in those programming languages.
-     Assuming the correctness of code generation
-     (whose verification is a separable problem,
-     akin to compilation verification)
-     the properties proved about the original code
-     carry over to the generated code.")
-
-   (xdoc::p
-    "For instance, the "
-    (xdoc::ahref "http://isabelle.in.tum.de" "Isabelle") ", "
-    (xdoc::ahref "https://coq.inria.fr" "Coq") ", and "
-    (xdoc::ahref "http://pvs.csl.sri.com" "PVS") ", and "
-    (xdoc::ahref "https://hol-theorem-prover.org" "HOL")
-    " theorem provers include facilities to generate code
-     in various programming languages, such as "
-    (xdoc::ahref "http://sml-family.org" "Standard ML") ", "
-    (xdoc::ahref "https://ocaml.org" "Ocaml") ", "
-    (xdoc::ahref "https://www.haskell.org" "Haskell") ", "
-    (xdoc::ahref "https://scala-lang.org" "Scala") ", "
-    (xdoc::ahref
-     "https://en.wikipedia.org/wiki/C_%28programming_language%29" "C")
-    ", and "
-    (xdoc::ahref "http://www.scheme-reports.org" "Scheme") ".")
-
-   (atj-tutorial-section "Code Generation in ACL2")
-
-   (xdoc::p
-    "ACL2's tight integration with the underlying Lisp platform
-     enables the executable subset of the ACL2 logical language
-     to run readily and efficiently as Lisp,
-     without the need for explicit code generation facilities.
-     Nonetheless, some situations may call for
-     running ACL2 code in other programming languages:
-     specifically, when the ACL2 code must interoperate
-     with external code in those programming languages
-     in a more integrated and efficient way than afforded
-     by inter-language communication via foreign function interfaces
-     such as "
-    (xdoc::ahref "https://common-lisp.net/project/cffi" "CFFI")
-    " and "
-    (xdoc::ahref "https://docs.oracle.com/javase/10/docs/specs/jni" "JNI")
-    " or by inter-process communication with the ACL2/Lisp runtime
-     via mechanisms like "
-    (xdoc::seetopic "acl2::bridge" "the ACL2 Bridge")
-    ". Using Lisp implementations
-     written in the target programming languages,
-     such as "
-    (xdoc::ahref "https://abcl.org" "ABCL")
-    ", involves not only porting ACL2 to them,
-     but also including much more runtime code
-     than necessary for the target applications.
-     Compilers from Lisp to the target programming languages
-     may need changes or wrappers,
-     because executable ACL2 is not quite a subset of Lisp;
-     furthermore, the ability to compile non-ACL2 Lisp code
-     is an unnecessary complication as far as ACL2 compilation is concerned,
-     making potential verification harder.")
-
-   (xdoc::p
-    "ATJ translates ACL2 to Java,
-     enabling possibly verified ACL2 code
-     to run as, and interoperate with, Java code,
-     without much of the ACL2 framework or any of the Lisp runtime.")
-
-   (xdoc::p
-    "ATJ is useful
-     to generate Java code at the end of an "
-    (xdoc::seetopic "apt::apt" "APT")
-    " program synthesis derivation.")
-
-   (xdoc::p
-    "Generators for ACL2 of code in other programming languages (than Java)
-     may be developed similarly to ATJ.")
-
-   (atj-tutorial-next "atj-tutorial-background" *atj-tutorial-background*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc atj-tutorial-background
-
-  :short (atj-tutorial-short *atj-tutorial-background*)
-
-  :long
-
-  (xdoc::topstring
-
-   (xdoc::p
-    "In the context of translating from the ACL2 language
-     to Java or any other programming language,
-     it is important to consider not only ACL2's logical semantics,
-     but also ACL2's evaluation semantics.
-     This tutorial page provides some background
-     on ACL2's evaluation semantics.")
-
-   (atj-tutorial-section "Logical and Evaluation Semantics")
-
-   (xdoc::p
-    "ACL2 has a precisely defined "
-    (xdoc::ahref "http://www.cs.utexas.edu/users/moore/publications/km97a.pdf"
-                 "logical semantics")
-    ", expressed in terms of syntax, axioms, and inference rules,
-     similarly to logic textbooks and other theorem provers.
-     This logical semantics applies to @(see logic)-mode functions,
-     not @(see program)-mode functions.
-     @(csee guard)s are not part of the logic,
-     but engender proof obligations in the logic
-     when guard verification is attempted.")
-
-   (xdoc::p
-    "ACL2 also has a documented "
-    (xdoc::seetopic "acl2::evaluation" "evaluation semantics")
-    ", which could be formalized
-     in terms of syntax, values, states, steps, errors, etc.,
-     as is customary for programming languages.
-     This evaluation semantics applies
-     to both logic-mode and program-mode functions.
-     Guards affect the evaluation semantics,
-     based on guard-checking settings.
-     Even non-executable functions
-     (e.g. introduced via @(tsee defchoose) or @(tsee defun-nx))
-     degenerately have an evaluation semantics,
-     because they do yield error results when called;
-     however, the following discussion focuses on executable functions.")
-
-   (atj-tutorial-section "Logic-Mode, Program-Mode, and Primitive Functions")
-
-   (xdoc::p
-    "Most logic-mode functions have definitions
-     that specify both their logical and their evaluation semantics:
-     for the former, the definitions are logically conservative axioms;
-     for the latter, the definitions provide ``instructions''
-     for evaluating calls of the function.
-     For a defined logic-mode function,
-     the relationship between the two semantics is that,
-     roughly speaking,
-     evaluating a call of the function yields, in a finite number of steps,
-     the unique result value that, with the argument values,
-     satisfies the function's defining axiom;
-     the actual relationship is slightly more complicated,
-     as it may involve guard checking.")
-
-   (xdoc::p
-    "The "
-    (xdoc::seetopic "acl2::primitive" "primitive functions")
-    " are in logic mode and have no definitions;
-     they are all built-in.
-     Examples are
-     @(tsee equal), @(tsee if), @(tsee cons), @(tsee car), and @(tsee binary-+).
-     Their logical semantics is specified by axioms of the ACL2 logic.
-     Their evaluation semantics is specified by raw Lisp code
-     (under the hood).
-     The relationship between the two semantics is as in the above paragraph,
-     with the slight complication that
-     @(tsee pkg-witness) and @(tsee pkg-imports)
-     yield error results when called on unknown package names.
-     The evaluation of calls of @(tsee if) is non-strict, as is customary.")
-
-   (xdoc::p
-    "Most program-mode functions have definitions
-     that specify their evaluation semantics,
-     similarly to the non-primitive logic-mode functions discussed above.
-     Their definitions specify no logical semantics.")
-
-   (atj-tutorial-section "Functions with Raw Lisp Code and Side Effects")
-
-   (xdoc::p
-    "The logic-mode functions
-     listed in the global variable @('logic-fns-with-raw-code')
-     have a logical semantics specified by their ACL2 definitions,
-     but an evaluation semantics specified by raw Lisp code.
-     (They are disjoint from the primitive functions,
-     which have no definitions.)
-     For some of these functions, e.g. @(tsee len),
-     the raw Lisp code just makes them run faster
-     but is otherwise functionally equivalent to the ACL2 definitions.
-     Others have side effects,
-     carried out by their raw Lisp code
-     but not reflected in their ACL2 definitions.
-     For example, @(tsee hard-error) prints a message on the screen
-     and immediately terminates execution, unwinding the call stack.
-     As another example, @(tsee fmt-to-comment-window)
-     prints a message on the screen,
-     returning @('nil') and continuing execution.
-     But the ACL2 definitions of both of these example functions
-    just return @('nil').")
-
-   (xdoc::p
-    "The program-mode functions
-     listed in the global variable @('program-fns-with-raw-code')
-     have an evaluation semantics specified by raw Lisp code.
-     Their ACL2 definitions appear to have no actual use.")
-
-   (xdoc::p
-    "Since "
-    (xdoc::seetopic "acl2::stobj" "stobjs")
-    " are destructively updated,
-     functions that manipulate stobjs may have side effects as well,
-     namely the destructive updates.
-     Because of single-threadedness,
-     these side effects are invisible
-     in the end-to-end input/output evaluation of these functions;
-     however, they may be visible
-     in some formulations of the evaluation semantics,
-     such as ones that comprehend interrupts,
-     for which updating a record field in place involves different steps
-     than constructing a new record value with a changed field.
-     The built-in @(tsee state) stobj
-     is ``linked'' to external entities,
-     e.g. the file system of the underlying machine.
-     Thus, functions that manipulate @(tsee state)
-     may have side effects on these external entities.
-     For example, @(tsee princ$) (a member of @('logic-fns-with-raw-code'))
-     writes to the stream associated with the output channel argument,
-     and affects the file system.")
-
-   (xdoc::p
-    "The fact that the side effects of the evaluation semantics
-     are not reflected in the logical semantics
-     is a design choice
-     that makes the language more practical for programming
-     while retaining the ability to prove theorems.
-     But when generating Java or other code,
-     these side effects should be taken into consideration:
-     for instance,
-     translating @(tsee hard-error) and @(tsee fmt-to-comment-window)
-     into Java code that returns (a representation of) @('nil'),
-     would be incorrect or at least undesired.
-     As an aside,
-     a similar issue applies to the use of "
-    (xdoc::seetopic "apt::apt" "APT transformations")
-    ": for instance,
-     using the "
-    (xdoc::ahref "https://arxiv.org/abs/1705.01228v1" "@('simplify')")
-    " transformation
-     to turn calls of @(tsee hard-error) into @('nil'),
-     while logically correct and within @('simplify')'s stipulations,
-     may be undesired or unexpected.")
-
-   (atj-tutorial-section "Macros with Raw Lisp Code")
-
-   (xdoc::p
-    "Macros are normally expanded
-     (the expansion being also according to ACL2's evaluation semantics),
-     and their expansion is then evaluated.
-     However, the macros listed in the global variable @('macros-with-raw-code')
-     have an evaluation semantics specified by raw Lisp code.
-     The evaluation semantics specified by their raw Lisp code
-     may be consistent with the evaluation semantics of their expansion or not,
-     due to side effects or apparent circularities.
-     For instance, the @(tsee concatenate) macro has raw Lisp code,
-     which obviously terminates execution;
-     however, the expansion of @(tsee concatenate) calls @(tsee string-append),
-     whose @(':exec') part calls @(tsee concatenate),
-     and therefore execution may not terminate.
-     Thus, macros with raw Lisp code may also need to be taken into account
-     when translating ACL2 code to Java or other programming languages.")
-
-   (atj-tutorial-next-and-previous
-    "atj-tutorial-aij" *atj-tutorial-aij*
-    "atj-tutorial-motivation" *atj-tutorial-motivation*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -518,7 +232,7 @@
 
    (atj-tutorial-next-and-previous
     "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*
-    "atj-tutorial-background" *atj-tutorial-background*)))
+    "atj-tutorial" "Top")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -756,7 +470,7 @@
 
    (atj-tutorial-next-and-previous
     "atj-tutorial-deep" *atj-tutorial-deep*
-     "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
+    "atj-tutorial-acl2-values" *atj-tutorial-acl2-values*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2312,9 +2026,284 @@
 
    (atj-tutorial-previous "atj-tutorial-tests" *atj-tutorial-tests*)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Auxiliary pages of the ATJ tutorial, which are referenced from the main ones.
+(defxdoc atj-tutorial-motivation
+
+  :short (atj-tutorial-short *atj-tutorial-motivation*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "This tutorial page provides motivation for ATJ,
+     and more in general for code generators for ACL2,
+     especially in light of ACL2's code ability to run as Common Lisp code.")
+
+   (atj-tutorial-section "Code Generation in Theorem Provers")
+
+   (xdoc::p
+    "A benefit of writing code in a theorem prover like ACL2
+     is the ability to prove properties about it,
+     such as the satisfaction of requirements specifications.
+     A facility to generate code in one or more programming languages
+     from an executable subset of the prover's logical language
+     enables the possibly verified code to run as, and interoperate with,
+     code written in those programming languages.
+     Assuming the correctness of code generation
+     (whose verification is a separable problem,
+     akin to compilation verification)
+     the properties proved about the original code
+     carry over to the generated code.")
+
+   (xdoc::p
+    "For instance, the "
+    (xdoc::ahref "http://isabelle.in.tum.de" "Isabelle") ", "
+    (xdoc::ahref "https://coq.inria.fr" "Coq") ", and "
+    (xdoc::ahref "http://pvs.csl.sri.com" "PVS") ", and "
+    (xdoc::ahref "https://hol-theorem-prover.org" "HOL")
+    " theorem provers include facilities to generate code
+     in various programming languages, such as "
+    (xdoc::ahref "http://sml-family.org" "Standard ML") ", "
+    (xdoc::ahref "https://ocaml.org" "Ocaml") ", "
+    (xdoc::ahref "https://www.haskell.org" "Haskell") ", "
+    (xdoc::ahref "https://scala-lang.org" "Scala") ", "
+    (xdoc::ahref
+     "https://en.wikipedia.org/wiki/C_%28programming_language%29" "C")
+    ", and "
+    (xdoc::ahref "http://www.scheme-reports.org" "Scheme") ".")
+
+   (atj-tutorial-section "Code Generation in ACL2")
+
+   (xdoc::p
+    "ACL2's tight integration with the underlying Lisp platform
+     enables the executable subset of the ACL2 logical language
+     to run readily and efficiently as Lisp,
+     without the need for explicit code generation facilities.
+     Nonetheless, some situations may call for
+     running ACL2 code in other programming languages:
+     specifically, when the ACL2 code must interoperate
+     with external code in those programming languages
+     in a more integrated and efficient way than afforded
+     by inter-language communication via foreign function interfaces
+     such as "
+    (xdoc::ahref "https://common-lisp.net/project/cffi" "CFFI")
+    " and "
+    (xdoc::ahref "https://docs.oracle.com/javase/10/docs/specs/jni" "JNI")
+    " or by inter-process communication with the ACL2/Lisp runtime
+     via mechanisms like "
+    (xdoc::seetopic "acl2::bridge" "the ACL2 Bridge")
+    ". Using Lisp implementations
+     written in the target programming languages,
+     such as "
+    (xdoc::ahref "https://abcl.org" "ABCL")
+    ", involves not only porting ACL2 to them,
+     but also including much more runtime code
+     than necessary for the target applications.
+     Compilers from Lisp to the target programming languages
+     may need changes or wrappers,
+     because executable ACL2 is not quite a subset of Lisp;
+     furthermore, the ability to compile non-ACL2 Lisp code
+     is an unnecessary complication as far as ACL2 compilation is concerned,
+     making potential verification harder.")
+
+   (xdoc::p
+    "ATJ translates ACL2 to Java,
+     enabling possibly verified ACL2 code
+     to run as, and interoperate with, Java code,
+     without much of the ACL2 framework or any of the Lisp runtime.")
+
+   (xdoc::p
+    "ATJ is useful
+     to generate Java code at the end of an "
+    (xdoc::seetopic "apt::apt" "APT")
+    " program synthesis derivation.")
+
+   (xdoc::p
+    "Generators for ACL2 of code in other programming languages (than Java)
+     may be developed similarly to ATJ.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc atj-tutorial-background
+
+  :short (atj-tutorial-short *atj-tutorial-background*)
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "In the context of translating from the ACL2 language
+     to Java or any other programming language,
+     it is important to consider not only ACL2's logical semantics,
+     but also ACL2's evaluation semantics.
+     This tutorial page provides some background
+     on ACL2's evaluation semantics.")
+
+   (atj-tutorial-section "Logical and Evaluation Semantics")
+
+   (xdoc::p
+    "ACL2 has a precisely defined "
+    (xdoc::ahref "http://www.cs.utexas.edu/users/moore/publications/km97a.pdf"
+                 "logical semantics")
+    ", expressed in terms of syntax, axioms, and inference rules,
+     similarly to logic textbooks and other theorem provers.
+     This logical semantics applies to @(see logic)-mode functions,
+     not @(see program)-mode functions.
+     @(csee guard)s are not part of the logic,
+     but engender proof obligations in the logic
+     when guard verification is attempted.")
+
+   (xdoc::p
+    "ACL2 also has a documented "
+    (xdoc::seetopic "acl2::evaluation" "evaluation semantics")
+    ", which could be formalized
+     in terms of syntax, values, states, steps, errors, etc.,
+     as is customary for programming languages.
+     This evaluation semantics applies
+     to both logic-mode and program-mode functions.
+     Guards affect the evaluation semantics,
+     based on guard-checking settings.
+     Even non-executable functions
+     (e.g. introduced via @(tsee defchoose) or @(tsee defun-nx))
+     degenerately have an evaluation semantics,
+     because they do yield error results when called;
+     however, the following discussion focuses on executable functions.")
+
+   (atj-tutorial-section "Logic-Mode, Program-Mode, and Primitive Functions")
+
+   (xdoc::p
+    "Most logic-mode functions have definitions
+     that specify both their logical and their evaluation semantics:
+     for the former, the definitions are logically conservative axioms;
+     for the latter, the definitions provide ``instructions''
+     for evaluating calls of the function.
+     For a defined logic-mode function,
+     the relationship between the two semantics is that,
+     roughly speaking,
+     evaluating a call of the function yields, in a finite number of steps,
+     the unique result value that, with the argument values,
+     satisfies the function's defining axiom;
+     the actual relationship is slightly more complicated,
+     as it may involve guard checking.")
+
+   (xdoc::p
+    "The "
+    (xdoc::seetopic "acl2::primitive" "primitive functions")
+    " are in logic mode and have no definitions;
+     they are all built-in.
+     Examples are
+     @(tsee equal), @(tsee if), @(tsee cons), @(tsee car), and @(tsee binary-+).
+     Their logical semantics is specified by axioms of the ACL2 logic.
+     Their evaluation semantics is specified by raw Lisp code
+     (under the hood).
+     The relationship between the two semantics is as in the above paragraph,
+     with the slight complication that
+     @(tsee pkg-witness) and @(tsee pkg-imports)
+     yield error results when called on unknown package names.
+     The evaluation of calls of @(tsee if) is non-strict, as is customary.")
+
+   (xdoc::p
+    "Most program-mode functions have definitions
+     that specify their evaluation semantics,
+     similarly to the non-primitive logic-mode functions discussed above.
+     Their definitions specify no logical semantics.")
+
+   (atj-tutorial-section "Functions with Raw Lisp Code and Side Effects")
+
+   (xdoc::p
+    "The logic-mode functions
+     listed in the global variable @('logic-fns-with-raw-code')
+     have a logical semantics specified by their ACL2 definitions,
+     but an evaluation semantics specified by raw Lisp code.
+     (They are disjoint from the primitive functions,
+     which have no definitions.)
+     For some of these functions, e.g. @(tsee len),
+     the raw Lisp code just makes them run faster
+     but is otherwise functionally equivalent to the ACL2 definitions.
+     Others have side effects,
+     carried out by their raw Lisp code
+     but not reflected in their ACL2 definitions.
+     For example, @(tsee hard-error) prints a message on the screen
+     and immediately terminates execution, unwinding the call stack.
+     As another example, @(tsee fmt-to-comment-window)
+     prints a message on the screen,
+     returning @('nil') and continuing execution.
+     But the ACL2 definitions of both of these example functions
+    just return @('nil').")
+
+   (xdoc::p
+    "The program-mode functions
+     listed in the global variable @('program-fns-with-raw-code')
+     have an evaluation semantics specified by raw Lisp code.
+     Their ACL2 definitions appear to have no actual use.")
+
+   (xdoc::p
+    "Since "
+    (xdoc::seetopic "acl2::stobj" "stobjs")
+    " are destructively updated,
+     functions that manipulate stobjs may have side effects as well,
+     namely the destructive updates.
+     Because of single-threadedness,
+     these side effects are invisible
+     in the end-to-end input/output evaluation of these functions;
+     however, they may be visible
+     in some formulations of the evaluation semantics,
+     such as ones that comprehend interrupts,
+     for which updating a record field in place involves different steps
+     than constructing a new record value with a changed field.
+     The built-in @(tsee state) stobj
+     is ``linked'' to external entities,
+     e.g. the file system of the underlying machine.
+     Thus, functions that manipulate @(tsee state)
+     may have side effects on these external entities.
+     For example, @(tsee princ$) (a member of @('logic-fns-with-raw-code'))
+     writes to the stream associated with the output channel argument,
+     and affects the file system.")
+
+   (xdoc::p
+    "The fact that the side effects of the evaluation semantics
+     are not reflected in the logical semantics
+     is a design choice
+     that makes the language more practical for programming
+     while retaining the ability to prove theorems.
+     But when generating Java or other code,
+     these side effects should be taken into consideration:
+     for instance,
+     translating @(tsee hard-error) and @(tsee fmt-to-comment-window)
+     into Java code that returns (a representation of) @('nil'),
+     would be incorrect or at least undesired.
+     As an aside,
+     a similar issue applies to the use of "
+    (xdoc::seetopic "apt::apt" "APT transformations")
+    ": for instance,
+     using the "
+    (xdoc::ahref "https://arxiv.org/abs/1705.01228v1" "@('simplify')")
+    " transformation
+     to turn calls of @(tsee hard-error) into @('nil'),
+     while logically correct and within @('simplify')'s stipulations,
+     may be undesired or unexpected.")
+
+   (atj-tutorial-section "Macros with Raw Lisp Code")
+
+   (xdoc::p
+    "Macros are normally expanded
+     (the expansion being also according to ACL2's evaluation semantics),
+     and their expansion is then evaluated.
+     However, the macros listed in the global variable @('macros-with-raw-code')
+     have an evaluation semantics specified by raw Lisp code.
+     The evaluation semantics specified by their raw Lisp code
+     may be consistent with the evaluation semantics of their expansion or not,
+     due to side effects or apparent circularities.
+     For instance, the @(tsee concatenate) macro has raw Lisp code,
+     which obviously terminates execution;
+     however, the expansion of @(tsee concatenate) calls @(tsee string-append),
+     whose @(':exec') part calls @(tsee concatenate),
+     and therefore execution may not terminate.
+     Thus, macros with raw Lisp code may also need to be taken into account
+     when translating ACL2 code to Java or other programming languages.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
