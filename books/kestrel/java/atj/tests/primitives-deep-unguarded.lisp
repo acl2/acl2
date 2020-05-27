@@ -12,6 +12,8 @@
 
 (include-book "primitives")
 
+(include-book "../implementation" :ttags (:open-input-channel :oslib :quicklisp :quicklisp.osicat))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the functions that manipulate Java primitive values.
