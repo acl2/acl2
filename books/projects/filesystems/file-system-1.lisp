@@ -6,7 +6,6 @@
 ; a file-system recognizer, and then we define various file-system
 ; operations.
 
-(include-book "std/testing/assert" :dir :system)
 (include-book "file-system-lemmas")
 (include-book "insert-text")
 
