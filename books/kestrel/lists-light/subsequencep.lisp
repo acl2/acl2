@@ -12,6 +12,9 @@
 
 (include-book "subsequencep-equal")
 
+;; The function subsequencep is built into ACL2.  It uses EQL as the
+;; test.
+
 (in-theory (disable subsequencep))
 
 ;; We turn subsequencep into subsequencep-equal and reason about that instead.
