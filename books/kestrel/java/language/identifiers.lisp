@@ -408,14 +408,12 @@
      See @(tsee identifierp) for the kind of identifiers
      used in the other contexts.")
    (xdoc::p
-    "We model these Java identifiers as lists of Java Unicode characters
-     that are not empty,
-     that start with a character satisfying @(tsee identifier-start-p),
-     that continue with characters satisfying @(tsee identifier-part-p),
-     that differ from all non-restricted and restricted keywords
-     (with one exception discussed below),
-     and that differ from boolean and null literals.
-     See [JLS:3.8].")
+    "We model these Java identifiers as
+     regular Java identifiers (the kinds used in most contexts)
+     that differ from all non-restricted and restricted keywords,
+     with one exception discussed below.
+     Note that this notion of identifiers for module-related contexts
+     is not explicit in the grammar in [JLS].")
    (xdoc::p
     "The exception mentioned above is that
      we allow @('transitive') to be an identifier
@@ -433,15 +431,9 @@
   (define midentifierp (x)
     :returns (yes/no booleanp)
     :short "Recognizer for @(tsee midentifier)."
-    (and (unicode-listp x)
-         (consp x)
-         (identifier-start-p (car x))
-         (identifier-part-listp (cdr x))
-         (not (jkeywordp x))
+    (and (identifierp x)
          (or (not (restricted-jkeywordp x))
-             (equal x (string=>unicode "transitive")))
-         (not (boolean-literal-p x))
-         (not (null-literal-p x))))
+             (equal x (string=>unicode "transitive")))))
 
   (std::deffixer midentifier-fix
     :pred midentifierp
