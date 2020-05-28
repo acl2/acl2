@@ -37,7 +37,7 @@
 (in-package "ACL2")
 (include-book "defsort")
 (include-book "misc/total-order" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 
 ;; The following defines (<-SORT X), which orders a list of rational numbers
