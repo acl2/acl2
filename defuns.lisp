@@ -5920,7 +5920,7 @@
                        (t (mv nil nil certify-book-info)))))
               ((and (eq (car useless-runes-info) 'channel)
                     #+acl2-par
-                    (f-get-global 'waterfall-parallelism state))
+                    (not (f-get-global 'waterfall-parallelism state)))
                (mv 'write (cdr useless-runes-info) certify-book-info))
               (t (mv nil nil certify-book-info))))))))
 
