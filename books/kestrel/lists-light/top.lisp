@@ -38,6 +38,7 @@
 (include-book "intersection-equal")
 (include-book "add-to-set-equal")
 (include-book "set-difference-equal")
+(include-book "subsequencep")
 
 ;; Books about non-built-in functions:
 (include-book "firstn-def")
@@ -52,6 +53,7 @@
 (include-book "perm2")
 (include-book "subrange-def")
 (include-book "subrange")
+(include-book "subsequencep-equal")
 
 ;; Typed lists:
 (include-book "symbol-listp")
