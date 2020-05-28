@@ -1,0 +1,5 @@
+; During development of the :useless-runes option, value 25 caused a failure.
+; So we use 20; actually, -20 so that the @useless-runes.lsp file need not be
+; present.  If this fails again, then try using nil as the value.
+
+; cert-flags: ? t :useless-runes -20

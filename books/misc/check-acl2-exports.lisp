@@ -111,6 +111,7 @@
     SAFE-MODE
     TAG-TREE
     TYPE-SET
+    USELESS-RUNES
     WATERFALL
 
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they

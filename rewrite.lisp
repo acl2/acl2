@@ -5153,16 +5153,19 @@
                                     (access rewrite-rule (car lemmas) :lhs)
                                     unify-subst)
                     (cond (ans
-                           (mv t
-                               unify-subst
-                               (push-lemma (geneqv-refinementp
-                                            (access rewrite-rule (car lemmas) :equiv)
-                                            *geneqv-iff*
-                                            wrld)
-                                           (push-lemma
-                                            (access rewrite-rule (car lemmas) :rune)
-                                            nilp-ttree))
-                               (cdr lemmas)))
+                           (let ((rune (access rewrite-rule (car lemmas) :rune)))
+                             (with-accumulated-persistence
+                              rune
+                              (flg final-unify-subst final-ttree final-lemmas)
+                              t
+                              (mv t
+                                  unify-subst
+                                  (push-lemma (geneqv-refinementp
+                                               (access rewrite-rule (car lemmas) :equiv)
+                                               *geneqv-iff*
+                                               wrld)
+                                              (push-lemma rune nilp-ttree))
+                                  (cdr lemmas)))))
                           (t (search-ground-units1
                               hyp unify-subst
                               (cdr lemmas)
@@ -15928,85 +15931,93 @@
 ; substitution.  So we lay down code customized to this situation, adapted from
 ; the definition of rewrite-if.
 
-                  (sl-let
-                   (rewritten-test ttree)
+                  (with-accumulated-persistence
+                   rune
+                   ((the (signed-byte 30) step-limit) new-term ttree)
+                   t
+                   (sl-let
+                    (rewritten-test ttree)
 
 ; We could save the original ttree to use below when we don't use
 ; rewritten-test.  But this way we record runes that participated even in a
 ; failed expansion, which could be of use for those who want to use that
 ; information for constructing a theory in which the proof may replay.
 
-                   (rewrite-entry (rewrite hyp alist 'expansion)
-                                  :geneqv *geneqv-iff*
-                                  :pequiv-info nil
-                                  :obj t
-                                  :ttree (push-lemma? rune ttree))
-                   (let ((ens (access rewrite-constant rcnst
-                                      :current-enabled-structure)))
-                     (mv-let
-                      (must-be-true
-                       must-be-false
-                       true-type-alist false-type-alist ts-ttree)
-                      (assume-true-false rewritten-test nil
-                                         (ok-to-force rcnst)
-                                         nil type-alist ens wrld
-                                         nil nil :fta)
-                      (declare (ignore false-type-alist))
-                      (cond
-                       (must-be-true
-                        (sl-let
-                         (rewritten-new-term ttree)
-                         (rewrite-entry
-                          (rewrite new-term alist 'expansion)
-                          :type-alist true-type-alist
-                          :ttree (cons-tag-trees ts-ttree ttree))
-                         (mv step-limit
-                             rewritten-new-term
-                             (push-splitter? rune ttree rcnst ancestors
-                                             new-term rewritten-new-term))))
-                       (must-be-false
-                        (mv step-limit
-                            (fcons-term* 'hide term)
-                            (push-lemma (fn-rune-nume 'hide nil nil wrld)
-                                        (cons-tag-trees ts-ttree ttree))))
-                       (t
+                    (rewrite-entry (rewrite hyp alist 'expansion)
+                                   :geneqv *geneqv-iff*
+                                   :pequiv-info nil
+                                   :obj t
+                                   :ttree (push-lemma? rune ttree))
+                    (let ((ens (access rewrite-constant rcnst
+                                       :current-enabled-structure)))
+                      (mv-let
+                        (must-be-true
+                         must-be-false
+                         true-type-alist false-type-alist ts-ttree)
+                        (assume-true-false rewritten-test nil
+                                           (ok-to-force rcnst)
+                                           nil type-alist ens wrld
+                                           nil nil :fta)
+                        (declare (ignore false-type-alist))
+                        (cond
+                         (must-be-true
+                          (sl-let
+                           (rewritten-new-term ttree)
+                           (rewrite-entry
+                            (rewrite new-term alist 'expansion)
+                            :type-alist true-type-alist
+                            :ttree (cons-tag-trees ts-ttree ttree))
+                           (mv step-limit
+                               rewritten-new-term
+                               (push-splitter? rune ttree rcnst ancestors
+                                               new-term rewritten-new-term))))
+                         (must-be-false
+                          (mv step-limit
+                              (fcons-term* 'hide term)
+                              (push-lemma (fn-rune-nume 'hide nil nil wrld)
+                                          (cons-tag-trees ts-ttree ttree))))
+                         (t
 
 ; We are tempted to bind ttree here to (normalize-rw-any-cache ttree), as we do
 ; in a similar situation in rewrite-if.  But limited experiments suggest that
 ; we may get better performance without doing so.
 
-                        (sl-let
-                         (rewritten-left ttree1)
-                         (rewrite-entry (rewrite new-term alist 2)
-                                        :type-alist true-type-alist
-                                        :ttree (rw-cache-enter-context ttree))
-                         (mv-let
-                          (final-term ttree)
-                          (rewrite-if11 (fcons-term* 'if
-                                                     rewritten-test
-                                                     rewritten-left
-                                                     (fcons-term* 'hide term))
-                                        type-alist geneqv wrld
-                                        (push-lemma (fn-rune-nume 'hide nil
-                                                                  nil wrld)
-                                                    (rw-cache-exit-context
-                                                     ttree ttree1)))
-                          (mv step-limit
-                              final-term
+                          (sl-let
+                           (rewritten-left ttree1)
+                           (rewrite-entry (rewrite new-term alist 2)
+                                          :type-alist true-type-alist
+                                          :ttree (rw-cache-enter-context ttree))
+                           (mv-let
+                             (final-term ttree)
+                             (rewrite-if11 (fcons-term* 'if
+                                                        rewritten-test
+                                                        rewritten-left
+                                                        (fcons-term* 'hide term))
+                                           type-alist geneqv wrld
+                                           (push-lemma (fn-rune-nume 'hide nil
+                                                                     nil wrld)
+                                                       (rw-cache-exit-context
+                                                        ttree ttree1)))
+                             (mv step-limit
+                                 final-term
 
 ; We avoid push-lemma+ just below, because ttree already incorporates a call of
 ; push-lemma? on rune.
 
-                              (push-splitter? rune ttree rcnst ancestors
-                                              new-term final-term))))))))))
+                                 (push-splitter? rune ttree rcnst ancestors
+                                                 new-term final-term)))))))))))
                  (new-term
-                  (sl-let (final-term ttree)
-                          (rewrite-entry (rewrite new-term alist 'expansion)
-                                         :ttree (push-lemma? rune ttree))
-                          (mv step-limit
-                              final-term
-                              (push-splitter? rune ttree rcnst ancestors
-                                              new-term final-term))))
+                  (with-accumulated-persistence
+                   rune
+                   ((the (signed-byte 30) step-limit) new-term ttree)
+                   t
+                   (sl-let (final-term ttree)
+                           (rewrite-entry (rewrite new-term alist 'expansion)
+                                          :ttree (push-lemma? rune ttree))
+                           (mv step-limit
+                               final-term
+                               (push-splitter? rune ttree rcnst ancestors
+                                               new-term final-term)))))
                  (t (prepend-step-limit
                      2
                      (rewrite-solidify term type-alist obj geneqv

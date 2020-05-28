@@ -5813,6 +5813,430 @@
         (print-verify-guards-msg names col state)
         (value (cons wrld3 ttree1)))))))
 
+(defun convert-runes-to-unordered-mapping-pairs (lst wrld ans)
+
+; This function is based on convert-theory-to-unordered-mapping-pairs1.
+; However, the present function expects each member R of lst to be in the shape
+; of a rune, without runic abbreviations (see :DOC theories); moreover, here we
+; do not require R to be a legal rune, as we simply ignore it in that case.
+
+  (cond
+   ((endp lst) ans)
+   (t (convert-runes-to-unordered-mapping-pairs
+       (cdr lst) wrld
+       (let ((pair (frunic-mapping-pair (car lst) wrld)))
+         (cond (pair (cons pair ans))
+               (t ans)))))))
+
+(defun augment-theory-weak (lst wrld)
+
+; This function is like augment-theory, except that here we require each member
+; R of lst to be a rune syntactically (not merely a runic abbreviation), but
+; not necessarily to be a rune.  If R is not a legal rune, then we ignore it.
+
+  (declare (xargs :guard (true-listp lst)))
+  (duplicitous-sort-car
+   nil
+   (convert-runes-to-unordered-mapping-pairs lst wrld nil)))
+
+(defun with-useless-runes-aux (name state)
+
+; See also with-useless-runes.
+
+; There are three cases, according to whether we are reading a
+; @useless-runes.lsp file, write such a file, or neither.  The "neither" case
+; applies when skipping proofs.  Assuming that we are not skipping proofs,
+; these cases are described in the next three paragraphs respectively.
+
+; Suppose that state global 'certify-book-info has a non-nil value whose
+; :useless-runes-info field is of the form (FAST-ALIST . fal), and suppose that
+; name is a non-nil symbol that is associated in the alist fal with a non-nil
+; list, lst.  So, lst is a list of lists of syntactic runes, that is, objects
+; that are runes syntactically but might not all be legal runes.  Then this
+; function returns (mv 'read certify-book-info-1 certify-book-info-2), where
+; certify-book-info-1 is to be used when processing the event named name and
+; certify-book-info-2 is to be used after that completes.  Thus if thy is the
+; augmented theory corresponding to (car lst), then certify-book-info-1 is the
+; result of updating the :useless-runes-info field of certify-book-info with
+; (THEORY . thy) and certify-book-info-2 is the result of updating the
+; :useless-runes-info field of certify-book-info with (FAST-ALIST . fal'),
+; where fal' is the update of fal obtained by associating name with (cdr lst).
+
+; Suppose that state global 'certify-book-info has a non-nil value whose
+; :useless-runes-info field is of the form (CHANNEL chan ...).  Then we return
+; (mv 'write chan certify-book-info).
+
+; Otherwise we return (mv nil nil certify-book-info).
+
+  (let ((certify-book-info (f-get-global 'certify-book-info state)))
+    (cond
+     ((or (null certify-book-info)
+          (ld-skip-proofsp state)
+
+; The following should generally be false when not skipping proofs.  But it is
+; conceivable that a make-event form with :check-expansion t causes an event to
+; be evaluated during include-book when not skipping proofs.  That event might
+; involve packages not known at the time a @useless-runes.lsp is read, so we do
+; not want to write useless-runes to that file in this case.  It thus makes
+; sense also not to read a non-existent entry in the "read" mode of using an
+; existing @useless-runes.lsp.
+
+          (global-val 'include-book-path (w state))
+
+; The following test is probably unnecessary because the include-book phase of
+; certify-book has a non-nil include-book-path.  But it's cheap, so we include
+; it for robustness.
+
+          (access certify-book-info certify-book-info :include-book-phase))
+      (mv nil nil certify-book-info))
+     (t
+      (let* ((wrld (w state))
+             (useless-runes-info (and name
+                                      certify-book-info
+                                      (access certify-book-info certify-book-info
+                                              :useless-runes-info))))
+        (cond ((eq (car useless-runes-info) 'fast-alist)
+               (let* ((fal (cdr useless-runes-info))
+                      (lst (cdr (hons-get name fal))))
+                 (cond ((consp lst)
+                        (let* ((runes (car lst))
+                               (fal (hons-acons name (cdr lst) fal))
+                               (certify-book-info-2
+                                (change certify-book-info certify-book-info
+                                        :useless-runes-info
+                                        (cons 'FAST-ALIST fal))))
+                          (cond
+                           #+acl2-par
+                           ((f-get-global 'waterfall-parallelism state)
+                            (mv nil nil certify-book-info-2))
+                           (t
+                            (mv 'read
+                                (change certify-book-info
+                                        certify-book-info
+                                        :useless-runes-info
+                                        (cons 'THEORY
+                                              (augment-theory-weak runes wrld)))
+                                certify-book-info-2)))))
+                       (t (mv nil nil certify-book-info)))))
+              ((and (eq (car useless-runes-info) 'channel)
+                    #+acl2-par
+                    (not (f-get-global 'waterfall-parallelism state)))
+               (mv 'write (cdr useless-runes-info) certify-book-info))
+              (t (mv nil nil certify-book-info))))))))
+
+(defun accp-info (state)
+  #-acl2-loop-only
+  (mv nil
+      (wormhole-data
+       (cdr (assoc-eq 'ACCUMULATED-PERSISTENCE *wormhole-status-alist*)))
+      state)
+  #+acl2-loop-only
+  (read-acl2-oracle state))
+
+(defun useless-runes (accp-info)
+
+; This function is based on show-accumulated-persistence-phrase.
+
+  (let* ((totals (access accp-info accp-info :totals))
+         (alist (merge-sort-lexorder
+                 (show-accumulated-persistence-phrase2
+                  :USELESS
+                  (car (last totals))
+                  nil))))
+    (show-accumulated-persistence-list
+     (show-accumulated-persistence-remove-useless alist nil)
+     nil)))
+
+(defun bad-useless-runes (useless-runes known-pkgs acc)
+  (cond ((endp useless-runes) (reverse acc))
+        (t (bad-useless-runes
+            (cdr useless-runes)
+            known-pkgs
+            (let ((rune (caddr (car useless-runes))))
+              (if (member-equal (symbol-package-name (base-symbol rune))
+                                known-pkgs)
+                  acc
+                (cons rune acc)))))))
+
+(defun set-difference-equal-sorted (lst1 lst2)
+
+; We return (set-difference-equal lst1 lst2), but take advantage of the
+; following assumption: lst2 is a subsequence of lst1.
+
+  (cond ((null lst2) lst1)
+        ((endp lst1)
+         (er hard? 'set-difference-equal-sorted
+             "Implementation error: Reached end of lst1 before end of lst2."))
+        ((equal (car lst1) (car lst2))
+         (set-difference-equal-sorted (cdr lst1) (cdr lst2)))
+        (t (cons (car lst1)
+                 (set-difference-equal-sorted (cdr lst1) lst2)))))
+
+(defun remove-executable-counterpart-useless-runes1 (useless-runes)
+  (cond
+   ((endp useless-runes) nil)
+   (t (let ((rune (caddr (car useless-runes))))
+        (cond
+         ((eq (car rune) :executable-counterpart)
+          (remove-executable-counterpart-useless-runes1 (cdr useless-runes)))
+         (t (cons rune
+                  (remove-executable-counterpart-useless-runes1
+                   (cdr useless-runes)))))))))
+
+(defun executable-counterpart-useless-runes-p (useless-runes)
+  (cond
+   ((endp useless-runes) nil)
+   (t (let ((rune (caddr (car useless-runes))))
+        (cond
+         ((eq (car rune) :executable-counterpart)
+          t)
+         (t (executable-counterpart-useless-runes-p (cdr useless-runes))))))))
+
+(defun remove-executable-counterpart-useless-runes (useless-runes)
+  (cond ((executable-counterpart-useless-runes-p useless-runes) ; optimization
+         (remove-executable-counterpart-useless-runes1 useless-runes))
+        (t useless-runes)))
+
+(defun print-useless-runes (name channel known-pkgs state)
+
+; We are given an output channel for a @useless-runes.lsp file.  We print an
+; entry into the indicated channel of the form (name . (pairlis$ frames thy)),
+; where thy is the :list output for useless runes that is associated with the
+; event named name that is now completing.  Note that each useless-rune is of
+; the form (frames tries rune).  These are sorted by accumulated-persistence,
+; highest first.  We omit any rune whose base symbol is not among the known
+; packages, with a comment explaining which are omitted.
+
+; We call remove-executable-counterpart-useless-runes to remove useless-runes
+; that are :executable-counterpart runes.  We do so because there are many
+; places that we do not track such runes for accumulated-persistence, including
+; (as of this writing) sublis-var!, eval-ground-subexpressions1, scons-term,
+; ev-respecting-ens, and even rewrite and expand-abbreviations.
+
+  (error-free-triple-to-state
+   'print-useless-runes
+   (er-let* ((accp-info (accp-info state)))
+     (state-global-let*
+      ((current-package "ACL2" set-current-package-state))
+      (cond
+       ((member-equal (symbol-package-name name) known-pkgs)
+        (let* ((useless-runes0 (remove-executable-counterpart-useless-runes
+                                (useless-runes accp-info)))
+               (bad-tuples (bad-useless-runes useless-runes0 known-pkgs nil))
+               (useless-runes (if (null bad-tuples) ; optimization
+                                  useless-runes0
+                                (set-difference-equal-sorted useless-runes0
+                                                             bad-tuples))))
+          (mv-let (col state)
+            (fmt1 "~@0~Y12"
+                  (list (cons #\0 (if bad-tuples
+                                      (msg "; Skipping ~#0~[this ~
+                                            useless-rune~/these useless ~
+                                            runess~] below~|; (unknown ~
+                                            package in certification ~
+                                            world):~|#|~|~*1|#~|"
+                                           bad-tuples
+                                           `(""
+                                             "~x*~|"
+                                             "~x*~|"
+                                             "~x*~|"
+                                             ,bad-tuples))
+                                    ""))
+                        (cons #\1 (cons name useless-runes))
+                        (cons #\2 nil))
+                  0 channel state nil)
+            (declare (ignore col))
+            (prog2$
+
+; We are done printing, so turn off accumulated-persistence.
+
+             (accumulated-persistence nil)
+             (value nil)))))
+       (t
+        (mv-let (col state)
+          (fmt1 "; Omitting the following entry because the package of~|; ~
+                 the event name is unknown in the certification ~
+                 world.~|#|~|~x0~||#~|"
+                (list (cons #\0 (cons name
+                                      (remove-executable-counterpart-useless-runes
+                                       (useless-runes accp-info)))))
+                0 channel state nil)
+          (declare (ignore col))
+          (prog2$
+
+; We are done printing, so turn off accumulated-persistence.
+
+           (accumulated-persistence nil)
+           (value nil)))))))))
+
+(defun augmented-runes-after-1 (nume pairs)
+
+; We compute (loop$ for x in pairs when (> (car x) nume) collect x), but
+; without using loop$ because of a boot-strapping problem.
+
+  (cond ((endp pairs) nil)
+        ((> (caar pairs) nume)
+         (cons (car pairs)
+               (augmented-runes-after-1 nume (cdr pairs))))
+        (t nil)))
+
+(defun augmented-runes-after (nume wrld ans)
+
+; We collect into ans all (nume . rune) pairs for which the nume exceeds the
+; given nume.  See also extend-with-augmented-runes-after.  A related function
+; is universal-theory-fn1, but in the present function we do not reverse ans.
+; Also, for efficiency, we do not check for redefinition, as we expect to use
+; this function only during book certification, where redefinition should not
+; take place without a trust tag.
+
+; Here we elaborate on the point above about redefinition not taking place.  We
+; will call this function only during certification, when nume is at least the
+; :index-of-last-enabling of the current enabled structure.  Because of the
+; update-current-theory call in end-prehistoric-world, we know that nume is
+; therefore not inside the ground-zero theory.  So even if redefinition takes
+; place during the boot-strap, that will not affect validity of runes we
+; collect here, since redefinition does not happen (without a trust tag) after
+; the boot-strap while certifying a book.
+
+  (cond ((endp wrld) (reverse ans))
+        ((and (eq (cadr (car wrld)) 'runic-mapping-pairs)
+
+; We expect the following condition to be false, but we might as well check for
+; it.
+
+              (not (eq (cddr (car wrld)) *acl2-property-unbound*)))
+         (let ((pairs (cddr (car wrld))))
+           (cond ((null pairs)
+                  (augmented-runes-after nume (cdr wrld) ans))
+                 ((> (caar pairs) nume)
+                  (augmented-runes-after nume
+                                         (cdr wrld)
+                                         (append pairs ans)))
+                 ((<= (car (car (last pairs))) nume)
+                  (reverse ans))
+                 (t (revappend ans
+                               (augmented-runes-after-1 nume pairs))))))
+        (t
+         (augmented-runes-after nume (cdr wrld) ans))))
+
+(defun extend-set-difference-theories (thy1 thy2 nm1 wrld)
+
+; Thy1 is an augmented runic theory whose numes do not exceed the given nume,
+; nm1.  Thy2 is an augmented runic theory whose first nume nm2 exceeds the
+; integer nm1.
+
+; Let thy1+ be the augmented theory that extends thy1 with all (nume . rune)
+; pairs in wrld for which nm1 < nume.  (In our intended application, there is
+; an enabled-structure whose theory-array is a header consed onto thy1 and
+; whose index-of-last-enabling is nm1.)  We return the set-difference of thy1+
+; and thy2.
+
+; Note that thy1+ = thy1++ U thy1, where thy1++ is the list of (nume . rune)
+; pairs defined above.  So thy1+ \ thy2 = (thy1++ \ thy2) U (thy1 \ thy2),
+; which we can compute as an augmented runic theory as clearly shown in the
+; code below.
+
+; We aren't careful with respect to redefinition (due to our use of
+; augmented-runes-after).  However, we intend to use this function only when
+; certifying books, where redefinition is presumably nonexistent (at least,
+; without a trust tag).
+
+  (let ((thy1++ (augmented-runes-after nm1 wrld nil)))
+    (append (set-difference-augmented-theories thy1++ thy2 nil)
+            (set-difference-augmented-theories thy1 thy2 nil))))
+
+(defun useless-runes-ens (ens wrld state)
+
+; This function returns a modified ens derived for the current event, if any,
+; from the @useless-runes.lsp file if there is one.  If there is no such
+; current event then we return ens.
+
+; Notice that we use load-theory-into-enabled-structure-1 below rather than
+; load-theory-into-enabled-structure.  That is because for efficiency, we don't
+; check theory-invariants for the event-level modification of ens when using
+; @useless-runes.lsp.  After all, there is already no guarantee that proofs
+; will go through when disabling useless-runes; also, most theory-invariants
+; probably insist that certain runes can't be simultaneously enabled, and that
+; would be maintained by disabling some runes.  We considered checking
+; theory-invariants before writing out an entry to the @useless-runes.lsp file.
+; That wouldn't be perfect, since it's conceivable that the theory-invariant
+; would fail at that point but would succeed in a hint given to "Goal", which
+; might the enabled-structure actually used by that event.
+
+  (let ((useless-runes (active-useless-runes state)))
+    (cond
+     (useless-runes
+      (let ((ens-theory (cdr (access enabled-structure ens :theory-array)))
+            (index-of-last-enabling (access enabled-structure ens
+                                            :index-of-last-enabling)))
+        (mv-let (index-of-last-enabling thy)
+          (cond ((<= (caar useless-runes) index-of-last-enabling)
+                 (mv index-of-last-enabling
+                     (set-difference-augmented-theories ens-theory
+                                                        useless-runes
+                                                        nil)))
+                (t
+                 (mv (caar useless-runes)
+                     (extend-set-difference-theories ens-theory
+                                                     useless-runes
+                                                     index-of-last-enabling
+                                                     wrld))))
+          (load-theory-into-enabled-structure-1
+           thy
+           t ; augmented-p
+           ens
+           t ; incrmt-array-name-info
+           index-of-last-enabling wrld))))
+     (t ens))))
+
+(defmacro with-useless-runes (name wrld form)
+
+; Name is the name of an event currently being processed.  This macro is
+; employed to wrap the given form in code that manages the reading or writing
+; of a @useless-runes.lsp file, when appropriate.  See with-useless-runes-aux
+; for more details; in particular, (with-useless-runes name wrld form) is
+; essentially just form when skipping proofs.
+
+; When reading such a file (during certification), then state global
+; certify-book-info is a certify-book-info record whose :useless-runes-info
+; field is of the form (FAST-ALIST . fal).  If name is associated with a
+; non-empty list of augmented theory in fal, the first such theory, thy, is
+; popped from that list, but during the processing of form, the
+; :useless-runes-info field of certify-book-info is replaced by (THEORY . thy).
+
+; When writing such a file we get a suitable channel from the certify-book-info
+; record.
+
+  `(let ((purf-name ,name)
+         (purf-wrld ,wrld))
+     (mv-let (r/w purf-1 purf-2)
+       (with-useless-runes-aux purf-name state)
+       (pprogn
+        (case r/w
+          (read (f-put-global 'certify-book-info purf-2 state))
+          (write (prog2$ (accumulated-persistence t) state))
+          (otherwise state))
+        (state-global-let*
+         ((certify-book-info
+           (case r/w
+             (read purf-1)
+             (otherwise purf-2)))
+          (global-enabled-structure
+           (case r/w
+             (read (useless-runes-ens (ens state) purf-wrld state))
+             (otherwise (ens state)))))
+         (mv-let (erp val state)
+           (check-vars-not-free (purf-name purf-wrld purf-1 purf-2)
+                                ,form)
+           (case r/w
+             (write (pprogn (print-useless-runes purf-name
+                                                 (car purf-1)
+                                                 (cdr purf-1)
+                                                 state)
+                            (prog2$ (accumulated-persistence nil)
+                                    (mv erp val state))))
+             (otherwise (mv erp val state)))))))))
+
 (defun verify-guards-fn (name state hints otf-flg guard-debug
                               guard-simplify event-form)
 
@@ -5842,38 +6266,40 @@
           (assumep (or (eq (ld-skip-proofsp state) 'include-book)
                        (eq (ld-skip-proofsp state) 'include-book-with-locals)
                        (eq (ld-skip-proofsp state) 'initialize-acl2))))
-      (er-let*
-       ((names (chk-acceptable-verify-guards name t ctx wrld state)))
-       (cond
-        ((eq names 'redundant)
-         (stop-redundant-event ctx state))
-        (t (enforce-redundancy
-            event-form ctx wrld
-            (er-let*
-             ((hints (if assumep
-                         (value nil)
-                       (translate-hints+
-                        (cons "Guard Lemma for" name)
-                        hints
-                        (default-hints wrld)
-                        ctx wrld state)))
-              (pair (verify-guards-fn1 names hints otf-flg guard-debug
-                                       guard-simplify ctx state)))
+      (er-let* ((names (chk-acceptable-verify-guards name t ctx wrld state)))
+        (cond
+         ((eq names 'redundant)
+          (stop-redundant-event ctx state))
+         (t (enforce-redundancy
+             event-form ctx wrld
+             (with-useless-runes
+              name
+              wrld
+              (er-let*
+                  ((hints (if assumep
+                              (value nil)
+                            (translate-hints+
+                             (cons "Guard Lemma for" name)
+                             hints
+                             (default-hints wrld)
+                             ctx wrld state)))
+                   (pair (verify-guards-fn1 names hints otf-flg guard-debug
+                                            guard-simplify ctx state)))
 
 ; pair is of the form (wrld1 . ttree)
 
-             (er-progn
-              (chk-assumption-free-ttree (cdr pair) ctx state)
-              (install-event name
-                             event-form
-                             'verify-guards
-                             0
-                             (cdr pair)
-                             nil
-                             nil
-                             nil
-                             (car pair)
-                             state)))))))))))
+                (er-progn
+                 (chk-assumption-free-ttree (cdr pair) ctx state)
+                 (install-event name
+                                event-form
+                                'verify-guards
+                                0
+                                (cdr pair)
+                                nil
+                                nil
+                                nil
+                                (car pair)
+                                state))))))))))))
 
 ; That completes the implementation of verify-guards.  We now return
 ; to the development of defun itself.
@@ -10982,62 +11408,65 @@
                 (split-types-terms (nth 22 tuple))
                 (lambda-info (nth 23 tuple))
                 (guard-simplify (nth 24 tuple)))
-            (er-let*
-             ((pair (defuns-fn0
-                      names
-                      arglists
-                      docs
-                      pairs
-                      guards
-                      measures
-                      ruler-extenders-lst
-                      mp
-                      rel
-                      hints
-                      guard-hints
-                      std-hints
-                      otf-flg
-                      guard-debug
-                      guard-simplify
-                      measure-debug
-                      bodies
-                      symbol-class
-                      normalizeps
-                      split-types-terms
-                      lambda-info
-                      non-executablep
-                      #+:non-standard-analysis std-p
-                      ctx
-                      wrld
-                      state)))
+            (with-useless-runes
+             (car names)
+             wrld
+             (er-let*
+                 ((pair (defuns-fn0
+                          names
+                          arglists
+                          docs
+                          pairs
+                          guards
+                          measures
+                          ruler-extenders-lst
+                          mp
+                          rel
+                          hints
+                          guard-hints
+                          std-hints
+                          otf-flg
+                          guard-debug
+                          guard-simplify
+                          measure-debug
+                          bodies
+                          symbol-class
+                          normalizeps
+                          split-types-terms
+                          lambda-info
+                          non-executablep
+                          #+:non-standard-analysis std-p
+                          ctx
+                          wrld
+                          state)))
 
 ; Pair is of the form (wrld . ttree).
 
-             (er-progn
-              (chk-assumption-free-ttree (cdr pair) ctx state)
-              (if (access lambda-info lambda-info :loop$-recursion)
+               (er-progn
+                (chk-assumption-free-ttree (cdr pair) ctx state)
+                (if (access lambda-info lambda-info :loop$-recursion)
 ; If loop$-recursion is set we know this is a singly-recursive (not mutually
 ; recursive) defun that the user alleged was tame.  We check that now.
-                  (mv-let (erp msg-and-badge)
-                    (ev-fncall-w 'badger
-                                 (list (car names) (ens state) (w state))
-                                 (w state) nil nil nil t t)
+                    (mv-let (erp msg-and-badge)
+                      (ev-fncall-w 'badger
+                                   (list (car names) (ens state) (w state))
+                                   (w state) nil nil nil t t)
 
 ; If erp is t, then msg-and-badge is actually an error msg.  Otherwise,
 ; msg-and-badge is (msg badge), where msg is either an error message or nil.
 ; When msg is nil, badge is the computed badge.
 
-                    (let ((msg1 msg-and-badge)
-                          (msg2 (if erp
-                                    nil
+                      (let ((msg1 msg-and-badge)
+                            (msg2 (if erp
+                                      nil
                                     (car msg-and-badge)))
-                          (badge (if erp
-                                     nil
+                            (badge (if erp
+                                       nil
                                      (cadr msg-and-badge))))
-                      (cond
-                       ((or erp msg2)
-                        (er soft 'defun
-                            "When :LOOP$-RECURSION T is declared for a ~
+                        (cond
+                         ((or erp msg2)
+                          (er soft 'defun
+                              "When :LOOP$-RECURSION T is declared for a ~
                              function, as it was for ~x0, we must assign it a ~
                              badge before we translate its body.  That ~
                              assigned badge asserts that ~x0 returns a single ~
@@ -11050,31 +11479,31 @@
                              attempt to generate a badge produced the ~
                              following error:~/The error message that would ~
                              be reported by DEFWARRANT is:~]~%~%~@2"
-                            (car names) (if erp 0 1) (if erp msg1 msg2)))
-                        ((not (equal (access apply$-badge badge :out-arity) 1))
+                              (car names) (if erp 0 1) (if erp msg1 msg2)))
+                         ((not (equal (access apply$-badge badge :out-arity) 1))
 
 ; This error can't happen!  The world -- wrld3 of chk-acceptable-defuns1 -- has
 ; the stobjs-out property of fn set to a list of length 1.  And the badger just
 ; looks there to find the :out-arity.
 
-                         (er soft 'defun
-                             "Impossible error!  The final badger check in ~
+                          (er soft 'defun
+                              "Impossible error!  The final badger check in ~
                               DEFUNS-FN has failed on the :OUT-ARITY.  This ~
                               is impossible given chk-acceptable-defuns1. ~
                               Please show the implementors this bug!"))
-                        ((not (eq (access apply$-badge badge :ilks) t))
-                         (er soft 'defun
-                             "When :LOOP$-RECURSION T is declared for a ~
+                         ((not (eq (access apply$-badge badge :ilks) t))
+                          (er soft 'defun
+                              "When :LOOP$-RECURSION T is declared for a ~
                               function the function must be tame.  But ~x0 is ~
                               not!  Its ilks are actually ~x1."
-                             (car names)
-                             (access apply$-badge badge :ilks)))
-                        (t (value nil)))))
+                              (car names)
+                              (access apply$-badge badge :ilks)))
+                         (t (value nil)))))
                   (value nil))
-              (install-event-defuns names event-form def-lst0 symbol-class
-                                    reclassifyingp non-executablep pair ctx wrld
-                                    state))))))))))
-        :event-type 'defun))
+                (install-event-defuns names event-form def-lst0 symbol-class
+                                      reclassifyingp non-executablep pair ctx wrld
+                                      state)))))))))))
+   :event-type 'defun))
 
 (defun defun-fn (def state event-form #+:non-standard-analysis std-p)
 
