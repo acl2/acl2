@@ -33,7 +33,7 @@
      One kind excludes only non-restricted keywords:
      these identifiers are usable in most contexts.
      The other kind excludes restricted keywords as well
-     (with a slight exception; see @(tsee midentifierp)):
+     (with a slight exception; see @(tsee midentifier)):
      these identifiers are usable in certain module-related contexts.")
    (xdoc::p
     "Here we also formalize Java type identifiers [JLS:3.8],
