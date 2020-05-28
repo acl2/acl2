@@ -344,9 +344,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define identifierp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize Java identifiers, for most contexts."
+(defsection identifier
+  :short "Fixtype of Java identifiers, for most contexts."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -355,8 +354,8 @@
     (xdoc::seetopic "identifiers" "here")
     ". Since these are used in most contexts
      (except for some module-related contexts),
-     we use the unqualified name @('identifierp') for this recognizer.
-     See @(tsee midentifierp) for the kind of identifiers
+     we use the general name @('identifierp') for this recognizer.
+     See @(tsee midentifier) for the kind of identifiers
      used in module-related contexts.")
    (xdoc::p
     "We model these Java identifiers as lists of Java Unicode characters
@@ -366,21 +365,23 @@
      that differ from all the non-restricted keywords,
      and that differ from the boolean and null literals.
      See [JLS:3.8]."))
-  (and (unicode-listp x)
-       (consp x)
-       (identifier-start-p (car x))
-       (identifier-part-listp (cdr x))
-       (not (jkeywordp x))
-       (not (boolean-literal-p x))
-       (not (null-literal-p x))))
 
-(std::deffixer identifier-fix
-  :pred identifierp
-  :body-fix (list (char-code #\$))
-  :short "Fixer for @(tsee identifierp).")
+  (define identifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee identifier)."
+    (and (unicode-listp x)
+         (consp x)
+         (identifier-start-p (car x))
+         (identifier-part-listp (cdr x))
+         (not (jkeywordp x))
+         (not (boolean-literal-p x))
+         (not (null-literal-p x))))
 
-(defsection identifier
-  :short "Fixtype for @(tsee identifierp)."
+  (std::deffixer identifier-fix
+    :pred identifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee identifierp).")
+
   (fty::deffixtype identifier
     :pred identifierp
     :fix identifier-fix
@@ -390,9 +391,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define midentifierp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize Java identifiers, for module-related contexts."
+(defsection midentifier
+  :short "Fixtype of Java identifiers, for module-related contexts."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -426,23 +426,25 @@
      that has no information about the surrounding context.
      Additional predicates can be used to impose restrictions
      based on the surrounding context."))
-  (and (unicode-listp x)
-       (consp x)
-       (identifier-start-p (car x))
-       (identifier-part-listp (cdr x))
-       (not (jkeywordp x))
-       (or (not (restricted-jkeywordp x))
-           (equal x (string=>unicode "transitive")))
-       (not (boolean-literal-p x))
-       (not (null-literal-p x))))
 
-(std::deffixer midentifier-fix
-  :pred midentifierp
-  :body-fix (list (char-code #\$))
-  :short "Fixer for @(tsee midentifierp).")
+  (define midentifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee midentifier)."
+    (and (unicode-listp x)
+         (consp x)
+         (identifier-start-p (car x))
+         (identifier-part-listp (cdr x))
+         (not (jkeywordp x))
+         (or (not (restricted-jkeywordp x))
+             (equal x (string=>unicode "transitive")))
+         (not (boolean-literal-p x))
+         (not (null-literal-p x))))
 
-(defsection midentifier
-  :short "Fixtype for @(tsee midentifierp)."
+  (std::deffixer midentifier-fix
+    :pred midentifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee midentifierp).")
+
   (fty::deffixtype midentifier
     :pred midentifierp
     :fix midentifier-fix
