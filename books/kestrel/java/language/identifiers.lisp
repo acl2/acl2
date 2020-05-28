@@ -26,8 +26,8 @@
    (xdoc::p
     "Java identifiers are sequences of characters that, among other things,
      must differ from Java keywords.
-     Since, as discussed "
-    (xdoc::seetopic "keywords" "here")
+     Since, as discussed in the "
+    (xdoc::seetopic "keywords" "topic on keywords")
     ", there are non-restricted and restricted Java keywords,
      correspondingly there are two kinds of Java identifiers.
      One kind excludes only non-restricted keywords:
@@ -350,8 +350,8 @@
   (xdoc::topstring
    (xdoc::p
     "These are Java identifiers that exclude just the non-restricted keywords,
-     as discussed "
-    (xdoc::seetopic "identifiers" "here")
+     as discussed in the "
+    (xdoc::seetopic "identifiers" "topic on identifiers")
     ". Since these are used in most contexts
      (except for some module-related contexts),
      we use the general name @('identifierp') for this recognizer.
@@ -398,8 +398,8 @@
    (xdoc::p
     "These are Java identifiers that exclude all the keywords
      (non-restricted and restricted, with one exception discussed below),
-     as discussed "
-    (xdoc::seetopic "identifiers" "here")
+     as discussed in the "
+    (xdoc::seetopic "identifiers" "topic on identifiers")
     ". Since these are used in module-related contexts,
      we prepend the name of this recognizer with @('m').
      See @(tsee identifierp) for the kind of identifiers
