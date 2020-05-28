@@ -1601,14 +1601,10 @@
     (abs-file->contents (mv-nth 0 (abs-find-file frame pathname)))))
   :hints (("goal" :in-theory (enable abs-find-file))))
 
-;; This has an error which could easily have been caught by guard verification,
-;; which was sort of the inevitable consequence of skipping that work up until
-;; this point.
-;;
 ;; OK, here's the plan for defining abs-mkdir. We can proooobably get rid of
 ;; abs-place-file and abs-remove-file, since those tasks are going to be
 ;; accomplished by first bringing the parent directory to the front and then
-;; doing a put-assoc or a remove-assoc respectively - I think?
+;; doing a put-assoc or a remove-assoc respectively.
 (defund abs-mkdir (frame pathname)
   (declare (xargs
             :guard (and (frame-p frame)

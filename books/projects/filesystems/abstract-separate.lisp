@@ -45,31 +45,6 @@
                   (not (list-equiv x y))))
   :hints (("goal" :in-theory (enable prefixp))))
 
-(defthmd
-  len-when-set-equiv
-  (implies (and (set-equiv x y)
-                (no-duplicatesp-equal x)
-                (no-duplicatesp-equal y))
-           (equal (len x) (len y)))
-  :hints
-  (("goal" :in-theory (disable (:linear len-of-set-difference-when-subsetp))
-    :use ((:linear len-of-set-difference-when-subsetp)
-          (:instance (:linear len-of-set-difference-when-subsetp)
-                     (x y)
-                     (y x))))))
-
-(defthm
-  len-of-no-duplicatesp-when-set-equiv
-  (implies (set-equiv x y)
-           (equal (len (remove-duplicates-equal x))
-                  (len (remove-duplicates-equal y))))
-  :hints
-  (("goal" :do-not-induct t
-    :use (:instance len-when-set-equiv
-                    (x (remove-duplicates-equal x))
-                    (y (remove-duplicates-equal y)))))
-  :rule-classes :congruence)
-
 ;; This is explicitly a replacement for assoc-equal with a vacuous guard.
 (defund abs-assoc (x alist)
   (declare (xargs :guard t))
@@ -13355,28 +13330,136 @@
                      (seq (cons x (seq-this (collapse-this frame x)))))
           valid-seqp-after-collapse-this))))
 
-;; (thm
-;;  (b*
-;;      ((frame (collapse-seq frame (seq-this frame)))
-;;       (1st-complete (1st-complete (frame->frame frame))))
-;;    (or
-;;     (zp 1st-complete)
-;;     (and
-;;      (zp (frame-val->src (cdr (assoc-equal 1st-complete (frame->frame
-;;                                                          frame)))))
-;;      (not
-;;       (ctx-app-ok
-;;        (frame->root frame)
-;;        1st-complete
-;;        (frame-val->path (cdr (assoc-equal 1st-complete (frame->frame
-;;                                                         frame)))))))
-;;     (and
-;;      (not
-;;       (zp (frame-val->src (cdr (assoc-equal 1st-complete (frame->frame
-;;                                                           frame)))))))))
-;;  :hints (("Goal" :in-theory (enable seq-this collapse-seq collapse-iter)
-;;           :induct (SEQ-THIS FRAME)
-;;           :expand (COLLAPSE-ITER FRAME 1))))
+(defthm
+  partial-collapse-correctness-lemma-37
+  (implies
+   (and
+    (equal
+     (1st-complete
+      (frame->frame
+       (collapse-seq
+        (collapse-this frame
+                       (1st-complete (frame->frame frame)))
+        (seq-this (collapse-this frame
+                                 (1st-complete (frame->frame frame)))))))
+     (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                       (frame->frame frame)))))
+    (no-duplicatesp-equal (strip-cars (frame->frame frame))))
+   (and
+   (equal
+    (frame-val->path
+     (cdr
+      (assoc-equal
+       (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                         (frame->frame frame))))
+       (frame->frame
+        (collapse-seq
+         (collapse-this frame
+                        (1st-complete (frame->frame frame)))
+         (seq-this (collapse-this frame
+                                  (1st-complete (frame->frame frame)))))))))
+    (frame-val->path
+     (cdr
+      (assoc-equal
+       (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                         (frame->frame frame))))
+       (frame->frame (collapse-this frame
+                                    (1st-complete (frame->frame frame))))))))
+   (equal
+    (frame-val->src
+     (cdr
+      (assoc-equal
+       (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                         (frame->frame frame))))
+       (frame->frame
+        (collapse-seq
+         (collapse-this frame
+                        (1st-complete (frame->frame frame)))
+         (seq-this (collapse-this frame
+                                  (1st-complete (frame->frame frame)))))))))
+    (frame-val->src
+     (cdr
+      (assoc-equal
+       (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                         (frame->frame frame))))
+       (frame->frame (collapse-this frame
+                                    (1st-complete (frame->frame frame))))))))))
+  :hints
+  (("goal"
+    :in-theory (disable (:rewrite 1st-complete-correctness-1))
+    :use
+    (:instance
+     (:rewrite 1st-complete-correctness-1)
+     (frame
+      (frame->frame
+       (collapse-seq
+        (collapse-this frame
+                       (1st-complete (frame->frame frame)))
+        (seq-this (collapse-this frame
+                                 (1st-complete (frame->frame frame)))))))))))
+
+(defthmd
+  partial-collapse-correctness-lemma-75
+  (implies
+   (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+   (b*
+       ((frame (collapse-seq frame (seq-this frame)))
+        (1st-complete (1st-complete (frame->frame frame))))
+     (or
+      (zp 1st-complete)
+      (and
+       (zp
+        (frame-val->src (cdr (assoc-equal 1st-complete (frame->frame frame)))))
+       (not (ctx-app-ok
+             (frame->root frame)
+             1st-complete
+             (frame-val->path
+              (cdr (assoc-equal 1st-complete (frame->frame frame)))))))
+      (and
+       (not (zp (frame-val->src
+                 (cdr (assoc-equal 1st-complete (frame->frame frame))))))
+       (not
+        (and
+         (prefixp
+          (frame-val->path
+           (cdr
+            (assoc-equal
+             (frame-val->src
+              (cdr (assoc-equal 1st-complete (frame->frame frame))))
+             (frame->frame frame))))
+          (frame-val->path
+           (cdr (assoc-equal 1st-complete (frame->frame frame)))))
+         (ctx-app-ok
+          (frame-val->dir
+           (cdr
+            (assoc-equal
+             (frame-val->src
+              (cdr (assoc-equal 1st-complete (frame->frame frame))))
+             (frame->frame frame))))
+          1st-complete
+          (nthcdr
+           (len
+            (frame-val->path
+             (cdr
+              (assoc-equal
+               (frame-val->src
+                (cdr (assoc-equal 1st-complete (frame->frame frame))))
+               (frame->frame frame)))))
+           (frame-val->path (cdr (assoc-equal 1st-complete
+                                              (frame->frame frame))))))))))))
+  :hints
+  (("goal" :in-theory (e/d (seq-this collapse-seq collapse-iter
+                                     partial-collapse-correctness-lemma-32)
+                           ((:rewrite partial-collapse-correctness-lemma-24)
+                            (:definition no-duplicatesp-equal)
+                            (:rewrite subsetp-when-prefixp)
+                            (:definition assoc-equal)
+                            (:definition member-equal)
+                            (:linear count-free-clusters-correctness-1)
+                            (:rewrite member-of-abs-addrs-when-natp . 2)
+                            (:definition remove-equal)))
+    :induct (seq-this frame)
+    :expand (collapse-iter frame 1))))
 
 ;; (verify
 ;;  (implies (and (no-duplicatesp-equal (strip-cars (frame->frame frame)))
@@ -13402,9 +13485,8 @@
 ;;   (:= (take (len (seq-this (collapse-this frame x)))
 ;;             (seq-this (collapse-this frame x)))
 ;;       (seq-this (collapse-this frame x)))
-;;   :top :split (:contrapose 8)
-;;   (:dive 1)
 ;;   :top
+;;   :split
 ;;   (:bash ("goal" :in-theory (disable member-of-a-nat-list
 ;;                                      member-of-strip-cars
 ;;                                      no-duplicatesp-of-seq-this-lemma-1)
@@ -13532,7 +13614,7 @@
      collapse-iter-correctness-1
      (:instance (:rewrite collapse-seq-of-seq-this-is-collapse)
                 (frame (collapse-this frame x)))
-     (:instance len-when-set-equiv
+     (:instance set-equiv-implies-equal-len-1-when-no-duplicatesp
                 (x (cons x (seq-this (collapse-this frame x))))
                 (y (strip-cars (frame->frame frame)))))
     :in-theory (e/d (collapse-seq)
