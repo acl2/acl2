@@ -480,3 +480,37 @@
     :equiv tidentifier-equiv
     :define t
     :forward t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection umidentifier
+  :short "Fixtype of Java unqualified method identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar rule for @('unqualified-method-identifier') in [JLS:3.8]
+     defines an unqualified method identifier as a regular identifier
+     that is not @('yield').")
+   (xdoc::p
+    "Accordingly, we model Java unqualified method identifiers as
+     regular identifiers
+     (the kinds used in most contexts, not in module-related contexts)
+     that differ from the Unicode sequence for @('yield')."))
+
+  (define umidentifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee umidentifier)."
+    (and (identifierp x)
+         (not (equal x (string=>unicode "yield")))))
+
+  (std::deffixer umidentifier-fix
+    :pred umidentifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee umidentifierp).")
+
+  (fty::deffixtype umidentifier
+    :pred umidentifierp
+    :fix umidentifier-fix
+    :equiv umidentifier-equiv
+    :define t
+    :forward t))
