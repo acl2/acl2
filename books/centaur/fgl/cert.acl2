@@ -46,4 +46,5 @@
 (set-waterfall-parallelism nil)
 
 (include-book "portcullis")
-; cert-flags: ? t :ttags :all
+; The book interp.lisp, at least, seems to need :useless-runes nil:
+; cert-flags: ? t :ttags :all :useless-runes nil

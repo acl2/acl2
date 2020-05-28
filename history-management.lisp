@@ -3568,6 +3568,8 @@
   (cond
    ((null wrld) ; see initial call of set-w in enter-boot-strap-mode
     state)
+   ((active-useless-runes state) ; then we already updated
+    state)
    (t
     (let* ((augmented-theory (global-val 'current-theory-augmented wrld))
            (ens (f-get-global 'global-enabled-structure state))
@@ -3884,6 +3886,8 @@
 
             deferred-ttag-notes       ;;; see comment immediately above
             deferred-ttag-notes-saved ;;; see comment immediately above
+
+            certify-book-info         ;;; need effect from with-useless-runes
 
 ; The following two are protected a different way; see
 ; protect-system-state-globals.
@@ -17550,10 +17554,6 @@
                  0 (standard-co state) state ())
            (declare (ignore col))
            (value ':invisible)))
-
-(defrec certify-book-info
-  (full-book-name cert-op . include-book-phase)
-  nil) ; could replace with t sometime
 
 (defun active-book-name (wrld state)
 
