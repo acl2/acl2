@@ -34,7 +34,10 @@
      these identifiers are usable in most contexts.
      The other kind excludes restricted keywords as well
      (with a slight exception; see @(tsee midentifierp)):
-     these identifiers are usable in certain module-related contexts."))
+     these identifiers are usable in certain module-related contexts.")
+   (xdoc::p
+    "Here we also formalize Java type identifiers [JLS:3.8],
+     which are slightly more restricted identifiers."))
   :order-subtopics t
   :default-parent t)
 
@@ -449,5 +452,39 @@
     :pred midentifierp
     :fix midentifier-fix
     :equiv midentifier-equiv
+    :define t
+    :forward t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection tidentifier
+  :short "Fixtype of Java type identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar rule for @('type-identifier') in [JLS:3.8]
+     defines a type identifier as a regular identifier
+     that is not @('var') or @('yield').")
+   (xdoc::p
+    "Accordingly, we model Java type identifiers as regular identifiers
+     (the kinds used in most contexts, not in module-related contexts)
+     that differ from the Unicode sequences for @('var') and @('yield')."))
+
+  (define tidentifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee tidentifier)."
+    (and (identifierp x)
+         (not (equal x (string=>unicode "var")))
+         (not (equal x (string=>unicode "yield")))))
+
+  (std::deffixer tidentifier-fix
+    :pred tidentifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee tidentifierp).")
+
+  (fty::deffixtype tidentifier
+    :pred tidentifierp
+    :fix tidentifier-fix
+    :equiv tidentifier-equiv
     :define t
     :forward t))
