@@ -10,23 +10,13 @@
 
 (in-package "ACL2")
 
+(include-book "subsequencep-equal-def")
 (local (include-book "member-equal"))
 (local (include-book "cdr"))
 
 ;; See also subsequencep.lisp.
 
-;; Note that the function subsequencep is built into ACL2.  It uses EQL as the
-;; test.
 
-(defund subsequencep-equal (x y)
-  (declare (xargs :guard (and (true-listp x)
-                              (true-listp y))))
-  (if (endp x)
-      t
-    (let ((tail (member-equal (first x) y)))
-      (if (endp tail)
-          nil
-        (subsequencep-equal (rest x) (rest tail))))))
 
 (defthm subsequencep-equal-of-take
   (implies (<= (nfix n) (len x))
