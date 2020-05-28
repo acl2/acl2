@@ -30,6 +30,7 @@
 (include-book "erp")
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
+(include-book "event-tuples-between")
 (include-book "include-book-paths")
 (include-book "integer-arithmetic/top")
 (include-book "integer-range-fixing")
