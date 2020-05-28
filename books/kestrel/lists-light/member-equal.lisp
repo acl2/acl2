@@ -118,3 +118,8 @@
 (defthm not-member-equal-of-cdr-when-not-member-equal
   (implies (not (member-equal a x))
            (not (member-equal a (cdr x)))))
+
+(defthm consp-of-member-equal-iff
+  (iff (consp (member-equal a x))
+       (member-equal a x))
+  :hints (("Goal" :in-theory (enable member-equal))))
