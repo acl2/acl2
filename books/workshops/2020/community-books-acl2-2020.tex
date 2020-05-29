@@ -172,10 +172,10 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 
 \newlibtitle
 
-\bookpath{kestrel/alists-light}: A ``minimalist'' library about alists.
-
+\bookpath{kestrel/alists-light}:
+A ``minimalist'' library about alists.
 \begin{itemize}
-\item  Covers acons, assoc-equal, strip-cars, strip-cdrs, pairlis\$, etc.
+\item  Covers \code{acons}, \code{assoc-equal}, \code{strip-cars}, \code{strip-cdrs}, \code{pairlis\$}, etc.
 \item Introduces lookup-equal, etc.
 \item ``Minimalist'' approach seeks to minimize include-books, especially non-local ones. Example: ``Just give me some theorems about function X.  Don't make me include books about Y or Z.  Don't make me include the books you used to prove the theorems about X.''
 \end{itemize}
@@ -188,9 +188,10 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 
 \newlibtitle
 
-\bookpath{kestrel/arithmetic-light}: A ``minimalist'' library about arithmetic.
+\bookpath{kestrel/arithmetic-light}:
+A ``minimalist'' library about arithmetic.
 \begin{itemize}
-\item Covers built-in arithmetic operations (+, *, floor, mod, numerator, etc.).
+\item Covers built-in arithmetic operations (\code{+}, \code{*}, \code{floor}, \code{mod}, \code{numerator}, etc.).
 \item Minimalist approach: One book per function.  Almost zero non-local include-books.
 \end{itemize}
 
@@ -202,7 +203,8 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 
 \newlibtitle
 
-\bookpath{kestrel/axe}: Kestrel's Axe toolkit.
+\bookpath{kestrel/axe}:
+Kestrel's Axe toolkit.
 \begin{itemize}
 \item Holding area: Almost nothing there yet!
 \item Will include Axe Rewriter, Axe Prover, Axe Equivalence Checker.
@@ -211,7 +213,7 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 \item Claim to fame: Structure-shared representation of terms as DAGs allows
   rewriting over very large terms (e.g., verifying crypto algorithms by
   unrolling loops).
-\item See www.kestrel.edu/axe.
+\item See \code{www.kestrel.edu/axe}.
 \end{itemize}
 
 \end{frame}
@@ -222,9 +224,10 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 
 \newlibtitle
 
-\bookpath{kestrel/booleans}: A lightweight library about operations on booleans.
+\bookpath{kestrel/booleans}:
+A lightweight library about operations on booleans.
 \begin{itemize}
-\item Covers bool-fix, boolif, boolor, booland, boolxor.
+\item Covers \code{bool-fix}, \code{boolif}, \code{boolor}, \code{booland}, \code{boolxor}.
 \item Functions are guaranteed to return booleans, so you can easily tell the
   type.  No need to examine every leaf of large nests.
 \end{itemize}
@@ -237,13 +240,14 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 
 \newlibtitle
 
-\bookpath{kestrel/bv}: Kestrel's library about bit-vectors (BVs)
+\bookpath{kestrel/bv}:
+Kestrel's library about bit-vectors (BVs).
 \begin{itemize}
 \item Represents bit-vectors as natural numbers.
 \item Supports the Kestrel JVM model and Axe.
 \item Functions are guaranteed to return bit vectors, so you can easily tell the
   type.  No need to examine every leaf of large nests.
-\item Covers bvchop, slice, bvcat, bvplus, bvxor, BV rotation, etc.
+\item Covers \code{bvchop}, \code{slice}, \code{bvcat}, \code{bvplus}, \code{bvxor}, BV rotation, etc.
 \item Much more material to add (in development over 10 years).
 \end{itemize}
 
@@ -255,12 +259,13 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 
 \newlibtitle
 
-\bookpath{kestrel/bv-lists}: A library about lists of BVs (see also kestrel/bv).
+\bookpath{kestrel/bv-lists}:
+A library about lists of BVs (see also \code{kestrel/bv}).
 \begin{itemize}
 \item Unpacking: Splitting a BV into a list of smaller BVs.
 \item Packing: Combining a list of smaller BVs into a single BV.
 \item Conversions between lists of bits and lists of bytes (big-endian and little-endian).
-\item Operations that map BV operations over lists: bvchop-list, bvxor-list.
+\item Operations that map BV operations over lists: \code{bvchop-list}, \code{bvxor-list}.
 \end{itemize}
 
 \end{frame}
