@@ -349,4 +349,25 @@ class Acl2IntegerTest {
                 (Acl2Rational.make(-1000000, 999)) < 0);
     }
 
+    @Test
+    void compareToComplexRationals() {
+        // compare lexicographically -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(1, 100)) < 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(-1, 100)) > 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(0, 100)) < 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(0, -100)) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(5, 100)) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(0, 100)) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(1, 100)) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(1, -100)) > 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13580, 0)) < 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13578, 0)) > 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13579, 1000)) < 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13579, -15)) > 0);
+    }
+
 }
