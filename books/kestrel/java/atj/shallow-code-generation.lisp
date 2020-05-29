@@ -16,7 +16,7 @@
 (include-book "java-primitive-arrays")
 (include-book "shallow-quoted-constant-generation")
 (include-book "array-write-method-names")
-(include-book "types-for-natives")
+(include-book "types-for-built-ins")
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
