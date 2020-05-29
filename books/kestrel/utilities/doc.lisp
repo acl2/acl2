@@ -1,4 +1,4 @@
-; Utilities for generating xdoc documention
+; Utilities for generating xdoc documentation
 ;
 ; Copyright (C) 2017-2020 Kestrel Institute
 ;
