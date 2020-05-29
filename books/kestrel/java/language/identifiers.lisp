@@ -26,15 +26,18 @@
    (xdoc::p
     "Java identifiers are sequences of characters that, among other things,
      must differ from Java keywords.
-     Since, as discussed "
-    (xdoc::seetopic "keywords" "here")
+     Since, as discussed in the "
+    (xdoc::seetopic "keywords" "topic on keywords")
     ", there are non-restricted and restricted Java keywords,
      correspondingly there are two kinds of Java identifiers.
      One kind excludes only non-restricted keywords:
      these identifiers are usable in most contexts.
      The other kind excludes restricted keywords as well
-     (with a slight exception; see @(tsee midentifierp)):
-     these identifiers are usable in certain module-related contexts."))
+     (with a slight exception; see @(tsee midentifier)):
+     these identifiers are usable in certain module-related contexts.")
+   (xdoc::p
+    "Here we also formalize Java type identifiers [JLS:3.8],
+     which are slightly more restricted identifiers."))
   :order-subtopics t
   :default-parent t)
 
@@ -344,19 +347,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define identifierp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize Java identifiers, for most contexts."
+(defsection identifier
+  :short "Fixtype of Java identifiers, for most contexts."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are Java identifiers that exclude just the non-restricted keywords,
-     as discussed "
-    (xdoc::seetopic "identifiers" "here")
+     as discussed in the "
+    (xdoc::seetopic "identifiers" "topic on identifiers")
     ". Since these are used in most contexts
      (except for some module-related contexts),
-     we use the unqualified name @('identifierp') for this recognizer.
-     See @(tsee midentifierp) for the kind of identifiers
+     we use the general name @('identifierp') for this recognizer.
+     See @(tsee midentifier) for the kind of identifiers
      used in module-related contexts.")
    (xdoc::p
     "We model these Java identifiers as lists of Java Unicode characters
@@ -366,21 +368,23 @@
      that differ from all the non-restricted keywords,
      and that differ from the boolean and null literals.
      See [JLS:3.8]."))
-  (and (unicode-listp x)
-       (consp x)
-       (identifier-start-p (car x))
-       (identifier-part-listp (cdr x))
-       (not (jkeywordp x))
-       (not (boolean-literal-p x))
-       (not (null-literal-p x))))
 
-(std::deffixer identifier-fix
-  :pred identifierp
-  :body-fix (list (char-code #\$))
-  :short "Fixer for @(tsee identifierp).")
+  (define identifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee identifier)."
+    (and (unicode-listp x)
+         (consp x)
+         (identifier-start-p (car x))
+         (identifier-part-listp (cdr x))
+         (not (jkeywordp x))
+         (not (boolean-literal-p x))
+         (not (null-literal-p x))))
 
-(defsection identifier
-  :short "Fixtype for @(tsee identifierp)."
+  (std::deffixer identifier-fix
+    :pred identifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee identifierp).")
+
   (fty::deffixtype identifier
     :pred identifierp
     :fix identifier-fix
@@ -390,29 +394,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define midentifierp (x)
-  :returns (yes/no booleanp)
-  :short "Recognize Java identifiers, for module-related contexts."
+(defsection midentifier
+  :short "Fixtype of Java identifiers, for module-related contexts."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are Java identifiers that exclude all the keywords
      (non-restricted and restricted, with one exception discussed below),
-     as discussed "
-    (xdoc::seetopic "identifiers" "here")
+     as discussed in the "
+    (xdoc::seetopic "identifiers" "topic on identifiers")
     ". Since these are used in module-related contexts,
      we prepend the name of this recognizer with @('m').
      See @(tsee identifierp) for the kind of identifiers
      used in the other contexts.")
    (xdoc::p
-    "We model these Java identifiers as lists of Java Unicode characters
-     that are not empty,
-     that start with a character satisfying @(tsee identifier-start-p),
-     that continue with characters satisfying @(tsee identifier-part-p),
-     that differ from all non-restricted and restricted keywords
-     (with one exception discussed below),
-     and that differ from boolean and null literals.
-     See [JLS:3.8].")
+    "We model these Java identifiers as
+     regular Java identifiers (the kinds used in most contexts)
+     that differ from all non-restricted and restricted keywords,
+     with one exception discussed below.
+     Note that this notion of identifiers for module-related contexts
+     is not explicit in the grammar in [JLS].")
    (xdoc::p
     "The exception mentioned above is that
      we allow @('transitive') to be an identifier
@@ -426,26 +427,90 @@
      that has no information about the surrounding context.
      Additional predicates can be used to impose restrictions
      based on the surrounding context."))
-  (and (unicode-listp x)
-       (consp x)
-       (identifier-start-p (car x))
-       (identifier-part-listp (cdr x))
-       (not (jkeywordp x))
-       (or (not (restricted-jkeywordp x))
-           (equal x (string=>unicode "transitive")))
-       (not (boolean-literal-p x))
-       (not (null-literal-p x))))
 
-(std::deffixer midentifier-fix
-  :pred midentifierp
-  :body-fix (list (char-code #\$))
-  :short "Fixer for @(tsee midentifierp).")
+  (define midentifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee midentifier)."
+    (and (identifierp x)
+         (or (not (restricted-jkeywordp x))
+             (equal x (string=>unicode "transitive")))))
 
-(defsection midentifier
-  :short "Fixtype for @(tsee midentifierp)."
+  (std::deffixer midentifier-fix
+    :pred midentifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee midentifierp).")
+
   (fty::deffixtype midentifier
     :pred midentifierp
     :fix midentifier-fix
     :equiv midentifier-equiv
+    :define t
+    :forward t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection tidentifier
+  :short "Fixtype of Java type identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar rule for @('type-identifier') in [JLS:3.8]
+     defines a type identifier as a regular identifier
+     that is not @('var') or @('yield').")
+   (xdoc::p
+    "Accordingly, we model Java type identifiers as regular identifiers
+     (the kinds used in most contexts, not in module-related contexts)
+     that differ from the Unicode sequences for @('var') and @('yield')."))
+
+  (define tidentifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee tidentifier)."
+    (and (identifierp x)
+         (not (equal x (string=>unicode "var")))
+         (not (equal x (string=>unicode "yield")))))
+
+  (std::deffixer tidentifier-fix
+    :pred tidentifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee tidentifierp).")
+
+  (fty::deffixtype tidentifier
+    :pred tidentifierp
+    :fix tidentifier-fix
+    :equiv tidentifier-equiv
+    :define t
+    :forward t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection umidentifier
+  :short "Fixtype of Java unqualified method identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar rule for @('unqualified-method-identifier') in [JLS:3.8]
+     defines an unqualified method identifier as a regular identifier
+     that is not @('yield').")
+   (xdoc::p
+    "Accordingly, we model Java unqualified method identifiers as
+     regular identifiers
+     (the kinds used in most contexts, not in module-related contexts)
+     that differ from the Unicode sequence for @('yield')."))
+
+  (define umidentifierp (x)
+    :returns (yes/no booleanp)
+    :short "Recognizer for @(tsee umidentifier)."
+    (and (identifierp x)
+         (not (equal x (string=>unicode "yield")))))
+
+  (std::deffixer umidentifier-fix
+    :pred umidentifierp
+    :body-fix (list (char-code #\$))
+    :short "Fixer for @(tsee umidentifierp).")
+
+  (fty::deffixtype umidentifier
+    :pred umidentifierp
+    :fix umidentifier-fix
+    :equiv umidentifier-equiv
     :define t
     :forward t))
