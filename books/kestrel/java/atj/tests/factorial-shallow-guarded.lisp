@@ -14,8 +14,6 @@
 
 (include-book "../implementation" :ttags (:open-input-channel :oslib :quicklisp :quicklisp.osicat))
 
-(include-book "../types-for-built-ins")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Specialize the input and output types of the factorial functions.
