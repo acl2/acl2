@@ -3351,6 +3351,30 @@
     (f-put-global 'current-package val state)
     (value val))))
 
+(defun defun-for-state-name (name)
+  (add-suffix name "-STATE"))
+
+(defmacro error-free-triple-to-state (ctx form)
+  (declare (xargs :guard ; really (quotep ctx), but we don't check pseudo-termp
+                  (and (consp ctx)
+                       (eq (car ctx) 'quote))))
+  `(mv-let (erp val state)
+     ,form
+     (declare (ignore val))
+     (prog2$ (and erp (er hard ,ctx
+                          "Unexpected error.  An error message may have been ~
+                           printed above."))
+             state)))
+
+(defmacro defun-for-state (name args)
+  `(defun ,(defun-for-state-name name)
+       ,args
+     (error-free-triple-to-state
+      ',name
+      (,name ,@args))))
+
+(defun-for-state set-current-package (val state))
+
 (defun standard-oi (state)
   (f-get-global 'standard-oi state))
 

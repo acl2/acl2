@@ -491,6 +491,8 @@
          (caddr args))
         ((eq fn 'mv-list)
          (cadr args))
+        ((eq fn 'if)
+         (if (car args) (cadr args) (caddr args)))
         (t (let ((trip (gethash fn *apply$-prim-ht*)))
              (and trip
                   (let ((fn2 (car trip))

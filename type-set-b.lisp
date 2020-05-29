@@ -1449,6 +1449,64 @@
      (theory-invariant-msg-implication active-runeps1 active-runeps2))
     (& nil)))
 
+(defrec certify-book-info
+
+; The useless-runes-info field is first here because that is the field that
+; changes the most often, in the case that we are using data from the
+; @useless-runes.lsp file.  It can have any of the following forms; a
+; capitalized symbol indicates that exact symbol in the "ACL2" package.
+
+; NIL
+;   We are not doing anything with useless-runes.
+
+; (CHANNEL chan . pkg-names)
+;   Chan is an output channel for writing to the @useless-runes.lsp file.
+;   Pkg-names lists the known package names in the certification world,
+;   including those that are hidden.
+
+; (FAST-ALIST . fal)
+;   Fal is a fast-alist, each of whose pairs associates an event name (a
+;   symbol) with a list of "useless" runes for that event.
+
+; (THEORY . augmented-theory)
+;   Augmented-theory is associated with the current event in the global
+;   fast-alist.
+
+  (useless-runes-info include-book-phase cert-op . full-book-name)
+  nil) ; could replace with t sometime
+
+(defun active-useless-runes (state)
+  (let ((certify-book-info (f-get-global 'certify-book-info state)))
+    (and certify-book-info
+         (let ((useless-runes-info (and certify-book-info
+                                        (access certify-book-info
+                                                certify-book-info
+                                                :useless-runes-info))))
+           (and (eq (car useless-runes-info) 'THEORY)
+                (cdr useless-runes-info))))))
+
+(defun useless-runes-filename (full-book-name)
+
+; This is analogous to expansion-filename, but for the file containing useless
+; rune information.  See expansion-filename.
+
+  (let ((len (length full-book-name)))
+    (assert$ (equal (subseq full-book-name (- len 5) len) ".lisp")
+             (concatenate 'string
+                          (subseq full-book-name 0 (- len 5))
+                          "@useless-runes.lsp"))))
+
+(defun active-useless-runes-filename (state)
+
+; This is analogous to expansion-filename, but for the file containing useless
+; rune information.  See expansion-filename.  NOTE: This function does not
+; check that the resulting file actually exists!
+
+  (let* ((info (f-get-global 'certify-book-info state)))
+    (and info
+         (useless-runes-filename
+          (access certify-book-info info :full-book-name)))))
+
 (defun@par chk-theory-invariant1 (theory-expr ens invariant-alist errp-acc ctx
                                               state)
 
@@ -1486,11 +1544,17 @@
                                 :untrans-term))
                        (msg (msg
                              "Theory invariant ~x0 could not be evaluated on ~
-                              the theory produced by ~@1.  Theory invariant ~
-                              ~P32 produced the error message:~%~@4~@5  See ~
+                              the theory produced by ~@1~@2.  Theory invariant ~
+                              ~P43 produced the error message:~%~@5~@6  See ~
                               :DOC theory-invariant."
                              inv-name
                              produced-by-msg
+                             (if (active-useless-runes state)
+                                 (msg ", modified by subtracting the theory ~
+                                       for the current event stored in file ~
+                                       ~s0"
+                                      (active-useless-runes-filename state))
+                               "")
                              (term-evisc-tuple nil state)
                              theory-invariant-term
                              okp ; error message
@@ -1536,13 +1600,18 @@
                       (theory-invariant-msg theory-invariant-term))
                      (msg (msg
                            "Theory invariant ~x0, defined ~@1, failed on the ~
-                            theory produced by ~@2.  Theory invariant ~x0 is ~
-                            ~@3~@4  See :DOC theory-invariant."
+                            theory produced by ~@2~@3.  Theory invariant ~x0 is ~
+                            ~@4~@5  See :DOC theory-invariant."
                            inv-name
                            (if (null theory-invariant-book)
                                "at the top-level"
                              (msg "in book ~x0" theory-invariant-book))
                            produced-by-msg
+                           (if (active-useless-runes state)
+                               (msg ", modified by subtracting the theory for ~
+                                     the current event stored in file ~s0"
+                                    (active-useless-runes-filename state))
+                             "")
                            (if thy-inv-msg
                                (msg "~P10~@2."
                                     (term-evisc-tuple nil state)
@@ -1801,52 +1870,7 @@
 
     (setf (car old) (cons header alist))))
 
-(defun update-enabled-structure (ens n d new-d alist augmented-p
-                                     incrmt-array-name-info)
-  #+acl2-loop-only (declare (ignore d augmented-p))
-  #-acl2-loop-only
-  (let* ((k 0)
-         (name (access enabled-structure ens :array-name))
-         (old (get-acl2-array-property name))
-         (header (cadddr old))
-         (old-n (access enabled-structure ens :index-of-last-enabling)))
-    (when (and header ; hence old is associated with name
-               (consp (car old))
-               (eq header (caar old))
-               (null incrmt-array-name-info)
-               augmented-p
-               (int= d new-d)
-               (or (eq (loop for tail on alist
-                             do (cond ((<= (caar tail) old-n)
-                                       (return tail))
-                                      (t (incf k))))
-                       (cdr (access enabled-structure ens :theory-array)))
-
-; The disjunct just above computes the tail of alist consisting of entries
-; not exceeding the old index-of-last-enabling, and checks that this tail is
-; the alist stored in the existing enabled structure.  In that case, k is the
-; number of entries of alist outside that tail, and the call of
-; update-enabled-structure-array below can take advantage of the fact that only
-; the first k elements of alist need to be updated in the corresponding raw
-; Lisp array.
-
-; By including the following disjunct and also tweaking
-; load-theory-into-enabled-structure, we have reduced the time spent in
-; load-theory-into-enabled-structure from about 3.1 to 3.2s to about 2.7s to
-; 2.8s in runs (of (include-book "centaur/sv/top" :dir :system)) that take
-; about 58s.  Notice that by setting k = nil, we are indicating to the call
-; below of update-enabled-structure-array that the eq test above has failed.
-
-                   (and (<= old-n n)
-                        (progn (setq k nil) t))))
-      (assert (eq (access enabled-structure ens :theory-array)
-                  (car old))) ; checking this invariant before updating
-      (return-from
-       update-enabled-structure
-       (change enabled-structure ens
-               :index-of-last-enabling n
-               :theory-array (update-enabled-structure-array
-                              name header alist k old d n)))))
+(defun increment-array-name (ens incrmt-array-name-info)
   (let* ((root (access enabled-structure ens :array-name-root))
          (suffix (cond ((eq incrmt-array-name-info t)
                         (1+ (access enabled-structure ens
@@ -1871,6 +1895,56 @@
                                'string)
                               "ACL2"))
                      (t (access enabled-structure ens :array-name)))))
+    (mv root suffix name)))
+
+(defun update-enabled-structure (ens n d new-d alist augmented-p
+                                     incrmt-array-name-info)
+  #+acl2-loop-only (declare (ignore d augmented-p))
+  #-acl2-loop-only
+  (when (and (null incrmt-array-name-info)
+             augmented-p
+             (int= d new-d))
+    (let* ((k 0)
+           (name (access enabled-structure ens :array-name))
+           (old (get-acl2-array-property name))
+           (header (cadddr old))
+           (old-n (access enabled-structure ens :index-of-last-enabling)))
+      (when (and header ; hence old is associated with name
+                 (consp (car old))
+                 (eq header (caar old))
+                 (or (eq (loop for tail on alist
+                               do (cond ((<= (caar tail) old-n)
+                                         (return tail))
+                                        (t (incf k))))
+                         (cdr (access enabled-structure ens :theory-array)))
+
+; The disjunct just above computes the tail of alist consisting of entries
+; not exceeding the old index-of-last-enabling, and checks that this tail is
+; the alist stored in the existing enabled structure.  In that case, k is the
+; number of entries of alist outside that tail, and the call of
+; update-enabled-structure-array below can take advantage of the fact that only
+; the first k elements of alist need to be updated in the corresponding raw
+; Lisp array.
+
+; By including the following disjunct and also tweaking
+; load-theory-into-enabled-structure, we have reduced the time spent in
+; load-theory-into-enabled-structure from about 3.1 to 3.2s to about 2.7s to
+; 2.8s in runs (of (include-book "centaur/sv/top" :dir :system)) that take
+; about 58s.  Notice that by setting k = nil, we are indicating to the call
+; below of update-enabled-structure-array that the eq test above has failed.
+
+                     (and (<= old-n n)
+                          (progn (setq k nil) t))))
+        (assert (eq (access enabled-structure ens :theory-array)
+                    (car old))) ; checking this invariant before updating
+        (return-from
+         update-enabled-structure
+         (change enabled-structure ens
+                 :index-of-last-enabling n
+                 :theory-array (update-enabled-structure-array
+                                name header alist k old d n))))))
+  (mv-let (root suffix name)
+    (increment-array-name ens incrmt-array-name-info)
     (make enabled-structure
           :index-of-last-enabling n
           :theory-array
@@ -1886,6 +1960,26 @@
           :array-length new-d
           :array-name-root root
           :array-name-suffix suffix)))
+
+(defun load-theory-into-enabled-structure-1 (theory augmented-p ens
+                                                    incrmt-array-name-info
+                                                    index-of-last-enabling
+                                                    wrld)
+
+; See load-theory-into-enabled-structure, which is a wrapper for this function
+; that may perform an extra check.
+
+  (let* ((n (or index-of-last-enabling (1- (get-next-nume wrld))))
+         (d (access enabled-structure ens :array-length))
+         (new-d (cond ((< n d) d)
+                      (t (max (* 2 d)
+                              (+ d (* 500 (1+ (floor (- n d) 500))))))))
+         (alist (if augmented-p
+                    theory
+                  (augment-runic-theory theory wrld))))
+    (update-enabled-structure ens n d new-d alist
+                              augmented-p
+                              incrmt-array-name-info)))
 
 (defun@par load-theory-into-enabled-structure
   (theory-expr theory augmented-p ens incrmt-array-name-info
@@ -1922,17 +2016,9 @@
 ; maybe-warn-about-theory on the enabled structure passed in and the one
 ; returned.
 
-  (let* ((n (or index-of-last-enabling (1- (get-next-nume wrld))))
-         (d (access enabled-structure ens :array-length))
-         (new-d (cond ((< n d) d)
-                      (t (max (* 2 d)
-                              (+ d (* 500 (1+ (floor (- n d) 500))))))))
-         (alist (if augmented-p
-                    theory
-                  (augment-runic-theory theory wrld)))
-         (ens (update-enabled-structure ens n d new-d alist
-                                        augmented-p
-                                        incrmt-array-name-info)))
+  (let ((ens (load-theory-into-enabled-structure-1
+              theory augmented-p ens incrmt-array-name-info
+              index-of-last-enabling wrld)))
     (er-progn@par (if (or (eq theory-expr :no-check)
                           (eq (ld-skip-proofsp state)
                               'include-book)
@@ -8768,7 +8854,12 @@
        (with-accumulated-persistence
         (access type-prescription tp :rune)
         (ts type-alist-out ttree-out extended-p-out)
-        (not (ts= *ts-unknown* ts))
+        (or (not (ts= *ts-unknown* ts))
+
+; The following mis-guarded use of eq instead of equal implies that we could be
+; over-counting successes at the expense of failures.
+
+            (not (eq type-alist type-alist-out)))
         (let ((hyps (access type-prescription tp :hyps)))
           (mv-let
             (type-alist extended-p)
@@ -8819,8 +8910,13 @@
                   (ts type-alist ttree)
                   (with-accumulated-persistence
                    (access type-prescription tp :rune)
-                   (ts type-alist ttree)
-                   (ts= ts *ts-unknown*)
+                   (ts type-alist-out ttree)
+                   (or (not (ts= *ts-unknown* ts))
+
+; The following mis-guarded use of eq instead of equal implies that we could be
+; over-counting successes at the expense of failures.
+
+                       (not (eq type-alist type-alist-out)))
                    (type-set-with-rule1
                     unify-subst
                     (access type-prescription tp :vars)
