@@ -21,8 +21,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; primary types:
+
 (atj-main-function-type mv-nth (:ainteger :avalue) :avalue)
 
 (atj-main-function-type not (:avalue) :aboolean)
 
 (atj-main-function-type zp (:ainteger) :aboolean)
+
+; secondary types:
+
+(atj-other-function-type not (:aboolean) :aboolean)
