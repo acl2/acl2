@@ -172,6 +172,105 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 
 \newlibtitle
 
+\bookpath{kestrel/alists-light}: A ``minimalist'' library about alists.
+
+\begin{itemize}
+\item  Covers acons, assoc-equal, strip-cars, strip-cdrs, pairlis\$, etc.
+\item Introduces lookup-equal, etc.
+\item ``Minimalist'' approach seeks to minimize include-books, especially non-local ones. Example: ``Just give me some theorems about function X.  Don't make me include books about Y or Z.  Don't make me include the books you used to prove the theorems about X.''
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/arithmetic-light}: A ``minimalist'' library about arithmetic.
+\begin{itemize}
+\item Covers built-in arithmetic operations (+, *, floor, mod, numerator, etc.).
+\item Minimalist approach: One book per function.  Almost zero non-local include-books.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/axe}: Kestrel's Axe toolkit.
+\begin{itemize}
+\item Holding area: Almost nothing there yet!
+\item Will include Axe Rewriter, Axe Prover, Axe Equivalence Checker.
+\item Will include Axe Lifters (JVM, x86).
+\item Will include tools for input finding, answering questions about programs.
+\item Claim to fame: Structure-shared representation of terms as DAGs allows
+  rewriting over very large terms (e.g., verifying crypto algorithms by
+  unrolling loops).
+\item See www.kestrel.edu/axe.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/booleans}: A lightweight library about operations on booleans.
+\begin{itemize}
+\item Covers bool-fix, boolif, boolor, booland, boolxor.
+\item Functions are guaranteed to return booleans, so you can easily tell the
+  type.  No need to examine every leaf of large nests.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/bv}: Kestrel's library about bit-vectors (BVs)
+\begin{itemize}
+\item Represents bit-vectors as natural numbers.
+\item Supports the Kestrel JVM model and Axe.
+\item Functions are guaranteed to return bit vectors, so you can easily tell the
+  type.  No need to examine every leaf of large nests.
+\item Covers bvchop, slice, bvcat, bvplus, bvxor, BV rotation, etc.
+\item Much more material to add (in development over 10 years).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/bv-lists}: A library about lists of BVs (see also kestrel/bv).
+\begin{itemize}
+\item Unpacking: Splitting a BV into a list of smaller BVs.
+\item Packing: Combining a list of smaller BVs into a single BV.
+\item Conversions between lists of bits and lists of bytes (big-endian and little-endian).
+\item Operations that map BV operations over lists: bvchop-list, bvxor-list.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{kestrel/crypto}:
 Executable specifications and abstract interfaces of cryptographic functions.
 \begin{itemize}
@@ -195,9 +294,10 @@ Instantiated with HMAC-SHA-512.
 Specification of the Keccak family of permutations, sponge functions,
 and hash functions, and the FIPS 202 SHA-3 hash functions based on Keccak.
 \item
-SHA-2.
+Specifications of the SHA-2 family of hash functions (SHA-224, SHA-256,
+ SHA-384, SHA-512) defined in FIPS 180-4.
 \item
-Padding.
+Specifications of some common message padding operations.
 \end{itemize}
 
 \end{frame}
@@ -221,6 +321,21 @@ Handling of applicability conditions
 Controlling of screen output of event macros.
 \item
 XDOC constructors for both user and developer documentation of event macros.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/file-io-light}: A lightweight library about file-io
+\begin{itemize}
+\item Deals with opening I/O channels, writing to files, etc.
+\item Provides lightweight books with rules about built-in functions.
+\item Defines some new functions (e.g., write-bytes-to-channel).
 \end{itemize}
 
 \end{frame}
