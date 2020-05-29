@@ -287,6 +287,9 @@
     "Some functions and theorems related to integer literals have been added.
      These are part of the formalized abstract syntax of Java.")
 
+   (xdoc::p
+    "More aspects of the Java syntax have been formalized.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))

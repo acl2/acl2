@@ -120,10 +120,15 @@
 \bookpath{centaur/fgl}:
 Bitblasting rewriter, successor to GL.
 \begin{itemize}
-\item A rewriter that does bitblasting, rather than a bitblaster that has a rewriter.
-\item More extensible and customizable than GL.
-\item Adds incremental SAT support.
-\item Some fancy rewriter features discussed in the paper \textit{New Rewriter Features in FGL} at this workshop.
+\item
+A rewriter that does bitblasting, rather than a bitblaster that has a rewriter.
+\item
+More extensible and customizable than GL.
+\item
+Adds incremental SAT support.
+\item
+Some fancy rewriter features discussed in the paper
+\textit{New Rewriter Features in FGL} at this workshop.
 \end{itemize}
 
 \end{frame}
@@ -137,14 +142,22 @@ Bitblasting rewriter, successor to GL.
 \bookpath{centaur/meta}:
 New library of metareasoning utilities.
 \begin{itemize}
-\item Based on \bookpath{clause-processors/pseudo-term-fty.lisp}, treats pseudo-term as an FTY sum type.
-\item Unification, substitution, variable collection.
-\item Unconditional rewriter.
-\item Let-abstraction algorithm.
-\item Utilities for understanding rewrite, equivalence, and congruence rules.
-\item Term measure that decreases under beta-reduction.
-\item Utility that uses meta-extract plus a runtime check to
-  effectively extend the functions understood by an evaluator.
+\item
+Based on \bookpath{clause-processors/pseudo-term-fty.lisp},
+treats pseudo-term as an FTY sum type.
+\item
+Unification, substitution, variable collection.
+\item
+Unconditional rewriter.
+\item
+Let-abstraction algorithm.
+\item
+Utilities for understanding rewrite, equivalence, and congruence rules.
+\item
+Term measure that decreases under beta-reduction.
+\item
+Utility that uses meta-extract plus a runtime check to
+effectively extend the functions understood by an evaluator.
 \end{itemize}
 
 \end{frame}
@@ -158,10 +171,13 @@ New library of metareasoning utilities.
 \bookpath{centaur/svl}:
 A framework to simulate and reason about Verilog modules with design hierarchy.
 \begin{itemize}
-\item Uses \code{centaur/sv} and \code{centaur/vl} books to generate
-  simulation-ready SVL designs. May sometimes be used in lieu of SVTV.
-\item Selected submodules may not be flattened to retain design hierarchy.
-\item Does not support combinational loops (e.g., latches).
+\item
+Uses \code{centaur/sv} and \code{centaur/vl} books to generate
+simulation-ready SVL designs. May sometimes be used in lieu of SVTV.
+\item
+Selected submodules may not be flattened to retain design hierarchy.
+\item
+Does not support combinational loops (e.g., latches).
 \end{itemize}
 
 \end{frame}
@@ -175,24 +191,30 @@ A framework to simulate and reason about Verilog modules with design hierarchy.
 \bookpath{kestrel/alists-light}:
 A ``minimalist'' library about alists.
 \begin{itemize}
-\item  Covers \code{acons}, \code{assoc-equal}, \code{strip-cars}, \code{strip-cdrs}, \code{pairlis\$}, etc.
-\item Introduces \code{lookup-equal}, etc.
-\item ``Minimalist'' approach seeks to minimize include-books, especially non-local ones. Example: ``Just give me some theorems about function X.  Don't make me include books about Y or Z.  Don't make me include the books you used to prove the theorems about X.''
+\item
+Covers \code{acons}, \code{assoc-equal}, \code{strip-cars}, \code{strip-cdrs},
+\code{pairlis\$}, etc.
+\item
+Introduces \code{lookup-equal}, etc.
+\item
+``Minimalist'' approach seeks to minimize include-books,
+especially non-local ones.
+Example: ``Just give me some theorems about function X.
+Don't make me include books about Y or Z.
+Don't make me include the books you used to prove the theorems about X.''
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/arithmetic-light}:
 A ``minimalist'' library about arithmetic.
 \begin{itemize}
-\item Covers built-in arithmetic operations (\code{+}, \code{*}, \code{floor}, \code{mod}, \code{numerator}, etc.).
-\item Minimalist approach: One book per function.  Almost zero non-local include-books.
+\item
+Covers built-in arithmetic operations (\code{+}, \code{*}, \code{floor},
+\code{mod}, \code{numerator}, etc.).
+\item
+Minimalist approach: One book per function. 
+Almost zero non-local \code{include-books}.
 \end{itemize}
 
 \end{frame}
@@ -206,30 +228,33 @@ A ``minimalist'' library about arithmetic.
 \bookpath{kestrel/axe}:
 Kestrel's Axe toolkit.
 \begin{itemize}
-\item Holding area: Almost nothing there yet!
-\item Will include Axe Rewriter, Axe Prover, Axe Equivalence Checker.
-\item Will include Axe Lifters (JVM, x86).
-\item Will include tools for input finding, answering questions about programs.
-\item Claim to fame: Structure-shared representation of terms as DAGs allows
-  rewriting over very large terms (e.g., verifying crypto algorithms by
-  unrolling loops).
-\item See \code{www.kestrel.edu/axe}.
+\item
+Holding area: Almost nothing there yet!
+\item
+Will include Axe Rewriter, Axe Prover, Axe Equivalence Checker.
+\item
+Will include Axe Lifters (JVM, x86).
+\item
+Will include tools for input finding, answering questions about programs.
+\item
+Claim to fame: Structure-shared representation of terms as DAGs allows
+rewriting over very large terms (e.g., verifying crypto algorithms by
+unrolling loops).
+\item
+See \code{www.kestrel.edu/axe}.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/booleans}:
 A lightweight library about operations on booleans.
 \begin{itemize}
-\item Covers \code{bool-fix}, \code{boolif}, \code{boolor}, \code{booland}, \code{boolxor}.
-\item Functions are guaranteed to return booleans, so you can easily tell the
-  type.  No need to examine every leaf of large nests.
+\item
+Covers \code{bool-fix}, \code{boolif}, \code{boolor}, \code{booland},
+\code{boolxor}.
+\item
+Functions are guaranteed to return booleans, so you can easily tell the
+type.  No need to examine every leaf of large nests.
 \end{itemize}
 
 \end{frame}
@@ -243,29 +268,35 @@ A lightweight library about operations on booleans.
 \bookpath{kestrel/bv}:
 Kestrel's library about bit-vectors (BVs).
 \begin{itemize}
-\item Represents bit-vectors as natural numbers.
-\item Supports the Kestrel JVM model and Axe.
-\item Functions are guaranteed to return bit vectors, so you can easily tell the
-  type.  No need to examine every leaf of large nests.
-\item Covers \code{bvchop}, \code{slice}, \code{bvcat}, \code{bvplus}, \code{bvxor}, BV rotation, etc.
-\item Much more material to add (in development over 10 years).
+\item
+Represents bit-vectors as natural numbers.
+\item
+Supports the Kestrel JVM model and Axe.
+\item
+Functions are guaranteed to return bit vectors, so you can easily tell the
+type.  No need to examine every leaf of large nests.
+\item
+Covers \code{bvchop}, \code{slice}, \code{bvcat}, \code{bvplus}, \code{bvxor},
+BV rotation, etc.
+\item
+Much more material to add (in development over 10 years).
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\newlibtitle
+\separation
 
 \bookpath{kestrel/bv-lists}:
 A library about lists of BVs (see also \code{kestrel/bv}).
 \begin{itemize}
-\item Unpacking: Splitting a BV into a list of smaller BVs.
-\item Packing: Combining a list of smaller BVs into a single BV.
-\item Conversions between lists of bits and lists of bytes (big-endian and little-endian).
-\item Operations that map BV operations over lists: \code{bvchop-list}, \code{bvxor-list}.
+\item
+Unpacking: Splitting a BV into a list of smaller BVs.
+\item
+Packing: Combining a list of smaller BVs into a single BV.
+\item
+Conversions between lists of bits and lists of bytes
+(big-endian and little-endian).
+\item
+Operations that map BV operations over lists:
+\code{bvchop-list}, \code{bvxor-list}.
 \end{itemize}
 
 \end{frame}
@@ -300,7 +331,7 @@ Specification of the Keccak family of permutations, sponge functions,
 and hash functions, and the FIPS 202 SHA-3 hash functions based on Keccak.
 \item
 Specifications of the SHA-2 family of hash functions (SHA-224, SHA-256,
- SHA-384, SHA-512) defined in FIPS 180-4.
+SHA-384, SHA-512) defined in FIPS 180-4.
 \item
 Specifications of some common message padding operations.
 \end{itemize}
@@ -339,9 +370,74 @@ XDOC constructors for both user and developer documentation of event macros.
 \bookpath{kestrel/file-io-light}:
 A lightweight library about file I/O.
 \begin{itemize}
-\item Deals with opening I/O channels, writing to files, etc.
-\item Provides lightweight books with rules about built-in functions.
-\item Defines some new functions (e.g., write-bytes-to-channel).
+\item
+Deals with opening I/O channels, writing to files, etc.
+\item
+Provides lightweight books with rules about built-in functions.
+\item
+Defines some new functions (e.g., \code{write-bytes-to-channel}).
+\end{itemize}
+
+\separation
+
+\bookpath{kestrel/library-wrappers}:
+A directory of books that ``wrap'' other libraries.
+\begin{itemize}
+\item
+Each book includes some other library or book and then disables rules
+that may cause problems and/or introduces improved versions.
+\item
+Eventually, the wrapped libraries could be improved
+(and the wrapper books eliminated).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/lists-light}:
+A ``minimalist'' library about lists.
+\begin{itemize}
+\item
+Small books about many built-in functions
+(\code{cons}, \code{append}, \code{take}, \code{union-equal}, etc.).
+\item
+Also defines some new functions
+(\code{perm}, \code{memberp}, \code{subrange}, etc.).
+\item
+Uses a minimalist style, as with other ``light'' libraries.
+Also helps with ``auditing'' a development
+(e.g., when reading all defintions in all books included by a spec).
+\item
+Perhaps list libraries are best included only locally in other
+developments (like arithmetic libraries).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/prime-fields}:
+A formalization of operations over prime fields.
+\begin{itemize}
+\item
+Includes \code{add}, \code{sub}, \code{neg}, \code{mul}, \code{pow},
+\code{inv}, and \code{div}, all modulo a supplied prime.
+\item
+\code{pow} calls existing \code{mod-expt-fast} for speed.
+\item
+Provides many simplification rules (in-progress; normal forms may change).
+\item
+Includes \code{bind-free} rules for equalities: canceling common addends
+and moving negated addends.
 \end{itemize}
 
 \end{frame}
@@ -361,7 +457,7 @@ Added several functions to manipulate symbols.
 Added \code{mbt\$}, a variant of \code{mbt}
 that requires non-\code{nil} instead of \code{t}.
 \item
-These will be gradually moved to \code{std/basic}.
+These will be gradually moved to the \code{std/basic} directory.
 \end{itemize}
 
 \separation
@@ -377,7 +473,7 @@ and improved in the process.
 \item
 New utilities have been added.
 \item
-This is being gradually moved to \code{std/system}.
+This is being gradually moved to the \code{std/system} directory.
 \end{itemize}
 
 \end{frame}
@@ -410,8 +506,120 @@ a (possibly infinite) set of natural numbers.
 \item
 Added \code{defmacro+}, which enhances \code{defmacro} with XDOC integration.
 \item
-These will be gradually moved to \code{std/util}.
+These will be gradually moved to the \code{std/util} directory.
 \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/conjunctions.lisp}:
+Utilities for manipulating conjunctions.
+
+\separation
+
+\bookpath{kestrel/utilities/declares0.lisp}:
+Basic utilities for manipulating declares (more will be added).
+
+\separation
+
+\bookpath{kestrel/utilities/def-constant-opener.lisp}:
+A utility that generates an opener theorem for a function when all arguments
+are constant (used by Axe).
+
+\separation
+
+\bookpath{kestrel/utilities/defopeners.lisp}:
+A utility for making opener rules for recursive functions.
+
+\separation
+
+\bookpath{kestrel/utilities/deftest.lisp}:
+A utility for isolating tests and running them with extensive guard checking.
+
+\separation
+
+\bookpath{kestrel/utilities/defthm-events.lisp}:
+Utilities for processing defthm forms.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/defun-events.lisp}:
+Utilities for processing defun forms.
+
+\separation
+
+\bookpath{kestrel/utilities/disables.lisp}:
+A book that disables some built-in functions that may be convenient to have
+disabled from the start.
+
+\separation
+
+\bookpath{kestrel/utilities/doublets2.lisp}:
+Utilities that deal with doublets (true lists of length 2).
+
+\separation
+
+\bookpath{kestrel/utilities/equal-of-booleans.lisp}:
+Rules to break an equality of two booleans into the equivalent conjunction of
+two implications.
+
+\separation
+
+\bookpath{kestrel/utilities/erp.lisp}:
+Utilities for returning errors
+(which are often assigned to a variable called \code{erp}).
+
+\separation
+
+\bookpath{kestrel/utilities/forms.lisp}:
+Basic utilities about forms that look like function calls.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/keyword-value-lists2.lisp}:
+Utilities about keyword-value-lists.
+
+\separation
+
+\bookpath{kestrel/utilities/make-and.lisp}:
+A utility to make an untranslated conjunction.
+
+\separation
+
+\bookpath{kestrel/utilities/make-and-nice.lisp}:
+A utility to make a, possibly simplified, untranslated conjunction.
+
+\separation
+
+\bookpath{kestrel/utilities/make-or.lisp}:
+A utility to make an untranslated disjunction.
+
+\separation
+
+\bookpath{kestrel/utilities/make-or-nice.lisp}:
+A utility to make a, possibly simplified, untranslated disjunction.
+
+\separation
+
+\bookpath{kestrel/utilities/my-get-event.lisp}:
+A utility to get the (untranslated) event that introduced a function.
 
 \end{frame}
 
@@ -433,9 +641,46 @@ Cf.\ obags (above) and osets (in Std/osets).
 
 \separation
 
+\bookpath{kestrel/utilities/pack.lisp}:
+Utilities for making symbols from strings, natural numbers, characters,
+and other symbols.
+
+\separation
+
+\bookpath{kestrel/utilities/remove-duplicates-equal-dollar.lisp}:
+A utility to remove duplicates, keeping the first of each set.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/utilities/smaller-termp.lisp}:
+A utility to compare the sizes of terms.
+
+\separation
+
 \bookpath{kestrel/utilities/sublis-expr-plus.lisp}:
 Added \code{sublis-expr+},
 which replaces terms by variables also inside lambda expressions.
+
+\separation
+
+\bookpath{kestrel/utilities/substitution.lisp}:
+Utilities that perform substitution.
+
+\separation
+
+\bookpath{kestrel/utilities/terms.lisp}:
+Various utilities for manipulating terms.
+
+\separation
+
+\bookpath{kestrel/utilities/world.lisp}:
+Utilities for querying the ACL2 logical world.
 
 \end{frame}
 
@@ -511,11 +756,17 @@ Add more typed alists, as needed.
 \bookpath{build}:
 Books build system.
 \begin{itemize}
-\item \bookpath{build/*.certdep}: Track dependencies of books on certain ACL2 system features---see xdoc topic \code{acl2-system-feature-dependencies}.
-\item Add \code{ifdef-(un)define(!)} for setting/unsetting environment
-  variables (non-)locally, with effects on \code{if(n)def} forms
-  understood by the build system.
-\item \bookpath{build/cert.pl} supporting libraries refactored into proper (?) Perl modules.
+\item
+\bookpath{build/*.certdep}:
+Track dependencies of books on certain ACL2 system features---see XDOC topic
+\code{acl2-system-feature-dependencies}.
+\item
+Add \code{ifdef-(un)define(!)} for setting/unsetting environment
+variables (non-)locally, with effects on \code{if(n)def} forms
+understood by the build system.
+\item
+\bookpath{build/cert.pl} supporting libraries refactored into proper (?)
+Perl modules.
 \end{itemize}
 
 \end{frame}
@@ -571,13 +822,7 @@ Added verified executable attachments
 for some declaratively specified functions.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\separation
 
 \bookpath{kestrel/ethereum}:
 A library for the Ethereum cryptocurrency and platform.
@@ -672,13 +917,7 @@ and processed it with the verified ABNF grammar parser in \code{kestrel/abnf}.
 (This parses the ABNF grammar of Java, not Java.)
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\separation
 
 \bookpath{kestrel/soft}:
 Macros to mimic second-order functions and theorems.
@@ -796,11 +1035,15 @@ Made it possible to use \code{:smtlink} hint inside an Smtlink proof.
 \item
 Added abstract type support for Smtlink.
 \item
-Fixed the problem of rewrite-loops by changing computed-hints structure in Smtlink.
+Fixed the problem of rewrite-loops by changing computed-hints structure
+in Smtlink.
 \item
-Fixed the {\color{red} \bf{soundness bug}} that \code{unary-/} can be interpreted as integer division in Smtlink.
+Fixed the {\color{red} \bf{soundness bug}} that \code{unary-/} can be
+interpreted as integer division in Smtlink.
 \item
-Added a link to an example using Smtlink for verifying an ASP* Pipeline. (This example will be moved to the ACL2 repository once we have the next stable version of Smtlink.)
+Added a link to an example using Smtlink for verifying an ASP* Pipeline.
+(This example will be moved to the ACL2 repository once we have the next stable
+version of Smtlink.)
 \item
 Made improvements to the documentation.
 \end{itemize}
@@ -824,7 +1067,8 @@ Added support for additional forms of the
 \item
 Improved the \code{definst} macro to generate more boilerplate code.
 \item
-Updates to program instrumentation utilities to allow logging (parts of) the x86 state to a specified file in both CCL and SBCL.
+Updates to program instrumentation utilities to allow logging (parts of)
+the x86 state to a specified file in both CCL and SBCL.
 \end{itemize}
 
 \end{frame}
@@ -911,7 +1155,8 @@ Standard string library.
 Added a variant \code{strtok!} of \code{strtok}.
 It does not treat multiple contiguous delimiters like one.
 \item
-Added \code{printtree} library for efficiently composing large strings from pieces.
+Added \code{printtree} library for efficiently composing large strings
+from pieces.
 \end{itemize}
 
 \end{frame}
@@ -944,9 +1189,12 @@ utilities have been moved here from the X86ISA model.
 \item
 The \code{use-termhint} utility has been moved here
 from \code{clause-processors/use-hint.lisp}.
-\item Added \code{defret-mutual-generate}, discussed in the paper \textit{Generating Mutually Inductive Theorems from Concise Descriptions} at this workshop.
+\item Added \code{defret-mutual-generate}, discussed in the paper
+\textit{Generating Mutually Inductive Theorems from Concise Descriptions}
+at this workshop.
 \item
-Like \code{defun-nx}, \code{define} macro also disables the executable-counterpart of a non-executable function now.
+Like \code{defun-nx}, \code{define} macro also disables the
+executable-counterpart of a non-executable function now.
 \end{itemize}
 
 \end{frame}
@@ -974,13 +1222,7 @@ More could be factored out.
 These could be perhaps integrated with Std/system.
 \end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
+\separation
 
 \bookpath{xdoc/constructors.lisp}:
 Made some improvements and additions.
