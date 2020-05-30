@@ -18,7 +18,7 @@
 ; l2-wrchs anew, although they were proved in file-system-1 for the filesystem
 ; described therein.
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "file-system-1")
 
 ; This function defines a valid filesystem. It's an alist where all the cars
