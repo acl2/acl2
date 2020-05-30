@@ -32,6 +32,8 @@ Makefile-tmp : Makefile Makefile-deps
 	@echo "Making $(PWD)/Makefile-tmp"
 	cat Makefile Makefile-deps > Makefile-tmp
 
+apply-prim.cert : $(ACL2_SYSTEM_BOOKS)/build/first-order-like-terms-and-out-arities.certdep
+
 include $(ACL2_SYSTEM_BOOKS)/Makefile-generic
 
 ex1:
