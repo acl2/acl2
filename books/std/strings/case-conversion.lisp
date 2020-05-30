@@ -138,12 +138,12 @@ logical definition.</p>"
   ;; Mihir M. mod: added a lemma.
   (defthm
     not-charlist-has-some-down-alpha-p-of-upcase-charlist
-    (not (str::charlist-has-some-down-alpha-p
-          (str::upcase-charlist x)))
+    (not (charlist-has-some-down-alpha-p
+          (upcase-charlist x)))
     :hints
     (("goal"
-      :in-theory (enable str::charlist-has-some-down-alpha-p
-                         str::upcase-charlist)))))
+      :in-theory (enable charlist-has-some-down-alpha-p
+                         upcase-charlist)))))
 
 
 (define charlist-has-some-up-alpha-p ((x character-listp))
