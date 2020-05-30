@@ -21,7 +21,6 @@
 (local
  (in-theory
   (disable
-   (:rewrite partial-collapse-correctness-lemma-29)
    (:rewrite partial-collapse-correctness-lemma-21)
    (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
    (:rewrite collapse-congruence-lemma-4)

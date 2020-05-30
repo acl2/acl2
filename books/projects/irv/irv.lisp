@@ -49,6 +49,7 @@
 (local (include-book "std/lists/nth"  :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
+(local (in-theory (disable acl2::set-equiv-implies-equal-len-remove-duplicates-equal)))
 ;; ----------------------------------------------------------------------
 
 (defxdoc instant-runoff-voting

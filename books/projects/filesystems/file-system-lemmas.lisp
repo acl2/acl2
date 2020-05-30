@@ -1511,3 +1511,13 @@
 
 (defthm last-when-equal-len-1
   (implies (equal (len l) 1) (equal (last l) l)))
+
+;; The following two theorems are redundant with the eponymous theorems in
+;; books/std/lists/resize-list.lisp, from where they were taken with thanks.
+(defthm len-of-resize-list
+  (equal (len (resize-list lst n default))
+         (nfix n)))
+(defthm resize-list-of-len-free
+  (implies (equal (nfix n) (len lst))
+           (equal (resize-list lst n default-value)
+                  (true-list-fix lst))))
