@@ -118,6 +118,7 @@
                          patbind-fun
                          patbind-run-unless
                          patbind-run-when
+                         pos
                          pos-listp
                          primitivep
                          printable-charlist-p

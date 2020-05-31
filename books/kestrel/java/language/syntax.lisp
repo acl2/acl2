@@ -42,6 +42,7 @@
 (include-book "literals")
 (include-book "package-names")
 (include-book "primitive-types")
+(include-book "reference-types")
 (include-book "unicode-escapes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
