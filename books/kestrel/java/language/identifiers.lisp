@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -71,7 +71,7 @@
         (= char 127)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection nonascii-identifier-ignore-p
   :short "Check if a non-ASCII Java Unicode character
@@ -110,7 +110,7 @@
     (fty::deffixequiv nonascii-identifier-ignore-p
       :args ((char unicodep)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define identifier-ignore-p ((char unicodep))
   :returns (yes/no booleanp)
@@ -125,7 +125,7 @@
           (t (nonascii-identifier-ignore-p char))))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist no-identifier-ignore-p (x)
   (identifier-ignore-p x)
@@ -174,7 +174,7 @@
         (and (<= (char-code #\a) char) (<= char (char-code #\z)))))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection nonascii-identifier-start-p
   :short "Check if a non-ASCII Java Unicode character can start identifiers."
@@ -212,7 +212,7 @@
     (fty::deffixequiv nonascii-identifier-start-p
       :args ((char unicodep)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define identifier-start-p ((char unicodep))
   :returns (yes/no booleanp)
@@ -277,7 +277,7 @@
         (= char 127)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection nonascii-identifier-part-p
   :short "Check if a non-ASCII Java Unicode character
@@ -316,7 +316,7 @@
     (fty::deffixequiv nonascii-identifier-part-p
       :args ((char unicodep)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define identifier-part-p ((char unicodep))
   :returns (yes/no booleanp)
@@ -332,7 +332,7 @@
           (t (nonascii-identifier-part-p char))))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist identifier-part-listp (x)
   (identifier-part-p x)
@@ -391,6 +391,15 @@
     :equiv identifier-equiv
     :define t
     :forward t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist identifier-list
+  :short "Fixtype of lists of Java identifiers, for most contexts."
+  :elt-type identifier
+  :true-listp t
+  :elementp-of-nil nil
+  :pred identifier-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
