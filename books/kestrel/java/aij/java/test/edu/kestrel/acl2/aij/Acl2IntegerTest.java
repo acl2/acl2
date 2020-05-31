@@ -370,4 +370,12 @@ class Acl2IntegerTest {
                 compareTo(Acl2Number.make(13579, -15)) > 0);
     }
 
+    @Test
+    void compareToCharacters() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Character.make('a')) < 0);
+        assertTrue(Acl2Integer.make(1).compareTo(Acl2Character.make('1')) < 0);
+        assertTrue(Acl2Integer.make(12345).
+                compareTo(Acl2Character.make('#')) < 0);
+    }
+
 }
