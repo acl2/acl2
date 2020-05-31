@@ -285,8 +285,8 @@ unann-reference-type = unann-class-or-interface-type
                      / unann-type-variable
                      / unann-array-type
 
-Unann-Class-Or-Interface-Type = Unann-Class-Type
-                              / Unann-Interface-Type
+unann-class-or-interface-type = unann-class-type
+                              / unann-interface-type
 
 unann-class-type =
     type-identifier [type-arguments]
