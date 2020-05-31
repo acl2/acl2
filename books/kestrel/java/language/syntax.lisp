@@ -40,6 +40,7 @@
 (include-book "character-literals")
 (include-book "string-literals")
 (include-book "literals")
+(include-book "package-names")
 (include-book "primitive-types")
 (include-book "unicode-escapes")
 

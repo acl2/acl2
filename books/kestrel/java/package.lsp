@@ -15,7 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "JAVA" (append (set-difference-eq *std-pkg-symbols*
-                                          '(pointers
+                                          '(package-name
+                                            pointers
                                             values))
                        '(*nil*
                          *pkg-witness-name*
