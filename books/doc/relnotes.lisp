@@ -300,6 +300,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
+
+   (xdoc::p
+    "Modified the raw-Lisp implementation of @(tsee read-string) to catch
+     errors successfully, as intended.  This could fail in SBCL
+     2.0.5 (implementation note: because the error message referenced a string
+     stream that was already closed).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p

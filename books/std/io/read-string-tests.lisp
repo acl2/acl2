@@ -71,14 +71,9 @@
 ;; be fixed as of SBCL 1.2.0, so we re-enable the tests.
 ;; Note: These fail in the CMUCL 2014-06 snapshot and also (at least for the
 ;; first)  CMUCL 20, so we comment them out for CMUCL.
-;; Update from Matt K., 5/31/2020: SBCL 2.0.5 has the problem discussed above,
-;; so I am disabling these tests once again for SBCL.  I think we are actually
-;; hitting a bug in function read-string-fn in read-string-raw.lsp (stream has
-;; dynamic extent); probably I'll fix it tomorrow and then restore SBCL here
-;; (and delete this comment).
-#-(or cmucl sbcl)
+#-cmucl
 (test-fail "#\wtf ")
-#-(or cmucl sbcl)
+#-cmucl
 (test-fail "#\Return ")
 
 
