@@ -99,28 +99,28 @@
      svl-run-phase-occs-is-svl-run-phase-occs-wog
      svl-run-phase-wog-opener-error
      svl-run-phase-wog-opener
-     rp::svl-run-phase-wog-opener_lambda-opener
+     ;;rp::svl-run-phase-wog-opener_lambda-opener
      svl-run-phase-occs-wog-opener-error
      svl-run-phase-occs-wog-opener-nil
      svl-run-phase-occs-wog-opener-cons-assign
      svl-run-phase-occs-wog-opener-cons-module
-     rp::svl-run-phase-occs-wog-opener-cons-module_lambda-opener
+     ;;rp::svl-run-phase-occs-wog-opener-cons-module_lambda-opener
      pairlis3-opener-error
      pairlis3-opener-done
      pairlis3-opener-cons
      svl-run-save-output-opener-error
      svl-run-save-output-opener-nil
      svl-run-save-output-opener-cons
-     rp::svl-run-save-output-opener-cons_lambda-opener
+     ;;rp::svl-run-save-output-opener-cons_lambda-opener
      svl-run-aux-opener-error
      svl-run-aux-wog-opener-error
      svl-run-aux-is-svl-run-aux-wog
      svl-run-aux-wog-opener-nil
      svl-run-aux-opener-cons
-     rp::svl-run-aux-opener-cons_lambda-opener
+     ;;rp::svl-run-aux-opener-cons_lambda-opener
      svl-run-opener-error
      svl-run-def-opener
-     rp::svl-run-def-opener_lambda-opener
+     ;;rp::svl-run-def-opener_lambda-opener
      sv::4veclist-p-of-cons
      svex-env-p-of-falist
 
@@ -160,11 +160,11 @@
      svexllist-eval-is-svexllist-eval-wog
      svexl-eval-is-svexl-eval-wog
      svexl-eval-wog-opener
-     rp::svexl-eval-wog-opener_lambda-opener
+     ;;rp::svexl-eval-wog-opener_lambda-opener
      svex-env-fastlookup-wog-def
      SVEXL-EVAL-AUX-WOG-nil
      svexl-eval-aux-wog-cons
-     rp::svexl-eval-aux-wog-cons_lambda-opener
+     ;;rp::svexl-eval-aux-wog-cons_lambda-opener
      svexl-node-eval-is-svexl-node-eval-wog
      svexl-nodelist-eval-is-svexl-nodelist-eval-wog
 
