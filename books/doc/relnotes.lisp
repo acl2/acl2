@@ -276,6 +276,11 @@
      This applies to the shallow embedding with guards.")
 
    (xdoc::p
+    "A new post-translation step has been added
+     to simplify generated Java conditional expressions
+     whose test is a boolean literal.")
+
+   (xdoc::p
     "The Java abstract syntax used by the code generator is now more precise,
      in the sense that it captures more syntactic aspects of Java.")
 
