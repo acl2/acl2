@@ -378,4 +378,11 @@ class Acl2IntegerTest {
                 compareTo(Acl2Character.make('#')) < 0);
     }
 
+    @Test
+    void compareToStrings() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2String.ACL2) < 0);
+        assertTrue(Acl2Integer.make(10).compareTo(Acl2String.make("10")) < 0);
+        assertTrue(Acl2Integer.make(-2).compareTo(Acl2String.make("abc")) < 0);
+    }
+
 }
