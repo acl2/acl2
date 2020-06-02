@@ -197,7 +197,9 @@
        :digits/uscores (decdig/uscore-digit-list codes)
        :suffix? (optional-integer-type-suffix-none)))))
   :guard-hints (("Goal" :in-theory (enable decdig/uscore-list-wfp)))
-  :prepwork ((local (include-book "kestrel/java/language/decimal-digits-std-strings-theorems" :dir :system))))
+  :prepwork
+  ((local
+    (include-book "kestrel/java/language/decimal-digits-std-strings-theorems" :dir :system))))
 
 (define jliteral-long-dec-nouscores ((value natp))
   :returns (lit jliteralp)
@@ -214,7 +216,9 @@
        :digits/uscores (decdig/uscore-digit-list codes)
        :suffix? (optional-integer-type-suffix-uppercase)))))
   :guard-hints (("Goal" :in-theory (enable decdig/uscore-list-wfp)))
-  :prepwork ((local (include-book "kestrel/java/language/decimal-digits-std-strings-theorems" :dir :system))))
+  :prepwork
+  ((local
+    (include-book "kestrel/java/language/decimal-digits-std-strings-theorems" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
