@@ -63,7 +63,6 @@
                               (quotep k2)))
                 (fep x p)
                 (fep k1 p)
-                (fep k2 p)
                 (integerp p))
            (equal (equal k1 (add k2 x p))
                   (equal x (sub k1 k2 p))))
