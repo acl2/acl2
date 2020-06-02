@@ -189,7 +189,7 @@
 ;; RDTSC nonsense, but we still can report mysterious results since we have no
 ;; clue about which core we are running on in CCL (or, presumably, SBCL).
 
-#+(or ccl sbcl)
+#+(and (or ccl sbcl) x86-64)
 (eval-when
  (:execute :compile-toplevel :load-toplevel)
  (when #+ccl (fboundp 'ccl::rdtsc)
