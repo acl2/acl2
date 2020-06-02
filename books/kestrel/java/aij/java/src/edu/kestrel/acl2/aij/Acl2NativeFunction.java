@@ -1437,7 +1437,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     /**
      * Executes the native implementation of
      * the {@code char-code} ACL2 primitive function,
-     * on a character.
+     * on an ACL2 character.
      *
      * @param x The actual argument to pass to the function.
      *          Precondition: not null.
@@ -1446,6 +1446,19 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
     public static Acl2Integer execCharCode(Acl2Character x) {
         // it is not clear how this compares to x.charCode() in speed:
         return Acl2Integer.make(x.getJavaChar());
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code char-code} ACL2 primitive function,
+     * on a Java character.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Precondition: not null, below 256.
+     * @return The result of the function on the given argument.
+     */
+    public static Acl2Integer execCharCode(char x) {
+        return Acl2Integer.make(x);
     }
 
     /**
@@ -1474,6 +1487,22 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         // this should be faster than x.codeChar()
         // because we can avoid checking that the integer is in range:
         return Acl2Character.imake((char) x.getJavaInt());
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code code-char} ACL2 primitive function,
+     * on a non-negative integer below 256,
+     * returning a Java character instead of an ACL2 character.
+     *
+     * @param x The actual argument to pass to the function.
+     *          Preconditions: not null, non-negative, and below 256.
+     * @return The result of the function on the given argument.
+     */
+    public static char execCodeCharChar(Acl2Integer x) {
+        // this should be faster than x.codeChar()
+        // because we can avoid checking that the integer is in range:
+        return (char) x.getJavaInt();
     }
 
     /**
