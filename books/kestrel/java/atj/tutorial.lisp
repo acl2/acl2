@@ -373,8 +373,7 @@
     Examples are
     @(tsee equal), @(tsee if), @(tsee cons), @(tsee car), and @(tsee binary-+).
     Their logical semantics is specified by axioms of the ACL2 logic.
-    Their evaluation semantics is specified by raw Lisp code
-    (under the hood).
+    Their evaluation semantics is specified by raw Lisp code (under the hood).
     The relationship between the two semantics is as in the above paragraph,
     with the slight complication that
     @(tsee pkg-witness) and @(tsee pkg-imports)
@@ -392,6 +391,9 @@
   (xdoc::p
    "The logic-mode functions
     listed in the global variable @('logic-fns-with-raw-code')
+    (whose content can be inspected
+    via @('(@ logic-fns-with-raw-code)') in an ACL2 shell;
+    see @(tsee @))
     have a logical semantics specified by their ACL2 definitions,
     but an evaluation semantics specified by raw Lisp code.
     (They are disjoint from the primitive functions,
