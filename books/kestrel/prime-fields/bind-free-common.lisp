@@ -37,3 +37,9 @@
     (if (endp (rest addends))
         (first addends)
       `(add ,(first addends) ,(make-add-nest (rest addends) p) ,p))))
+
+(defthm pseudo-termp-of-make-add-nest
+  (implies (and (pseudo-term-listp addends)
+                (pseudo-termp p))
+           (pseudo-termp (make-add-nest addends p)))
+  :hints (("Goal" :in-theory (enable make-add-nest))))

@@ -18,6 +18,7 @@
 (include-book "bind-free-common")
 (include-book "prime-fields-rules") ;needed just for some "add of neg" rules?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system)) ;;for integerp of mod
+(local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
 
 (local (in-theory (disable intersection-equal pseudo-term-listp)))
 
@@ -107,6 +108,14 @@
                      (acons 'p p nil))
             nil ;fail
             ))))))
+
+;; Just to check that the return type is right.
+(local
+ (defthm symbol-term-alistp-of-bind-sum-of-negated-terms
+   (implies (and (pseudo-termp x)
+                 (pseudo-termp y))
+            (acl2::symbol-term-alistp (bind-sum-of-negated-terms x y)))
+   :hints (("Goal" :in-theory (enable acl2::symbol-term-alistp)))))
 
 ;; The rule for moving negated addends to the other side.
 ;; Gather all the addends that are negated and add them (not negated) to both
