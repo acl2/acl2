@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc simplify-term
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Simplify a term."
   :long "
  <h3>Introduction</h3>
@@ -344,7 +344,7 @@
  })")
 
 (defxdoc simplify-term-programmatic
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Programmatic interface to @(tsee simplify-term)"
   :long "<p>Call @('simplify-term-programmatic') exactly as you would call
  @(tsee simplify-term), except that arguments are not automatically quoted; so

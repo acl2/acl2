@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc simplify-defun-sk
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Simplify the definition of a given function made with @(tsee defun-sk)."
   :long "
  <h3>Introduction</h3>
@@ -786,7 +786,7 @@
 ")
 
 (defxdoc simplify-defun-sk-programmatic
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Programmatic interface to @(tsee simplify-defun-sk)"
   :long "<p>Call @('simplify-defun-sk-programmatic') exactly as you would call
  @(tsee simplify-defun-sk), except that arguments are not automatically quoted;

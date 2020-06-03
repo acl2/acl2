@@ -20,7 +20,7 @@
 
 ; TO DO: Add reference to transform-and-propagate below.
 (defxdoc simplify-defun
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Simplify the definition of a given function."
   :long "<p>This macro is an interface to the @(tsee simplify) transformation
  for function symbols that the user (or a tool) introduces with @(tsee defun).
@@ -1386,7 +1386,7 @@
 ")
 
 (defxdoc simplify-defun+
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Simplify the definition of a given function, including the guard and measure."
   :long "<p>See @(see simplify-defun).  @('Simplify-defun+') is merely a macro
  whose calls expand to corresponding calls of @('simplify-defun') with
@@ -1411,7 +1411,7 @@
 (acl2::defpointer show-simplify-defun simplify-defun)
 
 (defxdoc simplify-defun-programmatic
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Programmatic interface to @(tsee simplify-defun)"
   :long "<p>Call @('simplify-defun-programmatic') exactly as you would call
  @(tsee simplify-defun), except that arguments are not automatically quoted; so

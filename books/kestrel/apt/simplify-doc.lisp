@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc simplify
-  :parents (acl2::transformations)
+  :parents (apt)
   :short "Simplify the definition of a given function."
   :long "<p>For any function symbol @('f') defined using @(tsee defun), @(tsee
  defun-sk), or the the @(see soft::SOFT) tool, @('defun-sk2'), @('simplify')
