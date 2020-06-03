@@ -101,14 +101,21 @@
        (append (pairlis$ keys (repeat (len keys) value)) ;map all the keys to this value
                msg-or-rest)))))
 
-(defthm alistp-append
+; Matt K. mod: I renamed the following because it conflicted (when building
+; books/doc/top-slow.lisp) with alistp-append in
+; books/data-structures/alist-defthms.lisp.  This one is stronger.
+(defthm alistp-append-strong
   (implies (true-listp x)
            (equal (alistp (append x y))
                   (and (alistp x)
                        (alistp y)))))
 
+; Matt K. mod: Originally the variables below were x and y, but this conflicted
+; with those used in the version of alistp-pairlis$ in
+; books/tools/with-quoted-forms.lisp, so I changed it here (both this book and
+; that one are included in books/doc/top-slow.lisp).
 (defthm alistp-pairlis$
-  (alistp (pairlis$ x y)))
+  (alistp (pairlis$ a b)))
 
 ;todo: strengthen to symbol-alistp:
 (defthm alistp-of-mv-nth-1-of-elaborate-mut-rec-option-map

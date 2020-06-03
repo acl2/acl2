@@ -27,8 +27,16 @@
 (include-book "restrict")
 (include-book "restrict-doc")
 
+(include-book "simplify")
+(include-book "simplify-defun-doc")
+(include-book "simplify-defun-sk-doc")
+(include-book "simplify-doc")
+(include-book "simplify-term-doc")
+
 (include-book "tailrec")
 (include-book "tailrec-doc")
+
+
 
 ; (depends-on "images/apt-logo.png")
 

@@ -18,6 +18,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; TO DO: Add reference to transform-and-propagate below.
 (defxdoc simplify-defun
   :parents (acl2::transformations)
   :short "Simplify the definition of a given function."
@@ -43,7 +44,7 @@
  simplify-defun-sk) for an analogous utility for which the input function
  symbol was originally defined with @(tsee defun-sk) rather than @('defun').
  Also see @(see simplify-defun+) for a variant of @('simplify-defun'), and see
- @(see transform-and-propagate) for a utility that can apply
+ @('transform-and-propagate') for a utility that can apply
  @('simplify-defun') to several function symbols after applying an indicated
  transformation.</p>
 
@@ -232,9 +233,9 @@
 
  <p>NOTE: If you supply @(':hints') with a value other than @('nil'), then you
  may find it helpful to specify that the runes mentioned above are all
- disabled: @('FN'), @('(:e FN)'), and @('(:t FN)') (see @(see rune)).  If you
- are simplifying a @(tsee mutual-recursion) form then you may find it helpful
- to disable these for every @('FN') in the clique of functions being
+ disabled: @('FN'), @('(:e FN)'), and @('(:t FN)') (see @(see acl2::rune)).  If
+ you are simplifying a @(tsee mutual-recursion) form then you may find it
+ helpful to disable these for every @('FN') in the clique of functions being
  introduced.</p>
 
  </blockquote>
@@ -411,7 +412,7 @@
  <p>Specify what to print.</p>
 
  <p>By default, only the resulting definition and theorem are printed.  In
- general, the value is a print specifier @(see acl2::apt-print-specifier) that
+ general, the value is a print specifier @(see print-specifier) that
  controls the output.</p>
 
  </blockquote>

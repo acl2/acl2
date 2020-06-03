@@ -112,10 +112,10 @@
  <h3>Dealing with a guard verification failure</h3>
 
  <p>When @('(simplify FN ...)') performs guard verification, it does so using a
- somewhat sophisticated @(see proof-builder) macro that users are not expected
- to understand.  So when that approach fails, it is probably best to avoid that
- macro and, instead, try one of the following approaches (or more than one, if
- the first approach doesn't work out).</p>
+ somewhat sophisticated @(see acl2::proof-builder) macro that users are not
+ expected to understand.  So when that approach fails, it is probably best to
+ avoid that macro and, instead, try one of the following approaches (or more
+ than one, if the first approach doesn't work out).</p>
 
  <ul>
 

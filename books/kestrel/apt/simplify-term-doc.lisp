@@ -181,8 +181,7 @@
  <p>Specify what to print.</p>
 
  <p>By default, only the resulting theorem is printed.  In general, the value
- is a print specifier @(see acl2::apt-print-specifier) that controls the
- output.</p>
+ is a print specifier @(see print-specifier) that controls the output.</p>
 
  </blockquote>
 

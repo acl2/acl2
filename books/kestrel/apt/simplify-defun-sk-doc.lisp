@@ -220,8 +220,8 @@
  <p>Specify what to print.</p>
 
  <p>By default, only the resulting definition and theorem are printed.  In
- general, the value is a print specifier @(see acl2::apt-print-specifier) that
- controls the output.</p>
+ general, the value is a print specifier @(see print-specifier) that controls
+ the output.</p>
 
  </blockquote>
 
