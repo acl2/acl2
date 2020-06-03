@@ -200,7 +200,7 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
-
+    TOO-MANY-IFS
   ))
 
 (defconst *special-ops*
