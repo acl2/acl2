@@ -385,4 +385,10 @@ class Acl2IntegerTest {
         assertTrue(Acl2Integer.make(-2).compareTo(Acl2String.make("abc")) < 0);
     }
 
+    @Test
+    void compareToSymbols() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Symbol.T) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Symbol.NIL) < 0);
+    }
+
 }
