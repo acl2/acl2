@@ -153,8 +153,7 @@
   :hints (("Goal" :in-theory (enable fep))))
 
 (defthm mul-of-minus1-becomes-neg
-  (implies (and (fep x p)
-                (integerp p))
+  (implies (fep x p)
            (equal (mul (minus1 p) x p)
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub minus1 fep acl2::mod-sum-cases))))
