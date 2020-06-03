@@ -25,9 +25,11 @@
 
 (in-package "ACL2")
 
-(include-book "sorting/perm" :dir :system)
-(include-book "sorting/ordered-perms" :dir :system)
-(include-book "sorting/convert-perm-to-how-many" :dir :system)
+;;(include-book "sorting/perm" :dir :system)
+;;(include-book "sorting/ordered-perms" :dir :system)
+(include-book "sorting/orderedp" :dir :system)
+(include-book "sorting/how-many" :dir :system)
+(local (include-book "sorting/convert-perm-to-how-many" :dir :system))
 
 (include-book "leftist-tree-defuns")
 (include-book "leftist-tree-defthms")
