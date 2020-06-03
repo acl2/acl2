@@ -4,13 +4,7 @@
 
 (include-book "perm")
 
-(defun orderedp (x)
-       (if (endp x)
-           t
-         (if (endp (cdr x))
-             t
-           (and (lexorder (car x) (car (cdr x)))
-                (orderedp (cdr x))))))
+(include-book "orderedp")
 
 (encapsulate nil
              (local (defthm orderedp-rm
@@ -49,4 +43,3 @@
                         (equal (equal a b)
                                (perm a b)))
                :rule-classes nil))
-
