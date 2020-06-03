@@ -10,7 +10,7 @@
 (include-book "simplify-defun-impl")
 (include-book "simplify-defun-sk-impl")
 (include-book "simplify-term-impl")
-(include-book "kestrel/apt/utilities/deftransformation" :dir :system)
+(include-book "utilities/deftransformation")
 
 (defun check-simplify-defaults (triples fn type ctx state bad)
 

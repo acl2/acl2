@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/apt/simplify" :dir :system)
+(include-book "simplify")
 (include-book "std/testing/eval" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 

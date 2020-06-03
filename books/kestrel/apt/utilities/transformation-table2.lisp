@@ -12,7 +12,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/apt/utilities/transformation-table" :dir :system)
+(include-book "transformation-table")
 
 (defun get-transformation-table (state)
   (declare (xargs :stobjs state))
