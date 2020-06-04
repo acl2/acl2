@@ -68,6 +68,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Checks if this value is a character,
+     * consistently with the {@code characterp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Character}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean characterpBoolean() {
+        return false;
+    }
+
+    /**
      * Checks if this value is a string,
      * consistently with the {@code stringp} ACL2 function.
      * It returns {@code nil} by default;
@@ -77,6 +90,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol stringp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is a string,
+     * consistently with the {@code stringp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2String}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean stringpBoolean() {
+        return false;
     }
 
     /**
@@ -92,7 +118,20 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Checks if this value is a integer,
+     * Checks if this value is a symbol,
+     * consistently with the {@code symbolp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Symbol}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean symbolpBoolean() {
+        return false;
+    }
+
+    /**
+     * Checks if this value is an integer,
      * consistently with the {@code integerp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2Integer}.
@@ -101,6 +140,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol integerp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is an integer,
+     * consistently with the {@code integerp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Integer}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean integerpBoolean() {
+        return false;
     }
 
     /**
@@ -116,6 +168,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Checks if this value is a rational,
+     * consistently with the {@code rationalp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Rational}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean rationalpBoolean() {
+        return false;
+    }
+
+    /**
      * Checks if this value is a complex rational,
      * consistently with the {@code complex-rationalp} ACL2 function.
      * It returns {@code nil} by default;
@@ -125,6 +190,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol complexRationalp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is a complex rational,
+     * consistently with the {@code complex-rationalp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2ComplexRational}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean complexRationalpBoolean() {
+        return false;
     }
 
     /**
@@ -140,6 +218,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Checks if this value is a number,
+     * consistently with the {@code acl2-numberp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Number}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean acl2NumberpBoolean() {
+        return false;
+    }
+
+    /**
      * Checks if this value is a {@code cons} pair,
      * consistently with the {@code consp} ACL2 function.
      * It returns {@code nil} by default;
@@ -149,6 +240,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol consp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is a {@code cons} pair,
+     * consistently with the {@code consp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2ConsPair}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean conspBoolean() {
+        return false;
     }
 
     /**

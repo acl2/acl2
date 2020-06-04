@@ -1243,7 +1243,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execCharacterpBoolean(Acl2Value x) {
-        return x.characterp() != Acl2Symbol.NIL;
+        return x.characterpBoolean();
     }
 
     /**
@@ -1268,7 +1268,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execStringpBoolean(Acl2Value x) {
-        return x.stringp() != Acl2Symbol.NIL;
+        return x.stringpBoolean();
     }
 
     /**
@@ -1293,7 +1293,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execSymbolpBoolean(Acl2Value x) {
-        return x.symbolp() != Acl2Symbol.NIL;
+        return x.symbolpBoolean();
     }
 
     /**
@@ -1318,7 +1318,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execIntegerpBoolean(Acl2Value x) {
-        return x.integerp() != Acl2Symbol.NIL;
+        return x.integerpBoolean();
     }
 
     /**
@@ -1343,7 +1343,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execRationalpBoolean(Acl2Value x) {
-        return x.rationalp() != Acl2Symbol.NIL;
+        return x.rationalpBoolean();
     }
 
     /**
@@ -1368,7 +1368,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execComplexRationalpBoolean(Acl2Value x) {
-        return x.complexRationalp() != Acl2Symbol.NIL;
+        return x.complexRationalpBoolean();
     }
 
     /**
@@ -1393,7 +1393,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execAcl2NumberpBoolean(Acl2Value x) {
-        return x.acl2Numberp() != Acl2Symbol.NIL;
+        return x.acl2NumberpBoolean();
     }
 
     /**
@@ -1418,7 +1418,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * @return The result of the function on the given argument.
      */
     public static boolean execConspBoolean(Acl2Value x) {
-        return x.consp() != Acl2Symbol.NIL;
+        return x.conspBoolean();
     }
 
     /**
