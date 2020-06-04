@@ -7,14 +7,7 @@
 
 (include-book "perm")
 
-(defun how-many (e x)
-  (cond
-   ((endp x)
-    0)
-   ((equal e (car x))
-    (1+ (how-many e (cdr x))))
-   (t
-    (how-many e (cdr x)))))
+(include-book "how-many")
 
 ; We aim to prove that (perm x y) is the same as checking that for all e,
 ; (how-many e x) is (how-many e y).  We can do that by defining the function
@@ -104,7 +97,3 @@
            ((:instance perm-counter-example-is-counterexample-for-true-lists
                        (x (tlfix x))
                        (y (tlfix y)))))))
-
-
-
-
