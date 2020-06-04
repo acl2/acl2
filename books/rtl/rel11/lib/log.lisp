@@ -11,7 +11,7 @@
 
 (in-package "RTL")
 
-(set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about  logand-natp
+(set-enforce-redundancy t) ; for some reason, acl2 4.3 complains about logand-natp
 
 (local (include-book "../support/top"))
 
@@ -497,6 +497,12 @@
                 (integerp z))
            (equal (logior x (logand y z))
                   (logand (logior x y) (logior x z)))))
+
+(defthmd logior-logand-1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (logior x (logand x y))
+                  x)))
 
 (defthmd logand-logior
   (implies (and (integerp x)
