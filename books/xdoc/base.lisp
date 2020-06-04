@@ -109,6 +109,7 @@
 ;; This book potentially needs recertification after any change to the
 ;; CERTIFY-BOOK-INFO record, because the ACCESS call below macroexpands to some
 ;; cars/cdrs that depend on the shape of the record.
+;; (depends-on "build/defrec-certdeps/CERTIFY-BOOK-INFO.certdep" :dir :system)
 (defun defxdoc-fn (name parents short long pkg no-override state)
   (declare (xargs :mode :program :stobjs state))
   (let* ((err (check-defxdoc-args name parents short long pkg)))
