@@ -27,6 +27,12 @@
 (include-book "restrict")
 (include-book "restrict-doc")
 
+(include-book "simplify")
+(include-book "simplify-defun-doc")
+(include-book "simplify-defun-sk-doc")
+(include-book "simplify-doc")
+(include-book "simplify-term-doc")
+
 (include-book "tailrec")
 (include-book "tailrec-doc")
 
@@ -93,14 +99,9 @@
 
    (xdoc::p
     "The <see topic='@(url community-books)'>Community Books</see>
-     currently contain only a few APT transformations.
+     currently contain only some APT transformations.
      More transformations exist in Kestrel Institute's private files,
-     but they will be eventually moved to the Community Books;
-     this includes the latest version of the @('simplify-defun') transformation
-     described in the
-     <a href=\"http://www.cs.utexas.edu/users/moore/acl2/workshop-2017\"
-     >ACL2-2017 Workshop</a> paper
-     `A Versatile, Sound Tool for Simplifying Definitions'.")
+     but they will be eventually moved to the Community Books.")
 
    (xdoc::p
     "Also see the "
@@ -113,6 +114,14 @@
                             isodata
                             parteval
                             restrict
+                            simplify
+                            simplify-defun
+                            simplify-defun+
+                            simplify-defun-programmatic
+                            simplify-defun-sk
+                            simplify-defun-sk-programmatic
+                            simplify-term
+                            simplify-term-programmatic
                             tailrec
                             utilities))
 

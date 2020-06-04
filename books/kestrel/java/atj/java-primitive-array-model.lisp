@@ -376,6 +376,7 @@
                 :prepwork
                 ((define ,type-array-to-list-aux ((comps ,type-value-listp))
                    :returns (list ,acl2type-listp)
+                   :parents nil
                    (cond ((endp comps) nil)
                          (t (cons (,type-value->get (car comps))
                                   (,type-array-to-list-aux (cdr comps)))))
@@ -402,6 +403,7 @@
                 :prepwork
                 ((define ,type-array-from-list-aux ((list ,acl2type-listp))
                    :returns (comps ,type-value-listp)
+                   :parents nil
                    (cond ((endp list) nil)
                          (t (cons (,type-value (car list))
                                   (,type-array-from-list-aux (cdr list)))))

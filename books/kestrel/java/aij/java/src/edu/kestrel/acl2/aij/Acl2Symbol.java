@@ -135,6 +135,18 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
+     * Checks if this symbol is a symbol, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code symbolp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean symbolpBoolean() {
+        return true;
+    }
+
+    /**
      * Returns the package name of this symbol,
      * consistently with the {@code symbol-package-name} ACL2 function.
      *

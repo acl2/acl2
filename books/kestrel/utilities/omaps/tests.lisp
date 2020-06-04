@@ -354,3 +354,13 @@
 (assert-equal (omap::size '((a . 1))) 1)
 
 (assert-equal (omap::size '((a . 1) (b . 2) (c . 3))) 3)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal (omap::from-lists nil nil) nil)
+
+(assert-equal (omap::from-lists '(a b) '(1 2)) '((a . 1) (b . 2)))
+
+(assert-equal (omap::from-lists '(b a) '(2 1)) '((a . 1) (b . 2)))
+
+(assert-equal (omap::from-lists '(a a) '(1 2)) '((a . 1)))

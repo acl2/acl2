@@ -437,25 +437,6 @@
     (my-sublis-var (pairlis$ formals actuals)
                    body)))
 
-;todo: what about lambdas?
-(mutual-recursion
- (defun subtermp (a b)
-   (declare (xargs :guard (pseudo-termp b)))
-   (if (atom b)
-       (equal b a)
-     (let ((fn (ffn-symb b)))
-       (if (eq 'quote fn)
-           (equal a b)
-         (or (equal a b)
-             (subterm-of-anyp a (fargs b)))))))
-
- (defun subterm-of-anyp (a b-lst)
-   (declare (xargs :guard (pseudo-term-listp b-lst)))
-   (if (endp b-lst)
-       nil
-     (or (subtermp a (car b-lst))
-         (subterm-of-anyp a (cdr b-lst))))))
-
 ;; where should this go?
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
 (defun negate-term (term)

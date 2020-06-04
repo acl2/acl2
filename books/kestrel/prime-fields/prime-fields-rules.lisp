@@ -63,7 +63,6 @@
                               (quotep k2)))
                 (fep x p)
                 (fep k1 p)
-                (fep k2 p)
                 (integerp p))
            (equal (equal k1 (add k2 x p))
                   (equal x (sub k1 k2 p))))
@@ -154,8 +153,7 @@
   :hints (("Goal" :in-theory (enable fep))))
 
 (defthm mul-of-minus1-becomes-neg
-  (implies (and (fep x p)
-                (integerp p))
+  (implies (fep x p)
            (equal (mul (minus1 p) x p)
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub minus1 fep acl2::mod-sum-cases))))

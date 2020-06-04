@@ -16,8 +16,6 @@
 
 ;; See also subsequencep.lisp.
 
-
-
 (defthm subsequencep-equal-of-take
   (implies (<= (nfix n) (len x))
            (subsequencep-equal (take n x) x))
@@ -38,3 +36,14 @@
                 (not (member-equal item y)))
            (not (subsequencep-equal x y)))
   :hints (("Goal" :in-theory (enable subsequencep-equal member-equal-when-not-member-equal-of-cdr))))
+
+(defthm subsequencep-equal-of-cons-arg1
+  (equal (subsequencep-equal (cons a x) y)
+         (and (member-equal a y)
+              (subsequencep-equal x (cdr (member-equal a y)))))
+  :hints (("Goal" :in-theory (enable subsequencep-equal))))
+
+(defthm subsequencep-equal-of-true-list-fix-arg1
+  (equal (subsequencep-equal (true-list-fix x) y)
+         (subsequencep-equal x y))
+  :hints (("Goal" :in-theory (enable subsequencep-equal))))

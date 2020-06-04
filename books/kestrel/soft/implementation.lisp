@@ -42,18 +42,17 @@
   :returns (yes/no booleanp)
   :short "Recognize true lists of @('*')s."
   :long
-  "<p>
-   These lists are used to indicate
-   the number of arguments of function variables
-   in @(tsee defunvar).
-   </p>
-   <p>
-   Any @('*') symbol (i.e. in any package) is allowed.
-   Normally, the @('*') in the current package should be used
-   (without package qualifier),
-   which is often the one from the main Lisp package,
-   which other packages generally import.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "These lists are used to indicate
+     the number of arguments of function variables
+     in @(tsee defunvar).")
+   (xdoc::p
+    "Any @('*') symbol (i.e. in any package) is allowed.
+     Normally, the @('*') in the current package should be used
+     (without package qualifier),
+     which is often the one from the main Lisp package,
+     which other packages generally import."))
   (if (atom stars)
       (null stars)
     (and (symbolp (car stars))
@@ -63,13 +62,12 @@
 (defsection function-variables-table
   :short "Table of function variables."
   :long
-  "<p>
-   The names of declared function variables
-   are stored as keys in a @(tsee table).
-   No values are associated to these keys, so the table is essentially a set.
-   Note that the arity of a function variable
-   can be retrieved from the @(see world).
-   </p>"
+  (xdoc::topstring-p
+   "The names of declared function variables
+    are stored as keys in a @(tsee table).
+    No values are associated to these keys, so the table is essentially a set.
+    Note that the arity of a function variable
+    can be retrieved from the @(see world).")
 
   (table function-variables nil nil :guard (and (symbolp acl2::key)
                                                 (null acl2::val))))
@@ -79,10 +77,9 @@
   :verify-guards nil
   :short "Recognize names of function variables."
   :long
-  "<p>
-   These are symbols that name declared function variables,
-   i.e. that are in the table of function variables.
-   </p>"
+  (xdoc::topstring-p
+   "These are symbols that name declared function variables,
+    i.e. that are in the table of function variables.")
   (let ((table (table-alist 'function-variables wrld)))
     (and (symbolp funvar)
          (not (null (assoc-eq funvar table))))))
@@ -100,10 +97,9 @@
   :short "Validate the inputs to @(tsee defunvar)
           and generate the event form to submit."
   :long
-  "<p>
-   Similary to @(tsee *-listp),
-   any @('*') and @('=>') symbol (i.e. in any package) is allowed.
-   </p>"
+  (xdoc::topstring-p
+   "Similary to @(tsee *-listp),
+    any @('*') and @('=>') symbol (i.e. in any package) is allowed.")
   (b* ((wrld (w state))
        ((unless (>= (len inputs) 4))
         (er-soft+ ctx t nil
@@ -210,11 +206,10 @@
 (defsection second-order-functions-table
   :short "Table of second-order functions."
   :long
-  "<p>
-   The names of declared second-order functions
-   are stored as keys in a @(see table),
-   associated with the function variables they depend on.
-   </p>"
+  (xdoc::topstring-p
+   "The names of declared second-order functions
+    are stored as keys in a @(see table),
+    associated with the function variables they depend on.")
 
   (table second-order-functions nil nil
     :guard (and (symbolp acl2::key)
@@ -233,21 +228,20 @@
   :short "Recognize symbols that denote
           the kinds of second-order functions supported by SOFT."
   :long
-  "<p>
-   Following the terminology used in the Workshop paper,
-   in the implementation we use:
-   </p>
-   <ul>
-     <li>
-     @('plain') for second-order functions introduced via @(tsee defun2).
-     </li>
-     <li>
-     @('choice') for second-order functions introduced via @(tsee defchoose2).
-     </li>
-     <li>
-     @('quant') for second-order functions introduced via @(tsee defun-sk2).
-     </li>
-   </ul>"
+  (xdoc::topstring
+   (xdoc::p
+    "Following the terminology used in the Workshop paper,
+     in the implementation we use:")
+   (xdoc::ul
+    (xdoc::li
+     "@('plain') for second-order functions introduced
+      via @(tsee defun2).")
+    (xdoc::li
+     "@('choice') for second-order functions introduced
+      via @(tsee defchoose2).")
+    (xdoc::li
+     "@('quant') for second-order functions introduced
+      via @(tsee defun-sk2).")))
   (or (eq kind 'plain)
       (eq kind 'choice)
       (eq kind 'quant)))
@@ -292,24 +286,22 @@
   :verify-guards nil
   :short "Function variables that terms depend on."
   :long
-  "<p>
-   A term may depend on a function variable directly
-   (when the function variable occurs in the term)
-   or indirectly
-   (when a the second-order function that occurs in the term
-   depends on the function variable).
-   </p>
-   <p>
-   Note that, in the following code,
-   if @('(sofunp fn wrld)') is @('nil'),
-   then @('fn') is a first-order function,
-   which depends on no function variables.
-   </p>
-   <p>
-   The returned list may contain duplicates.
-   </p>
-   @(def funvars-of-term)
-   @(def funvars-of-terms)"
+  (xdoc::topstring
+   (xdoc::p
+    "A term may depend on a function variable directly
+     (when the function variable occurs in the term)
+     or indirectly
+     (when a the second-order function that occurs in the term
+     depends on the function variable).")
+   (xdoc::p
+    "Note that, in the following code,
+     if @('(sofunp fn wrld)') is @('nil'),
+     then @('fn') is a first-order function,
+     which depends on no function variables.")
+   (xdoc::p
+    "The returned list may contain duplicates.")
+   (xdoc::@def "funvars-of-term")
+   (xdoc::@def "funvars-of-terms"))
 
   (define funvars-of-term ((term pseudo-termp) (wrld plist-worldp))
     :returns (funvars "A @(tsee funvar-listp).")
@@ -340,26 +332,24 @@
   :short "Function variables depended on
           by a plain second-order function or by an instance of it."
   :long
-  "<p>
-   Plain second-order functions and their instances
-   may depend on function variables
-   via their defining bodies,
-   via their measures (absent in non-recursive functions),
-   and via their guards.
-   For now recursive second-order functions (which are all plain)
-   and their instances
-   are only allowed to use @(tsee o<) as their well-founded relation,
-   and so plain second-order functions and their instances
-   may not depend on function variables via their well-founded relations.
-   </p>
-   <p>
-   Note that if the function is recursive,
-   the variable @('measure') in the following code is @('nil'),
-   and @(tsee funvars-of-term) applied to that yields @('nil').
-   </p>
-   <p>
-   The returned list may contain duplicates.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Plain second-order functions and their instances
+     may depend on function variables
+     via their defining bodies,
+     via their measures (absent in non-recursive functions),
+     and via their guards.
+     For now recursive second-order functions (which are all plain)
+     and their instances
+     are only allowed to use @(tsee o<) as their well-founded relation,
+     and so plain second-order functions and their instances
+     may not depend on function variables via their well-founded relations.")
+   (xdoc::p
+    "Note that if the function is recursive,
+     the variable @('measure') in the following code is @('nil'),
+     and @(tsee funvars-of-term) applied to that yields @('nil').")
+   (xdoc::p
+    "The returned list may contain duplicates."))
   (let* ((body (ubody fun wrld))
          (measure (if (recursivep fun nil wrld)
                       (measure fun wrld)
@@ -378,13 +368,12 @@
   :short "Function variables depended on
           by a choice second-order function or by an instance of it."
   :long
-  "<p>
-   Choice second-order functions and their instances
-   may depend on function variables via their defining bodies.
-   </p>
-   <p>
-   The returned list may contain duplicates.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Choice second-order functions and their instances
+     may depend on function variables via their defining bodies.")
+   (xdoc::p
+    "The returned list may contain duplicates."))
   (funvars-of-term (defchoose-body fun wrld) wrld))
 
 (define funvars-of-quantifier-fn ((fun symbolp) (wrld plist-worldp))
@@ -393,15 +382,14 @@
   :short "Function variables depended on
           by a quantifier second-order function or by an instance of it."
   :long
-  "<p>
-   Quantifier second-order functions and their instances
-   may depend on function variables
-   via their matrices
-   and via their guards (which are introduced via @(':witness-dcls')).
-   </p>
-   <p>
-   The returned list may contain duplicates.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Quantifier second-order functions and their instances
+     may depend on function variables
+     via their matrices
+     and via their guards (which are introduced via @(':witness-dcls')).")
+   (xdoc::p
+    "The returned list may contain duplicates."))
   (let* ((matrix (defun-sk-matrix fun wrld))
          (guard (uguard fun wrld))
          (matrix-funvars (funvars-of-term matrix wrld))
@@ -415,13 +403,12 @@
   :short "Function variables depended on
           by a second-order theorem or by an instance of it."
   :long
-  "<p>
-   Second-order theorems and their instances
-   may depend on function variables via their formulas.
-   </p>
-   <p>
-   The returned list may contain duplicates.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Second-order theorems and their instances
+     may depend on function variables via their formulas.")
+   (xdoc::p
+    "The returned list may contain duplicates."))
   (funvars-of-term (formula thm nil wrld) wrld))
 
 (define check-wfrel-o< ((fun symbolp) (wrld plist-worldp))
@@ -430,17 +417,16 @@
   :short "Check if a recursive second-order function, or an instance of it,
           uses @(tsee o<) as well-founded relation."
   :long
-  "<p>
-   When a recursive second-order function, or an instance thereof,
-   is introduced,
-   the submitted event form first introduces the function,
-   and then checks whether its well-founded relation is @(tsee o<).
-   The following code performs this check.
-   </p>
-   <p>
-   If the check is satisfied, @('nil') is returned.
-   Otherwise, an error message is returned.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "When a recursive second-order function, or an instance thereof,
+     is introduced,
+     the submitted event form first introduces the function,
+     and then checks whether its well-founded relation is @(tsee o<).
+     The following code performs this check.")
+   (xdoc::p
+    "If the check is satisfied, @('nil') is returned.
+     Otherwise, an error message is returned."))
   (if (recursivep fun nil wrld)
       (let ((wfrel (well-founded-relation fun wrld)))
         (if (eq wfrel 'o<)
@@ -457,23 +443,21 @@
           depends exactly on the same function variables
           that the matrix of the function depends on."
   :long
-  "<p>
-   When a quantifier second-order function, or an instance thereof,
-   is introduced,
-   the submitted event form first introduces the function,
-   and then checks whether its rewrite rule depends
-   exactly on the same function variables
-   that the matrix of the function depends on.
-   The following code performs this check.
-   </p>
-   <p>
-   If the check is satisfied, @('nil') is returned.
-   Otherwise, an error message is returned.
-   </p>
-   <p>
-   This check is relevant when the rewrite rule is a custom one.
-   Otherwise, it is a redundant check.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "When a quantifier second-order function, or an instance thereof,
+     is introduced,
+     the submitted event form first introduces the function,
+     and then checks whether its rewrite rule depends
+     exactly on the same function variables
+     that the matrix of the function depends on.
+     The following code performs this check.")
+   (xdoc::p
+    "If the check is satisfied, @('nil') is returned.
+     Otherwise, an error message is returned.")
+   (xdoc::p
+    "This check is relevant when the rewrite rule is a custom one.
+     Otherwise, it is a redundant check."))
   (let* ((rule-name (defun-sk-rewrite-name fun wrld))
          (rule-body (formula rule-name nil wrld))
          (fun-matrix (defun-sk-matrix fun wrld)))
@@ -491,21 +475,19 @@
   :mode :program
   :short "Print the function variables that a funcion depends on."
   :long
-  "<p>
-   When a second-order function, or an instance thereof, is introduced,
-   the submitted event form first introduces the function,
-   and then prints the function variables that the function depends on.
-   The following code performs that printing.
-   </p>
-   <p>
-   This function returns nothing.
-   It is only used for side effects, namely printing.
-   </p>
-   <p>
-   The @('kind') argument is the kind of @('fun') if second-order,
-   otherwise it is the kind of the second-order function
-   of which @('fun') is an instance.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "When a second-order function, or an instance thereof, is introduced,
+     the submitted event form first introduces the function,
+     and then prints the function variables that the function depends on.
+     The following code performs that printing.")
+   (xdoc::p
+    "This function returns nothing.
+     It is only used for side effects, namely printing.")
+   (xdoc::p
+    "The @('kind') argument is the kind of @('fun') if second-order,
+     otherwise it is the kind of the second-order function
+     of which @('fun') is an instance."))
   (let ((funvars (case kind
                    (plain (funvars-of-plain-fn fun wrld))
                    (choice (funvars-of-choice-fn fun wrld))
@@ -528,20 +510,19 @@
   :short "Validate some of the inputs to @(tsee defun2)
           and generate the event form to submit."
   :long
-  "<p>
-   We directly check the name
-   and @(':print') option (if present),
-   but rely on @(tsee defun) to check the rest of the form.
-   The second-to-last element of a valid @(tsee defun)
-   can never be the keyword @(':print')
-   (it must be a declaration, a documentation string, or a list of formals),
-   so if the second-to-last element of @(tsee defun2) is @(':print'),
-   the last element of @(tsee defun2)
-   must be the value of the @(':print') option.
-   After submitting the @(tsee defun) form,
-   we check that, if the function is recursive,
-   the well-founded relation is @(tsee o<).
-   </p>"
+  (xdoc::topstring-p
+   "We directly check the name
+    and @(':print') option (if present),
+    but rely on @(tsee defun) to check the rest of the form.
+    The second-to-last element of a valid @(tsee defun)
+    can never be the keyword @(':print')
+    (it must be a declaration, a documentation string, or a list of formals),
+    so if the second-to-last element of @(tsee defun2) is @(':print'),
+    the last element of @(tsee defun2)
+    must be the value of the @(':print') option.
+    After submitting the @(tsee defun) form,
+    we check that, if the function is recursive,
+    the well-founded relation is @(tsee o<).")
   (b* (((unless (symbolp sofun))
         (er-soft+ ctx t nil
                   "The first input must be a symbol, but ~x0 is not."
@@ -647,11 +628,10 @@
   :short "Validate some of the inputs to @(tsee defchoose2)
           and generate the event form to submit."
   :long
-  "<p>
-   We directly check the name
-   and @(':print') option (if present),
-   but rely on @(tsee defchoose) to check the rest of the form.
-   </p>"
+  (xdoc::topstring-p
+   "We directly check the name
+    and @(':print') option (if present),
+    but rely on @(tsee defchoose) to check the rest of the form.")
   (b* (((unless (symbolp sofun))
         (er-soft+ ctx t nil
                   "The first input must be a symbol, but ~x0 is not."
@@ -756,14 +736,13 @@
   :short "Validate some of the inputs to @(tsee defun-sk2)
           and generate the event form to submit."
   :long
-  "<p>
-   We directly check the name
-   and @(':print') option (if present),
-   but rely on @(tsee defun-sk) to check the rest of the form.
-   After submitting the @(tsee defun-sk) form,
-   we check that the body and the rewrite rule
-   depend on the same function variables.
-   </p>"
+  (xdoc::topstring-p
+   "We directly check the name
+    and @(':print') option (if present),
+    but rely on @(tsee defun-sk) to check the rest of the form.
+    After submitting the @(tsee defun-sk) form,
+    we check that the body and the rewrite rule
+    depend on the same function variables.")
   (b* (((unless (symbolp sofun))
         (er-soft+ ctx t nil
                   "The first input must be a symbol, but ~x0 is not."
@@ -864,21 +843,20 @@
   :mode :program
   :short "Recognize second-order theorems."
   :long
-  "<p>
-   A theorem is second-order iff it depends on one or more function variables.
-   </p>"
+  (xdoc::topstring-p
+   "A theorem is second-order iff
+    it depends on one or more function variables.")
   (not (null (funvars-of-thm sothm wrld))))
 
 (define no-trivial-pairsp ((alist alistp))
   :returns (yes/no booleanp)
   :short "Check if an alist has no pairs with equal key and value."
   :long
-  "<p>
-   This is a constraint satisfied by function substitutions;
-   see @(tsee fun-substp).
-   A pair that substitutes a function with itself would have no effect,
-   so such pairs are useless.
-   </p>"
+  (xdoc::topstring-p
+   "This is a constraint satisfied by function substitutions;
+    see @(tsee fun-substp).
+    A pair that substitutes a function with itself would have no effect,
+    so such pairs are useless.")
   (if (endp alist)
       t
     (let ((pair (car alist)))
@@ -889,10 +867,9 @@
   :returns (yes/no booleanp)
   :short "Recognize function substitutions."
   :long
-  "<p>
-   A function substitution is an alist from function names to function names,
-   with unique keys and with no trivial pairs.
-   </p>"
+  (xdoc::topstring-p
+   "A function substitution is an alist from function names to function names,
+    with unique keys and with no trivial pairs.")
   (and (symbol-symbol-alistp fsbs)
        (no-duplicatesp (alist-keys fsbs))
        (no-trivial-pairsp fsbs))
@@ -903,10 +880,9 @@
   :verify-guards nil
   :short "Recognize instantiations."
   :long
-  "<p>
-   These are non-empty function substitutions
-   whose keys are function variables and whose values are function names.
-   </p>"
+  (xdoc::topstring-p
+   "These are non-empty function substitutions
+    whose keys are function variables and whose values are function names.")
   (and (fun-substp inst)
        (consp inst)
        (funvar-listp (alist-keys inst) wrld)
@@ -928,10 +904,10 @@
           that is associated to second-order function names
           in the @(tsee sof-instances) table."
   :long
-  "<p>
-   This is an alist from instantiations to function names.
-   Each pair in the alist maps an instantiation to the corresponding instance.
-   </p>"
+  (xdoc::topstring-p
+   "This is an alist from instantiations to function names.
+    Each pair in the alist maps an instantiation
+    to the corresponding instance.")
   (and (alistp instmap)
        (funvar-inst-listp (alist-keys instmap) wrld)
        (symbol-listp (alist-vals instmap))))
@@ -946,10 +922,9 @@
   :short "Retrieve the instance associated to a given instantiation,
           in the map of known instances of a second-order function."
   :long
-  "<p>
-   Instantiations are treated as equivalent according to @(tsee alist-equiv).
-   If no instance for the instantiation is found, @('nil') is returned.
-   </p>"
+  (xdoc::topstring-p
+   "Instantiations are treated as equivalent according to @(tsee alist-equiv).
+    If no instance for the instantiation is found, @('nil') is returned.")
   (if (endp instmap)
       nil
     (let ((pair (car instmap)))
@@ -968,21 +943,19 @@
   :short "Associates an instantiation with an instance
           in an existing map of know instances of a second-order function."
   :long
-  "<p>
-   The guard requires the absence of an instance for the same instantiation
-   (equivalent up to @(tsee alist-equiv)).
-   </p>"
+  (xdoc::topstring-p
+   "The guard requires the absence of an instance for the same instantiation
+    (equivalent up to @(tsee alist-equiv)).")
   (declare (ignore wrld)) ; only used in guard
   (acons inst fun instmap))
 
 (defsection sof-instances-table
   :short "Table of instances of second-order functions."
   :long
-  "<p>
-   The known instances of second-order functions are stored in a @(see table).
-   The keys are the names of second-order functions that have instances,
-   and the values are alists from instantiations to instances.
-   </p>"
+  (xdoc::topstring-p
+   "The known instances of second-order functions are stored in a @(see table).
+    The keys are the names of second-order functions that have instances,
+    and the values are alists from instantiations to instances.")
 
   (table sof-instances nil nil :guard (and (symbolp acl2::key)
                                            (sof-instancesp acl2::val world))))
@@ -999,48 +972,47 @@
   :verify-guards nil
   :short "Apply a function substitution to an individual function."
   :long
-  "<p>
-   Applying an instantiation to a term involves replacing
-   not only the function variables that are keys of the instantiation
-   and that occur explicitly in the term,
-   but also the ones that occur implicitly in the term
-   via occurrences of second-order functions that depend on
-   those function variables.
-   For example, if @('ff') is a second-order function
-   with function parameter @('f'),
-   and an instantiation @('I') replaces @('f') with @('g'),
-   applying @('I') to the term @('(cons (f x) (ff y))')
-   should yield the term @('(cons (g x) (gg y))'),
-   where @('gg') is the instance that results form applying @('I') to @('ff').
-   The @(tsee sof-instances) table is used to find @('gg'):
-   @('I') is restricted to the function parameters of @('ff')
-   before searching the map of instances of @('ff');
-   if the restriction is empty, @('gg') is @('ff'),
-   i.e. no replacement takes place.
-   If @('gg') does not exist,
-   the application of @('I') to @('(cons (f x) (ff y))') fails;
-   the user must create @('gg')
-   and try applying @('I') to @('(cons (f x) (ff y))') again.
-   </p>
-   <p>
-   When an instantiation is applied
-   to the body of a recursive second-order function @('sofun')
-   to obtain an instance @('fun'),
-   occurrences of @('sofun') in the body must be replaced with @('fun'),
-   but at that time @('fun') does not exist yet,
-   and thus the table of second-order function instances of @('sofun')
-   has no entries for @('fun') yet.
-   Thus, it is convenient to use function substitutions
-   (not just instantiations)
-   to instantiate terms.
-   </p>
-   <p>
-   The following code applies a function substitution to an individual function,
-   in the manner explained above.
-   It is used by @(tsee fun-subst-term),
-   which applies a function substitution to a term.
-   If a needed second-order function instance does not exist, an error occurs.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Applying an instantiation to a term involves replacing
+     not only the function variables that are keys of the instantiation
+     and that occur explicitly in the term,
+     but also the ones that occur implicitly in the term
+     via occurrences of second-order functions that depend on
+     those function variables.
+     For example, if @('ff') is a second-order function
+     with function parameter @('f'),
+     and an instantiation @('I') replaces @('f') with @('g'),
+     applying @('I') to the term @('(cons (f x) (ff y))')
+     should yield the term @('(cons (g x) (gg y))'),
+     where @('gg') is the instance that results form applying @('I') to @('ff').
+     The @(tsee sof-instances) table is used to find @('gg'):
+     @('I') is restricted to the function parameters of @('ff')
+     before searching the map of instances of @('ff');
+     if the restriction is empty, @('gg') is @('ff'),
+     i.e. no replacement takes place.
+     If @('gg') does not exist,
+     the application of @('I') to @('(cons (f x) (ff y))') fails;
+     the user must create @('gg')
+     and try applying @('I') to @('(cons (f x) (ff y))') again.")
+   (xdoc::p
+    "When an instantiation is applied
+     to the body of a recursive second-order function @('sofun')
+     to obtain an instance @('fun'),
+     occurrences of @('sofun') in the body must be replaced with @('fun'),
+     but at that time @('fun') does not exist yet,
+     and thus the table of second-order function instances of @('sofun')
+     has no entries for @('fun') yet.
+     Thus, it is convenient to use function substitutions
+     (not just instantiations)
+     to instantiate terms.")
+   (xdoc::p
+    "The following code applies a function substitution to an individual function,
+     in the manner explained above.
+     It is used by @(tsee fun-subst-term),
+     which applies a function substitution to a term.
+     If a needed second-order function instance does not exist,
+     an error occurs."))
   (let ((pair (assoc-eq fun fsbs)))
     (if pair
         (cdr pair)
@@ -1060,11 +1032,11 @@
   :verify-guards nil
   :short "Apply function substitutions to terms."
   :long
-  "<p>
-   See the discussion in @(tsee fun-subst-function).
-   </p>
-   @(def fun-subst-term)
-   @(def fun-subst-terms)"
+  (xdoc::topstring
+   (xdoc::p
+    "See the discussion in @(tsee fun-subst-function).")
+   (xdoc::@def "fun-subst-term")
+   (xdoc::@def "fun-subst-terms"))
 
   (define fun-subst-term
     ((fsbs fun-substp) (term pseudo-termp) (wrld plist-worldp))
@@ -1094,49 +1066,49 @@
   :mode :program
   :short "Extend function substitutions for functional instantiation."
   :long
-  "<p>
-   An instance @('thm') of a second-order theorem @('sothm') is also a theorem,
-   provable using a @(':functional-instance') of @('sothm').
-   The pairs of the @(':functional-instance') are
-   not only the pairs of the instantiation
-   that creates @('thm') from @('sothm'),
-   but also all the pairs
-   whose first components are second-order functions that @('sothm') depends on
-   and whose second components are the corresponding instances.
-   </p>
-   <p>
-   For example,
-   if @('sothm') is @('(p (sofun x))'),
-   @('sofun') is a second-order function,
-   @('p') is a first-order predicate,
-   and applying an instantiation @('I') to @('(p (sofun x))')
-   yields @('(p (fun x))'),
-   then @('thm') is proved using
-   @('(:functional-instance sothm (... (sofun fun) ...))'),
-   where the first @('...') are the pairs of @('I')
-   and the second @('...') are further pairs
-   of second-order functions and their instances,
-   e.g. if @('sofun') calls a second-order function @('sofun1'),
-   the pair @('(sofun1 fun1)') must be in the second @('...'),
-   where @('fun1') is the instance of @('sofun1') corresponding to @('I').
-   All these pairs are needed to properly instantiate
-   the constraints that arise from the @(':functional-instance'),
-   which involve the second-order functions that @('sothm') depends on,
-   directly or indirectly.
-   </p>
-   <p>
-   The following code extends a function substitution
-   (initially an instantiation)
-   to contain all those extra pairs.
-   The starting point is a term;
-   the bodies of second-order functions referenced in the term
-   are recursively processed.
-   The table of instances of second-order functions is searched,
-   similarly to @(tsee fun-subst-function).
-   </p>
-   @(def ext-fun-subst-term)
-   @(def ext-fun-subst-terms)
-   @(def ext-fun-subst-function)"
+  (xdoc::topstring
+   (xdoc::p
+    "An instance @('thm') of a second-order theorem @('sothm')
+     is also a theorem,
+     provable using a @(':functional-instance') of @('sothm').
+     The pairs of the @(':functional-instance') are
+     not only the pairs of the instantiation
+     that creates @('thm') from @('sothm'),
+     but also all the pairs
+     whose first components are
+     second-order functions that @('sothm') depends on
+     and whose second components are the corresponding instances.")
+   (xdoc::p
+    "For example,
+     if @('sothm') is @('(p (sofun x))'),
+     @('sofun') is a second-order function,
+     @('p') is a first-order predicate,
+     and applying an instantiation @('I') to @('(p (sofun x))')
+     yields @('(p (fun x))'),
+     then @('thm') is proved using
+     @('(:functional-instance sothm (... (sofun fun) ...))'),
+     where the first @('...') are the pairs of @('I')
+     and the second @('...') are further pairs
+     of second-order functions and their instances,
+     e.g. if @('sofun') calls a second-order function @('sofun1'),
+     the pair @('(sofun1 fun1)') must be in the second @('...'),
+     where @('fun1') is the instance of @('sofun1') corresponding to @('I').
+     All these pairs are needed to properly instantiate
+     the constraints that arise from the @(':functional-instance'),
+     which involve the second-order functions that @('sothm') depends on,
+     directly or indirectly.")
+   (xdoc::p
+    "The following code extends a function substitution
+     (initially an instantiation)
+     to contain all those extra pairs.
+     The starting point is a term;
+     the bodies of second-order functions referenced in the term
+     are recursively processed.
+     The table of instances of second-order functions is searched,
+     similarly to @(tsee fun-subst-function).")
+   (xdoc::@def "ext-fun-subst-term")
+   (xdoc::@def "ext-fun-subst-terms")
+   (xdoc::@def "ext-fun-subst-function"))
 
   (define ext-fun-subst-term
     ((term pseudo-termp) (fsbs fun-substp) (wrld plist-worldp))
@@ -1182,25 +1154,24 @@
   :mode :program
   :short "Create a list of doublets for functional instantiation."
   :long
-  "<p>
-   From a function substitution obtained by extending an instantiation
-   via @(tsee ext-fun-subst-term/terms/function),
-   the list of pairs to supply to @(':functional-instance') is obtained.
-   Each dotted pair is turned into a doublet
-   (a different representation of the pair).
-   </p>
-   <p>
-   In addition, when a dotted pair is encountered
-   whose @(tsee car) is the name of a quantifier second-order function,
-   an extra pair for instantiating the associated witness is inserted.
-   The witnesses of quantifier second-order functions
-   must also be part of the @(':functional-instance'),
-   because they are referenced by the quantifier second-order functions.
-   However, these witnesses are not recorded as second-order functions
-   in the table of second-order functions,
-   and thus the code of @(tsee ext-fun-subst-term/terms/function)
-   does not catch these witnesses.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "From a function substitution obtained by extending an instantiation
+     via @(tsee ext-fun-subst-term/terms/function),
+     the list of pairs to supply to @(':functional-instance') is obtained.
+     Each dotted pair is turned into a doublet
+     (a different representation of the pair).")
+   (xdoc::p
+    "In addition, when a dotted pair is encountered
+     whose @(tsee car) is the name of a quantifier second-order function,
+     an extra pair for instantiating the associated witness is inserted.
+     The witnesses of quantifier second-order functions
+     must also be part of the @(':functional-instance'),
+     because they are referenced by the quantifier second-order functions.
+     However, these witnesses are not recorded as second-order functions
+     in the table of second-order functions,
+     and thus the code of @(tsee ext-fun-subst-term/terms/function)
+     does not catch these witnesses."))
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
@@ -1220,89 +1191,79 @@
   :mode :program
   :short "Create list of facts for functional instantiation."
   :long
-  "<p>
-   When a @(':functional-instance') is used in a proof,
-   proof subgoals are created to ensure that the replacing functions
-   satisfy all the constraints of the replaced functions.
-   In a @(':functional-instance') with a function substitution @('S')
-   as calculated by @(tsee ext-fun-subst-term/terms/function),
-   each function variable (which comes from the instantiation)
-   has no constraints and so no subgoals are generated for them.
-   Each second-order function @('sofun') in @('S')
-   has the following constraints:
-   </p>
-   <ul>
-     <li>
-     If @('sofun') is a plain second-order function,
-     the constraint is that
-     the application of @('S') to the definition of @('sofun') is a theorem,
-     which follows by the construction of the instance @('fun') of @('sofun'),
-     i.e. it follows from the definition of @('fun').
-     </li>
-     <li>
-     If @('sofun') is a choice second-order function,
-     the constraint is that
-     the application of @('S') to the choice axiom of @('sofun') is a theorem,
-     which follows by the construction of the instance @('fun') of @('sofun'),
-     i.e. it follows from the choice axiom of @('fun').
-     </li>
-     <li>
-     If @('sofun') is a quantifier second-order function,
-     the constraints are that
-     (1) the application of @('S')
-     to the rewrite rule generated by the @(tsee defun-sk) of @('sofun'),
-     and (2) the application of @('S') to the definition of @('sofun')
-     (or to the defining theorem of @('sofun')
-     if @('sofun') was introduced with @(':constrain t')),
-     are both theorems,
-     which both follow by the construction
-     of the instance @('fun') of @('sofun'),
-     i.e. they follow from
-     (1) the rewrite rule generated by the @(tsee defun-sk) of @('fun')
-     and (2) the definition of @('fun')
-     (or the defining theorem of @('fun')
-     if @('fun') was introduced with @(':constrain nil')).
-     </li>
-   </ul>
-   <p>
-   The list of facts needed to prove these constraints is determined
-   by the function substitution @('S').
-   For each pair @('(fun1 . fun2)') of the function substitution:
-   </p>
-   <ul>
-     <li>
-     If @('fun1') is a plain second-order function,
-     the fact used in the proof is the definition of @('fun2'),
-     whose name is the name of @('fun2').
-     (Note that by construction, since @('fun2') is an instance of @('fun1'),
-     @('fun2') is introduced by a @(tsee defun).)
-     </li>
-     <li>
-     If @('fun1') is a choice second-order function,
-     the fact used in the proof is the @(tsee defchoose) axiom of @('fun2'),
-     whose name is the name of @('fun2').
-     (Note that by construction, since @('fun2') is an instance of @('fun1'),
-     @('fun2') is introduced by a @(tsee defchoose).)
-     </li>
-     <li>
-     If @('fun1') is a quantifier second-order function,
-     the facts used in the proof are
-     (1) the @(tsee defun-sk) rewrite rule of @('fun2')
-     and (2)
-     either (i) the definition of @('fun2')
-     (if @('fun2') was introduced with @(':constrain nil')),
-     whose name is the name of @('fun2'),
-     or (ii) the defining theorem of @('fun2')
-     (if @('fun2') was introduced with @(':constrain t')),
-     whose name is @('fun2') followed by @('-definition').
-     (Note that by construction, since @('fun2') is an instance of @('fun1'),
-     @('fun2') is introduced by a @(tsee defun-sk).)
-     </li>
-     <li>
-     Otherwise, @('fun1') is a function variable, which has no constraints,
-     so no fact is used in the proof.
-     </li>
-   </ul>"
+  (xdoc::topstring
+   (xdoc::p
+    "When a @(':functional-instance') is used in a proof,
+     proof subgoals are created to ensure that the replacing functions
+     satisfy all the constraints of the replaced functions.
+     In a @(':functional-instance') with a function substitution @('S')
+     as calculated by @(tsee ext-fun-subst-term/terms/function),
+     each function variable (which comes from the instantiation)
+     has no constraints and so no subgoals are generated for them.
+     Each second-order function @('sofun') in @('S')
+     has the following constraints:")
+   (xdoc::ul
+    (xdoc::li
+     "If @('sofun') is a plain second-order function,
+      the constraint is that
+      the application of @('S') to the definition of @('sofun') is a theorem,
+      which follows by the construction of the instance @('fun') of @('sofun'),
+      i.e. it follows from the definition of @('fun').")
+    (xdoc::li
+     "If @('sofun') is a choice second-order function,
+      the constraint is that
+      the application of @('S') to the choice axiom of @('sofun') is a theorem,
+      which follows by the construction of the instance @('fun') of @('sofun'),
+      i.e. it follows from the choice axiom of @('fun').")
+    (xdoc::li
+     "If @('sofun') is a quantifier second-order function,
+      the constraints are that
+      (1) the application of @('S')
+      to the rewrite rule generated by the @(tsee defun-sk) of @('sofun'),
+      and (2) the application of @('S') to the definition of @('sofun')
+      (or to the defining theorem of @('sofun')
+      if @('sofun') was introduced with @(':constrain t')),
+      are both theorems,
+      which both follow by the construction
+      of the instance @('fun') of @('sofun'),
+      i.e. they follow from
+      (1) the rewrite rule generated by the @(tsee defun-sk) of @('fun')
+      and (2) the definition of @('fun')
+      (or the defining theorem of @('fun')
+      if @('fun') was introduced with @(':constrain nil'))."))
+   (xdoc::p
+    "The list of facts needed to prove these constraints is determined
+     by the function substitution @('S').
+     For each pair @('(fun1 . fun2)') of the function substitution:")
+   (xdoc::ul
+    (xdoc::li
+     "If @('fun1') is a plain second-order function,
+      the fact used in the proof is the definition of @('fun2'),
+      whose name is the name of @('fun2').
+      (Note that by construction, since @('fun2') is an instance of @('fun1'),
+      @('fun2') is introduced by a @(tsee defun).)")
+    (xdoc::li
+     "If @('fun1') is a choice second-order function,
+      the fact used in the proof is the @(tsee defchoose) axiom of @('fun2'),
+      whose name is the name of @('fun2').
+      (Note that by construction, since @('fun2') is an instance of @('fun1'),
+      @('fun2') is introduced by a @(tsee defchoose).)")
+    (xdoc::li
+     "If @('fun1') is a quantifier second-order function,
+      the facts used in the proof are
+      (1) the @(tsee defun-sk) rewrite rule of @('fun2')
+      and (2)
+      either (i) the definition of @('fun2')
+      (if @('fun2') was introduced with @(':constrain nil')),
+      whose name is the name of @('fun2'),
+      or (ii) the defining theorem of @('fun2')
+      (if @('fun2') was introduced with @(':constrain t')),
+      whose name is @('fun2') followed by @('-definition').
+      (Note that by construction, since @('fun2') is an instance of @('fun1'),
+      @('fun2') is introduced by a @(tsee defun-sk).)")
+    (xdoc::li
+     "Otherwise, @('fun1') is a function variable, which has no constraints,
+      so no fact is used in the proof.")))
   (if (endp fsbs)
       nil
     (let* ((pair (car fsbs))
@@ -1326,21 +1287,21 @@
   :short "Proof builder instructions to prove
           instances of second-order theorems."
   :long
-  "<p>
-   Instances of second-order theorems are proved using the ACL2 proof builder.
-   Each such instance is proved by
-   first using the @(':functional-instance')
-   determined by @(tsee sothm-inst-pairs),
-   then using the facts computed by @(tsee sothm-inst-facts) on the subgoals.
-   Each sugoal only needs a subset of those facts,
-   but for simplicity all the facts are used for each subgoal,
-   using the proof builder
-   <see topic='@(url acl2-pc::repeat)'>@(':repeat')</see> command.
-   Since sometimes the facts are not quite identical to the subgoals,
-   the proof builder
-   <see topic='@(url acl2-pc::prove)'>@(':prove')</see> command
-   is used to iron out any such differences.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Instances of second-order theorems are proved using the ACL2 proof builder.
+     Each such instance is proved by
+     first using the @(':functional-instance')
+     determined by @(tsee sothm-inst-pairs),
+     then using the facts computed by @(tsee sothm-inst-facts) on the subgoals.
+     Each sugoal only needs a subset of those facts,
+     but for simplicity all the facts are used for each subgoal,
+     using the proof builder
+     <see topic='@(url acl2-pc::repeat)'>@(':repeat')</see> command.
+     Since sometimes the facts are not quite identical to the subgoals,
+     the proof builder
+     <see topic='@(url acl2-pc::prove)'>@(':prove')</see> command
+     is used to iron out any such differences."))
   `(:instructions
     ((:use (:functional-instance ,sothm ,@(sothm-inst-pairs fsbs wrld)))
      (:repeat (:then (:use ,@(sothm-inst-facts fsbs wrld)) :prove)))))
@@ -1350,13 +1311,12 @@
   :mode :program
   :short "Recognize designations of instances of second-order theorems."
   :long
-  "<p>
-   A designation of an instance of a second-order theorem has the form
-   @('(sothm (f1 . g1) ... (fM . gM))'),
-   where @('sothm') is a second-order theorem
-   and @('((f1 . g1) ... (fM . gM))') is an instantiation.
-   These designations are used in @(tsee defthm-inst).
-   </p>"
+  (xdoc::topstring-p
+   "A designation of an instance of a second-order theorem has the form
+    @('(sothm (f1 . g1) ... (fM . gM))'),
+    where @('sothm') is a second-order theorem
+    and @('((f1 . g1) ... (fM . gM))') is an instantiation.
+    These designations are used in @(tsee defthm-inst).")
   (and (true-listp sothm-inst)
        (>= (len sothm-inst) 2)
        (sothmp (car sothm-inst) wrld)
@@ -1376,10 +1336,9 @@
   :short "Validate some of the inputs to @(tsee defthm-inst)
           and generate the event form to submit."
   :long
-  "<p>
-   We directly check all the inputs except for the @(':rule-classes') option,
-   relying on @(tsee defthm) to check it.
-   </p>"
+  (xdoc::topstring-p
+   "We directly check all the inputs except for the @(':rule-classes') option,
+    relying on @(tsee defthm) to check it.")
   (b* ((wrld (w state))
        ((unless (symbolp thm))
         (er-soft+ ctx t nil
@@ -1488,13 +1447,12 @@
   :verify-guards nil
   :short "Recognize designations of instances of second-order functions."
   :long
-  "<p>
-   A designation of an instance of a second-order function has the form
-   @('(sofun (f1 . g1) ... (fM . gM))'),
-   where @('sofun') is a second-order function
-   and @('((f1 . g1) ... (fM . gM))') is an instantiation.
-   These designations are used in @(tsee defun-inst).
-   </p>"
+  (xdoc::topstring-p
+   "A designation of an instance of a second-order function has the form
+    @('(sofun (f1 . g1) ... (fM . gM))'),
+    where @('sofun') is a second-order function
+    and @('((f1 . g1) ... (fM . gM))') is an instantiation.
+    These designations are used in @(tsee defun-inst).")
   (and (true-listp sofun-inst)
        (>= (len sofun-inst) 2)
        (sofunp (car sofun-inst) wrld)
@@ -1519,26 +1477,22 @@
   :short "Generate a list of events to submit,
           when instantiating a plain second-order function."
   :long
-  "<p>
-   Also return the @(tsee defun2) or @(tsee defun) event form,
-   without the termination hints.
-   This is printed when @(':print') is @(':result').
-   </p>
-   <p>
-   Also return the function variables that the new function depends on.
-   </p>
-   <p>
-   Only the @(':verify-guards') and @(':print') options may be present.
-   </p>
-   <p>
-   We add @('fun') to the table of second-order functions
-   iff it is second-order.
-   </p>
-   <p>
-   If @('sofun') (and consequently @('fun')) is recursive,
-   we extend the instantiation with @('(sofun . fun)'),
-   to ensure that the recursive calls are properly transformed.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Also return the @(tsee defun2) or @(tsee defun) event form,
+     without the termination hints.
+     This is printed when @(':print') is @(':result').")
+   (xdoc::p
+    "Also return the function variables that the new function depends on.")
+   (xdoc::p
+    "Only the @(':verify-guards') and @(':print') options may be present.")
+   (xdoc::p
+    "We add @('fun') to the table of second-order functions
+     iff it is second-order.")
+   (xdoc::p
+    "If @('sofun') (and consequently @('fun')) is recursive,
+     we extend the instantiation with @('(sofun . fun)'),
+     to ensure that the recursive calls are properly transformed."))
   (b* ((wrld (w state))
        ((unless (subsetp (evens options)
                          '(:verify-guards :print)))
@@ -1618,20 +1572,17 @@
   :short "Generate a list of events to submit,
           when instantiating a choice second-order function."
   :long
-  "<p>
-   Also return the @(tsee defchoose2) or @(tsee defchoose) event form.
-   This is printed when @(':print') is @(':result').
-   </p>
-   <p>
-   Also return the function variables that the new function depends on.
-   </p>
-   <p>
-   Only the @(':print') option may be present.
-   </p>
-   <p>
-   We add @('fun') to the table of second-order functions
-   iff it is second-order.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Also return the @(tsee defchoose2) or @(tsee defchoose) event form.
+     This is printed when @(':print') is @(':result').")
+   (xdoc::p
+    "Also return the function variables that the new function depends on.")
+   (xdoc::p
+    "Only the @(':print') option may be present.")
+   (xdoc::p
+    "We add @('fun') to the table of second-order functions
+     iff it is second-order."))
   (b* ((wrld (w state))
        ((unless (subsetp (evens options)
                          '(:print)))
@@ -1683,26 +1634,23 @@
   :short "Generate a list of events to submit,
           when instantiating a quantifier second-order function."
   :long
-  "<p>
-   Also return the @(tsee defun-sk2) or @(tsee defun-sk) event form.
-   This is printed when @(':print') is @(':result').
-   </p>
-   <p>
-   Also return the function variables that the new function depends on.
-   </p>
-   <p>
-   Only the
-   @(':skolem-name'),
-   @(':thm-name'),
-   @(':rewrite'),
-   @(':constrain'), and
-   @(':print')
-   options may be present.
-   </p>
-   <p>
-   We add @('fun') to the table of second-order functions
-   iff it is second-order.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Also return the @(tsee defun-sk2) or @(tsee defun-sk) event form.
+     This is printed when @(':print') is @(':result').")
+   (xdoc::p
+    "Also return the function variables that the new function depends on.")
+   (xdoc::p
+    "Only the
+     @(':skolem-name'),
+     @(':thm-name'),
+     @(':rewrite'),
+     @(':constrain'), and
+     @(':print')
+     options may be present.")
+   (xdoc::p
+    "We add @('fun') to the table of second-order functions
+     iff it is second-order."))
   (b* ((wrld (w state))
        ((unless (subsetp (evens options)
                          '(:skolem-name :thm-name :rewrite :constrain :print)))
@@ -1801,24 +1749,23 @@
   :short "Validate some of the inputs to @(tsee defun-inst)
           and generate the event form to submit."
   :long
-  "<p>
-   We directly check the name and instance designation,
-   we directly check the correct presence of keyed options
-   (we do that in
-   @(tsee defun-inst-plain-events),
-   @(tsee defun-inst-choice-events), and
-   @(tsee defun-inst-quant-events)), and
-   we directly check the correct value of the @(':print') option (if present),
-   but rely on @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
-   to check the values of the other keyed options.
-   </p>
-   <p>
-   Prior to introducing @('fun'),
-   we generate local events
-   to avoid errors due to ignored or irrelevant formals in @('fun')
-   (which may happen if @('sofun') has ignored or irrelevant formals).
-   We add @('fun') to the table of instances of second-order functions.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "We directly check the name and instance designation,
+     we directly check the correct presence of keyed options
+     (we do that in
+     @(tsee defun-inst-plain-events),
+     @(tsee defun-inst-choice-events), and
+     @(tsee defun-inst-quant-events)), and
+     we directly check the correct value of the @(':print') option (if present),
+     but rely on @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
+     to check the values of the other keyed options.")
+   (xdoc::p
+    "Prior to introducing @('fun'),
+     we generate local events
+     to avoid errors due to ignored or irrelevant formals in @('fun')
+     (which may happen if @('sofun') has ignored or irrelevant formals).
+     We add @('fun') to the table of instances of second-order functions."))
   (b* ((wrld (w state))
        ((unless (symbolp fun))
         (er-soft+ ctx t nil

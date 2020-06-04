@@ -17,3 +17,8 @@
       *nil*
     `(cons ,(car items)
            ,(make-cons-nest (cdr items)))))
+
+(defthm pseudo-termp-of-make-cons-nest
+  (implies (pseudo-term-listp items)
+           (pseudo-termp (make-cons-nest items)))
+  :hints (("Goal" :in-theory (enable make-cons-nest))))

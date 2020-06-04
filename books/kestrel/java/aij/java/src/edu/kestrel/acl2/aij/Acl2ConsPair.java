@@ -56,6 +56,19 @@ public final class Acl2ConsPair extends Acl2Value {
     }
 
     /**
+     * Checks if this {@code cons} pair is a {@code cons} pair,
+     * which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code consp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean conspBoolean() {
+        return true;
+    }
+
+    /**
      * Returns the first component of this {@code cons} pair.
      * This is consistent with the {@code car} ACL2 function.
      *

@@ -42,6 +42,18 @@ public abstract class Acl2Rational extends Acl2Number {
     }
 
     /**
+     * Checks if this rational is a rational, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code rationalp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean rationalpBoolean() {
+        return true;
+    }
+
+    /**
      * Negates (arithmetically) this rational,
      * consistently with the {@code unary--} ACL2 function.
      *

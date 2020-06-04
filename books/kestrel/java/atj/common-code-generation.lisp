@@ -317,12 +317,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-char ((char characterp))
+(define atj-gen-char ((char characterp) (deep$ symbolp) (guards$ symbolp))
   :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 character."
-  (jexpr-smethod *aij-type-char*
-                 "make"
-                 (list (jexpr-literal-character char))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding with guards,
+     we translate ACL2 characters to Java character literals.
+     This is because, in the shallow embedding with guards,
+     ACL2 characters are represented as Java characters.")
+   (xdoc::p
+    "In the deep embedding, or in the shallow embedding without guards,
+     we generate an expression of type @('Acl2Character'),
+     by calling the factory method on the Java character literal."))
+  (if (and (not deep$)
+           guards$)
+      (jexpr-literal-character char)
+    (jexpr-smethod *aij-type-char*
+                   "make"
+                   (list (jexpr-literal-character char)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -500,7 +514,7 @@
                  (new-jvar-value-index posp :hyp (posp jvar-value-index)))
     :parents nil
     (cond ((characterp value) (mv nil
-                                  (atj-gen-char value)
+                                  (atj-gen-char value deep$ guards$)
                                   jvar-value-index))
           ((stringp value) (mv nil
                                (atj-gen-string value)
@@ -644,8 +658,9 @@
      in this sense it is ``flat''.")
    (xdoc::p
     "We set the @('deep$') and @('guards$') flags to @('t') and @('nil')
-     when we call @(tsee atj-gen-symbol),
-     so that we generate @('Acl2Symbol')s for the ACL2 booleans.
+     when we call @(tsee atj-gen-symbol) and @(tsee atj-gen-char),
+     so that we generate @('Acl2Symbol')s for the ACL2 booleans
+     and @('Acl2Character')s for the ACL2 characters.
      This is because @(tsee atj-gen-value-flat) is only called
      on @(tsee cons)es at the top level;
      see the documentation of @(tsee atj-gen-value).")
@@ -657,7 +672,7 @@
   (define atj-gen-value-flat (value)
     :returns (expr jexprp)
     :parents nil
-    (cond ((characterp value) (atj-gen-char value))
+    (cond ((characterp value) (atj-gen-char value t nil))
           ((stringp value) (atj-gen-string value))
           ((symbolp value) (atj-gen-symbol value t nil))
           ((integerp value) (atj-gen-integer value))

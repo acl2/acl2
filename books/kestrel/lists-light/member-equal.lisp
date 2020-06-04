@@ -73,7 +73,12 @@
                     (member-equal a x)  )))
   :hints (("Goal" :in-theory (enable member-equal))))
 
-(defthm member-equal-of-true-list-fix
+(defthmd member-equal-of-true-list-fix
+  (equal (member-equal a (true-list-fix x))
+         (true-list-fix (member-equal a (true-list-fix x))))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-true-list-fix-iff
   (iff (member-equal x (true-list-fix y))
        (member-equal x y))
   :hints (("Goal" :in-theory (enable member-equal true-list-fix))))

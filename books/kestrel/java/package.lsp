@@ -15,7 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "JAVA" (append (set-difference-eq *std-pkg-symbols*
-                                          '(pointers
+                                          '(package-name
+                                            pointers
                                             values))
                        '(*nil*
                          *pkg-witness-name*
@@ -117,6 +118,7 @@
                          patbind-fun
                          patbind-run-unless
                          patbind-run-when
+                         pos
                          pos-listp
                          primitivep
                          printable-charlist-p

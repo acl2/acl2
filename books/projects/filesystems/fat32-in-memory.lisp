@@ -6,9 +6,7 @@
 ; filesystem.
 
 (include-book "fat32")
-(include-book "std/lists/resize-list" :dir :system)
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
-(local (include-book "std/lists/take" :dir :system))
 
 (make-event
  `(defstobj fat32-in-memory

@@ -349,4 +349,56 @@ class Acl2IntegerTest {
                 (Acl2Rational.make(-1000000, 999)) < 0);
     }
 
+    @Test
+    void compareToComplexRationals() {
+        // compare lexicographically -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(1, 100)) < 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(-1, 100)) > 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(0, 100)) < 0);
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Number.make(0, -100)) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(5, 100)) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(0, 100)) > 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(1, 100)) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Number.make(1, -100)) > 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13580, 0)) < 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13578, 0)) > 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13579, 1000)) < 0);
+        assertTrue(Acl2Integer.make(13579).
+                compareTo(Acl2Number.make(13579, -15)) > 0);
+    }
+
+    @Test
+    void compareToCharacters() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Character.make('a')) < 0);
+        assertTrue(Acl2Integer.make(1).compareTo(Acl2Character.make('1')) < 0);
+        assertTrue(Acl2Integer.make(12345).
+                compareTo(Acl2Character.make('#')) < 0);
+    }
+
+    @Test
+    void compareToStrings() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2String.ACL2) < 0);
+        assertTrue(Acl2Integer.make(10).compareTo(Acl2String.make("10")) < 0);
+        assertTrue(Acl2Integer.make(-2).compareTo(Acl2String.make("abc")) < 0);
+    }
+
+    @Test
+    void compareToSymbols() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.compareTo(Acl2Symbol.T) < 0);
+        assertTrue(Acl2Integer.ONE.compareTo(Acl2Symbol.NIL) < 0);
+    }
+
+    @Test
+    void compareToConsPairs() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.
+                compareTo(Acl2ConsPair.make(Acl2String.EMPTY,
+                        Acl2Integer.ZERO)) < 0);
+        assertTrue(Acl2Integer.make(-800).
+                compareTo(Acl2ConsPair.make(Acl2Symbol.CAR,
+                        Acl2Rational.make(1, 3))) < 0);
+    }
+
 }

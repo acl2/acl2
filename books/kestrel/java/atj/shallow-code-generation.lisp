@@ -16,7 +16,7 @@
 (include-book "java-primitive-arrays")
 (include-book "shallow-quoted-constant-generation")
 (include-book "array-write-method-names")
-(include-book "types-for-natives")
+(include-book "types-for-built-ins")
 
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
@@ -644,41 +644,71 @@
      if the source type is a subtype of or the same type as the destination type
      (which can be checked via @(tsee atj-type-<=),
      we leave the expression unchanged,
-     unless @(':guards') is @('t'),
-     the source type is (':aboolean'),
-     and the destination type is not @(':aboolean'):
-     in this case,
+     unless @(':guards') is @('t') and
+     either (i) the source type is (':aboolean')
+     and the destination type is not @(':aboolean')
+     or (ii) the source type is @(':acharacter')
+     the the destination type is not @(':acharacter'):
+     in case (i),
      the destination type must be @(':asymbol') or @(':avalue'),
      and the expression must have Java type @('boolean'),
-     so we convert it to @('Acl2Symbol') via a conditional expression.
+     so we convert it to @('Acl2Symbol') via a conditional expression;
+     in case (ii),
+     the destination type must be @(':avalue'),
+     and the expression must have Java type @('char'),
+     so we convert it to @('Acl2Character') by calling the factory method.
      If the source type is not a subtype of the destination type,
      we insert a cast to the destination type
      (which is expected to always succeed
      under the assumption of guard verification),
-     unless @(':guards') is @('t')
-     and the destination type is @(':aboolean'):
-     in this case,
-     the source type must @(':asymbol') or @(':avalue'),
-     and in fact the expression must return a @('Acl2Symbol'),
-     which we convert to a Java boolean by comparing it with @('nil')."))
+     unless @(':guards') is @('t') and
+     either (i) the destination type is @(':aboolean')
+     or (ii) the destination type is @(':acharacter'):
+     in case (i),
+     the source type must be @(':asymbol') or @(':avalue'),
+     but in fact the expression must return an @('Acl2Symbol'),
+     which we convert to a Java boolean by comparing it with @('nil');
+     in case (ii),
+     the source type must be @(':avalue'),
+     but in fact the expression must return an @('Acl2Character'),
+     which we convert to a Java character by
+     casting it to @('Acl2Character') and calling the getter method."))
   (cond ((atj-type-equiv src-type dst-type) (jexpr-fix expr))
         ((and (atj-type-case src-type :acl2)
               (atj-type-case dst-type :acl2))
          (cond ((atj-type-<= src-type dst-type)
-                (if (and guards$
-                         (atj-atype-case (atj-type-acl2->get src-type)
-                                         :boolean)
-                         (not (atj-atype-case (atj-type-acl2->get dst-type)
-                                              :boolean)))
-                    (jexpr-cond expr
-                                (atj-gen-symbol t t nil)
-                                (atj-gen-symbol nil t nil))
+                (if guards$
+                    (cond
+                     ((and (atj-atype-case (atj-type-acl2->get src-type)
+                                           :boolean)
+                           (not (atj-atype-case (atj-type-acl2->get dst-type)
+                                                :boolean)))
+                      (jexpr-cond expr
+                                  (atj-gen-symbol t t nil)
+                                  (atj-gen-symbol nil t nil)))
+                     ((and (atj-atype-case (atj-type-acl2->get src-type)
+                                          :character)
+                           (not (atj-atype-case (atj-type-acl2->get dst-type)
+                                                :character)))
+                      (jexpr-smethod *aij-type-char*
+                                     "make"
+                                     (list expr)))
+                     (t (jexpr-fix expr)))
                   (jexpr-fix expr)))
                ((atj-type-< dst-type src-type)
-                (if (and guards$
-                         (atj-atype-case (atj-type-acl2->get dst-type)
-                                         :boolean))
-                    (jexpr-binary (jbinop-ne) expr (atj-gen-symbol nil t nil))
+                (if guards$
+                    (cond
+                     ((atj-atype-case (atj-type-acl2->get dst-type)
+                                      :boolean)
+                      (jexpr-binary (jbinop-ne)
+                                    expr
+                                    (atj-gen-symbol nil t nil)))
+                     ((atj-atype-case (atj-type-acl2->get dst-type)
+                                      :character)
+                      (jexpr-imethod (jexpr-cast *aij-type-char* expr)
+                                     "getJavaChar"
+                                     nil))
+                     (t (jexpr-cast (atj-type-to-jitype dst-type) expr)))
                   (jexpr-cast (atj-type-to-jitype dst-type) expr)))
                (t (prog2$ (raise "Internal error: ~
                                   unexpected conversion from ~x0 to ~x1."
@@ -3236,16 +3266,18 @@
   (xdoc::topstring
    (xdoc::p
     "The choice depends, in some cases, by the @(':guards') input.
-     If @(':guards') is @('t'), ACL2 booleans are mapped to Java booleans,
-     and thus we pick the method names that end with @('Boolean').
-     i.e. the ones that return Java booleans.
+     If @(':guards') is @('t'),
+     ACL2 booleans are mapped to Java booleans
+     and ACL2 characters are mapped to Java characters,
+     and thus we pick the method names that end with @('Boolean') and @('Char'),
+     i.e. the ones that return Java booleans and Java characters.
      If @(':guards') is @('nil'),
-     we pick the method names that do not end with @('Boolean').")
+     we pick the method names that do not end with @('Boolean') and @('Char').")
    (xdoc::p
     "The correctness of the choice between the method names
      should be based not only on whether @(':guards') is @('t') or @('nil'),
      but also whether the corresponding functions (@(tsee characterp) etc.)
-     are recorded to have return type @(':aboolean')
+     are recorded to have return types @(':aboolean') and @(':acharacter')
      (via @(tsee atj-main-function-type) or not.
      By including, in this file, the file @('\"types-for-natives.lisp\"'),
      we ensure that the second condition is always true.
@@ -3263,7 +3295,7 @@
     (acl2-numberp (if guards$ "execAcl2NumberpBoolean" "execAcl2Numberp"))
     (consp (if guards$ "execConspBoolean" "execConsp"))
     (char-code "execCharCode")
-    (code-char "execCodeChar")
+    (code-char (if guards$ "execCodeCharChar" "execCodeChar"))
     (coerce "execCoerce")
     (intern-in-package-of-symbol "execInternInPackageOfSymbol")
     (symbol-package-name "execSymbolPackageName")

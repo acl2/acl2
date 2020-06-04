@@ -184,7 +184,8 @@
                   output-file$
                   output-file-test$
                   tests$
-                  verbose$)) (atj-process-inputs args ctx state))
+                  verbose$))
+        (atj-process-inputs args ctx state))
        ((er &) (atj-gen-everything deep$
                                    guards$
                                    java-package$

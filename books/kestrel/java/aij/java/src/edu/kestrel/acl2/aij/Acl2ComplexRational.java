@@ -61,6 +61,19 @@ final class Acl2ComplexRational extends Acl2Number {
     }
 
     /**
+     * Checks if this complex rational is a complex rational,
+     * which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code complex-rationalp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean complexRationalpBoolean() {
+        return true;
+    }
+
+    /**
      * Returns a complex rational with the given real and imaginary parts.
      *
      * @param realPart      The real part of the complex rational.

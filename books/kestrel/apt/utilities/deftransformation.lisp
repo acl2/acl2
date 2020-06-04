@@ -32,7 +32,7 @@
 (include-book "../../utilities/make-cons-nest")
 (include-book "transformation-table2")
 (include-book "generate-print-events")
-(include-book "kestrel/apt/utilities/print-specifiers" :dir :system)
+(include-book "print-specifiers")
 
 (defun add-prefix (str sym)
 

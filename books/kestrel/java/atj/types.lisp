@@ -1333,30 +1333,46 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @(':acl2') types except @(':aboolean') denote
+    "The @(':acl2') types except @(':aboolean') and @(':acharacter') denote
      the corresponding AIJ class types.
      The @(':aboolean') type denotes
      the Java primitive type @('boolean').
+     The @(':acharacter') type denotes
+     the Java primitive type @('char').
      The @(':jprim') types denote
      the corresponding Java primitive types.
      The @(':jprimarr') types denote
      the corresponding Java primitive array types.")
    (xdoc::p
-    "The mapping of @(':aboolean') to the Java @('boolean') type
-     means that we represent ACL2 booleans as Java booleans.
+    "The mapping of @(':aboolean') and @(':acharacter')
+     to the Java @('boolean') and @('char') types
+     means that we represent
+     ACL2 booleans as Java booleans and
+     ACL2 characters as Java characters.
      This only happens in the shallow embedding approach;
      the deep embedding approach does not use ATJ types.
-     Also, @(':aboolean') is used only if @(':guards') is @('t');
+     Also, @(':aboolean') and @(':acharacter') are used
+     only if @(':guards') is @('t');
      otherwise, only the type @(':avalue') is used.
-     In other words, we represent ACL2 booleans as Java booleans
-     only when @(':guards') is @('t')."))
+     In other words, we represent
+     ACL2 booleans as Java booleans and
+     ACL2 characters as Java characters
+     only when @(':guards') is @('t').
+     Even though Java @('char') values (which consist of 16 bits)
+     are not isomorphic to ACL2 characters (which consist of 8 bits),
+     when @(':guards') is @('t') the satisfaction of all guards is assumed;
+     thus, if external code calls the generated Java code
+     with values that satisfy the guards,
+     and in particular with @('char') values below 256,
+     the generate code should manipulate only @('char') values below 256,
+     which are isomorphic to Java characters."))
   (atj-type-case
    type
    :acl2 (atj-atype-case type.get
                          :integer *aij-type-int*
                          :rational *aij-type-rational*
                          :number *aij-type-number*
-                         :character *aij-type-char*
+                         :character (jtype-char)
                          :string *aij-type-string*
                          :symbol *aij-type-symbol*
                          :boolean (jtype-boolean)

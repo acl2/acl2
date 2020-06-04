@@ -106,3 +106,8 @@
   :extension size
   (fty::deffixequiv size
     :hints (("Goal" :in-theory (enable size)))))
+
+(defsection from-lists
+  :extension from-lists
+  (fty::deffixequiv from-lists
+    :hints (("Goal" :in-theory (enable from-lists)))))

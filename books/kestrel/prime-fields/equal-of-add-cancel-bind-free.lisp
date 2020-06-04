@@ -17,6 +17,7 @@
 (include-book "bind-free-common")
 (include-book "prime-fields-rules") ;needed just for some "add of neg" rules?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system)) ;;for integerp of mod
+(local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
 
 (defun negate-non-excluded-terms (terms p exclude-fns)
   (declare (xargs :guard (and (pseudo-term-listp terms)
@@ -60,16 +61,24 @@
            (x-addends (get-addends x p))
            (y-addends (get-addends y p))
            (common-addends (intersection-equal x-addends y-addends)))
-      (if (not common-addends)
-          nil ;; fail (nothing to cancel)
-        (let* ((exclude-fns '(if mod ifix add)) ;these indicate that things have not been simplified as we expect)
-               (negations-of-common-addends (negate-non-excluded-terms common-addends p exclude-fns)))
+      (let* ((exclude-fns '(if mod ifix add)) ;these indicate that things have not been simplified as we expect)
+             (negations-of-common-addends (negate-non-excluded-terms common-addends p exclude-fns)))
+        (if (not negations-of-common-addends)
+            nil ;; fail (nothing to cancel)
           (if (or (intersection-equal x-addends negations-of-common-addends)
                   (intersection-equal y-addends negations-of-common-addends))
               nil ;; fail (something is wrong)
             ;; TODO: Think about how best to associate this nest:
             (acons 'negs (make-add-nest negations-of-common-addends p)
                    (acons 'p p nil))))))))
+
+;; Just to check that the return type is right.
+(local
+ (defthm symbol-term-alistp-of-bind-negated-sum-of-common-terms
+   (implies (and (pseudo-termp x)
+                 (pseudo-termp y))
+            (acl2::symbol-term-alistp (bind-negated-sum-of-common-terms x y)))
+   :hints (("Goal" :in-theory (enable acl2::symbol-term-alistp)))))
 
 ;; TODO: Deal with constant multiples of terms...
 (defthm equal-of-add-cancel-bind-free
