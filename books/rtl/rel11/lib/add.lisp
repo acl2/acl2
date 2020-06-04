@@ -58,7 +58,14 @@
 		   (* 2 (logior (logand x y)
 				(logior (logand x z)
 					(logand y z)))))))
-  :rule-classes ())
+    :rule-classes ())
+
+(defthmd plus-logior-logand
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (+ x y)
+                  (- (* 2 (logior x y))
+                     (logxor x y)))))
 
 (defthmd lutz-lemma
    (implies (and (integerp x) (integerp y) (natp n))

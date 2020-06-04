@@ -219,6 +219,20 @@
                                (logand x z)
                                (logand y z))))))))))
 
+(defthmd plus-logior-logand
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (+ x y)
+                  (- (* 2 (logior x y))
+                     (logxor x y))))
+  :hints (("Goal"
+           :in-theory (enable lognot-def)
+           :use (logand-x-m1
+                 logior-logand-1
+                 (:instance logand-x-m1 (x y))
+                 (:instance logxor-x-m1 (x (logxor x y)))
+                 (:instance add-3 (z -1))))))
+
 (defruled lutz-lemma
   (implies (and (integerp x) (integerp y) (natp n))
            (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
@@ -867,7 +881,6 @@
                (equal (= (+ x y) (1- (expt 2 n)))
                       (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))))
       :enable (bvecp bits-mod)))))
-
 
 ;;;**********************************************************************
 ;;;                  Leading One Prediction
