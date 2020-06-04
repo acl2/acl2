@@ -1,0 +1,11 @@
+# Prevent automatic newline conversion to CRLF by
+# the default Git setup on Windows because
+# SBCL can't load such files when Return is embedded
+# in format directives. https://bugs.launchpad.net/sbcl/+bug/720517.
+# (some of our code includes newlins in format directives, like
+# the +default-cipher-list+ constant definition.
+#
+# And it general, I don't like any magic conversions. Better
+# to work with files as they are.
+
+* text=false
