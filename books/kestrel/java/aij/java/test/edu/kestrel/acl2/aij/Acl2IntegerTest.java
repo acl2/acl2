@@ -391,4 +391,14 @@ class Acl2IntegerTest {
         assertTrue(Acl2Integer.ONE.compareTo(Acl2Symbol.NIL) < 0);
     }
 
+    @Test
+    void compareToConsPairs() { // integers come before -- see ACL2's alphorder
+        assertTrue(Acl2Integer.ZERO.
+                compareTo(Acl2ConsPair.make(Acl2String.EMPTY,
+                        Acl2Integer.ZERO)) < 0);
+        assertTrue(Acl2Integer.make(-800).
+                compareTo(Acl2ConsPair.make(Acl2Symbol.CAR,
+                        Acl2Rational.make(1, 3))) < 0);
+    }
+
 }
