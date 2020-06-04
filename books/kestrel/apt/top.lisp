@@ -36,8 +36,6 @@
 (include-book "tailrec")
 (include-book "tailrec-doc")
 
-
-
 ; (depends-on "images/apt-logo.png")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,6 +119,14 @@
                             isodata
                             parteval
                             restrict
+                            simplify
+                            simplify-defun
+                            simplify-defun+
+                            simplify-defun-programmatic
+                            simplify-defun-sk
+                            simplify-defun-sk-programmatic
+                            simplify-term
+                            simplify-term-programmatic
                             tailrec
                             utilities))
 
