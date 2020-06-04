@@ -317,7 +317,7 @@
    "This is a private static final field with an initializer,
     which constructs the character value.")
   (b* ((name (atj-gen-shallow-char-field-name char))
-       (init (atj-gen-char char))
+       (init (atj-gen-char char t nil))
        (type *aij-type-char*))
     (make-jfield :access (jaccess-private)
                  :static? t
@@ -520,13 +520,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-char ((char characterp))
+(define atj-gen-shallow-char ((char characterp) (guards$ booleanp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 quoted character."
   :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted character.")
-  (jexpr-name (atj-gen-shallow-char-field-name char)))
+  (xdoc::topstring
+   (xdoc::p
+    "If guards are assumed,
+     we generate the corresponding Java character literal.")
+   (xdoc::p
+    "Otherwise,
+     we generate a reference to the field for the quoted character."))
+  (if guards$
+      (jexpr-literal-character char)
+    (jexpr-name (atj-gen-shallow-char-field-name char))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,7 +600,7 @@
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 value."
   (cond ((acl2-numberp value) (atj-gen-shallow-number value))
-        ((characterp value) (atj-gen-shallow-char value))
+        ((characterp value) (atj-gen-shallow-char value guards$))
         ((stringp value) (atj-gen-shallow-string value))
         ((symbolp value) (atj-gen-shallow-symbol value
                                                  pkg-class-names
