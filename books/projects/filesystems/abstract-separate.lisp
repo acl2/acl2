@@ -419,6 +419,11 @@
          (append (abs-addrs x) (abs-addrs y)))
   :hints (("goal" :in-theory (enable abs-addrs))))
 
+(defthm abs-addrs-when-m1-file-contents-p
+  (implies (m1-file-contents-p fs)
+           (not (consp (abs-addrs fs))))
+  :hints (("goal" :in-theory (enable abs-addrs m1-file-contents-p))))
+
 ;; top-complete is known to match up with alistp
 (defun abs-complete (x)
   (declare
@@ -2944,6 +2949,11 @@
          (true-list-fix (frame-with-root root frame)))
   :hints (("goal" :in-theory (enable frame-with-root))))
 
+(defthm strip-cars-of-frame-with-root
+  (equal (strip-cars (frame-with-root root frame))
+         (cons 0 (strip-cars frame)))
+  :hints (("goal" :in-theory (enable frame-with-root))))
+
 (defund frame->root (frame)
   (declare (xargs :guard (and (frame-p frame) (consp (assoc-equal 0 frame)))))
   (frame-val->dir (cdr (assoc-equal 0 frame))))
@@ -3006,7 +3016,7 @@
          (frame-with-root root frame))
   :hints (("goal" :in-theory (enable frame-with-root))))
 
-(defthmd no-duplicatesp-of-strip-cars-of-frame->frame
+(defthm no-duplicatesp-of-strip-cars-of-frame->frame
   (implies
    (no-duplicatesp-equal (strip-cars frame))
    (no-duplicatesp-equal (strip-cars (frame->frame frame))))
@@ -13461,8 +13471,15 @@
     :induct (seq-this frame)
     :expand (collapse-iter frame 1))))
 
+;; This theorem needs to be set aside because there's no obvious path towards
+;; proving
+;; (VALID-SEQP (COLLAPSE-THIS FRAME X) (SEQ-THIS (COLLAPSE-THIS FRAME X)))
+;; which is one of the subgoals.
+
 ;; (verify
-;;  (implies (and (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+;;  (implies (and (frame-p (frame->frame frame))
+;;                (abs-separate (frame->frame frame))
+;;                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
 ;;                (not (zp n))
 ;;                (<= n (len (seq-this frame)))
 ;;                (subsetp-equal (take (+ -1 n) (seq-this frame))
@@ -13470,7 +13487,9 @@
 ;;                (mv-nth 1 (collapse frame))
 ;;                (<= 0 (len (seq-this frame)))
 ;;                (not (equal (nth (+ -1 n) (seq-this frame))
-;;                            x)))
+;;                            x))
+;;                (abs-complete
+;;                 (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
 ;;           (member-equal (nth (+ -1 n) (seq-this frame))
 ;;                         (seq-this (collapse-this frame x))))
 ;;  :instructions

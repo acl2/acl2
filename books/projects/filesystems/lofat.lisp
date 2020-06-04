@@ -14928,13 +14928,6 @@ Some (rather awful) testing forms are
 ;;                                      clear-clusterchain-correctness-3
 ;;                                      place-contents-correctness-1))))
 
-;; Kinda general
-(defthm lofat-place-file-correctness-1-lemma-2
-  (implies (not (zp (mv-nth 1 (hifat-place-file fs pathname file))))
-           (equal (mv-nth 0 (hifat-place-file fs pathname file))
-                  (hifat-file-alist-fix fs)))
-  :hints (("goal" :in-theory (enable hifat-place-file))))
-
 (defthm
   hifat-cluster-count-of-put-assoc
   (implies

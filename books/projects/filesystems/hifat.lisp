@@ -403,44 +403,39 @@
   :hints (("goal" :in-theory (enable subsetp-equal prefixp)
            :induct (prefixp x y))))
 
-(encapsulate
-  ()
+(defthmd
+  painful-debugging-lemma-14
+  (implies (not (zp cluster-size))
+           (and
+            (equal (ceiling cluster-size cluster-size) 1)
+            (equal (ceiling 0 cluster-size) 0))))
 
-  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
+(defthm painful-debugging-lemma-15
+  (implies (and (not (zp j)) (integerp i) (> i j))
+           (> (floor i j) 0))
+  :rule-classes :linear)
 
-  (defthmd
-    painful-debugging-lemma-14
-    (implies (not (zp cluster-size))
-             (and
-              (equal (ceiling cluster-size cluster-size) 1)
-              (equal (ceiling 0 cluster-size) 0))))
+(defthmd painful-debugging-lemma-16
+  (implies (and (<= i1 i2)
+                (integerp i1)
+                (integerp i2)
+                (not (zp j)))
+           (and
+            (<= (floor i1 j) (floor i2 j))
+            (<= (ceiling i1 j) (ceiling i2 j))))
+  :rule-classes :linear)
 
-  (defthm painful-debugging-lemma-15
-    (implies (and (not (zp j)) (integerp i) (> i j))
-             (> (floor i j) 0))
-    :rule-classes :linear)
+(defthm painful-debugging-lemma-17 (equal (mod (* y (len x)) y) 0))
 
-  (defthmd painful-debugging-lemma-16
-    (implies (and (<= i1 i2)
-                  (integerp i1)
-                  (integerp i2)
-                  (not (zp j)))
-             (and
-              (<= (floor i1 j) (floor i2 j))
-              (<= (ceiling i1 j) (ceiling i2 j))))
-    :rule-classes :linear)
+(defthm painful-debugging-lemma-19
+  (implies (and (not (zp j)) (integerp i) (>= i 0))
+           (>= (ceiling i j) 0))
+  :rule-classes :linear)
 
-  (defthm painful-debugging-lemma-17 (equal (mod (* y (len x)) y) 0))
-
-  (defthm painful-debugging-lemma-19
-    (implies (and (not (zp j)) (integerp i) (>= i 0))
-             (>= (ceiling i j) 0))
-    :rule-classes :linear)
-
-  (defthm painful-debugging-lemma-20
-    (implies (and (not (zp j)) (integerp i) (> i 0))
-             (> (ceiling i j) 0))
-    :rule-classes :linear))
+(defthm painful-debugging-lemma-20
+  (implies (and (not (zp j)) (integerp i) (> i 0))
+           (> (ceiling i j) 0))
+  :rule-classes :linear)
 
 (defund dir-ent-p (x)
   (declare (xargs :guard t))
@@ -1936,6 +1931,23 @@
           (:instance hifat-place-file-correctness-2
                      (pathname pathname-equiv))))))
 
+;; This can't be made local.
+(defthm
+  hifat-place-file-correctness-lemma-2
+  (implies (and (m1-file-alist-p fs)
+                (hifat-no-dups-p fs))
+           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p m1-file->contents
+                                     m1-file-contents-fix m1-file-contents-p
+                                     m1-directory-file-p))))
+
+(defthm
+  hifat-place-file-correctness-3
+  (implies (not (zp (mv-nth 1 (hifat-place-file fs pathname file))))
+           (equal (mv-nth 0 (hifat-place-file fs pathname file))
+                  (hifat-file-alist-fix fs)))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
+
 (defcong m1-file-equiv equal
   (hifat-place-file fs pathname file) 3
   :hints (("goal" :in-theory (enable hifat-place-file))))
@@ -2065,14 +2077,11 @@
 (defthm fat32-filename-list-prefixp-of-self
   (fat32-filename-list-prefixp x x))
 
-;; This can't be made local.
-(defthm
-  m1-read-after-write-lemma-2
-  (implies (and (m1-file-alist-p fs)
-                (hifat-no-dups-p fs)
-                (m1-directory-file-p (cdr (assoc-equal key fs))))
-           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+(defthmd fat32-filename-list-prefixp-alt
+  (equal
+   (fat32-filename-list-prefixp x y)
+   (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)))
+  :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp prefixp))))
 
 (encapsulate
   ()
@@ -2335,14 +2344,8 @@
   (declare (xargs :guard (nat-listp fd-list)))
   (find-new-index-helper fd-list 0))
 
-(defthm find-new-index-correctness-1-lemma-1
-  (>= (find-new-index fd-list) 0)
-  :hints (("Goal" :in-theory (enable find-new-index)))
-  :rule-classes :linear)
-
-(defthm
-  find-new-index-correctness-1-lemma-2
-  (integerp (find-new-index fd-list))
+(defthm find-new-index-correctness-lemma-1
+  (natp (find-new-index fd-list))
   :hints (("Goal" :in-theory (enable find-new-index)))
   :rule-classes :type-prescription)
 
@@ -2419,11 +2422,6 @@
   len-of-name-to-fat32-name-helper
   (equal (len (name-to-fat32-name-helper character-list n))
          (nfix n)))
-
-;; (defthm name-to-fat32-name-helper-correctness-1
-;;   (implies (member x (name-to-fat32-name-helper
-;;                       character-list n))
-;;            (or (equal x #\space) (str::up-alpha-p x))))
 
 (defthm
   character-listp-of-name-to-fat32-name-helper
