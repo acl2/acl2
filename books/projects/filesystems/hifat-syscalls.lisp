@@ -287,7 +287,7 @@
         (mv fs -1 *enoent*))
        ((mv & errno)
         (hifat-find-file fs pathname))
-       ((unless (not (equal errno 0)))
+       ((when (equal errno 0))
         (mv fs -1 *eexist*))
        (basename (hifat-basename pathname))
        ((unless (equal (length basename) 11))

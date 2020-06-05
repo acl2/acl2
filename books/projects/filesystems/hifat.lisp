@@ -1110,7 +1110,7 @@
 (defthm fat32-filename-p-of-fat32-filename-fix
   (fat32-filename-p (fat32-filename-fix x)))
 
-(defthm fat32-filename-p-when-fat32-filename-p
+(defthm fat32-filename-fix-when-fat32-filename-p
   (implies (fat32-filename-p x)
            (equal (fat32-filename-fix x) x)))
 
