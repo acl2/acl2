@@ -315,6 +315,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "A new utility @(tsee good-valuep) has been added,
+     which checks whether a value is either a good atom
+     or a @(tsee cons) pair whose components are recursively good values.
+     That is, the value must not be a bad arom
+     or contains (directly or indirectly) bad atoms.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
 
    (xdoc::p
