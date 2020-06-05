@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function floor.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -146,6 +146,14 @@
            ;; the phrasing of the * term matches our normal form
            (<= (floor i j) (* i (/ j))))
   :rule-classes ((:linear :trigger-terms ((floor i j))))
+  :hints (("Goal" :in-theory (enable floor))))
+
+(defthm *-of-floor-upper-bound-linear
+  (implies (and (rationalp i)
+                (rationalp j)
+                (< 0 j))
+           (<= (* j (floor i j)) i))
+  :rule-classes (:linear)
   :hints (("Goal" :in-theory (enable floor))))
 
 (defthm floor-upper-bound-strong-linear

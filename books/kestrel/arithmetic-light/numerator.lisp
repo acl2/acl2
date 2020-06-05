@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function numerator.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,3 +51,9 @@
                i))
   :hints (("Goal" :use (:instance least-numerator-denominator-<= (n i) (d j))
            :in-theory (disable least-numerator-denominator-<=))))
+
+(defthm numerator-of-*-of---arg2
+  (equal (numerator (* x (- y)))
+         (- (numerator (* x y))))
+  :hints (("Goal" :use (:instance numerator-of-- (x (* x y)))
+           :in-theory (disable numerator-of--))))
