@@ -337,7 +337,7 @@
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
-    "A new macro @(tsee defmacro+) has been added,
+    "A new event macro @(tsee defmacro+) has been added,
      with is like @(tsee defmacro) but with "
     (xdoc::seetopic "xdoc" "XDOC")
     "integration.")
@@ -347,9 +347,14 @@
      counterpart of a non-executable function.")
 
    (xdoc::p
-    "A new macro @(tsee defsurj) had been added,
+    "A new event macro @(tsee defsurj) has been added,
      to verify and record surjective mappings.
      This is related to @(tsee defiso).")
+
+   (xdoc::p
+    "A new event macro @(tsee defmapping) has been added,
+     to verify and record mappings that must be (based on supplied options)
+     injective, surjective, or bijective.")
 
    (xdoc::p
     "Support for @(':prepwork') has been added to @(tsee std::deflist).")
