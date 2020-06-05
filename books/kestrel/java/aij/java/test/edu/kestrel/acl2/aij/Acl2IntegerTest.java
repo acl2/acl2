@@ -401,4 +401,17 @@ class Acl2IntegerTest {
                         Acl2Rational.make(1, 3))) < 0);
     }
 
+    @Test
+    void equalsToIntegers() { // equality of numeric values
+        assertTrue(Acl2Integer.ZERO.equals(Acl2Integer.ZERO));
+        assertTrue(Acl2Integer.ZERO.equals(Acl2Integer.make(0)));
+        assertTrue(Acl2Integer.ZERO.equals(Acl2Integer.make(0L)));
+        assertTrue(Acl2Integer.ZERO.equals(Acl2Integer.make(BigInteger.ZERO)));
+        assertTrue(Acl2Integer.make(0).equals(Acl2Integer.ZERO));
+        assertTrue(Acl2Integer.make(0L).equals(Acl2Integer.ZERO));
+        assertTrue(Acl2Integer.make(BigInteger.ZERO).equals(Acl2Integer.ZERO));
+        assertTrue(Acl2Integer.ONE.equals(Acl2Integer.ONE));
+        assertTrue(Acl2Integer.make(33).equals(Acl2Integer.make(33L)));
+    }
+
 }
