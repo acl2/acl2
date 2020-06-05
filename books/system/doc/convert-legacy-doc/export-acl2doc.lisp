@@ -39,7 +39,7 @@
 (include-book "std/strings/top" :dir :system)
 (include-book "std/osets/sort" :dir :system)
 (include-book "xdoc/parse-xml" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (set-state-ok t)
 (program)
 
@@ -603,4 +603,3 @@
               (t (er-progn
                   (export-acl2doc *new-xdoc-table* ,out ',subdirs state)
                   (value '(value-triple '(:exported-to ,out))))))))))
-

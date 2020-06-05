@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defconst *foo*
   (list 1 2 #{"""This is a test."""} 3
@@ -52,4 +52,3 @@ It may look like it should have ended there,
 but it didn't because that was a \"\"\"\\}
 not a \"\"\"}. But now it's going to actually end:"))
 (assert! (equal (sixth *foo*) 4))
-
