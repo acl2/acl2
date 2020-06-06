@@ -324,6 +324,11 @@
      That is, the value must not be a bad arom
      or contains (directly or indirectly) bad atoms.")
 
+   (xdoc::p
+    "A new utility @(tsee good-pseudo-termp) has been added,
+     which checks whether a pseudo-term only contains good values
+     (see @(tsee good-valuep)) in its quoted constants.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
