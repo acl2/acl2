@@ -82,7 +82,7 @@
   (list pathname top printname url main-tags-file-name
 	acl2-tags-file-name
 	(concat (or (file-name-directory pathname) "") "acl2-doc-search")
-	(concat (or (and url (file-name-directory url)) "") "acl2-doc-search")))
+	(concat (or (and url (file-name-directory url)) "") "acl2-doc-search.gz")))
 
 (defun extend-acl2-doc-manual-alist (key pathname top
                                          &optional
@@ -388,9 +388,7 @@ then restart the ACL2-Doc browser to view that manual."
 
   (acl2-doc-reset (acl2-doc-manual-name))
   (acl2-doc-top)
-; The following will be updated very soon!  Matt K., 6/6/2020, 11:30 am.
-  ;(acl2-doc-download-aux (acl2-doc-search-url) (acl2-doc-search-file-name))
-  )
+  (acl2-doc-download-aux (acl2-doc-search-url) (acl2-doc-search-file-name)))
 
 (defun acl2-doc-fetch ()
   (let ((pathname (acl2-doc-pathname)))
