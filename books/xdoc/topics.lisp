@@ -750,7 +750,7 @@ then, you may want to do something like this:</p>
 
 (defxdoc save-rendered
   :parents (XDOC)
-  :short "Saves the XDOC database into a file for the acl2-doc browser"
+  :short "Saves the XDOC database into files for the acl2-doc browser"
   :long "<p>Also see @(see save-rendered-event) for a corresponding macro that
   provides additional functionality.</p>
 
@@ -761,19 +761,25 @@ then, you may want to do something like this:</p>
                 header
                 topic-list-name
                 error
+                write-acl2-doc-search-file
                 state)
  })
 
- <p>where @('outfile') is the pathname for the output file, @('header') is to
- be written to the top of @('outfile') (typically as a comment), and the value
- of @('topic-list-name') is a symbol that can be the first argument of @(tsee
- defconst), hence of the form @('*c*').  The value of @('error') should be
- @('t') or @('nil') to indicate whether or not (respectively) to cause an error
- upon encountering a syntax error in xdoc source (marked by \"xdoc error\").
- Upon success this call returns the error-triple @('(mv nil (value-triple :ok)
- state)'); probably the value is unimportant except that it allows an
- @('xdoc::save-rendered') call to be placed inside @('make-event'), as
- displayed below.</p>
+ <p>where @('outfile') is the pathname for the output file containing rendered
+ documentation, @('header') is to be written to the top of
+ @('outfile') (typically as a comment), and the value of @('topic-list-name')
+ is a symbol that can be the first argument of @(tsee defconst), hence of the
+ form @('*c*').  The value of @('error') should be @('t') or @('nil') to
+ indicate whether or not (respectively) to cause an error upon encountering a
+ syntax error in xdoc source (marked by \"xdoc error\").  When the value of
+ @('write-acl2-doc-search-file') is not @('nil'), then a file
+ @('\"acl2-doc-search\"') is written, to be used for speeding up @(see
+ acl2::acl2-doc) search commands.</p>
+
+ <p>Upon success, the call displayed above returns the error-triple @('(mv
+ nil (value-triple :ok) state)'); probably the value is unimportant except that
+ it allows an @('xdoc::save-rendered') call to be placed inside
+ @('make-event'), as displayed below.</p>
 
  <p>For example, the following form may be found in community book
  @('books/doc/top.lisp').  Its evaluation creates the output file
@@ -815,7 +821,7 @@ then, you may want to do something like this:</p>
                       topic-list-name
                       error
                       &key
-                      script-file script-args timep)
+                      script-file script-args timep write-acl2-doc-search-file)
  })
 
  <p>where the four required arguments correspond to the same arguments of
@@ -835,7 +841,11 @@ then, you may want to do something like this:</p>
  @('xdoc::save-rendered-event') in community book @('doc/top.lisp').</p>
 
  <p>If @(':timep') is non-@('nil') then the entire computation will be wrapped
- in a call of @(tsee time$).</p>")
+ in a call of @(tsee time$).</p>
+
+ <p>The value of keyword option @(':write-acl2-doc-search-file'), which is
+ @('nil') by default, is passed directly to the corresponding parameter of
+ @(tsee save-rendered).</p>")
 
 (defxdoc deploying-manuals
   :parents (save)
