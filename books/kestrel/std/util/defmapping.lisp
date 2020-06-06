@@ -174,6 +174,7 @@
 
 (define maybe-defmapping-infop (x)
   :returns (yes/no booleanp)
+  :short "Recognize information about a @(tsee defmapping) call, and @('nil')."
   (or (defmapping-infop x)
       (eq x nil)))
 
