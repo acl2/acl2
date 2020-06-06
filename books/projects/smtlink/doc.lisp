@@ -435,7 +435,7 @@ export PYTHONPATH=$HOME/usr/lib/python-2.7/site-packages:$PYTHONPATH
 If PYTHONPATH is undefined, do:
 @({
 export PYTHONPATH=$HOME/usr/lib/python-2.7/site-packages
-@})
+})
 </li>
 <li>Now one should be able to import z3 into Python.
 Run Python, which will put you in an interactive loop.
