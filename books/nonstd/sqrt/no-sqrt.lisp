@@ -45,7 +45,7 @@ p/q is not in lowest terms (i.e. p and q are not relatively prime since they
 share the factor 2), so we have derived a contradiction, completing the proof.
 
 
-Now we turn to the situation in ACL2(r) a variant of ACL2 described in :DOC
+Now we turn to the situation in ACL2(r), a variant of ACL2 described in :DOC
 real.
 
 In ACL2(r), the universe of discourse is expanded to contain all real numbers,
@@ -162,7 +162,7 @@ That is to say, any square root of two must be an irrational real number.
   ;; Now, we have enough machinery to prove that both p and q are even from the
   ;; equation "p*p = 2*q*q".  We start by showing that in fact, p*p is even
   ;; follows naturally from the above equation.  It's a bit surprising that this
-  ;; isn't obvious to Acl2.
+  ;; isn't obvious to ACL2.
   ;;
   (local
    (defthm aux-1
@@ -171,7 +171,7 @@ That is to say, any square root of two must be an irrational real number.
               (and (integerp p)
                    (divisible p 2)))))
   ;;
-  ;; Acl2 gets lost in the next proof because it doesn't know to divide by 2
+  ;; ACL2 gets lost in the next proof because it doesn't know to divide by 2
   ;; at the crucial step.  So, we prove this nifty rewrite rule....
   ;;
   (local
@@ -229,7 +229,7 @@ That is to say, any square root of two must be an irrational real number.
 
   ;;
   ;; Now, we're ready to instantiate our results with the numerator and
-  ;; denominator of the alleged square root of x.  In Acl2, we're already
+  ;; denominator of the alleged square root of x.  In ACL2, we're already
   ;; guaranteed that the numerator and denominator are relatively prime, so if
   ;; we can apply the previous lemmas to them, we'll be done.
   ;;
@@ -245,7 +245,7 @@ That is to say, any square root of two must be an irrational real number.
      :rule-classes nil))
 
   ;;
-  ;; Now, for the crucial step.  We show Acl2 how to move the q*q from one side
+  ;; Now, for the crucial step.  We show ACL2 how to move the q*q from one side
   ;; of the equation to the other.
   ;;
   (local
@@ -298,9 +298,9 @@ That is to say, any square root of two must be an irrational real number.
 ;; are relatively prime to show that no such x can exist.  Sadly, this was more
 ;; difficult than we thought.  From the documentation, all I could gather was
 ;; that (numerator x) and (denominator x) were in "lowest terms", but if so
-;; Acl2 didn't seem to believe it.  Worse, the one key theorem according to the
+;; ACL2 didn't seem to believe it.  Worse, the one key theorem according to the
 ;; docs was that the numerator for non-rationals was zero.  Searching the
-;; released Acl2 "books", I found no relevant theorem.  Luckily, however, Acl2
+;; released ACL2 "books", I found no relevant theorem.  Luckily, however, ACL2
 ;; sources _are_ released as well.  Digging in "axioms.lisp", I found the
 ;; following beauty:
 ;;
@@ -315,7 +315,7 @@ That is to say, any square root of two must be an irrational real number.
 ;;                 (equal n 1))
 ;;        :rule-classes nil)
 ;;
-;; This was just what I needed -- and the :rule-classes nil explained why Acl2
+;; This was just what I needed -- and the :rule-classes nil explained why ACL2
 ;; seemed oblivious to it....
 ;;
 (defthm sqrt-lemma-1.5
@@ -330,8 +330,8 @@ That is to say, any square root of two must be an irrational real number.
   :rule-classes nil)
 
 ;;
-;; So finally, we can prove that the square root of two is irrational by simple
-;; propositional rewriting.
+;; So finally, we can prove that the square root of two is not a rational
+;; number by simple propositional rewriting.
 ;;
 (defthm sqrt-2-is-not-rationalp
   (implies (rationalp x)
@@ -344,12 +344,12 @@ That is to say, any square root of two must be an irrational real number.
 ;; Next, we turn our attention to the complex numbers.  These are fairly easy
 ;; to dismiss as candidates for the square root of two, for the following
 ;; reasons.  First of all, the only time the square of a complex is real is
-;; when its real or imaginary parts are zero.  Since Acl2 complex numbers
+;; when its real or imaginary parts are zero.  Since ACL2 complex numbers
 ;; have non-zero imaginary parts, this means that the only candidates for
 ;; square roots of real numbers are pure imaginary numbers.  But all these have
 ;; negative squares, and so none of them can be the square root of 2.
 ;;
-;; Unfortunately, Acl2 doesn't seem happy reasoning about complex arithmetic.
+;; Unfortunately, ACL2 doesn't seem happy reasoning about complex arithmetic.
 ;; Part of the reason is that the following axiom makes no rule available for
 ;; reasoning:
 ;;
@@ -366,7 +366,7 @@ That is to say, any square root of two must be an irrational real number.
   ()
 
   ;;
-  ;; First, we show Acl2 how to rewrite complex squares into its complex form.
+  ;; First, we show ACL2 how to rewrite complex squares into its complex form.
   ;;
   (local
    (defthm complex-square-definition-1
@@ -434,7 +434,7 @@ That is to say, any square root of two must be an irrational real number.
      :rule-classes nil))
 
   ;;
-  ;; Surely there's a better way!  I need to give Acl2 a hint here, so I have
+  ;; Surely there's a better way!  I need to give ACL2 a hint here, so I have
   ;; to name this, well, silly lemma.
   ;;
   (local
@@ -458,8 +458,9 @@ That is to say, any square root of two must be an irrational real number.
                    (:instance silly (x (* (realpart x) (imagpart x)))))))))
 
 ;;
-;; We're almost done.  The only candidates left are the imaginary numbers, but
-;; we can rule these out, since all their squares are negative.
+;; We're almost done.  The only candidates left for complex numbers that could
+;; be the square root of two are the imaginary numbers, but we can rule these
+;; out, since all their squares are negative.
 ;;
 (defthm imaginary-squares-are-negative
   (implies (and (complex/complex-rationalp x)
@@ -481,32 +482,29 @@ That is to say, any square root of two must be an irrational real number.
            :use ((:instance complex-squares-real-iff-imaginary)
                  (:instance imaginary-squares-are-negative)))))
 
-
-#|
-This result is no longer provable, since we added the reals to ACL2's type
-system.
-
 ;;
-;; And finally, the main result.  There is no square root of two.  We prove
-;; this by cases.  If "x" is a number, then it's either rational or
-;; complex-rational.  But, we already know the square root of two is neither
-;; rational nor complex-rational.  To complete the proof, we consider the
-;; non-numeric objects of the Acl2 universe, but of course, none of these can
-;; be the square root of two, since their square is zero.
+;; And finally, the main result.  The square root of two is real but not
+;; rational.  If we are in ACL2(r), this means that the square root of two is
+;; an irrational number.  If we are in standard ACL2, this is a contradiction,
+;; so we can conclude in a corollary that there cannot be any square root of
+;; two.
 ;;
-(defthm there-is-no-sqrt-2
-  (not (equal (* x x) 2))
-  :hints (("Goal"
-           :cases ((rationalp x) (complex-rationalp x)))))
-
-|#
+;; We prove this theorem by cases.  If "x" is a number, then it's either
+;; rational, irrational, complex, or not a number.  But, we already know the
+;; square root of two is neither rational nor complex.  The case where "x" is a
+;; non-numeric objects in the ACL2 universe can be dismissed easily -- none of
+;; these can be the square root of two, since their square is zero.  This
+;; leaves only the irrational case in ACL2(r), or no cases (a contradiction) in
+;; standard ACL2.
+;;
 
 (defthm irrational-sqrt-2
   (implies (equal (* x x) 2)
            (and (real/rationalp x)
                 (not (rationalp x))))
-  :hints (("Goal"
-           :cases ((rationalp x) (complex/complex-rationalp x))))
-  :rule-classes
-  #+non-standard-analysis :rewrite
-  #-non-standard-analysis ((:rewrite :corollary (not (equal (* x x) 2)))))
+  :hints (("Goal" :cases ((rationalp x) (complex/complex-rationalp x)))))
+
+#-non-standard-analysis
+(defthm no-sqrt-2
+  (not (equal (* x x) 2))
+  :hints (("Goal" :use irrational-sqrt-2)))
