@@ -8149,6 +8149,9 @@
 
 ; Warning: Consider all cert-data keys here and in all other functions with
 ; this warning.  There is no need to consider the key :pass1-saved here.
+; Moreover, keep the order of keys here the same as the order of keys produced
+; by fast-cert-data: this one is used by certify-book and that one by
+; include-book.
 
   (acons :type-prescription
          (cert-data-tps-from-fns fns wrld nil)
@@ -11370,6 +11373,9 @@
 
 ; Warning: Consider all cert-data keys here and in all other functions with
 ; this warning.  There is no need to consider the key :pass1-saved here.
+; Moreover, keep the order of keys here the same as the order of keys produced
+; by cert-data-for-certificate: this one is used by include-book and that one
+; by certify-book.
 
 ; Cert-data is the value of :cert-data from a certificate file.  In general,
 ; this function is equivalent to the identity function on alists: we expect the
@@ -11377,15 +11383,15 @@
 ; :type-prescription field of cert-data.  However, this function is nontrivial
 ; if the certificate file is written without the serialize writer.
 
-  (let* ((pair1 (assoc-eq :type-prescription cert-data))
+  (let* ((pair1 (assoc-eq :translate cert-data))
          (a1 (if pair1
-                 (acons :type-prescription
+                 (acons :translate
                         (make-fast-alist (cdr pair1))
                         nil)
                nil))
-         (pair2 (assoc-eq :translate cert-data))
+         (pair2 (assoc-eq :type-prescription cert-data))
          (a2 (if pair2
-                 (acons :translate
+                 (acons :type-prescription
                         (make-fast-alist (cdr pair2))
                         a1)
                a1)))
