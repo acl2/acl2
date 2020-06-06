@@ -414,4 +414,27 @@ class Acl2IntegerTest {
         assertTrue(Acl2Integer.make(33).equals(Acl2Integer.make(33L)));
     }
 
+    @Test
+    void equalsToNonIntegers() {
+        // ratios:
+        assertFalse(Acl2Integer.ZERO.equals(Acl2Rational.make(1, 3)));
+        assertFalse(Acl2Integer.ZERO.equals(Acl2Rational.make(-121, 3333)));
+        // complex rationals:
+        assertFalse(Acl2Integer.ZERO.equals(Acl2Number.make(0, 3)));
+        assertFalse(Acl2Integer.ZERO.equals(Acl2Number.make(-10, -10)));
+        // characters:
+        assertFalse(Acl2Integer.make(5).equals(Acl2Character.make('5')));
+        assertFalse(Acl2Integer.make(0).equals(Acl2Character.make('Q')));
+        // strings:
+        assertFalse(Acl2Integer.ONE.equals(Acl2String.make("ONE")));
+        assertFalse(Acl2Integer.make(12).equals(Acl2String.make("")));
+        // symbols:
+        assertFalse(Acl2Integer.make(-77).equals(Acl2Symbol.CAR));
+        assertFalse(Acl2Integer.ONE.equals(Acl2Symbol.CDR));
+        // cons pairs:
+        assertFalse(Acl2Integer.make(-19).
+                equals(Acl2ConsPair.make(Acl2Integer.ZERO,
+                        Acl2Number.make(1, 0))));
+    }
+
 }

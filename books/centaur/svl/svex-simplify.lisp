@@ -30,7 +30,6 @@
 (in-package "SVL")
 
 (include-book "meta/top")
-(include-book "xdoc/topics" :dir :system)
 
 (include-book "svex-simplify-rule-list")
 
