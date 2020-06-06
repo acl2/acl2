@@ -419,6 +419,11 @@
          (append (abs-addrs x) (abs-addrs y)))
   :hints (("goal" :in-theory (enable abs-addrs))))
 
+(defthm abs-addrs-when-m1-file-contents-p
+  (implies (m1-file-contents-p fs)
+           (not (consp (abs-addrs fs))))
+  :hints (("goal" :in-theory (enable abs-addrs m1-file-contents-p))))
+
 ;; top-complete is known to match up with alistp
 (defun abs-complete (x)
   (declare
@@ -2944,6 +2949,11 @@
          (true-list-fix (frame-with-root root frame)))
   :hints (("goal" :in-theory (enable frame-with-root))))
 
+(defthm strip-cars-of-frame-with-root
+  (equal (strip-cars (frame-with-root root frame))
+         (cons 0 (strip-cars frame)))
+  :hints (("goal" :in-theory (enable frame-with-root))))
+
 (defund frame->root (frame)
   (declare (xargs :guard (and (frame-p frame) (consp (assoc-equal 0 frame)))))
   (frame-val->dir (cdr (assoc-equal 0 frame))))
@@ -3006,7 +3016,7 @@
          (frame-with-root root frame))
   :hints (("goal" :in-theory (enable frame-with-root))))
 
-(defthmd no-duplicatesp-of-strip-cars-of-frame->frame
+(defthm no-duplicatesp-of-strip-cars-of-frame->frame
   (implies
    (no-duplicatesp-equal (strip-cars frame))
    (no-duplicatesp-equal (strip-cars (frame->frame frame))))
@@ -3979,6 +3989,29 @@
   absfat-equiv-of-abs-fs-fix
   (absfat-equiv (abs-fs-fix fs) fs)
   :hints (("Goal" :in-theory (enable absfat-equiv))))
+
+(defthm abs-addrs-when-absfat-equiv-lemma-1
+  (implies (and (abs-file-alist-p abs-file-alist1)
+                (absfat-subsetp abs-file-alist1 abs-file-alist2))
+           (subsetp-equal (abs-addrs abs-file-alist1)
+                          (abs-addrs abs-file-alist2)))
+  :hints (("goal" :in-theory (enable absfat-subsetp abs-addrs
+                                     no-duplicatesp-of-abs-addrs-of-put-assoc-lemma-1))))
+
+(defthm
+  abs-addrs-when-absfat-equiv
+  (implies (absfat-equiv x y)
+           (set-equiv (abs-addrs (abs-fs-fix x))
+                      (abs-addrs (abs-fs-fix y))))
+  :hints (("goal" :in-theory (e/d (absfat-equiv set-equiv abs-fs-p)
+                                  (abs-addrs-when-absfat-equiv-lemma-1))
+           :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
+                            (abs-file-alist1 (abs-fs-fix x))
+                            (abs-file-alist2 (abs-fs-fix y)))
+                 (:instance abs-addrs-when-absfat-equiv-lemma-1
+                            (abs-file-alist2 (abs-fs-fix x))
+                            (abs-file-alist1 (abs-fs-fix y))))))
+  :rule-classes :congruence)
 
 (defund
   names-at (fs relpath)
@@ -6108,14 +6141,6 @@
                   (abs-addrs abs-file-alist2)))
   :hints (("goal" :in-theory (enable abs-addrs))))
 
-(defthm absfat-equiv-of-ctx-app-lemma-4
-  (implies (and (abs-file-alist-p abs-file-alist1)
-                (absfat-subsetp abs-file-alist1 abs-file-alist2))
-           (subsetp-equal (abs-addrs abs-file-alist1)
-                          (abs-addrs abs-file-alist2)))
-  :hints (("goal" :in-theory (enable absfat-subsetp abs-addrs
-                                     no-duplicatesp-of-abs-addrs-of-put-assoc-lemma-1))))
-
 (defthm
   absfat-equiv-of-ctx-app-lemma-5
   (implies
@@ -6771,10 +6796,10 @@
   :hints
   (("goal"
     :in-theory (e/d (absfat-equiv)
-                    (absfat-equiv-of-ctx-app-lemma-4))
-    :use ((:instance absfat-equiv-of-ctx-app-lemma-4
+                    (abs-addrs-when-absfat-equiv-lemma-1))
+    :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
                      (abs-file-alist1 (abs-fs-fix abs-file-alist1)))
-          (:instance absfat-equiv-of-ctx-app-lemma-4
+          (:instance abs-addrs-when-absfat-equiv-lemma-1
                      (abs-file-alist1 abs-file-alist2)
                      (abs-file-alist2 (abs-fs-fix abs-file-alist1)))))))
 
@@ -8451,7 +8476,7 @@
                                                       (frame->frame frame)))))
               (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
        (:with
-        fat32-filename-p-when-fat32-filename-p
+        fat32-filename-fix-when-fat32-filename-p
         (fat32-filename-fix
          (nth
           (len (frame-val->path (cdr (assoc-equal (car l)
@@ -8616,7 +8641,7 @@
               (frame-val->path (cdr (assoc-equal (car l)
                                                  (frame->frame frame)))))))
        (:with
-        fat32-filename-p-when-fat32-filename-p
+        fat32-filename-fix-when-fat32-filename-p
         (fat32-filename-fix
          (nth (len (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
               (frame-val->path (cdr (assoc-equal (car l)
@@ -9492,34 +9517,34 @@
                         (frame->frame frame))))
      (frame-val->path$inline (cdr (assoc-equal x (frame->frame frame))))))))
 
-(defthm
-  partial-collapse-correctness-lemma-21
-  (implies
-   (and
-    (prefixp
-     (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
-     (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                        (frame->frame frame)))))
-    (not
-     (equal
-      (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                         (frame->frame frame))))
-      (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
-   (not
-    (prefixp
-     (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                        (frame->frame frame))))
-     (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
-  :hints
-  (("goal"
-    :in-theory (e/d (list-equiv)
-                    ((:rewrite prefixp-when-equal-lengths)))
-    :use
-    (:instance
-     (:rewrite prefixp-when-equal-lengths)
-     (y (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-     (x (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                           (frame->frame frame)))))))))
+;; (defthm
+;;   partial-collapse-correctness-lemma-21
+;;   (implies
+;;    (and
+;;     (prefixp
+;;      (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
+;;      (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
+;;                                         (frame->frame frame)))))
+;;     (not
+;;      (equal
+;;       (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
+;;                                          (frame->frame frame))))
+;;       (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
+;;    (not
+;;     (prefixp
+;;      (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
+;;                                         (frame->frame frame))))
+;;      (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
+;;   :hints
+;;   (("goal"
+;;     :in-theory (e/d (list-equiv)
+;;                     ((:rewrite prefixp-when-equal-lengths)))
+;;     :use
+;;     (:instance
+;;      (:rewrite prefixp-when-equal-lengths)
+;;      (y (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
+;;      (x (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
+;;                                            (frame->frame frame)))))))))
 
 (defthm
   partial-collapse-correctness-lemma-24
@@ -9819,8 +9844,7 @@
          ((:definition remove-assoc-equal)
           (:rewrite remove-assoc-when-absent-1)
           (:definition member-equal)
-          (:definition len)
-          (:rewrite partial-collapse-correctness-lemma-21))))))
+          (:definition len))))))
 
 ;; This is important.
 (defthm
@@ -12661,7 +12685,6 @@
                      (:rewrite remove-when-absent)
                      (:rewrite abs-addrs-of-ctx-app-2)
                      (:rewrite ctx-app-when-not-ctx-app-ok)
-                     (:rewrite partial-collapse-correctness-lemma-21)
                      (:linear position-when-member)))
     :induct (collapse-iter frame n)
     :expand ((seq-this frame)))))
@@ -13461,8 +13484,15 @@
     :induct (seq-this frame)
     :expand (collapse-iter frame 1))))
 
+;; This theorem needs to be set aside because there's no obvious path towards
+;; proving
+;; (VALID-SEQP (COLLAPSE-THIS FRAME X) (SEQ-THIS (COLLAPSE-THIS FRAME X)))
+;; which is one of the subgoals.
+
 ;; (verify
-;;  (implies (and (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+;;  (implies (and (frame-p (frame->frame frame))
+;;                (abs-separate (frame->frame frame))
+;;                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
 ;;                (not (zp n))
 ;;                (<= n (len (seq-this frame)))
 ;;                (subsetp-equal (take (+ -1 n) (seq-this frame))
@@ -13470,7 +13500,9 @@
 ;;                (mv-nth 1 (collapse frame))
 ;;                (<= 0 (len (seq-this frame)))
 ;;                (not (equal (nth (+ -1 n) (seq-this frame))
-;;                            x)))
+;;                            x))
+;;                (abs-complete
+;;                 (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
 ;;           (member-equal (nth (+ -1 n) (seq-this frame))
 ;;                         (seq-this (collapse-this frame x))))
 ;;  :instructions

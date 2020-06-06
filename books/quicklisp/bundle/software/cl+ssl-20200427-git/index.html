@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>CL+SSL</title>
+    <link rel="stylesheet" type="text/css" href="index.css"/>
+  </head>
+  <body>
+    <h1>CL+SSL</h1>
+
+    <p>
+      A Common Lisp interface to OpenSSL.
+    </p>
+
+    <h3>About</h3>
+
+    <p>
+      This library is a fork
+      of <a href="http://www.cliki.net/SSL-CMUCL">SSL-CMUCL</a>.  The
+      original SSL-CMUCL source code was written by Eric Marsden and
+      includes contributions by Jochen Schmidt. Development into CL+SSL
+      was done by David Lichteblau.  License: MIT-style.
+    </p>
+
+    <p>
+      Distinguishing features: CL+SSL is portable code based on CFFI and
+      gray streams.  It defines its own libssl BIO method, so that SSL
+      I/O can be written over portable Lisp streams instead of bypassing
+      the streams and sending data over Unix file descriptors directly.
+      (But the traditional approach is still used if possible.)
+    </p>
+
+    <h3>Download</h3>
+    <p>
+      The library is available via <a href="http://www.quicklisp.org/">Quicklisp</a>.
+    </p>
+
+    <p>
+      The Git repository: <a href="https://github.com/cl-plus-ssl/cl-plus-ssl">https://github.com/cl-plus-ssl/cl-plus-ssl</a>.
+    </p>
+    <p>
+      Send bug reports to <a
+      href="mailto:cl-plus-ssl-devel@common-lisp.net">cl-plus-ssl-devel@common-lisp.net</a>
+      (<a
+      href="http://common-lisp.net/cgi-bin/mailman/listinfo/cl-plus-ssl-devel">list
+      information</a>).
+    </p>
+
+    <h3>OpenSSL Installation Hints</h3>
+
+    <h4>Debian</h4>
+
+    <p>
+      You need the <tt>libssl-dev</tt> package on Debian to
+      load this cl+ssl without manual configuration.
+    </p>
+
+    <h4>Windows</h4>
+
+    <p>
+      <a href="https://wiki.openssl.org/index.php/Binaries">https://wiki.openssl.org/index.php/Binaries</a>
+      lists several soruces of binary distributions.
+
+      For example,
+      <a href="http://www.slproweb.com/products/Win32OpenSSL.html">http://www.slproweb.com/products/Win32OpenSSL.html</a>
+      (slproweb.com is a 3rd party; if you have questions about the OpenSSL installer they provide, 
+      please ask in the mailing list specified on the linked page).
+    </p>
+
+    <p>
+      If you chose to install the DLLs into the OpenSSL installation's
+      "bin" directory (recommended), then be sure to add the bin directory to your
+      PATH environment variable and restart your
+      session. e.g. "C:\Program Files\OpenSSL-Win64\bin"
+    </p>
+
+
+<!--
+    <p>
+      Comparison chart:
+    </p>
+    <table border="1" cellpadding="2" cellspacing="0">
+      <thead>
+        <tr>
+          <th></th>
+          <th><b>FFI</b></th>
+          <th><b>Streams</b></th>
+          <th><b>Lisp-BIO</b></th>
+        </tr>
+      </thead>
+      <tr>
+        <td>CL+SSL</td>
+        <td>CFFI</td>
+        <td>gray<sup>1</sup>, buffering output</td>
+        <td>yes</td>
+      </tr>
+      <tr>
+        <td>CL-SSL</td>
+        <td>UFFI</td>
+        <td>gray, buffering I/O [<em>part of ACL-COMPAT</em>]</td>
+        <td>no</td>
+      </tr>
+      <tr>
+        <td>SSL-CMUCL</td>
+        <td>CMUCL/ALIEN</td>
+        <td>CMUCL, non-buffering</td>
+        <td>no</td>
+      </tr>
+    </table>
+    <p>
+      <sup>1</sup>&nbsp;Character I/O and external formats in CL+SSL
+      are provided
+      using <a href="http://weitz.de/flexi-streams/">flexi-streams</a>.
+    </p>
+-->
+
+    <h3>API</h3>
+    <p>
+      <div class="def">Function CL+SSL:ENSURE-INITIALIZED (&amp;key method (rand-seed nil))</div>
+      In most cases you <strong>do not</strong> need to call this function, because it is called
+      automatically. The only reason to call it explicitly is to supply the <tt>rand-seed</tt> parameter.
+      In this case do it before calling any other functions.
+    </p>
+    <p>
+      Keyword arguments:
+    </p>
+    <p>
+      <tt>method</tt>. Just leave its default value.
+    </p>
+    <p>
+      <tt>rand-seed</tt> is an octet sequence to initialize OpenSSL random number generator. 
+      On many platforms, including Linux and Windows, it may be leaved NIL (default), 
+      because OpenSSL initializes the random number generator from OS specific service. But for 
+      example on Solaris it may be necessary to supply this value. The minimum length required
+      by OpenSSL is 128 bits. See here <a href="http://www.openssl.org/support/faq.html#USER1">
+        http://www.openssl.org/support/faq.html#USER1</a> for the details.
+    </p>
+    <p>
+      Hint: do not use Common Lisp RANDOM function to generate the <tt>rand-seed</tt>, because the function
+      usually returns predictable values.
+    </p>
+    <p>
+      <pre class="def" style="font-family:normal;">Function CL+SSL:MAKE-CONTEXT (&amp;key method
+                                                                               disabled-protocols
+                                                                               (options (list +SSL-OP-ALL+))
+                                                                               (session-cache-mode +ssl-sess-cache-server+)
+                                                                               (verify-location :default)
+                                                                               (verify-depth 100)
+                                                                               (verify-mode +ssl-verify-peer+)
+                                                                               (verify-callback nil verify-callback-supplied-p)
+                                                                               (cipher-list +default-cipher-list+)
+                                                                               (pem-password-callback 'pem-password-callback))</pre>
+    </p>
+    <p>
+      Creates a new SSL_CTX using <a href="https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_new.html"><tt>SSL_CTX_new</tt></a>
+      and initializes it according to the specified parameters.
+      After you're done using the context, don't forget to free it using <tt>ssl-ctx-free</tt>.
+    </p>
+    <p>
+      Exceptions:
+    </p>
+    <p>
+      <tt>ssl-error-initialize</tt>. When underlying SSL_CTX_new fails.
+    </p>
+    <p>
+      Keyword arguments:
+    </p>
+    <p>
+      <tt>method</tt>. Specifies which supported SSL/TLS to use. If not specified then TLS_method is used on OpenSSL versions supporing it (on legacy versions SSLv23_method is used).
+    </p>
+    <p>
+      <tt>disabled-protocols</tt>. List of +SSL-OP-NO-* constants. Denotes disabled SSL/TLS versions.
+      When <tt>method</tt> not specified defaults to (list +SSL-OP-NO-SSLv2+ +SSL-OP-NO-SSLv3+)
+    </p>
+    <p>
+      <tt>options</tt>. SSL context options list. Defaults to (list +SSL-OP-ALL+)
+    </p>
+    <p>
+      <tt>session-cache-mode</tt>. Enable/Disable session caching. Defaults to +SSL-SESS-CACHE-SERVER+
+    </p>
+    <p>
+      <tt>verify-location</tt>. Location(s) to load CA from.
+      Possible values
+      <br>
+      <ul>
+        <li><tt>:default</tt> OpenSSL default directory and file will be loaded</li>
+        <li><tt>:default-file</tt> OpenSSL default file will be loaded. Requires OpenSSL &gt;= 1.1.0.</li>
+        <li><tt>:default-dir</tt> OpenSSL default directory will be loaded. Requires OpenSSL &gt;= 1.1.0.</li>
+        <li><tt>STRING</tt> Directory or file path to be loaded</li>
+        <li><tt>PATHNAME</tt> Directory or file path to be loaded</li>
+        <li><tt>(LIST (or STRING PATHNAME))</tt> List of directories or files to be loaded</li>
+      </ul>
+    </p>
+    <p>
+      <tt>verify-depth</tt>. Sets the maximum depth for the certificate chain verification that shall be allowed for context.
+      Defaults to 100.
+    </p>
+    <p>
+      <tt>verify-mode</tt>. Sets the verification flags for context to be mode. Available flags
+      <ul>
+        <li>+SSL-VERIFY-NONE+</li>
+        <li>+SSL-VERIFY-PEER+</li>
+        <li>+SSL-VERIFY-FAIL-IF-NO-PEER-CERT+</li>
+        <li>+SSL-VERIFY-CLIENT-ONCE+</li>
+      </ul>
+      Defaults to +VERIFY-PEER+
+    </p>
+    <p>
+      <tt>verify-callback</tt>. The verify-callback is used to control the behaviour when the +SSL-VERIFY-PEER+ flag is set.
+      <br/>
+      Please note: this must be CFFI callback i.e. defined as <tt>(defcallback <name> :int ((ok :int) (ctx :pointer)) .. )</tt>.
+        <br/>
+        Defaults to <tt>verify-peer-callback</tt> which converts chain errors to <tt>ssl-error-verify</tt>.
+    </p>
+    <p>
+      <tt>cipher-list</tt>. Sets the list of available ciphers for context.
+      Possible values described <a href="https://www.openssl.org/docs/manmaster/apps/ciphers.html">here</a>.
+      <br/>
+      Default is expected to change overtime to provide highest security level. Do not rely on its exact value.
+    </p>
+    <p>
+      <tt>pem-password-callback</tt>. Sets the default password callback called when loading/storing a PEM certificate with encryption.
+      <br/>
+      Please note: this must be CFFI callback i.e. defined as <tt>(cffi:defcallback <name> :int
+        ((buf :pointer) (size :int) (rwflag :int) (unused :pointer)) .. )</tt>.
+        <br/>
+        Defaults to <tt>pem-password-callback</tt> which simply uses password provided by <tt>with-pem-password</tt>.
+    </p>
+    <p>
+      <div class="def">Function CL+SSL:SSL-CTX-FREE (context)</div>
+      Plain FFI binding for <a href="https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_free.html">SSL_CTX_free<a>.
+    </p>
+    <p>
+      <div class="def">Macro CL+SSL:WITH-GLOBAL-CONTEXT ((context &amp;key :auto-free-p) &amp;body body)</div>
+      Executes <tt>body</tt> with <tt>*ssl-global-context*</tt> bound to <tt>context</tt>.
+      <br/>
+      If <tt>auto-free-p</tt> is true the context is freed using <tt>ssl-ctx-free</tt> before exit.
+    </p>
+    <p>
+      <div class="def">Function CL+SSL:MAKE-SSL-CLIENT-STREAM (fd-or-stream &amp;key external-format certificate key password close-callback (unwrap-stream-p t) verify hostname)<br/><br/>
+      Function CL+SSL:MAKE-SSL-SERVER-STREAM (fd-or-stream &amp;key external-format certificate key password close-callback (unwrap-stream-p t))</div>
+      Return an SSL stream for the client (server)
+      socket <tt>fd-or-stream</tt>.  All reads and writes to this
+      stream will be pushed through the OpenSSL library.
+    </p>
+    <p>
+      Keyword arguments:
+    </p>
+    <p>
+      If <tt>fd-or-stream</tt> is a lisp stream, the SSL stream will
+      close it automatically.  File descriptors are not closed
+      automatically.  However, if <tt>close-callback</tt> is non-nil, it
+      will be called with zero arguments when the SSL stream is closed.
+    </p>
+    <p>
+      If <tt>unwrap-stream-p</tt> is true (the default), a stream for a
+      file descriptor will be replaced by that file descriptor
+      automatically.  This is similar to passing the result
+      of <tt>stream-fd</tt> as an argument, except that a deadline
+      associated with the stream object will be taken into account, and
+      that the stream will be closed automatically.  As with file
+      descriptor arguments, no I/O will actually be done on the stream
+      object.
+    </p>
+    <p>
+      <tt>certificate</tt> is the path to a file containing the PEM-encoded
+      certificate. 
+    </p>
+    <p>
+      <tt>key</tt> is the path to the PEM-encoded key, which may be associated 
+      with the passphrase <tt>password</tt>.
+    </p>
+    <p>
+      If <tt>external-format</tt> is <tt>nil</tt> (the default), a plain
+      <tt>(unsigned-byte 8)</tt> SSL stream is returned.  With a
+      non-null <tt>external-format</tt>, a flexi-stream capable of
+      character I/O will be returned instead, with the specified value
+      as its initial external format.
+    </p>
+    <p>
+      <tt>verify</tt> can be specified either as NIL if no check should be performed,
+      <tt>:optional</tt> to verify the server's certificate if it presented one or
+      <tt>:required</tt> to verify the server's certificate
+      and fail if an invalid or no certificate was presented.
+      Defaults to <tt>*make-ssl-client-stream-verify-default*</tt>
+      which is initialized to <tt>:required</tt>
+    </p>
+    <p>
+      <tt>hostname</tt> if specified, will be sent by client during TLS negotiation,
+      according to the Server Name Indication (SNI) extension to the TLS.
+      When server handles several domain names, this extension enables the server
+      to choose certificate for right domain. Also the <tt>hostname></tt> is used for
+      hostname verification if verification is enabled by <tt>verify</tt>.
+    </p>
+    <p>
+      <div class="def">Variable *make-ssl-client-stream-verify-default* :required</div>
+      Helps to mitigate the change in default behaviour of
+      <tt>make-ssl-client-stream</tt> - previously it worked as if <tt>:verify nil</tt>
+      but then <tt>:verify :required</tt> became the default on non-Windows platforms.
+      Change this variable if you want the previous behaviour.
+    </p>
+    <p>
+      <div class="def">Function CL+SSL:USE-CERTIFICATE-CHAIN-FILE (certificate-chain-file)</div>
+      Loads a PEM encoded certificate chain file <tt>certificate-chain-file</tt>
+      and adds the chain to global context. The certificates must be sorted 
+      starting with the subject's certificate (actual client or server certificate),
+      followed by intermediate CA certificates if applicable, and ending at 
+      the highest level (root) CA. 
+    </p>
+    <p>
+      Note: the RELOAD function clears the global 
+      context and in particular the loaded certificate chain.
+    </p>
+    <p>
+      <div class="def">Function CL+SSL:RELOAD ()</div>
+      Reload <tt>libssl</tt>.  Call this function after restarting a Lisp
+      core with CL+SSL dumped into it on Lisp implementations that do
+      not reload shared libraries automatically.
+    </p>
+    <p>
+      <div class="def"><a name="libs-already-loaded">
+        *FEATURES* flag :CL+SSL-FOREIGN-LIBS-ALREADY-LOADED
+      </a></div>
+      Allows user to load libssl (and libeay32 on Windows) himself
+      thus choosing the foreigh library(-ies) path and version to load.
+
+      <p>If specified, neither loading of the cl+ssl ASDF system
+        nor (cl+ssl:reload) try to load the foreign libraries,
+        assuming user has loaded them already.</p>
+
+      <pre>
+        (cffi:load-foreign-library "libssl.so.1.0.0")
+
+        (let ((*features* (cons :cl+ssl-foreign-libs-already-loaded
+                                *features*)))
+
+          (ql:quickload :a-system-which-depends-on-cl+ssl)
+
+          ;; or just load cl+ssl
+          (ql:quickload :cl+ssl))
+      </pre>
+
+    </p>
+    <p>
+      <div class="def">Function CL+SSL:STREAM-FD (stream)</div>
+      Return <tt>stream</tt>'s file descriptor as an integer, if known.
+      Otherwise return <tt>stream</tt> itself.  The result of this
+      function can be passed to <tt>make-ssl-client-stream</tt>
+      and <tt>make-ssl-server-stream</tt>.
+    </p>
+    <p>
+      <div class="def">Function CL+SSL:RANDOM-BYTES (count)</div>
+      Generates <tt>count</tt> cryptographically strong pseudo-random bytes. Returns
+      the bytes as a <tt>simple-array</tt> with <tt>element-type '(unsigned-byte 8)</tt>. 
+      Signals an <tt>error</tt> in case of problems, for example when the OpenSSL 
+      random number generator has not been seeded with enough randomness to ensure 
+      an unpredictable byte sequence.
+    </p>
+
+    <h3>Portability</h3>
+    <p>
+      CL+SSL requires CFFI with callback support.
+    </p>
+    <p>
+      CL Test Grid results: <a href="https://common-lisp.net/project/cl-test-grid/library/cl+ssl.html">https://common-lisp.net/project/cl-test-grid/library/cl+ssl.html</a>
+    </p>
+    <h3>TODO</h3>
+    <ul>
+      <li>session caching</li>
+      <li>The FFI code for all platforms except clisp needs to be
+      rewritten. (update 2017-07-05: does it? why?)</li>
+    </ul>
+    <h3>News</h3>
+    <p>
+      2017-07-03
+    </p>
+    <ul>
+      <li>
+        Hostname verification added, thanks to Ilya Khaprov.
+        Default mode for <tt>make-ssl-client-stream</tt> is to verify the connection.
+        New keywrd argument <tt>verify</tt> is added to <tt>make-ssl-client-stream</tt> with the same possible values as Drakma uses for http request verification.
+      </li>
+    </ul>
+    <p>
+      201?-??-??
+    </p>
+    <ul>
+      <li>
+        See <a href="https://github.com/cl-plus-ssl/cl-plus-ssl/commits/master">commits</a>.
+      </li>
+    </ul>
+    <p>
+      2011-05-22
+    </p>
+    <ul>
+      <li>
+        Added new public function RANDOM-BYTES.
+      </li>
+    </ul>
+    <p>
+      2011-05-22
+    </p>
+    <ul>
+      <li>
+        The source code repository is moved to Git.
+      </li>
+    </ul>
+    <p>
+      2011-03-25
+    </p>
+    <ul>
+      <li>
+        OpenSSL libraries names for OpenBSD, thanks to Thomas de Grivel.
+      </li>
+    </ul>
+    <p>
+      2010-05-26
+    </p>
+    <ul>
+      <li>
+        Fixed two bugs in LISTEN, thanks to Ron Garret.
+      </li>
+    </ul>
+    <p>
+      2009-09-17
+    </p>
+    <ul>
+      <li>
+        libssl loading on FreeBSD 7.2 fixed, thanks to Stian Sletner.
+      </li>
+    </ul>
+    <p>
+      2008-xx-yy
+    </p>
+    <ul>
+      <li>
+        Support for I/O deadlines (Clozure CL and SBCL).
+      </li>
+      <li>
+        Support for encrypted keys, thanks to Vsevolod Dyomkin.
+      </li>
+      <li>
+        Chained certificates support, thanks to Juhani Ränkimies.
+      </li>
+      <li>
+        More secure initialization of OpenSSL random number generator.
+      </li>
+      <li>
+        Minor CLISP-specific fixes.
+      </li>
+    </ul>
+    <p>
+      2007-xx-yy
+    </p>
+    <ul>
+      <li>
+        Fixed windows support, thanks to Matthew Kennedy and Anton Vodonosov.
+      </li>
+    </ul>
+    <p>
+      2007-07-07
+    </p>
+    <ul>
+      <li>
+        Improved CLISP support, thanks
+        to <a
+              href="http://web.kepibu.org/code/lisp/cl+ssl/">Pixel
+          // pinterface</a>, as well as client certificate support.
+      </li>
+      <li>
+        Re-introduced support for direct access to file descriptors as
+        an optimization.  New function <tt>stream-fd</tt>.  New keyword
+        argument <tt>close-callback</tt>.
+      </li>
+    </ul>
+    <p>
+      2007-01-16: CL+SSL is now available under an MIT-style license.
+    </p>
+  </body>
+</html>
