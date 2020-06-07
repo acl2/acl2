@@ -309,38 +309,16 @@
 
 (encapsulate
   ()
-  (local (defun simpler-take-induction (n xs)
-           (if (zp n)
-               nil
-             (cons (car xs)
-                   (simpler-take-induction (1- n) (cdr xs))))))
-
-  (local (defthm equivalence-lemma
-           (implies (true-listp acc)
-                    (equal (first-n-ac n xs acc)
-                           (revappend acc (simpler-take-induction n xs))))))
-
-  (local (defthm take-redefinition
-           (equal (take n x)
-                  (if (zp n)
-                      nil
-                    (cons (car x)
-                          (take (1- n) (cdr x)))))
-           :rule-classes ((:definition :controller-alist ((TAKE T NIL))))))
-
-  (local (in-theory (disable take)))
 
   (local (defthm take-when-atom
            (implies (atom x)
                     (equal (take n x)
                            (replicate n nil)))
            :hints(("Goal"
-                   :induct (simpler-take-induction n x)
                    :in-theory (enable replicate)))))
 
   (verify-guards first-n
     :hints(("Goal" :in-theory (enable replicate)))))
-
 
 (defun same-lengthp (x y)
   (declare (xargs :guard t))
