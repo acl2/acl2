@@ -2,13 +2,13 @@
 In this Acl2 book, we prove that the square root function can be approximated
 in Acl2.  In particular, we prove the following theorem:
 
- (defthm convergence-of-iter-sqrt
+ (defthm convergence-of-sqrt-iter
    (implies (and (real/rationalp x)
      (real/rationalp epsilon)
      (< 0 epsilon)
      (<= 0 x))
-      (and (<= (* (iter-sqrt x epsilon) (iter-sqrt x epsilon)) x)
-     (< (- x (* (iter-sqrt x epsilon) (iter-sqrt x epsilon)))
+      (and (<= (* (sqrt-iter x epsilon) (sqrt-iter x epsilon)) x)
+     (< (- x (* (sqrt-iter x epsilon) (sqrt-iter x epsilon)))
         epsilon))))
 
 That is, for any non-negative number, we can approximate its square root within
@@ -42,7 +42,7 @@ is encouraged to try that result.
 
 To load this book, it is sufficient to do something like this:
 
-    (certify-book "iter-sqrt" 0 nil)
+    (certify-book "sqrt-iter" 0 nil)
 
 |#
 
@@ -311,7 +311,7 @@ To load this book, it is sufficient to do something like this:
     :rule-classes (:linear :rewrite)))
 
 ;;
-;; Now, we translate the results above into iter-sqrt-delta.  Again, this seems
+;; Now, we translate the results above into sqrt-iter-delta.  Again, this seems
 ;; harder than it needs to be.  It looks like my proof goes directly against
 ;; Acl2's inequality heuristics.  We _must_ be doing something wrong.
 ;;
@@ -324,7 +324,7 @@ To load this book, it is sufficient to do something like this:
   ;; instantiate this theorem below.
   ;;
   (local
-   (defthm iter-sqrt-epsilon-delta-aux-1
+   (defthm sqrt-iter-epsilon-delta-aux-1
      (implies (and (real/rationalp epsilon)
                    (real/rationalp high)
                    (real/rationalp high2)
@@ -341,7 +341,7 @@ To load this book, it is sufficient to do something like this:
   ;; how to reason about inequalities in Acl2.  Need more practice!
   ;;
   (local
-   (defthm iter-sqrt-epsilon-delta-aux-2
+   (defthm sqrt-iter-epsilon-delta-aux-2
      (implies (and (real/rationalp epsilon)
                    (real/rationalp delta)
                    (real/rationalp high)
@@ -352,12 +352,12 @@ To load this book, it is sufficient to do something like this:
                    (<= high2 high))
               (<= delta (/ epsilon high2)))
      :hints (("Goal"
-              :use (:instance iter-sqrt-epsilon-delta-aux-1)
+              :use (:instance sqrt-iter-epsilon-delta-aux-1)
               :in-theory (disable <-*-/-left
                                   <-*-/-right
                                   <-*-y-x-y
                                   <-*-left-cancel
-                                  iter-sqrt-epsilon-delta-aux-1)))))
+                                  sqrt-iter-epsilon-delta-aux-1)))))
 
   ;;
   ;; And finally, we have the first half of the convergence proof.  If we start
@@ -365,7 +365,7 @@ To load this book, it is sufficient to do something like this:
   ;; the final range is less than delta, then our approximation is very close to
   ;; the square root of x (its squares are within epsilon).
   ;;
-  (defthm iter-sqrt-epsilon-delta
+  (defthm sqrt-iter-epsilon-delta
     (implies (and (real/rationalp low)
                   (real/rationalp high)
                   (real/rationalp epsilon)
@@ -386,13 +386,13 @@ To load this book, it is sufficient to do something like this:
                              (b (cdr (iterate-sqrt-range low high x num-iters))))
              :in-theory (disable sqrt-epsilon-delta))
             ("subgoal 1"
-             :use (:instance iter-sqrt-epsilon-delta-aux-2
+             :use (:instance sqrt-iter-epsilon-delta-aux-2
                              (high2 (+ (cdr (iterate-sqrt-range low high x
                                                                 num-iters))
                                        (cdr (iterate-sqrt-range low high x
                                                                 num-iters))))
                              (high (+ high high)))
-             :in-theory (disable iter-sqrt-epsilon-delta-aux-2)))))
+             :in-theory (disable sqrt-iter-epsilon-delta-aux-2)))))
 
 ;;
 ;; For the second half of the proof, we have to reason about how quickly the
@@ -476,7 +476,7 @@ To load this book, it is sufficient to do something like this:
 
 
 ;;
-;; This function is used to figure out how many iterations of iter-sqrt-range
+;; This function is used to figure out how many iterations of sqrt-iter-range
 ;; are needed to make the final range sufficiently small.  Since one can't
 ;; recurse on the rationals, we take the ceiling first, so that we can reason
 ;; strictly about integers.
@@ -496,9 +496,9 @@ To load this book, it is sufficient to do something like this:
 ;; Now, we're ready to define our square-root approximation function.  All it
 ;; does is initialize the high/low range, find a suitable delta, convert this
 ;; to a needed num-iters, and then return the low endpoint of the resulting
-;; call to iter-sqrt-range.
+;; call to sqrt-iter-range.
 ;;
-(defun iter-sqrt (x epsilon)
+(defun sqrt-iter (x epsilon)
   (if (and (real/rationalp x)
            (<= 0 x))
       (let ((low 0)
@@ -594,7 +594,7 @@ To load this book, it is sufficient to do something like this:
                                ceiling <-*-left-cancel))))
 
 ;;
-;; Now, we're ready to show that iter-sqrt-range will produce a small enough
+;; Now, we're ready to show that sqrt-iter-range will produce a small enough
 ;; final range.
 ;;
 (encapsulate
@@ -650,7 +650,7 @@ To load this book, it is sufficient to do something like this:
 
   ;;
   ;; So now, we can prove a general form of our theorem without appealing to the
-  ;; iter-sqrt functions (with all the added complication that excites Acl2's
+  ;; sqrt-iter functions (with all the added complication that excites Acl2's
   ;; rewriting heuristics)
   ;;
   (local
@@ -677,7 +677,7 @@ To load this book, it is sufficient to do something like this:
   ;; This is the second major point, since it shows how we can force
   ;; iterate-sqrt-range to iterate long enough to produce a small enough range.
   ;; Together with the first major result, this will prove the convergence of
-  ;; iter-sqrt-range.
+  ;; sqrt-iter-range.
   ;;
   (defthm iterate-sqrt-range-reduces-range-size-to-delta
     (implies (and (real/rationalp high)
@@ -727,24 +727,24 @@ To load this book, it is sufficient to do something like this:
   ;; value less than epsilon part of the proof.
   ;;
   (local
-   (defthm convergence-of-iter-sqrt-1
+   (defthm convergence-of-sqrt-iter-1
      (implies (and (real/rationalp x)
                    (real/rationalp epsilon)
                    (< 0 epsilon)
                    (<= 0 x))
-              (<= (* (iter-sqrt x epsilon) (iter-sqrt x epsilon)) x))))
+              (<= (* (sqrt-iter x epsilon) (sqrt-iter x epsilon)) x))))
 
   ;;
   ;; Now, we show that our answer (which is known to be smaller than needed)
   ;; isn't too much smaller.  I.e., it's within epsilon of the square root.
   ;;
   (local
-   (defthm convergence-of-iter-sqrt-2
+   (defthm convergence-of-sqrt-iter-2
      (implies (and (real/rationalp x)
                    (real/rationalp epsilon)
                    (< 0 epsilon)
                    (<= 0 x))
-              (< (- x (* (iter-sqrt x epsilon) (iter-sqrt x epsilon)))
+              (< (- x (* (sqrt-iter x epsilon) (sqrt-iter x epsilon)))
                  epsilon))
      :hints (("Goal"
               :use ((:instance iterate-sqrt-range-reduces-range-size-to-delta
@@ -752,7 +752,7 @@ To load this book, it is sufficient to do something like this:
                                (high (if (< x 1) 1 x))
                                (delta (/ epsilon (+ (if (< x 1) 1 x)
                                                     (if (< x 1) 1 x)))))
-                    (:instance iter-sqrt-epsilon-delta
+                    (:instance sqrt-iter-epsilon-delta
                                (low 0)
                                (high (if (< x 1) 1 x))
                                (delta (/ epsilon (+ (if (< x 1) 1 x)
@@ -768,26 +768,26 @@ To load this book, it is sufficient to do something like this:
                                                                    x)))))))
               :in-theory (disable ceiling
                                   iterate-sqrt-range-reduces-range-size-to-delta
-                                  iter-sqrt-epsilon-delta)))))
+                                  sqrt-iter-epsilon-delta)))))
 
   ;;
   ;; For stylistic reasons, we combine the two results above into a single
   ;; theorem.
   ;;
-  (defthm convergence-of-iter-sqrt
+  (defthm convergence-of-sqrt-iter
     (implies (and (real/rationalp x)
                   (real/rationalp epsilon)
                   (< 0 epsilon)
                   (<= 0 x))
-             (and (<= (* (iter-sqrt x epsilon)
-                         (iter-sqrt x epsilon))
+             (and (<= (* (sqrt-iter x epsilon)
+                         (sqrt-iter x epsilon))
                       x)
-                  (< (- x (* (iter-sqrt x epsilon)
-                             (iter-sqrt x epsilon)))
+                  (< (- x (* (sqrt-iter x epsilon)
+                             (sqrt-iter x epsilon)))
                      epsilon)))
     :hints (("Goal"
-             :use ((:instance convergence-of-iter-sqrt-1)
-                   (:instance convergence-of-iter-sqrt-2))
-             :in-theory (disable iter-sqrt
-                                 convergence-of-iter-sqrt-1
-                                 convergence-of-iter-sqrt-2)))))
+             :use ((:instance convergence-of-sqrt-iter-1)
+                   (:instance convergence-of-sqrt-iter-2))
+             :in-theory (disable sqrt-iter
+                                 convergence-of-sqrt-iter-1
+                                 convergence-of-sqrt-iter-2)))))
