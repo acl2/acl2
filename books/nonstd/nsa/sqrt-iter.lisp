@@ -1,6 +1,6 @@
 #|
-In this Acl2 book, we prove that the square root function can be approximated
-in Acl2.  In particular, we prove the following theorem:
+In this ACL2 book, we prove that the square root function can be approximated
+in ACL2.  In particular, we prove the following theorem:
 
  (defthm convergence-of-sqrt-iter
    (implies (and (real/rationalp x)
@@ -66,7 +66,7 @@ To load this book, it is sufficient to do something like this:
         (iterate-sqrt-range low mid x (1- num-iters))))))
 
 ;;
-;; Acl2 doesn't seem to infer the type of the function above, so we give it
+;; ACL2 doesn't seem to infer the type of the function above, so we give it
 ;; some help.  Hmmm, maybe this is a candidate for builtin-clause?
 ;;
 (defthm iterate-sqrt-range-type-prescription
@@ -150,7 +150,7 @@ To load this book, it is sufficient to do something like this:
   ()
 
   ;;
-  ;; First, we show Acl2 how to 'discover' the needed delta.
+  ;; First, we show ACL2 how to 'discover' the needed delta.
   ;;
   (local
    (defthm sqrt-epsilon-delta-aux
@@ -226,7 +226,7 @@ To load this book, it is sufficient to do something like this:
   ;; guaranteed that b becomes smaller, but a becomes larger.  So, it is very
   ;; advantageous to replace (+ a b) with the larger (+ b b), since we _know_
   ;; this term becomes smaller (and hence is easier to reason about).  So, the
-  ;; first step is to teach Acl2 the properties of (+ a b) and (+ b b) under our
+  ;; first step is to teach ACL2 the properties of (+ a b) and (+ b b) under our
   ;; assumptions.  Incidentally, we need that (+ a b) is positive, because the
   ;; inequality rewriting below only works for positive terms (e.g., multiplying
   ;; both sides of an inequality by a term).
@@ -242,7 +242,7 @@ To load this book, it is sufficient to do something like this:
 
   ;;
   ;; We discovered that it's easier to reason about A and B than about (+ a b)
-  ;; and (+ b b) respectively.  This is an instance of Acl2's problems with
+  ;; and (+ b b) respectively.  This is an instance of ACL2's problems with
   ;; non-recursive functions.  I.e., it doesn't know that it shouldn't reason
   ;; about the shape of (+ a b).  Can't blame it, really.  It's a program.
   ;;
@@ -313,7 +313,7 @@ To load this book, it is sufficient to do something like this:
 ;;
 ;; Now, we translate the results above into sqrt-iter-delta.  Again, this seems
 ;; harder than it needs to be.  It looks like my proof goes directly against
-;; Acl2's inequality heuristics.  We _must_ be doing something wrong.
+;; ACL2's inequality heuristics.  We _must_ be doing something wrong.
 ;;
 (encapsulate
   ()
@@ -335,10 +335,10 @@ To load this book, it is sufficient to do something like this:
 
   ;;
   ;; Now, we extend the theorem above, but we add the extra delta inequality to
-  ;; weaken the hypothesis.  We end up having to disable many of Acl2's rewrite
+  ;; weaken the hypothesis.  We end up having to disable many of ACL2's rewrite
   ;; rules, because they rewrite the intermediate terms before we can bring our
   ;; hypothesis to bear.  This is our biggest indication that we just don't know
-  ;; how to reason about inequalities in Acl2.  Need more practice!
+  ;; how to reason about inequalities in ACL2.  Need more practice!
   ;;
   (local
    (defthm sqrt-iter-epsilon-delta-aux-2
@@ -404,7 +404,7 @@ To load this book, it is sufficient to do something like this:
   `(expt 2 ,n))
 
 ;;
-;; Unfortunately, we have to use the ceiling function.  Acl2 doesn't seem to
+;; Unfortunately, we have to use the ceiling function.  ACL2 doesn't seem to
 ;; want to reason much about it, so we prove its fundamental theorem ourselves.
 ;;
 (encapsulate
@@ -511,25 +511,27 @@ To load this book, it is sufficient to do something like this:
     0))
 
 ;;
-;; To show how quickly the function converges, we teach Acl2 a simple way to
+;; To show how quickly the function converges, we teach ACL2 a simple way to
 ;; characterize the final range from a given initial range.  As expected, the
 ;; powers of two feature prominently :-)
 ;;
-(defthm expt-2-x-1 ; make local?
-  (implies (and (integerp x)
-                (< 0 x))
-           (equal (expt 2 (+ -1 x))
-                  (* 1/2 (expt 2 x))))
-  :hints (("Goal"
-           :in-theory '(exponents-add-unrestricted (expt)))))
+(local
+ (defthm expt-2-x-1
+   (implies (and (integerp x)
+                 (< 0 x))
+            (equal (expt 2 (+ -1 x))
+                   (* 1/2 (expt 2 x))))
+   :hints (("Goal"
+            :in-theory '(exponents-add-unrestricted (expt))))))
 
-(defthm expt-2-x+1 ; make local?
-  (implies (and (integerp x)
-                (< 0 x))
-           (equal (expt 2 (+ 1 x))
-                  (* 2 (expt 2 x))))
-  :hints (("Goal"
-           :in-theory '(exponents-add-unrestricted (expt)))))
+(local
+ (defthm expt-2-x+1
+   (implies (and (integerp x)
+                 (< 0 x))
+            (equal (expt 2 (+ 1 x))
+                   (* 2 (expt 2 x))))
+   :hints (("Goal"
+            :in-theory '(exponents-add-unrestricted (expt))))))
 
 (local (in-theory (disable expt
                            right-unicity-of-1-for-expt
@@ -624,7 +626,7 @@ To load this book, it is sufficient to do something like this:
      :rule-classes nil))
 
   ;;
-  ;; Using that, we show Acl2 how to derive an inequality contradiction that
+  ;; Using that, we show ACL2 how to derive an inequality contradiction that
   ;; it'll see in the next proof.
   ;;
   (local
@@ -650,7 +652,7 @@ To load this book, it is sufficient to do something like this:
 
   ;;
   ;; So now, we can prove a general form of our theorem without appealing to the
-  ;; sqrt-iter functions (with all the added complication that excites Acl2's
+  ;; sqrt-iter functions (with all the added complication that excites ACL2's
   ;; rewriting heuristics)
   ;;
   (local
