@@ -14,6 +14,8 @@
 (include-book "deffixer")
 (include-book "defarbrec")
 (include-book "defarbrec-doc")
+(include-book "definj")
+(include-book "definj-doc")
 (include-book "defiso")
 (include-book "defiso-doc")
 (include-book "defmacro-plus")

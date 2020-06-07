@@ -373,6 +373,12 @@
      implemented as a thin wrapper of @(tsee defmapping).")
 
    (xdoc::p
+    "A new event macro @(tsee definj) has been added
+     to verify and record injective mappings.
+     It is a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
+
+   (xdoc::p
     "A new event macro @(tsee defsurj) has been added
      to verify and record surjective mappings.
      It is a specialization of @(tsee defmapping),
