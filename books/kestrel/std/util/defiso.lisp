@@ -40,7 +40,8 @@
   (xdoc::topstring-p
    "This is a wrapper of @(tsee defmapping-lookup)
     that makes sure that the mapping is an isomorphism,
-    i.e. that it has @(':beta-of-alpha') and @(':alpha-of-beta') theorems.
+    i.e. that it has
+    both the @(':beta-of-alpha') and @(':alpha-of-beta') theorems.
     It causes an error if that is not the case.")
   (b* ((info (defmapping-lookup name wrld))
        ((when (not info)) nil)
@@ -60,7 +61,8 @@
   (xdoc::topstring
    (xdoc::p
     "We call @(tsee defmapping-fn),
-     passing @('t') as both @(':beta-of-alpha') and @(':alpha-of-beta').
+     passing @('t') as
+     both @(':beta-of-alpha-thm') and @(':alpha-of-beta-thm').
      Furthermore, we set the context to reference @(tsee defiso).")
    (xdoc::@def "defiso"))
   (defmacro defiso (&whole
@@ -85,8 +87,8 @@
                          ',domb
                          ',alpha
                          ',beta
-                         t
-                         t
+                         t ; BETA-OF-ALPHA-THM
+                         t ; ALPHA-OF-BETA-THM
                          ',guard-thms
                          ',unconditional
                          ',thm-names
