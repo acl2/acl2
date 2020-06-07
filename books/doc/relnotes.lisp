@@ -363,11 +363,6 @@
      counterpart of a non-executable function.")
 
    (xdoc::p
-    "A new event macro @(tsee defsurj) has been added,
-     to verify and record surjective mappings.
-     This is related to @(tsee defiso).")
-
-   (xdoc::p
     "A new event macro @(tsee defmapping) has been added,
      to verify and record mappings that must be (based on supplied options)
      injective, surjective, or bijective.")
@@ -375,6 +370,12 @@
    (xdoc::p
     "The @(tsee defiso) event macro is now
      a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
+
+   (xdoc::p
+    "A new event macro @(tsee defsurj) has been added
+     to verify and record surjective mappings.
+     It is a specialization of @(tsee defmapping),
      implemented as a thin wrapper of @(tsee defmapping).")
 
    (xdoc::p
