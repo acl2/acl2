@@ -24,6 +24,8 @@
 (include-book "parteval")
 (include-book "parteval-doc")
 
+;; (include-book "propagate-iso") ;; TODO: Uncomment once name clashes resolved
+
 (include-book "restrict")
 (include-book "restrict-doc")
 
