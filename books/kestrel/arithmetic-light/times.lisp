@@ -69,7 +69,7 @@
            :in-theory (disable integerp-of-*))))
 
 
-(defthm *-of---arg
+(defthm *-of---arg1
   (implies (syntaxp (not (quotep x))) ;prevent it from matching a constant
            (equal (* (- x) y)
                   (- (* x y))))
