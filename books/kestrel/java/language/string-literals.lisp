@@ -109,4 +109,5 @@
      This remains to be proved formally."))
   :elt-type string-literal-char
   :true-listp t
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  :pred string-literalp)

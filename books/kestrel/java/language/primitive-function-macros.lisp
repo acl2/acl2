@@ -53,7 +53,7 @@
 (define primitive-type-predicate ((type primitive-typep))
   :returns (predicate symbolp)
   :short "The recognizer of the fixtype of the values of a primitive type."
-  (packn-pos (list (symbol-name (primitive-type-kind type)) '-value-p)
+  (packn-pos (list (symbol-name (primitive-type-kind type)) '-valuep)
              (pkg-witness "JAVA")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

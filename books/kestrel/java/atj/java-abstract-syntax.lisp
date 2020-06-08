@@ -76,7 +76,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection string-list
-  :short "Fixtype of true lists of ACL2 strings,
+  :short "Fixtype of lists of ACL2 strings,
           i.e. values recognized by @(tsee string-listp)."
   :long
   (xdoc::topstring-p
@@ -178,7 +178,7 @@
   :pred jliteralp)
 
 (fty::deflist jliteral-list
-  :short "True lists of Java literals."
+  :short "Lists of Java literals."
   :elt-type jliteral
   :true-listp t
   :elementp-of-nil nil
@@ -287,7 +287,7 @@
   (jtype-prim (primitive-type-double)))
 
 (fty::deflist jtype-list
-  :short "True lists of Java types."
+  :short "Lists of Java types."
   :elt-type jtype
   :true-listp t
   :elementp-of-nil nil
@@ -598,7 +598,7 @@
     :enable (jblock-count append)))
 
 (fty::deflist jblock-list
-  :short "True lists of Java blocks."
+  :short "Lists of Java blocks."
   :elt-type jblock
   :true-listp t
   :elementp-of-nil t
@@ -733,7 +733,7 @@
   :pred jfieldp)
 
 (fty::deflist jfield-list
-  :short "True lists of Java field declarations."
+  :short "Lists of Java field declarations."
   :elt-type jfield
   :true-listp t
   :elementp-of-nil nil
@@ -764,7 +764,7 @@
   :pred jparamp)
 
 (fty::deflist jparam-list
-  :short "True lists of Java formal parameters."
+  :short "Lists of Java formal parameters."
   :elt-type jparam
   :true-listp t
   :elementp-of-nil nil
@@ -822,7 +822,7 @@
   :pred jmethodp)
 
 (fty::deflist jmethod-list
-  :short "True lists of Java method declarations."
+  :short "Lists of Java method declarations."
   :elt-type jmethod
   :true-listp t
   :elementp-of-nil nil
@@ -866,7 +866,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deflist jcbody-element-list
-    :short "True lists of Java class body declarations."
+    :short "Lists of Java class body declarations."
     :elt-type jcbody-element
     :true-listp t
     :elementp-of-nil nil
@@ -898,7 +898,7 @@
     :measure (two-nats-measure (acl2-count x) 1)))
 
 (fty::deflist jclass-list
-  :short "True lists of Java class declarations."
+  :short "Lists of Java class declarations."
   :elt-type jclass
   :true-listp t
   :elementp-of-nil nil
@@ -945,7 +945,7 @@
   :pred jimportp)
 
 (fty::deflist jimport-list
-  :short "True lists of Java import declarations."
+  :short "Lists of Java import declarations."
   :elt-type jimport
   :true-listp t
   :elementp-of-nil nil

@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-literal-p (x)
+(define boolean-literalp (x)
   :returns (yes/no booleanp)
   :short "Recognize the Java boolean literals."
   :long

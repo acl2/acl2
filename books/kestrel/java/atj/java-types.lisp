@@ -86,7 +86,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist atj-jitype-listp (x)
-  :short "Recognize true lists of ATJ Java input types."
+  :short "Recognize lists of ATJ Java input types."
   (atj-jitypep x)
   :true-listp t
   :elementp-of-nil nil

@@ -88,7 +88,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist hex-digit-list
-  :short "Fixtype of true lists of Java hexadecimal digits."
+  :short "Fixtype of lists of Java hexadecimal digits."
   :elt-type hex-digit
   :true-listp t
   :elementp-of-nil nil

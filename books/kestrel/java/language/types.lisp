@@ -45,7 +45,7 @@
   :pred jtypep
   :prepwork
   ((defrulel lemma
-     (implies (reference-type-p x)
+     (implies (reference-typep x)
               (not (primitive-typep x)))
      :enable (primitive-typep
-              reference-type-p))))
+              reference-typep))))

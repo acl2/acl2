@@ -265,7 +265,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-dec-integer-literal ((lit dec-integer-literal-p))
+(define print-dec-integer-literal ((lit dec-integer-literalp))
   :returns (part msgp)
   :short "Pretty-print a decimal integer literal."
   (b* (((dec-integer-literal lit) lit))
@@ -274,7 +274,7 @@
          (print-optional-integer-type-suffix lit.suffix?)))
   :hooks (:fix))
 
-(define print-hex-integer-literal ((lit hex-integer-literal-p))
+(define print-hex-integer-literal ((lit hex-integer-literalp))
   :returns (part msgp)
   :short "Pretty-print a hexadecimal integer literal."
   (b* (((hex-integer-literal lit) lit))
@@ -284,7 +284,7 @@
          (print-optional-integer-type-suffix lit.suffix?)))
   :hooks (:fix))
 
-(define print-oct-integer-literal ((lit oct-integer-literal-p))
+(define print-oct-integer-literal ((lit oct-integer-literalp))
   :returns (part msgp)
   :short "Pretty-print an octal integer literal."
   (b* (((oct-integer-literal lit) lit))
@@ -293,7 +293,7 @@
          (print-optional-integer-type-suffix lit.suffix?)))
   :hooks (:fix))
 
-(define print-bin-integer-literal ((lit bin-integer-literal-p))
+(define print-bin-integer-literal ((lit bin-integer-literalp))
   :returns (part msgp)
   :short "Pretty-print a binary integer literal."
   (b* (((bin-integer-literal lit) lit))
@@ -305,7 +305,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-integer-literal ((lit integer-literal-p))
+(define print-integer-literal ((lit integer-literalp))
   :returns (part msgp :hints (("Goal" :in-theory (disable msgp))))
   :short "Pretty-print an integer literal."
   (integer-literal-case lit

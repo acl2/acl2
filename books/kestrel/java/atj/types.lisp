@@ -377,7 +377,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-type-list
-  :short "Fixtype of true lists of ATJ types."
+  :short "Fixtype of lists of ATJ types."
   :elt-type atj-type
   :true-listp t
   :elementp-of-nil nil
@@ -415,7 +415,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-type-list-list
-  :short "Fixtype of true lists of true lists of ATJ types."
+  :short "Fixtype of lists of lists of ATJ types."
   :elt-type atj-type-list
   :true-listp t
   :elementp-of-nil t
@@ -514,23 +514,23 @@
                                        :cons 'consp
                                        :value '(lambda (_) 't))
                  :jprim (primitive-type-case type.get
-                                             :boolean 'boolean-value-p
-                                             :char 'char-value-p
-                                             :byte 'byte-value-p
-                                             :short 'short-value-p
-                                             :int 'int-value-p
-                                             :long 'long-value-p
-                                             :float 'float-value-p
-                                             :double 'double-value-p)
+                                             :boolean 'boolean-valuep
+                                             :char 'char-valuep
+                                             :byte 'byte-valuep
+                                             :short 'short-valuep
+                                             :int 'int-valuep
+                                             :long 'long-valuep
+                                             :float 'float-valuep
+                                             :double 'double-valuep)
                  :jprimarr (primitive-type-case type.comp
-                                                :boolean 'boolean-array-p
-                                                :char 'char-array-p
-                                                :byte 'byte-array-p
-                                                :short 'short-array-p
-                                                :int 'int-array-p
-                                                :long 'long-array-p
-                                                :float 'float-array-p
-                                                :double 'double-array-p))
+                                                :boolean 'boolean-arrayp
+                                                :char 'char-arrayp
+                                                :byte 'byte-arrayp
+                                                :short 'short-arrayp
+                                                :int 'int-arrayp
+                                                :long 'long-arrayp
+                                                :float 'float-arrayp
+                                                :double 'double-arrayp))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1498,7 +1498,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-function-type-list
-  :short "Fixtype of true lists of ATJ function types."
+  :short "Fixtype of lists of ATJ function types."
   :elt-type atj-function-type
   :true-listp t
   :elementp-of-nil nil
@@ -1901,7 +1901,7 @@
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
        ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
-                must be a true list of ATJ type keywords."
+                must be a list of ATJ type keywords."
                in-type-specs))
        (in-types ; error id not valid ATJ type keywords:
         (atj-type-list-from-keyword-list in-type-specs))
@@ -1919,7 +1919,7 @@
               (atj-process-output-type-specs
                out-type-spec/specs formals in-types)
             (prog2$ (raise "The third input, ~x0, ~
-                            must be a true list of length ~x1 ~
+                            must be a list of length ~x1 ~
                             of output type specifications."
                            out-type-spec/specs nresults)
                     (mv nil nil)))))
@@ -2274,7 +2274,7 @@
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
        ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
-                must be a true list of ATJ type keywords."
+                must be a list of ATJ type keywords."
                in-type-specs))
        (in-types ; error if not valid ATJ type keywords:
         (atj-type-list-from-keyword-list in-type-specs))
@@ -2292,7 +2292,7 @@
               (atj-process-output-type-specs
                out-type-spec/specs formals in-types)
             (prog2$ (raise "The third input, ~x0, ~
-                            must be a true list of length ~x1 ~
+                            must be a list of length ~x1 ~
                             of output type specifications."
                            out-type-spec/specs nresults)
                     (mv nil nil)))))

@@ -30,4 +30,5 @@
   (:hex ((get hex-integer-literal)))
   (:dec ((get dec-integer-literal)))
   (:oct ((get oct-integer-literal)))
-  (:bin ((get bin-integer-literal))))
+  (:bin ((get bin-integer-literal)))
+  :pred integer-literalp)
