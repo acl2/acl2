@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist decdig/uscore-list
-  :short "Fixtype of true lists of decimal digits and underscores."
+  :short "Fixtype of lists of decimal digits and underscores."
   :long
   (xdoc::topstring-p
    "A @('decimal-numeral') in the grammar

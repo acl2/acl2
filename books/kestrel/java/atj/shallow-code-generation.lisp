@@ -4111,7 +4111,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defalist string-jmethodlist-alistp (x)
-  :short "Alists from package names (strings) to true lists of Java methods."
+  :short "Alists from package names (strings) to lists of Java methods."
   :key (stringp x)
   :val (jmethod-listp x)
   :true-listp t
@@ -4217,7 +4217,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defalist string-jfieldlist-alistp (x)
-  :short "Alists from package names (strings) to true lists of Java fields."
+  :short "Alists from package names (strings) to lists of Java fields."
   :key (stringp x)
   :val (jfield-listp x)
   :true-listp t

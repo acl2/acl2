@@ -25,7 +25,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum atj-test-value
-  :short "Values used for inputs and outputs in user-specified ATJ tests."
+  :short "Fixtype of values used for
+          inputs and outputs in user-specified ATJ tests."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -98,7 +99,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-test-value-list
-  :short "True lists of ATJ test values."
+  :short "Fixtype of lists of ATJ test values."
   :elt-type atj-test-value
   :true-listp t
   :elementp-of-nil nil

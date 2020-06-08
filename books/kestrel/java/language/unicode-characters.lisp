@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbytelist unicode-list
-  :short "Fixtype of true lists of Java Unicode characters."
+  :short "Fixtype of lists of Java Unicode characters."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -85,7 +85,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbytelist ascii-list
-  :short "Fixtype of true lists of ASCII characters."
+  :short "Fixtype of lists of ASCII characters."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -149,7 +149,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist pointer-list
-  :short "Fixtype of true lists of Java pointers."
+  :short "Fixtype of lists of Java pointers."
   :elt-type pointer
   :true-listp t
   :pred pointer-listp)

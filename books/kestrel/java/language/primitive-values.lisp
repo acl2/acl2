@@ -191,7 +191,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist boolean-value-list
-  :short "Fixtype of true lists of Java @('boolean') values."
+  :short "Fixtype of lists of Java @('boolean') values."
   :elt-type boolean-value
   :true-listp t
   :elementp-of-nil nil
@@ -200,7 +200,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist char-value-list
-  :short "Fixtype of true lists of Java @('char') values."
+  :short "Fixtype of lists of Java @('char') values."
   :elt-type char-value
   :true-listp t
   :elementp-of-nil nil
@@ -209,7 +209,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist byte-value-list
-  :short "Fixtype of true lists of Java @('byte') values."
+  :short "Fixtype of lists of Java @('byte') values."
   :elt-type byte-value
   :true-listp t
   :elementp-of-nil nil
@@ -218,7 +218,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist short-value-list
-  :short "Fixtype of true lists of Java @('short') values."
+  :short "Fixtype of lists of Java @('short') values."
   :elt-type short-value
   :true-listp t
   :elementp-of-nil nil
@@ -227,7 +227,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist int-value-list
-  :short "Fixtype of true lists of Java @('int') values."
+  :short "Fixtype of lists of Java @('int') values."
   :elt-type int-value
   :true-listp t
   :elementp-of-nil nil
@@ -236,7 +236,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist long-value-list
-  :short "Fixtype of true lists of Java @('long') values."
+  :short "Fixtype of lists of Java @('long') values."
   :elt-type long-value
   :true-listp t
   :elementp-of-nil nil
@@ -245,7 +245,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist float-value-list
-  :short "Fixtype of true lists of Java @('float') values."
+  :short "Fixtype of lists of Java @('float') values."
   :elt-type float-value
   :true-listp t
   :elementp-of-nil nil
@@ -254,7 +254,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist double-value-list
-  :short "Fixtype of true lists of Java @('double') values."
+  :short "Fixtype of lists of Java @('double') values."
   :elt-type double-value
   :true-listp t
   :elementp-of-nil nil

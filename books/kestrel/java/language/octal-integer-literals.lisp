@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist octdig/uscore-list
-  :short "Fixtype of true lists of octal digits and underscores."
+  :short "Fixtype of lists of octal digits and underscores."
   :long
   (xdoc::topstring-p
    "An @('octal-numeral') in the grammar

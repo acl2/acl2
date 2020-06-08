@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist bindig/uscore-list
-  :short "Fixtype of true lists of binary digits and underscores."
+  :short "Fixtype of lists of binary digits and underscores."
   :long
   (xdoc::topstring-p
    "A @('binary-numeral') in the grammar, excluding the prefix,

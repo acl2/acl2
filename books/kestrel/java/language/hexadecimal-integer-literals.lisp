@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist hexdig/uscore-list
-  :short "Fixtype of true lists of hexadecimal digits and underscores."
+  :short "Fixtype of lists of hexadecimal digits and underscores."
   :long
   (xdoc::topstring-p
    "A @('hex-numeral') in the grammar, excluding the prefix,
