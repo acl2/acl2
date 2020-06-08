@@ -415,7 +415,7 @@ class Acl2IntegerTest {
     }
 
     @Test
-    void equalsToNonIntegers() {
+    void equalsToNonIntegers() { // not equal
         // ratios:
         assertFalse(Acl2Integer.ZERO.equals(Acl2Rational.make(1, 3)));
         assertFalse(Acl2Integer.ZERO.equals(Acl2Rational.make(-121, 3333)));

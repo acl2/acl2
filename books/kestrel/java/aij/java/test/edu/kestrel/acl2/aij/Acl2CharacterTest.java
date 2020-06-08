@@ -148,7 +148,7 @@ class Acl2CharacterTest {
     }
 
     @Test
-    void equalsToNonCharacters() {
+    void equalsToNonCharacters() { // not equal
         // strings:
         assertFalse(Acl2Character.CODE_0.equals(Acl2String.make("str")));
         assertFalse(Acl2Character.make('a').equals(Acl2String.make("a")));
