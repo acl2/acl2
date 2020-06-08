@@ -514,23 +514,23 @@
                                        :cons 'consp
                                        :value '(lambda (_) 't))
                  :jprim (primitive-type-case type.get
-                                             :boolean 'boolean-value-p
-                                             :char 'char-value-p
-                                             :byte 'byte-value-p
-                                             :short 'short-value-p
-                                             :int 'int-value-p
-                                             :long 'long-value-p
-                                             :float 'float-value-p
-                                             :double 'double-value-p)
+                                             :boolean 'boolean-valuep
+                                             :char 'char-valuep
+                                             :byte 'byte-valuep
+                                             :short 'short-valuep
+                                             :int 'int-valuep
+                                             :long 'long-valuep
+                                             :float 'float-valuep
+                                             :double 'double-valuep)
                  :jprimarr (primitive-type-case type.comp
-                                                :boolean 'boolean-array-p
-                                                :char 'char-array-p
-                                                :byte 'byte-array-p
-                                                :short 'short-array-p
-                                                :int 'int-array-p
-                                                :long 'long-array-p
-                                                :float 'float-array-p
-                                                :double 'double-array-p))
+                                                :boolean 'boolean-arrayp
+                                                :char 'char-arrayp
+                                                :byte 'byte-arrayp
+                                                :short 'short-arrayp
+                                                :int 'int-arrayp
+                                                :long 'long-arrayp
+                                                :float 'float-arrayp
+                                                :double 'double-arrayp))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

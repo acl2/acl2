@@ -135,6 +135,7 @@
                                    (octdig/uscore-digit (char-code #\0)))))
    (prefix-upcase-p bool)
    (suffix? optional-integer-type-suffix))
+  :require (octdig/uscore-list-wfp digits/uscores)
   :tag :oct-integer-lit
   :layout :list
-  :require (octdig/uscore-list-wfp digits/uscores))
+  :pred oct-integer-literalp)

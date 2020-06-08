@@ -133,6 +133,7 @@
                              (list (hexdig/uscore-digit (char-code #\0)))))
    (prefix-upcase-p bool)
    (suffix? optional-integer-type-suffix))
+  :require (hexdig/uscore-list-wfp digits/uscores)
   :tag :hex-integer-lit
   :layout :list
-  :require (hexdig/uscore-list-wfp digits/uscores))
+  :pred hex-integer-literalp)

@@ -136,6 +136,7 @@
                                digits/uscores
                              (list (decdig/uscore-digit (char-code #\0)))))
    (suffix? optional-integer-type-suffix))
+  :require (decdig/uscore-list-wfp digits/uscores)
   :tag :dec-integer-lit
   :layout :list
-  :require (decdig/uscore-list-wfp digits/uscores))
+  :pred dec-integer-literalp)

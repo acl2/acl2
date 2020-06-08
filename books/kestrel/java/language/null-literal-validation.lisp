@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,21 +17,21 @@
 
 (defxdoc+ null-literal-grammar-validation
   :parents (null-literal)
-  :short "Validation of the definition of @(tsee null-literal-p)
+  :short "Validation of the definition of @(tsee null-literalp)
           with respect to the ABNF grammar of Java."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The predicate @(tsee null-literal-p) defines the null literal
+    "The predicate @(tsee null-literalp) defines the null literal
      `directly', i.e. without reference to the grammar.
      Here we introduce an alternative predicate based on the grammar,
-     and we show it equivalent to @(tsee null-literal-p)."))
+     and we show it equivalent to @(tsee null-literalp)."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk grammar-null-literal-p (x)
+(define-sk grammar-null-literalp (x)
   :returns (yes/no booleanp)
   :short "Definition of the null literal based on the grammar."
   :long
@@ -53,15 +53,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used in @(tsee grammar-null-literal-p-when-null-literal-p)."))
+    "This is used in @(tsee grammar-null-literalp-when-null-literalp)."))
   (abnf::tree-nonleaf (abnf::rulename "null-literal")
                       (list (list (abnf::tree-leafterm
                                    (string=>unicode *null-literal*))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled grammar-null-literal-p-when-null-literal-p
-  :short "Proof of @(tsee grammar-null-literal-p) from @(tsee null-literal-p)."
+(defruled grammar-null-literalp-when-null-literalp
+  :short "Proof of @(tsee grammar-null-literalp) from @(tsee null-literalp)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -70,37 +70,37 @@
      if @('x') is the null literal,
      then we can use the tree as witness,
      since its leaves are the null literal @('x') as well."))
-  (implies (null-literal-p x)
-           (grammar-null-literal-p x))
-  :enable (null-literal-p
+  (implies (null-literalp x)
+           (grammar-null-literalp x))
+  :enable (null-literalp
            equal-of-ascii=>string-to-equal-of-string=>unicode)
-  :use (:instance grammar-null-literal-p-suff
+  :use (:instance grammar-null-literalp-suff
         (tree (null-literal-tree))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled null-literal-p-when-grammar-null-literal-p
-  :short "Proof of @(tsee null-literal-p) from @(tsee grammar-null-literal-p)."
+(defruled null-literalp-when-grammar-null-literalp
+  :short "Proof of @(tsee null-literalp) from @(tsee grammar-null-literalp)."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is proved via a lemma asserting that
      a terminated tree rooted at @('null-literal')
-     has leaves that satisfy @(tsee null-literal-p).
+     has leaves that satisfy @(tsee null-literalp).
      The lemma is proved by exhaustively opening @(tsee abnf-tree-with-root-p),
      thus prescribing the exact form of the tree,
      and in particular its leaves.
      The theorem is then proved by instantiating the lemma
-     to the witness tree of @(tsee grammar-null-literal-p)."))
-  (implies (grammar-null-literal-p x)
-           (null-literal-p x))
-  :enable (grammar-null-literal-p)
-  :use (:instance lemma (tree (grammar-null-literal-p-witness x)))
+     to the witness tree of @(tsee grammar-null-literalp)."))
+  (implies (grammar-null-literalp x)
+           (null-literalp x))
+  :enable (grammar-null-literalp)
+  :use (:instance lemma (tree (grammar-null-literalp-witness x)))
 
   :prep-lemmas
   ((defrule lemma
      (implies (abnf-tree-with-root-p tree "null-literal")
-              (null-literal-p (abnf::tree->string tree)))
+              (null-literalp (abnf::tree->string tree)))
      :rule-classes nil
      :expand ((:free (element)
                (abnf::tree-match-element-p tree element *grammar*)))
@@ -124,10 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled null-literal-p-is-grammar-null-literal-p
-  :short "Equivalence of @(tsee null-literal-p)
-          and @(tsee grammar-null-literal-p)."
-  (equal (null-literal-p x)
-         (grammar-null-literal-p x))
-  :use (grammar-null-literal-p-when-null-literal-p
-        null-literal-p-when-grammar-null-literal-p))
+(defruled null-literalp-is-grammar-null-literalp
+  :short "Equivalence of @(tsee null-literalp)
+          and @(tsee grammar-null-literalp)."
+  (equal (null-literalp x)
+         (grammar-null-literalp x))
+  :use (grammar-null-literalp-when-null-literalp
+        null-literalp-when-grammar-null-literalp))

@@ -35,4 +35,5 @@
      so that it can be distinguished from other lists of identifiers."))
   ((identifiers identifier-list))
   :layout :list
-  :tag :package-name)
+  :tag :package-name
+  :pred package-namep)
