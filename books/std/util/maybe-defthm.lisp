@@ -95,7 +95,7 @@
                                                 (acl2::remove-guard-holders
                                                  concl
                                                  wrld)
-                                                ens wrld))
+                                                nil ens wrld))
          ((when msg)
           ;; Not okay!  Don't submit the theorem.
           (value '(value-triple :invisible))))

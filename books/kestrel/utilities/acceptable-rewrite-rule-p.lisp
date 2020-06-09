@@ -26,6 +26,7 @@
         (interpret-term-as-rewrite-rule name
                                         (caar lst) ; hyps
                                         (cdar lst) ; concl
+                                        nil        ; ctx
                                         ens wrld)
         (declare (ignore eqv lhs rhs ttree))
         (and (null msg)
