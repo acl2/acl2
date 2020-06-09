@@ -47,7 +47,7 @@
   :size 16
   :pred unicodep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbytelist unicode-list
   :short "Fixtype of lists of Java Unicode characters."
@@ -59,6 +59,59 @@
      instances of the class @('java.lang.String')."))
   :elt-type unicode
   :pred unicode-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defbyte iso8851
+  :short "Fixtype of ISO 8851-1 characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ISO 8851-1 characters are the first 256 Unicode characters.")
+   (xdoc::p
+    "Since we model Java Unicode characters as unsigned 16-bit integers,
+     we model ISO 8851-1 characters as unsigned 8-bit integers.")
+   (xdoc::p
+    "The names of this fixtype and of its recognizer, fixer, and equivalence
+     omit the last `1' in `ISO 8851-1' for brevity.
+     In the context of our Java language formalization,
+     `ISO 8859' only refers to Part 1 of the ISO 8859 standard.")
+   (xdoc::p
+    "Note that " (xdoc::seetopic "acl2::characters" "ACL2 characters") " are
+     consistent with ISO 8851-1.
+     Thus, this fixtype is isomorphic to the ACL2 characters."))
+  :size 8
+  :pred iso8851p)
+
+(defsection iso8851-ext
+  :extension iso8851
+
+  (defrule unicodep-when-iso8851p
+    (implies (iso8851p x)
+             (unicodep x))
+    :enable (iso8851p unicodep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defbytelist iso8851-list
+  :short "Fixtype of lists of ISO 8851-1 characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Values of this type model Java strings
+     (at a more essential and abstract level than
+     instances of the class @('java.lang.String'))
+     that consist of only ISO 8851-1 characters."))
+  :elt-type iso8851
+  :pred iso8851-listp)
+
+(defsection iso8851-list-ext
+  :extension iso8851-list
+
+  (defrule unicode-listp-when-iso8851-listp
+    (implies (iso8851-listp x)
+             (unicode-listp x))
+    :enable (iso8851-listp unicode-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,12 +130,12 @@
 (defsection ascii-ext
   :extension ascii
 
-  (defrule unicodep-when-asciip
+  (defrule iso8851p-when-asciip
     (implies (asciip x)
-             (unicodep x))
-    :enable (asciip unicodep)))
+             (iso8851p x))
+    :enable (asciip iso8851p)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defbytelist ascii-list
   :short "Fixtype of lists of ASCII characters."
@@ -99,10 +152,10 @@
 (defsection ascii-list-ext
   :extension ascii-list
 
-  (defrule unicode-listp-when-ascii-listp
-    (implies (ascii-listp x)
+  (defrule iso8851-listp-when-ascii-listp
+    (implies (iso8851-listp x)
              (unicode-listp x))
-    :enable (ascii-listp unicode-listp)))
+    :enable (iso8851-listp unicode-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
