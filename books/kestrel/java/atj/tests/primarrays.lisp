@@ -35,43 +35,43 @@
 
 (defun test-boolean-array-read (a i)
   (declare
-   (xargs :guard (and (java::boolean-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::boolean-arrayp a)
+                      (java::int-valuep i)
                       (java::boolean-array-index-in-range-p a i))))
   (java::boolean-array-read a i))
 
 (defun test-char-array-read (a i)
   (declare
-   (xargs :guard (and (java::char-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::char-arrayp a)
+                      (java::int-valuep i)
                       (java::char-array-index-in-range-p a i))))
   (java::char-array-read a i))
 
 (defun test-byte-array-read (a i)
   (declare
-   (xargs :guard (and (java::byte-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::byte-arrayp a)
+                      (java::int-valuep i)
                       (java::byte-array-index-in-range-p a i))))
   (java::byte-array-read a i))
 
 (defun test-short-array-read (a i)
   (declare
-   (xargs :guard (and (java::short-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::short-arrayp a)
+                      (java::int-valuep i)
                       (java::short-array-index-in-range-p a i))))
   (java::short-array-read a i))
 
 (defun test-int-array-read (a i)
   (declare
-   (xargs :guard (and (java::int-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::int-arrayp a)
+                      (java::int-valuep i)
                       (java::int-array-index-in-range-p a i))))
   (java::int-array-read a i))
 
 (defun test-long-array-read (a i)
   (declare
-   (xargs :guard (and (java::long-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::long-arrayp a)
+                      (java::int-valuep i)
                       (java::long-array-index-in-range-p a i))))
   (java::long-array-read a i))
 
@@ -80,27 +80,27 @@
 ; length:
 
 (defun test-boolean-array-length (a)
-  (declare (xargs :guard (java::boolean-array-p a)))
+  (declare (xargs :guard (java::boolean-arrayp a)))
   (java::boolean-array-length a))
 
 (defun test-char-array-length (a)
-  (declare (xargs :guard (java::char-array-p a)))
+  (declare (xargs :guard (java::char-arrayp a)))
   (java::char-array-length a))
 
 (defun test-byte-array-length (a)
-  (declare (xargs :guard (java::byte-array-p a)))
+  (declare (xargs :guard (java::byte-arrayp a)))
   (java::byte-array-length a))
 
 (defun test-short-array-length (a)
-  (declare (xargs :guard (java::short-array-p a)))
+  (declare (xargs :guard (java::short-arrayp a)))
   (java::short-array-length a))
 
 (defun test-int-array-length (a)
-  (declare (xargs :guard (java::int-array-p a)))
+  (declare (xargs :guard (java::int-arrayp a)))
   (java::int-array-length a))
 
 (defun test-long-array-length (a)
-  (declare (xargs :guard (java::long-array-p a)))
+  (declare (xargs :guard (java::long-arrayp a)))
   (java::long-array-length a))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,50 +109,50 @@
 
 (defun test-boolean-array-write (a i e)
   (declare
-   (xargs :guard (and (java::boolean-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::boolean-arrayp a)
+                      (java::int-valuep i)
                       (java::boolean-array-index-in-range-p a i)
-                      (java::boolean-value-p e))))
+                      (java::boolean-valuep e))))
   (java::boolean-array-write a i e))
 
 (defun test-char-array-write (a i e)
   (declare
-   (xargs :guard (and (java::char-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::char-arrayp a)
+                      (java::int-valuep i)
                       (java::char-array-index-in-range-p a i)
-                      (java::char-value-p e))))
+                      (java::char-valuep e))))
   (java::char-array-write a i e))
 
 (defun test-byte-array-write (a i e)
   (declare
-   (xargs :guard (and (java::byte-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::byte-arrayp a)
+                      (java::int-valuep i)
                       (java::byte-array-index-in-range-p a i)
-                      (java::byte-value-p e))))
+                      (java::byte-valuep e))))
   (java::byte-array-write a i e))
 
 (defun test-short-array-write (a i e)
   (declare
-   (xargs :guard (and (java::short-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::short-arrayp a)
+                      (java::int-valuep i)
                       (java::short-array-index-in-range-p a i)
-                      (java::short-value-p e))))
+                      (java::short-valuep e))))
   (java::short-array-write a i e))
 
 (defun test-int-array-write (a i e)
   (declare
-   (xargs :guard (and (java::int-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::int-arrayp a)
+                      (java::int-valuep i)
                       (java::int-array-index-in-range-p a i)
-                      (java::int-value-p e))))
+                      (java::int-valuep e))))
   (java::int-array-write a i e))
 
 (defun test-long-array-write (a i e)
   (declare
-   (xargs :guard (and (java::long-array-p a)
-                      (java::int-value-p i)
+   (xargs :guard (and (java::long-arrayp a)
+                      (java::int-valuep i)
                       (java::long-array-index-in-range-p a i)
-                      (java::long-value-p e))))
+                      (java::long-valuep e))))
   (java::long-array-write a i e))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -160,32 +160,32 @@
 ; creation with length:
 
 (defun test-boolean-array-new-len (l)
-  (declare (xargs :guard (and (java::int-value-p l)
+  (declare (xargs :guard (and (java::int-valuep l)
                               (<= 0 (java::int-value->int l)))))
   (java::boolean-array-new-len l))
 
 (defun test-char-array-new-len (l)
-  (declare (xargs :guard (and (java::int-value-p l)
+  (declare (xargs :guard (and (java::int-valuep l)
                               (<= 0 (java::int-value->int l)))))
   (java::char-array-new-len l))
 
 (defun test-byte-array-new-len (l)
-  (declare (xargs :guard (and (java::int-value-p l)
+  (declare (xargs :guard (and (java::int-valuep l)
                               (<= 0 (java::int-value->int l)))))
   (java::byte-array-new-len l))
 
 (defun test-short-array-new-len (l)
-  (declare (xargs :guard (and (java::int-value-p l)
+  (declare (xargs :guard (and (java::int-valuep l)
                               (<= 0 (java::int-value->int l)))))
   (java::short-array-new-len l))
 
 (defun test-int-array-new-len (l)
-  (declare (xargs :guard (and (java::int-value-p l)
+  (declare (xargs :guard (and (java::int-valuep l)
                               (<= 0 (java::int-value->int l)))))
   (java::int-array-new-len l))
 
 (defun test-long-array-new-len (l)
-  (declare (xargs :guard (and (java::int-value-p l)
+  (declare (xargs :guard (and (java::int-valuep l)
                               (<= 0 (java::int-value->int l)))))
   (java::long-array-new-len l))
 
@@ -220,27 +220,27 @@
 ; initializer with 1 component:
 
 (defun test-boolean-array-new-init-1 (x)
-  (declare (xargs :guard (java::boolean-value-p x)))
+  (declare (xargs :guard (java::boolean-valuep x)))
   (java::boolean-array-new-init (list x)))
 
 (defun test-char-array-new-init-1 (x)
-  (declare (xargs :guard (java::char-value-p x)))
+  (declare (xargs :guard (java::char-valuep x)))
   (java::char-array-new-init (list x)))
 
 (defun test-byte-array-new-init-1 (x)
-  (declare (xargs :guard (java::byte-value-p x)))
+  (declare (xargs :guard (java::byte-valuep x)))
   (java::byte-array-new-init (list x)))
 
 (defun test-short-array-new-init-1 (x)
-  (declare (xargs :guard (java::short-value-p x)))
+  (declare (xargs :guard (java::short-valuep x)))
   (java::short-array-new-init (list x)))
 
 (defun test-int-array-new-init-1 (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-array-new-init (list x)))
 
 (defun test-long-array-new-init-1 (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-array-new-init (list x)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -248,33 +248,33 @@
 ; initializer with 2 components:
 
 (defun test-boolean-array-new-init-2 (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y))))
   (java::boolean-array-new-init (list x y)))
 
 (defun test-char-array-new-init-2 (x y)
-  (declare (xargs :guard (and (java::char-value-p x)
-                              (java::char-value-p y))))
+  (declare (xargs :guard (and (java::char-valuep x)
+                              (java::char-valuep y))))
   (java::char-array-new-init (list x y)))
 
 (defun test-byte-array-new-init-2 (x y)
-  (declare (xargs :guard (and (java::byte-value-p x)
-                              (java::byte-value-p y))))
+  (declare (xargs :guard (and (java::byte-valuep x)
+                              (java::byte-valuep y))))
   (java::byte-array-new-init (list x y)))
 
 (defun test-short-array-new-init-2 (x y)
-  (declare (xargs :guard (and (java::short-value-p x)
-                              (java::short-value-p y))))
+  (declare (xargs :guard (and (java::short-valuep x)
+                              (java::short-valuep y))))
   (java::short-array-new-init (list x y)))
 
 (defun test-int-array-new-init-2 (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-array-new-init (list x y)))
 
 (defun test-long-array-new-init-2 (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-array-new-init (list x y)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -282,39 +282,39 @@
 ; initializer with 3 components:
 
 (defun test-boolean-array-new-init-3 (x y z)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y)
-                              (java::boolean-value-p z))))
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y)
+                              (java::boolean-valuep z))))
   (java::boolean-array-new-init (list x y z)))
 
 (defun test-char-array-new-init-3 (x y z)
-  (declare (xargs :guard (and (java::char-value-p x)
-                              (java::char-value-p y)
-                              (java::char-value-p z))))
+  (declare (xargs :guard (and (java::char-valuep x)
+                              (java::char-valuep y)
+                              (java::char-valuep z))))
   (java::char-array-new-init (list x y z)))
 
 (defun test-byte-array-new-init-3 (x y z)
-  (declare (xargs :guard (and (java::byte-value-p x)
-                              (java::byte-value-p y)
-                              (java::byte-value-p z))))
+  (declare (xargs :guard (and (java::byte-valuep x)
+                              (java::byte-valuep y)
+                              (java::byte-valuep z))))
   (java::byte-array-new-init (list x y z)))
 
 (defun test-short-array-new-init-3 (x y z)
-  (declare (xargs :guard (and (java::short-value-p x)
-                              (java::short-value-p y)
-                              (java::short-value-p z))))
+  (declare (xargs :guard (and (java::short-valuep x)
+                              (java::short-valuep y)
+                              (java::short-valuep z))))
   (java::short-array-new-init (list x y z)))
 
 (defun test-int-array-new-init-3 (x y z)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y)
-                              (java::int-value-p z))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y)
+                              (java::int-valuep z))))
   (java::int-array-new-init (list x y z)))
 
 (defun test-long-array-new-init-3 (x y z)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y)
-                              (java::long-value-p z))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y)
+                              (java::long-valuep z))))
   (java::long-array-new-init (list x y z)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -322,27 +322,27 @@
 ; conversion to list:
 
 (defun test-boolean-array-to-boolean-list (array)
-  (declare (xargs :guard (java::boolean-array-p array)))
+  (declare (xargs :guard (java::boolean-arrayp array)))
   (java::boolean-array-to-boolean-list array))
 
 (defun test-char-array-to-ubyte16-list (array)
-  (declare (xargs :guard (java::char-array-p array)))
+  (declare (xargs :guard (java::char-arrayp array)))
   (java::char-array-to-ubyte16-list array))
 
 (defun test-byte-array-to-sbyte8-list (array)
-  (declare (xargs :guard (java::byte-array-p array)))
+  (declare (xargs :guard (java::byte-arrayp array)))
   (java::byte-array-to-sbyte8-list array))
 
 (defun test-short-array-to-sbyte16-list (array)
-  (declare (xargs :guard (java::short-array-p array)))
+  (declare (xargs :guard (java::short-arrayp array)))
   (java::short-array-to-sbyte16-list array))
 
 (defun test-int-array-to-sbyte32-list (array)
-  (declare (xargs :guard (java::int-array-p array)))
+  (declare (xargs :guard (java::int-arrayp array)))
   (java::int-array-to-sbyte32-list array))
 
 (defun test-long-array-to-sbyte64-list (array)
-  (declare (xargs :guard (java::long-array-p array)))
+  (declare (xargs :guard (java::long-arrayp array)))
   (java::long-array-to-sbyte64-list array))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -386,22 +386,22 @@
 (defun f (array i j)
   (declare
    (xargs :guard (and
-                  (java::int-array-p array)
-                  (java::int-value-p i)
-                  (java::int-value-p j)
+                  (java::int-arrayp array)
+                  (java::int-valuep i)
+                  (java::int-valuep j)
                   (java::int-array-index-in-range-p array i)
                   (java::int-array-index-in-range-p array j))))
   (java::int-add (java::int-array-read array i)
                  (java::int-array-read array j)))
 
 (defun g (bytearray shortarray)
-  (declare (xargs :guard (and (java::byte-array-p bytearray)
-                              (java::short-array-p shortarray))))
+  (declare (xargs :guard (and (java::byte-arrayp bytearray)
+                              (java::short-arrayp shortarray))))
   (java::int-add (java::byte-array-length bytearray)
                  (java::short-array-length shortarray)))
 
 (defun h (length)
-  (declare (xargs :guard (and (java::byte-value-p length)
+  (declare (xargs :guard (and (java::byte-valuep length)
                               (>= (java::byte-value->int length) 0))
                   :guard-hints (("Goal" :in-theory (enable java::byte-to-short
                                                            java::short-to-int
@@ -413,10 +413,10 @@
 
 (defun i (floatarray doublearray i j)
   (declare
-   (xargs :guard (and (java::float-array-p floatarray)
-                      (java::double-array-p doublearray)
-                      (java::int-value-p i)
-                      (java::int-value-p j)
+   (xargs :guard (and (java::float-arrayp floatarray)
+                      (java::double-arrayp doublearray)
+                      (java::int-valuep i)
+                      (java::int-valuep j)
                       (java::float-array-index-in-range-p floatarray i)
                       (java::double-array-index-in-range-p doublearray j))))
   (java::double-rem (java::float-to-double
@@ -424,10 +424,10 @@
                     (java::double-array-read doublearray j)))
 
 (defun j (bytes1 bytes2 i1 i2)
-  (declare (xargs :guard (and (java::byte-array-p bytes1)
-                              (java::byte-array-p bytes2)
-                              (java::int-value-p i1)
-                              (java::int-value-p i2)
+  (declare (xargs :guard (and (java::byte-arrayp bytes1)
+                              (java::byte-arrayp bytes2)
+                              (java::int-valuep i1)
+                              (java::int-valuep i2)
                               (java::byte-array-index-in-range-p bytes1 i1)
                               (java::byte-array-index-in-range-p bytes2 i2))))
   (let* ((x1 (java::byte-array-read bytes1 i1))

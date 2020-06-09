@@ -79,7 +79,10 @@
 (defun acl2-doc-manual-alist-entry (pathname top printname url
                                              main-tags-file-name
                                              acl2-tags-file-name)
-  (list pathname top printname url main-tags-file-name acl2-tags-file-name))
+  (list pathname top printname url main-tags-file-name
+	acl2-tags-file-name
+	(concat (or (file-name-directory pathname) "") "acl2-doc-search")
+	(concat (or (and url (file-name-directory url)) "") "acl2-doc-search.gz")))
 
 (defun extend-acl2-doc-manual-alist (key pathname top
                                          &optional
@@ -234,19 +237,21 @@
         (push (acl2-doc-fix-entry entry) ans)))
     (reverse ans)))
 
+(defun acl2-doc-large-file-warning-threshold ()
+
+;;; As of April 2019, file books/system/doc/rendered-doc-combined.lsp is
+;;; a bit over 100M bytes.  We take a guess here that modern platforms
+;;; can handle somewhat more than this size, so we rather arbitrarily
+;;; bump up the threshold for a warning, to provide a modest cushion for
+;;; avoiding the warning.
+
+  (max (or large-file-warning-threshold 0)
+       120000000))
+
 (defun acl2-doc-alist-create (rendered-pathname)
   (when (not (file-exists-p rendered-pathname))
     (error "File %s is missing!" rendered-pathname))
-  (let* ((large-file-warning-threshold
-
-; As of April 2019, file books/system/doc/rendered-doc-combined.lsp is
-; a bit over 100M bytes.  We take a guess here that modern platforms
-; can handle somewhat more than this size, so we rather arbitrarily
-; bump up the threshold for a warning, to provide a modest cushion for
-; avoiding the warning.
-
-          (max (or large-file-warning-threshold 0)
-	       120000000))
+  (let* ((large-file-warning-threshold (acl2-doc-large-file-warning-threshold))
          (buf0 (find-buffer-visiting rendered-pathname))
 
 ; We could let buf = buf0 if buf0 is non-nil.  But if the file was changed
@@ -323,6 +328,12 @@
 (defun acl2-doc-acl2-tags-file-name ()
   (nth 5 (acl2-doc-manual-entry)))
 
+(defun acl2-doc-search-file-name ()
+  (nth 6 (acl2-doc-manual-entry)))
+
+(defun acl2-doc-search-url ()
+  (nth 7 (acl2-doc-manual-entry)))
+
 (defun acl2-doc-set-manual (manual-name)
 ; returns manual-name, except, error if manual-name names no manual
   (acl2-doc-manual-entry manual-name)
@@ -334,48 +345,50 @@
 (defun acl2-doc-gzipped-file (filename)
   (concat filename ".gz"))
 
+(defun acl2-doc-download-aux (file-url file-pathname)
+  (let ((file-backup (concat file-pathname ".backup"))
+	(file-gzipped (acl2-doc-gzipped-file file-pathname)))
+    (cond ((file-exists-p file-pathname)
+	   (message "Renaming %s to %s"
+		    file-pathname
+		    file-backup)
+	   (rename-file file-pathname file-backup 0)))
+    (message "Preparing to download %s"
+	     file-url)
+    (url-copy-file file-url file-gzipped)
+    (cond ((file-exists-p file-gzipped)
+	   (cond
+	    ((eql 0 (nth 7
+			 (file-attributes ; size
+			  file-gzipped)))
+	     (delete-file file-gzipped)
+	     (error
+	      "Download/install failed (deleted zero-length file, %s)"
+	      file-gzipped))
+	    (t
+	     (shell-command-to-string
+	      (format "gunzip %s"
+		      file-gzipped))
+	     (or (file-exists-p file-pathname)
+		 (error "Gunzip failed")))))
+	  (t (error "Download/install failed")
+	     nil))))
+
 (defun acl2-doc-download ()
   "Download the ``bleeding edge'' ACL2+Books Manual from the web;
 then restart the ACL2-Doc browser to view that manual."
   (interactive)
-  (let* ((acl2-doc-url (acl2-doc-url t))
-         (acl2-doc-pathname (acl2-doc-pathname))
-         (acl2-doc-backup (concat acl2-doc-pathname ".backup"))
-         (acl2-doc-gzipped (acl2-doc-gzipped-file acl2-doc-pathname)))
-    (cond ((file-exists-p acl2-doc-pathname)
-           (message "Renaming %s to %s."
-                    acl2-doc-pathname
-                    acl2-doc-backup)
-           (rename-file acl2-doc-pathname acl2-doc-backup 0)))
-    (message "Preparing to download %s"
-             acl2-doc-url)
-    (url-copy-file acl2-doc-url acl2-doc-gzipped)
-    (cond ((file-exists-p acl2-doc-gzipped)
-           (cond
-            ((eql 0 (nth 7
-                         (file-attributes ; size
-                          acl2-doc-gzipped)))
-             (error
-              "Download/install failed (zero-length file, %s, will be deleted)."
-              acl2-doc-gzipped)
-             (delete-file acl2-doc-gzipped))
-            (t
-             (shell-command-to-string
-              (format "gunzip %s"
-                      acl2-doc-gzipped))
-             (or (file-exists-p acl2-doc-pathname)
-                 (error "Gunzip failed."))
+  (acl2-doc-download-aux (acl2-doc-url t) (acl2-doc-pathname))
 
 ;;; The following call of acl2-doc-reset may appear to have the
 ;;; potential to cause a loop: acl2-doc-reset calls acl2-doc-fetch,
 ;;; which calls the present function.  However, acl2-doc-fetch is
 ;;; essentially a no-op in this case because of the file-exists-p
-;;; check just above.
+;;; check made in the first call above of acl2-doc-download-aux.
 
-             (acl2-doc-reset (acl2-doc-manual-name))
-             (acl2-doc-top))))
-          (t (error "Download/install failed.")
-             nil))))
+  (acl2-doc-reset (acl2-doc-manual-name))
+  (acl2-doc-top)
+  (acl2-doc-download-aux (acl2-doc-search-url) (acl2-doc-search-file-name)))
 
 (defun acl2-doc-fetch ()
   (let ((pathname (acl2-doc-pathname)))
@@ -1089,6 +1102,12 @@ alphabetically (backwards) from that exact match."
 ;;; Return the search buffer, which contains all :doc topics, creating it first
 ;;; (with those topics inserted) if necessary.
   (or (get-buffer *acl2-doc-search-buffer-name*)
+      (let ((acl2-doc-search-file-name (acl2-doc-search-file-name))
+	    (large-file-warning-threshold
+	     (acl2-doc-large-file-warning-threshold)))
+	(and acl2-doc-search-file-name
+	     (file-exists-p acl2-doc-search-file-name)
+	     (find-file-noselect acl2-doc-search-file-name)))
       (let ((buf (get-buffer-create *acl2-doc-search-buffer-name*))
             (alist (acl2-doc-state-alist)))
         (with-current-buffer

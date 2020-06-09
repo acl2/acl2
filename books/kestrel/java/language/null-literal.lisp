@@ -34,7 +34,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define null-literal-p (x)
+(define null-literalp (x)
   :returns (yes/no booleanp)
   :short "Recognize the Java null literal."
   :long

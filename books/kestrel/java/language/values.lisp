@@ -50,18 +50,18 @@
   :pred jvaluep
   :prepwork
   ((defrulel lemma
-     (implies (reference-value-p x)
-              (not (primitive-value-p x)))
-     :enable (primitive-value-p
-              boolean-value-p
-              char-value-p
-              byte-value-p
-              short-value-p
-              int-value-p
-              long-value-p
-              float-value-p
-              double-value-p
-              reference-value-p))))
+     (implies (reference-valuep x)
+              (not (primitive-valuep x)))
+     :enable (primitive-valuep
+              boolean-valuep
+              char-valuep
+              byte-valuep
+              short-valuep
+              int-valuep
+              long-valuep
+              float-valuep
+              double-valuep
+              reference-valuep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,18 +73,18 @@
   :pred jvaluexp
   :prepwork
   ((defrulel lemma
-     (implies (reference-value-p x)
-              (not (primitivex-value-p x)))
-     :enable (primitivex-value-p
-              primitive-value-p
-              boolean-value-p
-              char-value-p
-              byte-value-p
-              short-value-p
-              int-value-p
-              long-value-p
-              float-value-p
-              double-value-p
-              floatx-value-p
-              doublex-value-p
-              reference-value-p))))
+     (implies (reference-valuep x)
+              (not (primitivex-valuep x)))
+     :enable (primitivex-valuep
+              primitive-valuep
+              boolean-valuep
+              char-valuep
+              byte-valuep
+              short-valuep
+              int-valuep
+              long-valuep
+              float-valuep
+              double-valuep
+              floatx-valuep
+              doublex-valuep
+              reference-valuep))))

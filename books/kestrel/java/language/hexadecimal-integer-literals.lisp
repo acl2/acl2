@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist hexdig/uscore-list
-  :short "Fixtype of true lists of hexadecimal digits and underscores."
+  :short "Fixtype of lists of hexadecimal digits and underscores."
   :long
   (xdoc::topstring-p
    "A @('hex-numeral') in the grammar, excluding the prefix,
@@ -133,6 +133,7 @@
                              (list (hexdig/uscore-digit (char-code #\0)))))
    (prefix-upcase-p bool)
    (suffix? optional-integer-type-suffix))
+  :require (hexdig/uscore-list-wfp digits/uscores)
   :tag :hex-integer-lit
   :layout :list
-  :require (hexdig/uscore-list-wfp digits/uscores))
+  :pred hex-integer-literalp)

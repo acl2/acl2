@@ -81,6 +81,7 @@
     (:class ((get class-type)))
     (:array ((get array-type)))
     (:variable ((get tidentifier)))
+    :pred reference-typep
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deftagsum class-type
@@ -123,12 +124,13 @@
        We may do that in the future, if it turns out to be more convenient."))
     (:simple ((name tidentifier)
               (arguments type-argument-list)))
-    (:package ((package package-name-p)
+    (:package ((package package-namep)
                (name tidentifier)
                (arguments type-argument-list)))
     (:nested ((enclosing class-type)
               (name tidentifier)
               (arguments type-argument-list)))
+    :pred class-typep
     :base-case-override :simple
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -154,6 +156,7 @@
     (:primitive ((element primitive-type) (dimensions pos)))
     (:class ((element class-type) (dimensions pos)))
     (:variable ((element tidentifier) (dimensions pos)))
+    :pred array-typep
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deftagsum type-argument

@@ -26,7 +26,6 @@ null  = %x6e.75.6c.6c      ; null
 
 true  = %x74.72.75.65      ; true
 
-
 object = begin-object [ member *( value-separator member ) ]
          end-object
 

@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist octdig/uscore-list
-  :short "Fixtype of true lists of octal digits and underscores."
+  :short "Fixtype of lists of octal digits and underscores."
   :long
   (xdoc::topstring-p
    "An @('octal-numeral') in the grammar
@@ -135,6 +135,7 @@
                                    (octdig/uscore-digit (char-code #\0)))))
    (prefix-upcase-p bool)
    (suffix? optional-integer-type-suffix))
+  :require (octdig/uscore-list-wfp digits/uscores)
   :tag :oct-integer-lit
   :layout :list
-  :require (octdig/uscore-list-wfp digits/uscores))
+  :pred oct-integer-literalp)

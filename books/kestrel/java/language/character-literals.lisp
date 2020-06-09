@@ -94,4 +94,5 @@
      the Java grammar rule @('character-literal').
      This remains to be proved formally."))
   (:char ((get unicode-charlit-char)))
-  (:escape ((get escape-sequence))))
+  (:escape ((get escape-sequence)))
+  :pred char-literalp)

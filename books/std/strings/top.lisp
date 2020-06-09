@@ -35,6 +35,7 @@
 (include-book "charset")
 (include-book "charset-fns")
 (include-book "decimal")
+(include-book "digit-to-char")
 (include-book "eqv")
 (include-book "firstn-chars")
 (include-book "hexify")
@@ -203,4 +204,3 @@ strtok) to literally split it into a list of lines.  The functions here are
 generally meant to be more efficient, e.g., @(see prefix-lines) can add a
 prefix to every line without constructing an temporary string list or doing any
 intermediate string concatenation.</p>")
-

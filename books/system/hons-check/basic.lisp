@@ -30,7 +30,7 @@
 
 (in-package "ACL2")
 (include-book "hons-check")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/osets/top" :dir :system)
 
 ; cert_param: (hons-only)
@@ -190,4 +190,3 @@
 (assert! (check-alist-agree *atoms* *fal5* *fal1*))
 
 (value-triple (hons-check))
-

@@ -187,7 +187,7 @@ sub run_sat_and_check
 
     my ($solver, $args, $infile, $proof_file, $checker, $checkerargs) = @_;
 
-    $checker = defined($checker) ? $checker : "drup-trim";
+    $checker = defined($checker) ? $checker : "drat-trim";
     $checkerargs = defined($checkerargs) ? $checkerargs : [];
     
     my $solution = run_sat_solver($solver, $args);

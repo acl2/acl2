@@ -77,7 +77,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist oct-digit-list
-  :short "Fixtype of true lists of Java octal digits."
+  :short "Fixtype of lists of Java octal digits."
   :elt-type oct-digit
   :true-listp t
   :elementp-of-nil nil

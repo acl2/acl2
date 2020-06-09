@@ -16,7 +16,7 @@
 
 (defpkg "APT" (set-difference-eq
                (append *std-pkg-symbols*
-                       '(*defiso-table-name*
+                       '(*defmapping-table-name*
                          *fake-runes*
                          *force-xnume*
                          *geneqv-iff*
@@ -65,8 +65,9 @@
                          defattach-system
                          definedp
                          defiso
-                         defiso-info
                          defiso-lookup
+                         defmapping-info
+                         defmapping-infop
                          defun-sk-bound-vars
                          defun-sk-imatrix
                          defun-sk-matrix

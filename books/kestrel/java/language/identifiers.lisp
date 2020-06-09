@@ -377,8 +377,8 @@
          (identifier-start-p (car x))
          (identifier-part-listp (cdr x))
          (not (jkeywordp x))
-         (not (boolean-literal-p x))
-         (not (null-literal-p x))))
+         (not (boolean-literalp x))
+         (not (null-literalp x))))
 
   (std::deffixer identifier-fix
     :pred identifierp

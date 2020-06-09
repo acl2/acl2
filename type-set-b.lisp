@@ -12187,35 +12187,25 @@
 
 (defun known-whether-nil (x type-alist ens force-flg dwp wrld ttree)
 
-; This function determines whether we know, from type-set reasoning,
-; whether x is nil or not.  It returns three values.  The first is the
-; answer to the question "Do we know whether x is nil or not?"  If the
-; answer to that question is yes, the second value is the answer to
-; the question "Is x nil?" and the third value is a ttree that extends
-; the input ttree and records the 'assumptions and dependencies of our
-; derivation.  If the answer to the first question is no, the second
-; and third values are nil.  Note that this function may generate
-; 'assumptions and so splitting has to be considered.
-
-; Note: This note ought to be plastered all over this code.  Beware
-; the handling of ttree.  A bug was found in this function (11/9/92)
-; because in the case that x was a quoted constant it ignored the
-; incoming ttree and reported ``I know whether x is nil and I don't
-; need any help!''  But we must always keep in mind that the ttree
-; argument to many functions is an accumulator; the incoming ttree is
-; responsible for the derivation of x itself and must be preserved.
-; The original comment, above, is accurate: the outgoing ttree must be
-; an extension of the incoming one when successful.
+; This function determines whether we know, from type-set reasoning, whether x
+; is nil or not.  It returns three values.  The first is the answer to the
+; question "Do we know whether x is nil or not?"  If the answer to that
+; question is yes, the second value is the answer to the question "Is x nil?"
+; and the third value is a ttree that extends the input ttree and records the
+; 'assumptions and dependencies of our derivation.  If the answer to the first
+; question is no, the second value is nil, and the third is the input ttree
+; (thus, this function is a No-Change Loser).  Note that this function may
+; generate 'assumptions and so splitting has to be considered.
 
   (cond ((quotep x)
          (mv t (equal x *nil*) ttree))
-        (t (mv-let (ts ttree)
-                   (type-set x force-flg dwp type-alist ens wrld ttree nil nil)
-                   (cond ((ts= ts *ts-nil*)
-                          (mv t t ttree))
-                         ((ts-intersectp ts *ts-nil*)
-                          (mv nil nil nil))
-                         (t (mv t nil ttree)))))))
+        (t (mv-let (ts ttree1)
+             (type-set x force-flg dwp type-alist ens wrld ttree nil nil)
+             (cond ((ts= ts *ts-nil*)
+                    (mv t t ttree1))
+                   ((ts-intersectp ts *ts-nil*)
+                    (mv nil nil ttree))
+                   (t (mv t nil ttree1)))))))
 
 (defun ts-booleanp (term ens wrld)
   (mv-let (ts ttree)
