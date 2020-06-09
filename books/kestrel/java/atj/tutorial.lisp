@@ -811,13 +811,9 @@
    (xdoc::seetopic "atj-tutorial-deep-shallow"
                    "deep embedding of ACL2 in Java")
    "; more precisely, a deep embedding of the
-    executable, "
-   (xdoc::seetopic "atj-tutorial-background" "side-effect")
-   "-free,
-    non-"
-   (xdoc::seetopic "acl2::stobj" "stobj")
-   "-accessing
-    subset of the ACL2 language without guards.
+    executable, side-effect-free, non-stobj-accessing
+    subset of the ACL2 language without guards
+    (see @(see atj-tutorial-background)).
     AIJ includes a "
    (xdoc::seetopic "atj-tutorial-acl2-terms"
                    "Java representation of the ACL2 terms")
@@ -921,10 +917,7 @@
   (xdoc::p
    "where @(':deep t') specifies the deep embedding approach
     and @(':guards nil') specifies not to assume the guards' satisfaction
-    (more on this in "
-   (xdoc::seetopic "atj-tutorial-deep-guards"
-                   "the tutorial page about guards in the deep embedding")
-   ").")
+    (more on this in @(see atj-tutorial-deep-guards)).")
 
   (xdoc::p
    "As conveyed by the message shown on the screen by ATJ,
@@ -938,7 +931,7 @@
     and a few classes from the Java standard library.")
 
   (xdoc::p
-   "The class starts with a static initializer that calls
+   "The @('Acl2Code') class starts with a static initializer that calls
     a number of methods to define ACL2 packages
     and a number of methods to define ACL2 functions.
     The packages are all the known ones in the ACL2 @(see world)
@@ -1013,7 +1006,7 @@
 
   (xdoc::p
    "The following is a simple example of external Java code
-    that uses the ATJ-generated and AIJ:")
+    that uses the ATJ-generated code and AIJ:")
   (xdoc::codeblock
    "import edu.kestrel.acl2.aij.*;"
    ""
@@ -1064,7 +1057,7 @@
   (xdoc::p
    "where again @('[books]/...') must be replaced with a proper path.
     A fairly large number will be printed on the screen.
-    Some ACL2 has just been run in Java.")
+    Some ACL2 code has just been run in Java.")
 
   (atj-tutorial-section "Java Stack Space Considerations")
 
