@@ -1451,18 +1451,19 @@
                   teminates-witness-name$
                   terminates-rewrite-name$
                   measure-name$
-                  nonterminating$)) (defarbrec-process-inputs
-                                      fn
-                                      x1...xn
-                                      body
-                                      update-names
-                                      terminates-name
-                                      measure-name
-                                      nonterminating
-                                      print
-                                      show-only
-                                      ctx
-                                      state))
+                  nonterminating$))
+        (defarbrec-process-inputs
+          fn
+          x1...xn
+          body
+          update-names
+          terminates-name
+          measure-name
+          nonterminating
+          print
+          show-only
+          ctx
+          state))
        (event (defarbrec-gen-everything
                 fn
                 x1...xn
