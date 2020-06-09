@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright (C) 2018, Regents of the University of Texas
 # Written by Matt Kaufmann

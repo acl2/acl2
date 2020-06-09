@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This program installs a web-based acl2+books combined manual as well
 # as a corresponding text-based copy of that manual, suitable for the

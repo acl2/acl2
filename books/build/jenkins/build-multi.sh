@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # A parameterizable script for use with Jenkins "multi" build feature.
 # The parameters are predictable, but here are some sample

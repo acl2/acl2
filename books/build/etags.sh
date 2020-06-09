@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This file doesn't really need a copyright, but just in case it does:
 

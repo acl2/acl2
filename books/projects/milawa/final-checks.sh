@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Final Proof Checking - Jared Davis (jared@cs.utexas.edu)
 
