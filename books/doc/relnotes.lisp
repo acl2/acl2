@@ -303,7 +303,13 @@
      These are part of the formalized abstract syntax of Java.")
 
    (xdoc::p
-    "More aspects of the Java syntax have been formalized.")
+    "More aspects of the Java syntax have been formalized, including:
+     the ISO 8851-1 subset of Unicode characters;
+     type identifiers;
+     unqualified method identifiers;
+     package names;
+     reference types; and
+     all types.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
