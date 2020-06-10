@@ -488,12 +488,17 @@ compute a value for @('x').</p>
                                           ,(acl2::hq alist)))))))
 
 (encapsulate nil
-  (flag::make-flag fgl-unify-term/gobj-flg fgl-unify-term/gobj-fn
-                   :local t
-                   :hints ((and stable-under-simplificationp
-                                '(:expand ((pseudo-term-count pat)
-                                           (pseudo-term-list-count (pseudo-term-call->args pat))
-                                           (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))))))
+  (make-event
+   (let ((wrld (w state))
+         (fn 'fgl-unify-term/gobj-fn))
+     `(flag::make-flag ,(flag::flag-fn-name fn wrld) ,fn
+                       :defthm-macro-name ,(flag::flag-defthm-macro fn wrld)
+                       :flag-mapping ,(flag::flag-alist fn wrld)
+                       :local t
+                       :hints ((and stable-under-simplificationp
+                                    '(:expand ((pseudo-term-count pat)
+                                               (pseudo-term-list-count (pseudo-term-call->args pat))
+                                               (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))))))))
 
   (local (defthm fgl-object-count-of-mk-g-boolean
            (equal (fgl-object-count (mk-g-boolean x)) 1)
@@ -525,112 +530,54 @@ compute a value for @('x').</p>
            :rule-classes :linear))
 
 
-  (defthm-fgl-unify-term/gobj-flg
-    (defthm fgl-object-count-of-fgl-unify-term/gobj
-      (b* (((mv flag new-alist)
-            (fgl-unify-term/gobj pat x alist)))
-        (implies (and flag
-                      (not (hons-assoc-equal k alist))
-                      (hons-assoc-equal k new-alist))
-                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (fgl-object-count x))))
-      :hints ((acl2::use-termhint
-               `(:expand ((fgl-unify-term/gobj ,(acl2::hq pat)
-                                                ,(acl2::hq x)
-                                                ,(acl2::hq alist)))))
-              (and stable-under-simplificationp
-                   '(:expand ((fgl-object-count x)
-                              (fgl-objectlist-count (g-apply->args x))
-                              (fgl-objectlist-count (cdr (g-apply->args x)))))))
-      :flag fgl-unify-term/gobj-fn
-      :rule-classes :linear)
-    (defthm fgl-object-count-of-fgl-unify-term/gobj-commutative-args
-      (b* (((mv flag new-alist)
-            (fgl-unify-term/gobj-commutative-args pat1 pat2 x1 x2 alist)))
-        (implies (and flag
-                      (not (hons-assoc-equal k alist))
-                      (hons-assoc-equal k new-alist))
-                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (max (fgl-object-count x1)
-                          (fgl-object-count x2)))))
-      :hints ((acl2::use-termhint
-               `(:expand ((fgl-unify-term/gobj-commutative-args ,(acl2::hq pat1)
-                                                                 ,(acl2::hq pat2)
-                                                                 ,(acl2::hq x1)
-                                                                 ,(acl2::hq x2)
-                                                                 ,(acl2::hq alist))))))
-      :flag fgl-unify-term/gobj-commutative-args-fn
-      :rule-classes :linear)
-    (defthm fgl-object-count-of-fgl-unify-term/gobj-if
-      (b* (((mv flag new-alist)
-            (fgl-unify-term/gobj-if pat-test pat-then pat-else x-test x-then x-else alist)))
-        (implies (and flag
-                      (not (hons-assoc-equal k alist))
-                      (hons-assoc-equal k new-alist))
-                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (max (fgl-object-count x-test)
-                          (max (fgl-object-count x-then)
-                               (fgl-object-count x-else))))))
-      :hints ((acl2::use-termhint
-               `(:expand ((fgl-unify-term/gobj-if ,(acl2::hq pat-test)
-                                                   ,(acl2::hq pat-then)
-                                                   ,(acl2::hq pat-else)
-                                                   ,(acl2::hq x-test)
-                                                   ,(acl2::hq x-then)
-                                                   ,(acl2::hq x-else)
-                                                   ,(acl2::hq alist))))))
-      :flag fgl-unify-term/gobj-if-fn
-      :rule-classes :linear)
-    (defthm fgl-object-count-of-fgl-unify-term/gobj-if1
-      (b* (((mv flag new-alist)
-            (fgl-unify-term/gobj-if1 pat-test pat-then pat-else x-test x-then x-else alist)))
-        (implies (and flag
-                      (not (hons-assoc-equal k alist))
-                      (hons-assoc-equal k new-alist))
-                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (max (fgl-object-count x-test)
-                          (max (fgl-object-count x-then)
-                               (fgl-object-count x-else))))))
-      :hints ((acl2::use-termhint
-               `(:expand ((fgl-unify-term/gobj-if1 ,(acl2::hq pat-test)
-                                                   ,(acl2::hq pat-then)
-                                                   ,(acl2::hq pat-else)
-                                                   ,(acl2::hq x-test)
-                                                   ,(acl2::hq x-then)
-                                                   ,(acl2::hq x-else)
-                                                   ,(acl2::hq alist))))))
-      :flag fgl-unify-term/gobj-if1-fn
-      :rule-classes :linear)
-    (defthm fgl-object-count-of-fgl-unify-term/gobj-fn/args
-      (b* (((mv flag new-alist)
-            (fgl-unify-term/gobj-fn/args pat-fn pat-args x-fn x-args alist)))
-        (implies (and flag
-                      (not (hons-assoc-equal k alist))
-                      (hons-assoc-equal k new-alist))
-                 (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                     (fgl-objectlist-count x-args))))
-      :hints ((acl2::use-termhint
-               `(:expand ((fgl-unify-term/gobj-fn/args ,(acl2::hq pat-fn)
-                                                       ,(acl2::hq pat-args)
-                                                       ,(acl2::hq x-fn)
-                                                       ,(acl2::hq x-args)
-                                                       ,(acl2::hq alist))))))
-      :flag fgl-unify-term/gobj-fn/args-fn
-      :rule-classes :linear)
-    (defthm fgl-object-count-of-fgl-unify-term/gobj-list
-      (b* (((mv flag new-alist)
-            (fgl-unify-term/gobj-list pat x alist)))
-        (implies (and flag
-                      (not (hons-assoc-equal k alist))
-                      (hons-assoc-equal k new-alist))
-                 (< (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                    (fgl-objectlist-count x))))
-      :hints ((acl2::use-termhint
-               `(:expand ((fgl-unify-term/gobj-list ,(acl2::hq pat)
-                                                     ,(acl2::hq x)
-                                                     ,(acl2::hq alist))))))
-      :flag fgl-unify-term/gobj-list-fn
-      :rule-classes :linear))
+  
+  (std::defret-mutual-generate fgl-object-count-of-<fn>
+    :rules
+    ((t (:add-hyp (and flag
+                       (not (hons-assoc-equal k alist))
+                       (hons-assoc-equal k new-alist)))
+        (:add-keyword :hints ('(:expand ((:free (x-key) <call>)))
+                              (and stable-under-simplificationp
+                                   '(:expand ((:free (x y) (fgl-object-count (g-cons x y)))
+                                              (:free (x) (fgl-object-count (g-concrete x)))
+                                              (:free (x) (fgl-object-count (g-map '(:g-map) x))))))
+                              (and stable-under-simplificationp
+                                   '(:expand ((fgl-object-count x)))))))
+     ((:fnname fgl-unify-term/gobj)
+      (:add-concl
+       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+           (fgl-object-count x))))
+     ((:fnname fgl-unify-term/gobj-commutative-args)
+      (:add-concl
+       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+           (max (fgl-object-count x1)
+                (fgl-object-count x2)))))
+     ((or (:fnname fgl-unify-term/gobj-if)
+          (:fnname fgl-unify-term/gobj-if1))
+      (:add-concl
+       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+           (max (fgl-object-count x-test)
+                (max (fgl-object-count x-then)
+                     (fgl-object-count x-else))))))
+     ((:fnname fgl-unify-term/gobj-fn/args)
+      (:add-concl
+       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+           (fgl-objectlist-count x-args))))
+     ((:fnname fgl-unify-term/gobj-list)
+      (:add-concl
+       (< (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+          (fgl-objectlist-count x))))
+     ((:fnname fgl-unify-term/gobj-map)
+      (:add-concl
+       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+           (+ 3 (fgl-object-alist-count x)))))
+     ((:fnname fgl-unify-term/gobj-map-pair)
+      (:add-concl
+       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
+           (+ 4 (fgl-object-count val-obj))))))
+    :mutual-recursion fgl-unify-term/gobj)
+
+
 
   (defthmd fgl-object-count-of-fgl-unify-term/gobj-casesplit
     (b* (((mv flag new-alist)
@@ -662,7 +609,7 @@ compute a value for @('x').</p>
       (implies (and flag (not (hons-assoc-equal k alist))
                     (hons-assoc-equal k new-alist)
                     (not (pseudo-term-case pat :var))
-                    (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer))))
+                    (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map))))
                (< (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
                   (fgl-object-count x))))
     :hints (("goal" :expand ((fgl-unify-term/gobj pat x alist)
@@ -695,9 +642,21 @@ compute a value for @('x').</p>
                                    (mv-nth 1
                                            (gobj-syntactic-boolean-fix (g-ite->test x)))))
                           (x-then (g-ite->else x))
-                          (x-else (g-ite->then x))))
+                          (x-else (g-ite->then x)))
+                         (:instance fgl-object-count-of-fgl-unify-term/gobj-fn/args
+                          (pat-fn (pseudo-term-fncall->fn pat))
+                          (pat-args (pseudo-term-call->args pat))
+                          (x-fn (g-apply->fn x))
+                          (x-args (g-apply->args x)))
+                         ;; (:instance fgl-object-count-of-fgl-unify-term/gobj-map
+                         ;;  (pat pat)
+                         ;;  (x (g-map->alist x)))
+                         )
                    :in-theory (disable fgl-object-count-of-fgl-unify-term/gobj-commutative-args
-                                       fgl-object-count-of-fgl-unify-term/gobj-if))))
+                                       fgl-object-count-of-fgl-unify-term/gobj-if
+                                       fgl-object-count-of-fgl-unify-term/gobj-fn/args
+                                       ;; fgl-object-count-of-fgl-unify-term/gobj-map
+                                       ))))
     :rule-classes :linear))
 
 
@@ -907,7 +866,7 @@ compute a value for @('x').</p>
                                          (ruletable ctrex-ruletable-p)
                                          (bfrstate bfrstate-p)
                                          (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
                 (bfr-listp (fgl-object-bfrlist x)))
     :measure (list (fgl-object-count x) 7 (len rules) 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
@@ -922,7 +881,7 @@ compute a value for @('x').</p>
                                         (ruletable ctrex-ruletable-p)
                                         (bfrstate bfrstate-p)
                                         (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
                 (bfr-listp (fgl-object-bfrlist x)))
     :measure (list (fgl-object-count x) 7 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
@@ -937,7 +896,7 @@ compute a value for @('x').</p>
                                            (ruletable ctrex-ruletable-p)
                                            (bfrstate bfrstate-p)
                                            (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
                 (bfr-listp (fgl-object-bfrlist x)))
     :measure (list (fgl-object-count x) 5 (len matches) 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
@@ -957,14 +916,14 @@ compute a value for @('x').</p>
                                          (ruletable ctrex-ruletable-p)
                                          (bfrstate bfrstate-p)
                                          (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))
+    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
                 (bfr-listp (fgl-object-bfrlist x)))
     :measure (list (fgl-object-count x) 5 0 0)
     :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
     (b* (((when (pseudo-term-case match :var))
           (cw "Bad ctrex rule? Match is a variable: ~x0" (ctrex-rule->name rule))
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((unless (mbt (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer)))))
+         ((unless (mbt (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))))
           (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
          ((mv ok subst) (fgl-unify-term/gobj match x nil))
          ((unless ok) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
