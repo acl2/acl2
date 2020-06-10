@@ -17,8 +17,20 @@ class Acl2RationalTest {
         assertDoesNotThrow(() -> Acl2Rational.make(0, 1));
         assertDoesNotThrow(() -> Acl2Rational.make(1, 1));
         assertDoesNotThrow(() -> Acl2Rational.make(1, 2));
+        assertDoesNotThrow(() -> Acl2Rational.make(21, 21));
         assertDoesNotThrow(() -> Acl2Rational.make(-33, 17));
         assertDoesNotThrow(() -> Acl2Rational.make(22929, -1292927));
+    }
+
+    @Test
+    void makeLongLong() {
+        assertDoesNotThrow(() -> Acl2Rational.make(0L, 1L));
+        assertDoesNotThrow(() -> Acl2Rational.make(1L, 1L));
+        assertDoesNotThrow(() -> Acl2Rational.make(1L, 2L));
+        assertDoesNotThrow(() -> Acl2Rational.make(21L, 21L));
+        assertDoesNotThrow(() -> Acl2Rational.make(-33L, 17L));
+        assertDoesNotThrow(() ->
+                Acl2Rational.make(2292983408573429857L, -1292927723987238472L));
     }
 
 }
