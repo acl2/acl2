@@ -1,0 +1,4 @@
+(ALISTP-OF-GETPROPS (126 126 (:REWRITE CONS-CAR-CDR))
+                    (71 65 (:REWRITE SYMBOL-<-TRANSITIVE))
+                    (65 65 (:REWRITE SYMBOL-<-TRICHOTOMY))
+                    (63 63 (:REWRITE SYMBOL-<-ASYMMETRIC)))

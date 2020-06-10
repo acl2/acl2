@@ -1,0 +1,9 @@
+(FAKE-RUNEP)
+(PSEUDO-OR-FAKE-RUNEP)
+(PSEUDO-OR-FAKE-RUNE-LISTP)
+(DROP-FAKE-RUNES (363 363 (:REWRITE DEFAULT-CAR))
+                 (54 54 (:REWRITE DEFAULT-CDR))
+                 (4 4
+                    (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
+                 (4 4 (:REWRITE DEFAULT-<-2))
+                 (4 4 (:REWRITE DEFAULT-<-1)))

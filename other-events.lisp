@@ -16151,10 +16151,13 @@
                   (str2 (if (int= sign 1)
                             (subseq str 1 len)
                           str))
-                  (percent (and (or (int= len 1)
-                                    (int= len 2))
+                  (len2 (if (int= sign 1)
+                            (1- len)
+                          len))
+                  (percent (and (or (int= len2 1)
+                                    (int= len2 2))
                                 (all-digits-p (coerce str2 'list) 10)
-                                (decimal-string-to-number str2 len 0))))
+                                (decimal-string-to-number str2 len2 0))))
              (cond (percent (value
                              (cons str
                                    (/ percent
