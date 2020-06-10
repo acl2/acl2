@@ -88,6 +88,10 @@
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_THINKS_BOOK_DIR_IS" channel state))
            (state (newline channel state))
+           (state (princ$ "export ACL2_USELESS_RUNES ?= -25" channel state))
+           (state (newline channel state))
+           (state (princ$ "EXPORTED_VARS += ACL2_USELESS_RUNES" channel state))
+           (state (newline channel state))
            (state (close-output-channel channel state)))
       state)))
 
@@ -110,7 +114,7 @@
                 (mv t state))))
         ;; File didn't exist.
         (mv t state))
-      
+
       (if need-to-write-file-p
           (mv-let (channel state)
             (open-output-channel filename :object state)

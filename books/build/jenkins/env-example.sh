@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # The below alias doesn't seem to work for me.
 # alias startjob='bash'

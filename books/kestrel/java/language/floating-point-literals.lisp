@@ -37,20 +37,20 @@
     "For now we model them via a predicate
      constrained to be non-empty
      so that a fixing function and a fixtype can be defined.")
-   (xdoc::@def "floating-point-literal-p")
+   (xdoc::@def "floating-point-literalp")
    (xdoc::@def "floating-point-literal-witness"))
 
-  (std::defconstrained-recognizer floating-point-literal-p
+  (std::defconstrained-recognizer floating-point-literalp
     :nonempty floating-point-literal-witness)
 
   (std::deffixer floating-point-literal-fix
-    :pred floating-point-literal-p
+    :pred floating-point-literalp
     :body-fix (floating-point-literal-witness)
     :parents (floating-point-literal)
     :short "Fixer for @(tsee floating-point-literal).")
 
   (fty::deffixtype floating-point-literal
-    :pred floating-point-literal-p
+    :pred floating-point-literalp
     :fix floating-point-literal-fix
     :equiv floating-point-literal-equiv
     :define t

@@ -1,0 +1,9 @@
+(*::LONGOP_FLOPPED (5 5
+                      (:TYPE-PRESCRIPTION +::LONGOP_FLOPPED)))
+(*::S01)
+(*::S01_MUXED)
+(*::S01_MUXED_FLOPPED)
+(*::S23)
+(*::S23_FLOPPED)
+(*::S0123)
+(*::OUT)

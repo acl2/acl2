@@ -137,7 +137,7 @@
           are transformed."
   :long
   (xdoc::topstring-p
-   "This aggregate is somewhat similar to @(tsee acl2::defiso-infop),
+   "This aggregate is somewhat similar to @(tsee defmapping-infop),
     and in fact it corresponds
     either to an existing @(tsee defiso) that is referenced
     in an @('isok') input of @(tsee isodata),
@@ -145,7 +145,7 @@
     in the @('isok') input of @(tsee isodata).
     However, this aggregate is not stored in any table;
     it has some fields in common (except for their names)
-    with @(tsee acl2::defiso-infop),
+    with @(tsee defmapping-infop),
     but it has a few extra fields and omits a few fields.
     This aggregate is only for @(tsee isodata)'s internal use.")
   ((isoname "Name of the @(tsee defiso)." symbolp)
@@ -423,7 +423,7 @@
     "We use this function for generating local @(tsee defiso)s.")
    (xdoc::p
     "If the input name is already valid, no @('*')s are added."))
-  (b* ((table (table-alist *defiso-table-name* wrld)))
+  (b* ((table (table-alist *defmapping-table-name* wrld)))
     (isodata-fresh-defiso-name-with-*s-suffix-aux name table))
 
   :prepwork
@@ -640,7 +640,7 @@
                        but no DEFISO with this name exists.  ~
                        See :DOC DEFISO."
                       (list k) iso))
-           ((defiso-info info) info)
+           ((defmapping-info info) info)
            ((when (and verify-guards$
                        (null info.doma-guard)))
             (er-soft+ ctx t nil
@@ -716,7 +716,7 @@
          (hints (and (= (len iso) 6) (sixth iso)))
          (ctx-defiso (cons 'defiso isoname))
          ((er (list oldp$ newp$ forth$ back$))
-          (acl2::defiso-process-functions
+          (acl2::defmapping-process-functions
            oldp newp forth back verify-guards$ ctx-defiso state))
          (oldp-arity (arity oldp$ wrld))
          ((unless (= oldp-arity 1))

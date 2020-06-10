@@ -1,0 +1,2 @@
+(RAWP)
+(BOOLEANP-OF-RAWP)

@@ -1521,3 +1521,9 @@
   (implies (equal (nfix n) (len lst))
            (equal (resize-list lst n default-value)
                   (true-list-fix lst))))
+
+(defthm true-listp-of-put-assoc
+  (implies (not (null name))
+           (iff (true-listp (put-assoc-equal name val alist))
+                (or (true-listp alist)
+                    (atom (assoc-equal name alist))))))

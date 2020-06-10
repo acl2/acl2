@@ -33,7 +33,7 @@
 ; has worked on a Mac; a different command, perhaps just a call of
 ; "firefox" [rather than "open"], may work on Linux):
 
-; #!/bin/bash
+; #!/usr/bin/env bash
 ; open -a 'firefox' "$@"
 
 (defun manual-dir ()

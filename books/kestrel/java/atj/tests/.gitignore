@@ -67,3 +67,15 @@ MultivalueShallowUnguardedTests.java
 
 MultivalueShallowGuarded.java
 MultivalueShallowGuardedTests.java
+
+BooleansDeepUnguarded.java
+BooleansDeepUnguardedTests.java
+
+BooleansDeepGuarded.java
+BooleansDeepGuardedTests.java
+
+BooleansShallowUnguarded.java
+BooleansShallowUnguardedTests.java
+
+BooleansShallowGuarded.java
+BooleansShallowGuardedTests.java

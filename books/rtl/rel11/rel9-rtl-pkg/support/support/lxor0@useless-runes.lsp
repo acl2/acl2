@@ -1,0 +1,6 @@
+(RTL::FL)
+(RTL::BITS)
+(RTL::BITN)
+(RTL::LNOT)
+(RTL::BVECP)
+(RTL::ALL-ONES)

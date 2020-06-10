@@ -264,36 +264,36 @@
   (and (symbol-listp iso-info)
        (> (len iso-info) 4)))
 
-(define iso-info-iso-name ((iso-info defiso-infop))
-  (let ((iso-rec (defiso-info->call$ iso-info)))
+(define iso-info-iso-name ((iso-info defmapping-infop))
+  (let ((iso-rec (defmapping-info->call$ iso-info)))
     (case-match iso-rec
       (('defiso iso-name . &)
        iso-name))))
 
-(define iso-info-old ((iso-info defiso-infop))
+(define iso-info-old ((iso-info defmapping-infop))
   :returns (pred-name pseudo-termfnp :hyp :guard)
-  (defiso-info->doma iso-info))
+  (defmapping-info->doma iso-info))
 
-(define iso-info-new ((iso-info defiso-infop))
+(define iso-info-new ((iso-info defmapping-infop))
   :returns (pred-name pseudo-termfnp :hyp :guard)
-  (defiso-info->domb iso-info))
+  (defmapping-info->domb iso-info))
 
-(define iso-info-pred ((iso-info defiso-infop)
+(define iso-info-pred ((iso-info defmapping-infop)
                        (new-p booleanp))
   :returns (pred-name pseudo-termfnp :hyp :guard)
   (if new-p
       (iso-info-new iso-info)
     (iso-info-old iso-info)))
 
-(define iso-info-new-to-old ((iso-info defiso-infop))
+(define iso-info-new-to-old ((iso-info defmapping-infop))
   :returns (pred-name pseudo-termfnp :hyp :guard)
-  (defiso-info->beta iso-info))
+  (defmapping-info->beta iso-info))
 
-(define iso-info-old-to-new ((iso-info defiso-infop))
+(define iso-info-old-to-new ((iso-info defmapping-infop))
   :returns (pred-name pseudo-termfnp :hyp :guard)
-  (defiso-info->alpha iso-info))
+  (defmapping-info->alpha iso-info))
 
-(define iso-info-convert-fn ((iso-info defiso-infop)
+(define iso-info-convert-fn ((iso-info defmapping-infop)
                              (new-to-old-p booleanp))
   :returns (pred-name pseudo-termfnp :hyp :guard)
   (if new-to-old-p
@@ -306,7 +306,7 @@
       (and (consp iso-infos)
            (consp (first iso-infos))
            (symbolp (caar iso-infos))
-           (defiso-infop (cdar iso-infos))
+           (defmapping-infop (cdar iso-infos))
            (iso-info-alist-p (rest iso-infos))))
 ///
 (defthm true-listp-iso-info-alist-p
@@ -324,7 +324,7 @@
 (defthm iso-info-alist-p-cdar
   (implies (and (iso-info-alist-p iso-infos)
                 (consp iso-infos))
-           (defiso-infop (cdar iso-infos))))
+           (defmapping-infop (cdar iso-infos))))
 (defthm iso-info-alist-p-cdr
   (implies (iso-info-alist-p iso-infos)
            (iso-info-alist-p (cdr iso-infos))))
@@ -334,7 +334,7 @@
 (defthm iso-info-alist-p-append
   (implies (and (iso-info-alist-p iso-infos)
                 (symbolp s)
-                (defiso-infop o))
+                (defmapping-infop o))
            (iso-info-alist-p (append iso-infos (list (cons s o))))))
 ) ; iso-info-alist-p
 
@@ -355,7 +355,7 @@
   :mode :program
   (if (endp iso-infos)
       ()
-    (b* (((defiso-info iso) (cdar iso-infos))
+    (b* (((defmapping-info iso) (cdar iso-infos))
          (r-thms (iso-convert-theorems (rest iso-infos))))
       (list* iso.alpha-image
              iso.beta-image
@@ -370,10 +370,10 @@
 (define lookup-iso-info ((f symbolp) (iso-infos iso-info-alist-p))
   (cdr (assoc f iso-infos))
 ///
-(defthm defiso-infop-lookup-iso-info
+(defthm defmapping-infop-lookup-iso-info
   (implies (and (iso-info-alist-p iso-infos)
                 (lookup-iso-info f iso-infos))
-           (defiso-infop (lookup-iso-info f iso-infos))))
+           (defmapping-infop (lookup-iso-info f iso-infos))))
 )
 
 (define lookup-osi-info ((f symbolp) (iso-infos iso-info-alist-p))
@@ -383,10 +383,10 @@
         (cdar iso-infos)
       (lookup-osi-info f (rest iso-infos))))
 ///
-(defthm defiso-infop-lookup-osi-info
+(defthm defmapping-infop-lookup-osi-info
   (implies (and (iso-info-alist-p iso-infos)
                 (lookup-osi-info f iso-infos))
-           (defiso-infop (lookup-osi-info f iso-infos))))
+           (defmapping-infop (lookup-osi-info f iso-infos))))
 )
 
 (define source-of-iso-p ((f symbolp) (iso-infos iso-info-alist-p))
@@ -540,8 +540,8 @@
       (increment-name-suffix fun)
     (or (b* ((iso-info (cdar iso-infos))
              (new-fun-name (string-subst-remove-p (symbol-name fun)
-                                                  (symbol-name (defiso-info->doma iso-info))
-                                                  (symbol-name (defiso-info->domb iso-info))))
+                                                  (symbol-name (defmapping-info->doma iso-info))
+                                                  (symbol-name (defmapping-info->domb iso-info))))
              ((when (equal new-fun-name (symbol-name fun)))
               nil)
              (new-sym (intern new-fun-name "ACL2")))
@@ -1564,8 +1564,8 @@ Example: int10-map-p-->-int20-map-p
   (if (endp iso-infos)
       (mv nil convert-old-to-new-fn convert-new-to-old-fn)
     (b* ((iso (cdar iso-infos))
-         (alpha (defiso-info->alpha iso))
-         (beta  (defiso-info->beta  iso))
+         (alpha (defmapping-info->alpha iso))
+         (beta  (defmapping-info->beta  iso))
          ((unless (and (symbolp alpha)
                        (symbolp beta)))
           (find-previous-iso-with-equivalent-definition convert-old-to-new-fn convert-new-to-old-fn
@@ -1583,8 +1583,8 @@ Example: int10-map-p-->-int20-map-p
                                (cons alpha convert-old-to-new-fn))
                          body))
           (mv t
-              (defiso-info->alpha iso)
-              (defiso-info->beta iso))
+              (defmapping-info->alpha iso)
+              (defmapping-info->beta iso))
         (find-previous-iso-with-equivalent-definition convert-old-to-new-fn convert-new-to-old-fn
                                                       formal convert-old-to-new-fn-body
                                                       (cdr iso-infos) events)))))
@@ -1624,7 +1624,7 @@ Example: int10-map-p-->-int20-map-p
                                   (iso-infos iso-info-alist-p)
                                   (propiso-info propiso-info-p)
                                   (events true-list-listp))
-  :guard-hints (("Goal" :in-theory (enable iso-info-alist-p)))
+  :guard-hints (("Goal" :in-theory (enable iso-info-alist-p defmapping-infop)))
   (b* (((unless (equal (length formals) 1))
         (cw "Warning: Can't handle generation of isomorphism for ~x0 (not a single formal)" iso-source-pred)
         (mv nil fn-infos iso-infos))
@@ -1690,24 +1690,24 @@ Example: int10-map-p-->-int20-map-p
        (domb-guard (pack$ defiso-name ".DOMB-GUARD"))
        (alpha-guard (pack$ defiso-name ".ALPHA-GUARD"))
        (beta-guard (pack$ defiso-name ".BETA-GUARD"))
-       ;; Not all make-defiso-info fields are necessary for this purpose. The defiso event will create the real one
-       (new-iso-info (make-defiso-info :call$ defiso-form
-                                       :expansion defiso-form ; place-holder to avoid guard error
-                                       :doma iso-source-pred
-                                       :domb iso-target-pred
-                                       :alpha convert-old-to-new-fn
-                                       :beta convert-new-to-old-fn
-                                       :alpha-image alpha-image
-                                       :beta-image beta-image
-                                       :beta-of-alpha beta-of-alpha
-                                       :alpha-of-beta alpha-of-beta
-                                       :alpha-injective alpha-injective
-                                       :beta-injective beta-injective
-                                       :doma-guard doma-guard
-                                       :domb-guard domb-guard
-                                       :alpha-guard alpha-guard
-                                       :beta-guard beta-guard
-                                       :unconditional nil))
+       ;; Not all make-defmapping-info fields are necessary for this purpose. The defiso event will create the real one
+       (new-iso-info (make-defmapping-info :call$ defiso-form
+                                           :expansion defiso-form ; place-holder to avoid guard error
+                                           :doma iso-source-pred
+                                           :domb iso-target-pred
+                                           :alpha convert-old-to-new-fn
+                                           :beta convert-new-to-old-fn
+                                           :alpha-image alpha-image
+                                           :beta-image beta-image
+                                           :beta-of-alpha beta-of-alpha
+                                           :alpha-of-beta alpha-of-beta
+                                           :alpha-injective alpha-injective
+                                           :beta-injective beta-injective
+                                           :doma-guard doma-guard
+                                           :domb-guard domb-guard
+                                           :alpha-guard alpha-guard
+                                           :beta-guard beta-guard
+                                           :unconditional nil))
        (new-iso-infos (append iso-infos (list (cons iso-source-pred new-iso-info)))) ; Want to keep in order for new-name-maybe-using-isos
        (convert-old-to-new-fn-type-thms (type-theorems-for-new-iso-fn new-pred-body
                                                                       formal ;; iso-source-pred
@@ -2346,7 +2346,7 @@ Example: int10-map-p-->-int20-map-p
            (iso-info (defiso-lookup iso-name world)))
       (if (null iso-info)
           (raise "~x0 must be an isomorphism name." (first isos))
-        (acons (defiso-info->doma iso-info)
+        (acons (defmapping-info->doma iso-info)
                iso-info
                (check-isos (rest isos) world))))))
 

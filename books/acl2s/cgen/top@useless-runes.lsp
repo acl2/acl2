@@ -1,0 +1,3 @@
+(ACL2S::DEFDATA-TESTING-ENABLED-EV (1 1
+                                      (:TYPE-PRESCRIPTION DEFDATA::GET1-FN)))
+(ACL2S::TEST?-FN)

@@ -352,12 +352,6 @@ heavier-weight (but not necessarily recommended) alternative is to use the
     (and (subsetp-equal x y)
          (subsetp-equal y x)))
 
-  (defthm set-equiv-implies-iff
-    (implies (set-equiv x y)
-             (equal (iff (member a x)
-                         (member a y))
-                    t)))
-
   (encapsulate
     ()
     (local (defthm set-equiv-refl

@@ -315,6 +315,22 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "A new utility @(tsee good-valuep) has been added,
+     which checks whether a value is either a good atom
+     or a @(tsee cons) pair whose components are recursively good values.
+     That is, the value must not be a bad arom
+     or contains (directly or indirectly) bad atoms.")
+
+   (xdoc::p
+    "A new utility @(tsee good-pseudo-termp) has been added,
+     which checks whether a pseudo-term only contains good values
+     (see @(tsee good-valuep)) in its quoted constants.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
 
    (xdoc::p
@@ -337,7 +353,7 @@
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
-    "A new macro @(tsee defmacro+) has been added,
+    "A new event macro @(tsee defmacro+) has been added,
      with is like @(tsee defmacro) but with "
     (xdoc::seetopic "xdoc" "XDOC")
     "integration.")
@@ -347,9 +363,26 @@
      counterpart of a non-executable function.")
 
    (xdoc::p
-    "A new macro @(tsee defsurj) had been added,
+    "A new event macro @(tsee defmapping) has been added,
+     to verify and record mappings that must be (based on supplied options)
+     injective, surjective, or bijective.")
+
+   (xdoc::p
+    "The @(tsee defiso) event macro is now
+     a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
+
+   (xdoc::p
+    "A new event macro @(tsee definj) has been added
+     to verify and record injective mappings.
+     It is a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
+
+   (xdoc::p
+    "A new event macro @(tsee defsurj) has been added
      to verify and record surjective mappings.
-     This is related to @(tsee defiso).")
+     It is a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
 
    (xdoc::p
     "Support for @(':prepwork') has been added to @(tsee std::deflist).")

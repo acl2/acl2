@@ -225,7 +225,7 @@
        (- (cw "Maximum: ~@0~%" (format-time (list-max times)))))
     (run-abnf-tests (cdr inputs) (cdr grammars) n gcheck state)))
 
-; The input to the ABNF grammar parser must be a true list of natural numbers,
+; The input to the ABNF grammar parser must be a list of natural numbers,
 ; read from one of the files ./abnf-files/*.txt.
 ; These are using the program-mode function READ-FILE-CHARACTERS,
 ; via the (necessarily program-mode) function GET-INPUT-FROM-FILE above.

@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operations * and /.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -53,3 +53,41 @@
   (equal (/ (* x y))
          (* (/ x) (/ y)))
   :hints (("Goal" :cases ((acl2-numberp y)))))
+
+(defthm <-of-*-of-/-arg2-arg1
+  (implies (and (< 0 x)
+                (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< z (* (/ x) y))
+                  (< (* x z) y)))
+  :hints (("Goal" :cases ((< Z (* (/ X) Y))))))
+
+(defthm <-of-*-of-/-arg2-arg2
+  (implies (and (< 0 x)
+                (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< z (* y (/ x)))
+                  (< (* x z) y)))
+  :hints (("Goal" :use (:instance <-of-*-of-/-arg2-arg1)
+           :in-theory (disable <-of-*-of-/-arg2-arg1))))
+
+(defthm <-of-*-of-/-arg1-arg1
+  (implies (and (< 0 x)
+                (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< (* (/ x) y) z)
+                  (< y (* x z))))
+  :hints (("Goal" :cases ((< y (* x z))))))
+
+(defthm <-of-*-of-/-arg1-arg2
+  (implies (and (< 0 x)
+                (rationalp x)
+                (rationalp y)
+                (rationalp z))
+           (equal (< (* y (/ x)) z)
+                  (< y (* x z))))
+  :hints (("Goal" :use (:instance <-of-*-of-/-arg1-arg1)
+           :in-theory (disable <-of-*-of-/-arg1-arg1))))

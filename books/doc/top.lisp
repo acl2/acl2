@@ -517,6 +517,7 @@
  '*acl2+books-documentation*
  t ; error if there is any xdoc-error
  :timep t
+ :write-acl2-doc-search-file t
 
 ; The following assumes that the community books are in the books/ subdirectory
 ; of the local ACL2 distribution.  We use the same environment variable,

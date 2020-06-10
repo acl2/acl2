@@ -42,7 +42,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define floatx-param-p (k)
+(define floatx-paramp (k)
   :returns (yes/no booleanp)
   :short "Recognize the possible parameters that describe
           a Java implementation's support of
@@ -73,27 +73,27 @@
   (encapsulate
     (((floatx-param) => *))
     (local (defun floatx-param () 11))
-    (defrule floatx-param-p-of-floatx-param
-      (floatx-param-p (floatx-param))))
+    (defrule floatx-paramp-of-floatx-param
+      (floatx-paramp (floatx-param))))
 
   (defrule posp-of-floatx-param-when-non-nil
     (implies (floatx-param)
              (posp (floatx-param)))
-    :use floatx-param-p-of-floatx-param
-    :disable floatx-param-p-of-floatx-param
-    :enable floatx-param-p)
+    :use floatx-paramp-of-floatx-param
+    :disable floatx-paramp-of-floatx-param
+    :enable floatx-paramp)
 
   (defrule floatx-param-lower-bound-when-non-nil
     (implies (floatx-param)
              (>= (floatx-param) 11))
     :rule-classes :linear
-    :use floatx-param-p-of-floatx-param
-    :disable floatx-param-p-of-floatx-param
-    :enable floatx-param-p))
+    :use floatx-paramp-of-floatx-param
+    :disable floatx-paramp-of-floatx-param
+    :enable floatx-paramp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define doublex-param-p (k)
+(define doublex-paramp (k)
   :returns (yes/no booleanp)
   :short "Recognize the possible parameters that describe
           a Java implementation's support of
@@ -124,20 +124,20 @@
   (encapsulate
     (((doublex-param) => *))
     (local (defun doublex-param () 15))
-    (defrule doublex-param-p-of-doublex-param
-      (doublex-param-p (doublex-param))))
+    (defrule doublex-paramp-of-doublex-param
+      (doublex-paramp (doublex-param))))
 
   (defrule posp-of-doublex-param-when-non-nil
     (implies (doublex-param)
              (posp (doublex-param)))
-    :use doublex-param-p-of-doublex-param
-    :disable doublex-param-p-of-doublex-param
-    :enable doublex-param-p)
+    :use doublex-paramp-of-doublex-param
+    :disable doublex-paramp-of-doublex-param
+    :enable doublex-paramp)
 
   (defrule doublex-param-lower-bound-when-non-nil
     (implies (doublex-param)
              (>= (doublex-param) 15))
     :rule-classes :linear
-    :use doublex-param-p-of-doublex-param
-    :disable doublex-param-p-of-doublex-param
-    :enable doublex-param-p))
+    :use doublex-paramp-of-doublex-param
+    :disable doublex-paramp-of-doublex-param
+    :enable doublex-paramp))

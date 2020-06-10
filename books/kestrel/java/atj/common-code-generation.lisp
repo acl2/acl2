@@ -175,7 +175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jboolean-array ((boolean-array boolean-array-p))
+(define atj-gen-jboolean-array ((boolean-array boolean-arrayp))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('boolean') array."
   (jexpr-newarray-init (jtype-boolean)
@@ -190,7 +190,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jchar-array ((char-array char-array-p))
+(define atj-gen-jchar-array ((char-array char-arrayp))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('char') array."
   (jexpr-newarray-init (jtype-char)
@@ -205,7 +205,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jbyte-array ((byte-array byte-array-p))
+(define atj-gen-jbyte-array ((byte-array byte-arrayp))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('byte') array."
   (jexpr-newarray-init (jtype-byte)
@@ -220,7 +220,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jshort-array ((short-array short-array-p))
+(define atj-gen-jshort-array ((short-array short-arrayp))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('short') array."
   (jexpr-newarray-init (jtype-short)
@@ -235,7 +235,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jint-array ((int-array int-array-p))
+(define atj-gen-jint-array ((int-array int-arrayp))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('int') array."
   (jexpr-newarray-init (jtype-int)
@@ -250,7 +250,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-jlong-array ((long-array long-array-p))
+(define atj-gen-jlong-array ((long-array long-arrayp))
   :returns (expr jexprp)
   :short "Generate Java code to build a Java @('long') array."
   (jexpr-newarray-init (jtype-long)
@@ -1048,7 +1048,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-test-value ((tvalue atj-test-value-p)
+(define atj-gen-test-value ((tvalue atj-test-valuep)
                             (jvar-value-base stringp)
                             (jvar-value-index posp)
                             (deep$ booleanp)

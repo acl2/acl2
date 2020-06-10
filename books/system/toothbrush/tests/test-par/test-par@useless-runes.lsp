@@ -1,0 +1,7 @@
+(FIB (5 5 (:REWRITE DEFAULT-<-2))
+     (5 5 (:REWRITE DEFAULT-<-1))
+     (3 3 (:REWRITE DEFAULT-+-2))
+     (3 3 (:REWRITE DEFAULT-+-1))
+     (2 2 (:REWRITE ZP-OPEN))
+     (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
+(TOP)

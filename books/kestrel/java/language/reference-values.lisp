@@ -29,4 +29,5 @@
    "A reference value is either a pointer (to an object)
     or the null reference.")
   (:pointer ((get pointer)))
-  (:null ()))
+  (:null ())
+  :pred reference-valuep)

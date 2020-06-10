@@ -178,7 +178,7 @@
                     (mv 'equal (remove-lambdas term) *t* ttree))
                    (t (mv 'iff (remove-lambdas term) *t* nil)))))))
 
-(defun interpret-term-as-rewrite-rule (name hyps term ens wrld)
+(defun interpret-term-as-rewrite-rule (name hyps term ctx ens wrld)
 
 ; NOTE: Term is assumed to have had remove-guard-holders applied, which in
 ; particular implies that term is in quote-normal form.
@@ -188,6 +188,10 @@
 ; equivalence relation, eqv; the next two are terms, lhs and rhs, such that
 ; (eqv lhs rhs) is propositionally equivalent to term; and the last is an
 ; 'assumption-free ttree justifying the claim.
+
+; If ctx is non-nil, then print an observation, with that ctx, when we are
+; avoiding the use of an equivalence relation.  Otherwise do not print that
+; observation.
 
   (mv-let
     (eqv lhs rhs ttree)
@@ -218,7 +222,24 @@
           (cond
            ((interpret-term-as-rewrite-rule2 name hyps lhs2 rhs2 wrld)
             (mv msg eqv lhs rhs ttree))
-           (t (mv nil eqv2 lhs2 rhs2 ttree2)))))
+           (t (prog2$
+               (and ctx
+                    (observation-cw ctx
+                                    "The proposed rewrite rule ~x0 may ~
+                                     suggest a conclusion of the form (Equiv ~
+                                     Lhs Rhs) where:~|  Equiv: ~x1~|  Lhs:   ~
+                                     ~x2~|  Rhs:   ~x3~|But such a rewrite ~
+                                     rule would be illegal, so the conclusion ~
+                                     is treated as follows instead.~|  Equiv: ~
+                                     ~x4~|  Lhs:   ~x5~|  Rhs:   ~x6~|"
+                                    name
+                                    eqv
+                                    (untranslate lhs nil wrld)
+                                    (untranslate rhs nil wrld)
+                                    eqv2
+                                    (untranslate lhs2 nil wrld)
+                                    (untranslate rhs2 nil wrld)))
+               (mv nil eqv2 lhs2 rhs2 ttree2))))))
        (t (mv nil eqv lhs rhs ttree))))))
 
 ; We inspect the lhs and some hypotheses with the following functions to
@@ -1616,7 +1637,7 @@
 
   (mv-let
    (msg eqv lhs rhs ttree)
-   (interpret-term-as-rewrite-rule name hyps concl ens wrld)
+   (interpret-term-as-rewrite-rule name hyps concl ctx ens wrld)
    (cond
     (msg (er soft ctx "~@0" msg))
     (t (let ((rewrite-rule
@@ -1679,7 +1700,7 @@
 
   (mv-let
    (msg eqv lhs rhs ttree)
-   (interpret-term-as-rewrite-rule (base-symbol rune) hyps concl ens wrld)
+   (interpret-term-as-rewrite-rule (base-symbol rune) hyps concl nil ens wrld)
    (declare (ignore ttree))
    (cond
     (msg

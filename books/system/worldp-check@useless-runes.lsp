@@ -1,0 +1,2 @@
+(CHECK-WORLDP-CHECK (1 1
+                       (:TYPE-PRESCRIPTION CHECK-WORLDP-CHECK)))

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ACL2 Community Books build system
 # Copyright (C) 2019 Centaur Technology

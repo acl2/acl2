@@ -726,10 +726,10 @@
 
   (xdoc::p
    "This tutorial page provides an introduction to
-    the main code generation option provided by ATJ,
+    the main code generation options provided by ATJ,
     namely the choice between the deep and shallow embedding approach.")
 
-  (atj-tutorial-section "Comparison between Deep and Shallow Embeddings")
+  (atj-tutorial-section "Comparison between Deep and Shallow Embedding")
 
   (xdoc::p
    "Translating ACL2 to Java involves

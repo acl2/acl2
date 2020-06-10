@@ -38,7 +38,7 @@
 ; 92.53 sec. vs. 314.30 sec.
 (value-triple (set-gc-strategy :delay))
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/lists/flatten" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 
@@ -421,6 +421,3 @@
 ;;  - ACL2(hp): memoization, lock contention:     242 seconds (many gc messages)
 ;;  - ACL2(h):  memoization, no lock contention:   61 seconds (many gc messages)
 (assert! (time$ (check-both 100)))
-
-
-

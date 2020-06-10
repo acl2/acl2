@@ -449,7 +449,7 @@
      (lofat-truncate)
      ((:rewrite take-of-take-split)
       (:linear len-of-member-equal)
-      (:rewrite fat32-filename-p-when-fat32-filename-p)
+      (:rewrite fat32-filename-fix-when-fat32-filename-p)
       (:rewrite str::make-character-list-when-character-listp)
       (:rewrite hifat-to-lofat-inversion-lemma-2)
       (:definition take))))))
