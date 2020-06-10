@@ -12424,80 +12424,80 @@
         ttree))
    ((flambda-applicationp term)
     (mv-let (normal-args ttree)
-            (normalize-lst (fargs term) nil
-                           type-alist ens wrld ttree
-                           ts-backchain-limit)
+      (normalize-lst (fargs term) nil
+                     type-alist ens wrld ttree
+                     ts-backchain-limit)
 
 ; We normalize the body of the lambda (under a type-alist determined
 ; from the normalized arguments).  But we leave a lambda application
 ; in place.
 
-            (mv-let (normal-body ttree)
-                    (normalize (lambda-body (ffn-symb term))
-                               iff-flg
-                               (zip-variable-type-alist
-                                (lambda-formals (ffn-symb term))
-                                (type-set-lst
-                                 normal-args
-                                 nil ; see note above on force-flg
-                                 nil
-                                 type-alist
-                                 nil
-                                 ens
-                                 wrld
-                                 nil nil
-                                 ts-backchain-limit))
-                               ens wrld ttree ts-backchain-limit)
-                    (mv (mcons-term
-                         (list 'lambda
-                               (lambda-formals (ffn-symb term))
-                               normal-body)
-                         normal-args)
-                        ttree))))
+      (mv-let (normal-body ttree)
+        (normalize (lambda-body (ffn-symb term))
+                   iff-flg
+                   (zip-variable-type-alist
+                    (lambda-formals (ffn-symb term))
+                    (type-set-lst
+                     normal-args
+                     nil ; see note above on force-flg
+                     nil
+                     type-alist
+                     nil
+                     ens
+                     wrld
+                     nil nil
+                     ts-backchain-limit))
+                   ens wrld ttree ts-backchain-limit)
+        (mv (mcons-term
+             (list 'lambda
+                   (lambda-formals (ffn-symb term))
+                   normal-body)
+             normal-args)
+            ttree))))
    ((eq (ffn-symb term) 'if)
     (mv-let
-     (t1 ttree)
-     (normalize (fargn term 1) t type-alist ens wrld ttree ts-backchain-limit)
-     (let ((t2 (fargn term 2))
-           (t3 (fargn term 3)))
-       (mv-let
-        (mbt mbf tta fta ttree1)
-        (assume-true-false-bc t1 nil
-                              nil ; see note above on force-flg
-                              nil type-alist ens wrld nil nil nil
-                              ts-backchain-limit)
-        (cond
-         (mbt (normalize t2 iff-flg type-alist ens wrld
-                         (cons-tag-trees ttree1 ttree)
-                         ts-backchain-limit))
-         (mbf (normalize t3 iff-flg type-alist ens wrld
-                         (cons-tag-trees ttree1 ttree)
-                         ts-backchain-limit))
+      (t1 ttree)
+      (normalize (fargn term 1) t type-alist ens wrld ttree ts-backchain-limit)
+      (let ((t2 (fargn term 2))
+            (t3 (fargn term 3)))
+        (mv-let
+          (mbt mbf tta fta ttree1)
+          (assume-true-false-bc t1 nil
+                                nil ; see note above on force-flg
+                                nil type-alist ens wrld nil nil nil
+                                ts-backchain-limit)
+          (cond
+           (mbt (normalize t2 iff-flg type-alist ens wrld
+                           (cons-tag-trees ttree1 ttree)
+                           ts-backchain-limit))
+           (mbf (normalize t3 iff-flg type-alist ens wrld
+                           (cons-tag-trees ttree1 ttree)
+                           ts-backchain-limit))
 
 ; If mbt and mbf are both nil, then ttree1 is nil and we ignore it
 ; below.  (Actually, we use the same variable name to hold a different
 ; ttree.)
 
-         ((ffn-symb-p t1 'if)
-          (let ((t11 (fargn t1 1))
-                (t12 (fargn t1 2))
-                (t13 (fargn t1 3)))
-            (normalize (mcons-term* 'if t11
-                                    (mcons-term* 'if t12 t2 t3)
-                                    (mcons-term* 'if t13 t2 t3))
-                       iff-flg type-alist ens wrld ttree ts-backchain-limit)))
-         (t (mv-let (t2 ttree)
-                    (normalize t2 iff-flg tta ens wrld ttree ts-backchain-limit)
-                    (mv-let (t3 ttree)
-                            (normalize t3 iff-flg fta ens wrld ttree
-                                       ts-backchain-limit)
-                            (cond ((equal t2 t3)
-                                   (mv t2 ttree))
-                                  ((and (equal t1 t2)
-                                        (equal t3 *nil*))
-                                   (mv t1 ttree))
-                                  ((and (equal t2 *t*)
-                                        (equal t3 *nil*))
+           ((ffn-symb-p t1 'if)
+            (let ((t11 (fargn t1 1))
+                  (t12 (fargn t1 2))
+                  (t13 (fargn t1 3)))
+              (normalize (mcons-term* 'if t11
+                                      (mcons-term* 'if t12 t2 t3)
+                                      (mcons-term* 'if t13 t2 t3))
+                         iff-flg type-alist ens wrld ttree ts-backchain-limit)))
+           (t (mv-let (t2 ttree)
+                (normalize t2 iff-flg tta ens wrld ttree ts-backchain-limit)
+                (mv-let (t3 ttree)
+                  (normalize t3 iff-flg fta ens wrld ttree
+                             ts-backchain-limit)
+                  (cond ((equal t2 t3)
+                         (mv t2 ttree))
+                        ((and (equal t1 t2)
+                              (equal t3 *nil*))
+                         (mv t1 ttree))
+                        ((and (equal t2 *t*)
+                              (equal t3 *nil*))
 
 ; If t1 is Boolean and t2 and t3 are t and nil respectively, we can normalize
 ; to t1.  Similarly, if t1 is not Boolean but we are working in iff-mode,
@@ -12506,49 +12506,51 @@
 ; unnecessary.  If iff-flg is set then t2 will have been normalized in iff
 ; mode.  Thus, if it is non-nilp t2 would be *t*.
 
-                                   (cond
-                                    (iff-flg (mv t1 ttree))
-                                    (t
-                                     (mv-let (ts1 ttree1)
-                                             (type-set-bc
-                                              t1 ; see note above on force-flg
-                                              nil nil type-alist ens wrld nil
-                                              nil nil
-                                              ts-backchain-limit)
-                                             (cond
-                                              ((ts-subsetp ts1 *ts-boolean*)
-                                               (mv t1 (cons-tag-trees ttree1
-                                                                      ttree)))
-                                              (t (mv (mcons-term* 'if t1 t2 t3)
-                                                     ttree)))))))
-                                  (t (mv (mcons-term* 'if t1 t2 t3)
-                                         ttree)))))))))))
-    (t
-     (mv-let (normal-args ttree)
-             (normalize-lst (fargs term) nil
-                            type-alist ens wrld ttree ts-backchain-limit)
-             (let ((term (cons-term (ffn-symb term)
-                                    normal-args)))
-               (cond
-                ((fquotep term) (mv term ttree))
-                ((eq (ffn-symb term) 'equal)
-                 (cond ((equal (fargn term 1) (fargn term 2))
-                        (mv *t* ttree))
-                       (t (mv-let (not-ident ttree1)
-                                  (not-ident (fargn term 1)
-                                             (fargn term 2)
-                                             type-alist ens wrld)
-                                  (cond (not-ident (mv *nil*
-                                                       (cons-tag-trees ttree1
-                                                                       ttree)))
-                                        (t (distribute-first-if
-                                            term iff-flg
-                                            type-alist ens
-                                            wrld
-                                            ttree
-                                            ts-backchain-limit)))))))
-                (t (distribute-first-if term iff-flg type-alist ens wrld
-                                        ttree ts-backchain-limit))))))))
+                         (cond
+                          (iff-flg (mv t1 ttree))
+                          (t
+                           (mv-let (ts1 ttree1)
+                             (type-set-bc
+                              t1 ; see note above on force-flg
+                              nil nil type-alist ens wrld nil
+                              nil nil
+                              ts-backchain-limit)
+                             (cond
+                              ((ts-subsetp ts1 *ts-boolean*)
+                               (mv t1 (cons-tag-trees ttree1
+                                                      ttree)))
+                              (t (mv (mcons-term* 'if t1 t2 t3)
+                                     ttree)))))))
+                        (t (mv (mcons-term* 'if t1 t2 t3)
+                               ttree)))))))))))
+   ((eq (ffn-symb term) 'hide)
+    (mv term ttree))
+   (t
+    (mv-let (normal-args ttree)
+      (normalize-lst (fargs term) nil
+                     type-alist ens wrld ttree ts-backchain-limit)
+      (let ((term (cons-term (ffn-symb term)
+                             normal-args)))
+        (cond
+         ((fquotep term) (mv term ttree))
+         ((eq (ffn-symb term) 'equal)
+          (cond ((equal (fargn term 1) (fargn term 2))
+                 (mv *t* ttree))
+                (t (mv-let (not-ident ttree1)
+                     (not-ident (fargn term 1)
+                                (fargn term 2)
+                                type-alist ens wrld)
+                     (cond (not-ident (mv *nil*
+                                          (cons-tag-trees ttree1
+                                                          ttree)))
+                           (t (distribute-first-if
+                               term iff-flg
+                               type-alist ens
+                               wrld
+                               ttree
+                               ts-backchain-limit)))))))
+         (t (distribute-first-if term iff-flg type-alist ens wrld
+                                 ttree ts-backchain-limit))))))))
 
 (defun normalize-lst (args iff-flg type-alist ens wrld ttree
                            ts-backchain-limit)
