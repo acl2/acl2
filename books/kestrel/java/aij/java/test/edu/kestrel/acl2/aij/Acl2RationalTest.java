@@ -44,4 +44,13 @@ class Acl2RationalTest {
                         new BigInteger("-3283482738974827394728397492873492")));
     }
 
+    @Test
+    void makeAcl2IntegerAcl2Integer() {
+        assertDoesNotThrow(() ->
+                Acl2Rational.make(Acl2Integer.ONE, Acl2Integer.make(50)));
+        assertDoesNotThrow(() ->
+                Acl2Rational.make(Acl2Integer.ONE.make(BigInteger.TEN),
+                        Acl2Integer.make(new BigInteger("-11"))));
+    }
+
 }
