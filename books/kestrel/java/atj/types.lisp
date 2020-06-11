@@ -184,6 +184,7 @@
   (:character ())
   (:string ())
   (:symbol ())
+  (:boolean ())
   (:cons ())
   (:value ())
   :pred atj-atypep)
@@ -197,15 +198,19 @@
    (xdoc::p
     "These are used for code generation, as explained in @(see atj-types).")
    (xdoc::p
-    "Currently ATJ uses types for
-     all the AIJ public class types for ACL2 values
-     (integers, rationals, numbers,
-     characters, strings, symbols,
-     @(tsee cons) pairs, and all values),
-     whose fixtype is @(tsee atj-atype),
-     as well as types for the Java primitive types,
-     and types for Java primitive array types.
-     More types may be added in the future.")
+    "Currently ATJ uses types for:")
+   (xdoc::ul
+    (xdoc::li
+     "ACL2 integers, rationals, numbers,
+      characters, strings, symbols, booleans
+      @(tsee cons) pairs, and all values,
+      whose fixtype is @(tsee atj-atype).
+      With the exception of the type of booleans,
+      these all correspond to the AIJ public class types for ACL2 values.")
+    (xdoc::li
+     "Java primitive values and arrays."))
+   (xdoc::p
+    "More types may be added in the future.")
    (xdoc::p
     "Each ATJ type denotes
      (i) an ACL2 predicate (see @(tsee atj-type-to-pred)) and
@@ -283,6 +288,7 @@
                                        :character :acharacter
                                        :string :astring
                                        :symbol :asymbol
+                                       :boolean :aboolean
                                        :cons :acons
                                        :value :avalue)
                  :jprim (primitive-type-case type.get
@@ -334,6 +340,7 @@
     (:acharacter (atj-type-acl2 (atj-atype-character)))
     (:astring (atj-type-acl2 (atj-atype-string)))
     (:asymbol (atj-type-acl2 (atj-atype-symbol)))
+    (:aboolean (atj-type-acl2 (atj-atype-boolean)))
     (:acons (atj-type-acl2 (atj-atype-cons)))
     (:avalue (atj-type-acl2 (atj-atype-value)))
     (:jboolean (atj-type-jprim (primitive-type-boolean)))
@@ -370,7 +377,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-type-list
-  :short "Fixtype of true lists of ATJ types."
+  :short "Fixtype of lists of ATJ types."
   :elt-type atj-type
   :true-listp t
   :elementp-of-nil nil
@@ -408,7 +415,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-type-list-list
-  :short "Fixtype of true lists of true lists of ATJ types."
+  :short "Fixtype of lists of lists of ATJ types."
   :elt-type atj-type-list
   :true-listp t
   :elementp-of-nil t
@@ -503,26 +510,27 @@
                                        :character 'characterp
                                        :string 'stringp
                                        :symbol 'symbolp
+                                       :boolean 'booleanp
                                        :cons 'consp
                                        :value '(lambda (_) 't))
                  :jprim (primitive-type-case type.get
-                                             :boolean 'boolean-value-p
-                                             :char 'char-value-p
-                                             :byte 'byte-value-p
-                                             :short 'short-value-p
-                                             :int 'int-value-p
-                                             :long 'long-value-p
-                                             :float 'float-value-p
-                                             :double 'double-value-p)
+                                             :boolean 'boolean-valuep
+                                             :char 'char-valuep
+                                             :byte 'byte-valuep
+                                             :short 'short-valuep
+                                             :int 'int-valuep
+                                             :long 'long-valuep
+                                             :float 'float-valuep
+                                             :double 'double-valuep)
                  :jprimarr (primitive-type-case type.comp
-                                                :boolean 'boolean-array-p
-                                                :char 'char-array-p
-                                                :byte 'byte-array-p
-                                                :short 'short-array-p
-                                                :int 'int-array-p
-                                                :long 'long-array-p
-                                                :float 'float-array-p
-                                                :double 'double-array-p))
+                                                :boolean 'boolean-arrayp
+                                                :char 'char-arrayp
+                                                :byte 'byte-arrayp
+                                                :short 'short-arrayp
+                                                :int 'int-arrayp
+                                                :long 'long-arrayp
+                                                :float 'float-arrayp
+                                                :double 'double-arrayp))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -543,6 +551,7 @@
     :character (member-eq (atj-atype-kind sup) '(:character :value))
     :string (member-eq (atj-atype-kind sup) '(:string :value))
     :symbol (member-eq (atj-atype-kind sup) '(:symbol :value))
+    :boolean (member-eq (atj-atype-kind sup) '(:boolean :symbol :value))
     :cons (member-eq (atj-atype-kind sup) '(:cons :value))
     :value (atj-atype-case sup :value))
    t)
@@ -731,6 +740,7 @@
                       (atj-type-acl2 (atj-atype-character))
                       (atj-type-acl2 (atj-atype-string))
                       (atj-type-acl2 (atj-atype-symbol))
+                      (atj-type-acl2 (atj-atype-boolean))
                       (atj-type-acl2 (atj-atype-cons))
                       (atj-type-acl2 (atj-atype-value))
                       (atj-type-jprim (primitive-type-boolean))
@@ -1323,26 +1333,49 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @(':acl2') types denote
+    "The @(':acl2') types except @(':aboolean') and @(':acharacter') denote
      the corresponding AIJ class types.
+     The @(':aboolean') type denotes
+     the Java primitive type @('boolean').
+     The @(':acharacter') type denotes
+     the Java primitive type @('char').
      The @(':jprim') types denote
      the corresponding Java primitive types.
      The @(':jprimarr') types denote
      the corresponding Java primitive array types.")
    (xdoc::p
-    "Currently this is an injective mapping,
-     each ATJ type denotes a distinct Java type.
-     This might change in the future,
-     as new ATJ types are added."))
+    "The mapping of @(':aboolean') and @(':acharacter')
+     to the Java @('boolean') and @('char') types
+     means that we represent
+     ACL2 booleans as Java booleans and
+     ACL2 characters as Java characters.
+     This only happens in the shallow embedding approach;
+     the deep embedding approach does not use ATJ types.
+     Also, @(':aboolean') and @(':acharacter') are used
+     only if @(':guards') is @('t');
+     otherwise, only the type @(':avalue') is used.
+     In other words, we represent
+     ACL2 booleans as Java booleans and
+     ACL2 characters as Java characters
+     only when @(':guards') is @('t').
+     Even though Java @('char') values (which consist of 16 bits)
+     are not isomorphic to ACL2 characters (which consist of 8 bits),
+     when @(':guards') is @('t') the satisfaction of all guards is assumed;
+     thus, if external code calls the generated Java code
+     with values that satisfy the guards,
+     and in particular with @('char') values below 256,
+     the generate code should manipulate only @('char') values below 256,
+     which are isomorphic to Java characters."))
   (atj-type-case
    type
    :acl2 (atj-atype-case type.get
                          :integer *aij-type-int*
                          :rational *aij-type-rational*
                          :number *aij-type-number*
-                         :character *aij-type-char*
+                         :character (jtype-char)
                          :string *aij-type-string*
                          :symbol *aij-type-symbol*
+                         :boolean (jtype-boolean)
                          :cons *aij-type-cons*
                          :value *aij-type-value*)
    :jprim (primitive-type-case type.get
@@ -1399,6 +1432,7 @@
         ((acl2-numberp val) (atj-type-acl2 (atj-atype-number)))
         ((characterp val) (atj-type-acl2 (atj-atype-character)))
         ((stringp val) (atj-type-acl2 (atj-atype-string)))
+        ((booleanp val) (atj-type-acl2 (atj-atype-boolean)))
         ((symbolp val) (atj-type-acl2 (atj-atype-symbol)))
         ((consp val) (atj-type-acl2 (atj-atype-cons)))
         (t (prog2$ (raise "Internal errror: ~
@@ -1464,7 +1498,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist atj-function-type-list
-  :short "Fixtype of true lists of ATJ function types."
+  :short "Fixtype of lists of ATJ function types."
   :elt-type atj-function-type
   :true-listp t
   :elementp-of-nil nil
@@ -1867,7 +1901,7 @@
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
        ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
-                must be a true list of ATJ type keywords."
+                must be a list of ATJ type keywords."
                in-type-specs))
        (in-types ; error id not valid ATJ type keywords:
         (atj-type-list-from-keyword-list in-type-specs))
@@ -1885,7 +1919,7 @@
               (atj-process-output-type-specs
                out-type-spec/specs formals in-types)
             (prog2$ (raise "The third input, ~x0, ~
-                            must be a true list of length ~x1 ~
+                            must be a list of length ~x1 ~
                             of output type specifications."
                            out-type-spec/specs nresults)
                     (mv nil nil)))))
@@ -2240,7 +2274,7 @@
        (formals (formals fn wrld)) ; error if not FUNCTION-SYMBOLP
        ((unless (keyword-listp in-type-specs))
         (raise "The second input, ~x0, ~
-                must be a true list of ATJ type keywords."
+                must be a list of ATJ type keywords."
                in-type-specs))
        (in-types ; error if not valid ATJ type keywords:
         (atj-type-list-from-keyword-list in-type-specs))
@@ -2258,7 +2292,7 @@
               (atj-process-output-type-specs
                out-type-spec/specs formals in-types)
             (prog2$ (raise "The third input, ~x0, ~
-                            must be a true list of length ~x1 ~
+                            must be a list of length ~x1 ~
                             of output type specifications."
                            out-type-spec/specs nresults)
                     (mv nil nil)))))

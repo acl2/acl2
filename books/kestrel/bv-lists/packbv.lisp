@@ -1,7 +1,7 @@
 ; BV Lists Library: theorems about packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "../bv/getbit")
 (include-book "../lists-light/repeat")
 (local (include-book "../bv/bvcat"))
+(local (include-book "../bv/unsigned-byte-p"))
 (local (include-book "../../ihs/ihs-lemmas")) ;why? for <-*-left-cancel
 (local (include-book "../lists-light/butlast"))
 (local (include-book "../../meta/meta-plus-lessp"))

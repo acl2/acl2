@@ -157,7 +157,7 @@
          (type-doc (str::cat "@('" (str::downcase-string type-name) "')"))
          (jwit (pkg-witness "JAVA"))
          (type-value (packn-pos (list type '-value) jwit))
-         (type-value-p (packn-pos (list type '-value-p) jwit))
+         (type-valuep (packn-pos (list type '-valuep) jwit))
          (type-value-fix (packn-pos (list type '-value-fix) jwit))
          (type-value->get (case type
                             (boolean 'boolean-value->bool)
@@ -170,7 +170,7 @@
          (type-value-list (packn-pos (list type '-value-list) jwit))
          (type-value-listp (packn-pos (list type '-value-listp) jwit))
          (type-array (packn-pos (list type '-array) jwit))
-         (type-array-p (packn-pos (list type-array '-p) jwit))
+         (type-arrayp (packn-pos (list type-array 'p) jwit))
          (type-array-fix (packn-pos (list type-array '-fix) jwit))
          (type-array->components (packn-pos (list type-array '->components)
                                             jwit))
@@ -235,6 +235,7 @@
            :require (< (len components) (expt 2 31))
            :layout :list
            :tag ,(intern (symbol-name type-array) "KEYWORD")
+           :pred ,type-arrayp
            ///
            (defrule ,(packn-pos (list 'len-of-
                                       type-array->components
@@ -247,8 +248,8 @@
 
          ;; predicate to check int index in range:
 
-         (define ,type-array-index-in-range-p ((array ,type-array-p)
-                                               (index int-value-p))
+         (define ,type-array-index-in-range-p ((array ,type-arrayp)
+                                               (index int-valuep))
            :returns (yes/no booleanp)
            :short ,(str::cat "Check if a Java @('int') is a valid index
                               (i.e. in range) for a " type-doc " array.")
@@ -258,9 +259,9 @@
 
          ;; array read:
 
-         (define ,type-array-read ((array ,type-array-p) (index int-value-p))
+         (define ,type-array-read ((array ,type-arrayp) (index int-valuep))
            :guard (,type-array-index-in-range-p array index)
-           :returns (component ,type-value-p)
+           :returns (component ,type-valuep)
            :short ,(str::cat "Read a component from a Java " type-doc " array.")
            (,type-value-fix
             (nth (int-value->int index) (,type-array->components array)))
@@ -276,8 +277,8 @@
 
          ;; array length:
 
-         (define ,type-array-length ((array ,type-array-p))
-           :returns (length int-value-p)
+         (define ,type-array-length ((array ,type-arrayp))
+           :returns (length int-valuep)
            :short ,(str::cat "Obtain the length of a Java " type-doc " array.")
            (int-value (len (,type-array->components array)))
            :guard-hints (("Goal" :in-theory (enable ,type-array->components
@@ -285,11 +286,11 @@
 
          ;; array write:
 
-         (define ,type-array-write ((array ,type-array-p)
-                                    (index int-value-p)
-                                    (component ,type-value-p))
+         (define ,type-array-write ((array ,type-arrayp)
+                                    (index int-valuep)
+                                    (component ,type-valuep))
            :guard (,type-array-index-in-range-p array index)
-           :returns (new-array ,type-array-p)
+           :returns (new-array ,type-arrayp)
            :short ,(str::cat "Write a component to a Java " type-doc " array.")
            (if (mbt (,type-array-index-in-range-p array index))
                (,type-array (update-nth (int-value->int index)
@@ -328,9 +329,9 @@
 
          ;; new array with length:
 
-         (define ,type-array-new-len ((length int-value-p))
+         (define ,type-array-new-len ((length int-valuep))
            :guard (>= (int-value->int length) 0)
-           :returns (array ,type-array-p)
+           :returns (array ,type-arrayp)
            :short ,(str::cat "Construct a Java " type-doc " array
                               with the given length
                               and with default components.")
@@ -359,7 +360,7 @@
 
          (define ,type-array-new-init ((comps ,type-value-listp))
            :guard (< (len comps) (expt 2 31))
-           :returns (array ,type-array-p)
+           :returns (array ,type-arrayp)
            :short ,(str::cat "Construct a Java " type-doc " array
                               with the given initializer (i.e. components).")
            (,type-array comps))
@@ -368,7 +369,7 @@
 
          ,@(and
             acl2type
-            `((define ,type-array-to-list ((array ,type-array-p))
+            `((define ,type-array-to-list ((array ,type-arrayp))
                 :returns (list ,acl2type-listp)
                 :short ,(str::cat "Convert a Java " type-doc " array to
                               an ACL2 list of " acl2type-doc ".")
@@ -376,6 +377,7 @@
                 :prepwork
                 ((define ,type-array-to-list-aux ((comps ,type-value-listp))
                    :returns (list ,acl2type-listp)
+                   :parents nil
                    (cond ((endp comps) nil)
                          (t (cons (,type-value->get (car comps))
                                   (,type-array-to-list-aux (cdr comps)))))
@@ -395,13 +397,14 @@
             acl2type
             `((define ,type-array-from-list ((list ,acl2type-listp))
                 :guard (< (len list) (expt 2 31))
-                :returns (array ,type-array-p)
+                :returns (array ,type-arrayp)
                 :short ,(str::cat "Convert an ACL2 list of " acl2type-doc
                                   " to a Java @('boolean') array.")
                 (,type-array (,type-array-from-list-aux list))
                 :prepwork
                 ((define ,type-array-from-list-aux ((list ,acl2type-listp))
                    :returns (comps ,type-value-listp)
+                   :parents nil
                    (cond ((endp list) nil)
                          (t (cons (,type-value (car list))
                                   (,type-array-from-list-aux (cdr list)))))

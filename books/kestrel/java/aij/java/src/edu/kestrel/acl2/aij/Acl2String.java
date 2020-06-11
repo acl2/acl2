@@ -79,6 +79,18 @@ public final class Acl2String extends Acl2Value {
     }
 
     /**
+     * Checks if this string is a string, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code stringp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean stringpBoolean() {
+        return true;
+    }
+
+    /**
      * Coerces this string to a list,
      * consistently with the {@code coerce} ACL2 function
      * when the second argument is {@code list}.

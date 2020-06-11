@@ -12,7 +12,7 @@
 
 (include-book "natives")
 
-(include-book "../types-for-natives")
+(include-book "../implementation" :ttags (:open-input-channel :oslib :quicklisp :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 ;
 ; Additional Copyright Notice.
 ;
@@ -36,7 +37,7 @@
 (in-package "STD")
 (include-book "../deflist")
 (include-book "std/strings/top" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (make-event
  (prog2$
@@ -412,3 +413,20 @@
 (deflist nonempty-intlist2-p (x) (integerp x) :non-emptyp t :elementp-of-nil nil)
 (deflist nonempty-int-truelist-p (x) (integerp x) :non-emptyp t :true-listp t)
 (deflist nonempty-int-truelist2-p (x) (integerp x) :non-emptyp t :true-listp t :elementp-of-nil nil)
+
+
+(progn ; test :prepwork
+  (defund elemp (x r)
+    (declare (xargs :guard (rationalp r)))
+    (or (not (rationalp x))
+        (<= x r)))
+  (deflist elem-listp (x r)
+    :guard (rationalp r)
+    (elemp x r)
+    :true-listp t
+    :elementp-of-nil t ; this cannot be proved without the :prepwork below
+    :prepwork
+    ((local
+      (defthm elementp-of-nil-lemma
+        (elemp nil r)
+        :hints (("Goal" :in-theory (enable elemp))))))))

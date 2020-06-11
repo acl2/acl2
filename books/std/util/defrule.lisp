@@ -211,12 +211,12 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
         (t
          (find-goal-entry-in-user-hints (cdr user-hints)))))
 
-(defun hints-alist-to-plist (hints-al)
-  (if (atom hints-al)
+(defun alist-to-plist (al)
+  (if (atom al)
       nil
-    (list* (caar hints-al)
-           (cdar hints-al)
-           (hints-alist-to-plist (cdr hints-al)))))
+    (list* (caar al)
+           (cdar al)
+           (alist-to-plist (cdr al)))))
 
 (defun merge-keyword-hints-alist-into-ordinary-hints (hints-al user-hints)
   (b* (((when (atom hints-al))
@@ -227,7 +227,7 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
        ;; We just arbitrarily say the top-level hints come first.
        ;; We could eventually try to do some smarter merge, e.g., for
        ;; theory hints, but that's just awful anyway.
-       (new-goal        (append (hints-alist-to-plist hints-al)
+       (new-goal        (append (alist-to-plist hints-al)
                                 user-goal))
        (new-entry       (cons "Goal" new-goal)))
     (cons new-entry user-hints)))
@@ -264,6 +264,8 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
 
        (hints (cdr (assoc :hints kwd-alist)))
        (hints (merge-keyword-hints-alist-into-ordinary-hints hint-alist hints))
+       (kwd-alist (if hints (put-assoc-eq :hints hints kwd-alist) kwd-alist))
+
        (local (cdr (assoc :local kwd-alist)))
        (prep-lemmas (cdr (assoc :prep-lemmas kwd-alist)))
        (prep-books (cdr (assoc :prep-books kwd-alist)))
@@ -292,16 +294,13 @@ generated using @(see defthmd) instead of @(see defthm).</p>")
             `(local (progn ,@prep-books))
           nil))
 
+       ((mv thm-kwd-alist &)
+        (split-alist '(:hints :rule-classes :otf-flg :instructions)
+                     kwd-alist))
+
        (thm `(,(if disablep 'defthmd 'defthm) ,name
-               ,formula
-               :hints        ,hints
-               ,@(let ((look (assoc :rule-classes kwd-alist)))
-                   (and look `(:rule-classes ,(cdr look))))
-               :otf-flg      ,(cdr (assoc :otf-flg kwd-alist))
-               :instructions ,(cdr (assoc :instructions kwd-alist))
-; Commented out by Matt K. for post-v-7.1 removal of :doc for defthm:
-;              :doc          ,(cdr (assoc :doc kwd-alist))
-               ))
+              ,formula
+              ,@(alist-to-plist thm-kwd-alist)))
 
        (event
         (if (and (not want-xdoc)

@@ -1347,14 +1347,19 @@
 ; due to cancellation.  Choosing primes that are smaller may lead to
 ; checksums with less information.
 
-(defconst *check-sum-exclusive-maximum* 268435399
-  "268435399 is the first prime below 2^28.  We use integers
-   modulo this number as checksums.")
+(defconst *check-sum-exclusive-maximum*
 
-(defconst *check-length-exclusive-maximum* 2097143
-  "2097143 is the first prime below 2^21.  We use integers
-   modulo this number as indices into the stream we are
-   checksumming.")
+; 268435399 is the first prime below 2^28.  We use integers modulo this number
+; as checksums.
+
+  268435399)
+
+(defconst *check-length-exclusive-maximum*
+
+; 2097143 is the first prime below 2^21.  We use integers modulo this number as
+; indices into the stream we are checksumming.
+
+  2097143)
 
 ; We actually return checksums which are in (mod
 ; *check-sum-exclusive-maximum*).
@@ -3345,6 +3350,30 @@
    (pprogn
     (f-put-global 'current-package val state)
     (value val))))
+
+(defun defun-for-state-name (name)
+  (add-suffix name "-STATE"))
+
+(defmacro error-free-triple-to-state (ctx form)
+  (declare (xargs :guard ; really (quotep ctx), but we don't check pseudo-termp
+                  (and (consp ctx)
+                       (eq (car ctx) 'quote))))
+  `(mv-let (erp val state)
+     ,form
+     (declare (ignore val))
+     (prog2$ (and erp (er hard ,ctx
+                          "Unexpected error.  An error message may have been ~
+                           printed above."))
+             state)))
+
+(defmacro defun-for-state (name args)
+  `(defun ,(defun-for-state-name name)
+       ,args
+     (error-free-triple-to-state
+      ',name
+      (,name ,@args))))
+
+(defun-for-state set-current-package (val state))
 
 (defun standard-oi (state)
   (f-get-global 'standard-oi state))

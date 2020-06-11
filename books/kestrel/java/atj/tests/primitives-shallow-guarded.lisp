@@ -12,6 +12,8 @@
 
 (include-book "primitives")
 
+(include-book "../implementation" :ttags (:open-input-channel :oslib :quicklisp :quicklisp.osicat))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Specialize the input and output types of the tested functions.
@@ -20,7 +22,7 @@
 
 ; constructors:
 
-(java::atj-main-function-type test-boolean-value (:asymbol) :jboolean)
+(java::atj-main-function-type test-boolean-value (:aboolean) :jboolean)
 
 (java::atj-main-function-type test-char-value (:ainteger) :jchar)
 
@@ -36,7 +38,7 @@
 
 ; deconstructors:
 
-(java::atj-main-function-type test-boolean-value->bool (:jboolean) :asymbol)
+(java::atj-main-function-type test-boolean-value->bool (:jboolean) :aboolean)
 
 (java::atj-main-function-type test-char-value->nat (:jchar) :ainteger)
 

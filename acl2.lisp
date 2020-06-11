@@ -858,7 +858,7 @@
                 acl2::large-consp))
 
 (defmacro acl2::defconst (name term &rest rst)
-  (declare (ignore rst)) ; e.g., documentation
+  (declare (ignore rst))
   (let ((disc (gensym)))
     `(defparameter ,name
        (let ((acl2::*safe-mode-verified-p* t))

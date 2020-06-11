@@ -32,7 +32,15 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable member-equal))))
 
-(defthm member-equal-when-not-member-equal-of-cdr-cheap
+(defthmd member-equal-when-not-member-equal-of-cdr
+  (implies (not (member-equal a (cdr x)))
+           (iff (member-equal a x)
+                (if (consp x)
+                    (equal a (car x))
+                  nil)))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm not-member-equal-when-not-member-equal-of-cdr-cheap
   (implies (not (member-equal a (cdr x)))
            (iff (member-equal a x)
                 (if (consp x)
@@ -65,7 +73,12 @@
                     (member-equal a x)  )))
   :hints (("Goal" :in-theory (enable member-equal))))
 
-(defthm member-equal-of-true-list-fix
+(defthmd member-equal-of-true-list-fix
+  (equal (member-equal a (true-list-fix x))
+         (true-list-fix (member-equal a (true-list-fix x))))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-true-list-fix-iff
   (iff (member-equal x (true-list-fix y))
        (member-equal x y))
   :hints (("Goal" :in-theory (enable member-equal true-list-fix))))
@@ -98,3 +111,20 @@
 (defthmd consp-when-member-equal
   (implies (member-equal a x) ;note that a is a free var
 	   (consp x)))
+
+(defthm true-listp-of-member-equal
+  (implies (true-listp x)
+           (true-listp (member-equal a x))))
+
+(defthm not-member-equal-of-member-equal-when-not-member-equal
+  (implies (not (member-equal a1 x))
+           (not (member-equal a1 (member-equal a2 x)))))
+
+(defthm not-member-equal-of-cdr-when-not-member-equal
+  (implies (not (member-equal a x))
+           (not (member-equal a (cdr x)))))
+
+(defthm consp-of-member-equal-iff
+  (iff (consp (member-equal a x))
+       (member-equal a x))
+  :hints (("Goal" :in-theory (enable member-equal))))

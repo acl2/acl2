@@ -4721,23 +4721,9 @@
                flg)))
     `(f-put-global 'raw-warning-format ,flg state)))
 
-(defun set-standard-co-state (val state)
-  (declare (xargs :stobjs state :mode :program))
-  (mv-let (erp x state)
-          (set-standard-co val state)
-          (declare (ignore x))
-          (prog2$ (and erp (er hard? 'set-standard-co-state
-                               "See above for error message."))
-                  state)))
+(defun-for-state set-standard-co (val state))
 
-(defun set-proofs-co-state (val state)
-  (declare (xargs :stobjs state :mode :program))
-  (mv-let (erp x state)
-          (set-proofs-co val state)
-          (declare (ignore x))
-          (prog2$ (and erp (er hard? 'set-proofs-co-state
-                               "See above for error message."))
-                  state)))
+(defun-for-state set-proofs-co (val state))
 
 (defmacro with-standard-co-and-proofs-co-to-file (filename form)
   `(mv-let
@@ -4786,19 +4772,6 @@
                  (pso ,io-markers ,stop-markers)))))
 
 ; We now develop code for without-evisc.
-
-(defun defun-for-state-name (name)
-  (add-suffix name "-STATE"))
-
-(defmacro defun-for-state (name args)
-  `(defun ,(defun-for-state-name name)
-     ,args
-     (mv-let (erp val state)
-             (,name ,@args)
-             (declare (ignore val))
-             (prog2$ (and erp (er hard 'top-level
-                                  "See error message above."))
-                     state))))
 
 (defun set-ld-evisc-tuple (val state)
   (set-evisc-tuple val

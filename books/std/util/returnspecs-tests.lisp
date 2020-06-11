@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "returnspecs")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (equal (untranslate-and 'x) '(x)))
 (assert! (equal (untranslate-and 't) '(t)))

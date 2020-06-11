@@ -171,24 +171,19 @@
   (equal (intersectp-equal x y)
          (intersectp-equal y x)))
 
-(defthm subsetp-of-binary-append-1
-  (subsetp-equal y (binary-append x y)))
-
-(defthm subsetp-of-binary-append-2
-  (subsetp-equal x (binary-append x y)))
-
-(defthm subsetp-of-binary-append-3
-  (equal (subsetp-equal (binary-append x y) z)
-         (and (subsetp-equal x z) (subsetp-equal y z))))
-
-;; The following is redundant with the eponymous theorem in
-;; books/std/lists/sets.lisp, from where it was taken with thanks.
+;; The following five theorems are redundant with the eponymous theorems in
+;; books/std/lists/sets.lisp, from where they were taken with thanks.
+(defthm subsetp-append1
+  (equal (subsetp (append a b) c)
+         (and (subsetp a c)
+              (subsetp b c))))
+(defthm subsetp-append2
+  (subsetp a (append a b)))
+(defthm subsetp-append3
+  (subsetp b (append a b)))
 (defthm subsetp-trans
   (implies (and (subsetp x y) (subsetp y z))
            (subsetp x z)))
-
-;; The following is redundant with the eponymous theorem in
-;; books/std/lists/sets.lisp, from where it was taken with thanks.
 (defthm
   subsetp-member
   (implies (and (member a x) (subsetp x y))
@@ -946,9 +941,12 @@
          (remove-equal x (strip-cars alist))))
 
 (defthm strip-cars-of-put-assoc
-  (implies (consp (assoc-equal name alist))
+  (implies (case-split (not (null name)))
            (equal (strip-cars (put-assoc-equal name val alist))
-                  (strip-cars alist))))
+                  (if (consp (assoc-equal name alist))
+                      (strip-cars alist)
+                      (append (strip-cars alist)
+                              (list name))))))
 
 (defthm remove-when-absent
   (implies (not (member-equal x l))
@@ -990,7 +988,6 @@
            (equal (remove-equal nil (strip-cars (remove-equal x alist)))
                   (remove-equal nil (strip-cars alist)))))
 
-;; Rename and add a case-split to the hypothesis about x1.
 (defthm assoc-of-append-1
   (implies (case-split (not (null x1)))
            (equal (assoc-equal x1 (append x2 y))
@@ -1232,8 +1229,7 @@
                           l)))
 
 (defthm position-equal-ac-of-nthcdr
-  (implies (and (integerp ac)
-                (not (member-equal item (take n lst))))
+  (implies (not (member-equal item (take n lst)))
            (equal (position-equal-ac item (nthcdr n lst)
                                      ac)
                   (position-equal-ac item lst (- ac (nfix n))))))
@@ -1263,17 +1259,33 @@
 
 (defthmd nth-of-position-equal-ac
   (implies (member-equal item lst)
-           (equal (nth (- (position-equal-ac item lst acc)
-                          (fix acc))
+           (equal (nth (- (position-equal-ac item lst acc) acc)
                        lst)
                   item)))
 
 (defthm position-equal-ac-of-nth
   (implies (and (no-duplicatesp-equal l)
-                (integerp acc)
                 (< (nfix n) (len l)))
            (equal (position-equal-ac (nth n l) l acc)
-                  (+ acc (nfix n)))))
+                  (+ acc (nfix n))))
+  :hints (("goal" :induct (mv (position-equal-ac (nth n l) l acc)
+                              (nth n l))
+           :in-theory (disable member-equal-nth))
+          ("subgoal *1/2" :use (:instance member-equal-nth (l (cdr l))
+                                          (n (+ -1 n))))))
+
+(defthm position-equal-ac-of-take
+  (implies (and (member-equal item (take n l))
+                (<= (nfix n) (len l)))
+           (equal (position-equal-ac item (take n l) ac)
+                  (position-equal-ac item l ac))))
+
+(defthm position-equal-ac-when-member-of-take
+  (implies (and (member-equal x (take n l))
+                (<= (nfix n) (len l)))
+           (<= (position-equal-ac x l acc)
+               (+ (nfix n) acc)))
+  :rule-classes :linear)
 
 (encapsulate
   ()
@@ -1311,7 +1323,13 @@
       (implies (member-equal item lst)
                (and
                 (<= 0 (position-equal item lst))
-                (< (position-equal item lst) (len lst)))))))
+                (< (position-equal item lst) (len lst)))))
+     (:rewrite
+      :corollary
+      (implies (member-equal item lst)
+               (and
+                (integerp (position-equal item lst))
+                (acl2-numberp (position-equal item lst)))))))
 
   (defthm nth-of-position-equal
     (implies (member-equal item lst)
@@ -1325,7 +1343,25 @@
                   (< (nfix n) (len l)))
              (equal (position-equal (nth n l) l)
                     (nfix n)))
-    :hints (("Goal" :in-theory (enable position-equal)))))
+    :hints (("Goal" :in-theory (enable position-equal))))
+
+  (defthm position-of-take
+    (implies (and (member-equal item (take n l))
+                  (<= (nfix n) (len l)))
+             (equal (position-equal item (take n l))
+                    (position-equal item l)))
+    :hints (("goal" :in-theory (enable position-equal))))
+
+  (defthm
+    position-when-member-of-take
+    (implies (and (member-equal x (take n l))
+                  (<= (nfix n) (len l)))
+             (<= (position-equal x l) (nfix n)))
+    :hints (("goal" :in-theory (e/d (position-equal)
+                                    (position-equal-ac-when-member-of-take))
+             :use (:instance position-equal-ac-when-member-of-take
+                             (acc 0))))
+    :rule-classes :linear))
 
 (defthm
   subsetp-of-nthcdr
@@ -1344,3 +1380,150 @@
   (implies (nat-listp l)
            (iff (nat-listp (take n l))
                 (<= (nfix n) (len l)))))
+
+(defthm assoc-when-zp-len
+  (implies (zp (len alist))
+           (atom (assoc-equal x alist)))
+  :rule-classes :type-prescription)
+
+(defthmd
+  member-of-take
+  (implies (and (true-listp l)
+                (< (nfix n) (len l)))
+           (iff (member-equal x (take n l))
+                (and (member-equal x l)
+                     (< (position-equal x l) (nfix n)))))
+  :hints (("goal" :induct (mv (member-equal x l) (take n l))
+           :expand (position-equal (car l) l))
+          ("subgoal *1/2" :in-theory (disable (:rewrite position-of-nthcdr))
+           :use (:instance (:rewrite position-of-nthcdr)
+                           (lst l)
+                           (n 1)
+                           (item x)))
+          ("subgoal *1/1.1'"
+           :in-theory (disable (:type-prescription position-when-member))
+           :use (:instance (:type-prescription position-when-member)
+                           (lst l)
+                           (item x)))))
+
+(defthm position-of-cdr
+  (implies (and (true-listp lst)
+                (not (equal item (car lst)))
+                (member-equal item lst))
+           (equal (position-equal item (cdr lst))
+                  (- (position-equal item lst) 1)))
+  :hints (("goal" :in-theory (e/d (position-equal)
+                                  (position-of-nthcdr))
+           :use (:instance position-of-nthcdr (n 1)))))
+
+(defthm member-equal-nth-take-when-no-duplicatesp
+  (implies (and (equal x (nth n l))
+                (< (nfix n) (len l))
+                (no-duplicatesp-equal l))
+           (not (member-equal x (take n l)))))
+
+(defthmd subsetp-when-atom-set-difference$
+  (iff (consp (set-difference-equal l1 l2))
+       (not (subsetp-equal l1 l2))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/sets.lisp, from where it was taken with thanks.
+(defthm member-of-set-difference-equal
+  (iff (member a (set-difference-equal x y))
+       (and (member a x) (not (member a y))))
+  :hints (("goal" :induct (len x))))
+
+(defthm no-duplicatesp-of-set-difference
+  (implies
+   (no-duplicatesp-equal l1)
+   (no-duplicatesp-equal (set-difference-equal l1 l2))))
+
+(encapsulate
+  ()
+
+  (local (defthmd lemma-1
+           (implies (atom l2)
+                    (equal (set-difference-equal l1 l2)
+                           (true-list-fix l1)))))
+
+  (local
+   (defthmd
+     lemma-2
+     (implies
+      (consp l2)
+      (equal
+       (set-difference-equal l1 l2)
+       (remove-equal (car l2)
+                     (set-difference-equal l1 (cdr l2)))))))
+
+  (defthmd
+    set-difference$-redefinition
+    (equal
+     (set-difference-equal l1 l2)
+     (if (atom l2)
+         (true-list-fix l1)
+       (remove-equal (car l2)
+                     (set-difference-equal l1 (cdr l2)))))
+    :hints (("goal" :use (lemma-1 lemma-2)))
+    :rule-classes :definition))
+
+(defthm len-of-remove-when-member-1
+  (implies (member-equal x l)
+           (< (len (remove-equal x l)) (len l)))
+  :rule-classes :linear)
+
+(defthm
+  len-of-set-difference-when-subsetp
+  (implies (and (subsetp-equal x y)
+                (no-duplicatesp-equal x))
+           (<= (+ (len x)
+                  (len (set-difference-equal y x)))
+               (len y)))
+  :hints
+  (("goal"
+    :in-theory (e/d (set-difference$-redefinition subsetp-equal)
+                    (set-difference-equal))))
+  :rule-classes :linear)
+
+(defthm member-of-remove-duplicates
+  (iff (member-equal x (remove-duplicates-equal lst))
+       (member-equal x lst)))
+
+(defthm no-duplicatesp-of-remove-duplicates
+  (no-duplicatesp-equal (remove-duplicates-equal l)))
+
+(defthm len-of-strip-cars (equal (len (strip-cars x)) (len x)))
+
+(defthm consp-of-last (iff (consp (last l)) (consp l)))
+
+(defthm member-of-car-of-last
+  (implies (consp x)
+           (member-equal (car (last x)) x)))
+
+(defthm append-of-take-and-last
+  (equal (append (take (+ -1 (len pathname)) pathname)
+                 (last pathname))
+         pathname))
+
+(defthm atom-of-cdr-of-last
+  (atom (cdr (last x)))
+  :rule-classes :type-prescription)
+
+(defthm last-when-equal-len-1
+  (implies (equal (len l) 1) (equal (last l) l)))
+
+;; The following two theorems are redundant with the eponymous theorems in
+;; books/std/lists/resize-list.lisp, from where they were taken with thanks.
+(defthm len-of-resize-list
+  (equal (len (resize-list lst n default))
+         (nfix n)))
+(defthm resize-list-of-len-free
+  (implies (equal (nfix n) (len lst))
+           (equal (resize-list lst n default-value)
+                  (true-list-fix lst))))
+
+(defthm true-listp-of-put-assoc
+  (implies (not (null name))
+           (iff (true-listp (put-assoc-equal name val alist))
+                (or (true-listp alist)
+                    (atom (assoc-equal name alist))))))

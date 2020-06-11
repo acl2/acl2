@@ -60,11 +60,74 @@
     (and  (weak-rp-cl-hints-p hints)
           (alistp (access rp-cl-hints hints :new-synps)))))
 
-(defun rp-clause-processor-aux (cl hints meta-rules rp-state state)
+
+
+(defund create-simple-meta-rules-alist-aux (meta-rules disabled-meta-rules)
+  (declare (xargs :guard t))
+  (if (atom meta-rules)
+      nil
+    (b* (((when (not (weak-rp-meta-rule-rec-p (car meta-rules))))
+          (progn$ (hard-error 'create-simple-meta-rules-alist-aux
+                              "Possibly broken table! ~p0"
+                              (cons #\0 (car meta-rules)))
+                  nil))
+         (trig-fnc (acl2::symbol-fix (rp-meta-trig-fnc (car meta-rules))))
+         (fnc (acl2::symbol-fix (rp-meta-fnc (car meta-rules))))
+         (rest (create-simple-meta-rules-alist-aux (cdr meta-rules)
+                                               disabled-meta-rules))
+         (entry (hons-get fnc disabled-meta-rules))
+         ((when (and entry
+                     (cdr entry)))
+          rest))
+      (acons trig-fnc fnc rest))))
+
+
+(defund get-meta-rules (table-entry)
+ (declare (xargs :guard t ))
+ (if (or (atom table-entry)
+         (atom (car table-entry)))
+     nil
+   (b* ((e (cdar table-entry)))
+     (append (true-list-fix e) (get-meta-rules (cdr table-entry))))))
+
+(defund create-simple-meta-rules-alist (state)
+  (declare (xargs :stobjs (state)))
+  (b* ((world (w state))
+       (rp-rw-meta-rules-with-fc (table-alist 'rp-rw-meta-rules world))
+       (meta-rules (get-meta-rules rp-rw-meta-rules-with-fc))
+       (disabled-meta-rules (Make-Fast-Alist (table-alist 'disabled-rp-meta-rules world)))
+       (simple-meta-rules-list (create-simple-meta-rules-alist-aux meta-rules
+                                                                   disabled-meta-rules))
+       (- (fast-alist-free disabled-meta-rules)))
+    simple-meta-rules-list))
+
+
+(local
+ (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist-aux
+   (and (simple-meta-rule-alistp (create-simple-meta-rules-alist-aux meta-rules disabled-meta-rules))
+        )
+   :hints (("Goal"
+            :induct (create-simple-meta-rules-alist-aux meta-rules
+                                                        disabled-meta-rules)
+            :do-not-induct t
+            :in-theory (e/d (create-simple-meta-rules-alist
+                             SIMPLE-META-RULE-ALISTP
+                             CREATE-SIMPLE-META-RULES-ALIST-AUX)
+                            ())))))
+
+(local
+ (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist
+   (and (simple-meta-rule-alistp (create-simple-meta-rules-alist state)))
+   :hints (("Goal"
+            :in-theory (e/d (create-simple-meta-rules-alist
+                             SIMPLE-META-RULE-ALISTP)
+                            ())))))
+
+(defun rp-clause-processor-aux (cl hints rp-state state)
   (declare #|(ignorable rule-names)||#
    (xargs
-    :guard (and (rp-meta-rule-recs-p meta-rules state)
-                (rp-cl-hints-p hints))
+    :guard (and #|(rp-meta-rule-recs-p meta-rules state)||#
+            (rp-cl-hints-p hints))
     :stobjs (rp-state state)
     :guard-hints (("Goal"
                    :in-theory (e/d ()
@@ -94,18 +157,20 @@
                                 "format of rules-alist is bad ~%" nil)
                     (mv nil (list cl) rp-state state)))
            (rp-state (rp-state-new-run rp-state))
-
-           (disabled-meta-rules (table-alist 'disabled-rp-meta-rules
-                                             (w state)))
-           (meta-rules (remove-disabled-meta-rules meta-rules disabled-meta-rules))
+           (meta-rules (create-simple-meta-rules-alist state))
+           #|(disabled-meta-rules (table-alist 'disabled-rp-meta-rules
+           (w state)))||#
+           #|(meta-rules (remove-disabled-meta-rules meta-rules disabled-meta-rules))||#
            (meta-rules (make-fast-alist meta-rules))
            ((mv rw rp-state)
-            (rp-rw-aux car-cl
-                       rules-alist
-                       exc-rules
-                       meta-rules
-                       rp-state
-                       state))
+            (if (rp-formula-checks state)
+                (rp-rw-aux car-cl
+                           rules-alist
+                           exc-rules
+                           meta-rules
+                           rp-state
+                           state)
+              (mv car-cl rp-state)))
            (- (fast-alist-free meta-rules))
            (- (fast-alist-free exc-rules))
            (- (fast-alist-free rules-alist)))
@@ -119,15 +184,17 @@
 ;; will be used with functional instantiation with the new evaluator and other
 ;; functions. We would be needing a new evaluator when we want to use a new
 ;; meta function.
-(defthm correctness-of-rp-clause-processor-aux
+(local
+ (defthm correctness-of-rp-clause-processor-aux
   (implies (and (pseudo-term-listp cl)
-                (rp-meta-valid-syntax-listp meta-rules state)
-                (valid-rp-meta-rule-listp meta-rules state)
+                ;; (rp-meta-valid-syntax-listp meta-rules state)
+                ;; (valid-rp-meta-rule-listp meta-rules state)
+                ;;(rp-formula-checks state)
                 (alistp a)
                 (rp-evl-meta-extract-global-facts :state state))
            (iff (rp-evl (acl2::conjoin-clauses
                          (acl2::clauses-result
-                          (rp-clause-processor-aux cl hint meta-rules rp-state state)))
+                          (rp-clause-processor-aux cl hint rp-state state)))
                         a)
                 (rp-evl (acl2::disjoin cl) a)))
   :otf-flg t
@@ -146,7 +213,7 @@
                             rp-rw-aux-is-correct)
                            (get-rules
                             valid-rp-meta-rule-listp
-                            
+
                             valid-rp-meta-rulep
                             rp-meta-valid-syntaxp-sk
                             ex-from-synp-lemma1
@@ -155,13 +222,13 @@
                             #|get-enabled-exec-rules||#
                             assoc-eq
                             table-alist))))
-  :rule-classes :rewrite)
+  :rule-classes :rewrite))
 
 ;; This function needs a guard (rp-evl-meta-extract-global-facts :state state)
 ;; because we need to use resolve-b+-order-is-valid-rp-meta-rulep proved in
 ;; proofs/apply-meta-lemmas.lisp. We need to verify the guards because
 ;; rp-clause-processor-aux is not executable (its guards call a defun-sk).
-(defun rp-clause-processor (cl hints rp-state state)
+(defun rp-rewriter (cl hints rp-state state)
   (declare
    (xargs :stobjs (rp-state state)
           :guard t
@@ -172,20 +239,21 @@
   (if (rp-cl-hints-p hints)
       (rp-clause-processor-aux
        cl hints
-       nil
        rp-state
        state)
     (mv nil (list cl) rp-state state)))
 
-(verify-guards rp-clause-processor)
+(verify-guards rp-rewriter)
 
 (progn
   (table rp-rw 'meta-rules nil)
+  (table rp-rw 'simple-meta-rules-alist nil)
 
-  (table rp-rw 'rp-clause-processor
-         'rp-clause-processor))
+  (table rp-rw 'rp-rewriter
+         'rp-rewriter))
 
-(defthm correctness-of-rp-clause-processor-lemma
+(local
+ (defthm correctness-of-rp-clause-processor-lemma
   (implies (and (pseudo-term-listp cl)
                 (alistp a)
                 (rp-evl (acl2::conjoin-clauses
@@ -193,7 +261,7 @@
                         a))
            (rp-evl (acl2::disjoin cl) a))
   :hints (("goal"
-           :in-theory (e/d (acl2::disjoin acl2::conjoin-clauses) ()))))
+           :in-theory (e/d (acl2::disjoin acl2::conjoin-clauses) ())))))
 
 (defthm correctness-of-rp-clause-processor
   (implies
@@ -203,7 +271,7 @@
     (rp-evl-meta-extract-global-facts :state state)
     (rp-evl (acl2::conjoin-clauses
              (acl2::clauses-result
-              (rp-clause-processor cl hint rp-state state)))
+              (rp-rewriter cl hint rp-state state)))
             a))
    (rp-evl (acl2::disjoin cl) a))
   :otf-flg t

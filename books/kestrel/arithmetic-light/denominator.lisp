@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function denominator.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,9 +37,10 @@
                                numerator-when-integerp))))
 
 (defthm denominator-of--
-  (implies (rationalp x)
-           (equal (denominator (- x))
-                  (denominator x))))
+  (equal (denominator (- x))
+         (if (rationalp x)
+             (denominator x)
+           1)))
 
 (local (include-book "../../arithmetic/mod-gcd"))
 
@@ -49,3 +50,9 @@
            (<= (denominator (* i (/ j))) j))
   :hints (("Goal" :use (:instance least-numerator-denominator-<= (n i) (d j))
            :in-theory (disable least-numerator-denominator-<=))))
+
+(defthm denominator-of-*-of---arg2
+  (equal (denominator (* x (- y)))
+         (denominator (* x y)))
+  :hints (("Goal" :use (:instance denominator-of-- (x (* x y)))
+           :in-theory (disable denominator-of--))))

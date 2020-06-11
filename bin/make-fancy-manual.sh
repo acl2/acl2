@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This program installs a web-based acl2+books combined manual as well
 # as a corresponding text-based copy of that manual, suitable for the
@@ -54,6 +54,11 @@ if [ ! -f $books/system/doc/rendered-doc-combined.lsp ] ; then
     exit 1
 fi
 
+if [ ! -f $books/system/doc/acl2-doc-search ] ; then
+    echo "ERROR: File $books/system/doc/acl2-doc-search does not exist."
+    exit 1
+fi
+
 # Create version of the manual optimized for search engines
 # (instructions from David Rager):
 pushd $books/doc/manual
@@ -91,6 +96,15 @@ cp -p $books/system/doc/rendered-doc-combined.lsp $destdir/
 echo "gzip $destdir/rendered-doc-combined.lsp"
 gzip $destdir/rendered-doc-combined.lsp
 chmod ugo+r $destdir/rendered-doc-combined.lsp.gz
+
+# Copy books/system/doc/acl2-doc-search
+echo "cp -p $books/system/doc/acl2-doc-search $destdir/"
+cp -p $books/system/doc/acl2-doc-search $destdir/
+
+# Gzip books/system/doc/acl2-doc-search
+echo "gzip $destdir/acl2-doc-search"
+gzip $destdir/acl2-doc-search
+chmod ugo+r $destdir/acl2-doc-search.gz
 
 # Run update script, if available
 cd $destdirmain

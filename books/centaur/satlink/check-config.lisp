@@ -275,7 +275,7 @@ is producing the expected results.</p>"
 
 (value-triple
  (check-config
-  (make-config :cmdline "glucose"
+  (make-config :cmdline "glucose -model"
                :verbose t
                :mintime nil
                :remove-temps t)))

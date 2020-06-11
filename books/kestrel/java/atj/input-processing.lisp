@@ -25,7 +25,8 @@
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "oslib/top" :dir :system)
+(include-book "oslib/catpath" :dir :system)
+(include-book "oslib/file-types" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -322,12 +323,12 @@
   ///
 
   (more-returns
-   (value boolean-value-p :hyp (primitive-type-case type :boolean))
-   (value char-value-p :hyp (primitive-type-case type :char))
-   (value byte-value-p :hyp (primitive-type-case type :byte))
-   (value short-value-p :hyp (primitive-type-case type :short))
-   (value int-value-p :hyp (primitive-type-case type :int))
-   (value long-value-p :hyp (primitive-type-case type :long))))
+   (value boolean-valuep :hyp (primitive-type-case type :boolean))
+   (value char-valuep :hyp (primitive-type-case type :char))
+   (value byte-valuep :hyp (primitive-type-case type :byte))
+   (value short-valuep :hyp (primitive-type-case type :short))
+   (value int-valuep :hyp (primitive-type-case type :int))
+   (value long-valuep :hyp (primitive-type-case type :long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,7 +370,7 @@
                                 ctx
                                 state)
   :returns (mv erp
-               (test-input atj-test-value-p)
+               (test-input atj-test-valuep)
                state)
   :short "Process the input of a test for a function call."
   :long

@@ -803,3 +803,19 @@
                             (1- c))))
                 (> (size map) c))
        :rule-classes nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define from-lists ((keys true-listp) (vals true-listp))
+  :guard (= (len keys) (len vals))
+  :returns (map mapp)
+  :short "Build an omap from
+          a list of keys and a list of corresponding values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are duplicate keys in the first list,
+     the leftmost key, and the corresponding value,
+     will be in the resulting omap."))
+  (cond ((endp keys) nil)
+        (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals))))))

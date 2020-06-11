@@ -36,7 +36,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum jvalue
+(fty::defflatsum jvalue
   :short "Fixtype of Java values [JLS:4],
           excluding extended-exponent values [JLS:4.2.3]."
   :long
@@ -45,56 +45,46 @@
     we prefix @('value') with @('j') for the fixtype of Java values,
     and, for consistency,
     we do the same for recognizer, fixer, and equivalence.")
-  (:primitive
-   :fields ((get :type primitive-value :acc-body x))
-   :ctor-body get
-   :cond (primitive-value-p x))
-  (:reference
-   :fields ((get :type reference-value :acc-body x))
-   :ctor-body get)
+  (:primitive primitive-value)
+  (:reference reference-value)
   :pred jvaluep
   :prepwork
   ((defrulel lemma
-     (implies (reference-value-p x)
-              (not (primitive-value-p x)))
-     :enable (primitive-value-p
-              boolean-value-p
-              char-value-p
-              byte-value-p
-              short-value-p
-              int-value-p
-              long-value-p
-              float-value-p
-              double-value-p
-              reference-value-p))))
+     (implies (reference-valuep x)
+              (not (primitive-valuep x)))
+     :enable (primitive-valuep
+              boolean-valuep
+              char-valuep
+              byte-valuep
+              short-valuep
+              int-valuep
+              long-valuep
+              float-valuep
+              double-valuep
+              reference-valuep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflexsum jvaluex
+(fty::defflatsum jvaluex
   :short "Fixtype of Java values [JLS:4],
           including extended-exponent values [JLS:4.2.3]."
-  (:primitive
-   :fields ((get :type primitivex-value :acc-body x))
-   :ctor-body get
-   :cond (primitivex-value-p x))
-  (:reference
-   :fields ((get :type reference-value :acc-body x))
-   :ctor-body get)
+  (:primitive primitivex-value)
+  (:reference reference-value)
   :pred jvaluexp
   :prepwork
   ((defrulel lemma
-     (implies (reference-value-p x)
-              (not (primitivex-value-p x)))
-     :enable (primitivex-value-p
-              primitive-value-p
-              boolean-value-p
-              char-value-p
-              byte-value-p
-              short-value-p
-              int-value-p
-              long-value-p
-              float-value-p
-              double-value-p
-              floatx-value-p
-              doublex-value-p
-              reference-value-p))))
+     (implies (reference-valuep x)
+              (not (primitivex-valuep x)))
+     :enable (primitivex-valuep
+              primitive-valuep
+              boolean-valuep
+              char-valuep
+              byte-valuep
+              short-valuep
+              int-valuep
+              long-valuep
+              float-valuep
+              double-valuep
+              floatx-valuep
+              doublex-valuep
+              reference-valuep))))

@@ -1,0 +1,3 @@
+(SAME-LENGTHP (16 8 (:REWRITE DEFAULT-+-2))
+              (10 10 (:REWRITE DEFAULT-CDR))
+              (8 8 (:REWRITE DEFAULT-+-1)))

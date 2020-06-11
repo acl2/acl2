@@ -18,6 +18,7 @@
 
 (include-book "kestrel/std/system/all-free-bound-vars" :dir :system)
 (include-book "kestrel/std/system/all-vars-open" :dir :system)
+(include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
@@ -513,7 +514,8 @@
    (xdoc::p
     "We use a short two-letter string to identify each ATJ type.
      For the @(':acl2') types,
-     the first letter is @('A') and the second letter is from the class name.
+     the first letter is @('A')
+     and the second letter is from the class name or @('B') for @(':aboolean').
      For the @(':jprim') types,
      the first letter is @('J') and the second letter is from [JVMS:4.3.2].
      For the @(':jprimarr') types,
@@ -527,6 +529,7 @@
                                        :character "AC"
                                        :string "AS"
                                        :symbol "AY"
+                                       :boolean "AB"
                                        :cons "AP"
                                        :value "AV")
                  :jprim (primitive-type-case type.get
@@ -574,6 +577,7 @@
         ((equal id "AC") (atj-type-acl2 (atj-atype-character)))
         ((equal id "AS") (atj-type-acl2 (atj-atype-string)))
         ((equal id "AY") (atj-type-acl2 (atj-atype-symbol)))
+        ((equal id "AB") (atj-type-acl2 (atj-atype-boolean)))
         ((equal id "AP") (atj-type-acl2 (atj-atype-cons)))
         ((equal id "AV") (atj-type-acl2 (atj-atype-value)))
         ((equal id "JZ") (atj-type-jprim (primitive-type-boolean)))
@@ -904,11 +908,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-rewrap-term ((term pseudo-termp)
-                              (src-types atj-type-listp)
-                              (dst-types? atj-type-listp))
-  :guard (consp src-types)
-  :returns (rewrapped-term pseudo-termp
-                           :hints (("Goal" :expand ((pseudo-termp term)))))
+                              (dst-types atj-type-listp))
+  :guard (consp dst-types)
+  :returns (rewrapped-term pseudo-termp)
   :short "Re-wrap an ACL2 term with a type conversion function."
   :long
   (xdoc::topstring
@@ -918,39 +920,57 @@
      but its wrapping is then finalized with a different conversion function.
      So here we replace the wrapper.")
    (xdoc::p
+    "We only change the destination types of the conversion function.
+     The source types are unchanged.")
+   (xdoc::p
     "We also check that the new conversion is allowed.
      We stop with an error if that is not the case;
      as in @(tsee atj-type-wrap-term),
-     this is a ``deep'' input validation error."))
-  (b* (((when (or (variablep term)
-                  (fquotep term)
-                  (not (consp (fargs term)))))
-        (raise "Internal error: the term ~x0 has the wrong format." term))
-       ((when (and (consp dst-types?)
-                   (not (atj-types-conv-allowed-p src-types dst-types?))))
+     this is a ``deep'' input validation error.")
+   (xdoc::p
+    "If the term is a call of @(tsee if),
+     we recursively re-wrap its branches,
+     which therefore will return the same types.
+     Then we wrap the @(tsee if) call
+     with the identity conversion.
+     The reason for descending into the @(tsee if) branches
+     is that (the least upper bound of) the types of the @(tsee if) branches
+     are used, in the translation to Java,
+     to determine the types of the Java local variables
+     that store the result of (one or the other) branch.
+     In order to allow the mapping of ATJ subtypes to Java non-subtypes,
+     we need to push the conversions into the @(tsee if) branches."))
+  (b* (((mv term src-types &) (atj-type-unwrap-term term))
+       ((when (null term)) ; for termination
+        (raise "Internal error: unwrapped null term ~x0." term))
+       ((when (not (atj-types-conv-allowed-p src-types dst-types)))
         (raise "Type annotation failure: ~
                 cannot convert from ~x0 to ~x1."
-               src-types dst-types?)))
-    (atj-type-wrap-term (fargn term 1) src-types dst-types?))
-  :guard-hints (("Goal" :expand ((pseudo-termp term)))))
+               src-types dst-types))
+       ((mv ifp test then else) (check-if-call term)))
+    (if ifp
+        (atj-type-wrap-term (fcons-term* 'if
+                                         test
+                                         (atj-type-rewrap-term then dst-types)
+                                         (atj-type-rewrap-term else dst-types))
+                            dst-types
+                            dst-types)
+      (atj-type-wrap-term term src-types dst-types)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-type-rewrap-terms ((terms pseudo-term-listp)
-                               (src-typess atj-type-list-listp)
-                               (dst-types?s atj-type-list-listp))
-  :guard (and (cons-listp src-typess)
-              (= (len terms) (len src-typess))
-              (= (len terms) (len dst-types?s)))
+                               (dst-typess atj-type-list-listp))
+  :guard (and (cons-listp dst-typess)
+              (= (len terms) (len dst-typess)))
   :returns (rewrapped-terms pseudo-term-listp)
   :short "Lift @(tsee atj-type-rewrap-term) to lists."
   (cond ((endp terms) nil)
         (t (cons (atj-type-rewrap-term (car terms)
-                                       (car src-typess)
-                                       (car dst-types?s))
+                                       (car dst-typess))
                  (atj-type-rewrap-terms (cdr terms)
-                                        (cdr src-typess)
-                                        (cdr dst-types?s))))))
+                                        (cdr dst-typess))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1439,14 +1459,10 @@
                       (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                      (first (if required-types?
                                 first
-                              (atj-type-rewrap-term first
-                                                    first-types
-                                                    types)))
+                              (atj-type-rewrap-term first types)))
                      (second (if required-types?
                                  second
-                               (atj-type-rewrap-term second
-                                                     second-types
-                                                     types)))
+                               (atj-type-rewrap-term second types)))
                      (term (pseudo-term-call 'if (list first first second))))
                   (mv (atj-type-wrap-term term types types)
                       types
@@ -1501,10 +1517,10 @@
                     (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
                    (then (if required-types?
                              then
-                           (atj-type-rewrap-term then then-types types)))
+                           (atj-type-rewrap-term then types)))
                    (else (if required-types?
                              else
-                           (atj-type-rewrap-term else else-types types)))
+                           (atj-type-rewrap-term else types)))
                    (term (pseudo-term-call 'if (list test then else))))
                 (mv (atj-type-wrap-term term types types)
                     types
@@ -1593,11 +1609,8 @@
                               differ in number from the argument types ~x2."
                              in-types fn types)
                       (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
-                     (args (atj-type-rewrap-terms args
-                                                (atj-type-list-to-type-list-list
-                                                 types)
-                                                (atj-type-list-to-type-list-list
-                                                 in-types)))
+                     (args (atj-type-rewrap-terms
+                            args (atj-type-list-to-type-list-list in-types)))
                      ((unless (consp out-types))
                       (raise "Internal error: ~
                               no output types in function type ~x0."
@@ -1629,11 +1642,8 @@
                             differ in number from the argument types ~x2."
                            in-types fn types)
                     (mv (pseudo-term-null) (list (atj-type-irrelevant)) nil))
-                   (args (atj-type-rewrap-terms args
-                                                (atj-type-list-to-type-list-list
-                                                 types)
-                                                (atj-type-list-to-type-list-list
-                                                 in-types)))
+                   (args (atj-type-rewrap-terms
+                          args (atj-type-list-to-type-list-list in-types)))
                    ((unless (consp out-types))
                     (raise "Internal error: ~
                             the function ~x0 has an empty list of output types."

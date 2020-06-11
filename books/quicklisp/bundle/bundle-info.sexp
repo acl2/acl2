@@ -1,18 +1,19 @@
-(:CREATION-TIME "2018-11-04T20:54:08Z" :REQUESTED-SYSTEMS
- ("bordeaux-threads" "bt-semaphore" "cl-fad" "hunchentoot" "osicat"
-  "uiop" "html-template" "shellpool" "babel")
+(:CREATION-TIME #A((20) BASE-CHAR . "2020-06-04T06:51:58Z") :REQUESTED-SYSTEMS
+ ("bordeaux-threads" "bt-semaphore" "cl-fad" "hunchentoot" "osicat" "uiop"
+  "html-template" "shellpool" "babel")
  :LISP-INFO
- (:MACHINE-INSTANCE "dlr-mint" :MACHINE-TYPE "x86_64"
-  :MACHINE-VERSION "Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz"
-  :LISP-IMPLEMENTATION-TYPE "Clozure Common Lisp"
-  :LISP-IMPLEMENTATION-VERSION
-  "Version 1.12-dev/v1.12-dev.0-39-g030b03e  (LinuxX8664)")
+ (:MACHINE-INSTANCE "DESKTOP-AMD" :MACHINE-TYPE #A((6) BASE-CHAR . "X86-64")
+  :MACHINE-VERSION "AMD Ryzen 9 3900X 12-Core Processor"
+  :LISP-IMPLEMENTATION-TYPE #A((4) BASE-CHAR . "SBCL")
+  :LISP-IMPLEMENTATION-VERSION #A((12) BASE-CHAR . "1.4.5.debian"))
  :QUICKLISP-INFO
  (:HOME
-  "/home/ragerdl/r/acl2-update-quicklisp-nov2018/books/quicklisp/temp-quicklisp-inst/"
+  #A((74) BASE-CHAR
+     . "/home/ragerdl/r/acl2-quicklisp-update/books/quicklisp/temp-quicklisp-inst/")
   :LOCAL-PROJECT-DIRECTORIES
-  ("/home/ragerdl/r/acl2-update-quicklisp-nov2018/books/quicklisp/temp-quicklisp-inst/local-projects/")
+  (#A((89) BASE-CHAR
+      . "/home/ragerdl/r/acl2-quicklisp-update/books/quicklisp/temp-quicklisp-inst/local-projects/"))
   :DISTS
   ((:NAME "quicklisp" :DIST-URL
-    "http://beta.quicklisp.org/dist/quicklisp/2018-10-18/distinfo.txt"
-    :VERSION "2018-10-18"))))
+    "http://beta.quicklisp.org/dist/quicklisp/2020-04-27/distinfo.txt" :VERSION
+    "2020-04-27"))))

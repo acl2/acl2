@@ -4,7 +4,7 @@
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 (in-package "ACL2S")
-(include-book "definec" :ttags :all)
+(include-book "acl2s/definec" :dir :system :ttags :all)
 (include-book "std/lists/flatten" :dir :system)
 
 #|

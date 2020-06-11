@@ -1,0 +1,3 @@
+(LOOKUP-EQ-LST (6 2 (:DEFINITION ALISTP))
+               (4 4 (:REWRITE DEFAULT-CAR))
+               (3 3 (:REWRITE DEFAULT-CDR)))

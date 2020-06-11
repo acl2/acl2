@@ -19,6 +19,8 @@
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "short-weierstrass-closure-simp"))
+(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+(local (include-book "kestrel/prime-fields/equal-of-add-rules" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

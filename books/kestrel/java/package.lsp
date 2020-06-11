@@ -15,7 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "JAVA" (append (set-difference-eq *std-pkg-symbols*
-                                          '(pointers
+                                          '(package-name
+                                            pointers
                                             values))
                        '(*nil*
                          *pkg-witness-name*
@@ -41,6 +42,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         check-if-call
                          check-lambda-call
                          check-list-call
                          check-mv-let-call
@@ -116,11 +118,13 @@
                          patbind-fun
                          patbind-run-unless
                          patbind-run-when
+                         pos
                          pos-listp
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
                          pseudo-fn-args-p
+                         pseudo-fn-p
                          pseudo-lambda
                          pseudo-lambda->body
                          pseudo-lambda->formals
@@ -132,9 +136,12 @@
                          pseudo-term-case
                          pseudo-term-count
                          pseudo-term-fix
+                         pseudo-term-fncall->args
+                         pseudo-term-fncall->fn
                          pseudo-term-kind
-                         pseudo-term-lambda->formals
+                         pseudo-term-lambda->args
                          pseudo-term-lambda->body
+                         pseudo-term-lambda->formals
                          pseudo-term-list-count
                          pseudo-term-null
                          pseudo-term-quote

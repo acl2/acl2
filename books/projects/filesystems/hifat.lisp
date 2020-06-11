@@ -8,6 +8,7 @@
 (include-book "std/io/read-ints" :dir :system)
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
+;; This book happens to non-locally disable intersectp.
 (include-book "kestrel/utilities/strings/top" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 
@@ -128,22 +129,6 @@
                                      (unsigned-byte-p))))))
   )
 
-(defthm
-  down-alpha-p-of-upcase-char
-  (not (str::down-alpha-p (str::upcase-char x)))
-  :hints
-  (("goal"
-    :in-theory (enable str::upcase-char str::down-alpha-p))))
-
-(defthm
-  charlist-has-some-down-alpha-p-of-upcase-charlist
-  (not (str::charlist-has-some-down-alpha-p
-        (str::upcase-charlist x)))
-  :hints
-  (("goal"
-    :in-theory (enable str::charlist-has-some-down-alpha-p
-                       str::upcase-charlist))))
-
 (defthmd integer-listp-when-unsigned-byte-listp
   (implies (not (integer-listp x))
            (not (unsigned-byte-listp n x))))
@@ -152,25 +137,54 @@
   (implies (not (rational-listp x))
            (not (unsigned-byte-listp n x))))
 
-;; These two theorems cannot be moved to to file-system-lemmas.lisp, because
-;; they're expressed in terms of explode, which is not a built-in function.
+;; These two theorems are necessary, but also they're really awkward and can't
+;; be moved to other books.
 (defthm len-of-explode-of-string-append
   (equal (len (explode (string-append str1 str2)))
          (+ (len (explode str1))
             (len (explode str2)))))
 
-(defthmd
-  length-of-empty-list
-  (implies (stringp x)
-           (iff (equal (len (explode x)) 0)
-                (equal x "")))
+(defthmd length-of-empty-list
+  (iff (equal (len (explode x)) 0)
+       (equal (str-fix x) ""))
   :hints (("goal" :expand (len (explode x)))))
 
-(defthm
-  unsigned-byte-listp-of-make-list-ac
-  (equal (unsigned-byte-listp n1 (make-list-ac n2 val ac))
-         (and (unsigned-byte-listp n1 ac)
-              (or (zp n2) (unsigned-byte-p n1 val)))))
+(encapsulate
+  ()
+
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
+  (defthm logtail-of-logior
+    (equal (logtail pos (logior i j))
+           (logior (logtail pos i)
+                   (logtail pos j)))
+    :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
+                                        ihsext-inductions))))
+
+  (defthm loghead-of-logior
+    (equal (loghead pos (logior i j))
+           (logior (loghead pos i)
+                   (loghead pos j)))
+    :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
+                                        ihsext-inductions))))
+
+  ;; The following two lemmas are redundant with the eponymous lemmas from
+  ;; books/centaur/bitops/ihsext-basics.lisp, from where they were taken with
+  ;; thanks.
+  (defthm bitops::logtail-of-ash
+    (equal (logtail bitops::sh2 (ash x bitops::sh1))
+           (ash x
+                (+ (ifix bitops::sh1)
+                   (- (nfix bitops::sh2))))))
+
+  (defthm bitops::loghead-of-ash
+    (equal (loghead n (ash x m))
+           (ash (loghead (nfix (- (nfix n) (ifix m))) x) m)))
+
+  ;; The following lemma is redundant with the eponymous lemma from
+  ;; books/std/basic/arith-equivs.lisp, from where it was taken with
+  ;; thanks.
+  (defcong nat-equiv equal (take n x) 1))
 
 (defcong
   str::charlisteqv equal (chars=>nats x)
@@ -383,50 +397,45 @@
 ;; bytes.
 (local (include-book "std/typed-lists/integer-listp" :dir :system))
 
-(defthm unsigned-byte-listp-of-revappend
-  (equal (unsigned-byte-listp width (revappend x y))
-         (and (unsigned-byte-listp width (list-fix x))
-              (unsigned-byte-listp width y)))
-  :hints (("goal" :induct (revappend x y))))
+(defthm subsetp-when-prefixp
+  (implies (prefixp x y)
+           (subsetp-equal x y))
+  :hints (("goal" :in-theory (enable subsetp-equal prefixp)
+           :induct (prefixp x y))))
 
-(encapsulate
-  ()
+(defthmd
+  painful-debugging-lemma-14
+  (implies (not (zp cluster-size))
+           (and
+            (equal (ceiling cluster-size cluster-size) 1)
+            (equal (ceiling 0 cluster-size) 0))))
 
-  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
+(defthm painful-debugging-lemma-15
+  (implies (and (not (zp j)) (integerp i) (> i j))
+           (> (floor i j) 0))
+  :rule-classes :linear)
 
-  (defthmd
-    painful-debugging-lemma-14
-    (implies (not (zp cluster-size))
-             (and
-              (equal (ceiling cluster-size cluster-size) 1)
-              (equal (ceiling 0 cluster-size) 0))))
+(defthmd painful-debugging-lemma-16
+  (implies (and (<= i1 i2)
+                (integerp i1)
+                (integerp i2)
+                (not (zp j)))
+           (and
+            (<= (floor i1 j) (floor i2 j))
+            (<= (ceiling i1 j) (ceiling i2 j))))
+  :rule-classes :linear)
 
-  (defthm painful-debugging-lemma-15
-    (implies (and (not (zp j)) (integerp i) (> i j))
-             (> (floor i j) 0))
-    :rule-classes :linear)
+(defthm painful-debugging-lemma-17 (equal (mod (* y (len x)) y) 0))
 
-  (defthmd painful-debugging-lemma-16
-    (implies (and (<= i1 i2)
-                  (integerp i1)
-                  (integerp i2)
-                  (not (zp j)))
-             (and
-              (<= (floor i1 j) (floor i2 j))
-              (<= (ceiling i1 j) (ceiling i2 j))))
-    :rule-classes :linear)
+(defthm painful-debugging-lemma-19
+  (implies (and (not (zp j)) (integerp i) (>= i 0))
+           (>= (ceiling i j) 0))
+  :rule-classes :linear)
 
-  (defthm painful-debugging-lemma-17 (equal (mod (* y (len x)) y) 0))
-
-  (defthm painful-debugging-lemma-19
-    (implies (and (not (zp j)) (integerp i) (>= i 0))
-             (>= (ceiling i j) 0))
-    :rule-classes :linear)
-
-  (defthm painful-debugging-lemma-20
-    (implies (and (not (zp j)) (integerp i) (> i 0))
-             (> (ceiling i j) 0))
-    :rule-classes :linear))
+(defthm painful-debugging-lemma-20
+  (implies (and (not (zp j)) (integerp i) (> i 0))
+           (> (ceiling i j) 0))
+  :rule-classes :linear)
 
 (defund dir-ent-p (x)
   (declare (xargs :guard t))
@@ -700,38 +709,6 @@
                   (loghead 8 masked-entry)))
   :hints (("goal" :in-theory (e/d (fat32-update-lower-28)
                                   (logapp loghead logtail)))))
-
-(encapsulate
-  ()
-
-  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-
-  (defthm logtail-of-logior
-    (equal (logtail pos (logior i j))
-           (logior (logtail pos i)
-                   (logtail pos j)))
-    :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
-                                        ihsext-inductions))))
-
-  (defthm loghead-of-logior
-    (equal (loghead pos (logior i j))
-           (logior (loghead pos i)
-                   (loghead pos j)))
-    :hints (("goal" :in-theory (enable* ihsext-recursive-redefs
-                                        ihsext-inductions))))
-
-  ;; The following two lemmas are redundant with the eponymous lemmas from
-  ;; books/centaur/bitops/ihsext-basics.lisp, from where they were taken with
-  ;; thanks.
-  (defthm bitops::logtail-of-ash
-    (equal (logtail bitops::sh2 (ash x bitops::sh1))
-           (ash x
-                (+ (ifix bitops::sh1)
-                   (- (nfix bitops::sh2))))))
-
-  (defthm bitops::loghead-of-ash
-    (equal (loghead n (ash x m))
-           (ash (loghead (nfix (- (nfix n) (ifix m))) x) m))))
 
 ;; The hypotheses are somewhat weaker than this, but getting to them needs the
 ;; unsigned-byte-p terms to be expanded...
@@ -1133,7 +1110,7 @@
 (defthm fat32-filename-p-of-fat32-filename-fix
   (fat32-filename-p (fat32-filename-fix x)))
 
-(defthm fat32-filename-p-when-fat32-filename-p
+(defthm fat32-filename-fix-when-fat32-filename-p
   (implies (fat32-filename-p x)
            (equal (fat32-filename-fix x) x)))
 
@@ -1314,6 +1291,10 @@
            (fat32-filename-list-p (true-list-fix x)))
   :hints (("goal" :in-theory (enable prefixp fat32-filename-list-p))))
 
+(defthm fat32-filename-list-p-correctness-1
+  (implies (fat32-filename-list-p x)
+           (not (member-equal nil x))))
+
 ;; We need to write this whole thing out - based on an idea we got from an
 ;; event generated by fty::defalist - because the induction scheme has to be
 ;; created by us, without assistance from fty, just this once.
@@ -1474,7 +1455,7 @@
   ((:rewrite
     :corollary
     (implies
-     (m1-directory-file-p file)
+     (m1-directory-file-p (m1-file-fix file))
      (m1-file-alist-p (m1-file->contents file))))))
 
 (defthm
@@ -1950,35 +1931,42 @@
           (:instance hifat-place-file-correctness-2
                      (pathname pathname-equiv))))))
 
+;; This can't be made local.
+(defthm
+  hifat-place-file-correctness-lemma-2
+  (implies (and (m1-file-alist-p fs)
+                (hifat-no-dups-p fs))
+           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p m1-file->contents
+                                     m1-file-contents-fix m1-file-contents-p
+                                     m1-directory-file-p))))
+
+(defthm
+  hifat-place-file-correctness-3
+  (implies (not (zp (mv-nth 1 (hifat-place-file fs pathname file))))
+           (equal (mv-nth 0 (hifat-place-file fs pathname file))
+                  (hifat-file-alist-fix fs)))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
+
 (defcong m1-file-equiv equal
   (hifat-place-file fs pathname file) 3
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
-(local
- (defthm hifat-no-dups-p-of-put-assoc-equal-1
-   (implies
-    (and (m1-file-alist-p m1-file-alist)
-         (hifat-no-dups-p m1-file-alist)
-         (m1-regular-file-p file))
-    (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
-   :hints (("goal" :in-theory (enable hifat-no-dups-p)))))
-
-(defthm hifat-no-dups-p-of-put-assoc-equal-2
+;; Do not make this local, it's needed elsewhere.
+(defthm hifat-no-dups-p-of-put-assoc
   (implies (and (m1-file-alist-p m1-file-alist)
                 (hifat-no-dups-p m1-file-alist)
-                (hifat-no-dups-p (m1-file->contents file)))
+                (or (m1-regular-file-p file)
+                    (hifat-no-dups-p (m1-file->contents file))))
            (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
 (defthm
-  hifat-place-file-correctness-3
-  (implies
-   (m1-regular-file-p file)
-   (hifat-no-dups-p
-    (mv-nth 0
-            (hifat-place-file fs pathname file))))
-  :hints
-  (("goal" :in-theory (enable hifat-place-file))))
+  hifat-no-dups-p-of-hifat-place-file
+  (implies (or (hifat-no-dups-p (m1-file->contents file))
+               (m1-regular-file-p file))
+           (hifat-no-dups-p (mv-nth 0 (hifat-place-file fs pathname file))))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defund
   hifat-remove-file (fs pathname)
@@ -2089,14 +2077,11 @@
 (defthm fat32-filename-list-prefixp-of-self
   (fat32-filename-list-prefixp x x))
 
-;; This can't be made local.
-(defthm
-  m1-read-after-write-lemma-2
-  (implies (and (m1-file-alist-p fs)
-                (hifat-no-dups-p fs)
-                (m1-directory-file-p (cdr (assoc-equal key fs))))
-           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+(defthmd fat32-filename-list-prefixp-alt
+  (equal
+   (fat32-filename-list-prefixp x y)
+   (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)))
+  :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp prefixp))))
 
 (encapsulate
   ()
@@ -2359,14 +2344,8 @@
   (declare (xargs :guard (nat-listp fd-list)))
   (find-new-index-helper fd-list 0))
 
-(defthm find-new-index-correctness-1-lemma-1
-  (>= (find-new-index fd-list) 0)
-  :hints (("Goal" :in-theory (enable find-new-index)))
-  :rule-classes :linear)
-
-(defthm
-  find-new-index-correctness-1-lemma-2
-  (integerp (find-new-index fd-list))
+(defthm find-new-index-correctness-lemma-1
+  (natp (find-new-index fd-list))
   :hints (("Goal" :in-theory (enable find-new-index)))
   :rule-classes :type-prescription)
 
@@ -2443,11 +2422,6 @@
   len-of-name-to-fat32-name-helper
   (equal (len (name-to-fat32-name-helper character-list n))
          (nfix n)))
-
-;; (defthm name-to-fat32-name-helper-correctness-1
-;;   (implies (member x (name-to-fat32-name-helper
-;;                       character-list n))
-;;            (or (equal x #\space) (str::up-alpha-p x))))
 
 (defthm
   character-listp-of-name-to-fat32-name-helper

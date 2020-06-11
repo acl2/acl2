@@ -448,7 +448,8 @@
     :off :all
     :gag-mode nil
     (rp::def-formula-checks bits-of-formula-checks
-                            (bits sbits 4vec-concat
+                            (bits sbits
+                                  4vec-concat
                                   4vec-rsh
                                   sv::4vec-bitxor
                                   sv::4vec-bitand
@@ -459,8 +460,9 @@
                                   4vec-part-select
                                   sv::4vec-fix$inline
                                   bitp
-                                  concat-meta
-                                  bits-of-meta-fn))))
+                                  ;;concat-meta
+                                  ;;bits-of-meta-fn
+                                  ))))
 
 #|(local
  (defthm rp-trans-when-quotep
@@ -803,7 +805,7 @@
                             (rp::ex-from-rp
                              natp))))))
 
-(defthm valid-rp-meta-rulep-concat-meta-1
+#|(defthm valid-rp-meta-rulep-concat-meta-1
   (implies (and (rp-evl-meta-extract-global-facts)
                 (bits-of-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -817,9 +819,9 @@
   :hints (("Goal"
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
                            (rp::RP-TERMP
-                            rp::VALID-SC)))))
+                            rp::VALID-SC)))))||#
 
-(defthm valid-rp-meta-rulep-concat-meta-2
+#|(defthm valid-rp-meta-rulep-concat-meta-2
   (implies (and (rp-evl-meta-extract-global-facts)
                 (bits-of-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -833,9 +835,9 @@
   :hints (("Goal"
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
                            (rp::RP-TERMP
-                            rp::VALID-SC)))))
+                            rp::VALID-SC)))))||#
 
-(defthm valid-rp-meta-rulep-bits-of-meta-fn-1
+#|(defthm valid-rp-meta-rulep-bits-of-meta-fn-1
   (implies (and (rp-evl-meta-extract-global-facts)
                 (bits-of-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -849,9 +851,9 @@
   :hints (("Goal"
            :in-theory (e/d (rp::rp-meta-valid-syntaxp)
                            (rp::rp-termp
-                            rp::valid-sc)))))
+                            rp::valid-sc)))))||#
 
-(defthm valid-rp-meta-rulep-bits-of-meta-fn-2
+#|(defthm valid-rp-meta-rulep-bits-of-meta-fn-2
   (implies (and (rp-evl-meta-extract-global-facts)
                 (bits-of-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -865,7 +867,7 @@
   :hints (("Goal"
            :in-theory (e/d (rp::rp-meta-valid-syntaxp)
                            (rp::rp-termp
-                            rp::valid-sc)))))
+                            rp::valid-sc)))))||#
 
 
 (rp::add-meta-rules bits-of-formula-checks

@@ -753,7 +753,7 @@
   (def-formula-checks
     pp-flatten-formula-checks
     (merge-pp-and
-     flatten-pp-main
+     ;;flatten-pp-main
      merge-pp-or
      binary-not
      binary-and
@@ -762,11 +762,12 @@
      binary-?
      bit-of
      binary-xor
-     pp-term-to-pp-lists
+     ;;pp-term-to-pp-lists
      p+
      --
-     pp-lists-to-term-p+
-     sort-pp-lists)))
+     ;;pp-lists-to-term-p+
+     ;;sort-pp-lists
+     )))
 
 (local
  (defthmd rp-evl-of-ex-from-rp-reverse

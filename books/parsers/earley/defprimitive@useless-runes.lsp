@@ -1,0 +1,2 @@
+(FOO-P)
+(MAKE-FOO)

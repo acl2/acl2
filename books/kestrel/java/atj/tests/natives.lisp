@@ -10,7 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "../implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "std/strings/cat-base" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

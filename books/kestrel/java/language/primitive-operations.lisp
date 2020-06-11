@@ -109,7 +109,7 @@
      is used in the title of [JLS:4.2.2].")
    (xdoc::p
     "Since integral values are subjected to
-     unary and binary numeric promotion [JLS:5.6.1] [JLS:5.6.2] [JLS:15],
+     unary and binary numeric promotion [JLS:5.6] [JLS:15],
      the operations on integral values actually only operate on
      @('int') and @('long') values as operands.")
    (xdoc::p

@@ -38,4 +38,4 @@
 
 ;;(include-book "svl2-opener-meta")
 
-(rp::update-rp-clause-proc with-svl-metas)
+(rp::attach-meta-fncs with-svl-metas)

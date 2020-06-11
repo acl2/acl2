@@ -173,8 +173,8 @@
   ;; note: congruence for division (/p) is proved later
   (defcong =p =p (i+ x y) 1)
   (defcong =p =p (i+ x y) 2)
-  (defcong =p =p (i* x y) 1)
-  (defcong =p =p (i* x y) 2)
+  (defcong =p =p (i* x y) 1 :hints (("Goal" :in-theory (enable acl2::mod-of-*-subst-arg1))))
+  (defcong =p =p (i* x y) 2 :hints (("Goal" :in-theory (enable acl2::mod-of-*-subst-arg2))))
   (defcong =p =p (i- x) 1))
 
 (encapsulate ()

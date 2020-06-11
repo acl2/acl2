@@ -88,6 +88,10 @@
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_THINKS_BOOK_DIR_IS" channel state))
            (state (newline channel state))
+           (state (princ$ "export ACL2_USELESS_RUNES ?= -25" channel state))
+           (state (newline channel state))
+           (state (princ$ "EXPORTED_VARS += ACL2_USELESS_RUNES" channel state))
+           (state (newline channel state))
            (state (close-output-channel channel state)))
       state)))
 
@@ -110,7 +114,7 @@
                 (mv t state))))
         ;; File didn't exist.
         (mv t state))
-      
+
       (if need-to-write-file-p
           (mv-let (channel state)
             (open-output-channel filename :object state)
@@ -139,4 +143,109 @@
                            (let ((world (w state))) (current-theory 'acl2::ground-zero))
                            state)
 
+
+#||
+(set-raw-mode-on!)
+
+;; Based on note-fns-in-form from interface-raw.lsp
+(defun collect-defrecs-in-form (form acc)
+  (and (consp form)
+       (case (car form)
+         (defrec (cons (cadr form) acc))
+         (save-def (collect-defrecs-in-form (cadr form) acc))
+         ((when-pass-2)
+          (progn (loop for x in (cdr form)
+                       do (setq acc (collect-defrecs-in-form x acc)))
+                 acc))
+         ((encapsulate when)
+          (progn (loop for x in (cddr form)
+                       do (setq acc (collect-defrecs-in-form x acc)))
+                 acc))
+         (partial-encapsulate
+          (progn (loop for x in (cdddr form)
+                       do (setq acc (collect-defrecs-in-form x acc)))
+                 acc))
+         ((skip-proofs local)
+          (collect-defrecs-in-form (cadr form) acc))
+         (t acc))))
+
+(defun collect-defrecs-in-file (filename acc)
+  (with-open-file
+    (str filename :direction :input)
+    (let ((avrc (cons nil nil))
+          x)
+      (loop while (not (eq (setq x (read str nil avrc))
+                           avrc))
+            do
+            (setq acc (collect-defrecs-in-form x acc)))
+      acc)))
+
+(defun collect-defrecs-in-files (filenames acc)
+  (loop for filename in filenames
+        do (setq acc (collect-defrecs-in-file (concatenate 'string "../../" filename ".lisp")
+                                              acc)))
+  acc)
+
+(defconst *defrecs*
+  (time$ (collect-defrecs-in-files *acl2-files* nil)))
+
+||#
+
+(defconst *defrecs*
+  '(CL-CACHE-LINE CL-CACHE
+    LD-PROMPT-MEMO SAR ABSSTOBJ-METHOD
+    CERT-OBJ HCOMP-BOOK-HT-ENTRY GOAL
+    PC-STATE LAMBDA-INFO LOOP$-ALIST-ENTRY
+    TRANSLATE-CERT-DATA-RECORD ABSSTOBJ-INFO
+    DEFERRED-TTAG-NOTE TESTS-AND-CALL
+    LDD-STATUS COMMAND-NUMBER-BASELINE-INFO
+    PROVED-FUNCTIONAL-INSTANCES-ALIST-ENTRY
+    CLAUSE-PROCESSOR-HINT
+    POOL-ELEMENT GOAL-TREE JUSTIFICATION
+    TESTS-AND-CALLS TESTS-AND-ALISTS
+    CANDIDATE BDDSPV BDD-RULE BDDNOTE
+    GAG-STATE GAG-INFO PROVE-SPEC-VAR
+    FC-ACTIVATION RW-CACHE-ENTRY
+    EXPAND-HINT BUILT-IN-CLAUSE
+    INDUCTION-RULE GENERALIZE-RULE
+    ELIM-RULE FORWARD-CHAINING-RULE GFRAME
+    STEP-LIMIT-RECORD METAFUNCTION-CONTEXT
+    REWRITE-CONSTANT CURRENT-LITERAL
+    LINEAR-LEMMA REWRITE-RULE
+    PEQUIVS-PROPERTY PEQUIV-INFO
+    PEQUIV-PATTERN PEQUIV CONGRUENCE-RULE
+    BOUNDER-CORRECTNESS BIG-SWITCH-RULE
+    SIGNATURE-RULE TAU TAU-INTERVAL
+    SUMMARY-DATA TYPE-SET-INVERTER-RULE
+    ACCP-ENTRY ACCP-INFO ANCESTOR
+    TYPE-PRESCRIPTION RECOGNIZER-TUPLE
+    CLAUSE-ID CERTIFY-BOOK-INFO
+    THEORY-INVARIANT-RECORD
+    ENABLED-STRUCTURE
+    LINEAR-POT POLY FC-DERIVATION ASSUMPTION
+    ASSUMNOTE HISTORY-ENTRY APPLY$-BADGE
+    COMMAND-TUPLE ATTACHMENT-COMPONENT
+    ATTACHMENT MEMO-MAX-SIZES-ENTRY
+    MEMOIZE-INFO-HT-ENTRY
+    DEF-BODY DEFSTOBJ-TEMPLATE
+    DEFSTOBJ-FIELD-TEMPLATE
+    STATE-VARS IO-RECORD))
+
+(defun write-defrec-certdeps (defrecs state)
+  (declare (xargs :mode :program :stobjs state))
+  (if (atom defrecs)
+      state
+    (let* ((x (car defrecs))
+           (body (getpropc (record-maker-function-name x) 'macro-body :none (w state)))
+           (state (if (eq body :none)
+                      state
+                    (write-file-if-obj-differs
+                     (concatenate 'string "defrec-certdeps/" (symbol-name x) ".certdep")
+                     (getpropc (record-maker-function-name x) 'macro-body nil (w state))
+                     state))))
+      (write-defrec-certdeps (cdr defrecs) state))))
+
+(write-defrec-certdeps *defrecs* state)
+
 (good-bye 0)
+

@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "hex")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (and (equal (hex-digit-val #\A) #xA)
               (equal (hex-digit-val #\B) #xB)

@@ -204,15 +204,16 @@
 (def-formula-checks
   hons-get-meta-formula-checks
   (hons-get
-   hons-get-meta
+   ;;hons-get-meta
    assoc-eq-vals
    assoc-equal
    assoc-eq-val
    assoc-eq-vals
-   resolve-assoc-eq-val-rec
-   resolve-assoc-eq-vals-rec
-   resolve-assoc-eq-vals
-   assoc-eq-vals-meta))
+   ;;resolve-assoc-eq-val-rec
+   ;;resolve-assoc-eq-vals-rec
+   ;;resolve-assoc-eq-vals
+   ;;assoc-eq-vals-meta
+   ))
 
 (local
  (defthm rp-termp-hons-get-falist
@@ -988,39 +989,39 @@
                              assoc-eq-vals-meta)
                             ())))))
 
-(defthm hons-get-meta-is-valid-rp-meta-rulep
-  (implies (and (hons-get-meta-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'hons-get-meta
-                             :trig-fnc 'hons-get
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            hons-get-meta
-                            VALID-SC)))))
+;; (defthm hons-get-meta-is-valid-rp-meta-rulep
+;;   (implies (and (hons-get-meta-formula-checks state)
+;;                 (rp-evl-meta-extract-global-facts :state state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 'hons-get-meta
+;;                              :trig-fnc 'hons-get
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (RP-META-VALID-SYNTAXP)
+;;                            (RP-TERMP
+;;                             hons-get-meta
+;;                             VALID-SC)))))
 
-(defthm assoc-eq-vals-meta-is-valid-rp-meta-rulep
-  (implies (and (hons-get-meta-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'assoc-eq-vals-meta
-                             :trig-fnc 'assoc-eq-vals
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            assoc-eq-vals-meta
-                            VALID-SC)))))
+;; (defthm assoc-eq-vals-meta-is-valid-rp-meta-rulep
+;;   (implies (and (hons-get-meta-formula-checks state)
+;;                 (rp-evl-meta-extract-global-facts :state state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 'assoc-eq-vals-meta
+;;                              :trig-fnc 'assoc-eq-vals
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (RP-META-VALID-SYNTAXP)
+;;                            (RP-TERMP
+;;                             assoc-eq-vals-meta
+;;                             VALID-SC)))))
 
 (rp::add-meta-rules
  hons-get-meta-formula-checks

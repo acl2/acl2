@@ -29,7 +29,10 @@
     (#\< #\& #\l #\t #\;)
     (#\> #\& #\g #\t #\;)
     (#\@ #\@ #\@))
-  "Table with entries (char . char-list) for substituting characters.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "Table with entries (char . char-list) for substituting characters."
+|#)
 
 (defconst *xdoc-doc-markup-table*
   '(("-" nil .    "&mdash;")
@@ -123,8 +126,11 @@
 
     ("URL" nil .  "<a href='~st'>~st</a>")
     )
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "Table for use in printing documentation strings, when printing to
-an xdoc file.  See :DOC markup")
+an xdoc file.  See :DOC markup"
+|#)
 
 (defconst *xdoc-vp* ; see print-doc-string-part1
   '(("BV" "BF") . ("EV" "EF")))

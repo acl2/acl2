@@ -32,7 +32,7 @@
 
 (in-package "ACL2")
 (include-book "quantify")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (SET::quantify-predicate (integerp x))
 (SET::quantify-predicate (symbolp x))

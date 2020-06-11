@@ -12,7 +12,7 @@
 
 (include-book "factorial")
 
-(include-book "../types-for-built-ins")
+(include-book "../implementation" :ttags (:open-input-channel :oslib :quicklisp :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

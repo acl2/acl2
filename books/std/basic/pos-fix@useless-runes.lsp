@@ -1,0 +1,4 @@
+(POS-FIX)
+(POSP-OF-POS-FIX)
+(POS-FIX-WHEN-POSP (1 1 (:REWRITE DEFAULT-<-2))
+                   (1 1 (:REWRITE DEFAULT-<-1)))

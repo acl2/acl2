@@ -42,6 +42,18 @@ public abstract class Acl2Number extends Acl2Value {
     }
 
     /**
+     * Checks if this number is a number, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code acl2-numberp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean acl2NumberpBoolean() {
+        return true;
+    }
+
+    /**
      * Negates (arithmetically) this number,
      * consistently with the {@code unary--} ACL2 function.
      *

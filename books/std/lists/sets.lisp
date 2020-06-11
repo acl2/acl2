@@ -352,12 +352,6 @@ heavier-weight (but not necessarily recommended) alternative is to use the
     (and (subsetp-equal x y)
          (subsetp-equal y x)))
 
-  (defthm set-equiv-implies-iff
-    (implies (set-equiv x y)
-             (equal (iff (member a x)
-                         (member a y))
-                    t)))
-
   (encapsulate
     ()
     (local (defthm set-equiv-refl
@@ -753,3 +747,67 @@ about set equivalence.</p>"
     (equal (element-list-p (union-equal x y))
            (and (element-list-p (list-fix x))
                 (element-list-p (double-rewrite y))))))
+
+(encapsulate
+  () ;; Some of these lemmas may well deserve to be added someplace in
+  ;; STD, but their backchaining can be expensive (particularly
+  ;; remove-when-absent and remove-duplicates-when-no-duplicatesp) and so they
+  ;; are left local for now.
+
+  (local
+   (defun induction-scheme (x y)
+     (cond
+      ((atom x) (mv x y))
+      ((member-equal (car x) (cdr x)) (induction-scheme (cdr x) y))
+      (t (induction-scheme (cdr x) (remove (car x) y))))))
+
+  (local
+   (defthm remove-when-absent
+     (implies (not (member-equal x l))
+              (equal (remove-equal x l)
+                     (true-list-fix l)))))
+
+  (local
+   (defthm remove-duplicates-equal-of-true-list-fix
+     (equal (remove-duplicates-equal (true-list-fix x))
+            (true-list-fix (remove-duplicates-equal x)))))
+
+  (local (defthm lemma
+           (implies (member-equal x (remove-duplicates-equal y))
+                    (equal (len (remove-duplicates-equal (remove-equal x y)))
+                           (- (len (remove-duplicates-equal y)) 1)))))
+
+  (defthm
+    set-equiv-implies-equal-len-remove-duplicates-equal
+    (implies (set-equiv x y)
+             (equal (len (remove-duplicates-equal x))
+                    (len (remove-duplicates-equal y))))
+    :hints
+    (("Goal" :induct (induction-scheme x y) :expand (set-equiv x (cdr x))
+      :in-theory (enable subsetp-equal)))
+    :rule-classes :congruence)
+
+  (local
+   (defthm remove-duplicates-equal-when-no-duplicatesp
+     (implies (no-duplicatesp x)
+              (equal (remove-duplicates-equal x) (true-list-fix x)))))
+
+  (defthmd
+    set-equiv-implies-equal-len-1-when-no-duplicatesp
+    (implies (and (set-equiv x y)
+                  (no-duplicatesp x)
+                  (no-duplicatesp y))
+             (equal (len x) (len y)))
+    :hints (("Goal" :in-theory (disable
+                                set-equiv-implies-equal-len-remove-duplicates-equal)
+             :use set-equiv-implies-equal-len-remove-duplicates-equal))))
+
+(defsection more-set-equiv-congruences
+  :extension set-equiv-congruences
+
+  (defthm
+    set-equiv-implies-equal-len-remove-duplicates-equal
+    (implies (set-equiv x y)
+             (equal (len (remove-duplicates-equal x))
+                    (len (remove-duplicates-equal y))))
+    :rule-classes :congruence))

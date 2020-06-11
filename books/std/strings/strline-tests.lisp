@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "strline")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 
 (acl2::assert! (equal "foo" (strline 1 "foo

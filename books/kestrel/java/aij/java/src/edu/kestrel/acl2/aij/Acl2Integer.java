@@ -231,12 +231,25 @@ public final class Acl2Integer extends Acl2Rational {
 
     /**
      * Checks if this integer is an integer, which is always true.
+     * This is consistent with the {@code integerp} ACL2 function.
      *
      * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol integerp() {
         return Acl2Symbol.T;
+    }
+
+    /**
+     * Checks if this integer is an integer, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code integerp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean integerpBoolean() {
+        return true;
     }
 
     /**

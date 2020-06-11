@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "decimal")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (equal (strval "") nil))
 (assert! (equal (strval "0") 0))

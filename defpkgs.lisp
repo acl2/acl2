@@ -64,6 +64,15 @@
 ; We keep this list sorted, since that makes defpkg more efficient when users
 ; choose to import these symbols; it avoids having to sort them then.
 
+; Here is the documentation string that was supplied before the optional
+; argument to defconst was eliminated after Version_8.3.
+
+;     "This is the list of ACL2 symbols that the ordinary user is extremely
+;   likely to want to include in the import list of any package created
+;   because these symbols are the basic hooks for using ACL2.  However,
+;   it is never necessary to do such importing: one can always use the
+;   acl2:: prefix."
+
   (sort-symbol-listp
    (append
     *hons-primitives* ; even for non-hons version, for compatibility of the two
@@ -433,7 +442,7 @@
         PUT-ASSOC PUT-ASSOC-EQ PUT-ASSOC-EQL
         PUT-ASSOC-EQUAL PUT-GLOBAL PUTPROP
         QUICK-AND-DIRTY-SUBSUMPTION-REPLACEMENT-STEP
-        QUIT QUOTE QUOTEP R-EQLABLE-ALISTP R-SYMBOL-ALISTP
+        QUIT QUOTE QUOTEP QUOTE~ R-EQLABLE-ALISTP R-SYMBOL-ALISTP
         RANDOM$ RASSOC RASSOC-EQ RASSOC-EQUAL
         RATIO RATIONAL RATIONAL-IMPLIES1
         RATIONAL-IMPLIES2 RATIONAL-LISTP
@@ -697,15 +706,7 @@
 
         DEFTHM-STD DEFUN-STD DEFUNS-STD
         I-CLOSE I-LARGE I-LIMITED I-SMALL
-        REAL-LISTP STANDARD-PART STANDARDP)))
-
-  "This is the list of ACL2 symbols that the ordinary user is extremely
-likely to want to include in the import list of any package created
-because these symbols are the basic hooks for using ACL2.  However,
-it is never necessary to do such importing: one can always use the
-acl2:: prefix."
-
-  )
+        REAL-LISTP STANDARD-PART STANDARDP))))
 
 (defpkg "ACL2-USER"
   (union-eq *acl2-exports*

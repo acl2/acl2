@@ -93,7 +93,7 @@
 
 (def-formula-checks
  rp-equal-iter-pp+-meta-formula-checks
- (rp-equal-iter-pp+-meta
+ (;;rp-equal-iter-pp+-meta
   p+))
 
 (local
@@ -232,7 +232,7 @@
    :hints (("Goal"
             :in-theory (e/d (rp-equal-iter-pp+-meta) ())))))
 
-(defthm rp-equal-iter-pp+-meta-is-valid-rp-meta-rulep
+#|(defthm rp-equal-iter-pp+-meta-is-valid-rp-meta-rulep
   (implies (and (rp-equal-iter-pp+-meta-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -247,7 +247,7 @@
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
                            (RP-TERMP
                             rp-term-listp
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
 
 (rp::add-meta-rules

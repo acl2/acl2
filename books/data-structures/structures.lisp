@@ -2155,22 +2155,37 @@ certain types of proofs. ~/"
 	    :INLINE :READ-WRITE-LEMMA :REPRESENTATION :SET-CONC-NAME
 	    :SLOT-WRITERS :WEAK-PREDICATE :UPDATE-METHOD :VERIFY-GUARDS
 	    :WRITE-WRITE-LEMMA)
-  "The valid options for DEFSTRUCTURE options.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "The valid options for DEFSTRUCTURE options."
+|#)
 
 (defconst *duplicate-options*
   '(:ASSERT :DO-NOT)
-  "Only these options may be duplicated.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "Only these options may be duplicated."
+|#)
 
 (defconst *do-not-options* '(:TAG #|:NORMALIZE|# :READ-WRITE :WRITE-WRITE)
-  "Things done by default, they can be undone by a :DO-NOT option.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "Things done by default, they can be undone by a :DO-NOT option."
+|#)
 
 (defconst *slot-options*
   '(:DEFAULT :READ-ONLY :ASSERT)
-  "The valid options for DEFSTRUCTURE <slot-and-options>.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "The valid options for DEFSTRUCTURE <slot-and-options>."
+|#)
 
 (defconst *duplicate-slot-options*
   '(:ASSERT)
-  "Options for DEFSTRUCTURE <slot-and-options> that can be duplicated.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "Options for DEFSTRUCTURE <slot-and-options> that can be duplicated."
+|#)
 
 (defconst *rule-tokens*
   '(:BUILT-IN-CLAUSE :COMPOUND-RECOGNIZER :CONGRUENCE :DEFINITION :ELIM
@@ -2178,8 +2193,11 @@ certain types of proofs. ~/"
 		     :LINEAR :LINEAR-ALIAS :META NIL :REFINEMENT :REWRITE
 		     :TYPE-PRESCRIPTION :TYPE-SET-INVERTER
 		     :WELL-FOUNDED-RELATION)
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "The valid Acl2 rule-tokens. These may need to be updated from time to
-   time.")
+   time."
+|#)
 
 
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -30,7 +30,7 @@
 
 (in-package "STR")
 (include-book "binary")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (and (equal (bit-digit-list-value (explode "0")) #b0)
               (equal (bit-digit-list-value (explode "1")) #b1)

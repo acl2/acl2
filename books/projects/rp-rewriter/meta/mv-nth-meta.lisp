@@ -71,7 +71,8 @@
 (rp::def-formula-checks mv-nth-formula-checks
                         (mv-nth
                          cons
-                         mv-nth-meta))
+                         ;;mv-nth-meta
+                         ))
 
 (defthm rp-evl-of-mv-nth-meta
   (implies (and (rp-evl-meta-extract-global-facts)
@@ -109,7 +110,7 @@
            :in-theory (e/d (rp::is-if
                             rp::is-rp) ()))))
 
-(defthm valid-rp-meta-rulep-mv-nth-meta
+#|(defthm valid-rp-meta-rulep-mv-nth-meta
   (implies (and (rp-evl-meta-extract-global-facts)
                 (mv-nth-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -124,7 +125,7 @@
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
                            (rp::RP-TERMP
                             mv-nth-meta
-                            rp::VALID-SC)))))
+                            rp::VALID-SC)))))||#
 
 (rp::add-meta-rules mv-nth-formula-checks
                     (list (make rp::rp-meta-rule-rec

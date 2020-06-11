@@ -33,7 +33,7 @@
 (include-book "add-primitives")
 (include-book "primitives-stub")
 (include-book "bfr-arithmetic")
-(include-book "subst-functions")
+; (include-book "subst-functions")
 (include-book "def-fgl-rewrite")
 (include-book "centaur/misc/hons-remove-dups" :dir :system)
 (local (include-book "primitive-lemmas"))

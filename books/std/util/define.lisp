@@ -1218,7 +1218,7 @@ examples.</p>")
        (macro         (and need-macrop
                            (make-wrapper-macro name name-fn raw-formals)))
        (formals       (remove-macro-args name raw-formals nil))
-       (formals       (parse-formals name formals '(:type) world))
+       (formals       (parse-formals name formals '(:type :props) world))
 
        (formal-names  (formallist->names formals))
        (formal-guards (remove t (formallist->guards formals)))
