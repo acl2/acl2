@@ -349,6 +349,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Returns the symbol package name of this value,
+     * consistently with the {@code symbol-package-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     * It returns the empty string by default;
+     * it is overridden in {@link Acl2Symbol}.
+     *
+     * @return The symbol package name.
+     */
+    String symbolPackageNameString() {
+        return "";
+    }
+
+    /**
      * Returns the symbol name of this value,
      * consistently with the {@code symbol-name} ACL2 function.
      * It returns the empty string by default;
@@ -358,6 +371,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2String symbolName() {
         return Acl2String.EMPTY;
+    }
+
+    /**
+     * Returns the symbol name of this value,
+     * consistently with the {@code symbol-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     * It returns the empty string by default;
+     * it is overridden in {@link Acl2Symbol}.
+     *
+     * @return The symbol name.
+     */
+    String symbolNameString() {
+        return "";
     }
 
     /**

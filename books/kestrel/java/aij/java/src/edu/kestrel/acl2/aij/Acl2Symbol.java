@@ -158,6 +158,18 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
+     * Returns the package name of this symbol,
+     * consistently with the {@code symbol-package-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     *
+     * @return The package name of this symbol.
+     */
+    @Override
+    String symbolPackageNameString() {
+        return packageName.getJavaString();
+    }
+
+    /**
      * Returns the name of this symbol,
      * consistently with the {@code symbol-name} ACL2 function.
      *
@@ -166,6 +178,18 @@ public final class Acl2Symbol extends Acl2Value {
     @Override
     Acl2String symbolName() {
         return name;
+    }
+
+    /**
+     * Returns the name of this symbol,
+     * consistently with the {@code symbol-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     *
+     * @return The name of this symbol.
+     */
+    @Override
+    String symbolNameString() {
+        return name.getJavaString();
     }
 
     /**
