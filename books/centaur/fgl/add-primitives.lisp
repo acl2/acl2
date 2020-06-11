@@ -37,6 +37,43 @@
 (include-book "clause-processors/find-subterms" :dir :system)
 (set-state-ok t)
 
+(defsection dumb-clausify-cp
+  (defevaluator cl-ev cl-ev-lst ((if a b c)) :namedp t)
+
+  (defun dumb-clausify (x)
+    (declare (xargs :guard (pseudo-termp x)))
+    (cond ((atom x) (list (list x)))
+          ((equal x ''t) nil)
+          ((and (eq (car x) 'if)
+                (equal (fourth x) ''nil))
+           (append (dumb-clausify (second x))
+                   (dumb-clausify (third x))))
+          (t (list (list x)))))
+
+  (acl2::def-join-thms cl-ev)
+
+  (defthm dumb-clausify-correct
+    (iff (cl-ev (conjoin-clauses (dumb-clausify x)) a)
+         (cl-ev x a)))
+
+  (defun dumb-clausify-cp (x)
+    (declare (xargs :guard (pseudo-term-listp x)))
+    (if (or (atom x)
+            (consp (cdr x)))
+        (list x)
+      (dumb-clausify (car x))))
+
+  (defthm dumb-clausify-cp-correct
+    (implies (and (pseudo-term-listp x)
+                  (alistp a)
+                  (cl-ev (conjoin-clauses (dumb-clausify-cp x)) a))
+             (cl-ev (disjoin x) a))
+    :rule-classes :clause-processor))
+
+
+
+
+
 (defsection base-constraints-formula-check-lemmas
   (local (in-theory (enable and*)))
 

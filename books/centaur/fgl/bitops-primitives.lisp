@@ -161,7 +161,7 @@
 (local (in-theory (enable bitops::logapp** bitops::loghead** bitops::logtail**)))
 
 (local (in-theory (disable member-equal boolean-listp integer-listp append
-                           equal-of-booleans-rewrite set::empty-set-unique)))
+                           equal-of-booleans-rewrite)))
 
 (set-ignore-ok t)
 

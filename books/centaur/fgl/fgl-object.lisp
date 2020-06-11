@@ -450,3 +450,61 @@ case you misspell @(':g-concrete').</p>
            (fgl-object-alist-variable-free-p (cdr x)))))
   ///
   (memoize 'fgl-object-variable-free-p))
+
+
+
+
+(defines summarize-fgl-object 
+  (define summarize-fgl-object ((x fgl-object-p))
+    :parents (fgl-object)
+    :short "Remove repeated unary function calls in an FGL object to create an object
+            that might be smaller to print."
+    :long "<p>This preserves the structure of the input object except that nested calls of the same unary function are replaced by a bogus call of the function on two arguments: the number of nestings and the argument to the innermost call.  For example:</p>
+@({
+ (:g-apply intcdr (:g-apply intcdr (:g-apply intcdr (:g-var . x))))
+ })
+<p>is replaced with</p>
+@({
+ (:g-apply intcdr 3 (:g-var x))
+ })"
+    :measure (fgl-object-count x)
+    :hints(("Goal" :in-theory (enable o<))
+           (and stable-under-simplificationp
+                '(:expand ((fgl::fgl-object-count x)))))
+    :returns (new-x fgl-object-p)
+    :verify-guards nil
+    :prepwork ((local (defthm len-equal-1
+                        (equal (equal (len x) 1)
+                               (and (consp x) (not (consp (cdr x))))))))
+    (fgl-object-case x
+      :g-apply (if (eql (len x.args) 1)
+                   (b* ((x1 (summarize-fgl-object (car x.args))))
+                     (fgl-object-case x1
+                       :g-apply (if (eq x1.fn x.fn)
+                                    (if (and (eql (len x1.args) 2)
+                                             (integerp (car x1.args)))
+                                        (g-apply x1.fn (list (+ 1 (car x1.args)) (cadr x1.args)))
+                                      (g-apply x1.fn (cons 2 x1.args)))
+                                  (g-apply x.fn (list x1)))
+                       :otherwise (g-apply x.fn (list x1))))
+                 (g-apply x.fn (summarize-fgl-objectlist x.args)))
+      :g-cons (g-cons (summarize-fgl-object x.car)
+                      (summarize-fgl-object x.cdr))
+      :g-ite (g-ite (summarize-fgl-object x.test)
+                    (summarize-fgl-object x.then)
+                    (summarize-fgl-object x.else))
+      :otherwise (fgl-object-fix x)))
+  (define summarize-fgl-objectlist ((x fgl-objectlist-p))
+    :measure (fgl-objectlist-count x)
+    :returns (new-x fgl-objectlist-p)
+    (if (atom x)
+        nil
+      (cons (summarize-fgl-object (car x))
+            (summarize-fgl-objectlist (cdr x)))))
+  :prepwork ((local (in-theory (disable (tau-system))))
+             (local (defthm fgl-object-p-of-integer
+                      (implies (integerp x)
+                               (fgl-object-p x))
+                      :hints(("Goal" :in-theory (enable fgl-object-p))))))
+  ///
+  (verify-guards summarize-fgl-object))

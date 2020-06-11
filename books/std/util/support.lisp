@@ -101,11 +101,51 @@ rather than write something like:</p>
     `(er hard? __function__ . ,args)))
 
 
+(defsection legal-kwds-p
+  :parents (support)
+  :short "List of legal keywords for extract-keywords."
+  :long "<p>Recognizes a list where each element is either a symbol a singleton
+list containing a symbol.  In @(see extract-keywords), a bare symbol is a legal
+keyword and a symbol in a singleton list is a keyword that can occur multiple
+times in an argument list.</p>"
+  (defun legal-kwds-p (x)
+    (declare (Xargs :guard t))
+    (if (atom x)
+        (eq x nil)
+      (and (or (symbolp (car x))
+               (and (consp (car x))
+                    (symbolp (caar x))
+                    (not (cdar x))))
+           (legal-kwds-p (cdr x))))))
+
+(defsection keyword-legality
+  :parents (support)
+  :short "Check whether x is a legal keyword"
+  :long "<p>Returns :single if x is allowed to occur once in the argument
+list, :multiple if it is allowed to occur more than once, and NIL if not
+allowed.</p>"
+  (defun keyword-legality (x legals)
+    (declare (xargs :guard (and (symbolp x)
+                                (legal-kwds-p legals))))
+    (cond ((atom legals) nil)
+          ((eq x (car legals)) :single)
+          ((and (consp (car legals))
+                (eq x (caar legals)))
+           :multiple)
+          (t (keyword-legality x (cdr legals))))))
+          
+
 
 (defsection extract-keywords
   :parents (support)
   :short "Extract legal keyword/value pairs from an argument list."
-
+  :long "<p>If a keyword occurs as a singleton list in legal-kwds, it may have
+mulitple occurrences in the args, and the result stored in the kwd-alist will
+be a list of the arguments to the occurrences.  For example:</p>
+@({
+ (extract-keywords 'foo '((:bar)) '(:bar x :bar y) nil)
+ })
+<p>produces @('((:bar y x))') as its keyword alist result.</p>"
   (defun extract-keywords
     (ctx        ; context for error messages
      legal-kwds ; what keywords the args are allowed to contain
@@ -113,7 +153,7 @@ rather than write something like:</p>
      kwd-alist  ; accumulator alist of extracted keywords to values
      )
   "Returns (mv kwd-alist other-args)"
-  (declare (xargs :guard (and (symbol-listp legal-kwds)
+  (declare (xargs :guard (and (legal-kwds-p legal-kwds)
                               ; (no-duplicatesp legal-kwds)
                               (alistp kwd-alist))))
   (b* ((__function__ 'extract-keywords)
@@ -124,7 +164,8 @@ rather than write something like:</p>
         (b* (((mv kwd-alist other-args)
               (extract-keywords ctx legal-kwds (cdr args) kwd-alist)))
           (mv kwd-alist (cons arg1 other-args))))
-       ((unless (member arg1 legal-kwds))
+       (legality (keyword-legality arg1 legal-kwds))
+       ((unless legality)
         (raise (concatenate 'string
                             "~x0: invalid keyword ~x1."
                             (if legal-kwds
@@ -135,11 +176,15 @@ rather than write something like:</p>
        ((when (atom (rest args)))
         (raise "~x0: keyword ~x1 has no argument." ctx arg1)
         (mv nil nil))
-       ((when (assoc arg1 kwd-alist))
+       ((when (and (not (eq legality :multiple))
+                   (assoc arg1 kwd-alist)))
         (raise "~x0: multiple occurrences of keyword ~x1." ctx arg1)
         (mv nil nil))
        (value (second args))
-       (kwd-alist (acons arg1 value kwd-alist)))
+       (kwd-alist (if (eq legality :multiple)
+                      (acons arg1 (cons value (cdr (assoc arg1 kwd-alist)))
+                             (remove1-assoc arg1 kwd-alist))
+                    (acons arg1 value kwd-alist))))
     (extract-keywords ctx legal-kwds (cddr args) kwd-alist))))
 
 (defsection getarg

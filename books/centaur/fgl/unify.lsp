@@ -35,6 +35,9 @@
 (include-book "std/util/termhints" :dir :system)
 (include-book "centaur/misc/starlogic" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "std/util/defretgen" :dir :system)
+
+(local (in-theory (disable (tau-system))))
 
 (ifdef "THMS_ONLY"
   (include-book "unify-defs")
@@ -201,110 +204,95 @@
      :endif)
 
    (verify-guards fgl-unify-concrete)
+))
+   ;; (defret bfrlist-of-<fn>
+   ;;   (implies (not (member b (fgl-object-bindings-bfrlist alist)))
+   ;;            (not (member b (fgl-object-bindings-bfrlist new-alist))))
+   ;;   :hints(("Goal" :induct <call>)
+   ;;          (acl2::use-termhint
+   ;;           `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
+   ;;                      (fgl-object-bindings-bfrlist ,(acl2::hq new-alist)))))))
 
-   (defret bfrlist-of-<fn>
-     (implies (not (member b (fgl-object-bindings-bfrlist alist)))
-              (not (member b (fgl-object-bindings-bfrlist new-alist))))
-     :hints(("Goal" :induct <call>)
-            (acl2::use-termhint
-             `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
-                        (fgl-object-bindings-bfrlist ,(acl2::hq new-alist)))))))
+   ;; (ifndef "DEFS_ONLY"
+   ;;   (local (defthm equal-of-len
+   ;;            (implies (syntaxp (quotep n))
+   ;;                     (equal (Equal (len x) n)
+   ;;                            (cond ((eql n 0) (atom x))
+   ;;                                  ((zp n) nil)
+   ;;                                  (t (and (consp x)
+   ;;                                          (equal (len (cdr x)) (1- n)))))))
+   ;;            :hints(("Goal" :in-theory (enable len)))))
 
-   (ifndef "DEFS_ONLY"
-     (local (defthm equal-of-len
-              (implies (syntaxp (quotep n))
-                       (equal (Equal (len x) n)
-                              (cond ((eql n 0) (atom x))
-                                    ((zp n) nil)
-                                    (t (and (consp x)
-                                            (equal (len (cdr x)) (1- n)))))))
-              :hints(("Goal" :in-theory (enable len)))))
+   ;;   (defret <fn>-alist-lookup-when-present
+   ;;     (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
+   ;;                   flag)
+   ;;              (equal (hons-assoc-equal k new-alist)
+   ;;                     (hons-assoc-equal k (fgl-object-bindings-fix alist))))
+   ;;     :hints (("goal" :induct <call>)
+   ;;             (acl2::use-termhint
+   ;;              `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
 
-     (defret <fn>-alist-lookup-when-present
-       (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
-                     flag)
-                (equal (hons-assoc-equal k new-alist)
-                       (hons-assoc-equal k (fgl-object-bindings-fix alist))))
-       :hints (("goal" :induct <call>)
-               (acl2::use-termhint
-                `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
+   ;;   (defret <fn>-preserves-all-keys-bound
+   ;;     (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
+   ;;                   flag)
+   ;;              (subsetp keys (alist-keys new-alist)))
+   ;;     :hints (("goal" :induct <call>)
+   ;;             (acl2::use-termhint
+   ;;              `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
 
-     (defret <fn>-preserves-all-keys-bound
-       (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
-                     flag)
-                (subsetp keys (alist-keys new-alist)))
-       :hints (("goal" :induct <call>)
-               (acl2::use-termhint
-                `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
+   ;;   (local (defthm termlist-vars-when-consp
+   ;;            (implies (consp x)
+   ;;                     (equal (termlist-vars x)
+   ;;                            (union-eq (termlist-vars (cdr x))
+   ;;                                      (term-vars (car x)))))
+   ;;            :hints (("goal" :expand ((termlist-vars x))))))
 
-     (local (defthm termlist-vars-when-consp
-              (implies (consp x)
-                       (equal (termlist-vars x)
-                              (union-eq (termlist-vars (cdr x))
-                                        (term-vars (car x)))))
-              :hints (("goal" :expand ((termlist-vars x))))))
+   ;;   (defret all-keys-bound-of-<fn>
+   ;;     (implies flag
+   ;;              (subsetp (term-vars pat) (alist-keys new-alist)))
+   ;;     :hints (("goal" :induct <call>)
+   ;;             (acl2::use-termhint
+   ;;              `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
+   ;;                         (term-vars pat)
+   ;;                         ;; (termlist-vars (cdr pat))
+   ;;                         ;; (termlist-vars (cddr pat))
+   ;;                         ;; (termlist-vars (cdddr pat))
+   ;;                         )))))
 
-     (defret all-keys-bound-of-<fn>
-       (implies flag
-                (subsetp (term-vars pat) (alist-keys new-alist)))
-       :hints (("goal" :induct <call>)
-               (acl2::use-termhint
-                `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
-                           (term-vars pat)
-                           ;; (termlist-vars (cdr pat))
-                           ;; (termlist-vars (cddr pat))
-                           ;; (termlist-vars (cdddr pat))
-                           )))))
+   ;;   (local (defret var-lookup-of-<fn>
+   ;;            (implies (and flag (pseudo-term-case pat :var))
+   ;;                     (hons-assoc-equal (acl2::pseudo-term-var->name pat) new-alist))
+   ;;            :hints (("goal" :use ((:instance all-keys-bound-of-fgl-unify-concrete))
+   ;;                     :in-theory (e/d (term-vars)
+   ;;                                     (all-keys-bound-of-fgl-unify-concrete))))))
 
-     (local (defret var-lookup-of-<fn>
-              (implies (and flag (pseudo-term-case pat :var))
-                       (hons-assoc-equal (acl2::pseudo-term-var->name pat) new-alist))
-              :hints (("goal" :use ((:instance all-keys-bound-of-fgl-unify-concrete))
-                       :in-theory (e/d (term-vars)
-                                       (all-keys-bound-of-fgl-unify-concrete))))))
+   ;;   (defret <fn>-preserves-eval-when-all-keys-bound
+   ;;     (implies (and flag
+   ;;                   (subsetp (term-vars term)
+   ;;                            (alist-keys (fgl-object-bindings-fix alist))))
+   ;;              (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+   ;;                     (fgl-ev term (fgl-object-bindings-eval alist env))))
+   ;;     :hints (("goal" :induct <call>)
+   ;;             (acl2::use-termhint
+   ;;              `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
+   ;;                         (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))))
 
-     (defret <fn>-preserves-eval-when-all-keys-bound
-       (implies (and flag
-                     (subsetp (term-vars term)
-                              (alist-keys (fgl-object-bindings-fix alist))))
-                (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
-                       (fgl-ev term (fgl-object-bindings-eval alist env))))
-       :hints (("goal" :induct <call>)
-               (acl2::use-termhint
-                `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist))
-                           (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))))
+   ;;   (defret <fn>-correct
+   ;;     (implies flag
+   ;;              (equal (fgl-ev pat (fgl-object-bindings-eval new-alist env))
+   ;;                     x))
+   ;;     :hints (("Goal" :induct <call>)
+   ;;             (acl2::use-termhint
+   ;;              `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
 
-     (defret <fn>-correct
-       (implies flag
-                (equal (fgl-ev pat (fgl-object-bindings-eval new-alist env))
-                       x))
-       :hints (("Goal" :induct <call>)
-               (acl2::use-termhint
-                `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
+   ;;   (defret fgl-object-bindings-bfrlist-of-<fn>
+   ;;     (equal (fgl-object-bindings-bfrlist new-alist)
+   ;;            (and flag (fgl-object-bindings-bfrlist alist)))
+   ;;     :hints (("Goal" :induct <call>)
+   ;;             (acl2::use-termhint
+   ;;              `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
 
-     (defret fgl-object-bindings-bfrlist-of-<fn>
-       (equal (fgl-object-bindings-bfrlist new-alist)
-              (and flag (fgl-object-bindings-bfrlist alist)))
-       :hints (("Goal" :induct <call>)
-               (acl2::use-termhint
-                `(:expand ((fgl-unify-concrete ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))))))
-
-     :endif)))
-
-;; (local (defthm true-list-fix-of-boolean-list-fix
-;;          (equal (acl2::true-list-fix (acl2::boolean-list-fix x))
-;;                 (acl2::boolean-list-fix x))))
-
-;; (local (defthm boolean-list-fix-of-true-list-fix
-;;          (equal (acl2::boolean-list-fix (acl2::true-list-fix x))
-;;                 (acl2::boolean-list-fix x))
-;;          :hints(("Goal" :in-theory (enable acl2::boolean-list-fix)))))
-
-;; (defrefinement acl2::list-equiv acl2::boolean-list-equiv
-;;   :hints(("Goal" :in-theory (e/d (acl2::list-equiv)
-;;                                  (boolean-list-fix-of-true-list-fix))
-;;           :use ((:instance boolean-list-fix-of-true-list-fix)
-;;                 (:instance boolean-list-fix-of-true-list-fix (x y))))))
+   ;;   :endif)))
 
 (defthm bfrlist-of-mk-g-integer
   (implies (not (member v x))
@@ -384,18 +372,22 @@
        :guard (bfr-listp (fgl-object-bfrlist x) bfrstate)
        :returns (mv flag
                     (new-alist fgl-object-bindings-p))
-       :measure (two-nats-measure (pseudo-term-count pat) 0)
+       :measure (two-nats-measure (pseudo-term-count pat) 1)
        :hints ((and stable-under-simplificationp
                     '(:expand ((pseudo-term-count pat)
                                (pseudo-term-list-count (pseudo-term-call->args pat))
                                (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))
                       :in-theory (enable equal-of-len))))
+       :ruler-extenders :all
+       :measure-debug t
        :verify-guards nil
        (b* ((alist (fgl-object-bindings-fix alist))
             (x (fgl-object-fix x))
             (x.kind (fgl-object-kind x))
             ((when (fgl-object-kind-eq x.kind :g-concrete))
-             (fgl-unify-concrete pat (g-concrete->val x) alist)))
+             (fgl-unify-concrete pat (g-concrete->val x) alist))
+            ((when (fgl-object-kind-eq x.kind :g-map))
+             (fgl-unify-term/gobj-map pat (g-map->alist x) alist)))
          (pseudo-term-case pat
            :const (mv nil nil) ;; only matches when concrete, taken care of above.
            :var (let ((pair (hons-assoc-equal pat.name alist)))
@@ -463,6 +455,77 @@
            ;; don't support unifying with lambdas
            :otherwise (mv nil nil))))
 
+     (define fgl-unify-term/gobj-map ((pat pseudo-termp)
+                                      (x fgl-object-alist-p)
+                                      (alist fgl-object-bindings-p)
+                                      &optional ((bfrstate bfrstate-p) 'bfrstate))
+       :guard (bfr-listp (fgl-object-alist-bfrlist x) bfrstate)
+       :returns (mv flag
+                    (new-alist fgl-object-bindings-p))
+       :measure (two-nats-measure (pseudo-term-count pat) 0)
+       (b* ((x (fgl-object-alist-fix x))
+            ((when (atom x))
+             (fgl-unify-concrete pat x alist))
+            (alist (fgl-object-bindings-fix alist)))
+         (pseudo-term-case pat
+           :var (b* ((pair (hons-assoc-equal pat.name alist))
+                     ((unless pair)
+                      (mv t (cons (cons pat.name (g-map '(:g-map) x)) alist)))
+                     (obj (cdr pair))
+                     ((unless (fgl-object-case obj
+                                :g-map
+                                (hons-equal x obj.alist)
+                                :otherwise nil))
+                      (mv nil nil)))
+                  (mv t alist))
+           :fncall
+           (b* (((unless (and (eq pat.fn 'cons)
+                              (eql (len pat.args) 2)))
+                 (mv nil nil))
+                ((list pair-pat rest-pat) pat.args)
+                ((cons (cons x-key val-obj) rest-alist) x)
+                ((mv ok alist)
+                 (fgl-unify-term/gobj-map-pair pair-pat x-key val-obj alist))
+                ((unless ok) (mv nil nil)))
+             (fgl-unify-term/gobj-map rest-pat rest-alist alist))
+           :otherwise (mv nil nil))))
+
+     (define fgl-unify-term/gobj-map-pair ((pat pseudo-termp)
+                                           (x-key)
+                                           (val-obj fgl-object-p)
+                                           (alist fgl-object-bindings-p)
+                                           &optional ((bfrstate bfrstate-p) 'bfrstate))
+       :measure (two-nats-measure (pseudo-term-count pat) 1)
+       :guard (bfr-listp (fgl-object-bfrlist val-obj))
+       :returns (mv flag
+                    (new-alist fgl-object-bindings-p))
+       (b* ((alist (fgl-object-bindings-fix alist)))
+         (pseudo-term-case pat
+           :const (b* (((unless (consp pat.val)) (mv nil nil))
+                       ((cons key val) pat.val)
+                       ((unless (and (hons-equal key x-key)
+                                     (fgl-object-case val-obj
+                                       :g-concrete (hons-equal val-obj.val val)
+                                       :otherwise nil)))
+                        (mv nil nil)))
+                    (mv t alist))
+           :var (b* ((pair (hons-assoc-equal pat.name alist))
+                     (pair-obj (g-cons (g-concrete x-key) val-obj))
+                     ((unless pair)
+                      (mv t (cons (cons pat.name pair-obj)
+                                  alist)))
+                     (obj (cdr pair))
+                     ((unless (hons-equal obj pair-obj))
+                      (mv nil nil)))
+                  (mv t alist))
+           :fncall (b* (((unless (and (eq pat.fn 'cons)
+                                      (eql (len pat.args) 2)))
+                         (mv nil nil))
+                        ((list key-pat val-pat) pat.args)
+                        ((mv ok alist) (fgl-unify-concrete key-pat x-key alist))
+                        ((unless ok) (mv nil nil)))
+                     (fgl-unify-term/gobj val-pat val-obj alist))
+           :otherwise (mv nil nil))))
      
 
      (define fgl-unify-term/gobj-fn/args ((pat-fn pseudo-fnsym-p)
@@ -597,7 +660,7 @@
      ///
      (local
       (make-event
-       `(in-theory (disable . ,(getpropc 'fgl-unify-term/gobj 'acl2::recursivep
+       `(in-theory (disable . ,(getpropc 'fgl-unify-term/gobj-fn 'acl2::recursivep
                                          nil (w state))))))
 
      (local (defthm member-scdr
@@ -618,86 +681,68 @@
 
      (fty::deffixequiv-mutual fgl-unify-term/gobj)
 
-     ;; (defret-mutual bfrlist-of-<fn>
-     ;;   (defret bfrlist-of-<fn>
-     ;;     (implies (and (not (member b (fgl-object-bindings-bfrlist alist)))
-     ;;                   (not (member b (fgl-object-bfrlist x)))
-     ;;                   ;; (not (equal b nil))
-     ;;                   )
-     ;;              (not (member b (fgl-object-bindings-bfrlist new-alist))))
-     ;;     :hints ('(:expand ((:free (x) <call>)
-     ;;                        (fgl-unify-term/gobj nil x alist)))
-     ;;             (and stable-under-simplificationp
-     ;;                  '(:expand ((fgl-object-bfrlist x)))))
-     ;;     :fn fgl-unify-term/gobj)
-     ;;   (defret bfrlist-of-<fn>
-     ;;     (implies (and (not (member b (fgl-object-bindings-bfrlist alist)))
-     ;;                   (not (member b (fgl-object-bfrlist x1)))
-     ;;                   (not (member b (fgl-object-bfrlist x2))))
-     ;;              (not (member b (fgl-object-bindings-bfrlist new-alist))))
-     ;;     :fn fgl-unify-term/gobj-commutative-args)
-     ;;   (defret bfrlist-of-<fn>
-     ;;     (implies (and (not (member b (fgl-object-bindings-bfrlist alist)))
-     ;;                   (not (member b (fgl-objectlist-bfrlist x)))
-     ;;                   ;; (not (equal b nil))
-     ;;                   )
-     ;;              (not (member b (fgl-object-bindings-bfrlist new-alist))))
-     ;;     :hints ('(:expand ((:free (x) <call>)
-     ;;                        (fgl-objectlist-bfrlist x))))
-     ;;     :fn fgl-unify-term/gobj-list))
-
      (local (in-theory (enable bfr-listp-when-not-member-witness)))
 
-     (defret-mutual bfr-listp-of-<fn>
-       (defret bfr-listp-of-<fn>
-         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
-                       (bfr-listp (fgl-object-bfrlist x)))
-                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
-         :hints ('(:expand ((:free (x) <call>)
-                            (fgl-unify-term/gobj nil x alist)))
-                 (and stable-under-simplificationp
-                      '(:expand ((fgl-object-bfrlist x)))))
-         :fn fgl-unify-term/gobj)
-       (defret bfr-listp-of-<fn>
-         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
-                       (bfr-listp (fgl-objectlist-bfrlist x)))
-                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
-         :hints ('(:expand ((:free (x) <call>)
-                            (fgl-objectlist-bfrlist x))))
-         :fn fgl-unify-term/gobj-list)
-       (defret bfr-listp-of-<fn>
-         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
-                       (bfr-listp (fgl-object-bfrlist x1))
-                       (bfr-listp (fgl-object-bfrlist x2)))
-                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
-         :hints ('(:expand (<call>)))
-         :fn fgl-unify-term/gobj-commutative-args)
-       (defret bfr-listp-of-<fn>
-         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
-                       (bfr-listp (fgl-object-bfrlist x-test))
-                       (bfr-listp (fgl-object-bfrlist x-then))
-                       (bfr-listp (fgl-object-bfrlist x-else)))
-                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
-         :hints ('(:expand (<call>)))
-         :fn fgl-unify-term/gobj-if)
-       (defret bfr-listp-of-<fn>
-         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
-                       (bfr-listp (fgl-object-bfrlist x-test))
-                       (bfr-listp (fgl-object-bfrlist x-then))
-                       (bfr-listp (fgl-object-bfrlist x-else)))
-                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
-         :hints ('(:expand (<call>)))
-         :fn fgl-unify-term/gobj-if1)
-       (defret bfr-listp-of-<fn>
-         (implies (and (bfr-listp (fgl-object-bindings-bfrlist alist))
-                       (bfr-listp (fgl-objectlist-bfrlist x-args)))
-                  (bfr-listp (fgl-object-bindings-bfrlist new-alist)))
-         :hints ('(:expand (<call>)))
-         :fn fgl-unify-term/gobj-fn/args))
-       
+     (std::def-retgen-fnset fgl-unify-fnset (fgl-unify-concrete fgl-unify-term/gobj))
      
+     (std::defretgen bfr-listp-of-<fn>
+       :formal-hyps
+       (((fgl-object-bindings-p alist)    (bfr-listp (fgl-object-bindings-bfrlist alist)))
+        ((fgl-object-p x)                 (bfr-listp (fgl-object-bfrlist x)))
+        ((fgl-objectlist-p x)             (bfr-listp (fgl-objectlist-bfrlist x)))
+        ((fgl-object-alist-p x)           (bfr-listp (fgl-object-alist-bfrlist x))))
+       :rules ((t (:add-concl (bfr-listp (fgl-object-bindings-bfrlist new-alist))))
+               (:mutrec
+                (:add-keyword
+                 :hints ('(:expand ((:free (x-key) <call>))))))
+               (:recursive
+                (:add-keyword
+                 :hints (("goal" :induct <call>
+                          :in-theory (enable (:i <fn>))
+                          :expand ((:free (x) <call>)))))))
+       :functions fgl-unify-fnset)
+          
 
      (ifndef "DEFS_ONLY"
+       
+
+       (std::defretgen <fn>-alist-lookup-when-present
+         :rules
+         ((t (:add-hyp (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
+                            flag))
+             (:add-concl (equal (hons-assoc-equal k new-alist)
+                                (hons-assoc-equal k (fgl-object-bindings-fix alist)))))
+          (:mutrec
+           (:add-keyword
+            :hints ('(:expand ((:free (x-key) <call>))))))
+          (:recursive
+           (:add-keyword
+            :hints (("goal" :induct <call>
+                     :in-theory (enable (:i <fn>))
+                     :expand ((:free (x) <call>)))))))
+       :functions fgl-unify-fnset)
+
+       (std::defretgen <fn>-preserves-all-keys-bound
+         :rules
+         ((t (:add-hyp (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
+                            flag))
+             (:add-concl (subsetp keys (alist-keys new-alist))))
+          (:mutrec
+           (:add-keyword
+            :hints ('(:expand ((:free (x-key) <call>))))))
+          (:recursive
+           (:add-keyword
+            :hints (("goal" :induct <call>
+                     :in-theory (enable (:i <fn>))
+                     :expand ((:free (x) <call>)))))))
+       :functions fgl-unify-fnset)
+
+       (local (defthm termlist-vars-when-consp
+                (implies (consp x)
+                         (equal (termlist-vars x)
+                                (union-eq (termlist-vars (cdr x))
+                                          (term-vars (car x)))))
+                :hints (("goal" :expand ((termlist-vars x))))))
        
        ;; (local
        ;;  (defthmd equal-of-len
@@ -708,207 +753,53 @@
        ;;                          (t (and (consp x)
        ;;                                  (equal (len (cdr x)) (1- n)))))))
        ;;    :hints(("Goal" :in-theory (enable len)))))
+       (local (in-theory (enable equal-of-len)))
 
-       (defret-mutual <fn>-alist-lookup-when-present
-         (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
-                         flag)
-                    (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist))))
-           :fn fgl-unify-term/gobj)
-         (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
-                         flag)
-                    (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist))))
-           :fn fgl-unify-term/gobj-commutative-args)
-         (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
-                         flag)
-                    (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-list)
-         (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
-                         flag)
-                    (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if)
-         (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
-                         flag)
-                    (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if1)
-         (defret <fn>-alist-lookup-when-present
-           (implies (and (hons-assoc-equal k (fgl-object-bindings-fix alist))
-                         flag)
-                    (equal (hons-assoc-equal k new-alist)
-                           (hons-assoc-equal k (fgl-object-bindings-fix alist))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-fn/args))
+       
+       
+       (std::defretgen all-keys-bound-of-<fn>
+         :rules
+         ((t (:add-hyp flag)
+             (:each-formal :type pseudo-termp :var pat
+              :action (:add-concl (subsetp (term-vars pat) (alist-keys new-alist))))
+             (:each-formal :type pseudo-term-listp :var pat
+              :action (:add-concl (subsetp (termlist-vars pat) (alist-keys new-alist)))))
+          (:mutrec
+           (:add-keyword
+            :hints ('(:expand ((:free (x-key) <call>)))
+                    (and stable-under-simplificationp
+                         '(:expand ((term-vars pat)))))))
+          (:recursive
+           (:add-keyword
+            :hints (("goal" :induct <call>
+                     :in-theory (enable (:i <fn>))
+                     :expand ((:free (x) <call>)
+                              (term-vars pat)))))))
+         :functions fgl-unify-fnset)
 
-       (defret-mutual <fn>-preserves-all-keys-bound
-         (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
-                         flag)
-                    (subsetp keys (alist-keys new-alist)))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist))))
-           :fn fgl-unify-term/gobj)
-         (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
-                         flag)
-                    (subsetp keys (alist-keys new-alist)))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist))))
-           :fn fgl-unify-term/gobj-commutative-args)
-         (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
-                         flag)
-                    (subsetp keys (alist-keys new-alist)))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-list)
-         
-         (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
-                         flag)
-                    (subsetp keys (alist-keys new-alist)))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if)
-         (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
-                         flag)
-                    (subsetp keys (alist-keys new-alist)))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if1)
-         (defret <fn>-preserves-all-keys-bound
-           (implies (and (subsetp keys (alist-keys (fgl-object-bindings-fix alist)))
-                         flag)
-                    (subsetp keys (alist-keys new-alist)))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-fn/args))
+       (std::defretgen <fn>-preserves-eval-when-all-keys-bound
+         :rules
+         ((t (:add-hyp
+              (and flag
+                   (subsetp (term-vars term)
+                            (alist-keys (fgl-object-bindings-fix alist)))))
+             (:add-concl
+              (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
+                     (fgl-ev term (fgl-object-bindings-eval alist env)))))
+          (:mutrec
+           (:add-keyword
+            :hints ('(:expand ((:free (x-key) <call>)
+                               (:free (a b)
+                                (fgl-object-bindings-eval (cons a b) env)))))))
+          (:recursive
+           (:add-keyword
+            :hints (("goal" :induct <call>
+                     :in-theory (enable (:i <fn>))
+                     :expand ((:free (x) <call>)
+                              (:free (a b)
+                               (fgl-object-bindings-eval (cons a b) env))))))))
+       :functions fgl-unify-fnset)
 
-       (local (defthm termlist-vars-when-consp
-                (implies (consp x)
-                         (equal (termlist-vars x)
-                                (union-eq (termlist-vars (cdr x))
-                                          (term-vars (car x)))))
-                :hints (("goal" :expand ((termlist-vars x))))))
-
-       (defret-mutual all-keys-bound-of-<fn>
-         (defret all-keys-bound-of-<fn>
-           (implies flag
-                    (subsetp (term-vars pat) (alist-keys new-alist)))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist))
-                     :in-theory (enable equal-of-len))
-                   (and stable-under-simplificationp
-                        '(:expand ((term-vars pat)))))
-           :fn fgl-unify-term/gobj)
-         (defret all-keys-bound-of-<fn>
-           (implies flag
-                    (and (subsetp (term-vars pat1) (alist-keys new-alist))
-                         (subsetp (term-vars pat2) (alist-keys new-alist))))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist))
-                     :in-theory (enable equal-of-len))
-                   (and stable-under-simplificationp
-                        '(:expand ((term-vars pat)))))
-           :fn fgl-unify-term/gobj-commutative-args)
-         (defret all-keys-bound-of-<fn>
-           (implies flag
-                    (subsetp (termlist-vars pat) (alist-keys new-alist)))
-           :hints ('(:expand ((:free (x) <call>)
-                              (termlist-vars pat))))
-           :fn fgl-unify-term/gobj-list)
-         
-         (defret all-keys-bound-of-<fn>
-           (implies flag
-                    (and (subsetp (term-vars pat-test) (alist-keys new-alist))
-                         (subsetp (term-vars pat-then) (alist-keys new-alist))
-                         (subsetp (term-vars pat-else) (alist-keys new-alist))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if)
-         (defret all-keys-bound-of-<fn>
-           (implies flag
-                    (and (subsetp (term-vars pat-test) (alist-keys new-alist))
-                         (subsetp (term-vars pat-then) (alist-keys new-alist))
-                         (subsetp (term-vars pat-else) (alist-keys new-alist))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if1)
-         (defret all-keys-bound-of-<fn>
-           (implies flag
-                    (and (subsetp (termlist-vars pat-args) (alist-keys new-alist))))
-           :hints ('(:expand ((:free (x) <call>)
-                              ;; (termlist-vars pat-args)
-                              ;; (termlist-vars (cdr pat-args))
-                              ;; (termlist-vars (cddr pat-args))
-                              )
-                     :in-theory (enable equal-of-len)))
-           :fn fgl-unify-term/gobj-fn/args))
-
-       (defret-mutual <fn>-preserves-eval-when-all-keys-bound
-         (defret <fn>-preserves-eval-when-all-keys-bound
-           (implies (and flag
-                         (subsetp (term-vars term)
-                                  (alist-keys (fgl-object-bindings-fix alist))))
-                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
-                           (fgl-ev term (fgl-object-bindings-eval alist env))))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist)
-                              (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))
-           :fn fgl-unify-term/gobj)
-         (defret <fn>-preserves-eval-when-all-keys-bound
-           (implies (and flag
-                         (subsetp (term-vars term)
-                                  (alist-keys (fgl-object-bindings-fix alist))))
-                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
-                           (fgl-ev term (fgl-object-bindings-eval alist env))))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist)
-                              (:free (a b) (fgl-object-bindings-eval (cons a b) env)))))
-           :fn fgl-unify-term/gobj-commutative-args)
-         (defret <fn>-preserves-eval-when-all-keys-bound
-           (implies (and flag
-                         (subsetp (term-vars term)
-                                  (alist-keys (fgl-object-bindings-fix alist))))
-                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
-                           (fgl-ev term (fgl-object-bindings-eval alist env))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-list)
-         
-         (defret <fn>-preserves-eval-when-all-keys-bound
-           (implies (and flag
-                         (subsetp (term-vars term)
-                                  (alist-keys (fgl-object-bindings-fix alist))))
-                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
-                           (fgl-ev term (fgl-object-bindings-eval alist env))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if)
-         (defret <fn>-preserves-eval-when-all-keys-bound
-           (implies (and flag
-                         (subsetp (term-vars term)
-                                  (alist-keys (fgl-object-bindings-fix alist))))
-                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
-                           (fgl-ev term (fgl-object-bindings-eval alist env))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-if1)
-         (defret <fn>-preserves-eval-when-all-keys-bound
-           (implies (and flag
-                         (subsetp (term-vars term)
-                                  (alist-keys (fgl-object-bindings-fix alist))))
-                    (equal (fgl-ev term (fgl-object-bindings-eval new-alist env))
-                           (fgl-ev term (fgl-object-bindings-eval alist env))))
-           :hints ('(:expand ((:free (x) <call>))))
-           :fn fgl-unify-term/gobj-fn/args))
 
        ;; (local (defthm not-of-g-object-fix
        ;;          (implies (not (fgl-object-fix x))
@@ -985,152 +876,150 @@
                 (equal (cdr (fgl-objectlist-eval x env))
                        (fgl-objectlist-eval (cdr x) env))
                 :hints(("Goal" :in-theory (enable fgl-objectlist-eval)))))
+
+       (local (defthm fgl-object-alist-eval-when-atom
+                (implies (not (consp (fgl-object-alist-fix x)))
+                         (equal (fgl-object-alist-eval x env)
+                                (fgl-object-alist-fix x)))
+                :hints (("goal" :in-theory (enable len)
+                         :expand ((fgl-object-alist-eval x env)
+                                  (fgl-object-alist-fix x))
+                         :induct (len x)))))
        
        (local (in-theory (disable kwote-lst)))
 
-       (defret-mutual <fn>-correct
-         (defret <fn>-correct
-           (implies (and flag
-                         (equal bfrstate (logicman->bfrstate)))
-                    (equal (fgl-ev pat (fgl-object-bindings-eval new-alist env))
-                           (fgl-object-eval x env)))
-           :hints ('(:expand (<call>
-                              (fgl-unify-term/gobj nil x alist))
-                     :in-theory (enable fgl-apply
-                                        ;; fgl-ev-of-fncall-args
-                                        ))
-                   (and stable-under-simplificationp
-                        '(:expand ((fgl-object-eval x env))
-                          :do-not-induct t))
-                   (acl2::use-termhint
-                    (b* (((when (fgl-object-case x :g-concrete)) nil))
-                      (pseudo-term-case pat
-                        :const nil
-                        :var nil
-                        :lambda nil
-                        :fncall
-                        (b* ((fn pat.fn)
-                             ((when (and** (eq fn 'if)
-                                           (eql (len pat.args) 3)
-                                           (fgl-object-case x :g-ite)))
-                              (b* ((bits (g-integer->bits x))
-                                   ((unless (atom (cdr bits))) nil))
-                                `(:in-theory (enable equal-of-len)
-                                  :expand (;;(gobj-bfr-list-eval ,(acl2::hq bits) env)
-                                           ;; (:free (a b) (bools->int (cons a b)))
-                                           (gobj-bfr-list-eval nil env)))))
-                             ((when (and** (or** (eq fn 'intcons)
-                                                 (eq fn 'intcons*))
-                                           (int= (len pat.args) 2)
-                                           (fgl-object-case x :g-integer)))
-                              (b* ((bits (g-integer->bits x))
-                                   ((mv first rest end) (first/rest/end bits))
-                                   ((when (and end (not (eq fn 'intcons*))))
-                                    nil))
-                                `(:in-theory (enable equal-of-len or*)
-                                  :expand (;; (gobj-bfr-list-eval ,(acl2::hq bits) env)
-                                           ;; (:free (a b) (bools->int (cons a b)))
-                                           (gobj-bfr-list-eval nil env)))))
-                             ((when (and** (eq fn 'endint)
-                                           (int= (len pat.args) 1)
-                                           (fgl-object-case x :g-integer)))
-                              (b* ((bits (g-integer->bits x))
-                                   ((mv first rest end) (first/rest/end bits)))
-                                `(:in-theory (enable equal-of-len)
-                                  :expand (;; (gobj-bfr-list-eval ,(acl2::hq bits) env)
-                                           ;; (:free (a b) (bools->int (cons a b)))
-                                           ))))
-                             ((when (and (fgl-object-case x :g-apply)
-                                         (equal fn (g-apply->fn x))))
-                              '(:in-theory (enable fgl-ev-of-fncall-args))))
-                          nil)))))
-           :fn fgl-unify-term/gobj)
-         (defret <fn>-correct
-           (implies (and flag
-                         (equal bfrstate (logicman->bfrstate)))
-                    (equal (equal (fgl-ev pat1 (fgl-object-bindings-eval new-alist env))
-                                  (fgl-ev pat2 (fgl-object-bindings-eval new-alist env)))
-                           (equal (fgl-object-eval x1 env)
-                                  (fgl-object-eval x2 env))))
-           :hints ('(:expand ((:free (x) <call>)
-                              (fgl-objectlist-eval x env)
-                              (fgl-objectlist-eval nil env))))
-           :fn fgl-unify-term/gobj-commutative-args)
-         (defret <fn>-correct
-           (implies (and flag
-                         (equal bfrstate (logicman->bfrstate)))
-                    (equal (if (fgl-ev pat-test (fgl-object-bindings-eval new-alist env))
-                               (fgl-ev pat-then (fgl-object-bindings-eval new-alist env))
-                             (fgl-ev pat-else (fgl-object-bindings-eval new-alist env)))
-                           (if (fgl-object-eval x-test env)
-                               (fgl-object-eval x-then env)
-                             (fgl-object-eval x-else env))))
-           :hints ('(:expand (<call>)))
-           :fn fgl-unify-term/gobj-if
-           :rule-classes nil)
-         (defret <fn>-correct
-           (implies (and flag
-                         (equal bfrstate (logicman->bfrstate)))
-                    (equal (fgl-ev-list pat (fgl-object-bindings-eval new-alist env))
-                           (fgl-objectlist-eval x env)))
-           :hints ('(:expand ((:free (x) <call>)
-                              (fgl-objectlist-eval x env)
-                              (fgl-objectlist-eval nil env))))
-           :fn fgl-unify-term/gobj-list)
-         (defret <fn>-correct
-           (implies (and flag
-                         (equal bfrstate (logicman->bfrstate)))
-                    (equal (if (fgl-ev pat-test (fgl-object-bindings-eval new-alist env))
-                               (fgl-ev pat-then (fgl-object-bindings-eval new-alist env))
-                             (fgl-ev pat-else (fgl-object-bindings-eval new-alist env)))
-                           (if (fgl-object-eval x-test env)
-                               (fgl-object-eval x-then env)
-                             (fgl-object-eval x-else env))))
-           :hints ('(:expand (<call>)))
-           :fn fgl-unify-term/gobj-if1
-           :rule-classes nil)
-         (defret <fn>-correct
-           (implies (and flag
-                         (equal bfrstate (logicman->bfrstate)))
-                    (equal (fgl-ev (pseudo-term-fncall pat-fn pat-args)
-                                   (fgl-object-bindings-eval new-alist env))
-                           (fgl-ev (pseudo-term-fncall
-                                    x-fn
-                                    (kwote-lst (fgl-objectlist-eval x-args env)))
-                                   nil)))
-           :hints ('(:expand (<call>)
-                     :in-theory (enable kwote-lst
-                                        fgl-ev-of-fncall-args)))
-           :fn fgl-unify-term/gobj-fn/args
-           :rule-classes nil))
+       (local (defthmd fgl-object-alist-eval-in-terms-of-fix
+                (equal (fgl-object-alist-eval x env)
+                       (let ((x (fgl-object-alist-fix x)))
+                         (if (atom x)
+                             x
+                           (cons (cons (caar x)
+                                       (fgl-object-eval (cdar x) env))
+                                 (fgl-object-alist-eval (cdr x) env)))))
+                :hints (("goal" :in-theory (enable len)
+                         :expand ((fgl-object-alist-eval x env)
+                                  (fgl-object-alist-fix x))
+                         :induct (len x)))
+                :rule-classes :definition))
 
-       ;; (defret-mutual depends-on-of-<fn>
-       ;;   (defret depends-on-of-<fn> 
-       ;;     (implies (and (not (bfr-list-depends-on v (fgl-object-bindings-bfrlist alist)))
-       ;;                   (not (bfr-list-depends-on v (fgl-object-bfrlist x))))
-       ;;              (not (bfr-list-depends-on v (fgl-object-bindings-bfrlist new-alist))))
-       ;;     :hints ((acl2::use-termhint
-       ;;              (acl2::termhint-seq
-       ;;               `(:expand ((fgl-unify-term/gobj ,(acl2::hq pat) ,(acl2::hq x) ,(acl2::hq alist)))
-       ;;                 :in-theory (enable* fgl-object-bfrlist-when-thms))
-       ;;               (b* (((when (acl2::variablep pat)) nil)
-       ;;                    (fn (car pat))
-       ;;                    ((when (eq fn 'quote)) nil)
-       ;;                    ((when (or (and (eq fn 'endint)
-       ;;                                    (int= (len pat) 2)
-       ;;                                    (fgl-object-case x :g-integer))
-       ;;                               (and (or (eq fn 'intcons)
-       ;;                                        (eq fn 'intcons*))
-       ;;                                    (int= (len pat) 3)
-       ;;                                    (fgl-object-case x :g-integer))))
-       ;;                     '(:in-theory (enable equal-of-len))))
-       ;;                 nil))))
-       ;;     :fn fgl-unify-term/gobj)
-       ;;   (defret depends-on-of-<fn> 
-       ;;     (implies (and (not (bfr-list-depends-on v (fgl-object-bindings-bfrlist alist)))
-       ;;                   (not (bfr-list-depends-on v (fgl-objectlist-bfrlist x))))
-       ;;              (not (bfr-list-depends-on v (fgl-object-bindings-bfrlist new-alist))))
-       ;;     :hints ('(:expand (:free (x) <call>)))
-       ;;     :fn fgl-unify-term/gobj-list))
-
+       
+       (std::defretgen <fn>-correct
+         :rules
+         ((t (:add-hyp (and flag
+                            (equal bfrstate (logicman->bfrstate))))
+             (:add-bindings
+              ((ev-alist (fgl-object-bindings-eval new-alist env)))))
+          ((:fnname fgl-unify-term/gobj)
+           (:add-concl
+            (equal (fgl-ev pat ev-alist)
+                   (fgl-object-eval x env))))
+          ((:fnname fgl-unify-term/gobj-map)
+           (:add-concl
+            (equal (fgl-ev pat ev-alist)
+                   (fgl-object-alist-eval x env))))
+          ((:fnname fgl-unify-term/gobj-map-pair)
+           (:add-concl
+            (equal (fgl-ev pat ev-alist)
+                   (cons x-key (fgl-object-eval val-obj env)))))
+          ((:fnname fgl-unify-term/gobj-commutative-args)
+           (:add-concl
+            (equal (equal (fgl-ev pat1 ev-alist)
+                          (fgl-ev pat2 ev-alist))
+                   (equal (fgl-object-eval x1 env)
+                          (fgl-object-eval x2 env)))))
+          ((or (:fnname fgl-unify-term/gobj-if)
+               (:fnname fgl-unify-term/gobj-if1))
+           (:add-concl
+            (equal (if (fgl-ev pat-test ev-alist)
+                       (fgl-ev pat-then ev-alist)
+                     (fgl-ev pat-else ev-alist))
+                   (if (fgl-object-eval x-test env)
+                       (fgl-object-eval x-then env)
+                     (fgl-object-eval x-else env)))))
+          ((:fnname fgl-unify-term/gobj-list)
+           (:add-concl
+            (equal (fgl-ev-list pat ev-alist)
+                   (fgl-objectlist-eval x env))))
+          ((:fnname fgl-unify-term/gobj-fn/args)
+           (:add-concl
+            (equal (fgl-ev (pseudo-term-fncall pat-fn pat-args)
+                           ev-alist)
+                   (fgl-ev (pseudo-term-fncall
+                            x-fn
+                            (kwote-lst (fgl-objectlist-eval x-args env)))
+                           nil))))
+          ((:fnname fgl-unify-concrete)
+           (:add-concl
+            (equal (fgl-ev pat ev-alist)
+                   x)))
+          ((and :mutrec
+                (not (:fnname fgl-unify-term/gobj)))
+           (:add-keyword :hints ('(:expand ((:free (x-key) <call>)
+                                            (fgl-objectlist-eval x env)
+                                            (fgl-objectlist-eval x-args env)
+                                            (:with fgl-object-alist-eval-in-terms-of-fix
+                                             (fgl-object-alist-eval x env)))
+                                   :in-theory (enable kwote-lst
+                                                      fgl-ev-of-fncall-args)))))
+          (:recursive
+           (:add-keyword
+            :hints (("goal" :induct <call>
+                     :in-theory (enable (:i <fn>))
+                     :expand ((:free (x) <call>)
+                              (:free (a b)
+                               (fgl-object-bindings-eval (cons a b) env)))))))
+                                  
+          ((:fnname fgl-unify-term/gobj)
+           (:add-keyword
+            :hints ('(:expand (<call>
+                               (fgl-unify-term/gobj nil x alist))
+                      :in-theory (enable fgl-apply
+                                         ;; fgl-ev-of-fncall-args
+                                         ))
+                    (and stable-under-simplificationp
+                         '(:expand ((fgl-object-eval x env))
+                           :do-not-induct t))
+                    (acl2::use-termhint
+                     (b* (((when (fgl-object-case x :g-concrete)) nil))
+                       (pseudo-term-case pat
+                         :const nil
+                         :var nil
+                         :lambda nil
+                         :fncall
+                         (b* ((fn pat.fn)
+                              ((when (and** (eq fn 'if)
+                                            (eql (len pat.args) 3)
+                                            (fgl-object-case x :g-ite)))
+                               (b* ((bits (g-integer->bits x))
+                                    ((unless (atom (cdr bits))) nil))
+                                 `(:in-theory (enable equal-of-len)
+                                   :expand (;;(gobj-bfr-list-eval ,(acl2::hq bits) env)
+                                            ;; (:free (a b) (bools->int (cons a b)))
+                                            (gobj-bfr-list-eval nil env)))))
+                              ((when (and** (or** (eq fn 'intcons)
+                                                  (eq fn 'intcons*))
+                                            (int= (len pat.args) 2)
+                                            (fgl-object-case x :g-integer)))
+                               (b* ((bits (g-integer->bits x))
+                                    ((mv first rest end) (first/rest/end bits))
+                                    ((when (and end (not (eq fn 'intcons*))))
+                                     nil))
+                                 `(:in-theory (enable equal-of-len or*)
+                                   :expand (;; (gobj-bfr-list-eval ,(acl2::hq bits) env)
+                                            ;; (:free (a b) (bools->int (cons a b)))
+                                            (gobj-bfr-list-eval nil env)))))
+                              ((when (and** (eq fn 'endint)
+                                            (int= (len pat.args) 1)
+                                            (fgl-object-case x :g-integer)))
+                               (b* ((bits (g-integer->bits x))
+                                    ((mv first rest end) (first/rest/end bits)))
+                                 `(:in-theory (enable equal-of-len)
+                                   :expand (;; (gobj-bfr-list-eval ,(acl2::hq bits) env)
+                                            ;; (:free (a b) (bools->int (cons a b)))
+                                            ))))
+                              ((when (and (fgl-object-case x :g-apply)
+                                          (equal fn (g-apply->fn x))))
+                               '(:in-theory (enable fgl-ev-of-fncall-args))))
+                           nil))))))))
+       :functions fgl-unify-fnset)
        :endif))))
