@@ -50,7 +50,7 @@ downloaded from the webpage.
 (include-book "centaur/gl/bfr-satlink" :dir :system :ttags :all) ;missing in the Manual
 
 ; Make a Glucose satlink config
-(def-const *my-config* (satlink::make-config :cmdline "glucose"))
+(def-const *my-config* (satlink::make-config :cmdline "glucose -model"))
 ;; (def-const *my-config* (satlink::make-config :cmdline "cryptominisat5.exe"))
 
 (defun gl-my-satlink-config ()

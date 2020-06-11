@@ -163,7 +163,7 @@ form @('(gatecount free-var x)') in a rewrite rule.</p>")
 
 (defmacro fgl-support-vars (name expr)
   `(let ((,name ,expr))
-     (fgl-prog2 (cw "~x0 support-vars: ~x1~%" ',name (support-vars! ,name))
+     (fgl-prog2 (cw "~x0 support-vars: ~x1~%" ',name (summarize-fgl-objectlist (support-vars! ,name)))
                 ,name)))
 
 (defxdoc fgl-support-vars
