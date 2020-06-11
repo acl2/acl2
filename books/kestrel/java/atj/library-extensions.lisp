@@ -288,6 +288,7 @@
    "Readable"
    "Runnable"
    ;; classes:
+   "Boolean"
    "Byte"
    "Character"
    "Class"
