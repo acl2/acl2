@@ -295,12 +295,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-list ((values value-listp))
+(define value-list-of ((values value-listp))
   :returns (value valuep)
   :short "Make a meta-level list value from a list of meta-level values."
   (cond ((endp values) (value-nil))
         (t (value-cons (car values)
-                       (value-list (cdr values)))))
+                       (value-list-of (cdr values)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

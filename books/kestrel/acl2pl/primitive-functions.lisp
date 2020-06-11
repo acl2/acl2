@@ -410,7 +410,7 @@
            (package? (package-lookup x-string packages))
            ((when (not package?)) nil)
            (imports (package->imports package?)))
-        (value-list (value-symbol-list imports)))
+        (value-list-of (value-symbol-list imports)))
     (value-nil))
   :hooks (:fix))
 
