@@ -315,6 +315,22 @@ public final class Acl2Symbol extends Acl2Value {
         return symbol;
     }
 
+    /**
+     * Returns a symbol denoted by the given package name and name.
+     * The resulting symbol's package may differ from the given package,
+     * if the given package imports a symbol with that name.
+     *
+     * @param packageName The package name denoting the symbol.
+     *                    Invariant: not null, package defined.
+     * @param name        The name denoting the symbol.
+     *                    Invariant: not null, no elements above 255.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If the package is not defined.
+     */
+    static Acl2Symbol imake(Acl2PackageName packageName, String name) {
+        return imake(packageName, Acl2String.imake(name));
+    }
+
     //////////////////////////////////////// public members:
 
     /**
