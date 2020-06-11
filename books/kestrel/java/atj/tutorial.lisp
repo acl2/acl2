@@ -1403,14 +1403,19 @@
     the public static methods @('Acl2NativeFunction.exec...(...)');
     this class is part of "
    (xdoc::seetopic "atj-tutorial-acl2-terms"
-                   "the Java representation of ACL2 terms")
+                   "AIJ's representation of ACL2 terms")
    ". For instance, @('Acl2NativeFunction.execStringp(Acl2Value)')
     natively implements @(tsee stringp).")
 
   (xdoc::p
-   "Some of these methods have overloaded variants,
-    whose purpose is explained elsewhere;
-    for now, just consider the ones with all @('Acl2Value') arguments.")
+   "Some of these methods have overloaded variants
+    with different argument types,
+    e.g. @('Acl2NativeFunction.execCharCode(Acl2Character)');
+    they also have non-overloaded variants with different result types,
+    e.g. @('Acl2NativeFunction.execStringpBoolean(Acl2Value)').
+    Their purpose is explained elsewhere.
+    For now, just consider the methods
+    with all @('Acl2Value') arguments and results.")
 
   (atj-tutorial-section "Scope the Native Implementations")
 
@@ -1422,23 +1427,18 @@
     The main motivation is efficiency:
     a native Java implementation can be faster than
     mimicking ACL2's execution (in either the deep or shallow embedding).
-    In fact, this is also why some built-in ACL2 functions have raw Lisp code
-    (see the "
-   (xdoc::seetopic "atj-tutorial-background"
-                   "the tutorial page on the ACL2 evaluation semantics")
-   "), i.e. native Lisp implementations.
+    In fact, this is also why some built-in ACL2 functions have raw Lisp code,
+    i.e. native Lisp implementations (see @(see atj-tutorial-background)).
     Another motivation is to avoid circularities
     that exist in the ACL2 definitions
-    unless the raw Lisp code is taken into account
-    (see the "
-   (xdoc::seetopic "atj-tutorial-background"
-                   "the tutorial page on the ACL2 evaluation semantics")
-   ").")
+    unless the raw Lisp code is taken into account;
+    an example circularity, involving @(tsee concatenate),
+    is described in @(see atj-tutorial-background).")
 
   (xdoc::p
    "More native Java implementations can be added to AIJ as needed;
     it could be argued that all the ACL2 functions with raw Lisp code
-    should be implemented natively in Java in AIJ, for symmetry.
+    should be implemented natively in Java in AIJ, for ``symmetry''.
     The only drawback, besides the effort to do that,
     is a weakening of the assurance argument;
     however, for true assurance,
@@ -1462,11 +1462,11 @@
     the @('Acl2Value.stringp()') method returns
     (the Java representation of) @('nil');
     this default implementation is inherited
-    by all the @('Acl2Value') subclasses except for @('Acl2String'),
+    by all the @('Acl2Value') subclasses except @('Acl2String'),
     which overrides it to return @('t') instead.
     @('Acl2NativeFunction.execStringp(Acl2Value)')
     invokes @('stringp()') on its argument:
-    this selects, in constant time,
+    this selects, in constant time (via Java's dynamic dispatch),
     either the default implementation or the overriding one,
     based on the run-time type type of the argument @('Acl2Value').")
 
@@ -1480,9 +1480,9 @@
     which overrides it to return the character's code instead.
     @('Acl2NativeFunction.execCharCode(Acl2Value)')
     invokes @('charCode()') on its argument:
-    this selects, in constant time,
+    this selects, in constant time (via Java's dynamic dispatch),
     either the default implementation or the overriding one,
-    based on the run-time type type of the argument @('Acl2Value').")
+    based on the run-time type of the argument @('Acl2Value').")
 
   (xdoc::p
    "The ACL2 primitive functions for arithmetic (e.g. @(tsee binary-+))
