@@ -240,6 +240,16 @@
     " unit tests have been added,
      integrated with the IntelliJ IDEA project.")
 
+   (xdoc::p
+    "The Java implementations of some natively implemented ACL2 functions
+     have been optimized.")
+
+   (xdoc::p
+    "Variant Java implementations of some natively implemented ACL2 functions
+     have been added,
+     in support of the automatic mapping, in the shallow embedding with guards,
+     of ACL2 booleans and characters to Java booleans and characters.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::atj"
