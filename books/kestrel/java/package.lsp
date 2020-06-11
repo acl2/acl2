@@ -124,6 +124,7 @@
                          printable-charlist-p
                          program-fns-with-raw-code
                          pseudo-fn-args-p
+                         pseudo-fn-p
                          pseudo-lambda
                          pseudo-lambda->body
                          pseudo-lambda->formals
@@ -135,9 +136,12 @@
                          pseudo-term-case
                          pseudo-term-count
                          pseudo-term-fix
+                         pseudo-term-fncall->args
+                         pseudo-term-fncall->fn
                          pseudo-term-kind
-                         pseudo-term-lambda->formals
+                         pseudo-term-lambda->args
                          pseudo-term-lambda->body
+                         pseudo-term-lambda->formals
                          pseudo-term-list-count
                          pseudo-term-null
                          pseudo-term-quote

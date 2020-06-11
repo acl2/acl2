@@ -1427,6 +1427,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; This WITH-OUTPUT is here because it takes a long time to just print
+; (1) the return type theorem induction scheme and (2) the guard conjecture.
+; Comment this out if some error occurs, to see what is going on.
+(with-output :off :all :on (error summary)
+
 (defines atj-gen-shallow-term-fns
   :short "Functions to generate shallowly embedded ACL2 terms."
   :long
@@ -1501,7 +1506,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count test) 2))
+    :measure (two-nats-measure (pseudo-term-count test) 2))
 
   (define atj-gen-shallow-if-call ((test pseudo-termp)
                                    (then pseudo-termp)
@@ -1637,10 +1642,10 @@
     ;; 2nd component is greater than 1 and 2
     ;; so that the call of ATJ-GEN-SHALLOW-IF-TEST decreases
     ;; and each call of ATJ-GEN-SHALLOW-TERM decreases
-    ;; even when the ACL2-COUNTs of the other two addends are 0:
-    :measure (two-nats-measure (+ (acl2-count test)
-                                  (acl2-count then)
-                                  (acl2-count else))
+    ;; even when the PSEUDO-TERM-COUNTs of the other two addends are 0:
+    :measure (two-nats-measure (+ (pseudo-term-count test)
+                                  (pseudo-term-count then)
+                                  (pseudo-term-count else))
                                3))
 
   (define atj-gen-shallow-or-call ((first pseudo-termp)
@@ -1725,9 +1730,9 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
-    ;; even when the ACL2-COUNT of the other addend is 0:
-    :measure (two-nats-measure (+ (acl2-count first)
-                                  (acl2-count second))
+    ;; even when the PSEUDO-TERM-COUNT of the other addend is 0:
+    :measure (two-nats-measure (+ (pseudo-term-count first)
+                                  (pseudo-term-count second))
                                2))
 
   (define atj-gen-shallow-jprim-constr-call
@@ -1775,13 +1780,15 @@
        so the argument of the constructor must be unwrapped
        to be examined."))
     (b* (((mv uarg & &) (atj-type-unwrap-term arg))
-         ((unless uarg) ; for termination proof
+         ((unless (< (pseudo-term-count uarg) (pseudo-term-count arg)))
+          ;; the condition just above should be provably true,
+          ;; but for now we just test it at run time to prove termination
           (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
          (src-type (atj-type-list-to-type src-types))
          (dst-type (atj-type-list-to-type dst-types)))
-      (if (quotep uarg)
-          (b* ((uarg (unquote-term uarg))
-               (expr (atj-jprim-constr-fn-of-qconst-to-expr fn uarg))
+      (if (pseudo-term-case uarg :quote)
+          (b* ((val (pseudo-term-quote->val uarg))
+               (expr (atj-jprim-constr-fn-of-qconst-to-expr fn val))
                (expr (atj-adapt-expr-to-type expr
                                              src-type
                                              dst-type
@@ -1808,7 +1815,7 @@
               jvar-tmp-index))))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg) 2))
+    :measure (two-nats-measure (pseudo-term-count arg) 2))
 
   (define atj-gen-shallow-jprim-deconstr-call
     ((fn atj-jprim-deconstr-fn-p)
@@ -1866,7 +1873,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg) 2))
+    :measure (two-nats-measure (pseudo-term-count arg) 2))
 
   (define atj-gen-shallow-jprim-unop-call
     ((fn atj-jprim-unop-fn-p)
@@ -1924,7 +1931,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count operand) 2))
+    :measure (two-nats-measure (pseudo-term-count operand) 2))
 
   (define atj-gen-shallow-jprim-binop-call
     ((fn atj-jprim-binop-fn-p)
@@ -1995,9 +2002,9 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
-    ;; even when the ACL2-COUNT of the other addend is 0:
-    :measure (two-nats-measure (+ (acl2-count left)
-                                  (acl2-count right))
+    ;; even when the PSEUDO-TERM-COUNT of the other addend is 0:
+    :measure (two-nats-measure (+ (pseudo-term-count left)
+                                  (pseudo-term-count right))
                                2))
 
   (define atj-gen-shallow-jprim-conv-call
@@ -2058,7 +2065,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count operand) 2))
+    :measure (two-nats-measure (pseudo-term-count operand) 2))
 
   (define atj-gen-shallow-jprimarr-read-call
     ((array pseudo-termp)
@@ -2126,9 +2133,9 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
-    ;; even when the ACL2-COUNT of the other addend is 0:
-    :measure (two-nats-measure (+ (acl2-count array)
-                                  (acl2-count index))
+    ;; even when the PSEUDO-TERM-COUNT of the other addend is 0:
+    :measure (two-nats-measure (+ (pseudo-term-count array)
+                                  (pseudo-term-count index))
                                2))
 
   (define atj-gen-shallow-jprimarr-length-call
@@ -2193,7 +2200,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count array) 2))
+    :measure (two-nats-measure (pseudo-term-count array) 2))
 
   (define atj-gen-shallow-jprimarr-write-call
     ((fn atj-jprimarr-write-fn-p)
@@ -2278,10 +2285,10 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases
-    ;; even when the ACL2-COUNT of the other addends is 0:
-    :measure (two-nats-measure (+ (acl2-count array)
-                                  (acl2-count index)
-                                  (acl2-count component))
+    ;; even when the PSEUDO-TERM-COUNT of the other addends is 0:
+    :measure (two-nats-measure (+ (pseudo-term-count array)
+                                  (pseudo-term-count index)
+                                  (pseudo-term-count component))
                                2))
 
   (define atj-gen-shallow-jprimarr-new-len-call
@@ -2340,7 +2347,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count length) 2))
+    :measure (two-nats-measure (pseudo-term-count length) 2))
 
   (define atj-gen-shallow-jprimarr-new-init-call
     ((fn atj-jprimarr-new-init-fn-p)
@@ -2410,7 +2417,7 @@
           jvar-tmp-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases:
-    :measure (two-nats-measure (acl2-count args) 1))
+    :measure (two-nats-measure (pseudo-term-list-count args) 1))
 
   (define atj-gen-shallow-jprimarr-conv-fromlist-call
     ((fn atj-jprimarr-conv-fromlist-fn-p)
@@ -2470,7 +2477,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg) 2))
+    :measure (two-nats-measure (pseudo-term-count arg) 2))
 
   (define atj-gen-shallow-jprimarr-conv-tolist-call
     ((fn atj-jprimarr-conv-tolist-fn-p)
@@ -2529,7 +2536,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the second call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count arg) 2))
+    :measure (two-nats-measure (pseudo-term-count arg) 2))
 
   (define atj-gen-shallow-mv-call ((args pseudo-term-listp)
                                    (src-types atj-type-listp)
@@ -2603,9 +2610,9 @@
           jvar-tmp-index))
     ;; 2nd component is non-0
     ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases:
-    :measure (two-nats-measure (acl2-count args) 1))
+    :measure (two-nats-measure (pseudo-term-list-count args) 1))
 
-  (define atj-gen-shallow-fn-call ((fn pseudo-termfnp)
+  (define atj-gen-shallow-fn-call ((fn symbolp)
                                    (args pseudo-term-listp)
                                    (src-types atj-type-listp)
                                    (dst-types atj-type-listp)
@@ -2619,15 +2626,12 @@
                                    (wrld plist-worldp))
     :guard (and (consp src-types)
                 (consp dst-types)
-                (not (equal curr-pkg ""))
-                (or (not (pseudo-lambdap fn))
-                    (equal (len (lambda-formals fn))
-                           (len args))))
+                (not (equal curr-pkg "")))
     :returns (mv (block jblockp)
                  (expr jexprp)
                  (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
     :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded ACL2 function call."
+    :short "Generate a shallowly embedded ACL2 named function call."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2642,15 +2646,13 @@
      (xdoc::p
       "If @(':guards') is @('t'),
        calls of ACL2 functions that model
-       Java primitive and primitive array constructors and operations
+       Java primitive and primitive array operations
        are handled via separate functions.")
      (xdoc::p
       "In all other cases, in which the call is always strict,
-       we first generate Java code to compute all the actual arguments.
-       Calls of lambda expression are handled by a separate function.
-       If the function is a named one,
-       we generate a call of the method that corresponds to the ACL2 function,
-       and we wrap that into a Java conversion if needed.
+       first we generate Java code to compute all the actual arguments,
+       then we generate a call of the method that corresponds to the function,
+       and finally we wrap that into a Java conversion if needed.
        (We treat the Java abstract syntax somewhat improperly here,
        by using a generic method call with a possibly qualified method name,
        which should be therefore a static method call;
@@ -2882,57 +2884,31 @@
                                  qpairs
                                  guards$
                                  wrld))
-         ((when (symbolp fn))
-          (b* ((expr (jexpr-method
-                      (atj-gen-shallow-fnname fn
-                                              pkg-class-names
-                                              fn-method-names
-                                              curr-pkg)
-                      arg-exprs))
-               ((unless (= (len src-types) (len dst-types)))
-                (raise "Internal error: ~
-                        the source types ~x0 and destination types ~x1 ~
-                        differ in number."
-                       src-types dst-types)
-                (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
-               ((mv adapt-block
-                    expr
-                    jvar-tmp-index)
-                (atj-adapt-expr-to-types expr src-types dst-types
-                                         jvar-tmp-base jvar-tmp-index
-                                         guards$)))
-            (mv (append (flatten arg-blocks) adapt-block)
-                expr
-                jvar-tmp-index)))
-         ((mv lambda-block
-              lambda-expr
+         (expr (jexpr-method (atj-gen-shallow-fnname fn
+                                                     pkg-class-names
+                                                     fn-method-names
+                                                     curr-pkg)
+                             arg-exprs))
+         ((unless (= (len src-types) (len dst-types)))
+          (raise "Internal error: ~
+                  the source types ~x0 and destination types ~x1 ~
+                  differ in number."
+                 src-types dst-types)
+          (mv nil (jexpr-name "irrelevant") jvar-tmp-index))
+         ((mv adapt-block
+              expr
               jvar-tmp-index)
-          (atj-gen-shallow-lambda (lambda-formals fn)
-                                  (lambda-body fn)
-                                  arg-blocks
-                                  arg-exprs
-                                  src-types
-                                  dst-types
-                                  jvar-tmp-base
-                                  jvar-tmp-index
-                                  pkg-class-names
-                                  fn-method-names
-                                  curr-pkg
-                                  qpairs
-                                  guards$
-                                  wrld)))
-      (mv lambda-block
-          lambda-expr
+          (atj-adapt-expr-to-types expr src-types dst-types
+                                   jvar-tmp-base jvar-tmp-index
+                                   guards$)))
+      (mv (append (flatten arg-blocks) adapt-block)
+          expr
           jvar-tmp-index))
-    ;; 2nd component is greater than 2
-    ;; so that the call of ATJ-GEN-SHALLOW-LAMBDA decreases
-    ;; even when FN is a non-symbol atom (impossible under the guard),
-    ;; and it is non-0
-    ;; so that the call of ATJ-GEN-SHALLOW-TERMS decreases
-    ;; even when the ACL2-COUNT of FN is 0:
-    :measure (two-nats-measure (+ (acl2-count fn)
-                                  (acl2-count args))
-                               3))
+    ;; 2nd component is non-0 so that
+    ;; the call of ATJ-GEN-SHALLOW-TERMS decreases
+    ;; and it is greater than 1 so that
+    ;; the call of ATJ-GEN-SHALLOW-JPRIMARR-NEW-INIT-CALL decreases:
+    :measure (two-nats-measure (pseudo-term-list-count args) 2))
 
   (define atj-gen-shallow-lambda ((formals symbol-listp)
                                   (body pseudo-termp)
@@ -2996,7 +2972,7 @@
           jvar-tmp-index))
     ;; 2nd component is greater than 1
     ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (acl2-count body) 2))
+    :measure (two-nats-measure (pseudo-term-count body) 2))
 
   (define atj-gen-shallow-mv-let ((term pseudo-termp)
                                   (jvar-tmp-base stringp)
@@ -3043,6 +3019,13 @@
     (b* (((mv yes/no mv-var mv-term vars indices body-term)
           (atj-check-marked-annotated-mv-let-call term))
          ((unless yes/no) (mv nil nil (jexpr-name "dummy") jvar-tmp-index))
+         ((unless (and (< (pseudo-term-count mv-term)
+                          (pseudo-term-count term))
+                       (< (pseudo-term-count body-term)
+                          (pseudo-term-count term))))
+          ;; the condition just above should be provably true,
+          ;; but for now we just test it at run time to prove termination
+          (mv nil nil (jexpr-name "dummy") jvar-tmp-index))
          ((mv mv-block
               mv-expr
               jvar-tmp-index)
@@ -3081,7 +3064,7 @@
           (append mv-block vars-block body-block)
           body-expr
           jvar-tmp-index))
-    :measure (two-nats-measure (acl2-count term) 0)
+    :measure (two-nats-measure (pseudo-term-count term) 0)
 
     :prepwork
     ((define atj-gen-shallow-mv-let-aux ((expr jexprp) (indices nat-listp))
@@ -3134,7 +3117,14 @@
      (xdoc::p
       "If the ACL2 term is a quoted constant,
        we represent it as its value.
-       We wrap the resulting expression with a Java conversion, if needed."))
+       We wrap the resulting expression with a Java conversion, if needed.")
+     (xdoc::p
+      "If the ACL2 term is a named function call,
+       we use a separate code generation function.
+       If instead the ACL2 term is a call of a lambda expression,
+       we first generate code to compute the actual arguments,
+       and then we use a separate code generation function
+       for the lambda expression."))
     (b* (((mv mv-let-p
               block
               expr
@@ -3149,11 +3139,18 @@
                                   guards$
                                   wrld))
          ((when mv-let-p) (mv block expr jvar-tmp-index))
-         ((mv term src-types dst-types) (atj-type-unwrap-term term))
-         ((unless term) ; for termination proof
+         ((mv uterm src-types dst-types) (atj-type-unwrap-term term))
+         ((unless (< (pseudo-term-count uterm)
+                     (pseudo-term-count term)))
+          ;; the condition just above should be provably true,
+          ;; but for now we just test it at run time to prove termination
           (mv nil (jexpr-name "dummy") jvar-tmp-index))
-         ((when (variablep term))
-          (b* (((mv var &) (atj-unmark-var term))
+         (term uterm)
+         ((when (pseudo-term-case term :null))
+          (raise "Internal error: null unwrapped term.")
+          (mv nil (jexpr-name "dummy") jvar-tmp-index))
+         ((when (pseudo-term-case term :var))
+          (b* (((mv var &) (atj-unmark-var (pseudo-term-var->name term)))
                ((mv var &) (atj-type-unannotate-var var))
                (expr (jexpr-name (symbol-name var)))
                (expr
@@ -3162,8 +3159,8 @@
                                         (atj-type-list-to-type dst-types)
                                         guards$)))
             (mv nil expr jvar-tmp-index)))
-         ((when (fquotep term))
-          (b* ((value (unquote-term term))
+         ((when (pseudo-term-case term :quote))
+          (b* ((value (pseudo-term-quote->val term))
                (expr (atj-gen-shallow-value value
                                             qpairs
                                             pkg-class-names
@@ -3174,22 +3171,49 @@
                                         (atj-type-list-to-type src-types)
                                         (atj-type-list-to-type dst-types)
                                         guards$)))
-            (mv nil expr jvar-tmp-index))))
-      (atj-gen-shallow-fn-call (ffn-symb term)
-                               (fargs term)
-                               src-types
-                               dst-types
-                               jvar-tmp-base
-                               jvar-tmp-index
-                               pkg-class-names
-                               fn-method-names
-                               curr-pkg
-                               qpairs
-                               guards$
-                               wrld))
+            (mv nil expr jvar-tmp-index)))
+         ((when (pseudo-term-case term :fncall))
+          (atj-gen-shallow-fn-call (pseudo-term-fncall->fn term)
+                                   (pseudo-term-fncall->args term)
+                                   src-types
+                                   dst-types
+                                   jvar-tmp-base
+                                   jvar-tmp-index
+                                   pkg-class-names
+                                   fn-method-names
+                                   curr-pkg
+                                   qpairs
+                                   guards$
+                                   wrld))
+         ((mv arg-blocks
+              arg-exprs
+              jvar-tmp-index)
+          (atj-gen-shallow-terms (pseudo-term-lambda->args term)
+                                 jvar-tmp-base
+                                 jvar-tmp-index
+                                 pkg-class-names
+                                 fn-method-names
+                                 curr-pkg
+                                 qpairs
+                                 guards$
+                                 wrld)))
+      (atj-gen-shallow-lambda (pseudo-term-lambda->formals term)
+                              (pseudo-term-lambda->body term)
+                              arg-blocks
+                              arg-exprs
+                              src-types
+                              dst-types
+                              jvar-tmp-base
+                              jvar-tmp-index
+                              pkg-class-names
+                              fn-method-names
+                              curr-pkg
+                              qpairs
+                              guards$
+                              wrld))
     ;; 2nd component is non-0 so that
     ;; the call of ATJ-GEN-SHALLOW-MV-LET decreases:
-    :measure (two-nats-measure (acl2-count term) 1))
+    :measure (two-nats-measure (pseudo-term-count term) 1))
 
   (define atj-gen-shallow-terms ((terms pseudo-term-listp)
                                  (jvar-tmp-base stringp)
@@ -3237,11 +3261,12 @@
         (mv (cons first-block rest-blocks)
             (cons first-expr rest-exprs)
             jvar-tmp-index)))
-    :measure (two-nats-measure (acl2-count terms) 0))
+    :measure (two-nats-measure (pseudo-term-list-count terms) 0))
 
-  :prepwork ((local (in-theory (disable posp
-                                        member-equal
-                                        acl2::member-of-cons))))
+  :prepwork ((local (in-theory (disable pseudo-termp posp)))
+             (local (include-book "std/lists/len" :dir :system)))
+
+  :returns-hints (("Goal" :in-theory (disable len))) ; for speed
 
   :verify-guards nil ; done below
   ///
@@ -3249,12 +3274,9 @@
     :hints
     (("Goal"
       :in-theory
-      (enable atj-type-unwrap-term
-              acl2::member-of-cons
-              unquote-term
-              pseudo-termfnp
-              pseudo-lambdap
-              len-of-atj-check-marked-annotated-mv-let.vars/indices)))))
+      (enable len-of-atj-check-marked-annotated-mv-let.vars/indices)))))
+
+) ; closes WITH-OUTPUT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

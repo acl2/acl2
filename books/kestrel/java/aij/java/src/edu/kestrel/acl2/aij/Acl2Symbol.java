@@ -158,6 +158,18 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
+     * Returns the package name of this symbol,
+     * consistently with the {@code symbol-package-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     *
+     * @return The package name of this symbol.
+     */
+    @Override
+    String symbolPackageNameString() {
+        return packageName.getJavaString();
+    }
+
+    /**
      * Returns the name of this symbol,
      * consistently with the {@code symbol-name} ACL2 function.
      *
@@ -166,6 +178,18 @@ public final class Acl2Symbol extends Acl2Value {
     @Override
     Acl2String symbolName() {
         return name;
+    }
+
+    /**
+     * Returns the name of this symbol,
+     * consistently with the {@code symbol-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     *
+     * @return The name of this symbol.
+     */
+    @Override
+    String symbolNameString() {
+        return name.getJavaString();
     }
 
     /**
@@ -313,6 +337,22 @@ public final class Acl2Symbol extends Acl2Value {
             innerMap.put(name, symbol);
         }
         return symbol;
+    }
+
+    /**
+     * Returns a symbol denoted by the given package name and name.
+     * The resulting symbol's package may differ from the given package,
+     * if the given package imports a symbol with that name.
+     *
+     * @param packageName The package name denoting the symbol.
+     *                    Invariant: not null, package defined.
+     * @param name        The name denoting the symbol.
+     *                    Invariant: not null, no elements above 255.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If the package is not defined.
+     */
+    static Acl2Symbol imake(Acl2PackageName packageName, String name) {
+        return imake(packageName, Acl2String.imake(name));
     }
 
     //////////////////////////////////////// public members:

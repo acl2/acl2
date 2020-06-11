@@ -141,7 +141,7 @@
      the results of @(tsee check-mv-let-call) are smaller.
      Note that, under that assumpion,
      the wrapper and the original utility return the same result
-     (the only possibly differ on non-terms).
+     (they only possibly differ on non-terms).
      In proving those lemmas, we need to break the FTY abstraction
      so that we can reduce the FTY term API operations
      to the ACL2 term API operations."))

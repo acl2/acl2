@@ -240,6 +240,16 @@
     " unit tests have been added,
      integrated with the IntelliJ IDEA project.")
 
+   (xdoc::p
+    "The Java implementations of some natively implemented ACL2 functions
+     have been optimized.")
+
+   (xdoc::p
+    "Variant Java implementations of some natively implemented ACL2 functions
+     have been added,
+     in support of the automatic mapping, in the shallow embedding with guards,
+     of ACL2 booleans and characters to Java booleans and characters.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::atj"
@@ -303,7 +313,13 @@
      These are part of the formalized abstract syntax of Java.")
 
    (xdoc::p
-    "More aspects of the Java syntax have been formalized.")
+    "More aspects of the Java syntax have been formalized, including:
+     the ISO 8851-1 subset of Unicode characters;
+     type identifiers;
+     unqualified method identifiers;
+     package names;
+     reference types; and
+     all types.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

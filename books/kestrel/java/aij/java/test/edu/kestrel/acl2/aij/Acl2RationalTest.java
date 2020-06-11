@@ -8,6 +8,8 @@ package edu.kestrel.acl2.aij;
 
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class Acl2RationalTest {
@@ -31,6 +33,15 @@ class Acl2RationalTest {
         assertDoesNotThrow(() -> Acl2Rational.make(-33L, 17L));
         assertDoesNotThrow(() ->
                 Acl2Rational.make(2292983408573429857L, -1292927723987238472L));
+    }
+
+    @Test
+    void makeBigIntegerBigInteger() {
+        assertDoesNotThrow(() ->
+                Acl2Rational.make(BigInteger.ONE, BigInteger.TWO));
+        assertDoesNotThrow(() ->
+                Acl2Rational.make(new BigInteger("3737389299292929292"),
+                        new BigInteger("-3283482738974827394728397492873492")));
     }
 
 }
