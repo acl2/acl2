@@ -23,7 +23,8 @@
                                               program
                                               step
                                               symbol-value
-                                              value))
+                                              value
+                                              values))
                          '(acl2-number
                            define-sk
                            defxdoc+
