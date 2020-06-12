@@ -646,9 +646,11 @@
      we leave the expression unchanged,
      unless @(':guards') is @('t') and
      either (i) the source type is (':aboolean')
-     and the destination type is not @(':aboolean')
+     and the destination type is not @(':aboolean'),
      or (ii) the source type is @(':acharacter')
-     the the destination type is not @(':acharacter'):
+     and the destination type is not @(':acharacter'),
+     or (iii) the source type is @(':astring')
+     and the destination type is not @(':astring'):
      in case (i),
      the destination type must be @(':asymbol') or @(':avalue'),
      and the expression must have Java type @('boolean'),
@@ -656,14 +658,19 @@
      in case (ii),
      the destination type must be @(':avalue'),
      and the expression must have Java type @('char'),
-     so we convert it to @('Acl2Character') by calling the factory method.
+     so we convert it to @('Acl2Character') by calling the factory method;
+     in case (iii),
+     the destination type must be @(':avalue'),
+     and the expression must have Java type @('String'),
+     so we convert it to @('Acl2String') by calling the factory method.
      If the source type is not a subtype of the destination type,
      we insert a cast to the destination type
      (which is expected to always succeed
      under the assumption of guard verification),
      unless @(':guards') is @('t') and
      either (i) the destination type is @(':aboolean')
-     or (ii) the destination type is @(':acharacter'):
+     or (ii) the destination type is @(':acharacter')
+     or (iii) the destination type is @(':astring'):
      in case (i),
      the source type must be @(':asymbol') or @(':avalue'),
      but in fact the expression must return an @('Acl2Symbol'),
@@ -672,7 +679,12 @@
      the source type must be @(':avalue'),
      but in fact the expression must return an @('Acl2Character'),
      which we convert to a Java character by
-     casting it to @('Acl2Character') and calling the getter method."))
+     casting it to @('Acl2Character') and calling the getter method;
+     in case (iii),
+     the source type must be @(':avalue'),
+     but in fact the expression must return an @('Acl2String'),
+     which we convert to a Java string by
+     casting it to @('Acl2String') and calling the getter method."))
   (cond ((atj-type-equiv src-type dst-type) (jexpr-fix expr))
         ((and (atj-type-case src-type :acl2)
               (atj-type-case dst-type :acl2))
@@ -693,6 +705,13 @@
                       (jexpr-smethod *aij-type-char*
                                      "make"
                                      (list expr)))
+                     ((and (atj-atype-case (atj-type-acl2->get src-type)
+                                           :string)
+                           (not (atj-atype-case (atj-type-acl2->get dst-type)
+                                                :string)))
+                      (jexpr-smethod *aij-type-string*
+                                     "make"
+                                     (list expr)))
                      (t (jexpr-fix expr)))
                   (jexpr-fix expr)))
                ((atj-type-< dst-type src-type)
@@ -707,6 +726,11 @@
                                       :character)
                       (jexpr-imethod (jexpr-cast *aij-type-char* expr)
                                      "getJavaChar"
+                                     nil))
+                     ((atj-atype-case (atj-type-acl2->get dst-type)
+                                      :string)
+                      (jexpr-imethod (jexpr-cast *aij-type-string* expr)
+                                     "getJavaString"
                                      nil))
                      (t (jexpr-cast (atj-type-to-jitype dst-type) expr)))
                   (jexpr-cast (atj-type-to-jitype dst-type) expr)))
@@ -3320,8 +3344,12 @@
     (code-char (if guards$ "execCodeCharChar" "execCodeChar"))
     (coerce "execCoerce")
     (intern-in-package-of-symbol "execInternInPackageOfSymbol")
-    (symbol-package-name "execSymbolPackageName")
-    (symbol-name "execSymbolName")
+    (symbol-package-name (if guards$
+                             "execSymbolPackageNameString"
+                           "execSymbolPackageName"))
+    (symbol-name (if guards$
+                     "execSymbolNameString"
+                   "execSymbolName"))
     (pkg-imports "execPkgImports")
     (pkg-witness "execPkgWitness")
     (unary-- "execUnaryMinus")

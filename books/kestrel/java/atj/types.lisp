@@ -1333,30 +1333,33 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @(':acl2') types except @(':aboolean') and @(':acharacter') denote
-     the corresponding AIJ class types.
+    "The @(':acl2') types except
+     @(':aboolean'), @(':acharacter'), and @(':astring')
+     denote the corresponding AIJ class types.
      The @(':aboolean') type denotes
      the Java primitive type @('boolean').
      The @(':acharacter') type denotes
      the Java primitive type @('char').
+     The @(':astring') type denotes
+     the Java reference type @('java.lang.String').
      The @(':jprim') types denote
      the corresponding Java primitive types.
      The @(':jprimarr') types denote
      the corresponding Java primitive array types.")
    (xdoc::p
-    "The mapping of @(':aboolean') and @(':acharacter')
-     to the Java @('boolean') and @('char') types
+    "The mapping of @(':aboolean'), @(':acharacter'), and @(':astring')
+     to the Java @('boolean'), @('char'), and @('String') types
      means that we represent
-     ACL2 booleans as Java booleans and
-     ACL2 characters as Java characters.
+     ACL2 booleans as Java booleans,
+     ACL2 characters as Java characters, and
+     ACL2 strings as Java strings.
      This only happens in the shallow embedding approach;
      the deep embedding approach does not use ATJ types.
-     Also, @(':aboolean') and @(':acharacter') are used
-     only if @(':guards') is @('t');
+     Also, @(':aboolean'), @(':acharacter'), and @(':astring')
+     are used only if @(':guards') is @('t');
      otherwise, only the type @(':avalue') is used.
      In other words, we represent
-     ACL2 booleans as Java booleans and
-     ACL2 characters as Java characters
+     ACL2 booleans/characters/strings as Java booleans/characters/strings
      only when @(':guards') is @('t').
      Even though Java @('char') values (which consist of 16 bits)
      are not isomorphic to ACL2 characters (which consist of 8 bits),
@@ -1365,7 +1368,11 @@
      with values that satisfy the guards,
      and in particular with @('char') values below 256,
      the generate code should manipulate only @('char') values below 256,
-     which are isomorphic to Java characters."))
+     which are isomorphic to Java characters.
+     The same consideration applies to ACL2 strings vs. Java strings;
+     only Java strings with characters below 256
+     should be passed to ATJ-generated code,
+     which will only manipulate strings satisfying that property."))
   (atj-type-case
    type
    :acl2 (atj-atype-case type.get
@@ -1373,7 +1380,7 @@
                          :rational *aij-type-rational*
                          :number *aij-type-number*
                          :character (jtype-char)
-                         :string *aij-type-string*
+                         :string (jtype-class "String")
                          :symbol *aij-type-symbol*
                          :boolean (jtype-boolean)
                          :cons *aij-type-cons*

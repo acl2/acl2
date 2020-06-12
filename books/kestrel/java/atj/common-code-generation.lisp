@@ -340,12 +340,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-string ((string stringp))
+(define atj-gen-string ((string stringp) (deep$ symbolp) (guards$ symbolp))
   :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 string."
-  (jexpr-smethod *aij-type-string*
-                 "make"
-                 (list (atj-gen-jstring string))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding with guards,
+     we translate ACL2 Strings to Java string expression.
+     This is because, in the shallow embedding with guards,
+     ACL2 strings are represented as Java strings.")
+   (xdoc::p
+    "In the deep embedding, or in the shallow embedding without guards,
+     we generate an expression of type @('Acl2String'),
+     by calling the factory method on the Java string expression."))
+  (if (and (not deep$)
+           guards$)
+      (atj-gen-jstring string)
+    (jexpr-smethod *aij-type-string*
+                   "make"
+                   (list (atj-gen-jstring string)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,13 +506,16 @@
      and then calls @('Acl2ConsValue.make()') with the two local variables.")
    (xdoc::p
     "The @('deep$') and @('guards$') arguments are passed
-     from @(tsee atj-gen-value) to @(tsee atj-gen-symbol)
+     from @(tsee atj-gen-value) to
+     @(tsee atj-gen-symbol), @(tsee atj-gen-char), and @(tsee atj-gen-string)
      only at the top level;
-     this is so that we generate Java boolean literals for @('t') and @('nil')
+     this is so that we generate Java boolean, character, and string expressions
+     for ACL2 boolean, character, and string values,
      in the shallow embedding with guards.
      But at the non-top levels, these flags are set to @('t') and @('nil'),
-     because @('t') and @('nil') inside other values (@(tsee cons)es)
-     are represented as @('Acl2Symbol')s.")
+     because ACL2 booleans, characters, and strings
+     are represented as @('Acl2Symbol'), @('Acl2Character'), and @('Acl2String')
+     instances inside other values (@(tsee cons)es).")
    (xdoc::@def "atj-gen-value")
    (xdoc::@def "atj-gen-values")
    (xdoc::@def "atj-gen-list")
@@ -517,7 +534,7 @@
                                   (atj-gen-char value deep$ guards$)
                                   jvar-value-index))
           ((stringp value) (mv nil
-                               (atj-gen-string value)
+                               (atj-gen-string value deep$ guards$)
                                jvar-value-index))
           ((symbolp value) (mv nil
                                (atj-gen-symbol value deep$ guards$)
@@ -658,9 +675,11 @@
      in this sense it is ``flat''.")
    (xdoc::p
     "We set the @('deep$') and @('guards$') flags to @('t') and @('nil')
-     when we call @(tsee atj-gen-symbol) and @(tsee atj-gen-char),
-     so that we generate @('Acl2Symbol')s for the ACL2 booleans
-     and @('Acl2Character')s for the ACL2 characters.
+     when we call
+     @(tsee atj-gen-symbol), @(tsee atj-gen-char), and @(tsee atj-gen-string),
+     so that we generate @('Acl2Symbol')s for the ACL2 booleans,
+     @('Acl2Character')s for the ACL2 characters,
+     and @('Acl2String')s for the ACL2 strings.
      This is because @(tsee atj-gen-value-flat) is only called
      on @(tsee cons)es at the top level;
      see the documentation of @(tsee atj-gen-value).")
@@ -673,7 +692,7 @@
     :returns (expr jexprp)
     :parents nil
     (cond ((characterp value) (atj-gen-char value t nil))
-          ((stringp value) (atj-gen-string value))
+          ((stringp value) (atj-gen-string value t nil))
           ((symbolp value) (atj-gen-symbol value t nil))
           ((integerp value) (atj-gen-integer value))
           ((rationalp value) (atj-gen-rational value))
