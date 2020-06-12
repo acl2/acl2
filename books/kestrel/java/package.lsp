@@ -52,6 +52,7 @@
                          cons-pos-alistp
                          define-sk
                          defmacro+
+                         defthm-commutative
                          defxdoc+
                          doublets-to-alist
                          dumb-occur-var-open
