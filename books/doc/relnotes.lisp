@@ -320,6 +320,9 @@
      These are part of the formalized abstract syntax of Java.")
 
    (xdoc::p
+    "Some theorems about the Java primitive operations have been added.")
+
+   (xdoc::p
     "More aspects of the Java syntax have been formalized, including:
      the ISO 8851-1 subset of Unicode characters;
      type identifiers;
