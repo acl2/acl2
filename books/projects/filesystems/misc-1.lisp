@@ -22,8 +22,6 @@
    (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
    (:rewrite collapse-congruence-lemma-4)
    (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
-   (:rewrite partial-collapse-correctness-lemma-23)
-   (:rewrite absfat-subsetp-transitivity-lemma-8)
    (:rewrite collapse-congruence-lemma-2)
    (:rewrite absfat-equiv-of-ctx-app-lemma-8)
    (:rewrite abs-separate-correctness-1-lemma-19)
@@ -42,8 +40,6 @@
     abs-fs-fix-of-put-assoc-equal-lemma-2)
    final-val-of-collapse-this-lemma-3
    abs-fs-fix-of-put-assoc-equal-lemma-3
-   (:rewrite
-    absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
    (:type-prescription
     abs-directory-file-p-when-m1-file-p-lemma-1))))
 
@@ -456,10 +452,10 @@
            :in-theory (e/d
                        (abs-find-file-correctness-1-lemma-29)
                        (abs-separate-correctness-1-lemma-19
-                        abs-separate-of-put-assoc-lemma-1))
+                        abs-separate-of-frame->frame-of-collapse-this-lemma-16))
            :use ((:instance abs-separate-of-frame->frame-of-collapse-this-lemma-1
                             (dir (abs-fs-fix dir)))
-                 (:instance abs-separate-of-put-assoc-lemma-1
+                 (:instance abs-separate-of-frame->frame-of-collapse-this-lemma-16
                             (dir (abs-fs-fix dir))))))
   :rule-classes
   (:rewrite
@@ -1605,31 +1601,6 @@
           (pathname pathname)
           (frame (frame->frame frame))
           (x (1st-complete (frame->frame frame)))))))
-
-(defthm
-  abs-find-file-correctness-lemma-16
-  (implies
-   (and
-    (fat32-filename-list-prefixp x y)
-    (zp (mv-nth 1 (abs-find-file-helper fs x)))
-    (not
-     (consp
-      (abs-addrs
-       (abs-file->contents (mv-nth 0 (abs-find-file-helper fs x)))))))
-   (not (consp (addrs-at fs y))))
-  :hints
-  (("goal" :in-theory
-    (e/d (abs-find-file-helper addrs-at fat32-filename-list-prefixp)
-         (ctx-app-ok-when-abs-complete-lemma-4))
-    :induct (mv (fat32-filename-list-prefixp x y)
-                (mv-nth 0 (abs-find-file-helper fs x))))
-   ("subgoal *1/1'''"
-    :use
-    (:instance
-     ctx-app-ok-when-abs-complete-lemma-4
-     (fs (abs-file->contents (cdr (assoc-equal (fat32-filename-fix (car x))
-                                               (abs-fs-fix fs)))))
-     (relpath (cdr y))))))
 
 (encapsulate
   ()

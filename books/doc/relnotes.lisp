@@ -376,6 +376,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
+
+   (xdoc::p
+    "The contents of the file @('[books]/misc/assert-tests.lisp')
+     have been moved to new separate files under Std/testing.
+     That file has been removed.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
