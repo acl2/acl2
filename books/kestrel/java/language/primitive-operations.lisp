@@ -75,6 +75,7 @@
 
 (def-boolean-binary boolean-xor
   :operation (not (equal x y))
+  :commutative t
   :short "Logical exclusive disjunction @('^') [JLS:4.2.5] [JLS:15.22.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,12 +88,14 @@
 
 (def-boolean-binary boolean-eq
   :operation (equal x y)
+  :commutative t
   :short "Equality @('==') on @('boolean')s [JLS:4.2.5] [JLS:15.21.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-boolean-binary boolean-neq
   :operation (not (equal x y))
+  :commutative t
   :short "Non-equality @('!=') on @('boolean')s [JLS:4.2.5] [JLS:15.21.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,12 +174,14 @@
 
 (def-int-binary int-add
   :operation (logext 32 (+ x y))
+  :commutative t
   :short "Addition @('+') on @('int')s [JLS:4.2.2] [JLS:15.18.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-add
   :operation (logext 64 (+ x y))
+  :commutative t
   :short "Addition @('+') on @('long')s [JLS:4.2.2] [JLS:15.18.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -195,12 +200,14 @@
 
 (def-int-binary int-mul
   :operation (logext 32 (* x y))
+  :commutative t
   :short "Multiplication @('*') on @('int')s [JLS:4.2.2] [JLS:15.17.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-mul
   :operation (logext 64 (* x y))
+  :commutative t
   :short "Multiplication @('*') on @('long')s [JLS:4.2.2] [JLS:15.17.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -295,24 +302,28 @@
 
 (def-int=>boolean-binary int-eq
   :operation (equal x y)
+  :commutative t
   :short "Equality @('==') on @('int')s [JLS:4.2.2] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-eq
   :operation (equal x y)
+  :commutative t
   :short "Equality @('==') on @('long')s [JLS:4.2.2] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int=>boolean-binary int-neq
   :operation (not (equal x y))
+  :commutative t
   :short "Non-equality @('!=') on @('int')s [JLS:4.2.2] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-neq
   :operation (not (equal x y))
+  :commutative t
   :short "Non-equality @('!=') on @('long')s [JLS:4.2.2] [JLS:15.21.1].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
