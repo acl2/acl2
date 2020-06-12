@@ -411,6 +411,11 @@
      implemented as a thin wrapper of @(tsee defmapping).")
 
    (xdoc::p
+    "A new event macro @(tsee defthm-commutative) has been added,
+     to generate commutativity theorems for binary operations
+     more concisely.")
+
+   (xdoc::p
     "Support for @(':prepwork') has been added to @(tsee std::deflist).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
