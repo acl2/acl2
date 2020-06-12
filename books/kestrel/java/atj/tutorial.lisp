@@ -1574,9 +1574,9 @@
      (See below.)"))
   (xdoc::p
    "The @('apply') methods in @('Acl2Function') and subclasses
-    took an @('Acl2Value[]') argument in all versions of AIJ.
+    take an @('Acl2Value[]') argument in all versions of AIJ.
     The array is the sequence of values to apply the function to.
-    Function application proceeded as follows:")
+    Function application proceeded as follows in early versions of AIJ:")
   (xdoc::ul
    (xdoc::li
     "Applying a lambda expression returned the result of
@@ -1616,8 +1616,10 @@
     The index is initially -1 (when the object is created),
     which means that it is not set yet.
     When AIJ's public API is used to provide a function definition
-    (which is added to the Java representation of the ACL2 environment),
-    AIJ sets all the indices in the @('Acl2Variable')s
+    (which is added to the "
+   (xdoc::seetopic "atj-tutorial-acl2-environment"
+                   "Java representation of the ACL2 environment")
+   "), AIJ sets all the indices in the @('Acl2Variable')s
     that occur the definiens of the function.
     The setting of indices starts with the parameters and body of the function:
     the 0-based position of each parameter in the parameter list
@@ -1633,13 +1635,13 @@
     e.g. that it does not include variables that are not parameters.
     Because the same ACL2 variable
     may have different indices in different contexts,
-    generally the @('Acl2Term') instances passed to AIJ to define functions
+    the @('Acl2Term') instances passed to AIJ to define functions
     must not share any @('Acl2Variable') instances;
     AIJ throws an exception if, during the index setting recursion,
     it encounters an @('Acl2Variable') whose index is already set.")
 
   (xdoc::p
-   "Given these variable indices, a binding or variables to values
+   "Given these variable indices, a binding of variables to values
     can be represented as a map from indices (i.e. natural numbers) to values
     instead of a map from symbols to values.
     But a map from indices to values can be represented as an array,
