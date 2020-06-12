@@ -13,6 +13,7 @@
 (include-book "primitive-types")
 
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
+(include-book "kestrel/std/util/defthm-commutative" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,7 +27,7 @@
     "The ACL2 functions that formalize Java primitive operations and conversions
      have the following structure:
      they take one (if unary) or two (if binary) primitive values as arguments;
-     they uses primitive value destructors (e.g. @(tsee int-value->int))
+     they use primitive value destructors (e.g. @(tsee int-value->int))
      to obtain the ``core'' values to operate upon with existing ACL2 functions;
      they use existing ACL2 functions to generate the ``core'' result;
      they uses primitive value constructors (e.g. @(tsee int-value))
@@ -44,7 +45,11 @@
      which are all explicitly specified.
      Since certain combinations of operand and result types
      are shared by certain collections of primitive operations,
-     we also introduce more specialized macros for these combinations."))
+     we also introduce more specialized macros for these combinations.")
+   (xdoc::p
+    "These macros also provide options
+     to generate certain kinds of theorems about the operations,
+     e.g. commutativity theorems."))
   :order-subtopics t
   :default-parent t)
 
@@ -166,6 +171,10 @@
      to be different from the zero value of the respective type.
      This is used to define the integer division and reminder operations;
      it is @('nil') by default.")
+   (xdoc::p
+    "This macro also takes an optional argument saying whether
+     a theorem should be generated
+    that asserts the commutativity of the operation.")
    (xdoc::@def "def-primitive-binary"))
 
   (define def-primitive-binary-fn ((name symbolp)
@@ -174,6 +183,7 @@
                                    (out-type primitive-typep)
                                    (operation "An untranslated term.")
                                    (nonzero booleanp)
+                                   (commutative booleanp)
                                    (parents symbol-listp)
                                    (parents-suppliedp booleanp)
                                    (short "A string or form or @('nil').")
@@ -196,7 +206,11 @@
                   but it is ~x0 instead."
                  (primitive-type-kind in-type-right)))
          (guard? (and nonzero
-                      `(not (equal (,in-destructor-right operand-right) 0)))))
+                      `(not (equal (,in-destructor-right operand-right) 0))))
+         (commutative-thm?
+          (and commutative
+               `(defthm-commutative ,(add-suffix name "-COMMUTATIVE")
+                  ,name))))
       `(define ,name ((operand-left ,in-predicate-left)
                       (operand-right ,in-predicate-right))
          ,@(and guard? (list :guard guard?))
@@ -208,7 +222,9 @@
               (y (,in-destructor-right operand-right)))
            (,out-constructor ,operation))
          :hooks (:fix)
-         :no-function t)))
+         :no-function t
+         ///
+         ,@(and commutative (list commutative-thm?)))))
 
   (defmacro def-primitive-binary (name
                                   &key
@@ -217,6 +233,7 @@
                                   out-type
                                   operation
                                   nonzero
+                                  commutative
                                   (parents 'nil parents-suppliedp)
                                   (short 'nil short-suppliedp)
                                   (long 'nil long-suppliedp))
@@ -228,6 +245,7 @@
         ,out-type
         ',operation
         ,nonzero
+        ,commutative
         ',parents ,parents-suppliedp
         ,short ,short-suppliedp
         ,long ,long-suppliedp))))
@@ -327,6 +345,7 @@
 (defmacro+ def-boolean-binary (name
                                &key
                                operation
+                               commutative
                                (parents 'nil parents-suppliedp)
                                (short 'nil short-suppliedp)
                                (long 'nil long-suppliedp))
@@ -337,6 +356,7 @@
      :in-type-right (primitive-type-boolean)
      :out-type (primitive-type-boolean)
      :operation ,operation
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -347,6 +367,7 @@
                            &key
                            operation
                            nonzero
+                           commutative
                            (parents 'nil parents-suppliedp)
                            (short 'nil short-suppliedp)
                            (long 'nil long-suppliedp))
@@ -358,6 +379,7 @@
      :out-type (primitive-type-int)
      :operation ,operation
      :nonzero ,nonzero
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -368,6 +390,7 @@
                             &key
                             operation
                             nonzero
+                            commutative
                             (parents 'nil parents-suppliedp)
                             (short 'nil short-suppliedp)
                             (long 'nil long-suppliedp))
@@ -379,6 +402,7 @@
      :out-type (primitive-type-long)
      :operation ,operation
      :nonzero ,nonzero
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -388,6 +412,7 @@
 (defmacro+ def-float-binary (name
                              &key
                              operation
+                             commutative
                              (parents 'nil parents-suppliedp)
                              (short 'nil short-suppliedp)
                              (long 'nil long-suppliedp))
@@ -398,6 +423,7 @@
      :in-type-right (primitive-type-float)
      :out-type (primitive-type-float)
      :operation ,operation
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -407,6 +433,7 @@
 (defmacro+ def-double-binary (name
                               &key
                               operation
+                              commutative
                               (parents 'nil parents-suppliedp)
                               (short 'nil short-suppliedp)
                               (long 'nil long-suppliedp))
@@ -417,6 +444,7 @@
      :in-type-right (primitive-type-double)
      :out-type (primitive-type-double)
      :operation ,operation
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -426,6 +454,7 @@
 (defmacro+ def-int=>boolean-binary (name
                                     &key
                                     operation
+                                    commutative
                                     (parents 'nil parents-suppliedp)
                                     (short 'nil short-suppliedp)
                                     (long 'nil long-suppliedp))
@@ -437,6 +466,7 @@
      :in-type-right (primitive-type-int)
      :out-type (primitive-type-boolean)
      :operation ,operation
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -446,6 +476,7 @@
 (defmacro+ def-long=>boolean-binary (name
                                      &key
                                      operation
+                                     commutative
                                      (parents 'nil parents-suppliedp)
                                      (short 'nil short-suppliedp)
                                      (long 'nil long-suppliedp))
@@ -457,6 +488,7 @@
      :in-type-right (primitive-type-long)
      :out-type (primitive-type-boolean)
      :operation ,operation
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -466,6 +498,7 @@
 (defmacro+ def-float=>boolean-binary (name
                                       &key
                                       operation
+                                      commutative
                                       (parents 'nil parents-suppliedp)
                                       (short 'nil short-suppliedp)
                                       (long 'nil long-suppliedp))
@@ -477,6 +510,7 @@
      :in-type-right (primitive-type-float)
      :out-type (primitive-type-boolean)
      :operation ,operation
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -486,6 +520,7 @@
 (defmacro+ def-double=>boolean-binary (name
                                        &key
                                        operation
+                                       commutative
                                        (parents 'nil parents-suppliedp)
                                        (short 'nil short-suppliedp)
                                        (long 'nil long-suppliedp))
@@ -497,6 +532,7 @@
      :in-type-right (primitive-type-double)
      :out-type (primitive-type-boolean)
      :operation ,operation
+     :commutative ,commutative
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
