@@ -28,25 +28,10 @@
            (sbyte16p x))
   :enable (sbyte8p sbyte16p))
 
-(defrulel sbyte32p-when-sbyte8p
-  (implies (sbyte8p x)
-           (sbyte32p x))
-  :enable (sbyte8p sbyte32p))
-
-(defrulel sbyte64p-when-sbyte8p
-  (implies (sbyte8p x)
-           (sbyte64p x))
-  :enable (sbyte8p sbyte64p))
-
 (defrulel sbyte32p-when-sbyte16p
   (implies (sbyte16p x)
            (sbyte32p x))
   :enable (sbyte16p sbyte32p))
-
-(defrulel sbyte64p-when-sbyte16p
-  (implies (sbyte16p x)
-           (sbyte64p x))
-  :enable (sbyte16p sbyte64p))
 
 (defrulel sbyte64p-when-sbyte32p
   (implies (sbyte32p x)
