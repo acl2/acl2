@@ -1,19 +1,19 @@
-; Event-Level Assertions -- Tests
+; Standard Testing Library
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2017 Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Authors:
-;   Matt Kaufmann (kaufmann@cs.utexas.edu)
-;   Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Matt Kaufmann (kaufmann@cs.utexas.edu)
+; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
 
-(include-book "std/testing/assert" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "assert-bang")
+
+(include-book "must-fail")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,41 +65,3 @@
 ;                '(assert! (equal (access-command-tuple-form
 ;                                  (cddr (car (scan-to-command (w state)))))
 ;                                 '(exit-boot-strap-mode))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Test-stobj example from David Rager.
-(local
- (encapsulate
-  ()
-
-  (defstobj foo field1 field2)
-
-  (defun test-stobj (x foo)
-    (declare (xargs :stobjs foo))
-    (let ((foo (update-field1 17 foo)))
-      (update-field2 x foo)))
-
-; Passes.
-  (assert!-stobj (let* ((foo (test-stobj 14 foo)))
-                   (mv (equal (field1 foo)
-                              17)
-                       foo))
-                 foo)
-
-  (must-fail
-   (assert!-stobj (let* ((foo (test-stobj 14 foo)))
-                    (mv (equal (field1 foo)
-                               14)
-                        foo))
-                  foo))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-succeed*
- (defun f (x) (cons x x))
- (assert-equal (f 3) '(3 . 3)))
-
-(must-fail
- (assert-equal 1 2))
