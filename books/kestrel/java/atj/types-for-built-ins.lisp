@@ -23,6 +23,10 @@
 
 ; primary types:
 
+(atj-main-function-type atom (:avalue) :aboolean)
+
+(atj-main-function-type eql (:avalue :avalue) :aboolean)
+
 (atj-main-function-type mv-nth (:ainteger :avalue) :avalue)
 
 (atj-main-function-type not (:avalue) :aboolean)
