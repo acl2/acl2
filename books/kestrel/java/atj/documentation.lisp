@@ -343,7 +343,7 @@
       "@('nil') (the default), for the shallow embedding.")))
 
    (xdoc::desc
-    "@(':guards') &mdash; default @('nil')"
+    "@(':guards') &mdash; default @('t')"
     (xdoc::p
      "Specifies whether the generated code
       may assume that all the guards are satisfied or not:")

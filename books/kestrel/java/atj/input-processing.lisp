@@ -173,7 +173,7 @@
        ((when (null target-prims)) (value nil)))
     (er-soft+ ctx t nil
               "Since the :DEEP input is (perhaps by default) NIL ~
-               and the :GUARDS input is T, ~
+               and the :GUARDS input is (perhaps by default) T, ~
                ~@0."
               (if (= (len target-prims) 1)
                   (msg "the function ~x0 cannot be specified as target"
@@ -598,7 +598,9 @@
                                    "The test term ~x0 in the :TESTS input ~
                                     must translate to a function call ~
                                     where the guards are satisfied, ~
-                                    because the :GUARDS input is T." call)
+                                    because the :GUARDS input ~
+                                    is (perhaps by default) T."
+                                   call)
                        (value nil)))
                  (value nil)))
        ((er (cons & output/outputs)) (trans-eval term$ ctx state nil))
@@ -1257,21 +1259,7 @@
                                          maybe-stringp
                                          atj-test-listp
                                          booleanp
-                                         result)'),
-                        where @('fns-to-translate') are the functions
-                        to be translated to Java,
-                        @('pkgs') are the packages
-                        whose representation must be built in Java,
-                        @('deep$') is the @(':deep') input,
-                        @('guards$') is the @(':guards') input,
-                        @('java-package$') is the @(':java-package') input,
-                        @('java-class$) is the result of
-                        @(tsee atj-process-java-class),
-                        @('output-file$') and @('output-file-test$')
-                        are the result of (tsee atj-process-output-dir),
-                        @('tests$') is the result of
-                        @(tsee atj-process-tests), and
-                        @('verbose$') is the @(':verbose') input.")
+                                         result)').")
                state)
   :mode :program ; because of ATJ-FNS-TO-TRANSLATE and ATJ-PROCESS-TESTS
   :short "Ensure that the inputs to @(tsee atj) are valid."
@@ -1298,7 +1286,10 @@
                               followed by the options ~&0."
                              *atj-allowed-options*))
        (deep (cdr (assoc-eq :deep options)))
-       (guards (cdr (assoc-eq :guards options)))
+       (guards (b* ((pair? (assoc-eq :guards options)))
+                 (if (consp pair?)
+                     (cdr pair?)
+                   t)))
        (java-package (cdr (assoc-eq :java-package options)))
        (java-class (cdr (assoc-eq :java-class options)))
        (output-dir (or (cdr (assoc-eq :output-dir options)) "."))
