@@ -53,4 +53,13 @@ class Acl2RationalTest {
                         Acl2Integer.make(new BigInteger("-11"))));
     }
 
+    @Test
+    void getNumeratorFromMakeIntInt() {
+        assertEquals(Acl2Rational.make(3, 4).getNumerator(),
+                Acl2Integer.make(3));
+        assertEquals(Acl2Rational.make(20, 30).getNumerator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Rational.make(-647, 121).getNumerator(),
+                Acl2Integer.make(-647));
+    }
 }
