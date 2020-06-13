@@ -1480,7 +1480,7 @@
      If instead the test has a different type,
      which must be an @(':acl2') type,
      we convert the resulting expression to a Java boolean
-     by comparing it with @('nil').")
+     by comparing it with @('nil') for inequality.")
    (xdoc::p
     "Consider a call @('(if test then else)').
      If the Java code generated for @('test')
@@ -1523,11 +1523,12 @@
     "and the Java expression")
    (xdoc::codeblock
     "<test> ? <then-expr> : <else-expr>"))
-  (b* (((mv & & dst-types) (atj-type-unwrap-term test-term))
-       (test-expr (if (equal dst-types
+  (b* (((mv & & test-types) (atj-type-unwrap-term test-term))
+       (test-expr (if (equal test-types
                              (list (atj-type-acl2 (atj-atype-boolean))))
                       test-expr
-                    (jexpr-binary (jbinop-ne) test-expr
+                    (jexpr-binary (jbinop-ne)
+                                  test-expr
                                   (atj-gen-symbol nil t nil))))
        ((when (and *atj-gen-cond-exprs*
                    (null then-block)
@@ -1560,6 +1561,51 @@
     (mv block
         expr
         jvar-tmp-index)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-not-call ((arg-block jblockp)
+                                  (arg-expr jexprp)
+                                  (arg-term pseudo-termp)
+                                  (src-types atj-type-listp)
+                                  (dst-types atj-type-listp))
+  :guard (and (consp src-types)
+              (consp dst-types))
+  :returns (mv (block jblockp)
+               (expr jexprp))
+  :short "Generate a shallowly embedded ACL2 @(tsee not) call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called only if @(':guards') is @('t').
+     This is called after translating the argument of @(tsee not) to Java.
+     The resulting block and expression are passed as parameters here,
+     along with the original ACL2 term that is the @(tsee not) argument.")
+   (xdoc::p
+    "If the argument has type @(':aboolean'),
+     since when @(':guards') is @('t')
+     ACL2 booleans are mapped to Java booleans,
+     we apply Java's logical complement operator.
+     If instead the test has a different type,
+     which must be an @(':acl2') type,
+     we negate the resulting expression to a Java boolean
+     by comparing it with @('nil') for equality:
+     the result is a Java boolean, which is appropriate because
+     when @(':guards') is @('t') we map ACL2 booleans to Java booleans.")
+   (xdoc::p
+    "In any case, we never generate a call of the Java method for @(tsee not).
+     That method is still generated for external code to call though."))
+  (b* (((mv & & arg-types) (atj-type-unwrap-term arg-term))
+       (expr (if (equal arg-types
+                        (list (atj-type-acl2 (atj-atype-boolean))))
+                 (jexpr-unary (junop-logcompl) arg-expr)
+               (jexpr-binary (jbinop-eq)
+                             arg-expr
+                             (atj-gen-symbol nil t nil))))
+       (src-type (atj-type-list-to-type src-types))
+       (dst-type (atj-type-list-to-type dst-types)))
+    (mv (jblock-fix arg-block)
+        (atj-adapt-expr-to-type expr src-type dst-type t)))) ; GUARDS$
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2644,6 +2690,15 @@
                                        dst-types ; = SRC-TYPES
                                        jvar-tmp-base
                                        jvar-tmp-index))))
+         ((when (and guards$
+                     (eq fn 'not)
+                     (int= (len args) 1))) ; should be always true
+          (b* (((mv block expr) (atj-gen-shallow-not-call (car arg-blocks)
+                                                          (car arg-exprs)
+                                                          (car args)
+                                                          src-types
+                                                          dst-types)))
+            (mv block expr jvar-tmp-index)))
          ((when (and guards$
                      (atj-jprim-constr-fn-p fn)
                      (int= (len args) 1))) ; should be always true
