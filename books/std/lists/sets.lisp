@@ -748,8 +748,10 @@ about set equivalence.</p>"
            (and (element-list-p (list-fix x))
                 (element-list-p (double-rewrite y))))))
 
-(encapsulate
-  () ;; Some of these lemmas may well deserve to be added someplace in
+(defsection more-set-equiv-congruences
+  :extension set-equiv-congruences
+
+  ;; Some of these lemmas may well deserve to be added someplace in
   ;; STD, but their backchaining can be expensive (particularly
   ;; remove-when-absent and remove-duplicates-when-no-duplicatesp) and so they
   ;; are left local for now.
@@ -785,7 +787,10 @@ about set equivalence.</p>"
     :hints
     (("Goal" :induct (induction-scheme x y) :expand (set-equiv x (cdr x))
       :in-theory (enable subsetp-equal)))
-    :rule-classes :congruence)
+    :rule-classes :congruence))
+
+(encapsulate
+  ()
 
   (local
    (defthm remove-duplicates-equal-when-no-duplicatesp
@@ -801,13 +806,3 @@ about set equivalence.</p>"
     :hints (("Goal" :in-theory (disable
                                 set-equiv-implies-equal-len-remove-duplicates-equal)
              :use set-equiv-implies-equal-len-remove-duplicates-equal))))
-
-(defsection more-set-equiv-congruences
-  :extension set-equiv-congruences
-
-  (defthm
-    set-equiv-implies-equal-len-remove-duplicates-equal
-    (implies (set-equiv x y)
-             (equal (len (remove-duplicates-equal x))
-                    (len (remove-duplicates-equal y))))
-    :rule-classes :congruence))

@@ -24,8 +24,6 @@
    (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
    (:rewrite collapse-congruence-lemma-4)
    (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
-   (:rewrite partial-collapse-correctness-lemma-23)
-   (:rewrite absfat-subsetp-transitivity-lemma-8)
    (:rewrite collapse-congruence-lemma-2)
    (:rewrite absfat-equiv-of-ctx-app-lemma-8)
    (:rewrite abs-separate-correctness-1-lemma-19)
@@ -44,8 +42,6 @@
     abs-fs-fix-of-put-assoc-equal-lemma-2)
    final-val-of-collapse-this-lemma-3
    abs-fs-fix-of-put-assoc-equal-lemma-3
-   (:rewrite
-    absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
    (:type-prescription
     abs-directory-file-p-when-m1-file-p-lemma-1))))
 
@@ -5206,42 +5202,71 @@
     :do-not-induct t))
   :otf-flg t)
 
-;; It would be nice to enable those lemmas for the whole file, sure, but I'm
-;; not sure it can be done...
-(defthm
-  abs-find-file-correctness-2
-  (implies
-   (and
-    (consp (assoc-equal 0 frame))
-    (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-    (mv-nth 1 (collapse frame))
-    (frame-p frame)
-    (no-duplicatesp-equal (strip-cars frame))
-    (subsetp-equal (abs-addrs (frame->root frame))
-                   (frame-addrs-root (frame->frame frame)))
-    (abs-separate frame)
-    (or (m1-regular-file-p (mv-nth 0 (abs-find-file frame pathname)))
+;; So here's the idea: abs-complete is kind of a nonsensical predicate to be
+;; applying to the contents of a regular file - but it is provably true! So we
+;; roll with it because otherwise, a disjunctive clause as a hypothesis just
+;; makes the theorem prover freeze up and refuse to apply the theorem.
+(encapsulate
+  ()
+
+  (local
+   (defthmd
+     lemma
+     (implies
+      (and
+       (consp (assoc-equal 0 frame))
+       (not
+        (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
+       (mv-nth 1 (collapse frame))
+       (frame-p frame)
+       (no-duplicatesp-equal (strip-cars frame))
+       (subsetp-equal (abs-addrs (frame->root frame))
+                      (frame-addrs-root (frame->frame frame)))
+       (abs-separate frame)
+       (or
+        (m1-regular-file-p
+         (mv-nth 0 (abs-find-file frame pathname)))
         (abs-complete
-         (abs-file->contents (mv-nth 0 (abs-find-file frame pathname))))))
-   (equal (abs-find-file frame pathname)
-          (hifat-find-file (mv-nth 0 (collapse frame))
-                           pathname)))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d ((:definition abs-find-file)
-          collapse (:definition collapse-this))
-         ((:rewrite partial-collapse-correctness-lemma-24)
-          (:definition remove-equal)
-          (:definition assoc-equal)
-          (:definition member-equal)
-          (:definition remove-assoc-equal)
-          (:rewrite abs-file-alist-p-correctness-1)
-          (:rewrite nthcdr-when->=-n-len-l)
-          (:rewrite abs-find-file-of-put-assoc-lemma-6)
-          (:rewrite subsetp-when-prefixp)
-          (:definition strip-cars)
-          ;; Rules from this theorem become infinite rewriters.
-          abs-find-file-helper-of-collapse-3
-          ABS-FIND-FILE-CORRECTNESS-1-LEMMA-3))
-    :induct (collapse frame))))
+         (abs-file->contents
+          (mv-nth 0 (abs-find-file frame pathname))))))
+      (equal (abs-find-file frame pathname)
+             (hifat-find-file (mv-nth 0 (collapse frame))
+                              pathname)))
+     :hints
+     (("goal"
+       :in-theory
+       (e/d ((:definition abs-find-file)
+             collapse (:definition collapse-this))
+            ((:rewrite partial-collapse-correctness-lemma-24)
+             (:definition remove-equal)
+             (:definition assoc-equal)
+             (:definition member-equal)
+             (:definition remove-assoc-equal)
+             (:rewrite abs-file-alist-p-correctness-1)
+             (:rewrite nthcdr-when->=-n-len-l)
+             (:rewrite abs-find-file-of-put-assoc-lemma-6)
+             (:rewrite subsetp-when-prefixp)
+             (:definition strip-cars)
+             abs-find-file-helper-of-collapse-3
+             abs-find-file-correctness-1-lemma-3))
+       :induct (collapse frame)))))
+
+  (defthm
+    abs-find-file-correctness-2
+    (implies
+     (and
+      (consp (assoc-equal 0 frame))
+      (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
+      (mv-nth 1 (collapse frame))
+      (frame-p frame)
+      (no-duplicatesp-equal (strip-cars frame))
+      (subsetp-equal (abs-addrs (frame->root frame))
+                     (frame-addrs-root (frame->frame frame)))
+      (abs-separate frame)
+      (abs-complete
+       (abs-file->contents
+        (mv-nth 0 (abs-find-file frame pathname)))))
+     (equal (abs-find-file frame pathname)
+            (hifat-find-file (mv-nth 0 (collapse frame))
+                             pathname)))
+    :hints (("goal" :use lemma :do-not-induct t))))
