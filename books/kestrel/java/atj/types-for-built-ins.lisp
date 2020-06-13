@@ -15,9 +15,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file proves and records ATJ types (see the file types.lisp)
-; for some ACL2 (non-primitive) built-in functions;
+; for some ACL2 built-in functions that are not implemented natively in Java;
 ; more can be added as needed.
-; ATJ types for the ACL2 primitive functions are in types-for-natives.lisp.
+; ATJ types for the ACL2 functions that are implemented natively in Java
+; are in types-for-natives.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
