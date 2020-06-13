@@ -10,18 +10,18 @@
 
 (in-package "APT")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc common-concepts
+(defxdoc+ common-concepts
   :parents (apt)
-  :short "Concepts that are common to different APT transformations.")
+  :short "Concepts that are common to different APT transformations."
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc redundancy
-  :parents (common-concepts)
   :short "Notion of redundancy for APT transformations."
   :long
   (xdoc::topstring
@@ -37,3 +37,51 @@
     "A call of an APT transformation whose @(':show-only') input is @('t')
      does not generate any event.
      No successive call may be redundant with such a call.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc definedness
+  :short "Notion of definedness of functions for APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As far as APT is concerned,
+     an ACL2 named function is defined if and only if
+     it has a non-@('nil') unnormalized body.
+     The unnormalized body of a named function is
+     the @('acl2::unnormalized-body') property of the function symbol.")
+   (xdoc::p
+    "The unnormalized body of a named function is
+     the " (xdoc::seetopic "acl2::term" "translated term") " obtained
+     from the function body that appears (in untranslated form)
+     in the @(tsee defun) event that introduces the function.
+     This is the case not only for user-defined functions,
+     but also for built-in defined ACL2 functions,
+     whose introducing @(tsee defun) events can be seen
+     via " (xdoc::seetopic "acl2::pe" "@(':pe')") ".")
+   (xdoc::p
+    "A valid untranslated term never translates to @('nil').
+     The untranslated term @('nil') translates to @('\'nil'), a quoted constant.
+     Valid variable symbols do not include @('nil'),
+     so @('nil') is not a valid translated variable term;
+     it satisfies @(tsee pseudo-termp)
+     (which captures a superset of the valid translated terms),
+     but it does not satisfy @(tsee termp).
+     Therefore, the unnormalized body of a defined function cannot be @('nil'):
+     testing the @('acl2::unnormalized-body') property against @('nil')
+     is therefore a good way to check
+     whether a function is defined in the APT sense.")
+   (xdoc::p
+    "Certain program-mode functions may be defined
+     but not have an unnormalized body.
+     APT does not regard these functions as being defined.
+     In any case, APT currently only handles logic-mode functions.")
+   (xdoc::p
+    "The system utility @(tsee acl2::ubody) (or @(tsee acl2::ubody+))
+     retrieves the unnormalized body of a function.
+     It is a specialization of the built-in @(tsee body) system utility,
+     which retrieves the unnormalized or normalized body of a function.
+     based on the flag passed as argument.
+     The normalized body of a function may differ from the unnormalized one
+     because the former may be obtained from the latter
+     via some simplifications.")))

@@ -80,7 +80,7 @@
      (xdoc::p
       "@('old') must
        be in logic mode,
-       be defined,
+       be " (xdoc::seetopic "definedness" "defined") ",
        return a non-<see topic='@(url mv)'>multiple</see> value, and
        have no input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
        If the @(':verify-guards') input is @('t'),
