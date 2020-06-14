@@ -55,7 +55,8 @@
       as being changed via an indentity isomorphism,
       we can say that this transformation changes the representation of
       (the tuple of) all the function's arguments
-      into a new representation that is element-wise isomorphic.
+      into a new representation that consists of
+      (the tuple of) all the new function's arguments.
       In this case, there are two variants of this transformation:")
     (xdoc::ul
      (xdoc::li
@@ -229,8 +230,8 @@
         "Each @('isok') denotes the isomorphic mapping
          to apply to the arguments and results in @('arg/res-listk').
          Each @('isok') specifies
-         old and new isomorphic representations
-         and the isomorphisms between them.")
+         old and new representations
+         and the conversions between them.")
        (xdoc::p
         "It must be one of the following:")
        (xdoc::ul
@@ -238,7 +239,7 @@
          "A symbol that references
           a previous successful call of @(tsee defiso),
           i.e. the symbol must be the @('name') input of that call.
-          The domains and isomorphisms recorded under that name specify:
+          The domains and conversions recorded under that name specify:
           the recognizer of the old representation (@('doma')),
           which we call @('oldp') here;
           the recognizer of the new representation (@('domb')),
@@ -350,11 +351,11 @@
        the resulting isomorphic mapping over all function arguments
        is denoted as consisting of
        the domains @($A$) and @($A'$) and
-       the isomorphisms @($\\alpha$) and @($\\alpha'$),
+       the conversions @($\\alpha$) and @($\\alpha'$),
        and the resulting isomorphic mapping over all function results
        is denoted as consisting of
        the domains @($B$) and @($B'$) and
-       the isomorphisms @($\\beta$) and @($\\beta'$)."))
+       the conversions @($\\beta$) and @($\\beta'$)."))
 
     (xdoc::desc
      "@(':predicate') &mdash; default @('nil')"
