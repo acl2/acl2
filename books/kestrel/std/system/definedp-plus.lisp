@@ -26,7 +26,7 @@
      that does not name a logic-mode function.
      The reason for ensuring logic mode is that this utility
      checks whether the function has an @('unnormalized body') property,
-     but some program-mode functions may be defined
+     but the built-in program-mode functions are defined
      without having an @('unnormalized-body') property."))
   (cond ((not (function-symbolp fn wrld))
          (raise "The symbol ~x0 does not name a function." fn))
