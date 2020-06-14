@@ -4656,7 +4656,7 @@
           (frame-val->dir (cdr (assoc-equal x frame)))
           (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
                   relpath)))))
-  :hints (("goal" :in-theory (enable dist-names names-at))))
+  :hints (("goal" :in-theory (enable dist-names names-at len-of-fat32-filename-list-fix))))
 
 ;; The :with hint doesn't work, because of hiding.
 (defthm
@@ -4666,7 +4666,7 @@
                        (frame-val->path (cdr (assoc-equal x frame)))
                        (remove-assoc-equal x frame)))
   :hints
-  (("goal" :in-theory (e/d (abs-separate dist-names))
+  (("goal" :in-theory (e/d (abs-separate dist-names len-of-fat32-filename-list-fix))
     :induct (remove-assoc-equal x frame)
     :expand
     ((names-at nil (frame-val->path (cdr (car frame))))
@@ -5367,25 +5367,24 @@
     (not (intersectp-equal (names-at dir nil)
                            (names-at root relpath)))
     (abs-fs-p
-     (ctx-app
-      (frame-val->dir (cdr (assoc-equal src frame)))
-      dir x
-      (nthcdr (len (frame-val->path (cdr (assoc-equal src frame))))
-              relpath))))
+     (ctx-app (frame-val->dir (cdr (assoc-equal src frame)))
+              dir x
+              (nthcdr (len (frame-val->path (cdr (assoc-equal src frame))))
+                      relpath))))
    (dist-names
     root nil
     (put-assoc-equal
      src
      (frame-val
       (frame-val->path (cdr (assoc-equal src frame)))
-      (ctx-app
-       (frame-val->dir (cdr (assoc-equal src frame)))
-       dir x
-       (nthcdr (len (frame-val->path (cdr (assoc-equal src frame))))
-               relpath))
+      (ctx-app (frame-val->dir (cdr (assoc-equal src frame)))
+               dir x
+               (nthcdr (len (frame-val->path (cdr (assoc-equal src frame))))
+                       relpath))
       (frame-val->src (cdr (assoc-equal src frame))))
      frame)))
-  :hints (("goal" :in-theory (enable dist-names prefixp))))
+  :hints (("goal" :in-theory (enable dist-names prefixp
+                                     len-of-fat32-filename-list-fix))))
 
 (defthm
   abs-separate-correctness-1-lemma-18
@@ -8282,7 +8281,6 @@
                            ((:rewrite nthcdr-when->=-n-len-l)
                             (:linear count-free-clusters-correctness-1)
                             (:rewrite partial-collapse-correctness-lemma-2)
-                            (:type-prescription len-when-consp)
                             (:definition len)
                             (:definition nthcdr)
                             (:rewrite ctx-app-ok-when-abs-complete)
@@ -9969,7 +9967,6 @@
           (:linear count-free-clusters-correctness-1)
           (:rewrite collapse-1st-index-correctness-lemma-1)
           abs-separate-of-frame->frame-of-collapse-this-lemma-8
-          (:type-prescription len-when-consp)
           (:rewrite assoc-of-frame->frame-of-collapse-this)
           (:definition len)
           (:linear abs-separate-of-frame->frame-of-collapse-this-lemma-11)

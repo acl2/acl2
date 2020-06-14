@@ -1218,7 +1218,7 @@
   (equal (put-assoc-equal name val (true-list-fix alist))
          (true-list-fix (put-assoc-equal name val alist))))
 
-(defthm len-when-consp
+(defthmd len-when-consp
   (implies (consp x) (not (zp (len x))))
   :rule-classes :type-prescription)
 

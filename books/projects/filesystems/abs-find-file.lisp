@@ -543,12 +543,10 @@
   (equal (abs-find-file (frame-with-root root frame)
                         pathname)
          (if (equal (mv-nth 1
-                            (abs-find-file-helper (abs-fs-fix root)
-                                                  pathname))
+                            (abs-find-file-helper root pathname))
                     *enoent*)
              (abs-find-file frame pathname)
-           (abs-find-file-helper (abs-fs-fix root)
-                                 pathname)))
+           (abs-find-file-helper root pathname)))
   :hints
   (("goal" :do-not-induct t
     :in-theory (e/d (abs-find-file frame-with-root)
@@ -760,7 +758,9 @@
          (not (fat32-filename-list-equiv pathname x-path))))
     (equal (mv-nth 1 (abs-find-file-helper fs pathname))
            0)))
-  :hints (("goal" :in-theory (enable abs-find-file-helper prefixp)
+  :hints (("goal" :in-theory (e/d (abs-find-file-helper prefixp
+                                                        len-of-fat32-filename-list-fix)
+                                  (fat32-filename-list-equiv-implies-equal-len-1))
            :induct (mv (mv-nth 1 (abs-find-file-helper fs pathname))
                        (fat32-filename-list-prefixp pathname x-path))
            :expand (abs-find-file-helper fs x-path))))
@@ -1048,7 +1048,8 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (e/d (abs-find-file-helper abs-addrs-of-ctx-app-1-lemma-7)
+    :in-theory (e/d (abs-find-file-helper abs-addrs-of-ctx-app-1-lemma-7
+                                          len-of-fat32-filename-list-fix)
                     (abs-find-file-helper-of-collapse-lemma-2))
     :use
     ((:instance
@@ -2052,7 +2053,7 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (e/d (take-of-nthcdr abs-find-file-helper)
+    :in-theory (e/d (take-of-nthcdr abs-find-file-helper len-of-fat32-filename-list-fix)
                     (nthcdr-of-fat32-filename-list-fix
                      abs-separate-correctness-1-lemma-14
                      (:rewrite abs-find-file-correctness-1-lemma-18)
@@ -2510,7 +2511,7 @@
       (mv (abs-file-fix nil) *enoent*)))
     :hints (("goal" :induct (induction-scheme frame pathname x)
              :in-theory
-             (e/d (collapse)
+             (e/d (collapse len-of-fat32-filename-list-fix)
                   ((:rewrite partial-collapse-correctness-lemma-1)
                    (:rewrite partial-collapse-correctness-lemma-24)
                    (:rewrite partial-collapse-correctness-lemma-33)
@@ -2970,7 +2971,7 @@
         x y))
       (t (mv frame x y)))))
 
-  ;; This is important, but the induction scheme and subgoals were a drag.
+  ;; this is important, but the induction scheme and subgoals were a drag.
   (defthmd
     abs-find-file-correctness-1-lemma-75
     (implies
@@ -3006,8 +3007,23 @@
         pathname))
       (mv (abs-file-fix nil) *enoent*)))
     :hints (("goal" :induct (induction-scheme frame x y)
-             :in-theory (e/d (collapse)
-                             ())))))
+             :in-theory (e/d (collapse len-of-fat32-filename-list-fix)
+                             ((:rewrite
+                               partial-collapse-correctness-lemma-24)
+                              (:rewrite abs-addrs-when-m1-file-alist-p)
+                              (:rewrite
+                               abs-find-file-of-put-assoc-lemma-7 . 1)
+                              (:rewrite prefixp-when-equal-lengths)
+                              (:rewrite abs-find-file-of-remove-assoc-1)
+                              (:rewrite nthcdr-when->=-n-len-l)
+                              (:rewrite prefixp-one-way-or-another . 1)
+                              (:definition remove-equal)
+                              (:rewrite abs-file-alist-p-correctness-1)
+                              (:rewrite remove-when-absent)
+                              (:definition member-equal)
+                              (:rewrite
+                               final-val-seq-of-collapse-this-lemma-2)
+                              (:rewrite valid-seqp-when-prefixp)))))))
 
 (local
  (defthmd
@@ -3934,14 +3950,17 @@
    nil)
   :hints
   (("goal"
-    :in-theory (e/d ()
+    :in-theory (e/d (len-of-fat32-filename-list-fix)
                     ((:rewrite remove-when-absent)
                      (:definition remove-equal)
                      (:rewrite partial-collapse-correctness-lemma-24)
                      (:definition member-equal)
                      (:definition assoc-equal)
                      (:rewrite abs-addrs-when-m1-file-alist-p)
-                     (:rewrite abs-separate-of-put-assoc)))
+                     (:rewrite abs-separate-of-put-assoc)
+                     (:linear count-free-clusters-correctness-1)
+                     (:rewrite nthcdr-when->=-n-len-l)
+                     (:definition remove-assoc-equal)))
     :expand
     ((:with
       abs-find-file-of-remove-assoc-1
@@ -4799,7 +4818,7 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (e/d (collapse-this abs-find-file-of-put-assoc-lemma-6)
+    :in-theory (e/d (collapse-this abs-find-file-of-put-assoc-lemma-6 len-of-fat32-filename-list-fix)
                     (abs-find-file-of-put-assoc-lemma-7))
     :expand
     ((:with abs-find-file-of-remove-assoc-1
@@ -5137,7 +5156,7 @@
     (abs-find-file frame pathname)))
   :hints
   (("goal"
-    :in-theory (e/d ()
+    :in-theory (e/d (len-of-fat32-filename-list-fix)
                     ((:rewrite remove-when-absent)
                      (:definition remove-equal)
                      (:rewrite abs-find-file-correctness-lemma-18)

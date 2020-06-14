@@ -316,7 +316,8 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (names-at take-of-nthcdr abs-find-file-helper
-                              abs-find-file-correctness-1-lemma-20)
+                              abs-find-file-correctness-1-lemma-20
+                              len-of-fat32-filename-list-fix)
                     (abs-find-file-correctness-1-lemma-6
                      member-of-remove
                      (:rewrite nth-of-fat32-filename-list-fix)
@@ -399,7 +400,7 @@
                  (prefixp (fat32-filename-list-fix relpath)
                           (frame-val->path (cdr (assoc-equal x frame))))))
     :in-theory
-    (e/d (list-equiv nthcdr-when->=-n-len-l)
+    (e/d (list-equiv nthcdr-when->=-n-len-l len-of-fat32-filename-list-fix)
          (nth-of-fat32-filename-list-fix (:rewrite prefixp-when-equal-lengths)
                                          member-of-remove))
     :use
