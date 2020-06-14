@@ -41,17 +41,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc definedness
-  :short "Notion of definedness of functions for APT transformations."
+  :short "Notion of definedness of functions for some APT transformations."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As far as APT is concerned,
+    "As far as certain APT transformations are concerned,
      an ACL2 named function is defined if and only if
      it has a non-@('nil') unnormalized body.
-     The unnormalized body of a named function is
-     the @('acl2::unnormalized-body') property of the function symbol.")
+     This notion of definedness applies to the APT transformations
+     whose user documentation links to this XDOC topic
+     from the place where the definedness requirement is stated.")
    (xdoc::p
     "The unnormalized body of a named function is
+     the @('acl2::unnormalized-body') property of the function symbol.
+     The value of this property is
      the " (xdoc::seetopic "acl2::term" "translated term") " obtained
      from the function body that appears (in untranslated form)
      in the @(tsee defun) event that introduces the function.
@@ -70,12 +73,16 @@
      Therefore, the unnormalized body of a defined function cannot be @('nil'):
      testing the @('acl2::unnormalized-body') property against @('nil')
      is therefore a good way to check
-     whether a function is defined in the APT sense.")
+     whether a function is defined in the APT transformations
+     that use this notion of definedness.")
    (xdoc::p
-    "Certain program-mode functions may be defined
-     but not have an unnormalized body.
-     APT does not regard these functions as being defined.
-     In any case, APT currently only handles logic-mode functions.")
+    "However, the built-in program-mode functions are defined
+     but do not have an unnormalized body.
+     Thus, the APT transformations that use this notion of definedness
+     would not regard these functions as being defined.
+     Nonetheless,
+     all such transformations require the functions to be logic-mode,
+     thus excluding (built-in or non-built-in) program-mode functions.")
    (xdoc::p
     "The system utility @(tsee acl2::ubody) (or @(tsee acl2::ubody+))
      retrieves the unnormalized body of a function.
