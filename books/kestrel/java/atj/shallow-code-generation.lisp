@@ -1689,6 +1689,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-jprim-unop-call ((fn atj-jprim-unop-fn-p)
+                                         (arg-block jblockp)
+                                         (arg-expr jexprp)
+                                         (src-types atj-type-listp)
+                                         (dst-types atj-type-listp))
+  :guard (and (consp src-types)
+              (consp dst-types))
+  :returns (mv (block jblockp)
+               (expr jexprp))
+  :short "Generate a shallowly embedded
+          ACL2 call of a Java primitive unary operation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called only if @(':guards') is @('t').
+     This is called after translating the argument of @(tsee not) to Java.
+     The resulting block and expression are passed as parameters here,
+     along with the original ACL2 term that is the @(tsee not) argument.")
+   (xdoc::p
+    "We generate a Java unary expression
+     whose operator corresponds to the function."))
+  (b* ((unop (atj-jprim-unop-fn-to-junop fn))
+       (expr (jexpr-unary unop arg-expr))
+       (block (jblock-fix arg-block)))
+    (mv block
+        (atj-adapt-expr-to-type expr
+                                (atj-type-list-to-type src-types)
+                                (atj-type-list-to-type dst-types)
+                                t)))) ; GUARDS$
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; This WITH-OUTPUT is here because it takes a long time to just print
 ; (1) the return type theorem induction scheme and (2) the guard conjecture.
 ; Comment this out if some error occurs, to see what is going on.
@@ -1803,64 +1835,6 @@
     :measure (two-nats-measure (+ (pseudo-term-count first)
                                   (pseudo-term-count second))
                                2))
-
-  (define atj-gen-shallow-jprim-unop-call
-    ((fn atj-jprim-unop-fn-p)
-     (operand pseudo-termp)
-     (src-types atj-type-listp)
-     (dst-types atj-type-listp)
-     (jvar-tmp-base stringp)
-     (jvar-tmp-index posp)
-     (pkg-class-names string-string-alistp)
-     (fn-method-names symbol-string-alistp)
-     (curr-pkg stringp)
-     (qpairs cons-pos-alistp)
-     (wrld plist-worldp))
-    :guard (and (consp src-types)
-                (consp dst-types)
-                (not (equal curr-pkg "")))
-    :returns (mv (block jblockp)
-                 (expr jexprp)
-                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded
-            ACL2 call of a Java primitive unary operation."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This code generation function is called
-       only if @(':guards') is @('t').")
-     (xdoc::p
-      "If the @(':guards') input is @('t'),
-       the functions that model Java primitive unary operations
-       (i.e. @(tsee int-minus) etc.) are treated specially.
-       We generate Java code to compute the operand,
-       and generate a Java unary expression
-       whose operator corresponds to the function."))
-    (b* (((mv operand-block
-              operand-expr
-              jvar-tmp-index)
-          (atj-gen-shallow-term operand
-                                jvar-tmp-base
-                                jvar-tmp-index
-                                pkg-class-names
-                                fn-method-names
-                                curr-pkg
-                                qpairs
-                                t ; GUARDS$
-                                wrld))
-         (unop (atj-jprim-unop-fn-to-junop fn))
-         (expr (jexpr-unary unop operand-expr))
-         (block operand-block))
-      (mv block
-          (atj-adapt-expr-to-type expr
-                                  (atj-type-list-to-type src-types)
-                                  (atj-type-list-to-type dst-types)
-                                  t) ; GUARDS$
-          jvar-tmp-index))
-    ;; 2nd component is greater than 1
-    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (pseudo-term-count operand) 2))
 
   (define atj-gen-shallow-jprim-binop-call
     ((fn atj-jprim-binop-fn-p)
@@ -2664,17 +2638,13 @@
          ((when (and guards$
                      (atj-jprim-unop-fn-p fn)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprim-unop-call fn
-                                           (car args)
-                                           src-types
-                                           dst-types
-                                           jvar-tmp-base
-                                           jvar-tmp-index
-                                           pkg-class-names
-                                           fn-method-names
-                                           curr-pkg
-                                           qpairs
-                                           wrld))
+          (b* (((mv block expr)
+                (atj-gen-shallow-jprim-unop-call fn
+                                                 (car arg-blocks)
+                                                 (car arg-exprs)
+                                                 src-types
+                                                 dst-types)))
+            (mv block expr jvar-tmp-index)))
          ((when (and guards$
                      (atj-jprim-binop-fn-p fn)
                      (int= (len args) 2))) ; should be always true
