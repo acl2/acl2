@@ -18565,79 +18565,27 @@
                                   (cons accessor-const-name
                                         const-names))))))))
 
-(defun defstobj-redundancy-bundle (args)
-
-; See redundant-defstobjp to see how this is used.
-
-; The treatment of erp below is justified as follows.  If this function is used
-; to compute a redundancy bundle for a new purported but ill-formed defstobj,
-; the bundle will contain the symbol 'error in the field-descriptors slot,
-; which will cause it not to match any correct redundancy bundle.  Thus, the
-; purported defstobj will not be considered redundant and the error will be
-; detected by the admissions process.
-
-  (mv-let
-   (erp field-descriptors key-alist)
-   (partition-rest-and-keyword-args args *defstobj-keywords*)
-   (list* (if erp
-              'error
-            field-descriptors)
-          (cdr (assoc-eq :renaming key-alist))
-          (cdr (assoc-eq :non-memoizable key-alist))
-
-; We include the :congruent-to field, for example to avoid errors like the
-; following.
-
-;   (defstobj st1 fld1)
-;
-;   (encapsulate
-;    ()
-;    (local (defstobj st2 fld2 fld3))
-;    (defstobj st2 fld2 fld3 :congruent-to st1))
-;
-;   ; Raw lisp error!
-;   (fld3 st1)
-
-          (cdr (assoc-eq :congruent-to key-alist)))))
-
-(defun old-defstobj-redundancy-bundle (name wrld)
-
-; Name has a (non-nil) 'stobj property in the given world.  We return data
-; relevant for redundancy from the event associated with name in wrld.
-
+(defun old-field-descriptors (name wrld)
   (assert$
    (getpropc name 'stobj nil wrld)
    (let ((ev (get-event name wrld)))
      (and ev
-          (assert$ (and (eq (car ev) 'defstobj)
-                        (eq (cadr ev) name))
-                   (defstobj-redundancy-bundle (cddr ev)))))))
+          (assert$
+           (and (eq (car ev) 'defstobj)
+                (eq (cadr ev) name))
+           (mv-let (erp field-descriptors key-alist)
+             (partition-rest-and-keyword-args (cddr ev) *defstobj-keywords*)
+             (declare (ignore key-alist))
+             (and (null erp)
+                  field-descriptors)))))))
 
 (defun redundant-defstobjp (name args wrld)
-
-; Note: At one time we stored the defstobj template on the property
-; list of a defstobj name and we computed the new template from args
-; and compared the two templates to identify redundancy.  To make this
-; possible without causing runtime errors we had to check, here, that
-; the arguments -- which have not yet been checked for well-formedness
-; -- were at least of the right basic shape, e.g., that the renaming
-; is a doublet-style-symbol-to-symbol-alistp and that each
-; field-descriptor is either a symbol or a true-list of length 1, 3,
-; or 5 with :type and :initially fields.  But this idea suffered the
-; unfortunate feature that an illegal defstobj event could be
-; considered redundant.  For example, if the illegal event had a
-; renaming that included an unnecessary function symbol in its domain,
-; that error was not caught.  The bad renaming produced a good
-; template and if a correct version of that defstobj had previously
-; been executed, the bad one was recognized as redundant.
-; Unfortunately, if one were to execute the bad one first, an error
-; would result.
-
-; So we have changed this function to be extremely simple.
-
   (and (getpropc name 'stobj nil wrld)
-       (equal (old-defstobj-redundancy-bundle name wrld)
-              (defstobj-redundancy-bundle args))))
+       (let ((ev (get-event name wrld)))
+         (and ev
+              (eq (car ev) 'defstobj)
+              (eq (cadr ev) name)
+              (equal (cddr ev) args)))))
 
 (defun congruent-stobj-fields (fields1 fields2)
   (cond ((endp fields1) (null fields2))
@@ -18659,7 +18607,7 @@
    ((not (symbolp name))
     (er soft ctx
         "The first argument of a DEFSTOBJ event must be a symbol.  Thus, ~x0 ~
-          is ill-formed."
+         is ill-formed."
         (list* 'defstobj name args)))
    (t
     (mv-let
@@ -18681,16 +18629,21 @@
        (let ((renaming (cdr (assoc-eq :renaming key-alist)))
              (inline (cdr (assoc-eq :inline key-alist)))
              (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
-             (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
+             (non-memoizable (cdr (assoc-eq :non-memoizable key-alist)))
+             (non-executable (cdr (assoc-eq :non-executable key-alist))))
          (cond
           ((not (booleanp inline))
            (er soft ctx
                "DEFSTOBJ requires the :INLINE keyword argument to have a ~
                 Boolean value.  See :DOC defstobj."))
-          ((not (booleanp non-memoizable))
+          ((not (and (booleanp non-memoizable)
+                     (booleanp non-executable)))
            (er soft ctx
-               "DEFSTOBJ requires the :NON-MEMOIZABLE keyword argument to ~
-                have a Boolean value.  See :DOC defstobj."))
+               "DEFSTOBJ requires the ~x0 keyword argument to ~
+                have a Boolean value.  See :DOC defstobj."
+               (if (booleanp non-memoizable)
+                   :NON-EXECUTABLE
+                 :NON-MEMOIZABLE)))
           ((and congruent-to
                 (not (stobjp congruent-to t wrld)))
            (er soft ctx
@@ -18708,8 +18661,7 @@
           ((and congruent-to
                 (not (congruent-stobj-fields
                       field-descriptors
-                      (car (old-defstobj-redundancy-bundle congruent-to
-                                                           wrld)))))
+                      (old-field-descriptors congruent-to wrld))))
            (er soft ctx
                "A non-nil :CONGRUENT-TO field of a DEFSTOBJ must be the name ~
                 of a stobj that has the same shape as the proposed new stobj. ~
@@ -18730,6 +18682,13 @@
                congruent-to
                (if non-memoizable name congruent-to)
                (if non-memoizable congruent-to name)))
+          ((and congruent-to non-executable)
+           (er soft ctx
+               "It is illegal both to specify keyword argument ~
+                :NON-EXECUTABLE T and to use the :CONGRUENT-TO keyword ~
+                argument.  The proposed introduction of stobj ~x0 is thus ~
+                illegal.  See :DOC defstobj."
+               name))
           (t
            (er-progn
 
@@ -19438,7 +19397,9 @@
                  (congruent-to (access defstobj-template template
                                        :congruent-to))
                  (non-memoizable (access defstobj-template template
-                                         :non-memoizable)))
+                                         :non-memoizable))
+                 (non-executable (access defstobj-template template
+                                         :non-executable)))
             (er-progn
              (cond ((set-equalp-equal names
                                       (strip-cars raw-def-lst))
@@ -19519,56 +19480,59 @@
 ; super-defun-wart problem.
 
                 (let* ((wrld2 (w state))
+                       (congruent-stobj-rep
+                        (and congruent-to
+                             (congruent-stobj-rep congruent-to wrld2)))
                        (wrld3
                         (put-defstobj-invariant-risk
                          field-templates
                          (putprop
-                          name 'congruent-stobj-rep
-                          (and congruent-to
-                               (congruent-stobj-rep congruent-to wrld2))
+                          name 'congruent-stobj-rep congruent-stobj-rep
                           (putprop-unless
                            name 'non-memoizable non-memoizable nil
-                           (putprop
+                           (putprop-unless
+                            name 'non-executablep non-executable nil
+                            (putprop
 
 ; Here I declare that name is Common Lisp compliant.  Below I similarly declare
 ; the-live-var.  All elements of the namex list of an event must have the same
 ; symbol-class.
 
-                            name 'symbol-class :common-lisp-compliant
-                            (put-stobjs-in-and-outs
-                             name template
+                             name 'symbol-class :common-lisp-compliant
+                             (put-stobjs-in-and-outs
+                              name template
 
 ; Rockwell Addition: It is convenient for the recognizer to be in a
 ; fixed position in this list, so I can find out its name.
 
-                             (putprop
-                              name 'stobj
-                              (cons the-live-var
-                                    (list*
-                                     recog-name
-                                     creator-name
-                                     (append (remove1-eq
-                                              creator-name
-                                              (remove1-eq recog-name
+                              (putprop
+                               name 'stobj
+                               (cons the-live-var
+                                     (list*
+                                      recog-name
+                                      creator-name
+                                      (append (remove1-eq
+                                               creator-name
+                                               (remove1-eq recog-name
 
 ; See the comment in the binding of names above.
 
-                                                          names))
-                                             field-const-names)))
-                              (putprop-x-lst1
-                               names 'stobj-function name
+                                                           names))
+                                              field-const-names)))
                                (putprop-x-lst1
-                                field-const-names 'stobj-constant name
-                                (putprop
-                                 the-live-var 'stobj-live-var name
+                                names 'stobj-function name
+                                (putprop-x-lst1
+                                 field-const-names 'stobj-constant name
                                  (putprop
-                                  the-live-var 'symbol-class
-                                  :common-lisp-compliant
+                                  the-live-var 'stobj-live-var name
                                   (putprop
-                                   name
-                                   'accessor-names
-                                   (accessor-array name field-names)
-                                   wrld2)))))))))))))
+                                   the-live-var 'symbol-class
+                                   :common-lisp-compliant
+                                   (putprop
+                                    name
+                                    'accessor-names
+                                    (accessor-array name field-names)
+                                    wrld2))))))))))))))
 
 ; The property 'stobj marks a single-threaded object name.  Its value is a
 ; non-nil list containing all the names associated with this object.  The car
@@ -19635,7 +19599,8 @@
                                     ,(defstobj-raw-init template)
                                     ,raw-def-lst
                                     ,template
-                                    ,ax-def-lst)
+                                    ,ax-def-lst
+                                    . ,event-form)
                                  t
                                  ctx
                                  wrld3

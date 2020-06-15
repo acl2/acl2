@@ -5971,7 +5971,8 @@
   ((congruent-to . non-memoizable)
    (recognizer . creator)
    field-templates
-   inline)
+   inline
+   . non-executable)
   nil)
 
 (defun packn1 (lst)
@@ -6192,7 +6193,7 @@
               (cdr field-descriptors) renaming wrld))))))
 
 (defconst *defstobj-keywords*
-  '(:renaming :inline :congruent-to :non-memoizable))
+  '(:renaming :inline :congruent-to :non-memoizable :non-executable))
 
 ; The following function is used to implement a slightly generalized
 ; form of macro args, namely one in which we can provide an arbitrary
@@ -6280,13 +6281,15 @@
      (let ((renaming (cdr (assoc-eq :renaming key-alist)))
            (inline (cdr (assoc-eq :inline key-alist)))
            (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
-           (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
+           (non-memoizable (cdr (assoc-eq :non-memoizable key-alist)))
+           (non-executable (cdr (assoc-eq :non-executable key-alist))))
        (make defstobj-template
              :recognizer (defstobj-fnname name :recognizer :top renaming)
              :creator (defstobj-fnname name :creator :top renaming)
              :field-templates (defstobj-field-templates
                                 field-descriptors renaming wrld)
              :non-memoizable non-memoizable
+             :non-executable non-executable
              :inline inline
              :congruent-to congruent-to))))))
 
@@ -6427,6 +6430,20 @@
                  (s (if suffix (concatenate 'string s suffix) s)))
             (intern-in-package-of-symbol s name))))
 
+(defrec defstobj-redundant-raw-lisp-discriminator-value
+
+; The first field, :event, completely determines the other fields.  We store
+; those simply for convenience, as per the comments below.  At the time of this
+; writing (6/14/2020), none of the accesses needs to be efficient; if that
+; changes then we can rearrange the fields.
+
+  (event
+   creator             ; helpful for get-stobj-creator
+   congruent-stobj-rep ; helpful for congruent-stobj-rep-raw
+   non-memoizable      ; helpful for non-memoizable-stobj-raw
+   non-executable)     ; helpful for add-trip
+  nil)
+
 (defun get-stobj-creator (stobj wrld)
 
 ; This function assumes that wrld is an ACL2 logical world, although wrld may
@@ -6448,7 +6465,7 @@
 
 ; Then d is (defabsstobj name . keyword-alist).
 
-                  (let ((tail (assoc-keyword :CREATOR d)))
+                  (let ((tail (assoc-keyword :CREATOR (cddr d))))
                     (cond (tail (let* ((field-descriptor (cadr tail))
                                        (c (if (consp field-descriptor)
                                               (car field-descriptor)
@@ -6457,7 +6474,11 @@
                                            c)))
                           (t (let ((name (cadr d)))
                                (absstobj-name name :CREATOR))))))
-                 (t (caddr d))))
+                 ((eq (car d) 'defstobj)
+                  (access defstobj-redundant-raw-lisp-discriminator-value
+                          (cdr d)
+                          :creator))
+                 (t nil)))
          #+acl2-loop-only
          (er hard 'stobj-creator
              "Implementation error: The call ~x0 is illegal, because ~
@@ -7278,7 +7299,17 @@
   (f-get-global 'standard-co state))
 
 #-acl2-loop-only
-(defmacro defstobj (name &rest args)
+(defun congruent-stobj-rep-raw (name)
+  (assert name)
+  (let ((d (get (the-live-var name) 'redundant-raw-lisp-discriminator)))
+    (assert (eq (car d) 'defstobj))
+    (assert (cdr d))
+    (access defstobj-redundant-raw-lisp-discriminator-value
+            (cdr d)
+            :congruent-stobj-rep)))
+
+#-acl2-loop-only
+(defmacro defstobj (&whole event name &rest args)
 
 ; Warning: If you change this definition, consider the possibility of making
 ; corresponding changes to the #-acl2-loop-only definition of defabsstobj.
@@ -7305,7 +7336,9 @@
          (congruent-stobj-rep (if congruent-to
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
+         (creator (access defstobj-template template :creator))
          (non-memoizable (access defstobj-template template :non-memoizable))
+         (non-executable (access defstobj-template template :non-executable))
          (init-form (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
@@ -7335,61 +7368,62 @@
            (strip-accessor-names (access defstobj-template template
                                          :field-templates))
            0)
-       (let* ((template ',template)
+       (let* ((event ',event)
+              (creator ',creator)
               (congruent-stobj-rep ',congruent-stobj-rep)
               (non-memoizable ',non-memoizable)
+              (non-executable ',non-executable)
               (old-pair (assoc-eq ',name *user-stobj-alist*))
-              (d (and old-pair
+              (d (and (or old-pair non-executable) ; optimization
                       (get ',the-live-name
                            'redundant-raw-lisp-discriminator)))
 
 ; d is expected to be of the form (DEFSTOBJ namep creator field-templates
 ; . congruent-stobj-rep).
 
-              (ok-p (and old-pair
-                         (consp d)
+              (ok-p (and (consp d)
                          (eq (car d) 'defstobj)
-                         (consp (cdr d))
-                         (eq (cadr d) (access defstobj-template template
-                                              :recognizer))
-                         (consp (cddr d))
-                         (eq (caddr d) (access defstobj-template template
-                                               :creator))
-                         (equal (cadddr d) (access defstobj-template template
-                                                   :field-templates))
-                         (eq (car (cddddr d)) congruent-stobj-rep)
-                         (eq (cdr (cddddr d)) non-memoizable)
-
-; We do not check the :inline :congruent-to fields, because these incur no
-; proof obligations.  If a second pass of encapsulate, or inclusion of a book,
-; exposes a later non-local defstobj that is redundant with an earlier local
-; one, then any problems will be caught during local compatibility checks.
-
-                         )))
+                         (equal (access
+                                 defstobj-redundant-raw-lisp-discriminator-value
+                                 (cdr d)
+                                 :event)
+                                event))))
          (cond
           (ok-p ',name)
           ((and old-pair (not (raw-mode-p *the-live-state*)))
+
+; If the old stobj was non-executable, then it should be OK to redeclare it
+; since there is no issue about what to do with the old value (there isn't
+; one).
+
            (interface-er
             "Illegal attempt to redeclare the single-threaded object ~s0."
             ',name))
           (t
            (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
-                 (list* 'defstobj
-                        (access defstobj-template template
-                                :recognizer)
-                        (access defstobj-template template
-                                :creator)
-                        (access defstobj-template template
-                                :field-templates)
-                        congruent-stobj-rep
-                        (access defstobj-template template
-                                :non-memoizable)))
+                 (cons 'defstobj
+                       (make defstobj-redundant-raw-lisp-discriminator-value
+                             :event event
+                             :creator creator
+                             :congruent-stobj-rep congruent-stobj-rep
+                             :non-memoizable non-memoizable 
+                             :non-executable non-executable)))
            (cond (old-pair ; hence raw-mode
-                  (fms "Note:  Redefining and reinitializing stobj ~x0 in raw ~
-                        mode.~%"
-                       (list (cons #\0 ',name))
+                  (fms "Note:  Redefining and ~@0 stobj ~x1 in ~
+                        raw mode.~%"
+                       (list (cons #\0 (if non-executable
+                                           "removing executability of"
+                                         "reinitializing"))
+                             (cons #\1 ',name))
                        (standard-co *the-live-state*) *the-live-state* nil)
-                  (setf (cdr old-pair) ,init-form))
+                  (if non-executable
+                      (assert$
+                       (not (member-eq ',name *non-executable-user-stobj-lst*))
+                       (setq *user-stobj-alist*
+                             (remove1-assoc-eq ',name *user-stobj-alist*)))
+                    (setf (cdr old-pair) ,init-form)))
+                 (non-executable
+                  (pushnew ',name *non-executable-user-stobj-lst*))
                  (t
                   (setq *user-stobj-alist* ; update-user-stobj-alist
                         (cons (cons ',name ,init-form)

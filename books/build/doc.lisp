@@ -673,10 +673,10 @@ file that gets that @(see defpkg) form loaded.</p>")
 
 (defxdoc custom-certify-book-commands ; Step 3
   :parents (cert.pl)
-  :short "How to control the options that will be passed to the @(see
-certify-book) command.  You'll need this to allow the use of <see topic='@(url
-defttag)'>trust tags</see>, @(see skip-proofs), @(see defaxiom)s, and so
-forth."
+  :short "How to use @('cert-flags') to control the options that will be passed
+to the @(see certify-book) command.  You'll need this to allow the use of <see
+topic='@(url defttag)'>trust tags</see>, @(see skip-proofs), @(see defaxiom)s,
+and so forth."
 
   :long "<p>By default, ACL2's @(see certify-book) command does not allow your
 books to use unsafe features that can easily lead to unsoundness.  For

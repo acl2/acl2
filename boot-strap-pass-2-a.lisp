@@ -94,6 +94,8 @@
 (verify-termination-boot-strap symbol-name-lst) ; and guards
 ; for case-match expansions:
 (verify-termination-boot-strap symbol-name-equal) ; and guards
+(verify-termination-boot-strap fix-pkg) ; and guards
+(verify-termination-boot-strap unmake-true-list-cons-nest) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

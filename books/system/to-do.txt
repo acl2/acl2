@@ -810,3 +810,17 @@ with (verify (< (identity y) (identity z))) followed by (dv 1) and
 show-linears.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Move computation of defrec names from books/build/cert_features.lsp to ACL2 build.}}
+
+By moving that compuatation (see constant *defrecs* and function
+write-defrec-certdeps in books/build/cert_features.lsp) to the build,
+we can compute the set of defrec names without affecting regression
+times, just build time.  The computation.  Sol S. and Matt
+K. discussed this and it was OK with both of them.
+
+There are lots of examples in the ACL2 sources of defining a constant
+and then checking their accuracy at the end of the build.  See
+function check-built-in-constants in interface-raw.lisp.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>

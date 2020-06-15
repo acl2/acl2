@@ -1050,6 +1050,9 @@
 
   nil)
 
+(defvar *non-executable-user-stobj-lst*
+  nil)
+
 ; The following SPECIAL VARIABLE, *wormholep*, when non-nil, means that we
 ; are within a wormhole and are obliged to undo every change visited upon
 ; *the-live-state*.  Clearly, we can undo some of them, e.g., f-put-globals, by
@@ -1716,14 +1719,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (cdr x))
         (t (cons (car x)
                  (remove-stobj-inline-declare (cdr x))))))
-
-(defun congruent-stobj-rep-raw (name)
-  (assert name)
-  (let* ((d (get (the-live-var name)
-                 'redundant-raw-lisp-discriminator))
-         (ans (car (cddddr d))))
-    (assert ans)
-    ans))
 
 (defmacro value-triple (&rest args)
   (declare (ignore args))

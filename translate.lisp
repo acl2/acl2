@@ -2275,6 +2275,7 @@
 ; formal-args is the translation of (list t1 ... tn), unless that is impossible
 ; in which case we return :fail.
 
+  (declare (xargs :guard (pseudo-termp formal-args)))
   (cond ((equal formal-args *nil*) nil)
         ((quotep formal-args)
          (let ((lst (unquote formal-args)))
@@ -4049,6 +4050,21 @@
                            warranted-fns))
           (mv nil nil nil))))
 
+(defun non-executable-stobjs-msg (vars wrld non-exec-stobjs)
+  (cond ((endp vars)
+         (if non-exec-stobjs
+             (msg "  Note that ~&0 ~#0~[is a non-executable stobj~/are ~
+                   non-executable stobjs~]."
+                  (reverse non-exec-stobjs))
+           ""))
+        (t (non-executable-stobjs-msg
+            (cdr vars)
+            wrld
+            (if (and (stobjp (car vars) t wrld)
+                     (getpropc (car vars) 'non-executablep nil wrld))
+                (cons (car vars) non-exec-stobjs)
+              non-exec-stobjs)))))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -4659,8 +4675,9 @@
          (let ((pair (assoc-eq form alist)))
            (cond (pair (mv nil (cdr pair) latches))
                  (t (mv t
-                        (msg "Unbound var ~x0."
-                             form)
+                        (msg "Unbound var ~x0.~@1"
+                             form
+                             (non-executable-stobjs-msg (list form) w nil))
                         latches)))))
         ((fquotep form)
          (mv nil (cadr form) latches))
@@ -11013,10 +11030,12 @@
 #-acl2-loop-only
 (defun non-memoizable-stobj-raw (name)
   (assert name)
-  (let* ((d (get (the-live-var name)
-                 'redundant-raw-lisp-discriminator))
-         (ans (cdr (cddddr d))))
-    ans))
+  (let ((d (get (the-live-var name) 'redundant-raw-lisp-discriminator)))
+    (assert (eq (car d) 'defstobj))
+    (assert (cdr d))
+    (access defstobj-redundant-raw-lisp-discriminator-value
+            (cdr d)
+            :non-memoizable)))
 
 #-acl2-loop-only
 (defun stobj-let-fn-raw (x)
@@ -16922,9 +16941,10 @@
     (cond
      ((non-stobjps vars t wrld) ;;; known-stobjs = t
       (er soft ctx
-          "Global variables, such as ~&0, are not allowed. See :DOC ASSIGN ~
+          "Global variables, such as ~&0, are not allowed.~@1  See :DOC ASSIGN ~
            and :DOC @."
-          (reverse (non-stobjps vars t wrld)))) ;;; known-stobjs = t
+          (reverse (non-stobjps vars t wrld)) ;;; known-stobjs = t
+          (non-executable-stobjs-msg vars wrld nil)))
      (t (ev-for-trans-eval term stobjs-out ctx state aok
                            user-stobjs-modified-warning)))))
 

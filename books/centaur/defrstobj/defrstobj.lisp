@@ -30,6 +30,9 @@
 ; Shilpi Goel <shilpi@centtech.com>: added support for optional universal
 ;                                    accessor and updater functions
 
+; (depends-on "build/defrec-certdeps/DEFSTOBJ-FIELD-TEMPLATE.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/DEFSTOBJ-TEMPLATE.certdep" :dir :system)
+
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
 (include-book "generic")
