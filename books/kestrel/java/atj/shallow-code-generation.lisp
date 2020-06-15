@@ -1658,6 +1658,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-jprim-deconstr-call ((fn atj-jprim-deconstr-fn-p)
+                                             (arg-block jblockp)
+                                             (arg-expr jexprp)
+                                             (src-types atj-type-listp)
+                                             (dst-types atj-type-listp))
+  :guard (and (consp src-types)
+              (consp dst-types))
+  :returns (mv (block jblockp)
+               (expr jexprp))
+  :short "Generate a shallowly embedded
+          ACL2 call of a Java primitive deconstructor."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called only if @(':guards') is @('t').
+     This is called after translating the argument of @(tsee not) to Java.
+     The resulting block and expression are passed as parameters here,
+     along with the original ACL2 term that is the @(tsee not) argument.")
+   (xdoc::p
+    "We convert the argument from the appropriate Java primitive type."))
+  (b* ((src-type (atj-type-list-to-type src-types))
+       (dst-type (atj-type-list-to-type dst-types))
+       (expr (atj-convert-expr-from-jprim arg-expr
+                                          (atj-jprim-deconstr-fn-to-ptype fn)
+                                          t)) ; GUARDS$
+       (expr (atj-adapt-expr-to-type expr src-type dst-type t)) ; GUARDS$
+       (block (jblock-fix arg-block)))
+    (mv block expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; This WITH-OUTPUT is here because it takes a long time to just print
 ; (1) the return type theorem induction scheme and (2) the guard conjecture.
 ; Comment this out if some error occurs, to see what is going on.
@@ -1772,64 +1803,6 @@
     :measure (two-nats-measure (+ (pseudo-term-count first)
                                   (pseudo-term-count second))
                                2))
-
-  (define atj-gen-shallow-jprim-deconstr-call
-    ((fn atj-jprim-deconstr-fn-p)
-     (arg pseudo-termp)
-     (src-types atj-type-listp)
-     (dst-types atj-type-listp)
-     (jvar-tmp-base stringp)
-     (jvar-tmp-index posp)
-     (pkg-class-names string-string-alistp)
-     (fn-method-names symbol-string-alistp)
-     (curr-pkg stringp)
-     (qpairs cons-pos-alistp)
-     (wrld plist-worldp))
-    :guard (and (consp src-types)
-                (consp dst-types)
-                (not (equal curr-pkg "")))
-    :returns (mv (block jblockp)
-                 (expr jexprp)
-                 (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-    :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
-    :short "Generate a shallowly embedded
-            ACL2 call of a Java primitive deconstructor."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This code generation function is called
-       only if @(':guards') is @('t').")
-     (xdoc::p
-      "If the @(':guards') input is @('t'),
-       the functions that model the deconstruction of Java primitive values
-       (i.e. @(tsee byte-value->int) etc.)
-       are treated specially.
-       First we translate the argument in the general way
-       and then we convert that from the Java appropriate primitive type."))
-    (b* (((mv arg-block
-              arg-expr
-              jvar-tmp-index)
-          (atj-gen-shallow-term arg
-                                jvar-tmp-base
-                                jvar-tmp-index
-                                pkg-class-names
-                                fn-method-names
-                                curr-pkg
-                                qpairs
-                                t ; GUARDS$
-                                wrld))
-         (expr (atj-convert-expr-from-jprim
-                arg-expr
-                (atj-jprim-deconstr-fn-to-ptype fn)
-                t)) ; GUARDS$
-         (src-type (atj-type-list-to-type src-types))
-         (dst-type (atj-type-list-to-type dst-types)))
-      (mv arg-block
-          (atj-adapt-expr-to-type expr src-type dst-type t) ; GUARDS$
-          jvar-tmp-index))
-    ;; 2nd component is greater than 1
-    ;; so that the call of ATJ-GEN-SHALLOW-TERM decreases:
-    :measure (two-nats-measure (pseudo-term-count arg) 2))
 
   (define atj-gen-shallow-jprim-unop-call
     ((fn atj-jprim-unop-fn-p)
@@ -2681,17 +2654,13 @@
          ((when (and guards$
                      (atj-jprim-deconstr-fn-p fn)
                      (int= (len args) 1))) ; should be always true
-          (atj-gen-shallow-jprim-deconstr-call fn
-                                               (car args)
-                                               src-types
-                                               dst-types
-                                               jvar-tmp-base
-                                               jvar-tmp-index
-                                               pkg-class-names
-                                               fn-method-names
-                                               curr-pkg
-                                               qpairs
-                                               wrld))
+          (b* (((mv block expr)
+                (atj-gen-shallow-jprim-deconstr-call fn
+                                                     (car arg-blocks)
+                                                     (car arg-exprs)
+                                                     src-types
+                                                     dst-types)))
+            (mv block expr jvar-tmp-index)))
          ((when (and guards$
                      (atj-jprim-unop-fn-p fn)
                      (int= (len args) 1))) ; should be always true
