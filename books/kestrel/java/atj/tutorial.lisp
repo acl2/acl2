@@ -1827,14 +1827,11 @@
    "When @(':verbose') is @('nil'), which is the default,
     ATJ just prints a short completion message
     about the generated Java file(s).
-    This is mentioned in the factorial function example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", where a single file is generated.
-    (The generation of multiple files is discussed in "
-   (xdoc::seetopic "atj-tutorial-tests"
-                   "the tutorial page on test generation")
-   ".)")
+    This is mentioned in
+    the factorial function example in @(see atj-tutorial-deep),
+    where a single file is generated.
+    (The generation of multiple files is discussed later
+    in @(see atj-tutorial-tests).)")
 
   (atj-tutorial-section "Verbose Screen Output")
 
@@ -1846,46 +1843,39 @@
     and also for debugging.")
 
   (xdoc::p
-   "As discussed in the factorial example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", and more generally and systematically in "
-   (xdoc::seetopic
-    "atj-tutorial-translated"
-    "the tutorial page on the ACL2 functions translated to Java")
-   ", ATJ translates to Java not only
+   "As discussed in the factorial example in @(see atj-tutorial-deep),
+    and more generally and systematically
+    in @(see atj-tutorial-translated) later,
+    ATJ translates to Java not only
     the explicitly supplied target function(s),
     but also the functions that they call directly or indirectly.
     With the verbose screen output,
     ATJ displays the list of all such functions.")
 
   (xdoc::p
-   "As discussed in the factorial example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", ATJ generates Java code to build
+   "As discussed in
+    the factorial example in @(see atj-tutorial-deep),
+    ATJ generates Java code to build
     Java representations of all the ACL2 packages
-    known when ATJ is called.
+    that are known when ATJ is called.
     The list of these packages is displayed by ATJ
     when the screen output is verbose.")
 
   (xdoc::p
    "These two lists, of ACL2 functions and packages,
-    are actually printed twice each:
+    are actually printed twice:
     once when they are collected,
     and once when they are translated to Java code.
     The purpose of this duplication is mainly debugging,
-    and to give an idea of ATJ's progress.
-    (However, ATJ may run, and print the lists, very quickly.)
+    and to give an idea of ATJ's progress in case the process takes time.
+    (However, ATJ often runs, and prints the lists, very quickly.)
     For debugging and for progress indication,
     ATJ also displays (with verbose screen output),
-    messages as it generating Java classes, compilation units, and files.")
+    messages as it is generating Java classes, compilation units, and files.")
 
   (xdoc::p
-   "In the factorial example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", verbose screen output can be displayed via ")
+   "In the factorial example in @(see atj-tutorial-deep),
+    verbose screen output can be displayed via ")
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :verbose t)"))
 
