@@ -1685,24 +1685,20 @@
   (atj-tutorial-section "Java Package")
 
   (xdoc::p
-   "The Java code generated for the factorial function in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   " has no @('package') declaration [JLS:7.4],
-    which means that the generated class is in an unnamed package [JLS:7.4.2].
+   "The Java code generated for
+    the factorial function in @(see atj-tutorial-deep)
+    has no @('package') declaration,
+    which means that the generated class is in an unnamed package.
     This (i.e. the absence of a @('package') declaration) is the default,
     which can be overridden via ATJ's @(':java-package') option.")
 
   (xdoc::p
-   "For the example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", the ATJ call")
+   "For the example in @(see atj-tutorial-deep), the ATJ call")
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :java-package \"mypkg\")")
   (xdoc::p
-   "generates a file @('Acl2Code.java') that is the same as before
-    but with the package declaration")
+   "generates a file @('Acl2Code.java')
+    that is the same as before but with the package declaration")
   (xdoc::codeblock
    "package mypkg;")
   (xdoc::p
@@ -1710,10 +1706,8 @@
 
   (xdoc::p
    "Now that the generated code is in the @('mypkg') package,
-    the external Java code exemplified in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   " must be adapted, e.g. by putting it into @('mypkg') as well,
+    the external Java code exemplified in @(see atj-tutorial-deep)
+    must be adapted, e.g. by putting it into @('mypkg') as well,
     or by referencing the generated Java class
     via the fully qualified name @('mypkg.Acl2Code'),
     or by importing the class via a declaration @('import mypkg.Acl2Code;').")
@@ -1722,7 +1716,7 @@
    "The string passed as the @(':java-package') option
     must be not only a valid Java package name,
     but also consist only of ASCII characters.
-    ATJ does not support the generation of
+    ATJ does not currently support the generation of
     package names with non-ASCII characters.")
 
   (xdoc::p
@@ -1735,22 +1729,18 @@
   (atj-tutorial-section "Java Class")
 
   (xdoc::p
-   "The Java class generated for the factorial function in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   " is called @('Acl2Code');
+   "The Java class generated for
+    the factorial function in @(see atj-tutorial-deep)
+    is called @('Acl2Code');
     the generated file is called @('Acl2Code.java'),
     thus satisfying the constraint that a public class resides in a file
     whose name is obtained by adding the @('.java') extension
-    to the class name [JLS:7.6].
+    to the class name.
     This class (and thus file) name is the default,
     which can be overridden via ATJ's @(':java-class') option.")
 
   (xdoc::p
-   "For the example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", the ATJ call")
+   "For the example in @(see atj-tutorial-deep), the ATJ call")
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :java-class \"Fact\")")
   (xdoc::p
@@ -1759,33 +1749,27 @@
 
   (xdoc::p
    "Now that the generated class is called @('Fact'),
-    the external Java code exemplified in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   " must be adapted, by referencing the generated Java class as @('Fact').")
+    the external Java code exemplified in @(see atj-tutorial-deep)
+    must be adapted, by referencing the generated Java class as @('Fact').")
 
   (xdoc::p
    "The string passed as the @(':java-class') option
     must be not only a valid Java class name,
     but also consist only of ASCII characters.
-    ATJ does not support the generation of
+    ATJ does not currently support the generation of
     class names with non-ASCII characters.")
 
   (atj-tutorial-section "Output Directory")
 
   (xdoc::p
-   "The Java file generated for the factorial function in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   " resides in the current directory.
+   "The Java file generated for
+    the factorial function in @(see atj-tutorial-deep)
+    resides in the current directory.
     This is the default,
     which can be overridden via ATJ's @(':output-dir') option.")
 
   (xdoc::p
-   "For the example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", the ATJ call")
+   "For the example in @(see atj-tutorial-deep), the ATJ call")
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :output-dir \"java\")")
   (xdoc::p
@@ -1795,15 +1779,16 @@
 
   (xdoc::p
    "Needless to say, the invocations of the @('javac') and @('java') commands
-    must be adapted to the local of the @('.java') and @('.class') files.")
+    must be adapted to the location of the @('.java') and @('.class') files.")
 
   (xdoc::p
    "The string must be a valid absolute or relative path
     in the file system of the underlying operating system.
     If it is a relative path, it is relative to the current directory.
     When running ATJ interactively from the ACL2 shell,
-    the current directory is the one returned by @(':cbd').
-    When running ATJ as part of book certification,
+    the current directory is the one returned by "
+   (xdoc::seetopic "acl2::cbd" "@(':cbd')")
+   ". When running ATJ as part of book certification,
     the current directory should be the same one
     where the @('.lisp') file with the ATJ call resides.")
 
