@@ -16,6 +16,8 @@
 (include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system)
 (include-book "kestrel/fty/sbyte64-ihs-theorems" :dir :system)
 
+(local (include-book "ihs/logops-lemmas" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (disable logext)))
@@ -268,41 +270,47 @@
 
 (def-int-binary int-and
   :short "Bitwise conjunction @('&') on @('int')s [JLS:4.2.2] [JLS:15.22.1]."
-  :operation (logext 32 (logand x y)))
+  :operation (logext 32 (logand x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-and
   :short "Bitwise conjunction @('&') on @('long')s [JLS:4.2.2] [JLS:15.22.1]."
-  :operation (logext 64 (logand x y)))
+  :operation (logext 64 (logand x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-xor
   :short "Bitwise exclusive disjunction @('^') on @('int')s
           [JLS:4.2.2] [JLS:15.22.1]."
-  :operation (logext 32 (logxor x y)))
+  :operation (logext 32 (logxor x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-xor
   :short "Bitwise exclusive disjunction @('^') on @('long')s
           [JLS:4.2.2] [JLS:15.22.1]."
-  :operation (logext 64 (logxor x y)))
+  :operation (logext 64 (logxor x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-ior
   :short "Bitwise inclusive disjunction @('|') on @('int')s
           [JLS:4.2.2] [JLS:15.22.1]."
-  :operation (logext 32 (logior x y)))
+  :operation (logext 32 (logior x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-ior
   :short "Bitwise inclusive disjunction @('|') on @('long')s
           [JLS:4.2.2] [JLS:15.22.1]."
-  :operation (logext 64 (logior x y)))
+  :operation (logext 64 (logior x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
