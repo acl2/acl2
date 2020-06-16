@@ -1469,7 +1469,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called after translating the 3 arguments of @(tsee if) to Java.
+    "This is called after translating the arguments of @(tsee if) to Java.
      The resulting blocks and expressions are passed as parameters here,
      along with the original ACL2 term that is the @(tsee if) test.")
    (xdoc::p
@@ -1555,6 +1555,68 @@
                   (append else-block
                           (jblock-asg-name jvar-tmp else-expr))))
        (block (append (jblock-fix test-block)
+                      result-locvar-block
+                      if-block))
+       (expr (jexpr-name jvar-tmp)))
+    (mv block
+        expr
+        jvar-tmp-index)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-or-call ((left-block jblockp)
+                                 (right-block jblockp)
+                                 (left-expr jexprp)
+                                 (right-expr jexprp)
+                                 (types atj-type-listp)
+                                 (jvar-tmp-base stringp)
+                                 (jvar-tmp-index posp)
+                                 (pkg-class-names string-string-alistp)
+                                 (curr-pkg stringp)
+                                 (guards$ booleanp))
+  :guard (and (consp types)
+              (not (equal curr-pkg "")))
+  :returns (mv (block jblockp)
+               (expr jexprp)
+               (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+  :short "Generate a shallowly embedded ACL2 @('or') call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after translating the arguments to Java.
+     The resulting blocks and expressions are passed as parameters here.")
+   (xdoc::p
+    "This is for the @('or') ACL2 ``pseudo-function''
+     (see the AIJ documentation for details).
+     We treat @('(or a b)') non-strictly like @('(if a a b)'),
+     but we avoid calculating @('a') twice.
+     Somewhat similarly to how we treat @(tsee if),
+     we generate the Java block")
+   (xdoc::codeblock
+    "<a-block>"
+    "<type> <tmp> = <a-expr>;"
+    "if (<tmp> == NIL) {"
+    "    <b-blocks>"
+    "    <tmp> = <b-expr>;"
+    "}")
+   (xdoc::p
+    "and the Java expression @('<tmp>')."))
+  (b* ((jtype (atj-gen-shallow-jtype types))
+       ((mv result-locvar-block
+            jvar-tmp
+            jvar-tmp-index)
+        (atj-gen-jlocvar-indexed jtype
+                                 jvar-tmp-base
+                                 jvar-tmp-index
+                                 left-expr))
+       (if-block (jblock-if
+                  (jexpr-binary (jbinop-eq)
+                                (jexpr-name jvar-tmp)
+                                (atj-gen-shallow-symbol
+                                 nil pkg-class-names curr-pkg guards$))
+                  (append right-block
+                          (jblock-asg-name jvar-tmp right-expr))))
+       (block (append (jblock-fix left-block)
                       result-locvar-block
                       if-block))
        (expr (jexpr-name jvar-tmp)))
@@ -2134,93 +2196,6 @@
      the index to make these variables unique
      is threaded through the code generation functions."))
 
-    (define atj-gen-shallow-or-call ((first pseudo-termp)
-                                     (second pseudo-termp)
-                                     (types atj-type-listp)
-                                     (jvar-tmp-base stringp)
-                                     (jvar-tmp-index posp)
-                                     (pkg-class-names string-string-alistp)
-                                     (fn-method-names symbol-string-alistp)
-                                     (curr-pkg stringp)
-                                     (qpairs cons-pos-alistp)
-                                     (guards$ booleanp)
-                                     (wrld plist-worldp))
-      :guard (and (consp types)
-                  (not (equal curr-pkg "")))
-      :returns (mv (block jblockp)
-                   (expr jexprp)
-                   (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-      :parents (atj-shallow-code-generation atj-gen-shallow-term-fns)
-      :short "Generate a shallowly embedded ACL2 @('or') call."
-      :long
-      (xdoc::topstring
-       (xdoc::p
-        "This is for the @('or') ACL2 ``pseudo-function''
-       (see the AIJ documentation for details).
-       We treat @('(or a b)') non-strictly like @('(if a a b)'),
-       but we avoid calculating @('a') twice.
-       Somewhat similarly to how we treat @(tsee if),
-       we generate the Java block")
-       (xdoc::codeblock
-        "<a-block>"
-        "<type> <tmp> = <a-expr>;"
-        "if (<tmp> == NIL) {"
-        "    <b-blocks>"
-        "    <tmp> = <b-expr>;"
-        "}")
-       (xdoc::p
-        "and the Java expression @('<tmp>')."))
-      (b* (((mv first-block
-                first-expr
-                jvar-tmp-index)
-            (atj-gen-shallow-term first
-                                  jvar-tmp-base
-                                  jvar-tmp-index
-                                  pkg-class-names
-                                  fn-method-names
-                                  curr-pkg
-                                  qpairs
-                                  guards$
-                                  wrld))
-           ((mv second-block
-                second-expr
-                jvar-tmp-index)
-            (atj-gen-shallow-term second
-                                  jvar-tmp-base
-                                  jvar-tmp-index
-                                  pkg-class-names
-                                  fn-method-names
-                                  curr-pkg
-                                  qpairs
-                                  guards$
-                                  wrld))
-           (jtype (atj-gen-shallow-jtype types))
-           ((mv result-locvar-block jvar-tmp jvar-tmp-index)
-            (atj-gen-jlocvar-indexed jtype
-                                     jvar-tmp-base
-                                     jvar-tmp-index
-                                     first-expr))
-           (if-block (jblock-if
-                      (jexpr-binary (jbinop-eq)
-                                    (jexpr-name jvar-tmp)
-                                    (atj-gen-shallow-symbol
-                                     nil pkg-class-names curr-pkg guards$))
-                      (append second-block
-                              (jblock-asg-name jvar-tmp second-expr))))
-           (block (append first-block
-                          result-locvar-block
-                          if-block))
-           (expr (jexpr-name jvar-tmp)))
-        (mv block
-            expr
-            jvar-tmp-index))
-      ;; 2nd component is greater than 1
-      ;; so that each call of ATJ-GEN-SHALLOW-TERM decreases
-      ;; even when the PSEUDO-TERM-COUNT of the other addend is 0:
-      :measure (two-nats-measure (+ (pseudo-term-count first)
-                                    (pseudo-term-count second))
-                                 2))
-
     (define atj-gen-shallow-mv-call ((args pseudo-term-listp)
                                      (src-types atj-type-listp)
                                      (dst-types atj-type-listp)
@@ -2360,20 +2335,22 @@
            ((when (and (eq fn 'if)
                        (int= (len args) 3))) ; should be always true
             (b* ((first (first args))
-                 (second (second args))
-                 (third (third args)))
+                 (second (second args)))
               (if (equal first second)
-                  (atj-gen-shallow-or-call first
-                                           third
-                                           dst-types ; = SRC-TYPES
-                                           jvar-tmp-base
-                                           jvar-tmp-index
-                                           pkg-class-names
-                                           fn-method-names
-                                           curr-pkg
-                                           qpairs
-                                           guards$
-                                           wrld)
+                  (b* (((mv left-block & right-block)
+                        (atj-jblock-list-to-3-jblocks arg-blocks))
+                       ((mv left-expr & right-expr)
+                        (atj-jexpr-list-to-3-jexprs arg-exprs)))
+                    (atj-gen-shallow-or-call left-block
+                                             right-block
+                                             left-expr
+                                             right-expr
+                                             dst-types ; = SRC-TYPES
+                                             jvar-tmp-base
+                                             jvar-tmp-index
+                                             pkg-class-names
+                                             curr-pkg
+                                             guards$))
                 (b* (((mv test-block then-block else-block)
                       (atj-jblock-list-to-3-jblocks arg-blocks))
                      ((mv test-expr then-expr else-expr)
