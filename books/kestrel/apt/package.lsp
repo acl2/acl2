@@ -35,6 +35,7 @@
                          append?
                          apply-fn-if-known
                          apply-fn-into-ifs
+                         apply-renaming-to-hints
                          apply-term
                          apply-term*
                          apply-unary-to-terms
@@ -44,6 +45,12 @@
                          body
                          check-user-lambda
                          clausify
+                         clean-up-0ary-lambdas-in-untranslated-term
+                         clean-up-and-of-t-in-untranslated-term
+                         clean-up-equal-of-len-of-cons-nest-and-number-untranslated-term
+                         clean-up-implies-of-t-in-untranslated-term
+                         clean-up-nth-of-cons-in-untranslated-term
+                         clean-up-true-listp-of-cons-in-untranslated-term
                          cltl-def-from-name
                          collect-ideals
                          compute-stobj-flags
@@ -63,14 +70,19 @@
                          cw-event
                          def-error-checker
                          defattach-system
+                         defexists
+                         deffilter
+                         defforall
                          definedp
                          definj
                          defiso
                          defiso-lookup
+                         defmap
                          defmapping-info
                          defmapping-infop
                          defsurj
                          defsurj-lookup
+                         deftransformation
                          defun-sk-bound-vars
                          defun-sk-imatrix
                          defun-sk-matrix
@@ -93,6 +105,7 @@
                          dumb-negate-lit
                          dumb-occur
                          e/d*
+                         enable-disable-runes-in-hints
                          enabled-numep
                          enabled-runep
                          enabled-xfnp
@@ -151,6 +164,7 @@
                          evmac-process-input-hints$
                          evmac-process-input-print
                          evmac-process-input-show-only
+                         expand-ruleset
                          ext-address-subterm-governors-lst
                          ext-address-subterm-governors-lst-state
                          ext-fdeposit-term
@@ -164,6 +178,7 @@
                          ffn-symb
                          ffn-symb-p
                          ffnnamep
+                         firstn
                          flambda-applicationp
                          flambdap
                          flatten-ands-in-lit
@@ -186,9 +201,12 @@
                          fundef-enabledp
                          geneqv-from-g?equiv
                          genvar
+                         get-called-fns-in-untranslated-term
+                         get-calls-in-untranslated-term
                          get-event
                          get-unambiguous-xargs-flg1/edcls1
                          get-unnormalized-bodies
+                         get-vars-in-untranslated-term
                          guard-raw
                          guard-verified-p
                          ibody
@@ -210,6 +228,7 @@
                          lambda-applicationp
                          lambda-body
                          lambda-formals
+                         lookup-eq
                          macro-namep
                          macro-required-args
                          make-event-terse
@@ -230,13 +249,16 @@
                          must-succeed*
                          mvify
                          named-formulas-to-thm-events
+                         negate-term
                          next-numbered-name
                          non-executablep
                          number-of-results
                          on-failure
+                         pack$
                          packn
                          packn-pos
                          pairlis-x1
+                         parse-enable-disable-e/d
                          pos-fix
                          pos-listp
                          pseudo-event-form-listp
@@ -250,7 +272,10 @@
                          remove-keyword
                          remove-lambdas
                          rename-fns
+                         rename-fns-and-expand-lambdas-in-untranslated-term
+                         rename-fns-in-untranslated-term
                          rename-fns-lst
+                         replace-in-untranslated-term
                          resolve-numbered-name-wildcard
                          restore-output?
                          rewrite-if-avoid-swap
@@ -273,10 +298,12 @@
                          subcor-var-lst
                          sublis-expr
                          sublis-var
+                         sublis-var-untranslated-term
                          subst-expr
                          subst-expr1
                          subst-var
                          symbol-class
+                         symbol-name-equal
                          symbol-package-name-non-cl
                          symbol-symbol-alistp
                          symbol-truelist-alistp
@@ -300,9 +327,12 @@
                          uguard
                          unnormalized-body
                          untranslate-lst
+                         untranslated-term-listp
+                         untranslated-termp
                          unwrapped-nonexec-body
                          variablep
-                         well-founded-relation))
+                         well-founded-relation)
+                       )
 
 ; It's not clear why acl2::simplify is in *acl2-exports*.  That may change, but
 ; for now it is convenient to avoid importing it into the "APT" package in view
