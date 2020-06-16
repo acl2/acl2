@@ -28,7 +28,7 @@
            (stringp emacs-version)
            (< 1 (length emacs-version))
            (string-match "[0-9][0-9]" (substring emacs-version 0 2)))
-      (string-to-int (substring emacs-version 0 2))
+      (string-to-number (substring emacs-version 0 2))
     (error "The file mfm.el works for emacs versions 18 and 19, but not yours.")))
 
 (defvar mfm-comint-p
