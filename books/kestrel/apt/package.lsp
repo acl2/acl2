@@ -68,6 +68,8 @@
                          defiso-lookup
                          defmapping-info
                          defmapping-infop
+                         defsurj
+                         defsurj-lookup
                          defun-sk-bound-vars
                          defun-sk-imatrix
                          defun-sk-matrix
