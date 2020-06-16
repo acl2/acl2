@@ -23,4 +23,11 @@
                   (integer-range-p 0 16 y))
              (equal (equal (digit-to-char x) (digit-to-char y))
                     (equal x y)))
+    :hints (("Goal" :in-theory (enable digit-to-char))))
+
+  (defthmd zero-digit-to-char
+    (equal (equal (digit-to-char x) #\0)
+           (or (not (integerp x))
+               (<= x 0)
+               (< 15 x)))
     :hints (("Goal" :in-theory (enable digit-to-char)))))
