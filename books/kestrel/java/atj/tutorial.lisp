@@ -1897,19 +1897,16 @@
   (atj-tutorial-section "Target Functions")
 
   (xdoc::p
-   "In the factorial function example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ", ATJ is called with a single target ACL2 function, @('fact'), as argument.
+   "In the factorial function example in @(see atj-tutorial-deep),
+    ATJ is called with a single target ACL2 function, @('fact'), as argument.
     As noted in that page, ATJ generates a Java representation
     not only of the @('fact') function,
     but also of the functions called by it directly or indirectly,
-    except for the ACL2 primitive functions,
-    as detailed in that tutorial page.")
+    except for the ACL2 primitive functions.")
 
   (xdoc::p
    "In general, ATJ may be called with more than one target ACL2 function
-    (at least one is required):")
+    (with at least one being required):")
   (xdoc::codeblock
    "(java::atj f1 f2 f3 ...)")
   (xdoc::p
@@ -1927,7 +1924,7 @@
    "We need to be more precise about what
     `called directly or indirectly' means in this context.
     ATJ looks at the unnormalized body of each function
-    (i.e. the @('unnormalized-body') property of the function),
+    (i.e. the @('acl2::unnormalized-body') property of the function),
     which is the result of "
    (xdoc::seetopic "acl2::term" "translating")
    " the body of the @(tsee defun) that has introduced the function,
@@ -1937,7 +1934,10 @@
     a function @('f') directly calls a function @('g')
     if and only if @('g') occurs in the unnormalized body of @('f').
     Then the `indirectly calling' relation is
-    the transitive closure of the `directly calling' relation.")
+    the transitive closure of the `directly calling' relation.
+    (The unnormalized body of a function @('f')
+    can be examined via @(':props f'), or via utilities like
+    @(tsee body), @(tsee ubody), and @(tsee ubody+).)")
 
   (xdoc::p
    "Note that the guard of @('f') is ignored for the `calling' relation;
@@ -1995,10 +1995,8 @@
    (xdoc::li
     "Each function must have no input or output stobjs.
      The reason is that stobjs entail side effects,
-     as explained in "
-    (xdoc::seetopic "atj-tutorial-background"
-                    "the tutorial page on the ACL2 evaluation semantics")
-    ", and side effects are not yet supported by ATJ.")
+     as explained in @(see atj-tutorial-background),
+     and side effects are not yet supported by ATJ.")
    (xdoc::li
     "Each function must not have raw Lisp code,
      unless it is in a whitelist of functions with raw Lisp code
@@ -2065,7 +2063,11 @@
     is not in the whitelist mentioned earlier.
     However, ATJ accepts certain uses of @(tsee return-last):
     these uses have a known behavior and therefore ATJ
-    knows how to generate correct Java code.")
+    knows how to generate correct Java code.
+    (This is not to say that other uses of @(tsee return-last)
+    do not have a known behavior:
+    all the uses of @(tsee return-last) have a known behavior,
+    but only some of them are currently supported by ATJ.)")
 
   (xdoc::p
    "ATJ accepts calls of @(tsee return-last) of the following forms:")
@@ -2078,10 +2080,9 @@
      ATJ treats the call as if it were just @('y');
      if instead ATJ's @(':guards') input is @('t').
      ATJ treats the call as if it were just @('x').
-     The reason for this is explained in more detail in "
-    (xdoc::seetopic "atj-tutorial-deep-guards"
-                    "the tutorial page on guards in the deep embedding")
-    ". However, the other subterm
+     The reason for this is explained later in more detail
+     in @(see atj-tutorial-deep-guards).
+     However, the other subterm
      (i.e. @('x') if @(':guards') is @('nil'),
      and @('y') if @(':guards') is @('t'))
      is not completely ignored:
@@ -2095,8 +2096,8 @@
      but ATJ still checks that they have no side effects,
      to ensure that the generated Java code, which has no side effects,
      is consistent with the ACL2 evaluation semantics.
-     Note that, even if guards are verified, it is only known that
-     @('x') and @('y') are logically equal
+     Note that, even if guards are verified,
+     it is only known that @('x') and @('y') are logically equal
      in the context where the @(tsee return-last) call appears,
      but that says nothing about side effects.")
    (xdoc::li
