@@ -18,6 +18,9 @@
 (include-book "casesplit")
 (include-book "casesplit-doc")
 
+(include-book "expdata")
+(include-book "expdata-doc")
+
 (include-book "isodata")
 (include-book "isodata-doc")
 
@@ -113,6 +116,7 @@
 (xdoc::order-subtopics apt (common-concepts
                             common-options
                             casesplit
+                            expdata
                             isodata
                             parteval
                             restrict
