@@ -64,6 +64,7 @@
                          def-error-checker
                          defattach-system
                          definedp
+                         definj
                          defiso
                          defiso-lookup
                          defmapping-info
