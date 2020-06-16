@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ defthm-commutative (name op)
+(defmacro+ defthm-commutative (name op &key hints)
   (declare (xargs :guard (and (symbolp name)
                               (symbolp op))))
   :parents (std::std/util-extensions std/util)
@@ -25,13 +25,17 @@
    (xdoc::p
     "General form:")
    (xdoc::codeblock
-    "(defthm-commutative name op)")
+    "(defthm-commutative name op :hints ...)")
    (xdoc::ul
     (xdoc::li
      "@('name') must be a symbol that names the new theorem.")
     (xdoc::li
      "@('op') must be a symbol that names an existing binary operation,
-      whose (unconditional) commutativity the new theorem asserts."))
+      whose (unconditional) commutativity the new theorem asserts.")
+    (xdoc::li
+     "@(':hints'), if present, must consist of hints
+      of the kind use in @(tsee defthm).
+      These hints are used to prove the commutative theorem."))
    (xdoc::p
     "More customization options may be added in the future.")
    (xdoc::p
@@ -43,4 +47,5 @@
          (x (intern$ "X" var-pkg))
          (y (intern$ "Y" var-pkg)))
     `(defthm ,name
-       (equal (,op ,x ,y) (,op ,y ,x)))))
+       (equal (,op ,x ,y) (,op ,y ,x))
+       :hints ,hints)))
