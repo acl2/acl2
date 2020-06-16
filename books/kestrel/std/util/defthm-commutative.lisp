@@ -39,8 +39,7 @@
      in the same package as @('op'),
      unless @('op') is the @('\"COMMON-LISP\"') package,
      in which case the variables are in the @('\"ACL2\"') package."))
-  (let* ((op-pkg (symbol-package-name op))
-         (var-pkg (if (equal op-pkg "COMMON-LISP") "ACL2" op-pkg))
+  (let* ((var-pkg (fix-pkg (symbol-package-name op)))
          (x (intern$ "X" var-pkg))
          (y (intern$ "Y" var-pkg)))
     `(defthm ,name
