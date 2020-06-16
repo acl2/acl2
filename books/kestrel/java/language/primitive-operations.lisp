@@ -69,6 +69,9 @@
 
 (def-boolean-binary boolean-and
   :operation (and x y)
+  :commutative t
+  :commutative-hints (("Goal" :in-theory (enable boolean-value-fix
+                                                 boolean-value->bool)))
   :short "Logical conjunction @('&') [JLS:4.2.5] [JLS:15.22.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,6 +85,9 @@
 
 (def-boolean-binary boolean-ior
   :operation (or x y)
+  :commutative t
+  :commutative-hints (("Goal" :in-theory (enable boolean-value-fix
+                                                 boolean-value->bool)))
   :short "Logical inclusive disjunction @('|') [JLS:4.2.5] [JLS:15.22.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
