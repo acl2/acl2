@@ -62,4 +62,15 @@ class Acl2RationalTest {
         assertEquals(Acl2Rational.make(-647, 121).getNumerator(),
                 Acl2Integer.make(-647));
     }
+
+    @Test
+    void getNumeratorFromMakeLongLong() {
+        assertEquals(Acl2Rational.make(37L, 22L).getNumerator(),
+                Acl2Integer.make(37));
+        assertEquals(Acl2Rational.make(3333333333L, 2222222222L).getNumerator(),
+                Acl2Integer.make(3));
+        assertEquals(Acl2Rational.make(10000000000L, -3).getNumerator(),
+                Acl2Integer.make(-10000000000L));
+    }
+
 }
