@@ -191,7 +191,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist isodata-isomap-listp (x)
-  :short "Recognize true lists of isomorphic mapping records."
+  :short "Recognize lists of isomorphic mapping records."
   (isodata-isomapp x)
   :true-listp t
   :elementp-of-nil nil)
@@ -459,8 +459,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These will be used as the @(':thm-names') input
-     of a @(tsee defiso) that @(tsee isodata) will generate locally,
+    "These are used as the @(':thm-names') input
+     of a @(tsee defiso) that @(tsee isodata) generates locally,
      when the @('iso') input is not a name.")
    (xdoc::p
     "In order for the generated @(tsee defiso) to succeed,
@@ -547,7 +547,8 @@
                         (add-suffix prefix (symbol-name :beta-injective))
                         nil
                         names-to-avoid
-                        wrld)))
+                        wrld))
+       (names-to-avoid (cons back-injective names-to-avoid)))
     (mv forth-image
         back-image
         back-of-forth
@@ -601,7 +602,7 @@
     "When @('iso') is not the name of an existing @(tsee defiso),
      and instead we generate a local one as part of @(tsee isodata),
      we use @(tsee defiso)'s input processing code,
-     and then we check that they are all unary and single-valued;
+     and then we check that the functions are all unary and single-valued;
      given the constraints already checked
      by the @(tsee defiso) input processing code,
      here it suffices to check that the two domains are unary.
@@ -3022,7 +3023,6 @@
                                               res-isomaps)))
                (conjoin-equalities mv-nths-of-old-call
                                    back-of-mv-nths-of-new-call))))))
-
     (implicate (conjoin oldp-of-x1...xn)
                consequent)))
 
