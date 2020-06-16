@@ -378,6 +378,8 @@
 
   #+sbcl
   (setq sb-impl::*default-external-format* :iso-8859-1)
+  #+sbcl
+  (setq sb-impl::*default-external-format* :iso-8859-1)
 
 ; ;;;
 ; We have made only limited attempts to set the character encoding at the
