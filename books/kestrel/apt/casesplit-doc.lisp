@@ -20,7 +20,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *casesplit-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/casesplit.pdf" "design notes"))
+  (xdoc::ahref "res/kestrel-apt-design-notes/casesplit.pdf"
+               "@('casesplit') design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

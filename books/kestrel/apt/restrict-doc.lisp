@@ -20,7 +20,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *restrict-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf" "design notes"))
+  (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf"
+               "@('restrict') design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

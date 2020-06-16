@@ -20,7 +20,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *parteval-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/parteval.pdf" "design notes"))
+  (xdoc::ahref "res/kestrel-apt-design-notes/parteval.pdf"
+               "@('parteval') design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

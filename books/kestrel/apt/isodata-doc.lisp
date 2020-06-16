@@ -19,7 +19,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *isodata-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf" "design notes"))
+  (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf"
+               "@('isodata') design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

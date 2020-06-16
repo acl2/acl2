@@ -20,7 +20,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *tailrec-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/tailrec.pdf" "design notes"))
+  (xdoc::ahref "res/kestrel-apt-design-notes/tailrec.pdf"
+               "@('tailrec') design notes"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
