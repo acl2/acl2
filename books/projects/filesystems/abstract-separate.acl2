@@ -1,0 +1,6 @@
+; This file was added by Matt K. 6/17/2020, to avoid useless-runes.
+; It does so by copying the cert-flags comment from cert.acl2 and
+; adding :useless-runes nil.
+
+; cert-flags: ? t :skip-proofs-okp t :useless-runes nil
+(ld "cert.acl2")
