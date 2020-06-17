@@ -60,7 +60,7 @@
 (include-book "encryption")
 (include-book "diffie-helman")
 (include-book "random")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defun identityp (x)
   (declare (xargs :guard t))
@@ -1883,4 +1883,3 @@
         (equal (session-key initiator-s-after-5)
                (session-key responder-s-after-5)))))))))
 |#
-

@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (include-book "des")
 
@@ -364,4 +364,3 @@
 (assert!
   (equal (IP-inverse *pre-final-perm-message*)
          *final-permuted-cipher*))
-

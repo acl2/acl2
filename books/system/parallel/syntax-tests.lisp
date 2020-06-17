@@ -3,7 +3,8 @@
 
 (in-package "ACL2")
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "std/testing/eval" :dir :system)
 ;(include-book "make-event/dotimes" :dir :system)
 
