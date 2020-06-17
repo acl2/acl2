@@ -44,9 +44,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned "
-    (xdoc::seetopic "atj-code-generation" "here")
-    ", prior to generating Java code,
+    "As mentioned in @(see atj-code-generation),
+     prior to generating Java code,
      ATJ performs an ACL2-to-ACL2 pre-translation.
      Currently, this pre-translation consists of the following steps.
      The first three steps apply to both the deep and the shallow embedding;
@@ -54,55 +53,37 @@
    (xdoc::ol
     (xdoc::li
      "We remove @(tsee return-last).
-      See "
-     (xdoc::seetopic "atj-pre-translation-remove-return-last" "here")
-     ".")
+      See @(see atj-pre-translation-remove-return-last).")
     (xdoc::li
      "We remove dead @(tsee if) branches.
-      See "
-     (xdoc::seetopic "atj-pre-translation-remove-dead-if-branches" "here")
-     ".")
+      See @(see atj-pre-translation-remove-dead-if-branches).")
     (xdoc::li
      "We remove the unused lambda-bound variables.
-      See "
-     (xdoc::seetopic "atj-pre-translation-unused-vars" "here")
-     ".")
+      See @(see atj-pre-translation-unused-vars).")
     (xdoc::li
      "We remove the trivial lambda-bound variables.
-      See "
-     (xdoc::seetopic "atj-pre-translation-trivial-vars" "here")
-     ".")
+      See @(see atj-pre-translation-trivial-vars).")
     (xdoc::li
      "We replace @(tsee list) calls with @(tsee mv) calls
       in functions that return multiple results.
-      See "
-     (xdoc::seetopic "atj-pre-translation-multiple-values" "here")
-     ".")
+      See @(see atj-pre-translation-multiple-values).")
     (xdoc::li
      "We annotate terms with ATJ type information.
-      See "
-     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
-     ".")
+      See @(see atj-pre-translation-type-annotation).")
     (xdoc::li
      "We perform a single-threadedness analysis of the Java primitive arrays,
       but only if @(':guards') is @('t').
-      See "
-     (xdoc::seetopic "atj-pre-translation-array-analysis" "here")
-     ".")
+      See @(see atj-pre-translation-array-analysis).")
     (xdoc::li
      "We mark the lambda-bound variables
       that can be reused and destructively updated in Java.
-      See "
-     (xdoc::seetopic "atj-pre-translation-var-reuse" "here")
-     ".")
+      See @(see atj-pre-translation-var-reuse).")
     (xdoc::li
      "We rename variables
       so that their names are valid Java variable names
       and so that different variables with the same name are renamed apart,
       unless they have been marked for reuse in the previous step.
-      See "
-     (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
-     ".")))
+      See @(see atj-pre-translation-var-renaming).")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -672,9 +653,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned "
-    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
-    ", each ACL2 term is wrapped with a function named @('[src>dst]'),
+    "As mentioned in @(see atj-pre-translation-type-annotation),
+     each ACL2 term is wrapped with a function named @('[src>dst]'),
      where @('src') identifies the ATJ types of the term
      and @('dst') identifies an ATJ types
      to which the term must be converted to.")
@@ -993,9 +973,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned "
-    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
-    ", we systematically add type information to each ACL2 variable.
+    "As mentioned in @(see atj-pre-translation-type-annotation),
+     we systematically add type information to each ACL2 variable.
      We do so by adding @('[types]') before the variable name,
      where @('types') identifies a list of ATJ types.")
    (xdoc::p
@@ -3931,9 +3910,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is done before the translation from ACL2 to Java proper.
-     The pre-translation steps are described "
-    (xdoc::seetopic "atj-pre-translation" "here")
-    ".")
+     The pre-translation steps are described in @(see atj-pre-translation).")
    (xdoc::p
     "We collect all the @(tsee mv) types in the body
      for which we will need to generate @(tsee mv) classes.
