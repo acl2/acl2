@@ -98,6 +98,8 @@
 
 (atj-main-function-type len (:avalue) :ainteger)
 
+(atj-main-function-type char (:astring :ainteger) :acharacter)
+
 ; secondary types:
 
 (atj-other-function-type binary-+ (:arational :arational) :arational)

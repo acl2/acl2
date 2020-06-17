@@ -42,7 +42,7 @@ final class Acl2DefinedFunction extends Acl2NamedFunction {
      * The values of the map are reused
      * by the {@link #getInstance(Acl2Symbol)} method.
      * In other words, all the defined functions are interned.
-     * Invariants: not null, no null keys, no null values.
+     * Invariant: not null, no null keys, no null values.
      */
     private static final Map<Acl2Symbol, Acl2DefinedFunction> functions =
             new HashMap<>();

@@ -693,7 +693,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      *
      * @param other The value to string-append to the right of this value.
      *              Invariant: not null.
-     * @return The resulting of string-appending
+     * @return The result of string-appending
      * the argument value to the right of this value.
      */
     Acl2String stringAppendValueRight(Acl2Value other) {
@@ -713,6 +713,52 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2String stringAppendStringLeft(Acl2String other) {
         return other;
+    }
+
+    /**
+     * Returns the character at the specified index of this value,
+     * consistently with the {@code char} ACL2 function.
+     * It returns {@code nil} by default,
+     * it is overridden in {@link Acl2String}.
+     * The result is {@code nil} for non-string values
+     * because {@code char} is defined in ACL2
+     * to coerce the argument to a list (of characters)
+     * and then to apply {@code nth} to the list:
+     * coercing a non-string value to a list yields {@code nil}
+     * (see {@link #coerceToList()}),
+     * and applying {@code nth} to {@code nil} yields {@code nil}.
+     * We use the name {@code charAt} because {@code char} is a keyword;
+     * that is the same name as the analogous function on {@link String}.
+     *
+     * @param index The value of the index of the character in this value.
+     * @return The resulting character, or {@code nil}.
+     */
+    Acl2Value charAt(Acl2Value index) {
+        return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Returns the character in the argument string
+     * at the index specified by this value,
+     * consistently with the {@code char} ACL2 function.
+     * According to the definition of {@code char},
+     * a non-integer index value is treated like 0.
+     * Thus, by default
+     * we return the first character of the string if the string is not empty,
+     * otherwise we return {@code nil} because this is what {@code nth} returns
+     * (see the definition of {@code char}).
+     * This method is overridden in {@link Acl2Integer}.
+     *
+     * @param jstring The string from where the character is taken.
+     *                Invariant: not null.
+     * @return The character at index 0 in the string,
+     * or {@code nil} if the string is empty (i.e. the index is out of range).
+     */
+    Acl2Value charAtThisIndex(String jstring) {
+        if (jstring.length() > 0)
+            return Acl2Character.imake(jstring.charAt(0));
+        else
+            return Acl2Symbol.NIL;
     }
 
     /**

@@ -2951,6 +2951,7 @@
     (nonnegative-integer-quotient "execNonnegativeIntegerQuotient")
     (string-append "execStringAppend")
     (len "execLen")
+    (char (if guards$ "execCharChar" "execChar"))
     (t (prog2$ (impossible) "irrelevant-method-name")))
   :guard-hints (("Goal" :in-theory (enable aij-nativep))))
 
@@ -3102,6 +3103,7 @@
        (method-param-names
         (case fn
           (intern-in-package-of-symbol (list "str" "sym"))
+          (char (list "s" "n"))
           (if (list "x" "y" "z"))
           ((pkg-imports
             pkg-witness) (list "pkg"))

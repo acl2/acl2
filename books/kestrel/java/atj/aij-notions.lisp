@@ -136,7 +136,8 @@
   (append (strip-cars *primitive-formals-and-guards*)
           (list 'nonnegative-integer-quotient
                 'string-append
-                'len)))
+                'len
+                'char)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,7 +193,8 @@
     (or . "OR")
     (nonnegative-integer-quotient . "NONNEGATIVE_INTEGER_QUOTIENT")
     (string-append . "STRING_APPEND")
-    (len . "LEN"))
+    (len . "LEN")
+    (char . "CHAR"))
   ///
   (assert-event (symbol-string-alistp *aij-symbol-constants*))
   (assert-event (no-duplicatesp-equal (strip-cdrs *aij-symbol-constants*))))

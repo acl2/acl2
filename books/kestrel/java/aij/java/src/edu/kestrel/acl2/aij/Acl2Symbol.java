@@ -95,7 +95,7 @@ public final class Acl2Symbol extends Acl2Value {
      * <p>
      * All the symbols are thus interned.
      * <p>
-     * Invariants: not null, no null keys, no null values,
+     * Invariant: not null, no null keys, no null values,
      * no null keys or values in inner maps.
      */
     private static final Map<Acl2PackageName, Map<Acl2String, Acl2Symbol>>
@@ -760,6 +760,11 @@ public final class Acl2Symbol extends Acl2Value {
      */
     public static final Acl2Symbol LEN;
 
+    /**
+     * The symbol denoted by {@code common-lisp::char}.
+     */
+    public static final Acl2Symbol CHAR;
+
     static { // builds the pre-created symbols
         // names of the symbols:
         Acl2String stringT = Acl2String.imake("T");
@@ -806,6 +811,7 @@ public final class Acl2Symbol extends Acl2Value {
                 Acl2String.imake("NONNEGATIVE-INTEGER-QUOTIENT");
         Acl2String stringStringAppend = Acl2String.make("STRING-APPEND");
         Acl2String stringLen = Acl2String.make("LEN");
+        Acl2String stringChar = Acl2String.make("CHAR");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);
@@ -855,6 +861,7 @@ public final class Acl2Symbol extends Acl2Value {
         STRING_APPEND =
                 new Acl2Symbol(Acl2PackageName.ACL2, stringStringAppend);
         LEN = new Acl2Symbol(Acl2PackageName.ACL2, stringLen);
+        CHAR = new Acl2Symbol(Acl2PackageName.LISP, stringChar);
         // initial inner map for the "COMMON-LISP" package:
         Map<Acl2String, Acl2Symbol> initialLispMap = new HashMap<>();
         initialLispMap.put(stringT, T);
@@ -882,6 +889,7 @@ public final class Acl2Symbol extends Acl2Value {
         initialLispMap.put(stringCdr, CDR);
         initialLispMap.put(stringEqual, EQUAL);
         initialLispMap.put(stringOr, OR);
+        initialLispMap.put(stringChar, CHAR);
         // initial inner map for the "ACL2" package:
         Map<Acl2String, Acl2Symbol> initialAcl2Map = new HashMap<>();
         initialAcl2Map.put(stringComplexRationalp, COMPLEX_RATIONALP);

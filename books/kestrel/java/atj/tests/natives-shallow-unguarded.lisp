@@ -52,6 +52,7 @@
            nonnegative-integer-quotient
            string-append
            len
+           char
            :deep nil
            :guards nil
            :java-class "NativesShallowUnguarded"

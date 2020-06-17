@@ -38,7 +38,7 @@ public final class Acl2String extends Acl2Value {
 
     /**
      * Representation of this string as a Java string.
-     * Invariants: not null, satisfies {@link #isValidString(String)}.
+     * Invariant: not null, satisfies {@link #isValidString(String)}.
      */
     private final String jstring;
 
@@ -61,7 +61,7 @@ public final class Acl2String extends Acl2Value {
      * The values of the map are reused by
      * the {@link #imake(String)} and {@link #make(String)} methods.
      * In other words, all the strings are interned.
-     * Invariants: not null, no null keys, no null values.
+     * Invariant: not null, no null keys, no null values.
      */
     private static final Map<String, Acl2String> strings = new HashMap<>();
 
@@ -208,8 +208,6 @@ public final class Acl2String extends Acl2Value {
     /**
      * String-appends the argument string to the left of this value,
      * consistently with the {@code string-append} ACL2 function.
-     * It returns the argument by default;
-     * it is overridden in {@link Acl2String}.
      *
      * @param other The string to string-append to the left of this string.
      *              Invariant: not null.
@@ -221,6 +219,20 @@ public final class Acl2String extends Acl2Value {
         String left = other.jstring;
         String right = this.jstring;
         return imake(left.concat(right));
+    }
+
+    /**
+     * Returns the character at the specified index of this string,
+     * consistently with the {@code char} ACL2 function.
+     *
+     * @param index The value of the index of the character in this string.
+     *              Invariant: not null.
+     * @return The resulting character,
+     * or {@code nil} if the index is out of range.
+     */
+    @Override
+    Acl2Value charAt(Acl2Value index) {
+        return index.charAtThisIndex(this.jstring);
     }
 
     /**

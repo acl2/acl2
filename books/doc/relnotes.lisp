@@ -250,6 +250,17 @@
      in support of the automatic mapping, in the shallow embedding with guards,
      of ACL2 booleans and characters to Java booleans and characters.")
 
+   (xdoc::p
+    "A native implementation has been added
+     of the @(tsee char) ACL2 built-in function.
+     As with other native implementations,
+     this consists of a few variants for different input and output types.
+     This native Java implementation is faster than
+     the Java code obtained from the unnormalized body of @(tsee char),
+     which converts the string to a list of characters
+     and then calls @(tsee nth);
+     the native Java implementation accesses the string directly.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::atj"

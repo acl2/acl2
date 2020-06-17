@@ -27,7 +27,7 @@ final class Acl2ComplexRational extends Acl2Number {
 
     /**
      * Imaginary part of this complex rational.
-     * Invariants: not null, not 0.
+     * Invariant: not null, not 0.
      */
     private final Acl2Rational imaginaryPart;
 
