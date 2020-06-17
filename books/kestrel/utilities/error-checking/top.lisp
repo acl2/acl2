@@ -19,37 +19,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ error-checking
-  :parents (kestrel-utilities errors)
-  :short "Utilities for error checking."
-  :long
-  "<p>
-   Each error-checking function in these utilities
-   causes a <see topic='@(url er-soft+)'>soft error</see>,
-   with an informative message,
-   and optionally informative error flag and value,
-   when certain conditions are not satisified.
-   These error-checking functions are useful, for instance,
-   to programmatically validate inputs from the user to a macro,
-   providing the informative error messages to the user.
-   The informative error flags and values are useful
-   when such a macro is invoked programmatically,
-   to enable the caller to take appropriate actions
-   based on the nature of the error,
-   as with an exception mechanism.
-   </p>
-   <p>
-   Inside @(tsee b*), the <see topic='@(url patbind-er)'>@('er') binder</see>
-   can be used with calls to these error-checking functions.
-   </p>
-   <p>
-   These error-checking functions include @(tsee msgp) parameters
-   to describe the values being checked in error message.
-   When these functions are called,
-   the strings in the description parameters
-   should be capitalized based on where they occur in the error messages.
-   </p>"
-  :default-parent t)
+(local (xdoc::set-default-parents error-checking))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
