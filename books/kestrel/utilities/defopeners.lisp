@@ -387,12 +387,17 @@
 (defun clean-up-hyps-in-claim (claim)
   (declare (xargs :guard (pseudo-termp claim)))
   (if (not (and (call-of 'implies claim)
-                (eql 2 (len (fargs claim)))))
+                (= 2 (len (fargs claim)))))
       claim
     (let ((hyp (farg1 claim))
           (body (farg2 claim)))
-      `(implies (and ,@(get-conjuncts hyp))
-                ,body))))
+      (let ((hyp-conjuncts (get-conjuncts hyp)))
+        (if (= 1 (len hyp-conjuncts))
+            ;; only one conjunct, so no need to insert an AND:
+            `(implies ,(first hyp-conjuncts)
+                      ,body)
+          `(implies (and ,@hyp-conjuncts)
+                    ,body))))))
 
 (defun make-base-theorems (claims num totalnum defthmnameprefix fn formals disable state)
   (declare (xargs :stobjs state
