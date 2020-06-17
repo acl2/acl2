@@ -376,10 +376,13 @@
 ; our-lispworks-file-encoding below.
   (setq stream::*default-external-format* '(:LATIN-1 :EOL-STYLE :LF))
 
+; The following two symbols are external symbols of the "SB-EXT" package, but
+; that wasn't always the case.  We use the packages below so that these
+; assignments work back through at least SBCL 1.4.14.
   #+sbcl
   (setq sb-impl::*default-external-format* :iso-8859-1)
   #+sbcl
-  (setq sb-impl::*default-external-format* :iso-8859-1)
+  (setq sb-alien::*default-c-string-external-format* :iso-8859-1)
 
 ; ;;;
 ; We have made only limited attempts to set the character encoding at the
