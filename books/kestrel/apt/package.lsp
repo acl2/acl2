@@ -178,7 +178,6 @@
                          ffn-symb
                          ffn-symb-p
                          ffnnamep
-                         firstn
                          flambda-applicationp
                          flambdap
                          flatten-ands-in-lit
