@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "types")
+(include-book "type-macros")
 
 (include-book "../language/primitive-operations")
 (include-book "../language/primitive-conversions")

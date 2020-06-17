@@ -13,7 +13,7 @@
 ; Avoid failure for (atj-main-function-type < ...) in ACL2(r):
 ; cert_param: (non-acl2r)
 
-(include-book "types")
+(include-book "type-macros")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

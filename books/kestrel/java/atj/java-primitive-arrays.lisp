@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "types")
+(include-book "type-macros")
 
 (include-book "kestrel/std/system/function-name-listp" :dir :system)
 
