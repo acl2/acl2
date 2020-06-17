@@ -20,9 +20,9 @@
 
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p-of-repeat" :dir :system))
 
 (defund pad-to-448-number-of-zeros (l)
