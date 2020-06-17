@@ -86,4 +86,16 @@ class Acl2RationalTest {
                         .getNumerator(),
                 Acl2Integer.make(-2));
     }
+
+    @Test
+    void getNumeratorFromMakeAcl2IntegerAcl2Integer() {
+        assertEquals(Acl2Rational.make(Acl2Integer.ONE, Acl2Integer.make(4))
+                        .getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals
+                (Acl2Rational.make(Acl2Integer.make(-55), Acl2Integer.make(-54))
+                                .getNumerator(),
+                        Acl2Integer.make(55));
+    }
+
 }
