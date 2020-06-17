@@ -73,4 +73,17 @@ class Acl2RationalTest {
                 Acl2Integer.make(-10000000000L));
     }
 
+    @Test
+    void getNumeratorFromMakeBigIntegerBigInteger() {
+        assertEquals(Acl2Rational.make(BigInteger.ONE, BigInteger.TWO)
+                        .getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals(Acl2Rational.make(BigInteger.TWO, BigInteger.TEN)
+                        .getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals(Acl2Rational.make(new BigInteger("20"),
+                new BigInteger("-30"))
+                        .getNumerator(),
+                Acl2Integer.make(-2));
+    }
 }
