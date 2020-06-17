@@ -3,22 +3,14 @@
 (|ACK0-test| (2 2
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK0| (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-         (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK0-DOMAIN| (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|ARB-iACK0-INDEX-THM|)
 (|iACK0-MONO-DETERM| (110 110
                           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (39 39
-                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                     (22 11 (:REWRITE DEFUNG::TRUE-FROM-X))
-                     (22 11
-                         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                     (11 11 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                     (17 17
+                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (|iACK0-DOMAIN-MONOTONE|)
 (|iACK0-DOMAIN-MONOTONE-CONTRAPOSITIVE|)
 (|iACK0-DOMAIN-LOWER-BOUND|)
@@ -32,17 +24,12 @@
 (ACK0-MEASURE-PROPERTY)
 (ACK0-MEASURE-SMALLEST)
 (|REPLACE-ARB-iACK0-INDEX-BY-ACK0-MEASURE|
-     (20 4 (:REWRITE DEFUNG::NORMALIZE-TRUE))
-     (12 12
-         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-     (8 4 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (8 4
-        (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (4 4 (:REWRITE DEFUNG::QUOTED-TRUE))
+     (4 4
+        (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (4 1 (:LINEAR ACK0-MEASURE-SMALLEST)))
 (|REPLACE-ARB-iACK0-INDEX-BY-ACK0-MEASURE-2|)
 (|REPLACE-iACK0-DOMAIN-INDEX-BY-ACK0-MEASURE|
@@ -53,35 +40,33 @@
      (2 1
         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (ACK0-MEASURE-BODY (4 4
-                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                   (4 4
-                      (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (ACK0-MEASURE-DEFINITION (469 469
                               (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                         (219 219
-                              (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                         (159 71 (:REWRITE DEFUNG::TRUE-FROM-X))
-                         (159 71
-                              (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                          (129 85 (:LINEAR ACK0-MEASURE-SMALLEST))
-                         (71 71 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                         (119 119
+                              (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
+                         (57 21 (:REWRITE DEFUNG::TRUE-FROM-X))
+                         (57 21
+                             (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                         (21 21 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK0-DOMAIN-DEFINITION (482 482
                              (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                        (222 111 (:REWRITE DEFUNG::TRUE-FROM-X))
-                        (222 111
-                             (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                        (111 111 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                        (66 33 (:REWRITE DEFUNG::TRUE-FROM-X))
+                        (66 33
+                            (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                        (33 33 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK0-DEFINITION (189 189
                       (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                 (87 72
+                 (81 66
                      (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
                  (64 26
                      (:REWRITE |REPLACE-ARB-iACK0-INDEX-BY-ACK0-MEASURE|))
                  (41 9 (:REWRITE |iACK0-DOMAIN-MONOTONE|))
-                 (32 16 (:REWRITE DEFUNG::TRUE-FROM-X))
-                 (32 16
+                 (26 13 (:REWRITE DEFUNG::TRUE-FROM-X))
+                 (26 13
                      (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                 (16 16 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                 (13 13 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK0-INDUCTION (713 23 (:DEFINITION ACK0-DEFINITION))
                 (569 569
                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
@@ -99,12 +84,12 @@
      (183 183
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (172 10 (:DEFINITION ACK0-DEFINITION))
-     (36 18 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (36 18
-         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (18 18 (:REWRITE DEFUNG::QUOTED-TRUE))
      (18 18
          (:REWRITE DEFUNG::COMBINE-AND-EVALUATE-CONSTANTS))
+     (18 9 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (18 9
+         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+     (9 9 (:REWRITE DEFUNG::QUOTED-TRUE))
      (8 4 (:DEFINITION NOT)))
 (ACK0-INDUCTION-RULE)
 (OPEN-ACK0-DOMAIN (32 2 (:DEFINITION ACK0-DEFINITION))
@@ -142,22 +127,14 @@
 (|ACK1-test| (2 2
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK1| (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-         (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK1-DOMAIN| (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|ARB-iACK1-INDEX-THM|)
 (|iACK1-MONO-DETERM| (110 110
                           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (39 39
-                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                     (22 11 (:REWRITE DEFUNG::TRUE-FROM-X))
-                     (22 11
-                         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                     (11 11 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                     (17 17
+                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (|iACK1-DOMAIN-MONOTONE|)
 (|iACK1-DOMAIN-MONOTONE-CONTRAPOSITIVE|)
 (|iACK1-DOMAIN-LOWER-BOUND|)
@@ -171,17 +148,12 @@
 (ACK1-0-MEASURE-PROPERTY)
 (ACK1-0-MEASURE-SMALLEST)
 (|REPLACE-ARB-iACK1-INDEX-BY-ACK1-0-MEASURE|
-     (20 4 (:REWRITE DEFUNG::NORMALIZE-TRUE))
-     (12 12
-         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-     (8 4 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (8 4
-        (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (4 4 (:REWRITE DEFUNG::QUOTED-TRUE))
+     (4 4
+        (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (4 1 (:LINEAR ACK1-0-MEASURE-SMALLEST)))
 (|REPLACE-ARB-iACK1-INDEX-BY-ACK1-0-MEASURE-2|)
 (|REPLACE-iACK1-DOMAIN-INDEX-BY-ACK1-0-MEASURE|
@@ -192,36 +164,34 @@
      (2 1
         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (ACK1-0-MEASURE-BODY (4 4
-                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (4 4
-                        (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (ACK1-0-MEASURE-DEFINITION (469 469
                                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                           (219 219
-                                (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                           (159 71 (:REWRITE DEFUNG::TRUE-FROM-X))
-                           (159 71
-                                (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                            (129 85 (:LINEAR ACK1-0-MEASURE-SMALLEST))
-                           (71 71 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                           (119 119
+                                (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
+                           (57 21 (:REWRITE DEFUNG::TRUE-FROM-X))
+                           (57 21
+                               (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                           (21 21 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK1-0-DOMAIN-DEFINITION (482 482
                                (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                          (222 111 (:REWRITE DEFUNG::TRUE-FROM-X))
-                          (222 111
-                               (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                          (111 111 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                          (66 33 (:REWRITE DEFUNG::TRUE-FROM-X))
+                          (66 33
+                              (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                          (33 33 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK1-0-DEFINITION
      (189 189
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-     (87 72
+     (81 66
          (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (64 26
          (:REWRITE |REPLACE-ARB-iACK1-INDEX-BY-ACK1-0-MEASURE|))
      (41 9 (:REWRITE |iACK1-DOMAIN-MONOTONE|))
-     (32 16 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (32 16
+     (26 13 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (26 13
          (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (16 16 (:REWRITE DEFUNG::QUOTED-TRUE)))
+     (13 13 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK1-0-INDUCTION (713 23 (:DEFINITION ACK1-0-DEFINITION))
                   (569 569
                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
@@ -239,12 +209,12 @@
      (183 183
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (172 10 (:DEFINITION ACK1-0-DEFINITION))
-     (36 18 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (36 18
-         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (18 18 (:REWRITE DEFUNG::QUOTED-TRUE))
      (18 18
          (:REWRITE DEFUNG::COMBINE-AND-EVALUATE-CONSTANTS))
+     (18 9 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (18 9
+         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+     (9 9 (:REWRITE DEFUNG::QUOTED-TRUE))
      (8 4 (:DEFINITION NOT)))
 (ACK1-0-INDUCTION-RULE)
 (OPEN-ACK1-0-DOMAIN (32 2 (:DEFINITION ACK1-0-DEFINITION))
@@ -326,11 +296,7 @@
                     (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                 (8 8 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK1-INDUCTION-IS-ACK1-DOMAIN (65 65
-                                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                               (4 2 (:REWRITE DEFUNG::TRUE-FROM-X))
-                               (4 2
-                                  (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                               (2 2 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (ACK1-INDUCTION-RULE)
 (OPEN-ACK1-DOMAIN (22 22
                       (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
@@ -401,22 +367,14 @@
 (|ACK2-test| (2 2
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK2| (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-         (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK2-DOMAIN| (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|ARB-iACK2-INDEX-THM|)
 (|iACK2-MONO-DETERM| (110 110
                           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (39 39
-                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                     (22 11 (:REWRITE DEFUNG::TRUE-FROM-X))
-                     (22 11
-                         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                     (11 11 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                     (17 17
+                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (|iACK2-DOMAIN-MONOTONE|)
 (|iACK2-DOMAIN-MONOTONE-CONTRAPOSITIVE|)
 (|iACK2-DOMAIN-LOWER-BOUND|)
@@ -430,17 +388,12 @@
 (ACK2-0-MEASURE-PROPERTY)
 (ACK2-0-MEASURE-SMALLEST)
 (|REPLACE-ARB-iACK2-INDEX-BY-ACK2-0-MEASURE|
-     (20 4 (:REWRITE DEFUNG::NORMALIZE-TRUE))
-     (12 12
-         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-     (8 4 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (8 4
-        (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (4 4 (:REWRITE DEFUNG::QUOTED-TRUE))
+     (4 4
+        (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (4 1 (:LINEAR ACK2-0-MEASURE-SMALLEST)))
 (|REPLACE-ARB-iACK2-INDEX-BY-ACK2-0-MEASURE-2|)
 (|REPLACE-iACK2-DOMAIN-INDEX-BY-ACK2-0-MEASURE|
@@ -451,36 +404,34 @@
      (2 1
         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (ACK2-0-MEASURE-BODY (4 4
-                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (4 4
-                        (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (ACK2-0-MEASURE-DEFINITION (469 469
                                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                           (219 219
-                                (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                           (159 71 (:REWRITE DEFUNG::TRUE-FROM-X))
-                           (159 71
-                                (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                            (129 85 (:LINEAR ACK2-0-MEASURE-SMALLEST))
-                           (71 71 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                           (119 119
+                                (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
+                           (57 21 (:REWRITE DEFUNG::TRUE-FROM-X))
+                           (57 21
+                               (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                           (21 21 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK2-0-DOMAIN-DEFINITION (482 482
                                (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                          (222 111 (:REWRITE DEFUNG::TRUE-FROM-X))
-                          (222 111
-                               (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                          (111 111 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                          (66 33 (:REWRITE DEFUNG::TRUE-FROM-X))
+                          (66 33
+                              (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                          (33 33 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK2-0-DEFINITION
      (189 189
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-     (87 72
+     (81 66
          (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (64 26
          (:REWRITE |REPLACE-ARB-iACK2-INDEX-BY-ACK2-0-MEASURE|))
      (41 9 (:REWRITE |iACK2-DOMAIN-MONOTONE|))
-     (32 16 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (32 16
+     (26 13 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (26 13
          (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (16 16 (:REWRITE DEFUNG::QUOTED-TRUE)))
+     (13 13 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK2-0-INDUCTION (713 23 (:DEFINITION ACK2-0-DEFINITION))
                   (569 569
                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
@@ -498,12 +449,12 @@
      (183 183
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (172 10 (:DEFINITION ACK2-0-DEFINITION))
-     (36 18 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (36 18
-         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (18 18 (:REWRITE DEFUNG::QUOTED-TRUE))
      (18 18
          (:REWRITE DEFUNG::COMBINE-AND-EVALUATE-CONSTANTS))
+     (18 9 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (18 9
+         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+     (9 9 (:REWRITE DEFUNG::QUOTED-TRUE))
      (8 4 (:DEFINITION NOT)))
 (ACK2-0-INDUCTION-RULE)
 (OPEN-ACK2-0-DOMAIN (32 2 (:DEFINITION ACK2-0-DEFINITION))
@@ -585,11 +536,7 @@
                     (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                 (8 8 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK2-INDUCTION-IS-ACK2-DOMAIN (65 65
-                                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                               (4 2 (:REWRITE DEFUNG::TRUE-FROM-X))
-                               (4 2
-                                  (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                               (2 2 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (ACK2-INDUCTION-RULE)
 (OPEN-ACK2-DOMAIN (22 22
                       (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
@@ -706,22 +653,14 @@
 (|ACK3-test| (2 2
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK3| (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-         (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iACK3-DOMAIN| (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|ARB-iACK3-INDEX-THM|)
 (|iACK3-MONO-DETERM| (110 110
                           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (39 39
-                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                     (22 11 (:REWRITE DEFUNG::TRUE-FROM-X))
-                     (22 11
-                         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                     (11 11 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                     (17 17
+                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (|iACK3-DOMAIN-MONOTONE|)
 (|iACK3-DOMAIN-MONOTONE-CONTRAPOSITIVE|)
 (|iACK3-DOMAIN-LOWER-BOUND|)
@@ -735,17 +674,12 @@
 (ACK3-0-MEASURE-PROPERTY)
 (ACK3-0-MEASURE-SMALLEST)
 (|REPLACE-ARB-iACK3-INDEX-BY-ACK3-0-MEASURE|
-     (20 4 (:REWRITE DEFUNG::NORMALIZE-TRUE))
-     (12 12
-         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-     (8 4 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (8 4
-        (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (4 4 (:REWRITE DEFUNG::QUOTED-TRUE))
+     (4 4
+        (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (4 1 (:LINEAR ACK3-0-MEASURE-SMALLEST)))
 (|REPLACE-ARB-iACK3-INDEX-BY-ACK3-0-MEASURE-2|)
 (|REPLACE-iACK3-DOMAIN-INDEX-BY-ACK3-0-MEASURE|
@@ -756,36 +690,34 @@
      (2 1
         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (ACK3-0-MEASURE-BODY (4 4
-                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (4 4
-                        (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (ACK3-0-MEASURE-DEFINITION (469 469
                                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                           (219 219
-                                (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                           (159 71 (:REWRITE DEFUNG::TRUE-FROM-X))
-                           (159 71
-                                (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                            (129 85 (:LINEAR ACK3-0-MEASURE-SMALLEST))
-                           (71 71 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                           (119 119
+                                (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
+                           (57 21 (:REWRITE DEFUNG::TRUE-FROM-X))
+                           (57 21
+                               (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                           (21 21 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK3-0-DOMAIN-DEFINITION (482 482
                                (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                          (222 111 (:REWRITE DEFUNG::TRUE-FROM-X))
-                          (222 111
-                               (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                          (111 111 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                          (66 33 (:REWRITE DEFUNG::TRUE-FROM-X))
+                          (66 33
+                              (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                          (33 33 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK3-0-DEFINITION
      (189 189
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-     (87 72
+     (81 66
          (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (64 26
          (:REWRITE |REPLACE-ARB-iACK3-INDEX-BY-ACK3-0-MEASURE|))
      (41 9 (:REWRITE |iACK3-DOMAIN-MONOTONE|))
-     (32 16 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (32 16
+     (26 13 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (26 13
          (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (16 16 (:REWRITE DEFUNG::QUOTED-TRUE)))
+     (13 13 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK3-0-INDUCTION (713 23 (:DEFINITION ACK3-0-DEFINITION))
                   (569 569
                        (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
@@ -803,12 +735,12 @@
      (183 183
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (172 10 (:DEFINITION ACK3-0-DEFINITION))
-     (36 18 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (36 18
-         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (18 18 (:REWRITE DEFUNG::QUOTED-TRUE))
      (18 18
          (:REWRITE DEFUNG::COMBINE-AND-EVALUATE-CONSTANTS))
+     (18 9 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (18 9
+         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+     (9 9 (:REWRITE DEFUNG::QUOTED-TRUE))
      (8 4 (:DEFINITION NOT)))
 (ACK3-0-INDUCTION-RULE)
 (OPEN-ACK3-0-DOMAIN (32 2 (:DEFINITION ACK3-0-DEFINITION))
@@ -890,11 +822,7 @@
                     (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                 (8 8 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (ACK3-INDUCTION-IS-ACK3-DOMAIN (65 65
-                                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                               (4 2 (:REWRITE DEFUNG::TRUE-FROM-X))
-                               (4 2
-                                  (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                               (2 2 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (ACK3-INDUCTION-RULE)
 (OPEN-ACK3-DOMAIN (22 22
                       (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))

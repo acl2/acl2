@@ -1,13 +1,12 @@
-(L2-FS-P (201 90 (:REWRITE DEFAULT-+-2))
+(L2-FS-P (192 90 (:REWRITE DEFAULT-+-2))
          (126 90 (:REWRITE DEFAULT-+-1))
-         (81 9 (:DEFINITION LENGTH))
          (72 18 (:DEFINITION INTEGER-ABS))
-         (54 9 (:DEFINITION LEN))
+         (72 9 (:DEFINITION LENGTH))
+         (45 9 (:DEFINITION LEN))
          (31 23 (:REWRITE DEFAULT-<-2))
          (27 23 (:REWRITE DEFAULT-<-1))
          (18 18 (:REWRITE DEFAULT-UNARY-MINUS))
          (17 17 (:REWRITE DEFAULT-CAR))
-         (9 9 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
          (9 9 (:TYPE-PRESCRIPTION LEN))
          (9 9 (:REWRITE DEFAULT-REALPART))
          (9 9 (:REWRITE DEFAULT-NUMERATOR))
@@ -15,16 +14,15 @@
          (9 9 (:REWRITE DEFAULT-DENOMINATOR))
          (9 9 (:REWRITE DEFAULT-COERCE-2))
          (9 9 (:REWRITE DEFAULT-COERCE-1)))
-(L2-TO-L1-FS (201 90 (:REWRITE DEFAULT-+-2))
+(L2-TO-L1-FS (192 90 (:REWRITE DEFAULT-+-2))
              (126 90 (:REWRITE DEFAULT-+-1))
-             (81 9 (:DEFINITION LENGTH))
              (72 18 (:DEFINITION INTEGER-ABS))
-             (54 9 (:DEFINITION LEN))
+             (72 9 (:DEFINITION LENGTH))
+             (45 9 (:DEFINITION LEN))
              (35 35 (:REWRITE DEFAULT-CAR))
              (34 26 (:REWRITE DEFAULT-<-2))
              (30 26 (:REWRITE DEFAULT-<-1))
              (18 18 (:REWRITE DEFAULT-UNARY-MINUS))
-             (9 9 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
              (9 9 (:TYPE-PRESCRIPTION LEN))
              (9 9 (:REWRITE DEFAULT-REALPART))
              (9 9 (:REWRITE DEFAULT-NUMERATOR))
@@ -46,7 +44,7 @@
 (L2-FS-P-ASSOC (1160 1160 (:REWRITE DEFAULT-CAR))
                (112 112 (:REWRITE DEFAULT-<-2))
                (112 112 (:REWRITE DEFAULT-<-1)))
-(L2-STAT (478 82 (:REWRITE L2-FS-P-ASSOC))
+(L2-STAT (415 82 (:REWRITE L2-FS-P-ASSOC))
          (251 245 (:REWRITE DEFAULT-<-1))
          (245 245 (:REWRITE DEFAULT-<-2))
          (78 6 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
@@ -61,15 +59,15 @@
                                (243 243 (:REWRITE DEFAULT-CDR))
                                (7 7 (:REWRITE DEFAULT-<-2))
                                (7 7 (:REWRITE DEFAULT-<-1)))
-(L2-STAT-CORRECTNESS-1-LEMMA-2 (4945 3757 (:REWRITE DEFAULT-CAR))
-                               (4222 1374 (:REWRITE DEFAULT-CDR))
-                               (288 62
+(L2-STAT-CORRECTNESS-1-LEMMA-2 (4693 3757 (:REWRITE DEFAULT-CAR))
+                               (3609 1374 (:REWRITE DEFAULT-CDR))
+                               (248 62
                                     (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-1))
                                (32 32 (:REWRITE DEFAULT-<-2))
                                (32 32 (:REWRITE DEFAULT-<-1)))
-(L2-STAT-CORRECTNESS-1-LEMMA-3 (497 75
+(L2-STAT-CORRECTNESS-1-LEMMA-3 (457 75
                                     (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-2))
-                               (464 75
+                               (438 75
                                     (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-1))
                                (378 42 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                                (224 28 (:DEFINITION MEMBER-EQUAL))
@@ -80,29 +78,29 @@
                                (46 46 (:REWRITE DEFAULT-<-2))
                                (6 6
                                   (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
-(L2-STAT-CORRECTNESS-1-LEMMA-4 (2429 467 (:REWRITE DEFAULT-CDR))
-                               (2165 989 (:REWRITE DEFAULT-CAR))
-                               (296 38
+(L2-STAT-CORRECTNESS-1-LEMMA-4 (1985 467 (:REWRITE DEFAULT-CDR))
+                               (1898 989 (:REWRITE DEFAULT-CAR))
+                               (242 38
                                     (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-3))
-                               (296 38
+                               (242 38
                                     (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-2))
-                               (224 38
+                               (188 38
                                     (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-1))
                                (14 14 (:REWRITE DEFAULT-<-2))
                                (14 14 (:REWRITE DEFAULT-<-1)))
-(L2-STAT-CORRECTNESS-1-LEMMA-5 (1925 965 (:REWRITE DEFAULT-CDR))
-                               (333 57 (:REWRITE L2-FS-P-ASSOC))
+(L2-STAT-CORRECTNESS-1-LEMMA-5 (1721 965 (:REWRITE DEFAULT-CDR))
+                               (285 57 (:REWRITE L2-FS-P-ASSOC))
                                (127 127 (:REWRITE DEFAULT-<-2))
                                (127 127 (:REWRITE DEFAULT-<-1)))
-(L2-STAT-CORRECTNESS-1 (2022 829
+(L2-STAT-CORRECTNESS-1 (2487 829
                              (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                        (1057 209 (:DEFINITION ASSOC-EQUAL))
-                       (454 34 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                       (460 34 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                        (416 32 (:DEFINITION L2-FS-P))
-                       (284 34 (:DEFINITION MEMBER-EQUAL))
-                       (170 170 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                       (167 15
+                       (290 34 (:DEFINITION MEMBER-EQUAL))
+                       (183 15
                             (:REWRITE L1-READ-AFTER-WRITE-2-LEMMA-2))
+                       (170 170 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                        (68 68 (:REWRITE SUBSETP-MEMBER . 2))
                        (68 68 (:REWRITE SUBSETP-MEMBER . 1))
                        (56 8
@@ -126,13 +124,13 @@
                                   (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-4)))
 (L2-STAT-CORRECTNESS-2-LEMMA-2 (22 22 (:REWRITE DEFAULT-CAR))
                                (12 12 (:REWRITE DEFAULT-CDR)))
-(L2-STAT-CORRECTNESS-2 (2336 923
+(L2-STAT-CORRECTNESS-2 (2769 923
                              (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                        (1470 288 (:DEFINITION ASSOC-EQUAL))
-                       (725 53 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                       (460 53 (:DEFINITION MEMBER-EQUAL))
+                       (743 53 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                       (478 53 (:DEFINITION MEMBER-EQUAL))
                        (265 265 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                       (191 23
+                       (209 23
                             (:REWRITE L1-READ-AFTER-WRITE-2-LEMMA-2))
                        (106 106 (:REWRITE SUBSETP-MEMBER . 2))
                        (106 106 (:REWRITE SUBSETP-MEMBER . 1))
@@ -147,58 +145,57 @@
                        (8 8 (:REWRITE L2-TO-L1-FS-CORRECTNESS-1))
                        (8 1 (:REWRITE L2-FS-P-ASSOC))
                        (6 6 (:REWRITE CDR-CONS)))
-(L2-STAT-OF-STAT (460 218
+(L2-STAT-OF-STAT (654 218
                       (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                  (220 218 (:REWRITE DEFAULT-CAR))
-                 (171 13 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                 (172 13 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                  (155 31 (:DEFINITION ASSOC-EQUAL))
                  (142 140 (:REWRITE DEFAULT-CDR))
-                 (106 13 (:DEFINITION MEMBER-EQUAL))
+                 (107 13 (:DEFINITION MEMBER-EQUAL))
                  (65 65 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                  (65 5 (:DEFINITION L2-FS-P))
                  (26 26 (:REWRITE SUBSETP-MEMBER . 2))
                  (26 26 (:REWRITE SUBSETP-MEMBER . 1))
                  (15 5 (:DEFINITION NATP))
-                 (12 12 (:TYPE-PRESCRIPTION ZP))
-                 (12 12 (:TYPE-PRESCRIPTION LEN))
                  (5 5 (:REWRITE DEFAULT-<-2))
                  (5 5 (:REWRITE DEFAULT-<-1))
                  (4 1
                     (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
                  (2 1 (:DEFINITION STRING-LISTP))
                  (1 1 (:TYPE-PRESCRIPTION STRING-LISTP)))
-(L2-RDCHS (35 15 (:REWRITE DEFAULT-<-1))
-          (29 1 (:DEFINITION L2-STAT))
-          (22 18 (:REWRITE DEFAULT-+-2))
+(L2-RDCHS (31 1 (:DEFINITION L2-STAT))
+          (25 15 (:REWRITE DEFAULT-<-1))
+          (20 18 (:REWRITE DEFAULT-+-2))
           (18 18 (:REWRITE DEFAULT-+-1))
           (15 15 (:REWRITE DEFAULT-<-2))
           (13 1 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
           (13 1 (:DEFINITION L2-FS-P))
-          (12 2 (:DEFINITION LEN))
           (11 11 (:REWRITE DEFAULT-CDR))
           (11 11 (:REWRITE DEFAULT-CAR))
+          (10 2 (:DEFINITION LEN))
           (8 1 (:DEFINITION MEMBER-EQUAL))
+          (6 2
+             (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
           (5 5 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
           (5 1 (:DEFINITION ASSOC-EQUAL))
-          (4 2
-             (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
           (3 1 (:DEFINITION SYMBOL-LISTP))
+          (2 2 (:TYPE-PRESCRIPTION ZP))
           (2 2 (:REWRITE SUBSETP-MEMBER . 2))
           (2 2 (:REWRITE SUBSETP-MEMBER . 1))
           (2 2 (:REWRITE DEFAULT-COERCE-2))
           (2 2 (:REWRITE DEFAULT-COERCE-1)))
 (L2-RDCHS-CORRECTNESS-1-LEMMA-1
-     (1752 619
+     (1857 619
            (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
      (1094 1094 (:REWRITE DEFAULT-CAR))
      (920 184 (:DEFINITION ASSOC-EQUAL))
-     (662 581 (:REWRITE DEFAULT-CDR))
+     (680 581 (:REWRITE DEFAULT-CDR))
      (351 27 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
      (216 27 (:DEFINITION MEMBER-EQUAL))
-     (174 16
+     (186 16
           (:REWRITE L1-READ-AFTER-WRITE-2-LEMMA-2))
      (135 135 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (127 8 (:REWRITE L2-STAT-CORRECTNESS-1))
+     (132 8 (:REWRITE L2-STAT-CORRECTNESS-1))
      (84 21
          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-4))
      (64 8
@@ -221,35 +218,35 @@
                                 (2 2 (:REWRITE DEFAULT-<-2))
                                 (2 2 (:REWRITE DEFAULT-<-1)))
 (L2-RDCHS-CORRECTNESS-1
-     (1260 123 (:DEFINITION LEN))
-     (1218 762 (:REWRITE DEFAULT-CDR))
-     (1172 550
+     (1650 550
            (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+     (1153 762 (:REWRITE DEFAULT-CDR))
      (1046 1046 (:REWRITE DEFAULT-CAR))
+     (1029 123 (:DEFINITION LEN))
      (865 173 (:DEFINITION ASSOC-EQUAL))
      (715 55 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-     (687 269 (:REWRITE DEFAULT-+-2))
-     (592 5 (:DEFINITION TAKE))
-     (472 72 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+     (478 269 (:REWRITE DEFAULT-+-2))
      (440 55 (:DEFINITION MEMBER-EQUAL))
-     (365 10 (:REWRITE TAKE-OF-LEN-FREE))
-     (316 228 (:REWRITE DEFAULT-<-2))
-     (281 5 (:REWRITE CAR-OF-NTHCDR))
-     (277 269 (:REWRITE DEFAULT-+-1))
+     (427 5 (:DEFINITION TAKE))
+     (384 72 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
      (275 275 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (272 228 (:REWRITE DEFAULT-<-1))
-     (246 10 (:REWRITE NTH-WHEN->=-N-LEN-L))
+     (273 269 (:REWRITE DEFAULT-+-1))
+     (272 228 (:REWRITE DEFAULT-<-2))
+     (250 228 (:REWRITE DEFAULT-<-1))
      (224 32 (:DEFINITION L2-TO-L1-FS))
-     (224 10 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
-     (165 5 (:DEFINITION NTHCDR))
-     (155 5 (:DEFINITION NTH))
-     (124 32 (:DEFINITION NFIX))
-     (120 4 (:REWRITE LEN-OF-NTHCDR))
+     (221 10 (:REWRITE TAKE-OF-LEN-FREE))
+     (221 5 (:REWRITE CAR-OF-NTHCDR))
+     (186 10 (:REWRITE NTH-WHEN->=-N-LEN-L))
+     (170 10 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
+     (135 5 (:DEFINITION NTHCDR))
+     (125 5 (:DEFINITION NTH))
      (110 110 (:REWRITE SUBSETP-MEMBER . 2))
      (110 110 (:REWRITE SUBSETP-MEMBER . 1))
-     (106 5 (:REWRITE CONSP-OF-NTHCDR))
+     (110 32 (:DEFINITION NFIX))
+     (94 4 (:REWRITE LEN-OF-NTHCDR))
      (84 84 (:REWRITE DEFAULT-COERCE-2))
      (84 79 (:REWRITE DEFAULT-COERCE-1))
+     (81 5 (:REWRITE CONSP-OF-NTHCDR))
      (79 16
          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-4))
      (78 78 (:LINEAR POSITION-WHEN-MEMBER))
@@ -257,16 +254,15 @@
          (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
      (72 9
          (:REWRITE L2-STAT-CORRECTNESS-2-LEMMA-1))
-     (71 71
-         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (66 24
+         (:REWRITE L1-READ-AFTER-WRITE-2-LEMMA-2))
      (63 9
          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-2))
-     (62 24
-         (:REWRITE L1-READ-AFTER-WRITE-2-LEMMA-2))
-     (40 40 (:TYPE-PRESCRIPTION ZP))
      (33 5 (:REWRITE DEFAULT-COERCE-3))
      (26 26 (:REWRITE FOLD-CONSTS-IN-+))
      (23 23 (:REWRITE ZP-OPEN))
+     (20 20
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
      (20 4 (:REWRITE CONSP-OF-TAKE))
      (19 19 (:TYPE-PRESCRIPTION NFIX))
      (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
@@ -281,7 +277,7 @@
            (8 8 (:REWRITE SUBSETP-MEMBER . 1))
            (3 3
               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
-(L2-WRCHS (381 187
+(L2-WRCHS (551 187
                (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
           (143 11 (:DEFINITION L2-FS-P))
           (101 101 (:REWRITE DEFAULT-CAR))
@@ -296,7 +292,6 @@
           (8 8 (:REWRITE SUBSETP-MEMBER . 2))
           (8 8 (:REWRITE SUBSETP-MEMBER . 1))
           (8 1 (:REWRITE L2-FS-P-ASSOC))
-          (6 6 (:TYPE-PRESCRIPTION ZP))
           (1 1 (:REWRITE DEFAULT-COERCE-2))
           (1 1 (:REWRITE DEFAULT-COERCE-1)))
 (L2-WRCHS-RETURNS-FS-LEMMA-1 (67 67 (:REWRITE DEFAULT-CDR))
@@ -307,27 +302,24 @@
                              (68 68 (:REWRITE DEFAULT-<-2))
                              (54 54 (:TYPE-PRESCRIPTION NULL))
                              (54 54 (:DEFINITION NULL))
-                             (52 13
+                             (39 13
                                  (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                              (13 13 (:TYPE-PRESCRIPTION ZP))
-                             (13 13 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
                              (13 13 (:TYPE-PRESCRIPTION LEN))
                              (1 1
                                 (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
                              (1 1
                                 (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
-(L2-WRCHS-RETURNS-FS-LEMMA-3 (54 25
+(L2-WRCHS-RETURNS-FS-LEMMA-3 (75 25
                                  (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                              (15 3 (:DEFINITION ASSOC-EQUAL))
                              (13 13 (:REWRITE DEFAULT-CAR))
                              (13 1 (:DEFINITION L2-FS-P))
                              (8 8 (:REWRITE DEFAULT-CDR))
                              (3 1 (:DEFINITION NATP))
-                             (2 2 (:TYPE-PRESCRIPTION ZP))
-                             (2 2 (:TYPE-PRESCRIPTION LEN))
                              (1 1 (:REWRITE DEFAULT-<-2))
                              (1 1 (:REWRITE DEFAULT-<-1)))
-(L2-WRCHS-RETURNS-FS-LEMMA-4 (2788 1468 (:REWRITE DEFAULT-CDR))
+(L2-WRCHS-RETURNS-FS-LEMMA-4 (2476 1468 (:REWRITE DEFAULT-CDR))
                              (190 160 (:REWRITE DEFAULT-<-1))
                              (160 160 (:REWRITE DEFAULT-<-2))
                              (30 30
@@ -335,18 +327,18 @@
 (L2-WRCHS-RETURNS-FS-LEMMA-5 (62 62 (:REWRITE DEFAULT-CDR))
                              (8 8 (:REWRITE DEFAULT-<-2))
                              (8 8 (:REWRITE DEFAULT-<-1)))
-(L2-WRCHS-RETURNS-FS (628 283
+(L2-WRCHS-RETURNS-FS (849 283
                           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                     (466 461 (:REWRITE DEFAULT-CAR))
-                     (360 30 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-                     (324 319 (:REWRITE DEFAULT-CDR))
-                     (270 60
-                          (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
+                     (464 461 (:REWRITE DEFAULT-CAR))
+                     (354 30 (:DEFINITION REMOVE1-ASSOC-EQUAL))
+                     (322 319 (:REWRITE DEFAULT-CDR))
                      (270 54 (:DEFINITION ASSOC-EQUAL))
-                     (257 19 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                     (162 19 (:DEFINITION MEMBER-EQUAL))
+                     (264 60
+                          (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
+                     (262 19 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                     (167 19 (:DEFINITION MEMBER-EQUAL))
                      (95 95 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                     (79 9 (:DEFINITION LEN))
+                     (70 9 (:DEFINITION LEN))
                      (57 57 (:TYPE-PRESCRIPTION NULL))
                      (57 57 (:DEFINITION NULL))
                      (50 18 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
@@ -354,18 +346,17 @@
                      (38 38 (:REWRITE SUBSETP-MEMBER . 1))
                      (34 9 (:REWRITE DEFAULT-COERCE-3))
                      (32 4 (:REWRITE L2-FS-P-ASSOC))
-                     (31 31 (:TYPE-PRESCRIPTION ZP))
-                     (27 9 (:REWRITE DEFAULT-+-2))
                      (23 23 (:REWRITE DEFAULT-<-2))
                      (23 23 (:REWRITE DEFAULT-<-1))
                      (19 19 (:REWRITE DEFAULT-COERCE-2))
+                     (18 9 (:REWRITE DEFAULT-+-2))
                      (16 16 (:REWRITE CHARACTER-LISTP-COERCE))
                      (15 15 (:TYPE-PRESCRIPTION L2-WRCHS))
                      (11 4
                          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
                      (10 10 (:REWRITE DEFAULT-COERCE-1))
                      (9 9 (:REWRITE DEFAULT-+-1)))
-(L2-UNLINK-RETURNS-FS (260 122
+(L2-UNLINK-RETURNS-FS (366 122
                            (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                       (131 131 (:REWRITE DEFAULT-CAR))
                       (96 96 (:REWRITE DEFAULT-CDR))
@@ -381,20 +372,17 @@
                       (12 12 (:TYPE-PRESCRIPTION NULL))
                       (12 12 (:REWRITE SUBSETP-MEMBER . 2))
                       (12 12 (:REWRITE SUBSETP-MEMBER . 1))
-                      (12 12 (:DEFINITION NULL))
-                      (8 8 (:TYPE-PRESCRIPTION ZP))
-                      (8 8 (:TYPE-PRESCRIPTION LEN)))
+                      (12 12 (:DEFINITION NULL)))
 (L2-WRCHS-CORRECTNESS-1-LEMMA-1
      (141 141 (:TYPE-PRESCRIPTION NULL))
      (141 141 (:DEFINITION NULL))
-     (108 27
-          (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+     (81 27
+         (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
      (28 26 (:REWRITE DEFAULT-<-1))
      (27 27 (:TYPE-PRESCRIPTION ZP))
-     (27 27 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
      (27 27 (:TYPE-PRESCRIPTION LEN))
      (26 26 (:REWRITE DEFAULT-<-2))
-     (14 1
+     (12 1
          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-1))
      (2 2
         (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
@@ -403,32 +391,32 @@
 (L2-WRCHS-CORRECTNESS-1-LEMMA-2 (218 218 (:REWRITE DEFAULT-CAR))
                                 (10 10 (:REWRITE DEFAULT-<-2))
                                 (10 10 (:REWRITE DEFAULT-<-1)))
-(L2-WRCHS-CORRECTNESS-1 (1645 1606 (:REWRITE DEFAULT-CAR))
-                        (1176 225 (:DEFINITION ASSOC-EQUAL))
-                        (1116 949 (:REWRITE DEFAULT-CDR))
-                        (1076 457
+(L2-WRCHS-CORRECTNESS-1 (1639 1606 (:REWRITE DEFAULT-CAR))
+                        (1371 457
                               (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                        (873 87 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-                        (580 174
+                        (1176 225 (:DEFINITION ASSOC-EQUAL))
+                        (1122 949 (:REWRITE DEFAULT-CDR))
+                        (867 87 (:DEFINITION REMOVE1-ASSOC-EQUAL))
+                        (574 174
                              (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-                        (553 39 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                        (358 39 (:DEFINITION MEMBER-EQUAL))
+                        (570 39 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                        (375 39 (:DEFINITION MEMBER-EQUAL))
                         (195 195 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                        (158 18 (:DEFINITION LEN))
                         (155 155 (:TYPE-PRESCRIPTION NULL))
                         (155 155 (:DEFINITION NULL))
+                        (140 18 (:DEFINITION LEN))
                         (114 42 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
                         (103 13
                              (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-2))
                         (90 26 (:REWRITE DEFAULT-COERCE-3))
                         (78 78 (:REWRITE SUBSETP-MEMBER . 2))
                         (78 78 (:REWRITE SUBSETP-MEMBER . 1))
-                        (67 63 (:TYPE-PRESCRIPTION L2-WRCHS))
+                        (69 63 (:TYPE-PRESCRIPTION L2-WRCHS))
                         (59 10 (:REWRITE L2-FS-P-ASSOC))
                         (54 54 (:REWRITE DEFAULT-COERCE-2))
-                        (54 18 (:REWRITE DEFAULT-+-2))
                         (48 16 (:DEFINITION NATP))
                         (36 36 (:REWRITE CHARACTER-LISTP-COERCE))
+                        (36 18 (:REWRITE DEFAULT-+-2))
                         (28 28 (:REWRITE DEFAULT-COERCE-1))
                         (18 18 (:REWRITE DEFAULT-+-1))
                         (17 10
@@ -437,9 +425,8 @@
                         (16 16 (:REWRITE DEFAULT-<-1))
                         (16 2
                             (:REWRITE L2-STAT-CORRECTNESS-2-LEMMA-1)))
-(L2-CREATE (641 164
+(L2-CREATE (482 164
                 (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-           (210 210 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
            (182 14 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
            (117 9 (:DEFINITION L2-FS-P))
            (112 14 (:DEFINITION MEMBER-EQUAL))
@@ -456,25 +443,25 @@
            (8 1 (:REWRITE L2-FS-P-ASSOC))
            (3 3
               (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3)))
-(L2-CREATE-RETURNS-FS (1376 345
+(L2-CREATE-RETURNS-FS (1035 345
                             (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                      (466 458 (:REWRITE DEFAULT-CAR))
-                      (348 28 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-                      (332 324 (:REWRITE DEFAULT-CDR))
-                      (293 21 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                      (264 56
+                      (464 458 (:REWRITE DEFAULT-CAR))
+                      (336 28 (:DEFINITION REMOVE1-ASSOC-EQUAL))
+                      (330 324 (:REWRITE DEFAULT-CDR))
+                      (288 21 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                      (252 56
                            (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
                       (229 49 (:DEFINITION ASSOC-EQUAL))
-                      (188 21 (:DEFINITION MEMBER-EQUAL))
+                      (183 21 (:DEFINITION MEMBER-EQUAL))
                       (105 105 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                      (66 11 (:DEFINITION LEN))
+                      (55 11 (:DEFINITION LEN))
                       (53 53 (:TYPE-PRESCRIPTION NULL))
                       (53 53 (:DEFINITION NULL))
                       (42 42 (:REWRITE SUBSETP-MEMBER . 2))
                       (42 42 (:REWRITE SUBSETP-MEMBER . 1))
-                      (33 11 (:REWRITE DEFAULT-+-2))
                       (28 28 (:REWRITE DEFAULT-<-2))
                       (28 28 (:REWRITE DEFAULT-<-1))
+                      (22 11 (:REWRITE DEFAULT-+-2))
                       (16 2 (:REWRITE L2-FS-P-ASSOC))
                       (11 11 (:REWRITE DEFAULT-COERCE-2))
                       (11 11 (:REWRITE DEFAULT-COERCE-1))
@@ -484,23 +471,22 @@
 (L2-CREATE-CORRECTNESS-1-LEMMA-1 (22 22 (:REWRITE DEFAULT-<-2))
                                  (22 22 (:REWRITE DEFAULT-<-1)))
 (L2-CREATE-CORRECTNESS-1-LEMMA-2 (1 1 (:REWRITE DEFAULT-CAR)))
-(L2-CREATE-CORRECTNESS-1 (3528 885
+(L2-CREATE-CORRECTNESS-1 (2643 881
                                (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                         (2180 2151 (:REWRITE DEFAULT-CAR))
-                         (1568 1401 (:REWRITE DEFAULT-CDR))
-                         (850 70 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-                         (654 44 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                         (596 140
+                         (2177 2151 (:REWRITE DEFAULT-CAR))
+                         (1547 1401 (:REWRITE DEFAULT-CDR))
+                         (826 70 (:DEFINITION REMOVE1-ASSOC-EQUAL))
+                         (637 44 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                         (572 140
                               (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-                         (447 112 (:DEFINITION NATP))
-                         (434 44 (:DEFINITION MEMBER-EQUAL))
+                         (425 112 (:DEFINITION NATP))
+                         (417 44 (:DEFINITION MEMBER-EQUAL))
                          (294 49 (:REWRITE L2-FS-P-ASSOC))
                          (220 220 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                          (126 126 (:TYPE-PRESCRIPTION NULL))
                          (126 126 (:DEFINITION NULL))
                          (125 101
                               (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
-                         (120 20 (:DEFINITION LEN))
                          (116 12
                               (:REWRITE L2-STAT-CORRECTNESS-2-LEMMA-1))
                          (112 112 (:REWRITE DEFAULT-<-2))
@@ -509,35 +495,35 @@
                               (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-2))
                          (103 51
                               (:REWRITE L2-WRCHS-CORRECTNESS-1-LEMMA-2))
+                         (100 20 (:DEFINITION LEN))
                          (88 88 (:REWRITE SUBSETP-MEMBER . 2))
                          (88 88 (:REWRITE SUBSETP-MEMBER . 1))
-                         (60 20 (:REWRITE DEFAULT-+-2))
+                         (40 20 (:REWRITE DEFAULT-+-2))
                          (20 20 (:REWRITE DEFAULT-COERCE-2))
                          (20 20 (:REWRITE DEFAULT-COERCE-1))
                          (20 20 (:REWRITE DEFAULT-+-1)))
-(L2-READ-AFTER-WRITE-1-LEMMA-1 (80 20
+(L2-READ-AFTER-WRITE-1-LEMMA-1 (60 20
                                    (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                               (22 22 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
                                (10 2 (:DEFINITION ASSOC-EQUAL))
                                (6 6 (:REWRITE DEFAULT-CAR))
                                (2 2 (:REWRITE DEFAULT-CDR)))
 (L2-READ-AFTER-WRITE-1-LEMMA-3)
-(L2-READ-AFTER-WRITE-1-LEMMA-4 (2836 160 (:DEFINITION LEN))
-                               (2711 179
+(L2-READ-AFTER-WRITE-1-LEMMA-4 (2388 1476 (:REWRITE DEFAULT-CDR))
+                               (2193 160 (:DEFINITION LEN))
+                               (2051 179
                                      (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-                               (2621 1476 (:REWRITE DEFAULT-CDR))
-                               (1451 91 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                               (1584 91 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                                (1440 160 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-                               (1036 37 (:REWRITE DEFAULT-COERCE-3))
-                               (996 91 (:DEFINITION MEMBER-EQUAL))
+                               (1129 91 (:DEFINITION MEMBER-EQUAL))
                                (960 320
                                     (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-                               (849 263 (:REWRITE DEFAULT-+-2))
-                               (624 368 (:REWRITE DEFAULT-<-2))
+                               (777 37 (:REWRITE DEFAULT-COERCE-3))
+                               (556 263 (:REWRITE DEFAULT-+-2))
+                               (496 368 (:REWRITE DEFAULT-<-2))
                                (455 455 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                               (390 368 (:REWRITE DEFAULT-<-1))
-                               (323 263 (:REWRITE DEFAULT-+-1))
+                               (379 368 (:REWRITE DEFAULT-<-1))
                                (320 320 (:TYPE-PRESCRIPTION NULL))
+                               (293 263 (:REWRITE DEFAULT-+-1))
                                (254 254 (:REWRITE DEFAULT-COERCE-2))
                                (225 217 (:REWRITE DEFAULT-COERCE-1))
                                (220 22
@@ -554,11 +540,11 @@
 (L2-READ-AFTER-WRITE-2-LEMMA-1 (8 8 (:REWRITE DEFAULT-<-2))
                                (8 8 (:REWRITE DEFAULT-<-1)))
 (L2-READ-AFTER-WRITE-2-LEMMA-2
-     (476 37
+     (484 37
           (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-     (293 13 (:DEFINITION L2-FS-P))
-     (292 138
+     (406 138
           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+     (301 13 (:DEFINITION L2-FS-P))
      (240 48 (:DEFINITION ASSOC-EQUAL))
      (160 160 (:REWRITE DEFAULT-CDR))
      (80 8
@@ -566,23 +552,21 @@
      (80 8
          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
      (64 8 (:REWRITE L2-FS-P-ASSOC))
-     (55 13 (:DEFINITION NATP))
+     (63 13 (:DEFINITION NATP))
      (39 3 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
      (24 3 (:DEFINITION MEMBER-EQUAL))
      (15 15 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (13 13 (:REWRITE DEFAULT-<-2))
      (13 13 (:REWRITE DEFAULT-<-1))
-     (10 10 (:TYPE-PRESCRIPTION ZP))
-     (10 10 (:TYPE-PRESCRIPTION LEN))
      (6 6 (:REWRITE SUBSETP-MEMBER . 2))
      (6 6 (:REWRITE SUBSETP-MEMBER . 1))
      (3 3
         (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-3)))
 (L2-READ-AFTER-WRITE-2-LEMMA-3
-     (501 44
-          (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-     (408 192
+     (576 192
           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+     (509 44
+          (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
      (276 276 (:REWRITE DEFAULT-CAR))
      (245 49 (:DEFINITION ASSOC-EQUAL))
      (181 181 (:REWRITE DEFAULT-CDR))
@@ -596,26 +580,24 @@
      (20 20 (:REWRITE SUBSETP-MEMBER . 1))
      (19 19 (:REWRITE DEFAULT-<-2))
      (19 19 (:REWRITE DEFAULT-<-1))
-     (12 12 (:TYPE-PRESCRIPTION ZP))
-     (12 12 (:TYPE-PRESCRIPTION LEN))
      (4 4
         (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-3)))
 (L2-READ-AFTER-WRITE-2-LEMMA-4
-     (3419 255
+     (3444 255
            (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-     (2795 31 (:DEFINITION L2-STAT))
-     (1628 11 (:DEFINITION L2-WRCHS))
+     (2888 31 (:DEFINITION L2-STAT))
+     (1650 11 (:DEFINITION L2-WRCHS))
      (1534 1534 (:REWRITE DEFAULT-CAR))
      (1362 258 (:DEFINITION ASSOC-EQUAL))
-     (1212 1115 (:REWRITE DEFAULT-CDR))
+     (1230 1115 (:REWRITE DEFAULT-CDR))
      (693 51 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-     (648 9
+     (631 9
           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-3))
+     (606 198
+          (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
      (525 15 (:DEFINITION L2-TO-L1-FS))
      (518 51
           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
-     (486 198
-          (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
      (469 51
           (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
      (452 51 (:REWRITE L2-FS-P-ASSOC))
@@ -624,15 +606,16 @@
      (255 255 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (243 9
           (:REWRITE L2-READ-AFTER-WRITE-2-LEMMA-1))
-     (233 209 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
-     (205 205 (:TYPE-PRESCRIPTION L2-WRCHS))
+     (209 209 (:TYPE-PRESCRIPTION LEN))
+     (198 198 (:TYPE-PRESCRIPTION ZP))
      (198 66
           (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
+     (181 181 (:TYPE-PRESCRIPTION L2-WRCHS))
      (102 102 (:REWRITE SUBSETP-MEMBER . 2))
      (102 102 (:REWRITE SUBSETP-MEMBER . 1))
-     (99 11 (:DEFINITION LEN))
      (97 9
          (:REWRITE L2-STAT-CORRECTNESS-2-LEMMA-1))
+     (88 11 (:DEFINITION LEN))
      (88 9
          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-4))
      (87 87 (:REWRITE DEFAULT-<-2))
@@ -645,14 +628,12 @@
      (62 62
          (:REWRITE L2-READ-AFTER-WRITE-2-LEMMA-2))
      (44 11 (:REWRITE DEFAULT-COERCE-3))
-     (38 38 (:TYPE-PRESCRIPTION LEN))
      (33 33
          (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-1))
-     (33 11 (:REWRITE DEFAULT-+-2))
-     (27 27 (:TYPE-PRESCRIPTION ZP))
      (22 22 (:TYPE-PRESCRIPTION CHARACTER-LISTP))
      (22 22 (:REWRITE DEFAULT-COERCE-2))
      (22 22 (:REWRITE CHARACTER-LISTP-COERCE))
+     (22 11 (:REWRITE DEFAULT-+-2))
      (21 9
          (:REWRITE L2-WRCHS-CORRECTNESS-1-LEMMA-2))
      (18 18
@@ -665,48 +646,47 @@
      (11 11 (:REWRITE DEFAULT-+-1))
      (6 1 (:DEFINITION SYMBOL-LISTP))
      (5 5 (:TYPE-PRESCRIPTION SYMBOL-LISTP)))
-(L2-STAT-AFTER-WRITE (1725 5 (:DEFINITION L2-WRCHS))
-                     (1618 121
+(L2-STAT-AFTER-WRITE (1626 121
                            (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-                     (1173 13 (:DEFINITION L2-STAT))
-                     (1120 40 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-                     (1053 574 (:REWRITE DEFAULT-CDR))
-                     (830 35 (:DEFINITION LEN))
-                     (804 6 (:REWRITE L2-STAT-CORRECTNESS-2))
-                     (766 6 (:REWRITE DEFAULT-COERCE-3))
+                     (1485 5 (:DEFINITION L2-WRCHS))
+                     (1212 13 (:DEFINITION L2-STAT))
+                     (954 574 (:REWRITE DEFAULT-CDR))
+                     (850 40 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+                     (828 6 (:REWRITE L2-STAT-CORRECTNESS-2))
                      (757 757 (:REWRITE DEFAULT-CAR))
-                     (736 22 (:LINEAR INSERT-TEXT-CORRECTNESS-3))
                      (696 132 (:DEFINITION ASSOC-EQUAL))
-                     (420 6
+                     (635 35 (:DEFINITION LEN))
+                     (586 6 (:REWRITE DEFAULT-COERCE-3))
+                     (553 22 (:LINEAR INSERT-TEXT-CORRECTNESS-3))
+                     (410 6
                           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-3))
-                     (399 387 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
-                     (372 4
+                     (387 387 (:TYPE-PRESCRIPTION LEN))
+                     (384 4
                           (:REWRITE L2-READ-AFTER-WRITE-2-LEMMA-3))
                      (326 24 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                     (303 303 (:TYPE-PRESCRIPTION LEN))
-                     (278 8 (:DEFINITION L2-TO-L1-FS))
-                     (258 102
+                     (312 102
                           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+                     (278 8 (:DEFINITION L2-TO-L1-FS))
                      (244 24
                           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
                      (212 24 (:REWRITE L2-FS-P-ASSOC))
                      (206 24 (:DEFINITION MEMBER-EQUAL))
                      (204 24
                           (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
-                     (177 97 (:REWRITE DEFAULT-<-2))
-                     (171 57 (:REWRITE DEFAULT-+-2))
                      (162 6
                           (:REWRITE L2-READ-AFTER-WRITE-2-LEMMA-1))
+                     (137 97 (:REWRITE DEFAULT-<-2))
                      (135 15 (:DEFINITION REMOVE1-ASSOC-EQUAL))
                      (120 120 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                     (98 98 (:TYPE-PRESCRIPTION L2-WRCHS))
+                     (114 57 (:REWRITE DEFAULT-+-2))
+                     (102 102 (:TYPE-PRESCRIPTION ZP))
                      (97 97 (:REWRITE DEFAULT-<-1))
                      (90 30
                          (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-                     (88 22 (:REWRITE UNICITY-OF-0))
+                     (86 86 (:TYPE-PRESCRIPTION L2-WRCHS))
                      (74 74 (:REWRITE DEFAULT-COERCE-2))
                      (68 68 (:REWRITE DEFAULT-COERCE-1))
-                     (66 22 (:DEFINITION FIX))
+                     (66 22 (:REWRITE UNICITY-OF-0))
                      (62 6
                          (:REWRITE L2-STAT-CORRECTNESS-2-LEMMA-1))
                      (57 57 (:REWRITE DEFAULT-+-1))
@@ -716,6 +696,7 @@
                          (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-2))
                      (48 48 (:REWRITE SUBSETP-MEMBER . 2))
                      (48 48 (:REWRITE SUBSETP-MEMBER . 1))
+                     (44 22 (:DEFINITION FIX))
                      (30 30 (:TYPE-PRESCRIPTION NULL))
                      (30 30 (:DEFINITION NULL))
                      (26 26
@@ -723,7 +704,6 @@
                      (22 22 (:LINEAR POSITION-WHEN-MEMBER))
                      (22 22
                          (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
-                     (18 18 (:TYPE-PRESCRIPTION ZP))
                      (15 15
                          (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-1))
                      (15 15 (:REWRITE CHARACTER-LISTP-COERCE))
@@ -731,44 +711,45 @@
                          (:REWRITE L1-READ-AFTER-WRITE-2-LEMMA-2))
                      (12 6
                          (:REWRITE L2-WRCHS-CORRECTNESS-1-LEMMA-2)))
-(L2-READ-AFTER-WRITE-1 (315 16 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-                       (215 80 (:REWRITE DEFAULT-CDR))
-                       (215 1 (:DEFINITION L2-WRCHS))
-                       (214 14 (:DEFINITION LEN))
-                       (192 2 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
-                       (175 13
+(L2-READ-AFTER-WRITE-1 (244 16 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+                       (199 1 (:DEFINITION L2-WRCHS))
+                       (182 80 (:REWRITE DEFAULT-CDR))
+                       (180 2 (:DEFINITION L2-STAT))
+                       (178 13
                             (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-                       (174 2 (:DEFINITION L2-STAT))
-                       (121 4
+                       (166 14 (:DEFINITION LEN))
+                       (159 2 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
+                       (106 83 (:REWRITE DEFAULT-CAR))
+                       (101 4
                             (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
-                       (113 83 (:REWRITE DEFAULT-CAR))
-                       (109 4 (:DEFINITION STRING-LISTP))
-                       (95 4 (:DEFINITION L2-FS-P))
-                       (83 2 (:DEFINITION TRUE-LISTP))
-                       (71 25 (:REWRITE DEFAULT-+-2))
-                       (63 35 (:REWRITE DEFAULT-<-2))
-                       (63 3 (:REWRITE DEFAULT-COERCE-3))
+                       (98 4 (:DEFINITION L2-FS-P))
+                       (89 4 (:DEFINITION STRING-LISTP))
+                       (70 2 (:DEFINITION TRUE-LISTP))
                        (60 12 (:DEFINITION ASSOC-EQUAL))
+                       (49 35 (:REWRITE DEFAULT-<-2))
+                       (49 3 (:REWRITE DEFAULT-COERCE-3))
+                       (48 25 (:REWRITE DEFAULT-+-2))
                        (39 3 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                        (39 1 (:DEFINITION NTHCDR))
-                       (37 35 (:REWRITE DEFAULT-<-1))
+                       (36 35 (:REWRITE DEFAULT-<-1))
                        (30 3
                            (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
                        (30 3
                            (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
-                       (29 25 (:REWRITE DEFAULT-+-1))
+                       (27 25 (:REWRITE DEFAULT-+-1))
+                       (27 9
+                           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                        (27 3 (:DEFINITION REMOVE1-ASSOC-EQUAL))
                        (24 24 (:REWRITE DEFAULT-COERCE-2))
                        (24 3 (:REWRITE L2-FS-P-ASSOC))
                        (24 3 (:DEFINITION MEMBER-EQUAL))
                        (21 21 (:REWRITE DEFAULT-COERCE-1))
                        (20 20 (:TYPE-PRESCRIPTION STRING-LISTP))
-                       (18 9
-                           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                        (18 6
                            (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
                        (15 15 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                        (10 10 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                       (9 9 (:TYPE-PRESCRIPTION ZP))
                        (8 8 (:LINEAR POSITION-WHEN-MEMBER))
                        (8 8
                           (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
@@ -787,52 +768,51 @@
                           (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-3))
                        (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
 (L2-READ-AFTER-WRITE-2
-     (3922 45 (:DEFINITION L2-STAT))
-     (2870 204
+     (4057 45 (:DEFINITION L2-STAT))
+     (2920 204
            (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-     (2631 82 (:DEFINITION LEN))
-     (2473 55 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-     (2044 914 (:REWRITE DEFAULT-CDR))
-     (1595 5 (:DEFINITION L2-WRCHS))
-     (1368 54 (:DEFINITION L2-FS-P))
-     (1150 82 (:REWRITE DEFAULT-COERCE-1))
+     (2418 82 (:DEFINITION LEN))
+     (2273 55 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+     (1930 914 (:REWRITE DEFAULT-CDR))
+     (1418 54 (:DEFINITION L2-FS-P))
+     (1387 5 (:DEFINITION L2-WRCHS))
+     (1186 82 (:REWRITE DEFAULT-COERCE-1))
      (1134 1134 (:REWRITE DEFAULT-CAR))
      (1000 200 (:DEFINITION ASSOC-EQUAL))
      (651 50 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-     (568 9 (:REWRITE DEFAULT-COERCE-3))
      (502 50
           (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
      (500 50
           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
-     (474 4 (:DEFINITION TAKE))
+     (450 150
+          (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+     (441 9 (:REWRITE DEFAULT-COERCE-3))
      (402 50 (:REWRITE L2-FS-P-ASSOC))
      (401 50 (:DEFINITION MEMBER-EQUAL))
-     (400 162 (:REWRITE DEFAULT-+-2))
-     (310 194 (:REWRITE DEFAULT-<-2))
-     (300 150
-          (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-     (287 8 (:REWRITE TAKE-OF-LEN-FREE))
+     (344 4 (:DEFINITION TAKE))
+     (281 162 (:REWRITE DEFAULT-+-2))
+     (252 194 (:REWRITE DEFAULT-<-2))
      (250 250 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (226 4 (:REWRITE CAR-OF-NTHCDR))
-     (212 194 (:REWRITE DEFAULT-<-1))
-     (198 8 (:REWRITE NTH-WHEN->=-N-LEN-L))
-     (176 8 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
-     (168 162 (:REWRITE DEFAULT-+-1))
+     (203 194 (:REWRITE DEFAULT-<-1))
+     (178 4 (:REWRITE CAR-OF-NTHCDR))
+     (174 8 (:REWRITE TAKE-OF-LEN-FREE))
+     (165 162 (:REWRITE DEFAULT-+-1))
+     (153 153 (:TYPE-PRESCRIPTION ZP))
+     (150 8 (:REWRITE NTH-WHEN->=-N-LEN-L))
      (135 15 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-     (132 4 (:DEFINITION NTHCDR))
-     (124 4 (:DEFINITION NTH))
+     (134 8 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
+     (108 4 (:DEFINITION NTHCDR))
      (100 100 (:REWRITE SUBSETP-MEMBER . 2))
      (100 100 (:REWRITE SUBSETP-MEMBER . 1))
-     (97 25 (:DEFINITION NFIX))
+     (100 4 (:DEFINITION NTH))
      (91 91 (:REWRITE DEFAULT-COERCE-2))
-     (91 3 (:REWRITE LEN-OF-NTHCDR))
      (90 90
          (:REWRITE L2-READ-AFTER-WRITE-2-LEMMA-2))
      (90 30
          (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-     (86 4 (:REWRITE CONSP-OF-NTHCDR))
-     (54 54
-         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
+     (86 25 (:DEFINITION NFIX))
+     (71 3 (:REWRITE LEN-OF-NTHCDR))
+     (66 4 (:REWRITE CONSP-OF-NTHCDR))
      (52 52 (:LINEAR POSITION-WHEN-MEMBER))
      (52 52
          (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
@@ -840,6 +820,8 @@
      (30 30 (:DEFINITION NULL))
      (24 8 (:DEFINITION SYMBOL-LISTP))
      (18 18 (:REWRITE ZP-OPEN))
+     (16 16
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
      (15 15 (:TYPE-PRESCRIPTION NFIX))
      (15 15
          (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-1))
@@ -849,31 +831,30 @@
         (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-3))
      (6 6 (:REWRITE FOLD-CONSTS-IN-+))
      (5 5 (:REWRITE DEFAULT-UNARY-MINUS))
-     (3 3 (:TYPE-PRESCRIPTION ZP))
      (3 3 (:TYPE-PRESCRIPTION L2-WRCHS))
      (2 2 (:REWRITE L2-WRCHS-RETURNS-FS)))
-(L2-READ-AFTER-CREATE-1 (3162 2921 (:REWRITE DEFAULT-CAR))
-                        (2424 2118 (:REWRITE DEFAULT-CDR))
-                        (1203 99 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+(L2-READ-AFTER-CREATE-1 (3115 2921 (:REWRITE DEFAULT-CAR))
+                        (2358 2118 (:REWRITE DEFAULT-CDR))
+                        (1196 99 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                         (1066 99 (:REWRITE L2-FS-P-ASSOC))
-                        (999 79 (:DEFINITION REMOVE1-ASSOC-EQUAL))
+                        (963 79 (:DEFINITION REMOVE1-ASSOC-EQUAL))
                         (925 119
                              (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
-                        (885 14 (:DEFINITION TAKE))
-                        (851 317 (:REWRITE DEFAULT-+-2))
-                        (764 85 (:DEFINITION MEMBER-EQUAL))
-                        (762 158
+                        (757 85 (:DEFINITION MEMBER-EQUAL))
+                        (726 158
                              (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-                        (635 136 (:DEFINITION NATP))
-                        (533 15 (:REWRITE DEFAULT-COERCE-3))
-                        (490 14 (:REWRITE CONSP-OF-TAKE))
-                        (451 303 (:REWRITE DEFAULT-<-2))
+                        (660 136 (:DEFINITION NATP))
+                        (648 14 (:DEFINITION TAKE))
+                        (584 317 (:REWRITE DEFAULT-+-2))
                         (425 425 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                        (341 317 (:REWRITE DEFAULT-+-1))
-                        (339 303 (:REWRITE DEFAULT-<-1))
-                        (336 84 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-                        (336 28 (:REWRITE ZP-OPEN))
-                        (276 12 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
+                        (377 303 (:REWRITE DEFAULT-<-2))
+                        (365 15 (:REWRITE DEFAULT-COERCE-3))
+                        (329 317 (:REWRITE DEFAULT-+-1))
+                        (322 14 (:REWRITE CONSP-OF-TAKE))
+                        (321 303 (:REWRITE DEFAULT-<-1))
+                        (294 84 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+                        (224 28 (:REWRITE ZP-OPEN))
+                        (204 12 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
                         (170 170 (:REWRITE SUBSETP-MEMBER . 2))
                         (170 170 (:REWRITE SUBSETP-MEMBER . 1))
                         (164 164 (:REWRITE DEFAULT-COERCE-2))
@@ -888,58 +869,56 @@
                             (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-2))
                         (12 12 (:TYPE-PRESCRIPTION NFIX)))
 (L2-READ-AFTER-CREATE-2
-     (7800 538
+     (7842 538
            (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-     (4170 30 (:DEFINITION L2-CREATE))
+     (4050 30 (:DEFINITION L2-CREATE))
      (3141 3141 (:REWRITE DEFAULT-CAR))
-     (2775 2466 (:REWRITE DEFAULT-CDR))
+     (2730 2466 (:REWRITE DEFAULT-CDR))
      (2274 444 (:DEFINITION ASSOC-EQUAL))
      (1637 47 (:DEFINITION L2-TO-L1-FS))
      (1532 114 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-     (1386 12 (:DEFINITION TAKE))
      (1146 114
            (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
+     (1080 357
+           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+     (1047 12 (:DEFINITION TAKE))
      (1000 114 (:REWRITE L2-FS-P-ASSOC))
      (962 114 (:DEFINITION MEMBER-EQUAL))
-     (939 357
-          (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-     (936 24 (:REWRITE TAKE-OF-LEN-FREE))
      (928 114
           (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
-     (822 133 (:DEFINITION LEN))
      (810 90 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-     (672 12 (:REWRITE CAR-OF-NTHCDR))
-     (663 3 (:DEFINITION L1-STAT))
-     (611 327 (:REWRITE DEFAULT-+-2))
-     (588 24 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
-     (588 24 (:REWRITE NTH-WHEN->=-N-LEN-L))
+     (689 133 (:DEFINITION LEN))
+     (651 3 (:DEFINITION L1-STAT))
+     (600 24 (:REWRITE TAKE-OF-LEN-FREE))
      (570 570 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (540 180
           (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-     (454 352 (:REWRITE DEFAULT-<-2))
-     (408 352 (:REWRITE DEFAULT-<-1))
-     (396 12 (:DEFINITION NTHCDR))
-     (372 12 (:DEFINITION NTH))
-     (345 327 (:REWRITE DEFAULT-+-1))
-     (336 12 (:REWRITE LEN-OF-NTHCDR))
-     (324 84 (:DEFINITION NFIX))
-     (264 264 (:TYPE-PRESCRIPTION L2-CREATE))
-     (258 12 (:REWRITE CONSP-OF-NTHCDR))
-     (246 3
+     (540 12 (:REWRITE CAR-OF-NTHCDR))
+     (469 327 (:REWRITE DEFAULT-+-2))
+     (456 24 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
+     (456 24 (:REWRITE NTH-WHEN->=-N-LEN-L))
+     (403 352 (:REWRITE DEFAULT-<-2))
+     (380 352 (:REWRITE DEFAULT-<-1))
+     (369 369 (:TYPE-PRESCRIPTION ZP))
+     (336 327 (:REWRITE DEFAULT-+-1))
+     (324 12 (:DEFINITION NTHCDR))
+     (300 12 (:DEFINITION NTH))
+     (288 84 (:DEFINITION NFIX))
+     (270 12 (:REWRITE LEN-OF-NTHCDR))
+     (246 246 (:TYPE-PRESCRIPTION L2-CREATE))
+     (237 3
           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-3))
      (228 228 (:REWRITE SUBSETP-MEMBER . 2))
      (228 228 (:REWRITE SUBSETP-MEMBER . 1))
-     (198 2
+     (207 12 (:REWRITE CONSP-OF-NTHCDR))
+     (204 2
           (:REWRITE L2-RDCHS-CORRECTNESS-1-LEMMA-1))
      (180 180 (:TYPE-PRESCRIPTION NULL))
      (180 180 (:DEFINITION NULL))
      (162 162
           (:REWRITE L2-READ-AFTER-WRITE-2-LEMMA-2))
-     (132 132
-          (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
-     (132 6
+     (123 6
           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-1))
-     (111 111 (:TYPE-PRESCRIPTION ZP))
      (96 12 (:REWRITE DEFAULT-COERCE-3))
      (90 90
          (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-1))
@@ -952,6 +931,8 @@
      (61 61 (:REWRITE DEFAULT-COERCE-1))
      (60 60 (:REWRITE ZP-OPEN))
      (60 12 (:REWRITE CONSP-OF-TAKE))
+     (48 48
+         (:TYPE-PRESCRIPTION TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION))
      (48 48 (:TYPE-PRESCRIPTION NFIX))
      (39 3
          (:REWRITE L2-STAT-CORRECTNESS-2-LEMMA-1))
@@ -969,18 +950,17 @@
      (6 6 (:TYPE-PRESCRIPTION L1-CREATE))
      (6 6
         (:REWRITE L1-READ-AFTER-WRITE-2-LEMMA-2)))
-(L2-FSCK (201 90 (:REWRITE DEFAULT-+-2))
+(L2-FSCK (192 90 (:REWRITE DEFAULT-+-2))
          (126 90 (:REWRITE DEFAULT-+-1))
          (93 9
              (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-         (81 9 (:DEFINITION LENGTH))
          (72 18 (:DEFINITION INTEGER-ABS))
-         (54 9 (:DEFINITION LEN))
+         (72 9 (:DEFINITION LENGTH))
          (47 47 (:REWRITE DEFAULT-CAR))
+         (45 9 (:DEFINITION LEN))
          (37 29 (:REWRITE DEFAULT-<-2))
          (33 29 (:REWRITE DEFAULT-<-1))
          (18 18 (:REWRITE DEFAULT-UNARY-MINUS))
-         (9 9 (:TYPE-PRESCRIPTION LEN-WHEN-CONSP))
          (9 9 (:TYPE-PRESCRIPTION LEN))
          (9 9 (:REWRITE DEFAULT-REALPART))
          (9 9 (:REWRITE DEFAULT-NUMERATOR))
@@ -988,14 +968,14 @@
          (9 9 (:REWRITE DEFAULT-DENOMINATOR))
          (9 9 (:REWRITE DEFAULT-COERCE-2))
          (9 9 (:REWRITE DEFAULT-COERCE-1)))
-(L2-FSCK-AFTER-L2-WRCHS-LEMMA-1 (252 88 (:REWRITE DEFAULT-+-2))
+(L2-FSCK-AFTER-L2-WRCHS-LEMMA-1 (170 88 (:REWRITE DEFAULT-+-2))
                                 (88 88 (:REWRITE DEFAULT-COERCE-2))
                                 (88 88 (:REWRITE DEFAULT-COERCE-1))
                                 (88 88 (:REWRITE DEFAULT-+-1))
                                 (71 71 (:REWRITE DEFAULT-<-2))
                                 (71 71 (:REWRITE DEFAULT-<-1))
                                 (60 12 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-                                (52 13
+                                (39 13
                                     (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                                 (26 26 (:TYPE-PRESCRIPTION NULL))
                                 (26 26 (:DEFINITION NULL))
@@ -1006,12 +986,12 @@
                                 (1 1
                                    (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP)))
 (L2-FSCK-AFTER-L2-WRCHS-LEMMA-2
-     (964 73
+     (945 73
           (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
-     (528 138
+     (414 138
           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
      (187 15 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-     (183 65 (:REWRITE DEFAULT-+-2))
+     (124 65 (:REWRITE DEFAULT-+-2))
      (113 15 (:DEFINITION MEMBER-EQUAL))
      (71 71 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (65 65 (:REWRITE DEFAULT-COERCE-2))
@@ -1026,17 +1006,17 @@
      (6 6
         (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER)))
 (L2-FSCK-AFTER-L2-WRCHS-LEMMA-4
-     (52916 16714
+     (43026 14342
             (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-     (3138 390 (:REWRITE DEFAULT-COERCE-1))
-     (1292 88 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-     (1176 116
+     (2901 390 (:REWRITE DEFAULT-COERCE-1))
+     (1020 116
            (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
-     (1148 392 (:REWRITE DEFAULT-+-2))
-     (447 319 (:REWRITE DEFAULT-<-2))
+     (978 88 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+     (770 392 (:REWRITE DEFAULT-+-2))
      (392 392 (:REWRITE DEFAULT-+-1))
      (390 390 (:REWRITE DEFAULT-COERCE-2))
-     (358 116 (:REWRITE L2-FS-P-ASSOC))
+     (383 319 (:REWRITE DEFAULT-<-2))
+     (352 116 (:REWRITE L2-FS-P-ASSOC))
      (319 319 (:REWRITE DEFAULT-<-1))
      (166 116
           (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
@@ -1049,23 +1029,23 @@
         (:REWRITE STR::MAKE-CHARACTER-LIST-WHEN-ATOM))
      (1 1 (:REWRITE DEFAULT-CDR))
      (1 1 (:REWRITE DEFAULT-CAR)))
-(L2-FSCK-AFTER-L2-WRCHS (1074 42 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-                        (1047 582 (:REWRITE DEFAULT-CDR))
-                        (1018 51 (:DEFINITION LEN))
-                        (854 394
-                             (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                        (744 736 (:REWRITE DEFAULT-CAR))
-                        (500 10 (:REWRITE DEFAULT-COERCE-3))
+(L2-FSCK-AFTER-L2-WRCHS (1182 394
+                              (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
+                        (923 582 (:REWRITE DEFAULT-CDR))
+                        (814 42 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+                        (779 51 (:DEFINITION LEN))
+                        (740 736 (:REWRITE DEFAULT-CAR))
                         (455 91 (:DEFINITION ASSOC-EQUAL))
-                        (360 30 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-                        (336 28 (:LINEAR INSERT-TEXT-CORRECTNESS-3))
-                        (270 60
+                        (384 10 (:REWRITE DEFAULT-COERCE-3))
+                        (354 30 (:DEFINITION REMOVE1-ASSOC-EQUAL))
+                        (275 20 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
+                        (264 60
                              (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
-                        (270 20 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                        (219 135 (:REWRITE DEFAULT-<-2))
-                        (189 63 (:REWRITE DEFAULT-+-2))
-                        (170 20 (:DEFINITION MEMBER-EQUAL))
+                        (254 28 (:LINEAR INSERT-TEXT-CORRECTNESS-3))
+                        (177 135 (:REWRITE DEFAULT-<-2))
+                        (175 20 (:DEFINITION MEMBER-EQUAL))
                         (135 135 (:REWRITE DEFAULT-<-1))
+                        (126 63 (:REWRITE DEFAULT-+-2))
                         (124 17
                              (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
                         (124 17 (:REWRITE L2-FS-P-ASSOC))
@@ -1075,33 +1055,32 @@
                         (63 63 (:REWRITE DEFAULT-+-1))
                         (57 57 (:TYPE-PRESCRIPTION NULL))
                         (57 57 (:DEFINITION NULL))
-                        (48 12 (:REWRITE UNICITY-OF-0))
                         (40 40 (:REWRITE SUBSETP-MEMBER . 2))
                         (40 40 (:REWRITE SUBSETP-MEMBER . 1))
-                        (36 12 (:DEFINITION FIX))
-                        (33 33 (:TYPE-PRESCRIPTION ZP))
+                        (36 12 (:REWRITE UNICITY-OF-0))
                         (28 28 (:LINEAR POSITION-WHEN-MEMBER))
                         (28 28
                             (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
                         (24 24 (:REWRITE CHARACTER-LISTP-COERCE))
+                        (24 12 (:DEFINITION FIX))
                         (18 18 (:TYPE-PRESCRIPTION L2-WRCHS)))
-(L2-FSCK-AFTER-L2-UNLINK (344 162
+(L2-FSCK-AFTER-L2-UNLINK (486 162
                               (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                          (274 274 (:REWRITE DEFAULT-CAR))
                          (225 225 (:REWRITE DEFAULT-CDR))
                          (155 31 (:DEFINITION ASSOC-EQUAL))
                          (91 7 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                         (85 25 (:DEFINITION NATP))
-                         (78 13 (:DEFINITION LEN))
+                         (90 25 (:DEFINITION NATP))
+                         (65 13 (:DEFINITION LEN))
                          (56 7 (:DEFINITION MEMBER-EQUAL))
                          (54 6 (:DEFINITION REMOVE1-ASSOC-EQUAL))
                          (50 5
                              (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
                          (40 5 (:REWRITE L2-FS-P-ASSOC))
-                         (39 13 (:REWRITE DEFAULT-+-2))
                          (36 12
                              (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
                          (35 35 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                         (26 13 (:REWRITE DEFAULT-+-2))
                          (25 25 (:REWRITE DEFAULT-<-2))
                          (25 25 (:REWRITE DEFAULT-<-1))
                          (14 14 (:REWRITE SUBSETP-MEMBER . 2))
@@ -1110,6 +1089,5 @@
                          (13 13 (:REWRITE DEFAULT-COERCE-1))
                          (13 13 (:REWRITE DEFAULT-+-1))
                          (12 12 (:TYPE-PRESCRIPTION NULL))
-                         (12 12 (:DEFINITION NULL))
-                         (10 10 (:TYPE-PRESCRIPTION ZP)))
+                         (12 12 (:DEFINITION NULL)))
 (L2-WC-LEN)

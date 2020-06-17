@@ -3,22 +3,14 @@
 (|LACK-test| (2 2
                 (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iLACK| (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-         (4 4
-            (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+            (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|iLACK-DOMAIN| (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                (4 4
-                   (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                   (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (|ARB-iLACK-INDEX-THM|)
 (|iLACK-MONO-DETERM| (110 110
                           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                     (39 39
-                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                     (22 11 (:REWRITE DEFUNG::TRUE-FROM-X))
-                     (22 11
-                         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                     (11 11 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                     (17 17
+                         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (|iLACK-DOMAIN-MONOTONE|)
 (|iLACK-DOMAIN-MONOTONE-CONTRAPOSITIVE|)
 (|iLACK-DOMAIN-LOWER-BOUND|)
@@ -32,17 +24,12 @@
 (LACK-MEASURE-PROPERTY)
 (LACK-MEASURE-SMALLEST)
 (|REPLACE-ARB-iLACK-INDEX-BY-LACK-MEASURE|
-     (20 4 (:REWRITE DEFUNG::NORMALIZE-TRUE))
-     (12 12
-         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-     (8 4 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (8 4
-        (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (4 4
         (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (4 4 (:REWRITE DEFUNG::QUOTED-TRUE))
+     (4 4
+        (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
      (4 1 (:LINEAR LACK-MEASURE-SMALLEST)))
 (|REPLACE-ARB-iLACK-INDEX-BY-LACK-MEASURE-2|)
 (|REPLACE-iLACK-DOMAIN-INDEX-BY-LACK-MEASURE|
@@ -53,35 +40,33 @@
      (2 1
         (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION)))
 (LACK-MEASURE-BODY (4 4
-                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                   (4 4
-                      (:TYPE-PRESCRIPTION DEFUNG::NOT-TRUE-FROM-NOT-X)))
+                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X)))
 (LACK-MEASURE-DEFINITION (469 469
                               (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                         (219 219
-                              (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
-                         (159 71 (:REWRITE DEFUNG::TRUE-FROM-X))
-                         (159 71
-                              (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
                          (129 85 (:LINEAR LACK-MEASURE-SMALLEST))
-                         (71 71 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                         (119 119
+                              (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
+                         (57 21 (:REWRITE DEFUNG::TRUE-FROM-X))
+                         (57 21
+                             (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                         (21 21 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (LACK-DOMAIN-DEFINITION (482 482
                              (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                        (222 111 (:REWRITE DEFUNG::TRUE-FROM-X))
-                        (222 111
-                             (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                        (111 111 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                        (66 33 (:REWRITE DEFUNG::TRUE-FROM-X))
+                        (66 33
+                            (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+                        (33 33 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (LACK-DEFINITION (189 189
                       (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
-                 (87 72
+                 (81 66
                      (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
                  (64 26
                      (:REWRITE |REPLACE-ARB-iLACK-INDEX-BY-LACK-MEASURE|))
                  (41 9 (:REWRITE |iLACK-DOMAIN-MONOTONE|))
-                 (32 16 (:REWRITE DEFUNG::TRUE-FROM-X))
-                 (32 16
+                 (26 13 (:REWRITE DEFUNG::TRUE-FROM-X))
+                 (26 13
                      (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-                 (16 16 (:REWRITE DEFUNG::QUOTED-TRUE)))
+                 (13 13 (:REWRITE DEFUNG::QUOTED-TRUE)))
 (LACK-INDUCTION (713 23 (:DEFINITION LACK-DEFINITION))
                 (569 569
                      (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
@@ -99,12 +84,12 @@
      (183 183
           (:TYPE-PRESCRIPTION DEFUNG::TRUE-FROM-X))
      (172 10 (:DEFINITION LACK-DEFINITION))
-     (36 18 (:REWRITE DEFUNG::TRUE-FROM-X))
-     (36 18
-         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
-     (18 18 (:REWRITE DEFUNG::QUOTED-TRUE))
      (18 18
          (:REWRITE DEFUNG::COMBINE-AND-EVALUATE-CONSTANTS))
+     (18 9 (:REWRITE DEFUNG::TRUE-FROM-X))
+     (18 9
+         (:REWRITE DEFUNG::NOT-TRUE-FROM-NOT-X))
+     (9 9 (:REWRITE DEFUNG::QUOTED-TRUE))
      (8 4 (:DEFINITION NOT)))
 (LACK-INDUCTION-RULE)
 (OPEN-LACK-DOMAIN (32 2 (:DEFINITION LACK-DEFINITION))
@@ -258,7 +243,7 @@
                         (18 10 (:REWRITE DEFAULT-<-2))
                         (2 2 (:TYPE-PRESCRIPTION NATP))
                         (1 1 (:REWRITE NATP-RW)))
-(ACK-INDUCTION (12246 194 (:DEFINITION ACK-DEFINITION))
+(ACK-INDUCTION (12869 194 (:DEFINITION ACK-DEFINITION))
                (4056 2316 (:REWRITE DEFAULT-+-2))
                (3377 779
                      (:REWRITE DEFUNG::COMBINE-AND-EVALUATE-CONSTANTS))
@@ -295,7 +280,7 @@
                (9 9
                   (:REWRITE |a < b & b < c  =>  a < c|)))
 (ACK-INDUCTION-REDUCTION
-     (559 15 (:DEFINITION ACK-DEFINITION))
+     (591 15 (:DEFINITION ACK-DEFINITION))
      (217 123 (:REWRITE DEFAULT-+-2))
      (123 123 (:REWRITE DEFAULT-+-1))
      (122 31

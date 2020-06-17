@@ -968,18 +968,18 @@
 (SV::S3VEC-FIX)
 (SV::S4VEC-P-OF-S3VEC-FIX)
 (SV::EQUAL-LOGAND (607 99 (:REWRITE BITOPS::LOGBITP-WHEN-BIT))
-                  (574 287
+                  (418 209
                        (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NEGP))
-                  (574 287
+                  (418 209
                        (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
                   (342 342 (:TYPE-PRESCRIPTION BITP))
                   (294 12
                        (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2))
-                  (293 293 (:TYPE-PRESCRIPTION NEGP))
                   (289 99
                        (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
                   (232 80
                        (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
+                  (215 215 (:TYPE-PRESCRIPTION NEGP))
                   (192 12
                        (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2))
                   (120 12 (:REWRITE BITOPS::LOGNOT-<-CONST))
@@ -1020,26 +1020,26 @@
                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                   (6 6 (:REWRITE NEGP-WHEN-INTEGERP)))
 (SV::EQUAL-LOGIOR (601 104 (:REWRITE BITOPS::LOGBITP-WHEN-BIT))
-                  (574 287
+                  (418 209
                        (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NEGP))
-                  (574 287
+                  (418 209
                        (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
                   (350 350 (:TYPE-PRESCRIPTION BITP))
-                  (305 305 (:TYPE-PRESCRIPTION NEGP))
                   (298 104
                        (:REWRITE BITOPS::LOGBITP-WHEN-BITMASKP))
                   (254 254
                        (:TYPE-PRESCRIPTION BITMASKP$INLINE))
                   (241 85
                        (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
+                  (227 227 (:TYPE-PRESCRIPTION NEGP))
                   (186 6
                        (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2))
-                  (175 175
+                  (139 139
                        (:TYPE-PRESCRIPTION BITOPS::LOGIOR-NATP-TYPE))
-                  (172 172
-                       (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
                   (138 6
                        (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2))
+                  (133 133
+                       (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
                   (126 18 (:REWRITE IFIX-NEGATIVE-TO-NEGP))
                   (104 104
                        (:REWRITE BITOPS::LOGBITP-OF-NEGATIVE-CONST))
@@ -5005,20 +5005,20 @@
 (SV::S4VEC-OVERRIDE)
 (SV::S4VEC-P-OF-S4VEC-OVERRIDE)
 (SV::S4VEC-OVERRIDE-CORRECT1
-     (3972 1794
-           (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
      (2896 4 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
      (2700 36
            (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2))
      (2388 36
            (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2))
-     (1866 1866 (:TYPE-PRESCRIPTION NEGP))
-     (1841 1841
-           (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
+     (2244 930
+           (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
      (1580 4 (:LINEAR BITOPS::LOGIOR->=-0-LINEAR))
      (1580 4 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
      (1512 56 (:REWRITE BITOPS::LOGNOT-<-CONST))
      (1023 118 (:REWRITE BITOPS::LOGBITP-WHEN-BIT))
+     (1002 1002 (:TYPE-PRESCRIPTION NEGP))
+     (905 905
+          (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
      (791 181 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (582 202 (:REWRITE DEFAULT-<-1))
      (524 32 (:REWRITE BFIX-WHEN-NOT-1))
@@ -5074,20 +5074,20 @@
         (:REWRITE IFIX-EQUAL-TO-NONZERO-CONST))
      (1 1 (:REWRITE IFIX-EQUAL-TO-NONZERO)))
 (SV::S4VEC-OVERRIDE-CORRECT2
-     (4844 2143
-           (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
      (4344 6 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
      (4050 54
            (:LINEAR BITOPS::LOGAND->=-0-LINEAR-2))
      (3582 54
            (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2))
+     (3068 1255
+           (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
      (2370 6 (:LINEAR BITOPS::LOGIOR->=-0-LINEAR))
      (2370 6 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))
      (2268 84 (:REWRITE BITOPS::LOGNOT-<-CONST))
-     (2251 2251 (:TYPE-PRESCRIPTION NEGP))
-     (2048 2048
-           (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
+     (1363 1363 (:TYPE-PRESCRIPTION NEGP))
      (1163 266 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+     (1160 1160
+           (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
      (1055 136 (:REWRITE BITOPS::LOGBITP-WHEN-BIT))
      (868 298 (:REWRITE DEFAULT-<-1))
      (756 108 (:REWRITE IFIX-NEGATIVE-TO-NEGP))
@@ -7013,12 +7013,12 @@
 (SV::S4VEC-PART-INSTALL-OF-S4VEC-FIX-VAL-NORMALIZE-CONST)
 (SV::S4VEC-PART-INSTALL-S4VEC-EQUIV-CONGRUENCE-ON-VAL)
 (SV::S4VEC-XFREE-P)
-(SV::EQUAL-NEG1-LOGIOR (1052 526
-                             (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NEGP))
-                       (1052 526
-                             (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
+(SV::EQUAL-NEG1-LOGIOR (812 406
+                            (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NEGP))
+                       (812 406
+                            (:TYPE-PRESCRIPTION BITOPS::LOGNOT-NATP))
                        (585 70 (:REWRITE BITOPS::LOGBITP-WHEN-BIT))
-                       (547 547 (:TYPE-PRESCRIPTION NEGP))
+                       (427 427 (:TYPE-PRESCRIPTION NEGP))
                        (300 30 (:REWRITE BITOPS::LOGNOT-<-CONST))
                        (240 240 (:TYPE-PRESCRIPTION BITP))
                        (210 70
@@ -7036,14 +7036,14 @@
                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 2))
                        (162 6
                             (:LINEAR BITOPS::UPPER-BOUND-OF-LOGAND . 1))
-                       (151 151
-                            (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
                        (150 50
                             (:REWRITE BITOPS::LOGBITP-NONZERO-OF-BIT))
                        (147 21 (:REWRITE IFIX-NEGATIVE-TO-NEGP))
-                       (122 122
-                            (:TYPE-PRESCRIPTION BITOPS::LOGIOR-NATP-TYPE))
+                       (121 121
+                            (:TYPE-PRESCRIPTION BITOPS::LOGAND-NATP-TYPE-1))
                        (109 109 (:META CANCEL_PLUS-LESSP-CORRECT))
+                       (98 98
+                           (:TYPE-PRESCRIPTION BITOPS::LOGIOR-NATP-TYPE))
                        (98 7 (:LINEAR BITOPS::LOGIOR->=-0-LINEAR))
                        (98 7 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-2))
                        (98 7 (:LINEAR BITOPS::LOGIOR-<-0-LINEAR-1))

@@ -128,9 +128,7 @@
                     (1 1 (:REWRITE CDR-CONS)))
 (COUNT-BRANCHES-TO (9 9 (:REWRITE DEFAULT-<-2))
                    (9 9 (:REWRITE DEFAULT-<-1))
-                   (3 3 (:REWRITE DEFAULT-UNARY-MINUS))
-                   (1 1
-                      (:TYPE-PRESCRIPTION FLUSH-HONS-GET-HASH-TABLE-LINK)))
+                   (3 3 (:REWRITE DEFAULT-UNARY-MINUS)))
 (INTEGERP-COUNT-BDD-BRANCHES-TO (13 13 (:REWRITE DEFAULT-<-2))
                                 (13 13 (:REWRITE DEFAULT-<-1))
                                 (4 4 (:REWRITE DEFAULT-UNARY-MINUS))

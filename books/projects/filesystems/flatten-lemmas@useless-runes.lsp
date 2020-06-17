@@ -105,7 +105,7 @@
      (185 9
           (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
      (158 158 (:TYPE-PRESCRIPTION STRING-LISTP))
-     (146 146 (:REWRITE DEFAULT-CDR))
+     (150 150 (:REWRITE DEFAULT-CDR))
      (110 110
           (:TYPE-PRESCRIPTION NO-DUPLICATESP-EQUAL))
      (99 99 (:REWRITE DEFAULT-CAR))
@@ -114,15 +114,15 @@
      (55 55 (:REWRITE SUBSETP-MEMBER . 1))
      (22 22 (:REWRITE SUBSETP-MEMBER . 4))
      (22 22 (:REWRITE SUBSETP-MEMBER . 3))
-     (21 7 (:REWRITE DEFAULT-+-2))
+     (22 11 (:REWRITE DEFAULT-+-2))
      (17 17
          (:REWRITE NOT-INTERSECTP-LIST-WHEN-ATOM))
      (17 17
          (:REWRITE NOT-INTERSECTP-EQUAL-IF-SUBSET))
+     (11 11 (:REWRITE DEFAULT-+-1))
      (9 9 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-     (7 7 (:REWRITE DEFAULT-+-1))
-     (7 7 (:LINEAR POSITION-WHEN-MEMBER))
-     (7 7
+     (8 8 (:LINEAR POSITION-WHEN-MEMBER))
+     (8 8
         (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER)))
 (FLATTEN-SUBSET-NO-DUPLICATESP-LEMMA-1
      (3953 311 (:REWRITE NO-DUPLICATESP-OF-MEMBER))
@@ -245,13 +245,13 @@
           (:REWRITE NOT-INTERSECTP-EQUAL-IF-SUBSET))
      (576 32 (:DEFINITION SUBSETP-EQUAL))
      (504 504 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (487 460 (:REWRITE DEFAULT-CDR))
+     (500 473 (:REWRITE DEFAULT-CDR))
      (307 292 (:REWRITE DEFAULT-CAR))
      (228 36 (:DEFINITION MEMBER-EQUAL))
      (192 4 (:REWRITE SUBSETP-APPEND1))
      (160 160 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (130 130 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (120 40 (:REWRITE DEFAULT-+-2))
+     (106 53 (:REWRITE DEFAULT-+-2))
      (102 62 (:REWRITE SUBSETP-MEMBER . 2))
      (84 84
          (:REWRITE FLATTEN-SUBSET-NO-DUPLICATESP-LEMMA-3))
@@ -261,10 +261,10 @@
          (:REWRITE NOT-INTERSECTP-LIST-WHEN-ATOM))
      (68 68 (:REWRITE SUBSETP-TRANS))
      (62 62 (:REWRITE SUBSETP-MEMBER . 1))
+     (53 53 (:REWRITE DEFAULT-+-1))
      (45 45 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-     (40 40 (:REWRITE DEFAULT-+-1))
-     (40 40 (:LINEAR POSITION-WHEN-MEMBER))
-     (40 40
+     (41 41 (:LINEAR POSITION-WHEN-MEMBER))
+     (41 41
          (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
      (37 37 (:TYPE-PRESCRIPTION BINARY-APPEND)))
 (MEMBER-INTERSECTP-WITH-SUBSET
@@ -508,7 +508,7 @@
                                     (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
                                (315 315 (:TYPE-PRESCRIPTION STRING-LISTP))
                                (308 28 (:DEFINITION MEMBER-EQUAL))
-                               (249 243 (:REWRITE DEFAULT-CDR))
+                               (255 249 (:REWRITE DEFAULT-CDR))
                                (224 56 (:REWRITE NO-DUPLICATESP-OF-MEMBER))
                                (209 209 (:TYPE-PRESCRIPTION TRUE-LISTP))
                                (163 157 (:REWRITE DEFAULT-CAR))
@@ -516,13 +516,13 @@
                                (56 56 (:REWRITE SUBSETP-MEMBER . 3))
                                (56 56 (:REWRITE SUBSETP-MEMBER . 2))
                                (56 56 (:REWRITE SUBSETP-MEMBER . 1))
-                               (48 16 (:REWRITE DEFAULT-+-2))
+                               (44 22 (:REWRITE DEFAULT-+-2))
                                (40 20
                                    (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
                                (28 28 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                               (22 22 (:REWRITE DEFAULT-+-1))
                                (20 20 (:TYPE-PRESCRIPTION BINARY-APPEND))
                                (18 18 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
-                               (16 16 (:REWRITE DEFAULT-+-1))
                                (16 16 (:LINEAR POSITION-WHEN-MEMBER))
                                (16 16
                                    (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER)))

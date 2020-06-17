@@ -11686,20 +11686,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        "~%We cannot reincarnate the package ~x0 because it was previously ~
         defined with a different list of imported symbols.~|~%The previous ~
         definition was made ~#1~[at the top level.~|~/in the portcullis of ~
-        the last of the book at the end of the following sequence of included ~
-        books, which starts with the top-most book at the front of the list ~
-        and works down to the book that defined the package.~|~%  ~
-        ~F2~|~]~%The proposed definition is being made ~#3~[at the top ~
-        level.~|~/in the portcullis of the last of the book at the end of the ~
-        following sequence of included books, which starts with the top-most ~
-        book at the front of the list and works down to the book that is ~
-        trying to define the package.~|~%  ~F4~|~]~%~#5~[The previous ~
-        definition imported the following list of symbols that are not ~
-        imports of the proposed definition, and is shown with respect to ~
-        current package ~x9:~|~%  ~x6.~|~%~/~]~#7~[The proposed definition ~
-        imports the following list of symbols not imported by the previous ~
-        definition, and is shown with respect to current package ~x9:~|~%  ~
-        ~x8.~|~%~/~]See :DOC package-reincarnation-import-restrictions."
+        the last book in the following sequence of included books, which ~
+        starts with the top-most book at the front of the list and works down ~
+        to the book that defined the package.~|~%  ~F2~|~]~%The proposed ~
+        definition is being made ~#3~[at the top level.~|~/in the portcullis ~
+        of the last book in the following sequence of included books, which ~
+        starts with the top-most book at the front of the list and works down ~
+        to the book that is trying to define the package.~|~%  ~
+        ~F4~|~]~%~#5~[The previous definition imported the following list of ~
+        symbols that are not imports of the proposed definition, and is shown ~
+        with respect to current package ~x9:~|~%  ~x6.~|~%~/~]~#7~[The ~
+        proposed definition imports the following list of symbols not ~
+        imported by the previous definition, and is shown with respect to ~
+        current package ~x9:~|~%  ~x8.~|~%~/~]See :DOC ~
+        package-reincarnation-import-restrictions."
        name
        (if old-book-path 1 0)
        old-book-path
