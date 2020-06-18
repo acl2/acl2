@@ -136,10 +136,13 @@
                          pseudo-term-call->fn
                          pseudo-term-case
                          pseudo-term-count
+                         pseudo-term-equiv
                          pseudo-term-fix
+                         pseudo-term-fncall
                          pseudo-term-fncall->args
                          pseudo-term-fncall->fn
                          pseudo-term-kind
+                         pseudo-term-lambda
                          pseudo-term-lambda->args
                          pseudo-term-lambda->body
                          pseudo-term-lambda->formals

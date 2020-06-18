@@ -316,9 +316,11 @@
    (xdoc::p
     "Some of the generated Java code in the shallow embedding with guards
      has been made more idiomatic.
-     In particular, calls of the Java method corresponding to @(tsee not)
+     Calls of the Java method corresponding to @(tsee not)
      are now avoided in favor of using Java's @('!') operator
-     or Java's @('==') operator with the symbol @('nil').")
+     or Java's @('==') operator with the symbol @('nil').
+     Calls of ACL2's @(tsee and) are translated
+     to Java's @('&&') operator when possible.")
 
    (xdoc::p
     "A new post-translation step has been added

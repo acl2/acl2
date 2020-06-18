@@ -1564,6 +1564,105 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-and-call ((left-block jblockp)
+                                  (right-block jblockp)
+                                  (left-expr jexprp)
+                                  (right-expr jexprp)
+                                  (left-types atj-type-listp)
+                                  (right-types atj-type-listp)
+                                  (jvar-tmp-base stringp)
+                                  (jvar-tmp-index posp)
+                                  (pkg-class-names string-string-alistp)
+                                  (curr-pkg stringp)
+                                  (guards$ booleanp))
+  :guard (and (consp left-types)
+              (consp right-types)
+              (not (equal curr-pkg "")))
+  :returns (mv (block jblockp)
+               (expr jexprp)
+               (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
+  :short "Generate a shallowly embedded ACL2 @(tsee and) call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called after translating the arguments to Java.
+     The resulting blocks and expressions are passed as parameters here.")
+   (xdoc::p
+    "Recall that ATJ's pre-translation
+     (see @(see atj-pre-translation-conjunctions))
+     turns (annotated) terms @('(if a b nil)') into @('(and a b)').
+     Here we recognize, and treat specially, these @(tsee and) calls.")
+   (xdoc::p
+    "If both operands have type @(':aboolean') and @('<right-block') is empty,
+     we generate the block @('<left-block>')
+     and the non-strict expression @('<left-expr> && <right-expr>'):
+     in other words,
+     we translate ACL2's boolean @(tsee and) calls (in the original term)
+     to a @('&&') binary expression in Java,
+     preceded by any computations needed by @('<left-expr>');
+     but this is possible only if the calculation of the right operand,
+     which must be executed only if the first operand is true,
+     involves just an expression @('<right-expr>')
+     and not a (non-empty) block @('<right-block>').
+     In all other cases, we generate the block")
+   (xdoc::codeblock
+    "<left-block>"
+    "<right-type> <tmp>;"
+    "if (<left-test>) {"
+    "    <right-block>"
+    "    <tmp> = <right-expr>;"
+    "} else {"
+    "    <tmp> = <false/NIL>;"
+    "}")
+   (xdoc::p
+    "and the Java expression @('<tmp>'), where:
+     @('<tmp>') consists of
+     the base name in the parameter @('jvar-tmp-base')
+     followed by the numeric index in the parameter @('jvar-tmp-index');
+     @('<right-type>') is the Java type of the right operand;
+     @('<left-test>') is @('<left-expr>') if boolean,
+     or otherwise @('<left-expr> != NIL');
+     and @('<false/NIL>') is @('false') if @('<right-type>') is @('boolean')
+     or otherwise @('NIL')
+     (not that these are the only two possible translations of @('nil'))."))
+  (if (and (equal left-types (list (atj-type-acl2 (atj-atype-boolean))))
+           (equal right-types (list (atj-type-acl2 (atj-atype-boolean))))
+           (null right-block))
+      (mv (jblock-fix left-block)
+          (jexpr-binary (jbinop-condand) left-expr right-expr)
+          jvar-tmp-index)
+    (b* (((mv tmp-locvar-block
+              jvar-tmp
+              jvar-tmp-index)
+          (atj-gen-jlocvar-indexed (atj-gen-shallow-jtype right-types)
+                                   jvar-tmp-base
+                                   jvar-tmp-index
+                                   nil))
+         (test (if (equal left-types
+                          (list (atj-type-acl2 (atj-atype-boolean))))
+                   left-expr
+                 (jexpr-binary (jbinop-ne)
+                               left-expr
+                               (atj-gen-shallow-symbol nil
+                                                       pkg-class-names
+                                                       curr-pkg
+                                                       guards$))))
+         (false/nil (if (equal right-types
+                               (list (atj-type-acl2 (atj-atype-boolean))))
+                        (jexpr-literal-false)
+                      (atj-gen-symbol nil t nil)))
+         (if-block (jblock-ifelse test
+                                  (append right-block
+                                          (jblock-asg-name jvar-tmp right-expr))
+                                  (jblock-asg-name jvar-tmp false/nil))))
+      (mv (append (jblock-fix left-block)
+                  tmp-locvar-block
+                  if-block)
+          (jexpr-name jvar-tmp)
+          jvar-tmp-index))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-or-call ((left-block jblockp)
                                  (right-block jblockp)
                                  (left-expr jexprp)
@@ -1579,7 +1678,7 @@
   :returns (mv (block jblockp)
                (expr jexprp)
                (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-  :short "Generate a shallowly embedded ACL2 @('or') call."
+  :short "Generate a shallowly embedded ACL2 @(tsee or) call."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2302,6 +2401,25 @@
                                        dst-types ; = SRC-TYPES
                                        jvar-tmp-base
                                        jvar-tmp-index)))))
+       ((when (and (eq fn 'and)
+                   (int= (len args) 2))) ; should be always true
+        (b* (((mv left-block right-block)
+              (atj-jblock-list-to-2-jblocks arg-blocks))
+             ((mv left-expr right-expr)
+              (atj-jexpr-list-to-2-jexprs arg-exprs))
+             ((mv & & left-types) (atj-type-unwrap-term (first args)))
+             ((mv & & right-types) (atj-type-unwrap-term (second args))))
+          (atj-gen-shallow-and-call left-block
+                                    right-block
+                                    left-expr
+                                    right-expr
+                                    left-types
+                                    right-types
+                                    jvar-tmp-base
+                                    jvar-tmp-index
+                                    pkg-class-names
+                                    curr-pkg
+                                    guards$)))
        ((when (and guards$
                    (eq fn 'not)
                    (int= (len args) 1))) ; should be always true
