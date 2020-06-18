@@ -1571,13 +1571,9 @@
                                   (left-types atj-type-listp)
                                   (right-types atj-type-listp)
                                   (jvar-tmp-base stringp)
-                                  (jvar-tmp-index posp)
-                                  (pkg-class-names string-string-alistp)
-                                  (curr-pkg stringp)
-                                  (guards$ booleanp))
+                                  (jvar-tmp-index posp))
   :guard (and (consp left-types)
-              (consp right-types)
-              (not (equal curr-pkg "")))
+              (consp right-types))
   :returns (mv (block jblockp)
                (expr jexprp)
                (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
@@ -1643,10 +1639,7 @@
                    left-expr
                  (jexpr-binary (jbinop-ne)
                                left-expr
-                               (atj-gen-shallow-symbol nil
-                                                       pkg-class-names
-                                                       curr-pkg
-                                                       guards$))))
+                               (atj-gen-symbol nil t nil))))
          (false/nil (if (equal right-types
                                (list (atj-type-acl2 (atj-atype-boolean))))
                         (jexpr-literal-false)
@@ -1678,7 +1671,7 @@
   :returns (mv (block jblockp)
                (expr jexprp)
                (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-  :short "Generate a shallowly embedded ACL2 @(tsee or) call."
+  :short "Generate a shallowly embedded ACL2 @('or') call."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2416,10 +2409,7 @@
                                     left-types
                                     right-types
                                     jvar-tmp-base
-                                    jvar-tmp-index
-                                    pkg-class-names
-                                    curr-pkg
-                                    guards$)))
+                                    jvar-tmp-index)))
        ((when (and guards$
                    (eq fn 'not)
                    (int= (len args) 1))) ; should be always true
