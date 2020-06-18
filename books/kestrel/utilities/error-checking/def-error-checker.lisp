@@ -12,8 +12,9 @@
 
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
-(include-book "kestrel/utilities/enumerations" :dir :system)
-(include-book "kestrel/utilities/messages" :dir :system)
+(include-book "std/basic/defs" :dir :system)
+(include-book "std/lists/rev" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,7 +22,7 @@
 
   :parents (error-checking)
 
-  :short "Generate an error-checking function
+  :short "Generate an error checking function
           and an associated macro abbreviation."
 
   :long
@@ -29,7 +30,7 @@
   (xdoc::topstring
 
    (xdoc::p
-    "This macro generates an error-checking function
+    "This macro generates an error checking function
      and an associated macro abbreviation of the following form:")
    (xdoc::codeblock
     "(define <name> (<x1> ... <xn>"
@@ -43,10 +44,10 @@
     "               <val>"
     "               state)"
     "  :mode <mode>"
-    "  :verify-guards <verify-guards> ; optional"
-    "  :parents <parents>  ; optional"
+    "  :verify-guards <verify-guards> ; may be absent"
+    "  :parents <parents>  ; may be absent"
     "  :short <short>"
-    "  :long <long>  ; optional"
+    "  :long <long>  ; may be absent"
     "  (b* (((unless <condition1>) (er-soft+"
     "                               ctx error-erp error-val . <message1>))"
     "       ..."
@@ -63,7 +64,7 @@
     "  (defmacro <name>$ (<x1'> ... <xn'> description error-erp error-val)"
     "    `(<name> ,<x1'> ... ,<xn'> description error-erp error-val ctx state)))")
    (xdoc::p
-    "where each @('<...>') element,
+    "where each @('<...>'),
      except @('<erp>'), @('<val>'), and @('<x1\'>'), ..., @('<xn\'>'),
      is supplied as argument to the macro:")
    (xdoc::ul
@@ -72,25 +73,25 @@
       and, with a @('$') added at the end, the name of the macro.")
     (xdoc::li
      "Each @('<xi>') is a symbol or
-      an <see topic='@(url std::extended-formals)'>extended formal</see>.
+      an " (xdoc::seetopic "std::extended-formals" "extended formal") ".
       Let @('<xi\'>') be:
       @('<xi>') if @('<xi>') is a symbol;
       the name of the @('<xi>') extended formal otherwise.")
     (xdoc::li
-     "@('<erp>') is a
-      <see topic='@(url std::returns-specifiers)'>return specifier</see>
-      that describes the error flag returned
-      inside the <see topic='@(url error-triple)'>error triple</see>.
+     "@('<erp>') is a "
+     (xdoc::seetopic "std::returns-specifiers" "return specifier")
+     " that describes the error flag returned
+      inside the " (xdoc::seetopic "error-triple" "error triple") ".
       This return specifier is:
       @('(erp (implies erp (equal erp error-erp)))')
       if @('<mode>') is @(':logic'); and
       @('(erp \"@('nil') or @('error-erp').\")')
       if @('<mode>') is @(':program').")
     (xdoc::li
-     "@('<val>') is a
-      <see topic='@(url std::returns-specifiers)'>return specifier</see>
-      that describes the value returned
-      inside the <see topic='@(url error-triple)'>error triple</see>.
+     "@('<val>') is a "
+     (xdoc::seetopic "std::returns-specifiers" "return specifier")
+     " that describes the value returned
+      inside the " (xdoc::seetopic "error-triple" "error triple") ".
       This return specifier depends on the @('<returns>') argument to the macro
       (see below for the complete list of arguments to the macro)
       and on @('<mode>'):
@@ -110,7 +111,7 @@
       If @('<verify-guards>') is not supplied as argument,
       @(':verify-guards') is absent.")
     (xdoc::li
-     "@('<parents>') is a list of parent <see topic='@(url xdoc)'>topics</see>.
+     "@('<parents>') is a list of parent XDOC topics.
       If @('<parents>') is not supplied as argument, @(':parents') is absent.")
     (xdoc::li
      "@('<short>') and @('<long>') are strings that document the function.
@@ -122,7 +123,7 @@
       The conditions are checked in order.")
     (xdoc::li
      "Each @('<messagej>') is a list that consists of
-      a <see topic='@(url fmt)'>format string</see>
+      a " (xdoc::seetopic "fmt" "format string") "
       followed by up to 10 terms,
       whose values fill in the placeholders of the format string.
       Generally, one of these terms should be @('description')
@@ -160,11 +161,11 @@
 
    (xdoc::p
     "A table keeps track of all the successful calls to this macro,
-     for <see topic='@(url redundant-events)'>redundancy</see> checking.")
+     for " (xdoc::seetopic "redundant-events" "redundancy") " checking.")
 
    (xdoc::@def "def-error-checker"))
 
-  ;; record successful calls to DEF-ERROR-CHECKER, for redundancy checking:
+  ;; records successful calls to DEF-ERROR-CHECKER, for redundancy checking:
   (table def-error-checker-calls nil nil
     :guard (and (pseudo-event-formp key)
                 (eq (car key) 'def-error-checker)
@@ -176,7 +177,7 @@
      (error-val symbolp "The @('error-val') formal."))
     :returns (bindings true-list-listp)
     :parents (def-error-checker)
-    :short "Generate the @(tsee b*) bindings of the error-checking function."
+    :short "Generate the @(tsee b*) bindings of the error checking function."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -217,11 +218,8 @@
   (define def-error-checker-x-symbols ((xs true-listp))
     :returns (x-symbols true-listp)
     :parents (def-error-checker)
-    :short
-    "Turn each @('xi') symbol into itself
-     and each @('xi')
-     <see topic='@(url std::extended-formals)'>extended formal</see>
-     into its underlying symbol."
+    :short "Turn each @('xi') symbol into itself
+            and each @('xi') extended formal into its underlying symbol."
     (def-error-checker-x-symbols-aux xs nil)
 
     :prepwork
@@ -245,7 +243,7 @@
                                 (returns-supplied-p booleanp)
                                 (conditions-messages true-list-listp)
                                 result
-                                (mode logic/program-p)
+                                (mode (member-eq mode '(:logic :program)))
                                 (verify-guards booleanp)
                                 (verify-guards-supplied-p booleanp)
                                 (parents (symbol-listp parents))

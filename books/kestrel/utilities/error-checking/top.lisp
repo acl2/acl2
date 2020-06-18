@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/utilities/enumerations" :dir :system)
+(include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/system/numbered-names" :dir :system)
 (include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "std/typed-alists/symbol-truelist-alistp" :dir :system)
