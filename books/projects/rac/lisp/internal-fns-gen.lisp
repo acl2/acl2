@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; May 2020
+;; June 2020
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -401,11 +401,11 @@
           ((const-p (cdr pair) consts)
            (let ((updated-pair
                   (cons (car pair)
-                        (replace-list-all
-                         (pairlis$ consts nil)
-                         (pairlis$ (pairlis$ consts nil)
-                                   (strip-cdrs const-bindings))
-                         (cadr pair)))))
+                        (car (replace-list-all
+                              (pairlis$ consts nil)
+                              (pairlis$ (pairlis$ consts nil)
+                                        (strip-cdrs const-bindings))
+                              (cdr pair))))))
              (elim-bindings-extract
               (cdr alist)
               (append const-bindings
@@ -634,7 +634,7 @@
                                  nil)))
     ;; Extract variables that are not used in "new-fn"
     (redundant-vars
-     (remove-all (used-syms-extract shrunk-body
+     (remove-all (used-syms-extract (list shrunk-body)
                                     simplified-alist
                                     nil)
                  renamed-vars))
@@ -706,6 +706,9 @@
                                  (strip-cdrs substd-bindings))
                        sub-pairs)
                shrunk-body))
+    (new-body (if (and (atom new-body) new-body)
+                  (list new-body)
+                new-body))
     (inter-names (remove-all
                   (append elim-vars excluded-vars)
                   (replace-list-all (strip-cars sub-pairs)
@@ -1021,7 +1024,7 @@
                                  nil)))
     ;; Extract variables that are not used in "fn"
     (redundant-vars
-     (remove-all (used-syms-extract shrunk-body
+     (remove-all (used-syms-extract (list shrunk-body)
                                     simplified-alist
                                     nil)
                  renamed-vars))
