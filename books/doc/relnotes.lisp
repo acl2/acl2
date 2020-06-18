@@ -122,6 +122,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
+                             "ACL2 Programming Language Library"))
+
+   (xdoc::p
+    "This is a library about the ACL2 programming language.
+     It includes a formalization of its evaluation semantics.
+     (This is just the work of this library's author,
+     not an official semantics of the ACL programming language;
+     see @(see evaluation) for an official description
+     of the ACL2 evaluation semantics.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "obag::obags" "Orderd Bags Library"))
 
    (xdoc::p
