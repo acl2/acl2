@@ -195,6 +195,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "ethereum::ethereum" "Ethereum Library"))
+
+   (xdoc::p
+    "Some theorems about hex-prefix encoding have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "event-macros" "Event Macros Library"))
 
    (xdoc::p
