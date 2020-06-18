@@ -96,7 +96,8 @@
 			 (quot% quot)
 			 (rem% r)
 			 (x% x))))
-          ("Subgoal 4" :in-theory (enable r quot))
+          ("Subgoal 5" :in-theory (enable r quot))
+          ("Subgoal 4" :use (q-vals))
           ("Subgoal 3" :use (q-vals))
           ("Subgoal 2" :use (x-bounds))
           ("Subgoal 1" :use (x-bounds))))
@@ -269,7 +270,7 @@
         (t -2)))
 
 (defund rp4 (j) (bits (ash (rp j) 2) 58 0))
-         
+
 (defund rn4 (j) (bits (ash (rn j) 2) 58 0))
 
 (defund rs8 (j)
@@ -286,7 +287,7 @@
       (* 4 (r 0))
     (* 1/8 (si (rs7 j) 7))))
 
- (in-theory (disable (approx)))
+(in-theory (disable (approx)))
 
 (defthm ratp-approx
   (rationalp (approx j))

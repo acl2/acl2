@@ -294,26 +294,31 @@
   (local (defun q% (j) (declare (ignore j)) 0))
   (defund r% () (expt 2 (e%)))
   (defund rho% () (/ (a%) (1- (r%))))
-  (defthm e%-constraint
-    (not (zp (e%)))
-    :rule-classes ())
-  (defthm x%-constraint
+  (defthmd e%-constraint
+    (not (zp (e%))))
+  (defthmd x%-constraint
     (and (rationalp (x%))
          (<= 1/4 (x%))
-         (< (x%) 1))
-    :rule-classes ())
-  (defthm a%-constraint
-    (not (zp (a%)))
-    :rule-classes ())
+         (< (x%) 1)))
+  (defthmd a%-constraint
+    (not (zp (a%))))
   (defthm q%-constraint
     (implies (not (zp j))
              (and (integerp (q% j))
                   (<= (abs (q% j)) (a%))))
-    :rule-classes ())
-  (defthm rho%-constraint
+    :rule-classes
+    ((:type-prescription
+      :corollary
+      (implies (not (zp j))
+               (integerp (q% j))))
+     (:linear
+      :corollary
+      (implies (not (zp j))
+               (and (<= (- (a%)) (q% j))
+                    (<= (q% j) (a%)))))))
+  (defthmd rho%-constraint
     (and (< 1/2 (rho%))
-         (<= (rho%) 1))
-    :rule-classes ()))
+         (<= (rho%) 1))))
 
 (defund quot% (j)
   (if (zp j)
@@ -498,6 +503,7 @@
 		(s4-hyp j))
 	   (and (quot%-bnds-inv (1+ j))
                 (rem%-bnds-inv (1+ j)))))
+
 ;;------------------------------------------------------------------------------------------------------------------
 
 (defun ms8-0 (k)
@@ -551,7 +557,7 @@
     (1 (ms8-1 i k))
     (t (ms8-2 i k))))
 
-(defun ms8 (i j k)
+(defund ms8 (i j k)
   (/ (ms8*64 i j k) 64))
 
 (defund select-digit-s8 (a i j)
