@@ -363,9 +363,13 @@
      in the sense that it captures more syntactic aspects of Java.")
 
    (xdoc::p
-    "ATJ function types have been recorded for more built-in functions,
+    "ATJ function types have been verified and recorded
+     for more built-in functions,
      thus avoiding certain type casts and other conversions
-     in the generated Java code.")
+     in the generated Java code.
+     ATJ function types have also been verified and recorded
+     for certain library functions, for the same reason;
+     these files can be included as needed.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
