@@ -88,4 +88,8 @@
 
 ; secondary types:
 
+(atj-other-function-type max (:ainteger :ainteger) :ainteger)
+
+(atj-other-function-type min (:ainteger :ainteger) :ainteger)
+
 (atj-other-function-type not (:aboolean) :aboolean)
