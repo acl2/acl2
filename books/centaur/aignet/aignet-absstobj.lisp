@@ -969,7 +969,7 @@
 (defmacro id->slot (id slot a)
   (cond ((eql slot 1) `(id->slot1 ,id ,a))
         ((eql slot 0) `(id->slot0 ,id ,a))
-        (t `(id->slot-fn ,id ,a))))
+        (t `(id->slot-fn ,id ,slot ,a))))
 
 
 (define id->type ((id natp) aignet)
