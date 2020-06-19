@@ -98,4 +98,52 @@ class Acl2RationalTest {
                         Acl2Integer.make(55));
     }
 
+    @Test
+    void getDenominatorFromMakeIntInt() {
+        assertEquals(Acl2Rational.make(3, 4).getDenominator(),
+                Acl2Integer.make(4));
+        assertEquals(Acl2Rational.make(20, 30).getDenominator(),
+                Acl2Integer.make(3));
+        assertEquals(Acl2Rational.make(-647, 121).getDenominator(),
+                Acl2Integer.make(121));
+    }
+
+    @Test
+    void getDenominatorFromMakeLongLong() {
+        assertEquals(Acl2Rational.make(37L, 22L).getDenominator(),
+                Acl2Integer.make(22));
+        assertEquals(Acl2Rational.make(3333333333L, 2222222222L)
+                        .getDenominator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Rational.make(10000000000L, -3).getDenominator(),
+                Acl2Integer.make(3));
+        assertEquals(Acl2Rational.make(3, 10000000000L).getDenominator(),
+                Acl2Integer.make(10000000000L));
+    }
+
+    @Test
+    void getDenominatorFromMakeBigIntegerBigInteger() {
+        assertEquals(Acl2Rational.make(BigInteger.ONE, BigInteger.TWO)
+                        .getDenominator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Rational.make(BigInteger.TWO, BigInteger.TEN)
+                        .getDenominator(),
+                Acl2Integer.make(5));
+        assertEquals(Acl2Rational.make(new BigInteger("20"),
+                new BigInteger("-30"))
+                        .getDenominator(),
+                Acl2Integer.make(3));
+    }
+
+    @Test
+    void getDenominatorFromMakeAcl2IntegerAcl2Integer() {
+        assertEquals(Acl2Rational.make(Acl2Integer.ONE, Acl2Integer.make(4))
+                        .getDenominator(),
+                Acl2Integer.make(4));
+        assertEquals
+                (Acl2Rational.make(Acl2Integer.make(-55), Acl2Integer.make(-54))
+                                .getDenominator(),
+                        Acl2Integer.make(54));
+    }
+
 }
