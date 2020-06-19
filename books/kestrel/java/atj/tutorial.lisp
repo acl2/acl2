@@ -2276,10 +2276,9 @@
   (atj-tutorial-section "Defining Some Tests")
 
   (xdoc::p
-   "Consider again the factorial function @('fact') example in "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   ". Introduce a named constant as follows:")
+   "Consider again the factorial function @('fact') example
+    in @(see atj-tutorial-deep).
+    Introduce a named constant as follows:")
   (xdoc::codeblock
    "(defconst *tests*"
    "  '((\"Test0\" (fact 0))"
@@ -2291,6 +2290,9 @@
    "    (\"Test50\" (fact 50))"
    "    (\"Test77\" (fact 77))"
    "    (\"Test100\" (fact 100))))")
+  (xdoc::p
+   "The name of the constant does not have to be @('*tests*').
+    Any name will do.")
 
   (xdoc::p
    "The above is a list of tests,
@@ -2298,20 +2300,22 @@
     a name (a string) and a ground call of the @('fact') function.
     The names in the list must be all distinct,
     and may be in any order:
-    their purpose is to describe the relative tests
-    in a human-readable way.
+    their purpose is to describe the associated tests
+    in a human-readable and identifiable way.
     Each ground call in the list
     specifies to check whether
     executing the ground call in Java
     yields the same result as executing it in ACL2.
     The arguments of the ground call must be constants:
     they must be or translate to quoted constants;
-    they cannot be just any terms that happen to be constant.")
+    they cannot be just any terms that happen to be constant
+    (this requirement might be relaxed in the future).")
 
   (xdoc::p
    "Note that each such test does not explicitly specify
     the expected result of the ground call.
-    The test simply compares the ACL2 result with the Java result.
+    At run time,
+    the test will simply compare the ACL2 result with the Java result.
     Thus, the user can quickly define many tests
     without specifying, or even knowing, the expected results.")
 
@@ -2321,41 +2325,38 @@
     This makes it easy to turn these names into (parts of) methods names,
     as explained below.")
 
-  (atj-tutorial-section "Passing the Tests to ATJ")
+  (atj-tutorial-section "Supplying the Tests to ATJ")
 
   (xdoc::p
-   "The tests defined above can be passed to ATJ as follows:")
+   "The tests defined above can be supplied to ATJ as follows:")
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :tests *tests*)")
 
   (xdoc::p
    "ATJ's @(':tests') input is evaluated:
-    in the example above, ATJ receives
+    in the example above, ATJ thus receives
     the list of doublets that @('*tests*') evaluates to.
-    In general, one can pass any term as the @(':tests') input,
+    In general, one can supply any term as the @(':tests') input,
     so long as its evaluation yields
     a true list of doublets in the format explained above.
     For example, the quoted list that defines @('*tests*')
-    could be passed directly as the @(':tests') input.
+    could be supplied directly as the @(':tests') input.
     As another example, one could define
     several named constants like @('*tests*') above,
     say @('*tests1*'), @('*tests2*'), etc.,
-    and pass @('(append *tests1* *tests2* ...)') as @(':tests').
-    However, passing a single named constant
+    and supply @('(append *tests1* *tests2* ...)') as @(':tests').
+    However, supplying a single named constant
     (which may well be defined as the @(tsee append) of other constants,
     each for a different group of tests)
     may be the clearest approach.")
 
   (xdoc::p
    "The ground call in a test must be that of a target function.
-    Recall that, as described in "
-   (xdoc::seetopic
-    "atj-tutorial-translated"
-    "the tutorial page on the ACL2 functions translated to Java")
-   ", the target functions are the ones explicitly specified to ATJ
+    Recall that, as described in @(see atj-tutorial-translated),
+    the target functions are the ones explicitly specified to ATJ
     (just @('fact') in the example above).
     Currently ATJ does not support tests that involve ground calls of
-    functions directly or indirectly called by the target functions
+    non-target functions directly or indirectly called by the target functions
     (such as @(tsee zp) in the @('fact') example above):
     the rationale is that the target functions are the top-level ones,
     and thus the one to be tested.
@@ -2382,10 +2383,7 @@
     whose meaning is explained later.
     After validating the input(s)
     and calling @('Acl2Code.initialize()')
-    (see "
-   (xdoc::seetopic "atj-tutorial-deep"
-                   "the tutorial page on the deep embedding approach")
-   " for details on the latter),
+    (see @(see atj-tutorial-deep) for details on the latter),
     the @('main()') method
     runs all the tests specified in @(':tests'),
     one after the other.
@@ -2425,7 +2423,7 @@
     sparing the user from having to visually double-check every line.")
 
   (xdoc::p
-   "Now trying running the same code with a positive integer argument:")
+   "Now try running the same code with a positive integer argument:")
   (xdoc::codeblock
    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
    "     Acl2CodeTest 10")
