@@ -92,4 +92,6 @@
 
 (atj-other-function-type min (:ainteger :ainteger) :ainteger)
 
+(atj-other-function-type mod (:ainteger :ainteger) :ainteger)
+
 (atj-other-function-type not (:aboolean) :aboolean)
