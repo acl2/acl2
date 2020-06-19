@@ -362,6 +362,11 @@
     "The Java abstract syntax used by the code generator is now more precise,
      in the sense that it captures more syntactic aspects of Java.")
 
+   (xdoc::p
+    "ATJ function types have been recorded for more built-in functions,
+     thus avoiding certain type casts and other conversions
+     in the generated Java code.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::language" "Java Language Formalization"))
