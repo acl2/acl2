@@ -697,11 +697,14 @@
                                 ctx
                                 state)
   :returns (mv erp
-               (result "A tuple @('(output-file$ output-file-test$)')
+               (result "A tuple
+                        @('(output-file$ output-file-env$ output-file-test$)')
                         satisfying
-                        @('(typed-tuplep stringp maybe-stringp)'),
+                        @('(typed-tuplep stringp stringp maybe-stringp)'),
                         where @('output-file$') is the path
                         of the generated main Java file,
+                        @('output-file-env$') is the path
+                        of the generated environment-building Java file,
                         and @('output-file-test$') is
                         @('nil') if the @(':tests') input is @('nil'),
                         otherwise it is the path
@@ -733,6 +736,26 @@
                                "The output path ~x0 ~
                                 exists but is not a regular file." file)))
                  (value :this-is-irrelevant)))
+       (file-env (oslib::catpath output-dir
+                                 (concatenate 'string
+                                              java-class$
+                                              "Environment.java")))
+       ((er &) (b* (((mv err/msg exists state) (oslib::path-exists-p file-env))
+                    ((when err/msg)
+                     (er-soft+ ctx t nil
+                               "The existence of the output path ~x0 ~
+                                cannot be tested." file-env))
+                    ((when (not exists)) (value :this-is-irrelevant))
+                    ((mv err/msg kind state) (oslib::file-kind file-env))
+                    ((when err/msg)
+                     (er-soft+ ctx t nil
+                               "The kind of the output path ~x0 ~
+                                cannot be tested." file-env))
+                    ((when (not (eq kind :regular-file)))
+                     (er-soft+ ctx t nil
+                               "The output path ~x0 ~
+                                exists but is not a regular file." file-env)))
+                 (value :this-is-irrelevant)))
        (file-test (if tests$
                       (oslib::catpath output-dir
                                       (concatenate 'string
@@ -756,7 +779,7 @@
                                "The output path ~x0 ~
                                 exists but is not a regular file." file-test)))
                  (value :this-is-irrelevant))))
-    (value (list file file-test)))
+    (value (list file file-env file-test)))
   :guard-hints (("Goal" :in-theory (enable acl2::ensure-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1245,6 +1268,7 @@
                                     java-package$
                                     java-class$
                                     output-file$
+                                    output-file-env$
                                     output-file-test$
                                     tests$
                                     verbose$)')
@@ -1254,6 +1278,7 @@
                                          booleanp
                                          booleanp
                                          maybe-stringp
+                                         stringp
                                          stringp
                                          stringp
                                          maybe-stringp
@@ -1302,8 +1327,9 @@
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets deep guards ctx state))
        ((er (list output-file$
-                  output-file-test$)) (atj-process-output-dir
-                                       output-dir java-class$ tests$ ctx state))
+                  output-file-env$
+                  output-file-test$))
+        (atj-process-output-dir output-dir java-class$ tests$ ctx state))
        ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
        ((er fns-to-translate) (atj-fns-to-translate
                                targets deep guards verbose ctx state))
@@ -1315,6 +1341,7 @@
                  java-package
                  java-class$
                  output-file$
+                 output-file-env$
                  output-file-test$
                  tests$
                  verbose))))

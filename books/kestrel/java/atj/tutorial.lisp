@@ -921,18 +921,24 @@
 
   (xdoc::p
    "As conveyed by the message shown on the screen by ATJ,
-    a single Java file @('Acl2Code.java') is generated,
+    two Java files, @('Acl2Code.java') and  @('Acl2CodeEnvironment.java'),
+    are generated,
     in the current directory.
-    (If the file already exists, it is overridden.)
-    Opening the file reveals that it contains
+    (If the files already exists, they are overridden.)
+    Opening the @('Acl2Code.java') file reveals that it contains
     a single Java public class called @('Acl2Code').
-    The file imports all the (public) AIJ classes,
-    which are in the @('edu.kestrel.acl2.aij') Java package,
-    and a few classes from the Java standard library.")
+    The file imports all the (public) AIJ classes.")
 
   (xdoc::p
    "The @('Acl2Code') class starts with a static initializer that calls
-    a number of methods to define ACL2 packages
+    the static @('initialize()') method
+    of the class @('Acl2CodeEnvironment'),
+    which is in the file @('Acl2CodeEnvironment.java'),
+    as can be revealed by opening that file.")
+
+  (xdoc::p
+   "The @('Acl2CodeEnvironment') class starts with a static initializer
+    that calls a number of methods to define ACL2 packages
     and a number of methods to define ACL2 functions.
     The packages are all the known ones in the ACL2 @(see world)
     at the time that ATJ is called:
@@ -980,7 +986,17 @@
     The details of all these methods are unimportant here.")
 
   (xdoc::p
-   "At the end of the class declaration (and file)
+   "At the end of the @('Acl2CodeEnvironment') class (and file)
+    there is the package-private method
+    called by the static initializer of the @('Acl2Code') class,
+    as mentioned above.
+    This method does nothing, but calling it ensures that
+    the @('Acl2CodeEnvironment') class is initialized,
+    and in particular that its static initializer (described above) is run.")
+
+  (xdoc::p
+   "Back to the @('Acl2Code') class,
+    after the static initializer,
     there are two public methods,
     which form the API to the ATJ-generated Java code
     illustrated in the picture above.
@@ -1041,7 +1057,7 @@
     it can be compiled via")
   (xdoc::codeblock
    "javac -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar \\"
-   "      Acl2Code.java Test.java")
+   "      Acl2Code.java Acl2CodeEnvironment.java Test.java")
   (xdoc::p
    "where @('[books]/...') must be replaced with
     a proper path to the AIJ jar file
@@ -1687,8 +1703,8 @@
   (xdoc::p
    "The Java code generated for
     the factorial function in @(see atj-tutorial-deep)
-    has no @('package') declaration,
-    which means that the generated class is in an unnamed package.
+    has no @('package') declarations,
+    which means that the generated classes are in an unnamed package.
     This (i.e. the absence of a @('package') declaration) is the default,
     which can be overridden via ATJ's @(':java-package') option.")
 
@@ -1697,8 +1713,8 @@
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :java-package \"mypkg\")")
   (xdoc::p
-   "generates a file @('Acl2Code.java')
-    that is the same as before but with the package declaration")
+   "generates files @('Acl2Code.java') and  @('Acl2CodeEnvironment.java')
+    that are the same as before but with the package declaration")
   (xdoc::codeblock
    "package mypkg;")
   (xdoc::p
@@ -1720,10 +1736,10 @@
     package names with non-ASCII characters.")
 
   (xdoc::p
-   "Note that the file is generated in the current directory,
+   "Note that the files are generated in the current directory,
     not in a @('mypkg') directory,
     as may be expected based on Java's typical source file organization.
-    The directory where the file is generated
+    The directory where the files are generated
     can be customized via the @(':output-dir') option, described below.")
 
   (atj-tutorial-section "Java Class")
@@ -1736,7 +1752,9 @@
     thus satisfying the constraint that a public class resides in a file
     whose name is obtained by adding the @('.java') extension
     to the class name.
-    This class (and thus file) name is the default,
+    The same applies to the class @('Acl2CodeEnvironment'),
+    generated in the file @('Acl2CodeEnvironment.java').
+    These class (and thus file) names are the default,
     which can be overridden via ATJ's @(':java-class') option.")
 
   (xdoc::p
@@ -1744,11 +1762,12 @@
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :java-class \"Fact\")")
   (xdoc::p
-   "generates a file @('Fact.java') that is the same as before
-    but with @('Fact') as the name of the class.")
+   "generates files @('Fact.java') and @('FactEnvironment.java')
+    that is the same as before but with @('Fact') and @('FactEnvironment')
+    as the name of the classes.")
 
   (xdoc::p
-   "Now that the generated class is called @('Fact'),
+   "Now that the main generated class is called @('Fact'),
     the external Java code exemplified in @(see atj-tutorial-deep)
     must be adapted, by referencing the generated Java class as @('Fact').")
 
@@ -1762,9 +1781,9 @@
   (atj-tutorial-section "Output Directory")
 
   (xdoc::p
-   "The Java file generated for
+   "The Java files generated for
     the factorial function in @(see atj-tutorial-deep)
-    resides in the current directory.
+    reside in the current directory.
     This is the default,
     which can be overridden via ATJ's @(':output-dir') option.")
 
@@ -1773,7 +1792,8 @@
   (xdoc::codeblock
    "(java::atj fact :deep t :guards nil :output-dir \"java\")")
   (xdoc::p
-   "generates the same file @('Acl2Code.java') as before
+   "generates the same files
+    @('Acl2Code.java') and  @('Acl2CodeEnvironment.java') as before,
     but in a subdirectory @('java') of the current directory.
     The subdirectory must already exist; ATJ does not create it.")
 
@@ -1826,12 +1846,9 @@
   (xdoc::p
    "When @(':verbose') is @('nil'), which is the default,
     ATJ just prints a short completion message
-    about the generated Java file(s).
+    about the generated Java files.
     This is mentioned in
-    the factorial function example in @(see atj-tutorial-deep),
-    where a single file is generated.
-    (The generation of multiple files is discussed later
-    in @(see atj-tutorial-tests).)")
+    the factorial function example in @(see atj-tutorial-deep).")
 
   (atj-tutorial-section "Verbose Screen Output")
 
@@ -1853,8 +1870,7 @@
     ATJ displays the list of all such functions.")
 
   (xdoc::p
-   "As discussed in
-    the factorial example in @(see atj-tutorial-deep),
+   "As discussed in the factorial example in @(see atj-tutorial-deep),
     ATJ generates Java code to build
     Java representations of all the ACL2 packages
     that are known when ATJ is called.
@@ -2367,9 +2383,10 @@
   (xdoc::p
    "As conveyed by the message shown on the screen by ATJ,
     two Java files are generated, in the current directory.
-    The first file, @('Acl2Code.java'), is the same as before.
-    The second file, @('Acl2CodeTests.java'), is new.
-    Opening the second file reveals that it contains
+    The first two files, @('Acl2Code.java') and @('Acl2CodeEnvironment'),
+    are the same as before.
+    The third file, @('Acl2CodeTests.java'), is new.
+    Opening the new file reveals that it contains
     a single Java public class called @('Acl2CodeTest').
     The file imports all the (public) AIJ classes,
     which are in the @('edu.kestrel.acl2.aij') Java package,
@@ -2397,11 +2414,10 @@
   (atj-tutorial-section "Compiling and Running the Code")
 
   (xdoc::p
-   "Both the main file and the test file generated by ATJ
-    can be compiled via")
+   "All the files generated by ATJ can be compiled via")
   (xdoc::codeblock
    "javac -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar \\"
-   "      Acl2Code.java Acl2CodeTests.java")
+   "      Acl2Code.java Acl2CodeEnvironment.java Acl2CodeTests.java")
   (xdoc::p
    "where @('[books]/...') must be replaced with
     a proper path to the AIJ jar file
@@ -2444,7 +2460,7 @@
     have a very similar structure.")
 
   (xdoc::p
-   "Each test methof takes as input a non-negative integer,
+   "Each test method takes as input a non-negative integer,
     which is the positive integer passed to the @('main()') method, if any,
     or 0 if no argument is passed to the @('main()') method.
     The value 0 means that no execution times should be measured and reported.
@@ -2594,16 +2610,18 @@
 
   (xdoc::p
    "As in the deep embedding approach,
-    a single Java file @('Acl2Code.java') is generated
-    (in the current directory),
-    which contains a single Java public class called @('Acl2Code').
+    two Java file, @('Acl2Code.java') and @('Acl2CodeEnvironment'),
+    are generated (in the current directory),
+    each of which contains
+    a single Java class with the same name (without @('.java'));
+    the first class is public, the second package-private.
     Also as in the deep embedding,
-    the file imports all the (public) AIJ classes,
+    the files import all the (public) AIJ classes,
     which are in the @('edu.kestrel.acl2.aij') Java package,
     and a few classes from the Java standard library.")
 
   (xdoc::p
-   "The static initializer at the beginning of the class
+   "The static initializer in the @('Acl2CodeEnvironment') class
     calls a number of methods to define ACL2 packages
     as in the deep embedding approach,
     but it does not call any methods to define ACL2 functions.
@@ -2614,7 +2632,18 @@
     in the shallow and deep embedding approaches.")
 
   (xdoc::p
-   "At the end of the class there is the same empty @('initialize()') method
+   "At the end of the @('Acl2CodeEnvironment') class
+    there is the same empty @('initialize()') method
+    as in the deep embedding; see @(see atj-tutorial-deep) for details.")
+
+  (xdoc::p
+   "As in the deep embedding,
+    the @('Acl2Code') class starts with a static initializer
+    to build the ACL2 environment; see @(see atj-tutorial-deep) for details.")
+
+  (xdoc::p
+   "At the end of the @('Acl2Code') class
+    there is the same empty @('initialize()') method
     as in the deep embedding; see @(see atj-tutorial-deep) for details.
     However, unlike the deep embedding approach,
     there is no @('call(Acl2Symbol, Acl2Value[])') method,
@@ -2623,7 +2652,7 @@
     are called directly as methods.")
 
   (xdoc::p
-   "After the methods that define ACL2 packages, described above,
+   "After the static initializer in the @('Acl2Code') class,
     there are six methods
     to convert from @('Acl2Value')s to Java primitive arrays,
     and six methods
@@ -2647,7 +2676,7 @@
     no quoted constant appears in @(tsee not).")
 
   (xdoc::p
-   "The rest of the class (up to the @('initialize()') method)
+   "The rest of the @('Acl2Code') class (up to the @('initialize()') method)
     consists of a number of nested static classes,
     each of which corresponds to an ACL2 package.
     These are a strict subset of the packages

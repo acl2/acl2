@@ -182,6 +182,7 @@
                   java-package$
                   java-class
                   output-file$
+                  output-file-env$
                   output-file-test$
                   tests$
                   verbose$))
@@ -191,6 +192,7 @@
                                    java-package$
                                    java-class
                                    output-file$
+                                   output-file-env$
                                    output-file-test$
                                    tests$
                                    pkgs
@@ -198,9 +200,10 @@
                                    verbose$
                                    state))
        (- (if output-file-test$
-              (cw "~%Generated Java files:~% ~x0~% ~x1~%"
-                  output-file$ output-file-test$)
-            (cw "~%Generated Java file:~%  ~x0~%" output-file$))))
+              (cw "~%Generated Java files:~% ~x0~% ~x1~% ~x2~%"
+                  output-file$ output-file-env$ output-file-test$)
+            (cw "~%Generated Java files:~% ~x0~% ~x1~%"
+                output-file$ output-file-env$))))
     (value '(value-triple :invisible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

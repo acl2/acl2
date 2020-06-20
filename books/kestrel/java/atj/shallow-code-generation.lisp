@@ -4063,10 +4063,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-static-initializer ((pkgs string-listp))
+(define atj-gen-shallow-env-static-initializer ((pkgs string-listp))
   :returns (initializer jcinitializerp)
   :short "Generate the static initializer
-          for the main (i.e. non-test) Java class declaration,
+          of the Java class that builds the ACL2 environment,
           in the shallow embedding approach."
   :long
   (xdoc::topstring
@@ -4075,6 +4075,23 @@
      we build the Java representation of the ACL2 packages."))
   (make-jcinitializer :static? t
                       :code (atj-gen-pkgs pkgs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-main-static-initializer ((java-class$ stringp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer of the main Java class,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This just calls the initialization method
+     of the Java class that builds the ACL2 environment."))
+  (make-jcinitializer
+   :static? t
+   :code (jblock-smethod (jtype-class (str::cat java-class$ "Environment"))
+                         "initialize"
+                         nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4321,6 +4338,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-shallow-env-class ((pkgs string-listp)
+                                   (java-class$ stringp)
+                                   (verbose$ booleanp))
+  :returns (class jclassp)
+  :short "Generate the declaration of
+          the Java class that builds the ACL2 environment,
+          in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a package-private class,
+     whose purpose is to build the ACL2 environment.
+     It contains
+     the static initializer,
+     the methods to build the ACL2 packages,
+     and the initialization method."))
+  (b* (((run-when verbose$)
+        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
+       (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
+       (pkg-methods (mergesort-jmethods pkg-methods))
+       ((run-when verbose$)
+        (cw "~%Generate the Java class to build the ACL2 environment.~%"))
+       (static-init (atj-gen-shallow-env-static-initializer pkgs))
+       (init-method (atj-gen-init-method nil))
+       (body-class (append (list (jcbody-element-init static-init))
+                           (jmethods-to-jcbody-elements pkg-methods)
+                           (list (jcbody-element-member
+                                  (jcmember-method init-method))))))
+    (make-jclass :access (jaccess-default)
+                 :abstract? nil
+                 :static? nil
+                 :final? t
+                 :strictfp? nil
+                 :name (str::cat java-class$ "Environment")
+                 :superclass? nil
+                 :superinterfaces nil
+                 :body body-class)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-env-cunit ((java-package$ stringp)
+                                   (java-class$ stringp)
+                                   (pkgs string-listp)
+                                   (verbose$ booleanp))
+  :guard (no-duplicatesp-equal pkgs)
+  :returns (cunit jcunitp)
+  :short "Generate the Java compilation unit
+          with the class to build the ACL2 environment,
+          in the shallow embedding approach."
+  (b* ((class (atj-gen-shallow-env-class pkgs java-class$ verbose$))
+       ((run-when verbose$)
+        (cw "~%Generate the Java compilation unit ~
+             to build the ACL2 environment.~%")))
+    (make-jcunit
+     :package? java-package$
+     :imports (list
+               (make-jimport :static? nil
+                             :target (str::cat *aij-package* ".*"))
+               ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
+               (make-jimport :static? nil :target "java.math.BigInteger")
+               (make-jimport :static? nil :target "java.util.ArrayList")
+               (make-jimport :static? nil :target "java.util.List"))
+     :types (list class))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-main-class ((pkgs string-listp)
                                     (fns-to-translate symbol-listp)
                                     (guards$ booleanp)
@@ -4343,7 +4426,6 @@
      The code that we generate satisfies this requirement.")
    (xdoc::p
     "The class contains the initialization method,
-     the methods to build the ACL2 packages,
      the methods to write primitive array components,
      the classes that contain methods for the ACL2 functions,
      the @(tsee mv) classes,
@@ -4351,7 +4433,7 @@
      and the static initializer.")
    (xdoc::p
     "It is critical that the static initializer
-     comes before the fields for the quoted constants,
+     comes textually before the fields for the quoted constants,
      so that the ACL2 environment is initialized
      before the field initializers, which construct ACL2 values, are executed;
      [JLS:12.4.1] says that the class initialization code
@@ -4372,11 +4454,7 @@
      because their Java representations are sometimes generated
      even when these two symbols are not used in any of the ACL2 functions
      that are translated to Java."))
-  (b* (((run-when verbose$)
-        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
-       (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
-       (pkg-methods (mergesort-jmethods pkg-methods))
-       (jprimarr-methods (append
+  (b* ((jprimarr-methods (append
                           ;; see doc of atj-gen-shallow-primarray-write-methods
                           ;; (atj-gen-shallow-primarray-write-methods)
                           (and guards$
@@ -4444,10 +4522,9 @@
                                   qstring-fields
                                   qcons-fields))
        (all-qconst-fields (mergesort-jfields all-qconst-fields))
-       (static-init (atj-gen-shallow-static-initializer pkgs))
-       (init-method (atj-gen-init-method))
+       (static-init (atj-gen-shallow-main-static-initializer java-class$))
+       (init-method (atj-gen-init-method t))
        (body-class (append (list (jcbody-element-init static-init))
-                           (jmethods-to-jcbody-elements pkg-methods)
                            (jmethods-to-jcbody-elements jprimarr-methods)
                            (jfields-to-jcbody-elements all-qconst-fields)
                            (jclasses-to-jcbody-elements mv-classes)

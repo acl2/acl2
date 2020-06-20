@@ -482,6 +482,116 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-deep-env-static-initializer ((pkgs string-listp)
+                                             (fns-to-translate symbol-listp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer
+          of the Java class that builds the ACL2 environment,
+          in the deep embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This contains code to initialize the ACL2 environment:
+     we build the Java representation of the ACL2 packages and functions."))
+  (make-jcinitializer :static? t
+                      :code (append (atj-gen-pkgs pkgs)
+                                    (atj-gen-deep-fndefs fns-to-translate)
+                                    (jblock-smethod *aij-type-named-fn*
+                                                    "validateAllFunctionCalls"
+                                                    nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-deep-main-static-initializer ((java-class$ stringp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer of the main Java class,
+          in the deep embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This just calls the initialization method
+     of the Java class that builds the ACL2 environment."))
+  (make-jcinitializer
+   :static? t
+   :code (jblock-smethod (jtype-class (str::cat java-class$ "Environment"))
+                         "initialize"
+                         nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-deep-env-class ((pkgs string-listp)
+                                (fns-to-translate symbol-listp)
+                                (guards$ booleanp)
+                                (java-class$ stringp)
+                                (verbose$ booleanp)
+                                (wrld plist-worldp))
+  :returns (class jclassp)
+  :short "Generate the declaration of
+          the Java class that builds the ACL2 environment,
+          in the deep embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a package-private class,
+     whose purpose is to build the ACL2 environment.
+     It contains
+     the static initializer,
+     the methods to build the ACL2 packages,
+     the methods to build the ACL2 functions,
+     and the initialization method."))
+  (b* (((run-when verbose$)
+        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
+       (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
+       ((run-when verbose$)
+        (cw "~%Generate the Java methods to build the ACL2 functions:~%"))
+       (fn-methods (atj-gen-deep-fndef-methods
+                    fns-to-translate guards$ verbose$ wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the Java class to build the ACL2 environment.~%"))
+       (static-init (atj-gen-deep-env-static-initializer pkgs fns-to-translate))
+       (init-method (atj-gen-init-method nil))
+       (body-class (append (list (jcbody-element-init static-init))
+                           (jmethods-to-jcbody-elements pkg-methods)
+                           (jmethods-to-jcbody-elements fn-methods)
+                           (list (jcbody-element-member
+                                  (jcmember-method init-method))))))
+    (make-jclass :access (jaccess-default)
+                 :abstract? nil
+                 :static? nil
+                 :final? t
+                 :strictfp? nil
+                 :name (str::cat java-class$ "Environment")
+                 :superclass? nil
+                 :superinterfaces nil
+                 :body body-class)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-deep-env-cunit ((guards$ booleanp)
+                                (java-package$ maybe-stringp)
+                                (java-class$ stringp)
+                                (pkgs string-listp)
+                                (fns-to-translate symbol-listp)
+                                (verbose$ booleanp)
+                                (wrld plist-worldp))
+  :returns (cunit jcunitp)
+  :short "Generate the Java compilation unit
+          with the class to build the ACL2 environment,
+          in the deep embedding approach."
+  (b* ((class (atj-gen-deep-env-class
+               pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
+       ((run-when verbose$)
+        (cw "~%Generate the Java compilation unit ~
+             to build the ACL2 environment.~%")))
+    (make-jcunit :package? java-package$
+                 :imports (list (jimport nil (str::cat *aij-package* ".*"))
+                                (jimport nil "java.math.BigInteger")
+                                (jimport nil "java.util.ArrayList")
+                                (jimport nil "java.util.List"))
+                 :types (list class))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-deep-call-method ()
   :returns (method jmethodp)
   :short "Generate the Java method to call ACL2 functions,
@@ -523,32 +633,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-static-initializer ((pkgs string-listp)
-                                         (fns-to-translate symbol-listp))
-  :returns (initializer jcinitializerp)
-  :short "Generate the static initializer
-          for the main (i.e. non-test) Java class declaration,
-          in the deep embedding approach."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This contains code to initialize the ACL2 environment:
-     we build the Java representation of the ACL2 packages and functions."))
-  (make-jcinitializer :static? t
-                      :code (append (atj-gen-pkgs pkgs)
-                                    (atj-gen-deep-fndefs fns-to-translate)
-                                    (jblock-smethod *aij-type-named-fn*
-                                                    "validateAllFunctionCalls"
-                                                    nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-deep-main-class ((pkgs string-listp)
-                                 (fns-to-translate symbol-listp)
-                                 (guards$ booleanp)
-                                 (java-class$ stringp)
-                                 (verbose$ booleanp)
-                                 (wrld plist-worldp))
+(define atj-gen-deep-main-class ((java-class$ stringp)
+                                 (verbose$ booleanp))
   :returns (class jclassp)
   :short "Generate the main (i.e. non-test) Java class declaration,
           in the deep embedding approach."
@@ -562,24 +648,13 @@
    (xdoc::p
     "The class contains the initialization method,
      the static initializer,
-     the methods to build the ACL2 packages,
-     the methods to build the ACL2 functions,
      and the method to call ACL2 code from external code."))
   (b* (((run-when verbose$)
-        (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
-       (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
-       ((run-when verbose$)
-        (cw "~%Generate the Java methods to build the ACL2 functions:~%"))
-       (fn-methods (atj-gen-deep-fndef-methods
-                    fns-to-translate guards$ verbose$ wrld))
-       ((run-when verbose$)
         (cw "~%Generate the main Java class.~%"))
-       (static-init (atj-gen-deep-static-initializer pkgs fns-to-translate))
-       (init-method (atj-gen-init-method))
+       (static-init (atj-gen-deep-main-static-initializer java-class$))
+       (init-method (atj-gen-init-method t))
        (call-method (atj-gen-deep-call-method))
        (body-class (append (list (jcbody-element-init static-init))
-                           (jmethods-to-jcbody-elements pkg-methods)
-                           (jmethods-to-jcbody-elements fn-methods)
                            (list (jcbody-element-member
                                   (jcmember-method init-method)))
                            (list (jcbody-element-member
@@ -587,7 +662,7 @@
     (make-jclass :access (jaccess-public)
                  :abstract? nil
                  :static? nil
-                 :final? nil
+                 :final? t
                  :strictfp? nil
                  :name java-class$
                  :superclass? nil
@@ -596,18 +671,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-main-cunit ((guards$ booleanp)
-                                 (java-package$ maybe-stringp)
+(define atj-gen-deep-main-cunit ((java-package$ maybe-stringp)
                                  (java-class$ stringp)
-                                 (pkgs string-listp)
-                                 (fns-to-translate symbol-listp)
-                                 (verbose$ booleanp)
-                                 (wrld plist-worldp))
+                                 (verbose$ booleanp))
   :returns (cunit jcunitp)
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
-  (b* ((class (atj-gen-deep-main-class
-               pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
+  (b* ((class (atj-gen-deep-main-class java-class$ verbose$))
        ((run-when verbose$)
         (cw "~%Generate the main Java compilation unit.~%")))
     (make-jcunit :package? java-package$

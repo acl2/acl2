@@ -513,13 +513,9 @@
        ((mv cunit
             pkg-class-names
             fn-method-names) (if deep$
-                                 (mv (atj-gen-deep-main-cunit guards$
-                                                              java-package$
+                                 (mv (atj-gen-deep-main-cunit java-package$
                                                               java-class$
-                                                              pkgs
-                                                              fns-to-translate
-                                                              verbose$
-                                                              wrld)
+                                                              verbose$)
                                      nil
                                      nil)
                                (atj-gen-shallow-main-cunit guards$
@@ -541,11 +537,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-env-file ((deep$ booleanp)
+                          (guards$ booleanp)
+                          (java-package$ maybe-stringp)
+                          (java-class$ stringp)
+                          (output-file-env$ stringp)
+                          (pkgs string-listp)
+                          (fns-to-translate symbol-listp)
+                          (verbose$ booleanp)
+                          state)
+  :guard (no-duplicatesp-equal pkgs)
+  :returns state
+  :mode :program ; because of PRINT-TO-JFILE
+  :short "Generate the file whose code builds the ACL2 environment."
+  (b* ((wrld (w state))
+       (cunit (if deep$
+                  (atj-gen-deep-env-cunit guards$
+                                          java-package$
+                                          java-class$
+                                          pkgs
+                                          fns-to-translate
+                                          verbose$
+                                          wrld)
+                (atj-gen-shallow-env-cunit java-package$
+                                           java-class$
+                                           pkgs
+                                           verbose$)))
+       ((unless (jcunitp cunit))
+        (raise "Internal error: generated an invalid compilation unit.")
+        state)
+       ((run-when verbose$)
+        (cw "~%Generate the environment Java file.~%")))
+    (print-to-jfile (print-jcunit cunit)
+                    output-file-env$
+                    state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-everything ((deep$ booleanp)
                             (guards$ booleanp)
                             (java-package$ maybe-stringp)
                             (java-class$ stringp)
                             (output-file$ stringp)
+                            (output-file-env$ stringp)
                             (output-file-test$ maybe-stringp)
                             (tests$ atj-test-listp)
                             (pkgs string-listp)
@@ -553,8 +587,10 @@
                             (verbose$ booleanp)
                             state)
   :returns (mv erp val state)
-  :mode :program ; because of ATJ-GEN-MAIN/TEST-FILE
-  :short "Generate the main Java file, and optionally the Java test file."
+  :mode :program ; because of ATJ-GEN-MAIN/ENV/TEST-FILE
+  :short "Generate the main Java file,
+          the environment-building Java file,
+          and optionally the test Java file."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -562,26 +598,36 @@
      to avoid line breaks in virtually all cases.
      Setting these margins to ``infinity'' is not supported.")
    (xdoc::p
-    "We always generate the main Java file.
+    "We always generate the main and environment-building Java files.
      We generate the test Java file only if @(':tests') is not @('nil').")
    (xdoc::p
     "We pass the alist from ACL2 package names to Java class names
-     from one file generation function to the other.
+     from one file generation function to another.
      This is @('nil') in the deep embedding approach."))
   (state-global-let*
    ((fmt-soft-right-margin 1000000 set-fmt-soft-right-margin)
     (fmt-hard-right-margin 1000000 set-fmt-hard-right-margin))
    (b* (((mv pkg-class-names
              fn-method-names
-             state) (atj-gen-main-file deep$
-                                       guards$
-                                       java-package$
-                                       java-class$
-                                       output-file$
-                                       pkgs
-                                       fns-to-translate
-                                       verbose$
-                                       state))
+             state)
+         (atj-gen-main-file deep$
+                            guards$
+                            java-package$
+                            java-class$
+                            output-file$
+                            pkgs
+                            fns-to-translate
+                            verbose$
+                            state))
+        (state (atj-gen-env-file deep$
+                                 guards$
+                                 java-package$
+                                 java-class$
+                                 output-file-env$
+                                 pkgs
+                                 fns-to-translate
+                                 verbose$
+                                 state))
         (state (if tests$
                    (atj-gen-test-file deep$
                                       guards$

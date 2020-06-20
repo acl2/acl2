@@ -78,8 +78,9 @@
 
    (xdoc::p
     "ATJ accepts all the ACL2 functions that
-     (1) have either an unnormalized body (see @(tsee acl2::ubody))
-     or an attachment and
+     (1) have either an "
+    (xdoc::seetopic "acl2::ubody" "unnormalized body")
+    " or an attachment and
      (2) either do not have raw Lisp code
      or have raw Lisp code but belong to a whitelist.
      The ACL2 functions with raw Lisp code
@@ -88,9 +89,13 @@
      are the ones for which @(tsee pure-raw-p) holds.
      The unnormalized body of the functions in the whitelist
      is functionally equivalent to their raw Lisp code.
-     The Java code that corresponds to the ACL2 functions
-     that satisfy conditions (1) and (2) above,
-     mimics the computations described by their unnormalized body.")
+     The Java code that corresponds to
+     the ACL2 functions that satisfy conditions (1) and (2) above,
+     mimics the computations described by their unnormalized body.
+     In the case of functions
+     without an unnormalized body but with an attachment,
+     (a call of) the attached function (on the formal arguments)
+     plays the role of the unnormalized body.")
 
    (xdoc::p
     "ATJ also accepts the ACL2 function @(tsee return-last)
@@ -248,8 +253,7 @@
      and AIJ's native implementations of ACL2 functions.
      Under certain conditions,
      the shallowly embedded ACL2 functions use Java values
-     that are not AIJ's Java representations of ACL2 values:
-     in particular, they use Java primitive types;
+     that are not AIJ's Java representations of ACL2 values;
      see below for details.")
 
    (xdoc::p
@@ -284,10 +288,8 @@
      "Each @('fni') must be a symbol that names a function that
       either has an unnormalized body
       and no raw Lisp code (unless it is in the whitelist),
-      or it has an attachment,
-      or is natively implemented in AIJ
-      (currently, this is equivalent to the function being "
-     (xdoc::seetopic "acl2::primitive" "primitive") ").
+      or has an attachment,
+      or is natively implemented in AIJ.
       Each of these functions must have
       no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") ".
       Each of these functions must transitively call
@@ -303,14 +305,12 @@
      (xdoc::li
       "The first argument of @(tsee return-last) is @('acl2::mbe-raw1'),
        i.e. the call results from the translation of @(tsee mbe).
-       If the @(':guards') input is @('nil'),
-       no restrictions are enforced on the @(':exec') parts of the call:
-       only the @(':logic') part is recursively checked
-       to satisfy all the constraints stated here.
-       If instead the @(':guards') input is @('t'),
-       no restrictions are enforced on the @(':logic') parts of this call:
-       only the @(':exec') part is recursively checked
-       to satisfy all the constraints stated here.")
+       Even though Java code is generated
+       for one of the second and third arguments but not for the other one
+       (based on the @(':guars') input; see below),
+       the restrictions on called functions,
+       and in particular the absence of side effects,
+       are enforced on all the argument of the call.")
      (xdoc::li
       "The first argument of @(tsee return-last) is @('acl2::progn'),
        i.e. the call results from the translation of
@@ -340,13 +340,13 @@
      (xdoc::li
       "@('t'), for the deep embedding.")
      (xdoc::li
-      "@('nil') (the default), for the shallow embedding.")))
+      "@('nil'), for the shallow embedding.")))
 
    (xdoc::desc
     "@(':guards') &mdash; default @('t')"
     (xdoc::p
      "Specifies whether the generated code
-      may assume that all the guards are satisfied or not:")
+      should assume that all the guards are satisfied or not:")
     (xdoc::ul
      (xdoc::li
       "@('t'), to assume that they are satisfied.
@@ -361,7 +361,7 @@
        and the generated Java code may manipulate
        Java primitive values and Java primitive arrays directly.")
      (xdoc::li
-      "@('nil') (the default), to not assume that the guards are satisfied.
+      "@('nil'), to not assume that the guards are satisfied.
        In this case, the generated code runs ``in the logic'';
        in particular, only the @(':logic') part of @(tsee mbe) is executed."))
     (xdoc::p
@@ -389,7 +389,7 @@
       it must also be distinct from AIJ's Java package name,
       i.e. @('edu.kestrel.acl2.aij').
       If this input is @('nil'), the generated Java code
-      is in an unnamed Java package [JSL:7.4.2]."))
+      is in an unnamed Java package."))
 
    (xdoc::desc
     "@(':java-class') &mdash; default @('nil')"
@@ -402,8 +402,16 @@
       If this input is @('nil'),
       the generated Java class is called @('Acl2Code').")
     (xdoc::p
+     "An additional auxiliary class is generated,
+      whose name is obtained by appending @('Environment')
+      at the end of the name of the main class.
+      This auxiliary class contains boilerplate code
+      to build a Java representation of the ACL2 environment
+      (i.e. ACL2 package definitions,
+      and also ACL2 function definitions if the @(':deep') input is @('t')).")
+    (xdoc::p
      "If the @(':tests') input (see below) is not @('nil'),
-      an additional Java class for testing is generated,
+      a third Java class for testing is generated,
       whose name is obtained by appending @('Tests')
       at the end of the name of the main class."))
 
@@ -411,7 +419,7 @@
     "@(':output-dir') &mdash; default @('\".\"')"
     (xdoc::p
      "Path of the directory where
-      the generated Java file/files is/are created.")
+      the generated Java files are created.")
     (xdoc::p
      "It must be an ACL2 string that is
       a valid path to a directory in the file system;
@@ -419,13 +427,11 @@
       or relative to
       the " (xdoc::seetopic "cbd" "current working directory") ".")
     (xdoc::p
-     "The name of the generated file containing the main class
-      is the name of that class followed by @('.java').
-      If the file already exists, it is overwritten.")
-    (xdoc::p
-     "If the @(':tests') input (see below) is not @('nil'),
-      the name of the generated file containing the test class
-      is the name of that class followed by @('.java').
+     "One file per class is generated:
+      two files if the @(':tests') input is @('nil'),
+      three files otherwise.
+      The name of each generated file
+      is the name of the corresponding class followed by @('.java').
       If the file already exists, it is overwritten."))
 
    (xdoc::desc
@@ -594,7 +600,7 @@
    (xdoc::codeblock
     "// if :deep is t:"
     "public class <name> {"
-    "    // private members"
+    "    ..."
     "    public static void initialize() ..."
     "    public static Acl2Value"
     "        call(Acl2Symbol function, Acl2Value[] arguments) ..."
@@ -602,20 +608,19 @@
     ""
     "// if :deep is nil:"
     "public class <name> {"
-    "    // private members"
-    "    public static void initialize() ..."
+    "    ..."
     "    public static class <pkg> {"
     "        public static <type> <fn>(<type> ...) ..."
     "    }"
     "    // other public static classes with public static methods"
+    "    public static void initialize() ..."
     "}")
 
    (xdoc::p
     "This Java class has a public static method @('initialize')
      to initialize the relevant portions of the ACL2 environment.
      This public method must be called just once,
-     before calling the other public methods described below;
-     a Java exception is thrown if this protocol is not observed.
+     before calling the other public methods described below.
      This @('initialize') method should be also called
      before calling any of the public methods provided by AIJ,
      because AIJ itself relies on this initialization to work properly.
@@ -676,6 +681,15 @@
      and the corresponding ACL2 package and function names
      is displayed if @(':verbose') is @('t').")
 
+   (xdoc::p
+    "ATJ also generated a Java file that contains
+     a single package-private class whose name is
+     the name of the main class (described above) followed by @('Environment').
+     This additional Java class contains code
+     to initialize the ACL2 environment:
+     this code is executed by invoking
+     the @('initialize()') method of the main class described above.")
+
    (xdoc::h4 "Optional Test Class")
 
    (xdoc::p
@@ -687,7 +701,7 @@
 
    (xdoc::codeblock
     "public class <name>Tests {"
-    "    // private members"
+    "   ..."
     "    public static void main(String[] args) ..."
     "}")
 

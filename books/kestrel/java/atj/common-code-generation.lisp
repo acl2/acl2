@@ -889,7 +889,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-init-method ()
+(define atj-gen-init-method ((publicp booleanp))
   :returns (method jmethodp)
   :short "Generate the Java public method to initialize the ACL2 environment."
   :long
@@ -898,8 +898,15 @@
     "This method is actually empty,
      but its invocation ensures that the class initializer,
      which actually initializes the environment,
-     has been executed."))
-  (make-jmethod :access (jaccess-public)
+     has been executed.")
+   (xdoc::p
+    "This method is part of two Java classes:
+     the main class, and the class to build the ACL2 environment.
+     The only difference is that the method is
+     public in the former, package-private in the latter."))
+  (make-jmethod :access (if publicp
+                            (jaccess-public)
+                          (jaccess-default))
                 :abstract? nil
                 :static? t
                 :final? nil
