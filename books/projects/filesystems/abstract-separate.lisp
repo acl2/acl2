@@ -13412,9 +13412,79 @@
     :induct (seq-this frame)
     :expand (collapse-iter frame 1))))
 
+;; This helps prove a necessary congruence.
+;; (thm
+;;  (implies
+;;   (and (natp x)
+;;        (abs-fs-p dir)
+;;        (consp (assoc-equal x (frame->frame frame)))
+;;        (absfat-equiv
+;;         (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
+;;         dir))
+;;   (equal (len (frame->frame (collapse-seq
+;;                              (frame-with-root
+;;                               (frame->root frame)
+;;                               (put-assoc-equal
+;;                                x
+;;                                (change-frame-val
+;;                                 (cdr (assoc-equal x (frame->frame frame)))
+;;                                 :dir dir)
+;;                                (frame->frame frame)))
+;;                              seq)))
+;;          (len (frame->frame (collapse-seq frame seq)))))
+;;  :hints (("Goal" :in-theory (e/d (collapse-seq)
+;;                                  ())
+;;           :induct (collapse-seq frame seq)
+;;           :expand
+;;           (collapse-seq
+;;            (frame-with-root
+;;             (frame->root frame)
+;;             (put-assoc-equal
+;;              x
+;;              (frame-val
+;;               (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
+;;               dir
+;;               (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
+;;              (frame->frame frame)))
+;;            seq))))
+
+;; This theorem helps with
+;; (valid-seqp (collapse-this frame x) (seq-this (collapse-this frame x)))
+;; which is a pre-requisite of the next theorem.
+;; (thm
+;;  (implies
+;;   (and (valid-seqp frame seq)
+;;        (consp (assoc-equal x (frame->frame frame)))
+;;        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+;;        (not (member-equal x seq))
+;;        (dist-names (frame->root frame) nil (frame->frame frame))
+;;        (abs-separate (frame->frame frame))
+;;        (abs-complete (frame-val->dir (cdr (assoc-equal x (frame->frame
+;;                                                           frame)))))
+;;        (frame-p (frame->frame frame)))
+;;   (valid-seqp (collapse-this frame x) seq))
+;;  :hints (("goal" :in-theory (e/d (collapse-seq valid-seqp collapse-this)
+;;                                  ((:DEFINITION ASSOC-EQUAL)
+;;                                   (:DEFINITION member-EQUAL)
+;;                                   (:LINEAR LEN-WHEN-PREFIXP)
+;;                                   (:REWRITE LEN-WHEN-PREFIXP)
+;;                                   (:REWRITE M1-FILE-CONTENTS-P-CORRECTNESS-1)
+;;                                   nthcdr-when->=-n-len-l
+;;                                   list-equiv-when-true-listp
+;;                                   ABS-SEPARATE-OF-FRAME->FRAME-OF-COLLAPSE-THIS-LEMMA-8
+;;                                   (:REWRITE
+;;                                    ABS-SEPARATE-OF-FRAME->FRAME-OF-COLLAPSE-THIS-LEMMA-15)
+;;                                   (:REWRITE
+;;                                    PARTIAL-COLLAPSE-CORRECTNESS-LEMMA-28)
+;;                                   (:REWRITE
+;;                                    PARTIAL-COLLAPSE-CORRECTNESS-LEMMA-1)))
+;;           :induct (collapse-seq frame seq)
+;;           :expand (collapse-seq (collapse-this frame x)
+;;                                 seq))))
+
 ;; This theorem needs to be set aside because there's no obvious path towards
 ;; proving
-;; (VALID-SEQP (COLLAPSE-THIS FRAME X) (SEQ-THIS (COLLAPSE-THIS FRAME X)))
+;; (valid-seqp (collapse-this frame x) (seq-this (collapse-this frame x)))
 ;; which is one of the subgoals.
 
 ;; (verify

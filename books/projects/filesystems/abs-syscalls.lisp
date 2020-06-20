@@ -1018,11 +1018,11 @@
       ((fs (mbe :exec fs :logic (abs-fs-fix fs)))
        (new-index
         (mbe :exec new-index :logic (nfix new-index)))
-       (pathname
-        (mbe :exec pathname :logic (fat32-filename-list-fix pathname)))
        ((when (atom pathname))
         (mv fs (list new-index)))
-       (alist-elem (abs-assoc (car pathname) fs))
+       (alist-elem (abs-assoc
+                    (mbe :exec (car pathname) :logic (fat32-filename-fix (car pathname)))
+                    fs))
        ((when (or (atom alist-elem)
                   (not (abs-directory-file-p (cdr alist-elem)))))
         (mv nil fs))
@@ -1033,7 +1033,7 @@
          new-index)))
     (mv x
         (abs-put-assoc
-         (car pathname)
+         (mbe :exec (car pathname) :logic (fat32-filename-fix (car pathname)))
          (change-abs-file
           (cdr alist-elem)
           :contents
@@ -1119,18 +1119,15 @@
      (frame-val->path (cdr (assoc-equal (abs-find-file-src frame pathname)
                                         frame)))
      (fat32-filename-list-fix pathname))
-    (not
-     (equal
-      (mv-nth
-       1
-       (abs-find-file-helper
-        (frame-val->dir (cdr (assoc-equal (abs-find-file-src frame pathname)
-                                          frame)))
-        (nthcdr (len (frame-val->path
-                      (cdr (assoc-equal (abs-find-file-src frame pathname)
-                                        frame))))
-                pathname)))
-      *enoent*))))
+    (equal
+     (abs-find-file-helper
+      (frame-val->dir (cdr (assoc-equal (abs-find-file-src frame pathname)
+                                        frame)))
+      (nthcdr (len (frame-val->path
+                    (cdr (assoc-equal (abs-find-file-src frame pathname)
+                                      frame))))
+              pathname))
+     (abs-find-file frame pathname))))
   :hints (("goal" :in-theory (enable abs-find-file abs-find-file-src)))
   :rule-classes
   ((:rewrite
@@ -1145,19 +1142,16 @@
        (frame-val->path (cdr (assoc-equal (abs-find-file-src frame pathname)
                                           frame)))
        (fat32-filename-list-fix pathname))
-      (not
-       (equal
-        (mv-nth
-         1
-         (abs-find-file-helper
-          (frame-val->dir (cdr (assoc-equal (abs-find-file-src frame pathname)
-                                            frame)))
-          (nthcdr
-           (len (frame-val->path
-                 (cdr (assoc-equal (abs-find-file-src frame pathname)
-                                   frame))))
-           pathname)))
-        *enoent*)))))))
+      (equal
+       (abs-find-file-helper
+        (frame-val->dir (cdr (assoc-equal (abs-find-file-src frame pathname)
+                                          frame)))
+        (nthcdr
+         (len (frame-val->path
+               (cdr (assoc-equal (abs-find-file-src frame pathname)
+                                 frame))))
+         pathname))
+       (abs-find-file frame pathname)))))))
 
 (encapsulate ()
 
@@ -1361,10 +1355,11 @@
                                                         (dir-ent-fix nil) t))
                                var))
        (frame
-        (cons (cons new-index
-                    (frame-val dirname
-                               new-var src))
-              (frame-with-root (frame->root frame) (frame->frame frame)))))
+        (frame-with-root (frame->root frame)
+                         (cons (cons new-index
+                                     (frame-val dirname
+                                                new-var src))
+                               (frame->frame frame)))))
     (mv frame 0 0)))
 
 ;; An example demonstrating that both ways of doing mkdir work out the same:
@@ -1825,43 +1820,42 @@
   (implies
    (and
     (abs-directory-file-p
-     (cdr (assoc-equal (car (fat32-filename-list-fix pathname))
-                       fs)))
+     (cdr (assoc-equal (fat32-filename-fix (car pathname))
+                       (abs-fs-fix fs))))
     (intersectp-equal
      y
-     (abs-addrs
-      (abs-file->contents
-       (cdr (assoc-equal (car (fat32-filename-list-fix pathname))
-                         fs))))))
-   (intersectp-equal y (abs-addrs fs)))
+     (abs-addrs (abs-file->contents
+                 (cdr (assoc-equal (fat32-filename-fix (car pathname))
+                                   (abs-fs-fix fs)))))))
+   (intersectp-equal y (abs-addrs (abs-fs-fix fs))))
   :instructions
   (:promote
    (:rewrite intersectp-is-commutative)
    (:rewrite
     intersect-with-subset
-    ((x (abs-addrs
-         (abs-file->contents
-          (cdr (assoc-equal (car (fat32-filename-list-fix pathname))
-                            fs)))))))
+    ((x (abs-addrs (abs-file->contents
+                    (cdr (assoc-equal (fat32-filename-fix (car pathname))
+                                      (abs-fs-fix fs))))))))
    :bash :bash))
 
 (defthm
   abs-mkdir-correctness-lemma-20
   (implies
-   (intersectp-equal
-    y
-    (abs-addrs (remove-assoc-equal (car (fat32-filename-list-fix pathname))
-                                   fs)))
-   (intersectp-equal y (abs-addrs fs)))
-  :instructions
-  (:promote
-   (:rewrite intersectp-is-commutative)
-   (:rewrite
-    intersect-with-subset
-    ((x
-      (abs-addrs (remove-assoc-equal (car (fat32-filename-list-fix pathname))
-                                     fs)))))
-   :bash :bash))
+   (not (intersectp-equal y (abs-addrs (abs-fs-fix fs))))
+   (not
+    (intersectp-equal
+     y
+     (abs-addrs (remove-assoc-equal (fat32-filename-fix (car pathname))
+                                    (abs-fs-fix fs))))))
+  :hints
+  (("goal"
+    :use
+    (:instance
+     (:rewrite intersect-with-subset)
+     (z y)
+     (y (abs-addrs (abs-fs-fix fs)))
+     (x (abs-addrs (remove-assoc-equal (fat32-filename-fix (car pathname))
+                                       (abs-fs-fix fs))))))))
 
 (defthm
   abs-mkdir-correctness-lemma-21
@@ -3093,7 +3087,32 @@
                   (fat32-filename-list-fix pathname)))
   :hints (("goal" :in-theory (enable hifat-dirname hifat-basename
                                      hifat-basename-dirname-helper
-                                     fat32-filename-list-fix))))
+                                     fat32-filename-list-fix)))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (iff (fat32-filename-list-equiv (hifat-dirname pathname)
+                                    pathname)
+         (atom pathname))
+    :instructions
+    ((:bash ("goal" :in-theory (enable hifat-dirname hifat-basename
+                                       hifat-basename-dirname-helper
+                                       fat32-filename-list-fix
+                                       fat32-filename-list-equiv)))
+     (:claim
+      (equal
+       (len (append (fat32-filename-list-fix pathname)
+                    (list (mv-nth 0
+                                  (hifat-basename-dirname-helper pathname)))))
+       (len pathname))
+      :hints :none)
+     (:change-goal nil t)
+     (:dive 1 1)
+     := :up
+     (:rewrite len-of-fat32-filename-list-fix)
+     :top
+     :s :bash))))
 
 (defthm
   abs-mkdir-correctness-lemma-51
@@ -4435,21 +4454,17 @@
            (equal (fat32-filename-list-fix x) nil))
   :rule-classes :type-prescription)
 
-(defthmd abs-find-file-after-abs-mkdir-lemma-2
-  (iff (equal x (fat32-filename-list-fix y))
-       (and (fat32-filename-list-equiv x y)
-            (fat32-filename-list-p x))))
-
 (defthm prefixp-of-hifat-dirname
   (prefixp (hifat-dirname path)
            (fat32-filename-list-fix path))
   :hints (("goal" :in-theory (enable hifat-dirname
-                                     hifat-basename-dirname-helper))))
-
-(defthmd abs-find-file-after-abs-mkdir-lemma-3
-  (iff (equal (fat32-filename-fix x) y)
-       (and (fat32-filename-equiv x y)
-            (fat32-filename-p y))))
+                                     hifat-basename-dirname-helper)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (fat32-filename-list-prefixp (hifat-dirname path) path)
+    :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp-alt))))
+   :rewrite))
 
 (defthmd
   abs-find-file-after-abs-mkdir-lemma-4
@@ -4474,39 +4489,495 @@
     :do-not-induct t)))
 
 (defthm
-  abs-find-file-after-abs-mkdir-1
-  (b*
-      (((mv frame & mkdir-error-code)
-        (abs-mkdir frame pathname)))
-    (implies
-     (equal mkdir-error-code 0)
-     (b*
-         (((mv file error-code)
-           (abs-find-file frame pathname)))
-       (and
-        (equal error-code 0)
-        (m1-file-equiv
-         file
-         (make-m1-file :dir-ent (dir-ent-install-directory-bit (dir-ent-fix nil)
-                                                               t)))))))
+  abs-find-file-after-abs-mkdir-lemma-2
+  (implies (equal (list (hifat-basename pathname))
+                  (fat32-filename-list-fix pathname))
+           (consp pathname))
+  :hints
+  (("goal" :in-theory (e/d (abs-mkdir abs-find-file abs-find-file-helper
+                                      abs-find-file-after-abs-mkdir-lemma-1
+                                      abs-find-file-after-abs-mkdir-lemma-4
+                                      len-when-consp
+                                      fat32-filename-list-fix abs-disassoc)
+                           (abs-mkdir-correctness-lemma-50
+                            (:definition nth)
+                            (:definition true-listp)
+                            (:definition member-equal)
+                            (:definition string-listp)
+                            (:rewrite true-listp-when-string-list)
+                            (:rewrite fat32-filename-p-correctness-1)))
+    :do-not-induct t))
+  :rule-classes :forward-chaining)
+
+(defthm abs-find-file-after-abs-mkdir-lemma-3
+  (implies (and (consp x)
+                (fat32-filename-list-prefixp x y)
+                (not (equal (mv-nth 1 (abs-find-file-helper fs y))
+                            *enoent*)))
+           (not (equal (mv-nth 1 (abs-find-file-helper fs x))
+                       *enoent*)))
+  :hints (("goal" :in-theory (enable abs-find-file-helper))))
+
+;; Move later
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  1
   :hints
   (("goal"
-    :in-theory
-    (e/d
-     (abs-mkdir abs-find-file abs-find-file-helper
-                abs-find-file-after-abs-mkdir-lemma-1
-                abs-find-file-after-abs-mkdir-lemma-2
-                abs-find-file-after-abs-mkdir-lemma-3
-                abs-find-file-after-abs-mkdir-lemma-4
-                len-when-consp fat32-filename-list-fix)
-     (abs-mkdir-correctness-lemma-50 (:definition nth)
-                                     (:definition true-listp)
-                                     (:definition member-equal)
-                                     (:definition string-listp)
-                                     (:rewrite true-listp-when-string-list)
-                                     (:rewrite fat32-filename-p-correctness-1)))
-    :use abs-mkdir-correctness-lemma-50
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  2
+  :hints
+  (("goal"
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+;; Move and rename later.
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-5
+  (implies (and (dist-names (frame->root frame)
+                            nil (frame->frame frame))
+                (abs-separate (frame->frame frame))
+                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                (frame-p (frame->frame frame)))
+           (dist-names (frame->root (partial-collapse frame pathname))
+                       nil
+                       (frame->frame (partial-collapse frame pathname))))
+  :hints (("goal" :in-theory (enable partial-collapse))))
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-6
+  (implies (and (abs-separate (frame->frame frame))
+                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                (frame-p (frame->frame frame)))
+           (abs-separate (frame->frame (partial-collapse frame pathname))))
+  :hints (("goal" :in-theory (enable partial-collapse))))
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-7
+  (implies
+   (and
+    (prefixp
+     (frame-val->path
+      (cdr
+       (assoc-equal
+        (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                           (hifat-dirname pathname))
+        frame)))
+     (hifat-dirname pathname))
+    (equal
+     (abs-find-file
+      (frame->frame (partial-collapse frame (hifat-dirname pathname)))
+      (hifat-dirname pathname))
+     '(((dir-ent 0 0 0 0 0 0 0 0 0 0 0 0
+                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+        (contents))
+       2))
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+           0)
+    (not
+     (equal
+      0
+      (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                         (hifat-dirname pathname)))))
+   (equal
+    (abs-find-file-helper
+     (frame-val->dir
+      (cdr
+       (assoc-equal
+        (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                           (hifat-dirname pathname))
+        (partial-collapse frame (hifat-dirname pathname)))))
+     (nthcdr
+      (len
+       (frame-val->path
+        (cdr
+         (assoc-equal
+          (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                             (hifat-dirname pathname))
+          frame))))
+      (hifat-dirname pathname)))
+    (mv (abs-file-fix nil) *enoent*)))
+  :hints
+  (("goal"
+    :in-theory (e/d (frame->frame)
+                    (abs-find-file-correctness-lemma-14))
+    :use
+    ((:instance
+      (:rewrite abs-find-file-helper-of-ctx-app-lemma-4)
+      (pathname
+       (nthcdr
+        (len
+         (frame-val->path
+          (cdr
+           (assoc-equal (abs-find-file-src
+                         (partial-collapse frame (hifat-dirname pathname))
+                         (hifat-dirname pathname))
+                        frame))))
+        (hifat-dirname pathname)))
+      (fs
+       (frame-val->dir
+        (cdr
+         (assoc-equal
+          (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                             (hifat-dirname pathname))
+          (partial-collapse frame (hifat-dirname pathname)))))))
+     (:instance
+      abs-find-file-correctness-lemma-14
+      (x (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                            (hifat-dirname pathname)))
+      (frame (frame->frame (partial-collapse frame (hifat-dirname pathname))))
+      (pathname (hifat-dirname pathname)))))))
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-8
+  (implies
+   (and
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (consp (assoc-equal 0
+                        (partial-collapse frame (hifat-dirname pathname))))
+    (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+           0)
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (no-duplicatesp-equal (abs-addrs (frame->root frame)))
+    (mv-nth '1 (collapse frame))
+    (not
+     (equal
+      0
+      (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                         (hifat-dirname pathname))))
+    (dist-names (frame->root frame)
+                nil (frame->frame frame))
+    (abs-separate (frame->frame frame)))
+   (equal (abs-find-file-helper
+           (frame->root (partial-collapse frame (hifat-dirname pathname)))
+           pathname)
+          (mv (abs-file-fix nil) *enoent*)))
+  :hints
+  (("goal"
+    :in-theory (e/d (abs-mkdir abs-find-file abs-find-file-helper
+                               abs-find-file-after-abs-mkdir-lemma-1
+                               abs-find-file-after-abs-mkdir-lemma-4
+                               len-when-consp fat32-filename-list-fix
+                               abs-disassoc abs-fs-fix)
+                    (abs-find-file-after-abs-mkdir-lemma-3
+                     abs-find-file-src-correctness-2
+                     abs-find-file-correctness-lemma-6
+                     (:definition nth)
+                     (:definition true-listp)
+                     (:definition member-equal)
+                     (:definition string-listp)
+                     (:rewrite true-listp-when-string-list)
+                     (:rewrite fat32-filename-p-correctness-1)))
+    :use
+    ((:instance
+      abs-find-file-after-abs-mkdir-lemma-3
+      (fs (frame->root (partial-collapse frame (hifat-dirname pathname))))
+      (x (hifat-dirname pathname))
+      (y (fat32-filename-list-fix pathname)))
+     (:instance abs-find-file-src-correctness-2
+                (frame (partial-collapse frame (hifat-dirname pathname)))
+                (pathname (hifat-dirname pathname)))
+     (:instance abs-find-file-correctness-lemma-6
+                (frame (partial-collapse frame (hifat-dirname pathname)))
+                (pathname (hifat-dirname pathname)))
+     (:instance
+      (:rewrite abs-find-file-helper-of-ctx-app-lemma-4)
+      (pathname pathname)
+      (fs (frame->root (partial-collapse frame (hifat-dirname pathname))))))
     :do-not-induct t)))
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-9
+  (implies
+   (and (fat32-filename-list-prefixp x y)
+        (not (fat32-filename-list-equiv x y))
+        (not (equal (mv-nth 1 (abs-disassoc fs x new-index))
+                    (abs-fs-fix fs))))
+   (equal (abs-find-file-helper (mv-nth 1 (abs-disassoc fs x new-index))
+                                y)
+          (mv (abs-file-fix nil) *enoent*)))
+  :hints (("goal" :in-theory (enable abs-find-file-helper
+                                     abs-disassoc fat32-filename-list-fix
+                                     fat32-filename-list-equiv
+                                     fat32-filename-list-prefixp abs-fs-fix)
+           :induct (mv (abs-disassoc fs x new-index)
+                       (fat32-filename-list-prefixp x y)))))
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-11
+  (implies
+   (and
+    (equal
+     (mv-nth 1
+             (abs-find-file (partial-collapse frame (hifat-dirname pathname))
+                            (hifat-dirname pathname)))
+     0)
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+           0)
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (abs-directory-file-p
+     (mv-nth 0
+             (abs-find-file (partial-collapse frame (hifat-dirname pathname))
+                            (hifat-dirname pathname))))
+    (equal
+     0
+     (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                        (hifat-dirname pathname)))
+    (not
+     (member-equal
+      (find-new-index
+       (strip-cars (partial-collapse frame (hifat-dirname pathname))))
+      (abs-addrs
+       (frame-val->dir
+        (cdr
+         (assoc-equal 0
+                      (partial-collapse frame (hifat-dirname pathname)))))))))
+   (not
+    (equal
+     (mv-nth
+      1
+      (abs-disassoc
+       (frame-val->dir
+        (cdr (assoc-equal 0
+                          (partial-collapse frame (hifat-dirname pathname)))))
+       (hifat-dirname pathname)
+       (find-new-index
+        (strip-cars (partial-collapse frame (hifat-dirname pathname))))))
+     (frame-val->dir
+      (cdr
+       (assoc-equal 0
+                    (partial-collapse frame (hifat-dirname pathname))))))))
+  :hints
+  (("goal"
+    :in-theory (disable (:rewrite abs-find-file-src-correctness-2)
+                        (:rewrite abs-mkdir-correctness-lemma-47))
+    :use
+    ((:instance
+      (:rewrite abs-mkdir-correctness-lemma-47)
+      (new-index
+       (find-new-index
+        (strip-cars (partial-collapse frame (hifat-dirname pathname)))))
+      (pathname (hifat-dirname pathname))
+      (fs
+       (frame-val->dir
+        (cdr
+         (assoc-equal 0
+                      (partial-collapse frame (hifat-dirname pathname)))))))
+     (:instance (:rewrite abs-find-file-src-correctness-2)
+                (pathname (hifat-dirname pathname))
+                (frame (partial-collapse frame (hifat-dirname pathname))))))))
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-10
+  (implies
+   (and
+    (equal
+     (mv-nth 1
+             (abs-find-file (partial-collapse frame (hifat-dirname pathname))
+                            (hifat-dirname pathname)))
+     0)
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+           0)
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (abs-directory-file-p
+     (mv-nth 0
+             (abs-find-file (partial-collapse frame (hifat-dirname pathname))
+                            (hifat-dirname pathname))))
+    (equal
+     0
+     (abs-find-file-src (partial-collapse frame (hifat-dirname pathname))
+                        (hifat-dirname pathname)))
+    (not
+     (member-equal
+      (find-new-index
+       (strip-cars (partial-collapse frame (hifat-dirname pathname))))
+      (abs-addrs
+       (frame-val->dir
+        (cdr
+         (assoc-equal 0
+                      (partial-collapse frame (hifat-dirname pathname)))))))))
+   (equal
+    (abs-find-file-helper
+     (mv-nth
+      1
+      (abs-disassoc
+       (frame-val->dir
+        (cdr
+         (assoc-equal 0
+                      (partial-collapse frame (hifat-dirname pathname)))))
+       (hifat-dirname pathname)
+       (find-new-index
+        (strip-cars (partial-collapse frame (hifat-dirname pathname))))))
+     pathname)
+    (mv (abs-file-fix nil) *enoent*)))
+  :hints
+  (("goal"
+    :in-theory (disable (:rewrite abs-find-file-after-abs-mkdir-lemma-9))
+    :use
+    ((:instance
+      (:rewrite abs-find-file-after-abs-mkdir-lemma-9)
+      (y pathname)
+      (new-index
+       (find-new-index
+        (strip-cars (partial-collapse frame (hifat-dirname pathname)))))
+      (x (hifat-dirname pathname))
+      (fs
+       (frame-val->dir
+        (cdr
+         (assoc-equal 0
+                      (partial-collapse frame (hifat-dirname pathname)))))))
+     (:instance
+      (:rewrite abs-find-file-helper-of-ctx-app-lemma-4)
+      (pathname pathname)
+      (fs
+       (mv-nth
+        1
+        (abs-disassoc
+         (frame-val->dir
+          (cdr
+           (assoc-equal
+            0
+            (partial-collapse frame (hifat-dirname pathname)))))
+         (hifat-dirname pathname)
+         (find-new-index
+          (strip-cars
+           (partial-collapse frame (hifat-dirname pathname))))))))))))
+
+(defthm abs-find-file-after-abs-mkdir-lemma-12
+  (subsetp-equal (frame-addrs-root frame)
+                 (strip-cars frame))
+  :hints (("goal" :in-theory (enable frame-addrs-root))))
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-13
+  (implies
+   (and
+    (mv-nth 1 (collapse frame))
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (consp (assoc-equal 0
+                        (partial-collapse frame (hifat-dirname pathname))))
+    (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+           0)
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (abs-separate frame)
+    (abs-directory-file-p
+     (mv-nth 0
+             (abs-find-file (partial-collapse frame (hifat-dirname pathname))
+                            (hifat-dirname pathname))))
+    (subsetp-equal (abs-addrs (frame->root frame))
+                   (frame-addrs-root (frame->frame frame))))
+   (not
+    (member-equal
+     (find-new-index
+      (strip-cars (partial-collapse frame (hifat-dirname pathname))))
+     (abs-addrs
+      (frame-val->dir$inline
+       (cdr
+        (assoc-equal '0
+                     (partial-collapse frame (hifat-dirname pathname)))))))))
+  :instructions
+  (:promote
+   (:dive 1)
+   (:rewrite
+    (:rewrite subsetp-member . 4)
+    ((y (strip-cars (partial-collapse frame (hifat-dirname pathname))))))
+   (:change-goal nil t)
+   :bash
+   (:=
+    (frame-val->dir
+     (cdr (assoc-equal 0
+                       (partial-collapse frame (hifat-dirname pathname)))))
+    (frame->root (partial-collapse frame (hifat-dirname pathname)))
+    :hints (("goal" :in-theory (enable frame->root))))
+   (:rewrite
+    subsetp-trans2
+    ((y
+      (frame-addrs-root
+       (frame->frame (partial-collapse frame (hifat-dirname pathname)))))))
+   (:change-goal nil t)
+   :bash
+   :bash
+   (:rewrite
+    subsetp-trans
+    ((y
+      (strip-cars
+       (frame->frame (partial-collapse frame (hifat-dirname pathname)))))))
+   :bash (:bash ("goal" :in-theory (enable frame->frame)))))
+
+(defthm
+  abs-find-file-after-abs-mkdir-1
+  (implies
+   (and
+    (mv-nth '1 (collapse frame))
+    (equal (frame-val->path (cdr (assoc-equal 0 frame)))
+           nil)
+    (consp (assoc-equal 0
+                        (partial-collapse frame (hifat-dirname pathname))))
+    (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+           0)
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (abs-separate frame)
+    (subsetp-equal (abs-addrs (frame->root frame))
+                   (frame-addrs-root (frame->frame frame))))
+   (b*
+       (((mv frame & mkdir-error-code)
+         (abs-mkdir frame pathname)))
+     (implies
+      (equal mkdir-error-code 0)
+      (b*
+          (((mv file error-code)
+            (abs-find-file frame pathname)))
+        (and (equal error-code 0)
+             (m1-file-equiv
+              file
+              (make-m1-file
+               :dir-ent (dir-ent-install-directory-bit (dir-ent-fix nil)
+                                                       t))))))))
+  :hints
+  (("goal" :in-theory (e/d (abs-mkdir abs-find-file abs-find-file-helper
+                                      abs-find-file-after-abs-mkdir-lemma-1
+                                      abs-find-file-after-abs-mkdir-lemma-4
+                                      len-when-consp fat32-filename-list-fix
+                                      abs-disassoc abs-fs-fix)
+                           (abs-mkdir-correctness-lemma-50
+                            (:definition nth)
+                            (:definition true-listp)
+                            (:definition member-equal)
+                            (:definition string-listp)
+                            (:rewrite true-listp-when-string-list)
+                            (:rewrite fat32-filename-p-correctness-1)
+                            (:rewrite abs-find-file-correctness-lemma-2)
+                            (:rewrite
+                             abs-find-file-helper-when-m1-file-alist-p)
+                            (:rewrite abs-disassoc-correctness-1)
+                            (:rewrite abs-fs-p-when-hifat-no-dups-p)
+                            (:rewrite abs-find-file-correctness-lemma-31)
+                            (:rewrite abs-file-alist-p-correctness-1)
+                            (:rewrite consp-of-nthcdr)
+                            (:rewrite
+                             abs-find-file-correctness-1-lemma-18)
+                            (:rewrite abs-find-file-correctness-1-lemma-3)
+                            (:rewrite
+                             abs-find-file-helper-of-collapse-lemma-1)
+                            (:linear count-free-clusters-correctness-1)
+                            (:definition no-duplicatesp-equal)
+                            (:rewrite abs-fs-p-correctness-1)
+                            (:definition len)))
+    :use abs-mkdir-correctness-lemma-50
+    :do-not-induct t))
+  :otf-flg t)
 
 ;; (defthm abs-find-file-after-abs-mkdir-2
 ;;  (b*
@@ -4525,7 +4996,7 @@
 ;;         file
 ;;         (make-m1-file :dir-ent (dir-ent-install-directory-bit (dir-ent-fix nil)
 ;;                                                               t)))))))
-;;  :hints (("goal" :in-theory (enable abs-mkdir)
+;;  :hints (("goal" :in-theory (enable abs-mkdir partial-collapse)
 ;;           :do-not-induct t)))
 
 ;; (thm

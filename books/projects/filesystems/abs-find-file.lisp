@@ -251,14 +251,15 @@
 (defthm
   abs-find-file-helper-of-ctx-app
   (implies
-   (and (ctx-app-ok abs-file-alist1 x x-path)
-        (abs-fs-p (ctx-app abs-file-alist1
-                           abs-file-alist2 x x-path)))
+   (abs-fs-p (ctx-app abs-file-alist1
+                      abs-file-alist2 x x-path))
    (equal
     (abs-find-file-helper (ctx-app abs-file-alist1
                                    abs-file-alist2 x x-path)
                           pathname)
     (cond
+     ((not (ctx-app-ok abs-file-alist1 x x-path))
+      (abs-find-file-helper abs-file-alist1 pathname))
      ((and (equal (mv-nth 1
                           (abs-find-file-helper abs-file-alist1 pathname))
                   0)
