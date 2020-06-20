@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file documents the propagate_iso, a transformation to propagate an isomorphism from 
+; This file documents the propagate_iso, a transformation to propagate an isomorphism from
 ; supplied isomorphic translations of interface functions of a data type to their direct
 ; and indirect users.
 
@@ -24,7 +24,7 @@
   :parents (transformations)
   :short "Propagate an isomorphism from a set of isomorphically transformed functions to events that use them."
 
-  :long 
+  :long
 
   (xdoc::topstring
 
@@ -36,8 +36,8 @@
      "@('propagate-iso') takes one or more isomorphisms and a set of functions and a sequence of events
       and propagates the isomorphisms from the given set of functions to those events that reference any of
       these functions either directly or directly. It maintains a substitution from old functions to their new isomorphic
-      functions. For function definitions it creates a new function by applying the substitution to the old body and 
-      extends the substitution to map the old function name to the newly created function name. Similarly, it applies 
+      functions. For function definitions it creates a new function by applying the substitution to the old body and
+      extends the substitution to map the old function name to the newly created function name. Similarly, it applies
       the substitution to existing theorems to generate theorems on the new functions.  Currently does not handle
       mutual recursion.")
 
@@ -76,7 +76,7 @@
       theorem for rewriting @('iso-fn') to @('fn').  @('arg-sig') gives the signature of
       the argument list of @('fn') with respect to the isomorphism, i.e. if an argument of
       @('fn') is of one of the isomorphism types (predicate) then the corresponding element
-      of the  signature is that predicate, otherwise it is @('*').  Similarly, if @('fn') 
+      of the signature is that predicate, otherwise it is @('*').  Similarly, if @('fn')
       returns a single value then it is @('*') or the name of an isomorphism predicate, or if
       it returns multiple values then it is a list of such values."))
 
