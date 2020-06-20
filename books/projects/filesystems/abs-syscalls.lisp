@@ -1827,16 +1827,7 @@
      (abs-addrs (abs-file->contents
                  (cdr (assoc-equal (fat32-filename-fix (car pathname))
                                    (abs-fs-fix fs)))))))
-   (intersectp-equal y (abs-addrs (abs-fs-fix fs))))
-  :instructions
-  (:promote
-   (:rewrite intersectp-is-commutative)
-   (:rewrite
-    intersect-with-subset
-    ((x (abs-addrs (abs-file->contents
-                    (cdr (assoc-equal (fat32-filename-fix (car pathname))
-                                      (abs-fs-fix fs))))))))
-   :bash :bash))
+   (intersectp-equal y (abs-addrs (abs-fs-fix fs)))))
 
 (defthm
   abs-mkdir-correctness-lemma-20
@@ -1846,16 +1837,7 @@
     (intersectp-equal
      y
      (abs-addrs (remove-assoc-equal (fat32-filename-fix (car pathname))
-                                    (abs-fs-fix fs))))))
-  :hints
-  (("goal"
-    :use
-    (:instance
-     (:rewrite intersect-with-subset)
-     (z y)
-     (y (abs-addrs (abs-fs-fix fs)))
-     (x (abs-addrs (remove-assoc-equal (fat32-filename-fix (car pathname))
-                                       (abs-fs-fix fs))))))))
+                                    (abs-fs-fix fs)))))))
 
 (defthm
   abs-mkdir-correctness-lemma-21

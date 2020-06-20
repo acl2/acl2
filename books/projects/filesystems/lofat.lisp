@@ -1842,7 +1842,7 @@ Some (rather awful) testing forms are
   :hints
   (("goal"
     :in-theory (e/d (update-dir-contents intersectp-equal clear-clusterchain)
-                    (intersectp-is-commutative))
+                    (intersectp-is-commutative intersect-with-subset))
     :expand
     ((fat32-build-index-list (effective-fat fat32-in-memory)
                              first-cluster *ms-max-dir-size*
