@@ -349,10 +349,10 @@
    "We generate a private static method
     for each deeply embedded ACL2 function definition to build.
     This function generates the name of this method,
-    which should be distinct from all the other methods
+    which is distinct from all the other methods
     generated for the same class.")
   (str::cat
-   "$addFunctionDef_"
+   "addFunctionDef_"
    (implode (atj-chars-to-jchars-id (explode
                                      (symbol-package-name fn)) nil :dash nil))
    "$$$"

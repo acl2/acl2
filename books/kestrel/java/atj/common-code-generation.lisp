@@ -749,9 +749,9 @@
    "We generate a private static method
     for each ACL2 package definition to build.
     This function generates the name of this method,
-    which should be distinct from all the other methods
+    which is distinct from all the other methods
     generated for the same class.")
-  (str::cat "$addPackageDef_"
+  (str::cat "addPackageDef_"
             (implode (atj-chars-to-jchars-id (explode pkg) nil :dash nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
