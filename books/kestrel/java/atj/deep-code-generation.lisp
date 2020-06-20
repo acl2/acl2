@@ -12,6 +12,7 @@
 
 (include-book "common-code-generation")
 (include-book "pre-translation")
+(include-book "java-syntax-operations")
 
 (include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
 
@@ -542,10 +543,12 @@
   (b* (((run-when verbose$)
         (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
+       (pkg-methods (mergesort-jmethods pkg-methods))
        ((run-when verbose$)
         (cw "~%Generate the Java methods to build the ACL2 functions:~%"))
        (fn-methods (atj-gen-deep-fndef-methods
                     fns-to-translate guards$ verbose$ wrld))
+       (fn-methods (mergesort-jmethods fn-methods))
        ((run-when verbose$)
         (cw "~%Generate the Java class to build the ACL2 environment.~%"))
        (static-init (atj-gen-deep-env-static-initializer pkgs fns-to-translate))
