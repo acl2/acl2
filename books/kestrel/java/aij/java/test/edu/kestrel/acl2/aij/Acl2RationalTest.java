@@ -146,4 +146,13 @@ class Acl2RationalTest {
                         Acl2Integer.make(54));
     }
 
+    @Test
+    void compareToIntegers() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Rational.make(1, 2).compareTo(Acl2Integer.ONE) < 0);
+        assertTrue(Acl2Rational.make(-5, 4).
+                compareTo(Acl2Integer.make(-10)) > 0);
+        assertTrue(Acl2Rational.make(45, -9).
+                compareTo(Acl2Integer.make(-5)) == 0);
+    }
+
 }
