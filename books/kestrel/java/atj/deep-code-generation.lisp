@@ -571,8 +571,7 @@
                                 (verbose$ booleanp)
                                 (wrld plist-worldp))
   :returns (cunit jcunitp)
-  :short "Generate the Java compilation unit
-          with the class to build the ACL2 environment,
+  :short "Generate the Java compilation unit with the environment Java class,
           in the deep embedding approach."
   (b* ((class (atj-gen-deep-env-class
                pkgs fns-to-translate guards$ java-class$ verbose$ wrld))

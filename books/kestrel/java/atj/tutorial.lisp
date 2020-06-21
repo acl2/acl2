@@ -2635,8 +2635,8 @@
     to build the ACL2 environment; see @(see atj-tutorial-deep) for details.")
 
   (xdoc::p
-   "At the end of the @('Acl2Code') class
-    there is the same empty @('initialize()') method
+   "The static analyzer in the @('Acl2Code') class
+    is followed by the same empty @('initialize()') method
     as in the deep embedding; see @(see atj-tutorial-deep) for details.
     However, unlike the deep embedding approach,
     there is no @('call(Acl2Symbol, Acl2Value[])') method,
@@ -2645,32 +2645,8 @@
     are called directly as methods.")
 
   (xdoc::p
-   "After the static initializer in the @('Acl2Code') class,
-    there are six methods
-    to convert from @('Acl2Value')s to Java primitive arrays,
-    and six methods
-    to convert from Java primitive arrays to @('Acl2Value')s:
-    there are two conversion methods for each of Java's primitive types
-    except @('float') and @('double').
-    The purpose of these array methods is explained elsewhere;
-    they can be ignored for now.")
-
-  (xdoc::p
-   "The twelve array conversion methods just described
-    are followed by three constants (i.e. final static fields)
-    for the ACL2 integers 0, 1, and -1.
-    These are all the quoted constants that occur in the unnormalized bodies
-    of @('fact') and of the non-primitive functions
-    directly or indirectly called by @('fact'),
-    namely @(tsee zp) and @(tsee not);
-    these are discussed also in @(see atj-tutorial-deep).
-    The quoted constants @('1') and @('-1') occur in @('fact'),
-    and the quoted constant @('0') occurs in @(tsee zp);
-    no quoted constant appears in @(tsee not).")
-
-  (xdoc::p
-   "The rest of the @('Acl2Code') class (up to the @('initialize()') method)
-    consists of a number of nested static classes,
+   "After the @('initialize()') method,
+    there are a number of nested static classes,
     each of which corresponds to an ACL2 package.
     These are a strict subset of the packages
     whose Java representation is built in the static initializer;
@@ -2752,6 +2728,30 @@
     in the generated Java code the method calls
     @('ACL2.not(x)') and @('COMMON_LISP.not(x)') have the same effect
     (presumably a JIT could remove the run-time penalty of these synonyms).")
+
+  (xdoc::p
+   "After the nested classes,
+    there are three constants (i.e. final static fields)
+    for the ACL2 integers 0, 1, and -1.
+    These are all the quoted constants that occur in the unnormalized bodies
+    of @('fact') and of the non-primitive functions
+    directly or indirectly called by @('fact'),
+    namely @(tsee zp) and @(tsee not);
+    these are discussed also in @(see atj-tutorial-deep).
+    The quoted constants @('1') and @('-1') occur in @('fact'),
+    and the quoted constant @('0') occurs in @(tsee zp);
+    no quoted constant appears in @(tsee not).")
+
+  (xdoc::p
+   "After the three constants just described,
+    there are six methods
+    to convert from @('Acl2Value')s to Java primitive arrays,
+    and six methods
+    to convert from Java primitive arrays to @('Acl2Value')s:
+    there are two conversion methods for each of Java's primitive types
+    except @('float') and @('double').
+    The purpose of these array methods is explained elsewhere;
+    they can be ignored for now.")
 
   (atj-tutorial-section "Example of External Code")
 

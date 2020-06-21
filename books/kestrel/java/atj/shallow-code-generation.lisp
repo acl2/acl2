@@ -4420,7 +4420,7 @@
      the initialization method,
      the classes that contain methods for the ACL2 functions,
      the @(tsee mv) classes, and the fields for quoted constants, and
-     the methods to write primitive array components.")
+     the methods to convert between lists and primitive arrays.")
    (xdoc::p
     "It is critical that the static initializer
      comes textually before the fields for the quoted constants,
@@ -4515,12 +4515,12 @@
        (static-init (atj-gen-static-initializer java-class$))
        (init-method (atj-gen-init-method))
        (body-class (append (list (jcbody-element-init static-init))
-                           (jmethods-to-jcbody-elements jprimarr-methods)
+                           (list (jcbody-element-member
+                                  (jcmember-method init-method)))
+                           (jclasses-to-jcbody-elements pkg-classes)
                            (jfields-to-jcbody-elements all-qconst-fields)
                            (jclasses-to-jcbody-elements mv-classes)
-                           (jclasses-to-jcbody-elements pkg-classes)
-                           (list (jcbody-element-member
-                                  (jcmember-method init-method))))))
+                           (jmethods-to-jcbody-elements jprimarr-methods))))
     (mv (make-jclass :access (jaccess-public)
                      :abstract? nil
                      :static? nil

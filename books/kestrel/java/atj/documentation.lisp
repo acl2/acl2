@@ -609,11 +609,11 @@
     "// if :deep is nil:"
     "public class <name> {"
     "    ..."
+    "    public static void initialize() ..."
     "    public static class <pkg> {"
     "        public static <type> <fn>(<type> ...) ..."
     "    }"
     "    // other public static classes with public static methods"
-    "    public static void initialize() ..."
     "}")
 
    (xdoc::p
