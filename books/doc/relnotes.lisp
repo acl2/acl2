@@ -359,6 +359,15 @@
      whose test is a boolean literal.")
 
    (xdoc::p
+    "The Java code to build the ACL2 environment is now generated
+     in a separate Java class in a separate Java file.
+     This class's name is obtained by adding @('Environment')
+     after the main class's name.
+     This way, the main class is free of the extensive and boilerplate code
+     to build the ACL2 environment,
+     making it easier to find and see the ``interesting'' generated Java code.")
+
+   (xdoc::p
     "The Java abstract syntax used by the code generator is now more precise,
      in the sense that it captures more syntactic aspects of Java.")
 
