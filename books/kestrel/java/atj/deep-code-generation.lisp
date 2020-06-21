@@ -483,40 +483,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-deep-env-static-initializer ((pkgs string-listp)
-                                             (fns-to-translate symbol-listp))
-  :returns (initializer jcinitializerp)
-  :short "Generate the static initializer
-          of the Java class that builds the ACL2 environment,
+(define atj-gen-deep-build-method ((pkgs string-listp)
+                                   (fns-to-translate symbol-listp))
+  :returns (method jmethodp)
+  :short "Generate the method to build the ACL2 environment,
           in the deep embedding approach."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains code to initialize the ACL2 environment:
-     we build the Java representation of the ACL2 packages and functions."))
-  (make-jcinitializer :static? t
-                      :code (append (atj-gen-pkgs pkgs)
-                                    (atj-gen-deep-fndefs fns-to-translate)
-                                    (jblock-smethod *aij-type-named-fn*
-                                                    "validateAllFunctionCalls"
-                                                    nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-deep-main-static-initializer ((java-class$ stringp))
-  :returns (initializer jcinitializerp)
-  :short "Generate the static initializer of the main Java class,
-          in the deep embedding approach."
-  :long
-  (xdoc::topstring
+    "This is a package-private static method in the environment Java class.
+     This method is called by the static initializer of the main Java class.")
    (xdoc::p
-    "This just calls the initialization method
-     of the Java class that builds the ACL2 environment."))
-  (make-jcinitializer
-   :static? t
-   :code (jblock-smethod (jtype-class (str::cat java-class$ "Environment"))
-                         "initialize"
-                         nil)))
+    "This method builds
+     the Java representation of the ACL2 packages and functions."))
+  (b* ((body (append (atj-gen-pkgs pkgs)
+                     (atj-gen-deep-fndefs fns-to-translate)
+                     (jblock-smethod *aij-type-named-fn*
+                                     "validateAllFunctionCalls"
+                                     nil))))
+    (make-jmethod :access (jaccess-default)
+                  :abstract? nil
+                  :static? t
+                  :final? nil
+                  :synchronized? nil
+                  :native? nil
+                  :strictfp? nil
+                  :result (jresult-void)
+                  :name "build"
+                  :params nil
+                  :throws nil
+                  :body body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -527,19 +523,18 @@
                                 (verbose$ booleanp)
                                 (wrld plist-worldp))
   :returns (class jclassp)
-  :short "Generate the declaration of
-          the Java class that builds the ACL2 environment,
+  :short "Generate the declaration of the environment Java class,
           in the deep embedding approach."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a package-private class,
      whose purpose is to build the ACL2 environment.
-     It contains
-     the static initializer,
-     the methods to build the ACL2 packages,
-     the methods to build the ACL2 functions,
-     and the initialization method."))
+     It starts with the @('build()') method,
+     so it is the first thing that shows up when looking at the file.
+     Then there are the private methods
+     to build the ACL2 packages and functions,
+     called by the @('build()') method."))
   (b* (((run-when verbose$)
         (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
@@ -551,13 +546,11 @@
        (fn-methods (mergesort-jmethods fn-methods))
        ((run-when verbose$)
         (cw "~%Generate the Java class to build the ACL2 environment.~%"))
-       (static-init (atj-gen-deep-env-static-initializer pkgs fns-to-translate))
-       (init-method (atj-gen-init-method nil))
-       (body-class (append (list (jcbody-element-init static-init))
+       (build-method (atj-gen-deep-build-method pkgs fns-to-translate))
+       (body-class (append (list (jcbody-element-member
+                                  (jcmember-method build-method)))
                            (jmethods-to-jcbody-elements pkg-methods)
-                           (jmethods-to-jcbody-elements fn-methods)
-                           (list (jcbody-element-member
-                                  (jcmember-method init-method))))))
+                           (jmethods-to-jcbody-elements fn-methods))))
     (make-jclass :access (jaccess-default)
                  :abstract? nil
                  :static? nil
@@ -654,8 +647,8 @@
      and the method to call ACL2 code from external code."))
   (b* (((run-when verbose$)
         (cw "~%Generate the main Java class.~%"))
-       (static-init (atj-gen-deep-main-static-initializer java-class$))
-       (init-method (atj-gen-init-method t))
+       (static-init (atj-gen-static-initializer java-class$))
+       (init-method (atj-gen-init-method))
        (call-method (atj-gen-deep-call-method))
        (body-class (append (list (jcbody-element-init static-init))
                            (list (jcbody-element-member

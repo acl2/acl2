@@ -889,7 +889,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-init-method ((publicp booleanp))
+(define atj-gen-static-initializer ((java-class$ stringp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer of the main Java class."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This calls the @('build()') method of the environment Java class."))
+  (make-jcinitializer
+   :static? t
+   :code (jblock-smethod (jtype-class (str::cat java-class$ "Environment"))
+                         "build"
+                         nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-init-method ()
   :returns (method jmethodp)
   :short "Generate the Java public method to initialize the ACL2 environment."
   :long
@@ -897,16 +912,20 @@
    (xdoc::p
     "This method is actually empty,
      but its invocation ensures that the class initializer,
-     which actually initializes the environment,
+     which builds the ACL2 environment,
      has been executed.")
    (xdoc::p
-    "This method is part of two Java classes:
-     the main class, and the class to build the ACL2 environment.
-     The only difference is that the method is
-     public in the former, package-private in the latter."))
-  (make-jmethod :access (if publicp
-                            (jaccess-public)
-                          (jaccess-default))
+    "The reason for having an empty initialization method
+     and the environment-building code in the static initializer,
+     as opposed to having no static initializer
+     and the environment-building code in the initialization method,
+     is that, in the shallow embedding approach,
+     we need the ACL2 environment to be initialized
+     before we create certain final static fields that involve ACL2 symbols,
+     and that therefore need the ACL2 environment to be built.
+     This is unnecessary in the deep embedding approach,
+     but we use the same code structure for uniformity and simplicity."))
+  (make-jmethod :access (jaccess-public)
                 :abstract? nil
                 :static? t
                 :final? nil

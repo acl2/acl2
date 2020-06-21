@@ -931,13 +931,14 @@
 
   (xdoc::p
    "The @('Acl2Code') class starts with a static initializer that calls
-    the static @('initialize()') method
+    the static @('build()') method
     of the class @('Acl2CodeEnvironment'),
     which is in the file @('Acl2CodeEnvironment.java'),
-    as can be revealed by opening that file.")
+    as can be seen by opening that file.")
 
   (xdoc::p
-   "The @('Acl2CodeEnvironment') class starts with a static initializer
+   "The @('Acl2CodeEnvironment') class starts with
+    a package-private static method @('build()')
     that calls a number of methods to define ACL2 packages
     and a number of methods to define ACL2 functions.
     The packages are all the known ones in the ACL2 @(see world)
@@ -970,7 +971,7 @@
     where macros, and also named constants, are expanded already.")
 
   (xdoc::p
-   "The static initializer is followed by
+   "The @('build()') method is followed by
     the declarations of the (private) methods that it calls.
     The package definition methods
     build the packages' import lists (some quite long)
@@ -986,15 +987,6 @@
     The details of all these methods are unimportant here.")
 
   (xdoc::p
-   "At the end of the @('Acl2CodeEnvironment') class (and file)
-    there is the package-private method
-    called by the static initializer of the @('Acl2Code') class,
-    as mentioned above.
-    This method does nothing, but calling it ensures that
-    the @('Acl2CodeEnvironment') class is initialized,
-    and in particular that its static initializer (described above) is run.")
-
-  (xdoc::p
    "Back to the @('Acl2Code') class,
     after the static initializer,
     there are two public methods,
@@ -1004,6 +996,11 @@
     but its purpose is to ensure the initialization of the class,
     and therefore the execution of the static initializer,
     which defines all the ACL2 packages and functions of interest.
+    (In the embedding, the static initializer could be avoided,
+    putting the call of @('build()') directly in @('initialize()').
+    But in the shallow embedding, as explained in later tutorial pages,
+    the static initializer is needed,
+    and so the same is done in the deep embedding for uniformity.)
     The @('call(Acl2Symbol, Acl2Value[])') method
     evaluates an ACL2 function call,
     by invoking the relevant AIJ method (the details are unimportant here).")
@@ -2621,20 +2618,16 @@
     and a few classes from the Java standard library.")
 
   (xdoc::p
-   "The static initializer in the @('Acl2CodeEnvironment') class
-    calls a number of methods to define ACL2 packages
-    as in the deep embedding approach,
-    but it does not call any methods to define ACL2 functions.
-    The static initializer is followed by
+   "The @('Acl2CodeEnvironment') class
+    starts with a package-private @('build()') method
+    that calls a number of methods to define ACL2 packages,
+    as in the deep embedding approach;
+    but this method does not call any methods to define ACL2 functions.
+    This method is followed by
     the declarations of the (private) methods that it calls,
     as in the deep embedding approach:
     these methods that define the packages are identical
     in the shallow and deep embedding approaches.")
-
-  (xdoc::p
-   "At the end of the @('Acl2CodeEnvironment') class
-    there is the same empty @('initialize()') method
-    as in the deep embedding; see @(see atj-tutorial-deep) for details.")
 
   (xdoc::p
    "As in the deep embedding,

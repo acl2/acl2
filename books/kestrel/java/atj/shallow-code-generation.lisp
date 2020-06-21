@@ -4063,35 +4063,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-env-static-initializer ((pkgs string-listp))
-  :returns (initializer jcinitializerp)
-  :short "Generate the static initializer
-          of the Java class that builds the ACL2 environment,
+(define atj-gen-shallow-build-method ((pkgs string-listp))
+  :returns (method jmethodp)
+  :short "Generate the method to build the ACL2 environment,
           in the shallow embedding approach."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains code to initialize the ACL2 environment:
-     we build the Java representation of the ACL2 packages."))
-  (make-jcinitializer :static? t
-                      :code (atj-gen-pkgs pkgs)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atj-gen-shallow-main-static-initializer ((java-class$ stringp))
-  :returns (initializer jcinitializerp)
-  :short "Generate the static initializer of the main Java class,
-          in the shallow embedding approach."
-  :long
-  (xdoc::topstring
+    "This is a package-private static method in the environment Java class.
+     This method is called by the static initializer of the main Java class.")
    (xdoc::p
-    "This just calls the initialization method
-     of the Java class that builds the ACL2 environment."))
-  (make-jcinitializer
-   :static? t
-   :code (jblock-smethod (jtype-class (str::cat java-class$ "Environment"))
-                         "initialize"
-                         nil)))
+    "This method builds the Java representation of the ACL2 packages."))
+  (make-jmethod :access (jaccess-default)
+                :abstract? nil
+                :static? t
+                :final? nil
+                :synchronized? nil
+                :native? nil
+                :strictfp? nil
+                :result (jresult-void)
+                :name "build"
+                :params nil
+                :throws nil
+                :body (atj-gen-pkgs pkgs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4342,30 +4336,28 @@
                                    (java-class$ stringp)
                                    (verbose$ booleanp))
   :returns (class jclassp)
-  :short "Generate the declaration of
-          the Java class that builds the ACL2 environment,
+  :short "Generate the declaration of the environment Java class,
           in the shallow embedding approach."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a package-private class,
      whose purpose is to build the ACL2 environment.
-     It contains
-     the static initializer,
-     the methods to build the ACL2 packages,
-     and the initialization method."))
+     It starts with the @('build()') method,
+     so it is the first thing that shows up when looking at the file.
+     Then there are the private methods
+     to build the ACL2 packages,
+     called by the @('build()') method."))
   (b* (((run-when verbose$)
         (cw "~%Generate the Java methods to build the ACL2 packages:~%"))
        (pkg-methods (atj-gen-pkg-methods pkgs verbose$))
        (pkg-methods (mergesort-jmethods pkg-methods))
        ((run-when verbose$)
         (cw "~%Generate the Java class to build the ACL2 environment.~%"))
-       (static-init (atj-gen-shallow-env-static-initializer pkgs))
-       (init-method (atj-gen-init-method nil))
-       (body-class (append (list (jcbody-element-init static-init))
-                           (jmethods-to-jcbody-elements pkg-methods)
-                           (list (jcbody-element-member
-                                  (jcmember-method init-method))))))
+       (build-method (atj-gen-shallow-build-method pkgs))
+       (body-class (append (list (jcbody-element-member
+                                  (jcmember-method build-method)))
+                           (jmethods-to-jcbody-elements pkg-methods))))
     (make-jclass :access (jaccess-default)
                  :abstract? nil
                  :static? nil
@@ -4384,8 +4376,7 @@
                                    (verbose$ booleanp))
   :guard (no-duplicatesp-equal pkgs)
   :returns (cunit jcunitp)
-  :short "Generate the Java compilation unit
-          with the class to build the ACL2 environment,
+  :short "Generate the Java compilation unit with the environment Java class,
           in the shallow embedding approach."
   (b* ((class (atj-gen-shallow-env-class pkgs java-class$ verbose$))
        ((run-when verbose$)
@@ -4425,12 +4416,11 @@
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement.")
    (xdoc::p
-    "The class contains the initialization method,
-     the methods to write primitive array components,
+    "The class contains the static initializer,
+     the initialization method,
      the classes that contain methods for the ACL2 functions,
-     the @(tsee mv) classes,
-     the fields for quoted constants (only numbers and characters for now),
-     and the static initializer.")
+     the @(tsee mv) classes, and the fields for quoted constants, and
+     the methods to write primitive array components.")
    (xdoc::p
     "It is critical that the static initializer
      comes textually before the fields for the quoted constants,
@@ -4522,8 +4512,8 @@
                                   qstring-fields
                                   qcons-fields))
        (all-qconst-fields (mergesort-jfields all-qconst-fields))
-       (static-init (atj-gen-shallow-main-static-initializer java-class$))
-       (init-method (atj-gen-init-method t))
+       (static-init (atj-gen-static-initializer java-class$))
+       (init-method (atj-gen-init-method))
        (body-class (append (list (jcbody-element-init static-init))
                            (jmethods-to-jcbody-elements jprimarr-methods)
                            (jfields-to-jcbody-elements all-qconst-fields)
