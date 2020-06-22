@@ -4031,8 +4031,8 @@
                  :name class-name
                  :superclass? nil
                  :superinterfaces nil
-                 :body (append (jfields-to-jcbody-elements fields)
-                               (jmethods-to-jcbody-elements methods)))))
+                 :body (append (jmethods-to-jcbody-elements methods)
+                               (jfields-to-jcbody-elements fields)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
