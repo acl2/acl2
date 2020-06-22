@@ -4378,6 +4378,13 @@
   :returns (cunit jcunitp)
   :short "Generate the Java compilation unit with the environment Java class,
           in the shallow embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The compilation unit imports all the AIJ public classes,
+     since it needs to reference (at least some of) them.
+     It also imports @('List') and @('ArrayList'),
+     used to build the packages' import lists."))
   (b* ((class (atj-gen-shallow-env-class pkgs java-class$ verbose$))
        ((run-when verbose$)
         (cw "~%Generate the Java compilation unit ~
@@ -4387,8 +4394,6 @@
      :imports (list
                (make-jimport :static? nil
                              :target (str::cat *aij-package* ".*"))
-               ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
-               (make-jimport :static? nil :target "java.math.BigInteger")
                (make-jimport :static? nil :target "java.util.ArrayList")
                (make-jimport :static? nil :target "java.util.List"))
      :types (list class))))
@@ -4560,9 +4565,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the generated imports are changed,
-     the constant @(tsee *atj-disallowed-class-names*)
-     must be modified accordingly.")
+    "The compilation unit imports all the AIJ public classes,
+     since it needs to reference (at least some of) them.
+     It also imports @('BigInteger'), used to build certain quoted constants.")
    (xdoc::p
     "We also return the alist from ACL2 package names to Java class names
      and the alist from ACL2 function symbols to Java method names,
@@ -4579,10 +4584,7 @@
          :imports (list
                    (make-jimport :static? nil
                                  :target (str::cat *aij-package* ".*"))
-                   ;; keep in sync with *ATJ-DISALLOWED-CLASS-NAMES*:
-                   (make-jimport :static? nil :target "java.math.BigInteger")
-                   (make-jimport :static? nil :target "java.util.ArrayList")
-                   (make-jimport :static? nil :target "java.util.List"))
+                   (make-jimport :static? nil :target "java.math.BigInteger"))
          :types (list class))))
     (mv cunit pkg-class-names fn-method-names)))
 

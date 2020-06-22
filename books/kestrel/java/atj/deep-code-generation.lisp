@@ -573,6 +573,14 @@
   :returns (cunit jcunitp)
   :short "Generate the Java compilation unit with the environment Java class,
           in the deep embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The compilation unit imports all the AIJ public classes,
+     since it needs to reference (at least some of) them.
+     It also imports @('BigInteger'), used to build certain quoted constants.
+     It also imports @('List') and @('ArrayList'),
+     used to build the packages' import lists."))
   (b* ((class (atj-gen-deep-env-class
                pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
        ((run-when verbose$)
@@ -672,14 +680,16 @@
   :returns (cunit jcunitp)
   :short "Generate the main Java compilation unit,
           in the deep embedding approach."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The compilation unit imports all the AIJ public classes,
+     since it needs to reference (at least some of) them."))
   (b* ((class (atj-gen-deep-main-class java-class$ verbose$))
        ((run-when verbose$)
         (cw "~%Generate the main Java compilation unit.~%")))
     (make-jcunit :package? java-package$
-                 :imports (list (jimport nil (str::cat *aij-package* ".*"))
-                                (jimport nil "java.math.BigInteger")
-                                (jimport nil "java.util.ArrayList")
-                                (jimport nil "java.util.List"))
+                 :imports (list (jimport nil (str::cat *aij-package* ".*")))
                  :types (list class))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

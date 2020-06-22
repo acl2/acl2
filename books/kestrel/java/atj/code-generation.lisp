@@ -435,6 +435,14 @@
                             (wrld plist-worldp))
   :returns (cunit jcunitp)
   :short "Generate the test Java compilation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The compilation unit imports all the AIJ public classes,
+     since it needs to reference (at least some of) them.
+     It also imports @('BigInteger'), used to build certain ACL2 value.
+     It also imports @('Arrays'), whose @('equals()') method
+     is used to compare array results."))
   (b* ((class (atj-gen-test-class tests$
                                   deep$
                                   guards$
