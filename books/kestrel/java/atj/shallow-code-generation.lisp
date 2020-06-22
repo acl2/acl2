@@ -4434,10 +4434,11 @@
      [JLS:12.4.1] says that the class initialization code
      is executed in textual order.")
    (xdoc::p
-    "We ensure that the ACL2 functions natively implemented in AIJ are included,
-     we organize the resulting functions by packages,
-     and we proceed to generate the Java nested classes,
-     after the methods to build the packages.")
+    "If @(':guards') is @('t'), we exclude the ACL2 functions
+     that model Java primitive and primitive array operations
+     from the list of functions to be translated to Java.
+     We organize the resulting functions by packages,
+     and we proceed to generate the Java nested classes.")
    (xdoc::p
     "We also return the alist from ACL2 package names to Java class names
      and the alist from ACL2 function symbols to Java method names,
@@ -4454,15 +4455,20 @@
                           ;; (atj-gen-shallow-primarray-write-methods)
                           (and guards$
                                (atj-gen-shallow-jprimarr-conversion-methods))))
-       (fns+natives (append fns-to-translate *aij-natives*))
-       ((unless (no-duplicatesp-eq fns+natives))
+       ((unless (no-duplicatesp-eq fns-to-translate))
         (raise "Internal error: ~
-                the list ~x0 of function names has duplicates." fns+natives)
+                the list ~x0 of function names has duplicates."
+               fns-to-translate)
         (mv (ec-call (jclass-fix :irrelevant)) nil nil))
-       (mv-typess (atj-all-mv-output-types fns-to-translate guards$ wrld))
+       (fns (if guards$
+                (set-difference-eq fns-to-translate
+                                   (union-eq *atj-jprim-fns*
+                                             *atj-jprimarr-fns*))
+              fns-to-translate))
+       (mv-typess (atj-all-mv-output-types fns guards$ wrld))
        (pkg-class-names (atj-pkgs-to-classes pkgs java-class$))
-       (fn-method-names (atj-fns-to-methods fns+natives))
-       (fns-by-pkg (organize-symbols-by-pkg fns+natives))
+       (fn-method-names (atj-fns-to-methods fns))
+       (fns-by-pkg (organize-symbols-by-pkg fns))
        (qconsts (make-atj-qconstants :integers nil
                                      :rationals nil
                                      :numbers nil
@@ -4474,7 +4480,7 @@
        ((mv methods-by-pkg qconsts mv-typess)
         (atj-gen-shallow-all-pkg-methods pkgs
                                          fns-by-pkg
-                                         fns+natives
+                                         fns
                                          qconsts
                                          pkg-class-names
                                          fn-method-names

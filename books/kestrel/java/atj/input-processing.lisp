@@ -115,28 +115,6 @@
    i.e. it is treated like a natively implemented function,
    which it is in some sense.")
  (xdoc::p
-  "As an optimization, ACL2 functions natively implemented in Java,
-   as well as functions in
-   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
-   if @(':deep') is @('nil') and @(':guards') is @('t'),
-   are never added to the worklists and collected lists.
-   This is because they are known to satisfy the necessary constraints,
-   and they are terminal nodes in the call graph being traversed.
-   In fact, the worklist is initialized
-   with possibly a subset of @('fn1'), ..., @('fnp'),
-   obtained by removing any natively implemented functions
-   (while the ones in
-   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*),
-   when @(':deep') is @('nil') and @(':guards') is @('t'),
-   are already ruled out by input validation).
-   When descending into the defining of a function,
-   natively implemented functions,
-   and functions in
-   @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
-   when applicable,
-   are skipped over, not checked against worKlists and collected lists,
-   and not added to any worklist.")
- (xdoc::p
   "Further details and complications of the worklist algorithm
    are explained in the implementing functions."))
 
@@ -165,8 +143,7 @@
                                            (msg "The target functions ~&0"
                                                 targets)
                                            t nil))
-       ((unless (or (eq deep nil)
-                    (eq guards t))) (value nil))
+       ((when (or deep (not guards))) (value nil))
        (target-prims (intersection-eq targets
                                       (union-eq *atj-jprim-fns*
                                                 *atj-jprimarr-fns*)))
@@ -817,14 +794,14 @@
     "Since variables and quoted constants contain no functions,
      we return the worklists unchanged in these cases.")
    (xdoc::p
-    "Note that a term @('(mbe :logic a :exec b)')
+    "A term @('(mbe :logic a :exec b)')
      is translated to @('(return-last \'acl2::mbe1-raw b a)').
      Thus, when @(':guards') is @('nil')
      we descend into the third argument of @(tsee return-last),
      while when @(':guards') is @('t')
      we descend into the second argument of @(tsee return-last).")
    (xdoc::p
-    "Note that a term @('(prog2$ a b)')
+    "A term @('(prog2$ a b)')
      is translated to @('(return-last \'acl2::progn a b)')
      (and @(tsee progn$) is translated into a nest of @(tsee prog2$)s).
      Thus, when we encounter this kind of call,
@@ -848,13 +825,7 @@
      the body of the lambda expression.")
    (xdoc::p
     "Otherwise, the call is of a named function (not @(tsee return-last)).
-     If it is a natively implemented function,
-     or in @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*)
-     when applicable,
-     we do not add it to the worklist,
-     because it satisfies all the necessary constraints
-     and does not have a defining body to be inspected.
-     Otherwise, we add the function to the appropriate worklist
+     We add the function to the appropriate worklist
      (the exact worklist is determined by the @('gen?') flag),
      unless it is already there or in a collected list.
      If @('gen?') is @('t') and the function is already
@@ -961,13 +932,7 @@
                                    collected-gen
                                    collected-chk
                                    deep$
-                                   guards$))
-         ((when (aij-nativep fn)) (mv worklist-gen worklist-chk nil))
-         ((when (and (eq deep$ nil)
-                     (eq guards$ t)
-                     (or (atj-jprim-fn-p fn)
-                         (atj-jprimarr-fn-p fn))))
-          (mv worklist-gen worklist-chk nil)))
+                                   guards$)))
       (if gen?
           (if (or (member-eq fn worklist-gen)
                   (member-eq fn collected-gen))
@@ -1080,17 +1045,23 @@
     "The iteration terminates because
      there is a finite number of functions in the ACL2 world,
      but for simplicity we leave this function in program mode
-     to avoid having to articulate the termination proof.")
+     to avoid having to articulate the termination proof for now.")
    (xdoc::p
-    "Note that, as explained in the overview of the algorithm,
-     functions natively implemented, which include the ACL2 primitive functions,
-     never appear in the worklists and collected lists.
-     Thus, when we encounter a function
-     without an unnormalized body and without an attachment,
-     we stop with an error.")
+    "When we encounter a function that is natively implemented in AIJ,
+     we do not examine its body
+     (which the ACL2 primitive functions,
+     all of which are natively implemented in AIJ,
+     do not have anyhow):
+     we just remove it from the worklist,
+     and, if @('gen?') is @('t'),
+     we add it to @('collected-gen'),
+     i.e. we include among the functions for which code must be generated.
+     When @(':deep') is @('nil') and @(':guards') is @('t'),
+     we apply the same treatment to the functions
+    in @(tsee *atj-jprim-fns*) and @(tsee *atj-jprimarr-fns*).")
    (xdoc::p
     "If the function satisfies all the needed constraints,
-     its name is printed in verbose mode.
+     its name is printed when verbose mode is on.
      The caller of this function precedes this printing
      with a suitable message (see the caller).")
    (xdoc::p
@@ -1105,19 +1076,38 @@
      we visit the call graph depth-first;
      the worklists are used as stacks."))
   (b* (((when (and (endp worklist-gen)
-                   (endp worklist-chk))) (value collected-gen))
+                   (endp worklist-chk)))
+        (value collected-gen))
        ((mv fn
             gen?
             worklist-gen
-            worklist-chk) (if (consp worklist-gen)
-                              (mv (car worklist-gen)
-                                  t
-                                  (cdr worklist-gen)
-                                  worklist-chk)
-                            (mv (car worklist-chk)
-                                nil
-                                worklist-gen
-                                (cdr worklist-chk))))
+            worklist-chk)
+        (if (consp worklist-gen)
+            (mv (car worklist-gen)
+                t
+                (cdr worklist-gen)
+                worklist-chk)
+          (mv (car worklist-chk)
+              nil
+              worklist-gen
+              (cdr worklist-chk))))
+       ((when (or (aij-nativep fn)
+                  (and (not deep$)
+                       guards$
+                       (or (atj-jprim-fn-p fn)
+                           (atj-jprimarr-fn-p fn)))))
+        (b* (((mv collected-gen collected-chk)
+              (if gen?
+                  (mv (cons fn collected-gen) collected-chk)
+                (mv collected-gen collected-chk))))
+          (atj-worklist-iterate worklist-gen
+                                worklist-chk
+                                collected-gen
+                                collected-chk
+                                deep$
+                                guards$
+                                verbose$
+                                ctx state)))
        ((when (and (rawp fn state)
                    (not (pure-raw-p fn))))
         (er-soft+ ctx t nil
@@ -1136,12 +1126,10 @@
                    therefore, code generation cannot proceed." fn))
        ((run-when verbose$)
         (cw "  ~x0~%" fn))
-       ((mv collected-gen
-            collected-chk) (if gen?
-                               (mv (cons fn collected-gen)
-                                   collected-chk)
-                             (mv collected-gen
-                                 (cons fn collected-chk))))
+       ((mv collected-gen collected-chk)
+        (if gen?
+            (mv (cons fn collected-gen) collected-chk)
+          (mv collected-gen (cons fn collected-chk))))
        ((mv worklist-gen worklist-chk unsuppported-return-last?)
         (atj-collect-fns-in-term body
                                  gen?
@@ -1186,18 +1174,14 @@
     (xdoc::seetopic "atj-input-processing" "overview")
     " of the worklist algorithm first.")
    (xdoc::p
-    "We start the worklist iteration with the targets supplied by the user,
-     minus any natively implemented function,
-     as discussed in the overview.
-     Currently the natively implemented functions
-     are exactly the ACL2 primitive functions.")
+    "We start the worklist iteration with the targets supplied by the user.")
    (xdoc::p
     "The returned list of function names should have no duplicates,
      but we double-check that for robustness.
      The list is in no particular order."))
   (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
-       (worklist-gen (set-difference-eq targets$ *aij-natives*))
+       (worklist-gen targets$)
        ((er fns) (atj-worklist-iterate worklist-gen
                                        nil
                                        nil
