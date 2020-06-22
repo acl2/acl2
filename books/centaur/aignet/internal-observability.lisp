@@ -409,7 +409,7 @@
   (b* (((obs-dom-info x))
        ((obs-dom-info y)))
     (or (not y.reached)
-        (cube-contradictionp y.doms)
+        ;; (cube-contradictionp y.doms)
         (and x.reached
              (subsetp x.doms y.doms))))
   ///
@@ -428,7 +428,21 @@
   (defretd <fn>-implies
     (implies (and subsetp (obs-dom-info-eval y invals regvals aignet))
              (obs-dom-info-eval x invals regvals aignet))
-    :hints(("Goal" :in-theory (enable obs-dom-info-eval)))))
+    :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
+
+  (defretd <fn>-implies-reached
+    (implies (and subsetp
+                  (obs-dom-info->reached y)
+                  ;; (not (cube-contradictionp (obs-dom-info->doms y)))
+                  )
+             (obs-dom-info->reached x))
+    :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
+
+  (defretd <fn>-implies-member
+    (implies (and subsetp
+                  (obs-dom-info->reached y)
+                  (not (member-equal lit (obs-dom-info->doms y))))
+             (not (member lit (obs-dom-info->doms x))))))
 
 
 (define obs-dom-info-intersect ((x obs-dom-info-p)
@@ -485,12 +499,26 @@
            (and (bit->bool (lit-eval lit invals regvals aignet))
                 (obs-dom-info-eval x invals regvals aignet)))
     :hints(("Goal" :in-theory (enable obs-dom-info-eval
-                                      aignet-eval-conjunction)))))
+                                      aignet-eval-conjunction))))
 
-(define node-level-rank< ((node1 natp)
-                          (node2 natp)
-                          levels)
-  :guard (and (< node1 (le
+  (defret <fn>-when-unreached
+    (implies (not (obs-dom-info->reached x))
+             (equal new (make-obs-dom-info-unreached))))
+
+  (defret <fn>-when-reached
+    (implies (obs-dom-info->reached x)
+             (obs-dom-info->reached new)))
+
+  (defret member-of-<fn>
+    (implies (obs-dom-info->reached x)
+             (iff (member-equal dom (obs-dom-info->doms new))
+                  (or (equal dom (lit-fix lit))
+                      (member-equal dom (obs-dom-info->doms x)))))))
+
+;; (define node-level-rank< ((node1 natp)
+;;                           (node2 natp)
+;;                           levels)
+;;   :guard (and (< node1 (le
 
 
 
@@ -501,29 +529,54 @@
   :guard (and (id-existsp fanout aignet)
               (eql (id->type fanout aignet) (gate-type)))
   :returns (child-fanout-info obs-dom-info-p)
-  (if (or (eql 1 (id->regp fanout aignet))
-          (eql fanin 1))
-      ;; xor
-      (obs-dom-info-fix fanout-info)
-    (obs-dom-info-add (snode->fanin (id->slot-fn fanout (b-not fanin) aignet)) fanout-info))
+  (b* ((fanin0 (gate-id->fanin0 fanout aignet))
+       (fanin1 (gate-id->fanin1 fanout aignet))
+       (xor (eql 1 (id->regp fanout aignet))))
+    (if xor
+        (if (or (eql fanin0 fanin1)
+                (eql fanin0 (lit-negate fanin1)))
+            (make-obs-dom-info-unreached)
+          (obs-dom-info-fix fanout-info))
+      (cond ((eql fanin0 fanin1) (obs-dom-info-fix fanout-info))
+            ((eql fanin0 (lit-negate fanin1)) (make-obs-dom-info-unreached))
+            (t
+             (obs-dom-info-add (snode->fanin (id->slot-fn fanout (b-not fanin) aignet)) fanout-info)))))
   ///
-  (defret eval-of-<fn>
-    (implies (not (obs-dom-info-eval fanout-info invals regvals aignet))
-             (not (obs-dom-info-eval child-fanout-info invals regvals aignet))))
+  ;; (defret eval-of-<fn>
+  ;;   (implies (not (obs-dom-info-eval fanout-info invals regvals aignet))
+  ;;            (not (obs-dom-info-eval child-fanout-info invals regvals aignet))))
 
   (defret <fn>-when-xor
     (implies (equal (stype (car (lookup-id fanout aignet))) :xor)
-             (equal child-fanout-info (obs-dom-info-fix fanout-info))))
-  (defret <fn>-when-fanin1
-    (implies (bit->bool fanin)
-             (equal child-fanout-info (obs-dom-info-fix fanout-info))))
-  (defret <fn>-when-and-fanin0
-    (implies (and (equal (stype (car (lookup-id fanout aignet))) :and)
-                  (not (bit->bool fanin)))
              (equal child-fanout-info
-                    (obs-dom-info-add (fanin (if (equal fanin 1) :gate0 :gate1)
-                                             (lookup-id fanout aignet))
-                                      fanout-info)))))
+                    (b* ((fanin0 (gate-id->fanin0 fanout aignet))
+                         (fanin1 (gate-id->fanin1 fanout aignet)))
+                      (if (or (eql fanin0 fanin1)
+                              (eql fanin0 (lit-negate fanin1)))
+                          (make-obs-dom-info-unreached)
+                        (obs-dom-info-fix fanout-info))))))
+  ;; (defret <fn>-when-fanin1
+  ;;   (implies (bit->bool fanin)
+  ;;            (equal child-fanout-info (obs-dom-info-fix fanout-info))))
+  ;; (defret <fn>-when-and-fanin0
+  ;;   (implies (and (equal (stype (car (lookup-id fanout aignet))) :and)
+  ;;                 (not (bit->bool fanin)))
+  ;;            (equal child-fanout-info
+  ;;                   (obs-dom-info-add (fanin (if (equal fanin 1) :gate0 :gate1)
+  ;;                                            (lookup-id fanout aignet))
+  ;;                                     fanout-info))))
+  (defret <fn>-when-and
+    (implies (equal (stype (car (lookup-id fanout aignet))) :and)
+             (equal child-fanout-info
+                    (cond ((equal (gate-id->fanin0 fanout aignet)
+                                  (gate-id->fanin1 fanout aignet))
+                           (obs-dom-info-fix fanout-info))
+                          ((equal (gate-id->fanin0 fanout aignet)
+                                  (lit-negate (gate-id->fanin1 fanout aignet)))
+                           (make-obs-dom-info-unreached))
+                          (t (obs-dom-info-add (fanin (if (equal fanin 1) :gate0 :gate1)
+                                                      (lookup-id fanout aignet))
+                                               fanout-info)))))))
                                 
 
 
@@ -562,44 +615,44 @@
 
 
 
-(define obs-dom-info-normalize ((x obs-dom-info-p))
-  :returns (new-x obs-dom-info-p)
-  (b* (((obs-dom-info x)))
-    (if x.reached
-        (if (cube-contradictionp x.doms)
-            (make-obs-dom-info-unreached)
-          (make-obs-dom-info-reached x.doms))
-      (make-obs-dom-info-unreached)))
-  ///
-  (defret eval-of-<fn>
-    (equal (obs-dom-info-eval new-x invals regvals aignet)
-           (obs-dom-info-eval x invals regvals aignet))
-    :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
+;; (define obs-dom-info-normalize ((x obs-dom-info-p))
+;;   :returns (new-x obs-dom-info-p)
+;;   (b* (((obs-dom-info x)))
+;;     (if x.reached
+;;         (if (cube-contradictionp x.doms)
+;;             (make-obs-dom-info-unreached)
+;;           (make-obs-dom-info-reached x.doms))
+;;       (make-obs-dom-info-unreached)))
+;;   ///
+;;   (defret eval-of-<fn>
+;;     (equal (obs-dom-info-eval new-x invals regvals aignet)
+;;            (obs-dom-info-eval x invals regvals aignet))
+;;     :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
 
-  (local (defthm cube-contradictionp-by-member
-           (implies (and (member x cube)
-                         (member (lit-negate x) cube)
-                         (lit-listp cube))
-                    (cube-contradictionp cube))
-           :hints(("Goal" :in-theory (enable cube-contradictionp)))))
+;;   (local (defthm cube-contradictionp-by-member
+;;            (implies (and (member x cube)
+;;                          (member (lit-negate x) cube)
+;;                          (lit-listp cube))
+;;                     (cube-contradictionp cube))
+;;            :hints(("Goal" :in-theory (enable cube-contradictionp)))))
   
-  (local (defthm cube-contradictionp-when-subsetp
-           (implies (and (subsetp x y)
-                         (cube-contradictionp x)
-                         (lit-listp y) (lit-listp x))
-                    (cube-contradictionp y))
-           :hints(("Goal" :in-theory (enable cube-contradictionp
-                                             subsetp)))))
+;;   (local (defthm cube-contradictionp-when-subsetp
+;;            (implies (and (subsetp x y)
+;;                          (cube-contradictionp x)
+;;                          (lit-listp y) (lit-listp x))
+;;                     (cube-contradictionp y))
+;;            :hints(("Goal" :in-theory (enable cube-contradictionp
+;;                                              subsetp)))))
   
-  (defret subsetp-of-<fn>-1
-    (equal (obs-dom-info-subsetp new-x y)
-           (obs-dom-info-subsetp x y))
-    :hints(("Goal" :in-theory (enable obs-dom-info-subsetp))))
+;;   (defret subsetp-of-<fn>-1
+;;     (equal (obs-dom-info-subsetp new-x y)
+;;            (obs-dom-info-subsetp x y))
+;;     :hints(("Goal" :in-theory (enable obs-dom-info-subsetp))))
 
-  (defret subsetp-of-<fn>-2
-    (equal (obs-dom-info-subsetp y new-x)
-           (obs-dom-info-subsetp y x))
-    :hints(("Goal" :in-theory (enable obs-dom-info-subsetp)))))
+;;   (defret subsetp-of-<fn>-2
+;;     (equal (obs-dom-info-subsetp y new-x)
+;;            (obs-dom-info-subsetp y x))
+;;     :hints(("Goal" :in-theory (enable obs-dom-info-subsetp)))))
     
 
 
@@ -610,20 +663,32 @@
             (implies (and (natp fanout)
                           (<= fanout (fanin-count aignet))
                           (<= (nfix sweep-position) fanout)
-                          (equal (id->type fanout aignet) (gate-type)))
-                     (and (obs-dom-info-subsetp
-                           (nth (lit->var (fanin :gate0 (lookup-id fanout aignet))) obs-dom-array)
-                           (obs-dom-info-for-child
-                            (nth fanout obs-dom-array) fanout 0 aignet))
-                          (obs-dom-info-subsetp
-                           (nth (lit->var (fanin :gate1 (lookup-id fanout aignet))) obs-dom-array)
-                           (obs-dom-info-for-child
-                            (nth fanout obs-dom-array) fanout 1 aignet)))))
+                          ;; (not (cube-contradictionp (obs-dom-info->doms (nth fanout obs-dom-array))))
+                          )
+                     (and ;; (not (cube-contradictionp (obs-dom-info->doms (nth fanout obs-dom-array))))
+                          (implies (equal (id->type fanout aignet) (gate-type))
+                                   (and (obs-dom-info-subsetp
+                                         (nth (lit->var (fanin :gate0 (lookup-id fanout aignet))) obs-dom-array)
+                                         (obs-dom-info-for-child
+                                          (nth fanout obs-dom-array) fanout 0 aignet))
+                                        (obs-dom-info-subsetp
+                                         (nth (lit->var (fanin :gate1 (lookup-id fanout aignet))) obs-dom-array)
+                                         (obs-dom-info-for-child
+                                          (nth fanout obs-dom-array) fanout 1 aignet))
+                                        )))))
     :rewrite  :direct)
 
   (in-theory (disable obs-dom-info-sweep-invariant
                       obs-dom-info-sweep-invariant-necc))
 
+  ;; (defthm obs-dom-info-sweep-invariant-implies-not-contradictionp
+  ;;   (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                 (<= (nfix fanout) (fanin-count aignet))
+  ;;                 (<= (nfix sweep-position) (nfix fanout)))
+  ;;            (not (cube-contradictionp (obs-dom-info->doms (nth fanout obs-dom-array)))))
+  ;;   :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+  ;;                          (fanout (nfix fanout)))))))
+  
   (defthm id-eval-toggle-when-less
     (implies (< (nfix x) (nfix toggle))
              (equal (id-eval-toggle x toggle invals regvals aignet)
@@ -639,12 +704,21 @@
                       (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
 
 
+  (local (defthm obs-dom-info-eval-when-contradictionp
+           (implies (cube-contradictionp (obs-dom-info->doms x))
+                    (not (obs-dom-info-eval x invals regvals aignet)))
+           :hints(("Goal" :in-theory (enable obs-dom-info-eval)))))
+  
   (defthm obs-dom-info-eval-of-xor-fanin0
     (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
                   (<= (nfix sweep-position) (nfix node))
                   (equal (stype (car (lookup-id node aignet))) :xor)
-                  (case-split (<= (nfix sweep-position) (lit->var (fanin :gate0 (lookup-id node aignet)))))
-                  (obs-dom-info-eval (nth node obs-dom-array) invals regvals aignet))
+                  ;; (case-split (<= (nfix sweep-position) (lit->var (fanin :gate0 (lookup-id node aignet)))))
+                  (obs-dom-info-eval (nth node obs-dom-array) invals regvals aignet)
+                  (not (equal (fanin :gate0 (lookup-id node aignet))
+                              (fanin :gate1 (lookup-id node aignet))))
+                  (not (equal (fanin :gate0 (lookup-id node aignet))
+                              (lit-negate (fanin :gate1 (lookup-id node aignet))))))
              (obs-dom-info-eval
               (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)
               invals regvals aignet))
@@ -657,8 +731,12 @@
     (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
                   (<= (nfix sweep-position) (nfix node))
                   (equal (stype (car (lookup-id node aignet))) :xor)
-                  (case-split (<= (nfix sweep-position) (lit->var (fanin :gate1 (lookup-id node aignet)))))
-                  (obs-dom-info-eval (nth node obs-dom-array) invals regvals aignet))
+                  ;; (case-split (<= (nfix sweep-position) (lit->var (fanin :gate1 (lookup-id node aignet)))))
+                  (obs-dom-info-eval (nth node obs-dom-array) invals regvals aignet)
+                  (not (equal (fanin :gate0 (lookup-id node aignet))
+                              (fanin :gate1 (lookup-id node aignet))))
+                  (not (equal (fanin :gate0 (lookup-id node aignet))
+                              (lit-negate (fanin :gate1 (lookup-id node aignet))))))
              (obs-dom-info-eval
               (nth (lit->var (fanin :gate1 (lookup-id node aignet))) obs-dom-array)
               invals regvals aignet))
@@ -671,9 +749,13 @@
     (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
                   (<= (nfix sweep-position) (nfix node))
                   (equal (stype (car (lookup-id node aignet))) :and)
-                  (case-split (<= (nfix sweep-position) (lit->var (fanin :gate0 (lookup-id node aignet)))))
+                  ;; (case-split (<= (nfix sweep-position) (lit->var (fanin :gate0 (lookup-id node aignet)))))
                   (obs-dom-info-eval (nth node obs-dom-array) invals regvals aignet)
-                  (case-split (bit->bool (lit-eval (fanin :gate1 (lookup-id node aignet)) invals regvals aignet))))
+                  (case-split (bit->bool (lit-eval (fanin :gate1 (lookup-id node aignet)) invals regvals aignet)))
+                  ;; (not (equal (fanin :gate0 (lookup-id node aignet))
+                  ;;             (fanin :gate1 (lookup-id node aignet))))
+                  (not (equal (fanin :gate0 (lookup-id node aignet))
+                              (lit-negate (fanin :gate1 (lookup-id node aignet))))))
              (obs-dom-info-eval
               (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)
               invals regvals aignet))
@@ -686,13 +768,38 @@
                           )
              :in-theory (enable obs-dom-info-subsetp-implies))))
 
+  (defthm obs-dom-info-eval-of-and-fanin0-self
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :and)
+                  ;; (case-split (<= (nfix sweep-position) (lit->var (fanin :gate0 (lookup-id node aignet)))))
+                  (obs-dom-info-eval (nth node obs-dom-array) invals regvals aignet)
+                  (equal (fanin :gate0 (lookup-id node aignet))
+                         (fanin :gate1 (lookup-id node aignet))))
+             (obs-dom-info-eval
+              (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)
+              invals regvals aignet))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node))
+                          ;; (:instance obs-dom-info-subsetp-implies
+                          ;;  (x (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array))
+                          ;;  (y (obs-dom-info-add (fanin :gate1 (lookup-id node aignet))
+                          ;;                       (nth node obs-dom-array))))
+                          )
+             :in-theory (enable obs-dom-info-subsetp-implies))))
+
+
+
+  
   (defthm obs-dom-info-eval-of-and-fanin1
     (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
                   (<= (nfix sweep-position) (nfix node))
                   (equal (stype (car (lookup-id node aignet))) :and)
-                  (case-split (<= (nfix sweep-position) (lit->var (fanin :gate1 (lookup-id node aignet)))))
+                  ;; (case-split (<= (nfix sweep-position) (lit->var (fanin :gate1 (lookup-id node aignet)))))
                   (obs-dom-info-eval (nth node obs-dom-array) invals regvals aignet)
-                  ;; (case-split (bit->bool (lit-eval (fanin :gate0 (lookup-id node aignet)) invals regvals aignet)))
+                  (case-split (bit->bool (lit-eval (fanin :gate0 (lookup-id node aignet)) invals regvals aignet)))
+                  (not (equal (fanin :gate0 (lookup-id node aignet))
+                              (lit-negate (fanin :gate1 (lookup-id node aignet)))))
                   )
              (obs-dom-info-eval
               (nth (lit->var (fanin :gate1 (lookup-id node aignet))) obs-dom-array)
@@ -701,7 +808,93 @@
                            (fanout node)))
              :in-theory (enable obs-dom-info-subsetp-implies)
              )))
-             
+
+
+  (defthm obs-dom-info-reached-of-xor-fanin0
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :xor)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  ;; (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array))))
+                  (case-split
+                    (not (equal (fanin :gate0 (lookup-id node aignet))
+                                (fanin :gate1 (lookup-id node aignet)))))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet))))))
+                  ;; (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array))))
+                  )
+             (obs-dom-info->reached (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-reached))))
+
+  (defthm obs-dom-info-reached-of-xor-fanin1
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :xor)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  ;; (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array))))
+                  (case-split
+                    (not (equal (fanin :gate0 (lookup-id node aignet))
+                                (fanin :gate1 (lookup-id node aignet)))))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet))))))
+                  ;; (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array))))
+                  )
+             (obs-dom-info->reached (nth (lit->var (fanin :gate1 (lookup-id node aignet))) obs-dom-array)))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-reached))))
+
+  (defthm obs-dom-info-reached-of-and-fanin0
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :and)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet))))))
+                  ;; (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array))))
+                  )
+             (obs-dom-info->reached (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-reached))))
+
+  (defthm obs-dom-info-reached-of-and-fanin1
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :and)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet))))))
+                  ;; (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array))))
+                  )
+             (obs-dom-info->reached (nth (lit->var (fanin :gate1 (lookup-id node aignet))) obs-dom-array)))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-reached))))
+
+  ;; (defthm obs-dom-info-reached-of-xor-fanin0
+  ;;   (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                 (<= (nfix sweep-position) (nfix node))
+  ;;                 (equal (stype (car (lookup-id node aignet))) :xor)
+  ;;                 (obs-dom-info->reached (nth node obs-dom-array))
+  ;;                 (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array)))))
+  ;;            (obs-dom-info->reached (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)))
+  ;;   :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+  ;;                          (fanout node)))
+  ;;            :in-theory (enable obs-dom-info-subsetp-implies-reached))))
+
+  ;; (defthm obs-dom-info-reached-of-xor-fanin1
+  ;;   (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                 (<= (nfix sweep-position) (nfix node))
+  ;;                 (equal (stype (car (lookup-id node aignet))) :xor)
+  ;;                 (obs-dom-info->reached (nth node obs-dom-array))
+  ;;                 (not (cube-contradictionp (obs-dom-info->doms (nth node obs-dom-array)))))
+  ;;            (obs-dom-info->reached (nth (lit->var (fanin :gate1 (lookup-id node aignet))) obs-dom-array)))
+  ;;   :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+  ;;                          (fanout node)))
+  ;;            :in-theory (enable obs-dom-info-subsetp-implies-reached))))
   
   ;; When we're all done with a node, it'll be the case that when it is not
   ;; observable (under some inputs), it can be toggled without causing a change
@@ -713,15 +906,83 @@
   ;; unobservable due to each other but both toggled when toggling source,
   ;; then this leads to an observable toggle of sink.  It seems that source should be
   ;; observable in this case: its path to f0 cannot have f0 as a dominator, and
-  ;; its path to f1 cannot have f1 as a dominator, 
-  (defthm observability-done-invariant
+  ;; its path to f1 cannot have f1 as a dominator.  
+  ;; (defthm observability-done-invariant
+  ;;   (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                 (<= (nfix sweep-position) (nfix source))
+  ;;                 (<= (nfix sweep-position) (nfix sink))
+  ;;                 ;; source is known not observable under the inputs
+  ;;                 (not (obs-dom-info-eval (nth source obs-dom-array) invals regvals aignet))
+  ;;                 ;; sink is observable under the inputs
+  ;;                 (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet))
+  ;;            (equal (id-eval sink invals regvals aignet)
+  ;;                   (id-eval-toggle sink source invals regvals aignet)))
+  ;;   :hints (("goal" :induct (id-eval-ind sink aignet)
+  ;;            :expand ((id-eval sink invals regvals aignet)
+  ;;                     (id-eval-toggle sink source invals regvals aignet)
+  ;;                     (:free (x) (lit-eval x invals regvals aignet))
+  ;;                     (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+  ;;                     (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+  ;;                     (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+  ;;                     (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+  ;;                     (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))
+  ;;            :do-not-induct t
+  ;;            ;; :in-theory (disable ACL2::INEQUALITY-WITH-NFIX-HYP-1
+  ;;            ;;                     ACL2::INEQUALITY-WITH-NFIX-HYP-2)
+  ;;            )
+  ;;           ;; (acl2::use-termhint
+  ;;           ;;  (b* (((unless (equal (id->type node2 aignet) (gate-type)))
+  ;;           ;;        nil)
+  ;;           ;;       (xor (equal (id->regp node2 aignet) 1))
+  ;;           ;;       (fan0 (lit->var (gate-id->fanin0 node2 aignet)))
+  ;;           ;;       (fan1 (lit->var (gate-id->fanin1 node2 aignet)))
+  ;;           ;;       ((unless ))
+  
+  ;;           ))
+
+
+  ;; Instead, let's focus on one observability dominator.  If a node is not
+  ;; observable, then either it is unreachable or else there is some dominator
+  ;; that evaluates to false.  We'll take the unreachable case separately.  Let
+  ;; D be the dominator that is false.  We'll show that only other nodes that
+  ;; have D as a dominator or are unreachable may be affected by a toggle of
+  ;; the node.
+
+  ;; Unreachable nodes only affect other unreachable nodes.  Not true: e.g.,
+  ;; n0 = n1 & n2
+  ;; n2 = ~n1 & n3
+  ;; n3 is unreachable, but n2 is not, and n3 can affect n2.
+  ;; (defthm obs-dom-info-eval-when-not-reached
+  ;;   (implies (not (obs-dom-info->reached info))
+  ;;            (not (obs-dom-info-eval info invals regvals aignet)))
+  ;;   :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
+
+  (local (defthm lit-var-when-equal-lit-negate
+           (implies (equal x (lit-negate y))
+                    (and (equal (lit->neg x) (b-not (lit->neg y)))
+                         (equal (lit->var x) (lit->var y))))
+           ;; :rule-classes :forward-chaining
+           ))
+
+  (local (defthm b-xor-b-xors
+           (equal (b-xor (b-xor n1 x) (b-xor n2 x))
+                  (b-xor n1 n2))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
+  (local (defthm b-and-b-xors
+           (equal (b-and (b-xor n1 x) (b-xor n2 x))
+                  (b-and (b-not (b-xor n1 n2)) (b-xor n1 x)))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+  
+  (defthm observability-of-unreachables
     (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
                   (<= (nfix sweep-position) (nfix source))
                   (<= (nfix sweep-position) (nfix sink))
-                  ;; source is known not observable under the inputs
-                  (not (obs-dom-info-eval (nth source obs-dom-array) invals regvals aignet))
-                  ;; sink is observable under the inputs
-                  (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet))
+                  (aignet-idp sink aignet)
+                  (not (obs-dom-info->reached (nth source obs-dom-array)))
+                  (obs-dom-info->reached (nth sink obs-dom-array))
+                  ;; (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet)
+                  )
              (equal (id-eval sink invals regvals aignet)
                     (id-eval-toggle sink source invals regvals aignet)))
     :hints (("goal" :induct (id-eval-ind sink aignet)
@@ -732,20 +993,108 @@
                       (:free (x y) (eval-and-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
                       (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))
-             :do-not-induct t
-             ;; :in-theory (disable ACL2::INEQUALITY-WITH-NFIX-HYP-1
-             ;;                     ACL2::INEQUALITY-WITH-NFIX-HYP-2)
-             )
-            ;; (acl2::use-termhint
-            ;;  (b* (((unless (equal (id->type node2 aignet) (gate-type)))
-            ;;        nil)
-            ;;       (xor (equal (id->regp node2 aignet) 1))
-            ;;       (fan0 (lit->var (gate-id->fanin0 node2 aignet)))
-            ;;       (fan1 (lit->var (gate-id->fanin1 node2 aignet)))
-            ;;       ((unless ))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+
   
-            )))
+  (defthm obs-dom-info-member-of-xor-fanin0
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :xor)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  (not (member-equal dom (obs-dom-info->doms (nth node obs-dom-array))))
+                  (case-split
+                    (not (equal (fanin :gate0 (lookup-id node aignet))
+                                (fanin :gate1 (lookup-id node aignet)))))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet)))))))
+             (not (member-equal dom (obs-dom-info->doms (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)))))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-member))))
+
+  (defthm obs-dom-info-member-of-xor-fanin1
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :xor)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  (not (member-equal dom (obs-dom-info->doms (nth node obs-dom-array))))
+                  (case-split
+                    (not (equal (fanin :gate0 (lookup-id node aignet))
+                                (fanin :gate1 (lookup-id node aignet)))))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet)))))))
+             (not (member-equal dom (obs-dom-info->doms (nth (lit->var (fanin :gate1 (lookup-id node aignet))) obs-dom-array)))))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-member))))
+
+  (defthm obs-dom-info-member-of-and-fanin0
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :and)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  (not (member-equal dom (obs-dom-info->doms (nth node obs-dom-array))))
+                  (case-split (not (equal dom (fanin :gate1 (lookup-id node aignet)))))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet)))))))
+             (not (member-equal dom (obs-dom-info->doms (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)))))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-member))))
+
+  (defthm obs-dom-info-member-of-and-fanin0-same
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :and)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  (not (member-equal dom (obs-dom-info->doms (nth node obs-dom-array))))
+                  ;; (case-split (not (equal dom (fanin :gate1 (lookup-id node aignet)))))
+                  (equal (fanin :gate0 (lookup-id node aignet))
+                         (fanin :gate1 (lookup-id node aignet))))
+             (not (member-equal dom (obs-dom-info->doms (nth (lit->var (fanin :gate0 (lookup-id node aignet))) obs-dom-array)))))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-member))))
+
+  (defthm obs-dom-info-member-of-and-fanin1
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix node))
+                  (equal (stype (car (lookup-id node aignet))) :and)
+                  (obs-dom-info->reached (nth node obs-dom-array))
+                  (not (member-equal dom (obs-dom-info->doms (nth node obs-dom-array))))
+                  (case-split (not (equal dom (fanin :gate0 (lookup-id node aignet)))))
+                  (case-split (not (equal (fanin :gate0 (lookup-id node aignet))
+                                          (lit-negate (fanin :gate1 (lookup-id node aignet)))))))
+             (not (member-equal dom (obs-dom-info->doms (nth (lit->var (fanin :gate1 (lookup-id node aignet))) obs-dom-array)))))
+    :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
+                           (fanout node)))
+             :in-theory (enable obs-dom-info-subsetp-implies-member))))
+
+  
+  
+  (defthm observability-when-gated
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix source))
+                  (<= (nfix sweep-position) (nfix sink))
+                  (aignet-idp sink aignet)
+                  (member dom (obs-dom-info->doms (nth source obs-dom-array)))
+                  (equal (lit-eval dom invals regvals aignet) 0)
+                  (obs-dom-info->reached (nth sink obs-dom-array))
+                  (not (member dom (obs-dom-info->doms (nth sink obs-dom-array)))))
+             (equal (id-eval sink invals regvals aignet)
+                    (id-eval-toggle sink source invals regvals aignet)))
+    :hints (("goal" :induct (id-eval-ind sink aignet)
+             :expand ((id-eval sink invals regvals aignet)
+                      (id-eval-toggle sink source invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+             
+  
+  )
 
 
 
