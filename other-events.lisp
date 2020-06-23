@@ -19600,7 +19600,7 @@
                                     ,raw-def-lst
                                     ,template
                                     ,ax-def-lst
-                                    . ,event-form)
+                                    ,event-form)
                                  t
                                  ctx
                                  wrld3

@@ -20,12 +20,6 @@
 
 ; This file cannot be compiled because it changes packages in the middle.
 
-#+cmucl
-(error "CMUCL builds are temporarily disabled, pending some necessary fixes for
-CMUCL.  To remove this error (which may cause failures in the build or book
-certification), just remove the initial form from ACL2 source file
-acl2-init.lisp.")
-
 ; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
 ; want to build a parallel version, which needs this to take place).  At the
 ; time that we add (perhaps once again) support for HONS in other lisps besides

@@ -27969,7 +27969,14 @@ Lisp definition."
   nil)
 
 #-acl2-loop-only
-(defg *inside-absstobj-update* #(0))
+(defg *inside-absstobj-update*
+
+; Warning: Do not use #(0) here, because this variable can be destructively
+; modified.  We actually used #(0) here through Version_8.3 and did not see a
+; problem with that, but we see the comment in *fncall-cache* for why we avoid
+; using a constant here.
+
+  (vector 0))
 
 (defun set-absstobj-debug-fn (val always)
   (declare (xargs :guard t))

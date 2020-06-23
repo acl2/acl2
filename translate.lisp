@@ -2010,7 +2010,12 @@
 (progn
 
 (defvar *fncall-cache*
-  '(nil))
+
+; Warning: Do not use '(nil) here!  That will cause CMUCL builds to fail, and
+; it will also cause SBCL builds to fail if we compile ACL2 source files with
+; compile-file before loading them during the build.
+
+  (list nil))
 
 (defun raw-ev-fncall-okp (wrld aokp &aux (w-state (w *the-live-state*)))
   (when (eq wrld w-state)
