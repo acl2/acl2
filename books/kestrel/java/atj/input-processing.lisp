@@ -27,6 +27,7 @@
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/catpath" :dir :system)
 (include-book "oslib/file-types" :dir :system)
+(include-book "std/typed-alists/symbol-symbollist-alistp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1025,7 +1026,7 @@
                               (worklist-chk symbol-listp)
                               (collected-gen symbol-listp)
                               (collected-chk symbol-listp)
-                              (call-graph alistp)
+                              (call-graph symbol-symbollist-alistp)
                               (deep$ booleanp)
                               (guards$ booleanp)
                               (verbose$ booleanp)
@@ -1033,7 +1034,9 @@
                               state)
   :returns (mv erp
                (result "A tuple @('(fns new-call-graph)') satisfying
-                        @('(typed-tuplep symbol-listp alistp result)').")
+                        @('(typed-tuplep symbol-listp
+                                         symbol-symbollist-alistp
+                                         result)').")
                state)
   :mode :program ; until termination is proved (which will take a bit of work)
   :short "Worklist algorithm iteration."
@@ -1194,7 +1197,9 @@
                               state)
   :returns (mv erp
                (result "A tuple @('(fns-to-translate call-graph')) satisfying
-                        @('(typed-tuplep symbol-listp alistp result)').")
+                        @('(typed-tuplep symbol-listp
+                                         symbol-symbollist-alistp
+                                         result)').")
                state)
   :mode :program ; because of ATJ-WORKLIST-ITERATE
   :short "Collect the names of all the ACL2 functions to be translated to Java,
@@ -1295,7 +1300,7 @@
                                     verbose$)')
                         satisfying
                         @('(typed-tuplep symbol-listp
-                                         alistp
+                                         symbol-symbollist-alistp
                                          string-listp
                                          booleanp
                                          booleanp

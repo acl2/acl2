@@ -190,6 +190,7 @@
                          symbol-pos-alistp
                          symbol-string-alistp
                          symbol-symbol-alistp
+                         symbol-symbollist-alistp
                          symbol-package-name-lst
                          table-alist+
                          tail-recursive-p

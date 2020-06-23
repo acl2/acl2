@@ -25,6 +25,7 @@
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/tail-recursive-p" :dir :system)
+(include-book "std/typed-alists/symbol-symbollist-alistp" :dir :system)
 
 (local (include-book "kestrel/std/basic/symbol-name-lst" :dir :system))
 
@@ -4442,7 +4443,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-shallow-fns-that-may-throw ((fns-to-translate symbol-listp)
-                                        (call-graph alistp))
+                                        (call-graph symbol-symbollist-alistp))
   :returns (fns-that-may-throw symbol-listp)
   :short "Calculate the functions whose corresponding Java methods
           may throw an @('Acl2UndefinedPackageException')."
@@ -4494,7 +4495,7 @@
 
 (define atj-gen-shallow-main-class ((pkgs string-listp)
                                     (fns-to-translate symbol-listp)
-                                    (call-graph alistp)
+                                    (call-graph symbol-symbollist-alistp)
                                     (guards$ booleanp)
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
@@ -4655,7 +4656,7 @@
                                     (java-class$ stringp)
                                     (pkgs string-listp)
                                     (fns-to-translate symbol-listp)
-                                    (call-graph alistp)
+                                    (call-graph symbol-symbollist-alistp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :guard (no-duplicatesp-equal pkgs)
