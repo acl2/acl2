@@ -797,10 +797,12 @@
    (xdoc::p
     "A term @('(mbe :logic a :exec b)')
      is translated to @('(return-last \'acl2::mbe1-raw b a)').
-     Thus, when @(':guards') is @('nil')
-     we descend into the third argument of @(tsee return-last),
-     while when @(':guards') is @('t')
-     we descend into the second argument of @(tsee return-last).")
+     When @(':guards') is @('nil'), we translate @('a') to Java,
+     but still need to check @('b') for side effects:
+     thus, we recursively descend into @('a') with the current @('gen?') flag,
+     and we recursively descend into @('b') with @('gen?') set to @('nil').
+     When @(':guards') is @('t'),
+     the treatment of @('a') and @('b') is reversed.")
    (xdoc::p
     "A term @('(prog2$ a b)')
      is translated to @('(return-last \'acl2::progn a b)')
@@ -882,49 +884,81 @@
                        term)
                 (mv worklist-gen worklist-chk called-fns nil))) ; irrelevant
             (case (pseudo-term-quote->val 1st-arg)
-              (acl2::mbe1-raw (if guards$
-                                  (atj-collect-fns-in-term (second args)
-                                                           gen?
-                                                           worklist-gen
-                                                           worklist-chk
-                                                           called-fns
-                                                           collected-gen
-                                                           collected-chk
-                                                           deep$
-                                                           guards$)
-                                (atj-collect-fns-in-term (third args)
-                                                         gen?
-                                                         worklist-gen
-                                                         worklist-chk
-                                                         called-fns
-                                                         collected-gen
-                                                         collected-chk
-                                                         deep$
-                                                         guards$)))
-              (acl2::progn (b* (((mv worklist-gen
-                                     worklist-chk
-                                     called-fns
-                                     unsuppported-return-last?)
-                                 (atj-collect-fns-in-term (second args)
-                                                          nil
-                                                          worklist-gen
-                                                          worklist-chk
-                                                          called-fns
-                                                          collected-gen
-                                                          collected-chk
-                                                          deep$
-                                                          guards$))
-                                ((when unsuppported-return-last?)
-                                 (mv worklist-gen worklist-chk called-fns t)))
-                             (atj-collect-fns-in-term (third args)
-                                                      gen?
-                                                      worklist-gen
-                                                      worklist-chk
-                                                      called-fns
-                                                      collected-gen
-                                                      collected-chk
-                                                      deep$
-                                                      guards$)))
+              (acl2::mbe1-raw
+               (if guards$
+                   (b* (((mv worklist-gen
+                             worklist-chk
+                             called-fns
+                             unsuppported-return-last?)
+                         (atj-collect-fns-in-term (third args)
+                                                  nil
+                                                  worklist-gen
+                                                  worklist-chk
+                                                  called-fns
+                                                  collected-gen
+                                                  collected-chk
+                                                  deep$
+                                                  guards$))
+                        ((when unsuppported-return-last?)
+                         (mv worklist-gen worklist-chk called-fns t)))
+                     (atj-collect-fns-in-term (second args)
+                                              gen?
+                                              worklist-gen
+                                              worklist-chk
+                                              called-fns
+                                              collected-gen
+                                              collected-chk
+                                              deep$
+                                              guards$))
+                 (b* (((mv worklist-gen
+                           worklist-chk
+                           called-fns
+                           unsuppported-return-last?)
+                       (atj-collect-fns-in-term (second args)
+                                                nil
+                                                worklist-gen
+                                                worklist-chk
+                                                called-fns
+                                                collected-gen
+                                                collected-chk
+                                                deep$
+                                                guards$))
+                      ((when unsuppported-return-last?)
+                       (mv worklist-gen worklist-chk called-fns t)))
+                   (atj-collect-fns-in-term (third args)
+                                            gen?
+                                            worklist-gen
+                                            worklist-chk
+                                            called-fns
+                                            collected-gen
+                                            collected-chk
+                                            deep$
+                                            guards$))))
+              (acl2::progn
+               (b* (((mv worklist-gen
+                         worklist-chk
+                         called-fns
+                         unsuppported-return-last?)
+                     (atj-collect-fns-in-term (second args)
+                                              nil
+                                              worklist-gen
+                                              worklist-chk
+                                              called-fns
+                                              collected-gen
+                                              collected-chk
+                                              deep$
+                                              guards$))
+                    ((when unsuppported-return-last?)
+                     (mv worklist-gen worklist-chk called-fns t)))
+                 (atj-collect-fns-in-term (third args)
+                                          gen?
+                                          worklist-gen
+                                          worklist-chk
+                                          called-fns
+                                          collected-gen
+                                          collected-chk
+                                          deep$
+                                          guards$)))
               (t (mv worklist-gen worklist-chk called-fns t)))))
          ((mv worklist-gen worklist-chk called-fns unsupported-return-last?)
           (atj-collect-fns-in-terms args
