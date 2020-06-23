@@ -18,6 +18,8 @@
 (include-book "array-write-method-names")
 (include-book "types-for-built-ins")
 
+(include-book "centaur/depgraph/invert" :dir :system)
+(include-book "centaur/depgraph/transdeps" :dir :system)
 (include-book "kestrel/std/basic/organize-symbols-by-pkg" :dir :system)
 (include-book "kestrel/std/basic/symbol-package-name-lst" :dir :system)
 (include-book "kestrel/std/system/check-unary-lambda-call" :dir :system)
@@ -3066,6 +3068,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fnnative-method ((fn symbolp)
+                                         (fns-that-may-throw symbol-listp)
                                          (fn-type atj-function-type-p)
                                          (method-name stringp)
                                          (method-param-names string-listp)
@@ -3136,7 +3139,9 @@
                 the number ~x0 of input types for ~x1 ~
                 differs from the number ~x2 of calculated method arguments."
                (len in-types) fn (len method-param-names))
-        (ec-call (jmethod-fix :irrelevant))))
+        (ec-call (jmethod-fix :irrelevant)))
+       (throws (and (member-eq fn fns-that-may-throw)
+                    (list *aij-class-undef-pkg-exc*))))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -3149,13 +3154,14 @@
                   :params (atj-gen-paramlist
                            method-param-names
                            (atj-type-list-to-jitype-list in-types))
-                  :throws (list *aij-class-undef-pkg-exc*)
+                  :throws throws
                   :body method-body))
   :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fnnative-methods ((fn symbolp)
+                                          (fns-that-may-throw symbol-listp)
                                           (fn-types atj-function-type-listp)
                                           (method-name stringp)
                                           (method-param-names string-listp)
@@ -3166,11 +3172,13 @@
           to lists of function types."
   (cond ((endp fn-types) nil)
         (t (cons (atj-gen-shallow-fnnative-method fn
+                                                  fns-that-may-throw
                                                   (car fn-types)
                                                   method-name
                                                   method-param-names
                                                   method-body)
                  (atj-gen-shallow-fnnative-methods fn
+                                                   fns-that-may-throw
                                                    (cdr fn-types)
                                                    method-name
                                                    method-param-names
@@ -3180,6 +3188,7 @@
 
 (define atj-gen-shallow-fnnative-all-methods
   ((fn symbolp)
+   (fns-that-may-throw symbol-listp)
    (pkg-class-names string-string-alistp)
    (fn-method-names symbol-string-alistp)
    (guards$ booleanp)
@@ -3237,6 +3246,7 @@
                              jcall-arg-exprs))
        (method-body (jblock-return jcall)))
     (atj-gen-shallow-fnnative-methods fn
+                                      fns-that-may-throw
                                       all-fn-types
                                       method-name
                                       method-param-names
@@ -3246,6 +3256,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fndef-method ((fn symbolp)
+                                      (fns-that-may-throw symbol-listp)
                                       (fn-type atj-function-type-p)
                                       (formals symbol-listp)
                                       (body pseudo-termp)
@@ -3354,6 +3365,8 @@
                fn out-types)
         (mv (ec-call (jmethod-fix :irrelevant)) qconsts nil))
        (out-jtype (atj-gen-shallow-jtype out-types))
+       (throws (and (member-eq fn fns-that-may-throw)
+                    (list *aij-class-undef-pkg-exc*)))
        (method (make-jmethod :access (jaccess-public)
                              :abstract? nil
                              :static? t
@@ -3364,7 +3377,7 @@
                              :result (jresult-type out-jtype)
                              :name method-name
                              :params method-params
-                             :throws (list *aij-class-undef-pkg-exc*)
+                             :throws throws
                              :body method-body)))
     (mv method qconsts mv-typess))
   :prepwork ((local (include-book "std/lists/len" :dir :system))))
@@ -3372,6 +3385,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fndef-methods ((fn symbolp)
+                                       (fns-that-may-throw symbol-listp)
                                        (fn-types atj-function-type-listp)
                                        (formals symbol-listp)
                                        (body pseudo-termp)
@@ -3398,6 +3412,7 @@
             qconsts
             mv-typess)
         (atj-gen-shallow-fndef-method fn
+                                      fns-that-may-throw
                                       (car fn-types)
                                       formals
                                       body
@@ -3413,6 +3428,7 @@
             qconsts
             mv-typess)
         (atj-gen-shallow-fndef-methods fn
+                                       fns-that-may-throw
                                        (cdr fn-types)
                                        formals
                                        body
@@ -3430,6 +3446,7 @@
 
 (define atj-gen-shallow-fndef-all-methods
   ((fn symbolp)
+   (fns-that-may-throw symbol-listp)
    (qconsts atj-qconstants-p)
    (pkg-class-names string-string-alistp)
    (fn-method-names symbol-string-alistp)
@@ -3477,6 +3494,7 @@
        ((run-when verbose$)
         (cw "  ~s0 for ~x1~%" method-name fn)))
     (atj-gen-shallow-fndef-methods fn
+                                   fns-that-may-throw
                                    all-fn-types
                                    formals
                                    body
@@ -3492,6 +3510,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-fn-methods ((fn symbolp)
+                                    (fns-that-may-throw symbol-listp)
                                     (qconsts atj-qconstants-p)
                                     (pkg-class-names string-string-alistp)
                                     (fn-method-names symbol-string-alistp)
@@ -3515,6 +3534,7 @@
     The collection does not change for native functions.")
   (if (aij-nativep fn)
       (mv (atj-gen-shallow-fnnative-all-methods fn
+                                                fns-that-may-throw
                                                 pkg-class-names
                                                 fn-method-names
                                                 guards$
@@ -3523,6 +3543,7 @@
           qconsts
           mv-typess)
     (atj-gen-shallow-fndef-all-methods fn
+                                       fns-that-may-throw
                                        qconsts
                                        pkg-class-names
                                        fn-method-names
@@ -3534,6 +3555,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-all-fn-methods ((fns symbol-listp)
+                                        (fns-that-may-throw symbol-listp)
                                         (qconsts atj-qconstants-p)
                                         (pkg-class-names string-string-alistp)
                                         (fn-method-names symbol-string-alistp)
@@ -3554,6 +3576,7 @@
             qconsts
             mv-typess)
         (atj-gen-shallow-fn-methods (car fns)
+                                    fns-that-may-throw
                                     qconsts
                                     pkg-class-names
                                     fn-method-names
@@ -3565,6 +3588,7 @@
             qconsts
             mv-typess)
         (atj-gen-shallow-all-fn-methods (cdr fns)
+                                        fns-that-may-throw
                                         qconsts
                                         pkg-class-names
                                         fn-method-names
@@ -3601,6 +3625,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-synonym-method ((fn symbolp)
+                                        (fns-that-may-throw symbol-listp)
                                         (fn-type atj-function-type-p)
                                         (pkg-class-names string-string-alistp)
                                         (fn-method-names symbol-string-alistp)
@@ -3686,7 +3711,9 @@
        (method-body (jblock-return
                      (jexpr-smethod (jtype-class class)
                                     method-name
-                                    (jexpr-name-list method-param-names)))))
+                                    (jexpr-name-list method-param-names))))
+       (throws (and (member-eq fn fns-that-may-throw)
+                    (list *aij-class-undef-pkg-exc*))))
     (make-jmethod :access (jaccess-public)
                   :abstract? nil
                   :static? t
@@ -3697,13 +3724,14 @@
                   :result (jresult-type out-jtype)
                   :name method-name
                   :params method-params
-                  :throws (list *aij-class-undef-pkg-exc*)
+                  :throws throws
                   :body method-body))
   :prepwork ((local (include-book "std/lists/len" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-gen-shallow-synonym-methods ((fn symbolp)
+                                         (fns-that-may-throw symbol-listp)
                                          (fn-types atj-function-type-listp)
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
@@ -3713,11 +3741,13 @@
           to lists of function types."
   (cond ((endp fn-types) nil)
         (t (cons (atj-gen-shallow-synonym-method fn
+                                                 fns-that-may-throw
                                                  (car fn-types)
                                                  pkg-class-names
                                                  fn-method-names
                                                  wrld)
                  (atj-gen-shallow-synonym-methods fn
+                                                  fns-that-may-throw
                                                   (cdr fn-types)
                                                   pkg-class-names
                                                   fn-method-names
@@ -3727,6 +3757,7 @@
 
 (define atj-gen-shallow-synonym-all-methods
   ((fn symbolp)
+   (fns-that-may-throw symbol-listp)
    (pkg-class-names string-string-alistp)
    (fn-method-names symbol-string-alistp)
    (guards$ booleanp)
@@ -3749,6 +3780,7 @@
        (other-fn-types (atj-function-type-info->others fn-info))
        (all-fn-types (cons main-fn-type other-fn-types)))
     (atj-gen-shallow-synonym-methods fn
+                                     fns-that-may-throw
                                      all-fn-types
                                      pkg-class-names
                                      fn-method-names
@@ -3758,6 +3790,7 @@
 
 (define atj-gen-shallow-all-synonym-methods
   ((fns symbol-listp)
+   (fns-that-may-throw symbol-listp)
    (pkg-class-names string-string-alistp)
    (fn-method-names symbol-string-alistp)
    (guards$ booleanp)
@@ -3767,11 +3800,13 @@
           to lists of functions."
   (cond ((endp fns) nil)
         (t (append (atj-gen-shallow-synonym-all-methods (car fns)
+                                                        fns-that-may-throw
                                                         pkg-class-names
                                                         fn-method-names
                                                         guards$
                                                         wrld)
                    (atj-gen-shallow-all-synonym-methods (cdr fns)
+                                                        fns-that-may-throw
                                                         pkg-class-names
                                                         fn-method-names
                                                         guards$
@@ -3782,6 +3817,7 @@
 (define atj-gen-shallow-pkg-methods ((pkg stringp)
                                      (fns-by-pkg string-symbollist-alistp)
                                      (fns+natives symbol-listp)
+                                     (fns-that-may-throw symbol-listp)
                                      (qconsts atj-qconstants-p)
                                      (pkg-class-names string-string-alistp)
                                      (fn-method-names symbol-string-alistp)
@@ -3827,6 +3863,7 @@
             qconsts
             mv-typess)
         (atj-gen-shallow-all-fn-methods fns
+                                        fns-that-may-throw
                                         qconsts
                                         pkg-class-names
                                         fn-method-names
@@ -3837,6 +3874,7 @@
        (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
        (imported-fns (sort-symbol-listp imported-fns))
        (synonym-methods (atj-gen-shallow-all-synonym-methods imported-fns
+                                                             fns-that-may-throw
                                                              pkg-class-names
                                                              fn-method-names
                                                              guards$
@@ -3862,7 +3900,8 @@
 
 (define atj-gen-shallow-all-pkg-methods ((pkgs string-listp)
                                          (fns-by-pkg string-symbollist-alistp)
-                                         (fns+natives symbol-listp)
+                                         (fns symbol-listp)
+                                         (fns-that-may-throw symbol-listp)
                                          (qconsts atj-qconstants-p)
                                          (pkg-class-names string-string-alistp)
                                          (fn-method-names symbol-string-alistp)
@@ -3896,7 +3935,8 @@
             mv-typess)
         (atj-gen-shallow-pkg-methods pkg
                                      fns-by-pkg
-                                     fns+natives
+                                     fns
+                                     fns-that-may-throw
                                      qconsts
                                      pkg-class-names
                                      fn-method-names
@@ -3909,7 +3949,8 @@
             mv-typess)
         (atj-gen-shallow-all-pkg-methods (cdr pkgs)
                                          fns-by-pkg
-                                         fns+natives
+                                         fns
+                                         fns-that-may-throw
                                          qconsts
                                          pkg-class-names
                                          fn-method-names
@@ -4400,8 +4441,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-shallow-fns-that-may-throw ((fns-to-translate symbol-listp)
+                                        (call-graph alistp))
+  :returns (fns-that-may-throw symbol-listp)
+  :short "Calculate the functions whose corresponding Java methods
+          may throw an @('Acl2UndefinedPackageException')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Among the natively implemented ACL2 functions,
+     @(tsee pkg-witness) and @(tsee pkg-imports) may cause errors
+     (when called on non-existent packages);
+     their corresponding Java methods
+     may throw @('Acl2UndefinedPackageException')s.
+     Thus, any method that calls these methods, directly or indirectly,
+     must declare that exception.
+     The Java methods' call graph is the same as the ACL2 functions';
+     thus, we can look at the ACL2 call graph to determine
+     which functions may cause non-existent package errors,
+     and thus whose corresponding methods must declare the exception.")
+   (xdoc::p
+    "The call graph is in the format amenable to the "
+    (xdoc::seetopic "depgraph::depgraph" "dependency graph library")
+    ". We use @(tsee depgraph::transdeps) to calculate
+     all the functions in the call graph that call
+     @(tsee pkg-witness) or @(tsee pkg-imports) directly or indirectly.
+     But first, we need to invert the graph (via @(tsee depgraph::invert)),
+     because the edges in our call graph go from callers to callees,
+     while here we want to find all the functions that
+     @(tsee pkg-witness) and @(tsee pkg-imports) are called by.")
+   (xdoc::p
+    "We return a list of the functions in the call graph
+     that call @(tsee pkg-witness) and @(tsee pkg-imports)
+     directly or indirectly.
+     The result of @(tsee depgraph::transdeps) always includes
+     the inputs @(tsee pkg-witness) and @(tsee pkg-imports),
+     even when these functions do not appear in the call graph.
+     Thus, eliminate them from the result
+     if they are not among the funtions to translate."))
+  (b* ((inv-call-graph (depgraph::invert call-graph))
+       (callers (depgraph::transdeps (list 'pkg-witness 'pkg-imports)
+                                     inv-call-graph))
+       ((unless (symbol-listp callers))
+        (raise "Internal error: ~
+                callers ~x0 of PKG-WITNESS and PKG-IMPORTS are not all symbols."
+               callers)))
+    (intersection-eq callers fns-to-translate))
+  :prepwork
+  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-shallow-main-class ((pkgs string-listp)
                                     (fns-to-translate symbol-listp)
+                                    (call-graph alistp)
                                     (guards$ booleanp)
                                     (java-class$ stringp)
                                     (verbose$ booleanp)
@@ -4477,10 +4570,13 @@
                                      :symbols (list t nil)
                                      :pairs nil
                                      :next-index 1))
+       (fns-that-may-throw (atj-shallow-fns-that-may-throw fns-to-translate
+                                                           call-graph))
        ((mv methods-by-pkg qconsts mv-typess)
         (atj-gen-shallow-all-pkg-methods pkgs
                                          fns-by-pkg
                                          fns
+                                         fns-that-may-throw
                                          qconsts
                                          pkg-class-names
                                          fn-method-names
@@ -4559,6 +4655,7 @@
                                     (java-class$ stringp)
                                     (pkgs string-listp)
                                     (fns-to-translate symbol-listp)
+                                    (call-graph alistp)
                                     (verbose$ booleanp)
                                     (wrld plist-worldp))
   :guard (no-duplicatesp-equal pkgs)
@@ -4581,7 +4678,7 @@
      the Java test class."))
   (b* (((mv class pkg-class-names fn-method-names)
         (atj-gen-shallow-main-class
-         pkgs fns-to-translate guards$ java-class$ verbose$ wrld))
+         pkgs fns-to-translate call-graph guards$ java-class$ verbose$ wrld))
        ((run-when verbose$)
         (cw "~%Generate the main Java compilation unit.~%"))
        (cunit

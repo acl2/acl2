@@ -849,22 +849,28 @@
      keeping @('collected-chk') empty,
      and then it processes @('worklist-chk'),
      and it is during this processing (when @('gen?') is thus @('nil'))
-     that @('collected-chk') gets populated."))
+     that @('collected-chk') gets populated.")
+   (xdoc::p
+    "We also return a duplicate-free list of
+     the function symbols called by the term
+     for which Java code must be generated."))
 
   (define atj-collect-fns-in-term ((term pseudo-termp)
                                    (gen? booleanp)
                                    (worklist-gen symbol-listp)
                                    (worklist-chk symbol-listp)
+                                   (called-fns symbol-listp)
                                    (collected-gen symbol-listp)
                                    (collected-chk symbol-listp)
                                    (deep$ booleanp)
                                    (guards$ booleanp))
     :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
                  (new-worklist-chk symbol-listp :hyp :guard)
+                 (new-called-fns symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
     (b* (((when (member-eq (pseudo-term-kind term)
                            '(:null :var :quote)))
-          (mv worklist-gen worklist-chk nil))
+          (mv worklist-gen worklist-chk called-fns nil))
          (fn (pseudo-term-call->fn term))
          (args (pseudo-term-call->args term))
          ((when (eq fn 'return-last))
@@ -873,13 +879,14 @@
                 (raise "Internal error: ~
                         the first argument of ~x0 is not a quoted constant."
                        term)
-                (mv worklist-gen worklist-chk nil))) ; irrelevant
+                (mv worklist-gen worklist-chk called-fns nil))) ; irrelevant
             (case (pseudo-term-quote->val 1st-arg)
               (acl2::mbe1-raw (if guards$
                                   (atj-collect-fns-in-term (second args)
                                                            gen?
                                                            worklist-gen
                                                            worklist-chk
+                                                           called-fns
                                                            collected-gen
                                                            collected-chk
                                                            deep$
@@ -888,65 +895,75 @@
                                                          gen?
                                                          worklist-gen
                                                          worklist-chk
+                                                         called-fns
                                                          collected-gen
                                                          collected-chk
                                                          deep$
                                                          guards$)))
               (acl2::progn (b* (((mv worklist-gen
                                      worklist-chk
+                                     called-fns
                                      unsuppported-return-last?)
                                  (atj-collect-fns-in-term (second args)
                                                           nil
                                                           worklist-gen
                                                           worklist-chk
+                                                          called-fns
                                                           collected-gen
                                                           collected-chk
                                                           deep$
                                                           guards$))
                                 ((when unsuppported-return-last?)
-                                 (mv worklist-gen worklist-chk t)))
+                                 (mv worklist-gen worklist-chk called-fns t)))
                              (atj-collect-fns-in-term (third args)
                                                       gen?
                                                       worklist-gen
                                                       worklist-chk
+                                                      called-fns
                                                       collected-gen
                                                       collected-chk
                                                       deep$
                                                       guards$)))
-              (t (mv worklist-gen worklist-chk t)))))
-         ((mv worklist-gen worklist-chk unsupported-return-last?)
+              (t (mv worklist-gen worklist-chk called-fns t)))))
+         ((mv worklist-gen worklist-chk called-fns unsupported-return-last?)
           (atj-collect-fns-in-terms args
                                     gen?
                                     worklist-gen
                                     worklist-chk
+                                    called-fns
                                     collected-gen
                                     collected-chk
                                     deep$
                                     guards$))
-         ((when unsupported-return-last?) (mv worklist-gen worklist-chk t))
+         ((when unsupported-return-last?)
+          (mv worklist-gen worklist-chk called-fns t))
          ((when (consp fn))
           (atj-collect-fns-in-term (pseudo-lambda->body fn)
                                    gen?
                                    worklist-gen
                                    worklist-chk
+                                   called-fns
                                    collected-gen
                                    collected-chk
                                    deep$
                                    guards$)))
       (if gen?
-          (if (or (member-eq fn worklist-gen)
-                  (member-eq fn collected-gen))
-              (mv worklist-gen worklist-chk nil)
-            (mv (cons fn worklist-gen)
-                (remove1-eq fn worklist-chk)
-                nil))
+          (b* ((called-fns (add-to-set-eq fn called-fns)))
+            (if (or (member-eq fn worklist-gen)
+                    (member-eq fn collected-gen))
+                (mv worklist-gen worklist-chk called-fns nil)
+              (mv (cons fn worklist-gen)
+                  (remove1-eq fn worklist-chk)
+                  called-fns
+                  nil)))
         (if (or (member-eq fn worklist-gen)
                 (member-eq fn worklist-chk)
                 (member-eq fn collected-gen)
                 (member-eq fn collected-chk))
-            (mv worklist-gen worklist-chk nil)
+            (mv worklist-gen worklist-chk called-fns nil)
           (mv worklist-gen
               (cons fn worklist-chk)
+              called-fns
               nil))))
     :measure (pseudo-term-count term))
 
@@ -954,28 +971,33 @@
                                     (gen? booleanp)
                                     (worklist-gen symbol-listp)
                                     (worklist-chk symbol-listp)
+                                    (called-fns symbol-listp)
                                     (collected-gen symbol-listp)
                                     (collected-chk symbol-listp)
                                     (deep$ booleanp)
                                     (guards$ booleanp))
     :returns (mv (new-worklist-gen symbol-listp :hyp :guard)
                  (new-worklist-chk symbol-listp :hyp :guard)
+                 (new-called-fns symbol-listp :hyp :guard)
                  (unsuppported-return-last? booleanp))
-    (b* (((when (endp terms)) (mv worklist-gen worklist-chk nil))
-         ((mv worklist-gen worklist-chk unsuppported-return-last?)
+    (b* (((when (endp terms)) (mv worklist-gen worklist-chk called-fns nil))
+         ((mv worklist-gen worklist-chk called-fns unsuppported-return-last?)
           (atj-collect-fns-in-term (car terms)
                                    gen?
                                    worklist-gen
                                    worklist-chk
+                                   called-fns
                                    collected-gen
                                    collected-chk
                                    deep$
                                    guards$))
-         ((when unsuppported-return-last?) (mv worklist-gen worklist-chk t)))
+         ((when unsuppported-return-last?)
+          (mv worklist-gen worklist-chk called-fns t)))
       (atj-collect-fns-in-terms (cdr terms)
                                 gen?
                                 worklist-gen
                                 worklist-chk
+                                called-fns
                                 collected-gen
                                 collected-chk
                                 deep$
@@ -1003,13 +1025,15 @@
                               (worklist-chk symbol-listp)
                               (collected-gen symbol-listp)
                               (collected-chk symbol-listp)
+                              (call-graph alistp)
                               (deep$ booleanp)
                               (guards$ booleanp)
                               (verbose$ booleanp)
                               ctx
                               state)
   :returns (mv erp
-               (fns "A @(tsee symbol-listp).")
+               (result "A tuple @('(fns new-call-graph)') satisfying
+                        @('(typed-tuplep symbol-listp alistp result)').")
                state)
   :mode :program ; until termination is proved (which will take a bit of work)
   :short "Worklist algorithm iteration."
@@ -1022,7 +1046,10 @@
    (xdoc::p
     "The iteration ends when both worklists are empty.
      When that happens, we return the collected list of functions
-     for which code must be generated.")
+     for which code must be generated.
+     We also return a call graph of these functions,
+     as an alist from each function
+     to a list of its directly called functions.")
    (xdoc::p
     "We always pick the next function from @('worklist-gen'),
      until it is empty; then we switch to @('worklist-chk').
@@ -1077,7 +1104,7 @@
      the worklists are used as stacks."))
   (b* (((when (and (endp worklist-gen)
                    (endp worklist-chk)))
-        (value collected-gen))
+        (value (list collected-gen call-graph)))
        ((mv fn
             gen?
             worklist-gen
@@ -1104,6 +1131,7 @@
                                 worklist-chk
                                 collected-gen
                                 collected-chk
+                                call-graph
                                 deep$
                                 guards$
                                 verbose$
@@ -1130,11 +1158,12 @@
         (if gen?
             (mv (cons fn collected-gen) collected-chk)
           (mv collected-gen (cons fn collected-chk))))
-       ((mv worklist-gen worklist-chk unsuppported-return-last?)
+       ((mv worklist-gen worklist-chk called-fns unsuppported-return-last?)
         (atj-collect-fns-in-term body
                                  gen?
                                  worklist-gen
                                  worklist-chk
+                                 nil
                                  collected-gen
                                  collected-chk
                                  deep$
@@ -1143,11 +1172,13 @@
         (er-soft+ ctx t nil
                   "The function RETURN-LAST is used ~
                    with an unsupported first argument; ~
-                   therefore, code generation cannot proceed.")))
+                   therefore, code generation cannot proceed."))
+       (call-graph (acons fn called-fns call-graph)))
     (atj-worklist-iterate worklist-gen
                           worklist-chk
                           collected-gen
                           collected-chk
+                          call-graph
                           deep$
                           guards$
                           verbose$
@@ -1162,7 +1193,8 @@
                               ctx
                               state)
   :returns (mv erp
-               (fns-to-translate "A @(tsee symbol-listp).")
+               (result "A tuple @('(fns-to-translate call-graph')) satisfying
+                        @('(typed-tuplep symbol-listp alistp result)').")
                state)
   :mode :program ; because of ATJ-WORKLIST-ITERATE
   :short "Collect the names of all the ACL2 functions to be translated to Java,
@@ -1178,25 +1210,29 @@
    (xdoc::p
     "The returned list of function names should have no duplicates,
      but we double-check that for robustness.
-     The list is in no particular order."))
+     The list is in no particular order.")
+   (xdoc::p
+    "We also return the call graph of those functions."))
   (b* (((run-when verbose$)
         (cw "~%ACL2 functions to translate to Java:~%"))
        (worklist-gen targets$)
-       ((er fns) (atj-worklist-iterate worklist-gen
-                                       nil
-                                       nil
-                                       nil
-                                       deep$
-                                       guards$
-                                       verbose$
-                                       ctx
-                                       state))
+       ((er (list fns call-graph))
+        (atj-worklist-iterate worklist-gen
+                              nil
+                              nil
+                              nil
+                              nil
+                              deep$
+                              guards$
+                              verbose$
+                              ctx
+                              state))
        ((unless (no-duplicatesp-eq fns))
         (value (raise "Internal error: ~
                        the list ~x0 of collected function names ~
                        has duplicates."
                       fns))))
-    (value fns)))
+    (value (list fns call-graph))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1246,6 +1282,7 @@
 (define atj-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
                (result "A tuple @('(fns-to-translate
+                                    call-graph
                                     pkgs
                                     deep$
                                     guards$
@@ -1258,6 +1295,7 @@
                                     verbose$)')
                         satisfying
                         @('(typed-tuplep symbol-listp
+                                         alistp
                                          string-listp
                                          booleanp
                                          booleanp
@@ -1315,10 +1353,11 @@
                   output-file-test$))
         (atj-process-output-dir output-dir java-class$ tests$ ctx state))
        ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
-       ((er fns-to-translate) (atj-fns-to-translate
-                               targets deep guards verbose ctx state))
+       ((er (list fns-to-translate call-graph))
+        (atj-fns-to-translate targets deep guards verbose ctx state))
        (pkgs (atj-pkgs-to-translate verbose state)))
     (value (list fns-to-translate
+                 call-graph
                  pkgs
                  deep
                  guards

@@ -176,6 +176,7 @@
      A message of successful completion is printed,
      regardless of @(':verbose')."))
   (b* (((er (list fns-to-translate
+                  call-graph
                   pkgs
                   deep$
                   guards$
@@ -197,6 +198,7 @@
                                    tests$
                                    pkgs
                                    fns-to-translate
+                                   call-graph
                                    verbose$
                                    state))
        (- (if output-file-test$

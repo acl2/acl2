@@ -501,6 +501,7 @@
                            (output-file$ stringp)
                            (pkgs string-listp)
                            (fns-to-translate symbol-listp)
+                           (call-graph alistp)
                            (verbose$ booleanp)
                            state)
   :returns (mv (pkg-class-names "A @(tsee string-string-alistp).")
@@ -520,19 +521,21 @@
   (b* ((wrld (w state))
        ((mv cunit
             pkg-class-names
-            fn-method-names) (if deep$
-                                 (mv (atj-gen-deep-main-cunit java-package$
-                                                              java-class$
-                                                              verbose$)
-                                     nil
-                                     nil)
-                               (atj-gen-shallow-main-cunit guards$
-                                                           java-package$
-                                                           java-class$
-                                                           pkgs
-                                                           fns-to-translate
-                                                           verbose$
-                                                           wrld)))
+            fn-method-names)
+        (if deep$
+            (mv (atj-gen-deep-main-cunit java-package$
+                                         java-class$
+                                         verbose$)
+                nil
+                nil)
+          (atj-gen-shallow-main-cunit guards$
+                                      java-package$
+                                      java-class$
+                                      pkgs
+                                      fns-to-translate
+                                      call-graph
+                                      verbose$
+                                      wrld)))
        ((unless (jcunitp cunit))
         (raise "Internal error: generated an invalid compilation unit.")
         (mv nil nil state))
@@ -592,6 +595,7 @@
                             (tests$ atj-test-listp)
                             (pkgs string-listp)
                             (fns-to-translate symbol-listp)
+                            (call-graph alistp)
                             (verbose$ booleanp)
                             state)
   :returns (mv erp val state)
@@ -625,6 +629,7 @@
                             output-file$
                             pkgs
                             fns-to-translate
+                            call-graph
                             verbose$
                             state))
         (state (atj-gen-env-file deep$
