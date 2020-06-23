@@ -1470,6 +1470,14 @@
     
 
 
+(local (include-book "std/util/termhints" :dir :system))
+
+(local (in-theory (disable lookup-id-in-bounds-when-positive
+                           lookup-id-out-of-bounds
+                           satlink::equal-of-lit-negate-backchain
+                           acl2::nth-when-too-large-cheap
+                           true-listp-lookup-id-of-node-listp
+                           member-equal)))
 
 (define contradictory-literal-badguy ((sink natp) (source natp)
                                       invals regvals aignet obs-dom-array)
@@ -1515,7 +1523,8 @@
              (not badguy))
     :hints (("goal" :induct <call>
              :expand (<call>)
-             :do-not-induct t)))
+             :do-not-induct t))
+    :rule-classes ((:rewrite :backchain-limit-lst 1)))
   
   
   (defret contradictory-literal-badguy-member
@@ -1548,10 +1557,10 @@
                       (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
                   badguy
                   (<= (nfix sweep-position) (nfix sink))
-                  (<= (nfix sweep-position) (nfix source)))
+                  (<= (nfix sweep-position) (nfix source))
+                  (not (descendant-p sink (lit->var badguy) aignet)))
              ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
-             (or (member-equal (lit-negate badguy) (obs-dom-info->doms (nth sink obs-dom-array)))
-                 (descendant-p sink (lit->var badguy) aignet)))
+             (member-equal (lit-negate badguy) (obs-dom-info->doms (nth sink obs-dom-array))))
     :hints (("goal" :induct <call>
              :expand (<call>)
              :do-not-induct t)
@@ -1567,30 +1576,143 @@
     :hints (("goal" :use ((:instance descendant-p-implies-lte-natp1 (a (nfix a)) (b (nfix b)))
                           (:instance descendant-p-implies-lte-natp1 (b (nfix a)) (a (nfix b)))))))
 
+  (defthm descendant-p-of-fanins
+    (implies (equal (ctype (stype (car (lookup-id sink aignet)))) :gate)
+             (and (descendant-p sink (lit->var (fanin :gate0 (lookup-id sink aignet))) aignet)
+                  (descendant-p sink (lit->var (fanin :gate1 (lookup-id sink aignet))) aignet)))
+    :hints (("goal" :expand ((:free (source) (descendant-p sink source aignet))))))
+  
 
-  ;; (defthm cross-literal-badguys
-  ;;   (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
-  ;;                 (obs-parent-invar obs-dom-array aignet)
+
+  ;; (local (defthm no-mutual-domination-lemma-rw
+  ;;          (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                        (obs-parent-invar obs-dom-array aignet)
+  ;;                        (bind-free '((sink . sink)) (sink))
+  ;;                        (<= (nfix sweep-position) (nfix sink))
+  ;;                        (descendant-p sink (lit->var a) aignet)
+  ;;                        (descendant-p sink (lit->var b) aignet)
+  ;;                        (not (equal (nfix sink) (lit->var a)))
+  ;;                        (not (equal (nfix sink) (lit->var b)))
+  ;;                        (member a (obs-dom-info->doms (nth (lit->var b) obs-dom-array)))
+  ;;                        (member a (obs-dom-info->doms (nth sink obs-dom-array))))
+  ;;                   (not (member b (obs-dom-info->doms (nth (lit->var a) obs-dom-array)))))
+  ;;          :hints (("goal" :use no-mutual-domination-lemma))))
+
+  ;; (local (defthm no-mutual-domination-lemma-rw2
+  ;;          (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                        (obs-parent-invar obs-dom-array aignet)
+  ;;                        (bind-free '((sink . sink)) (sink))
+  ;;                        (<= (nfix sweep-position) (nfix sink))
+  ;;                        (descendant-p sink (lit->var a) aignet)
+  ;;                        (descendant-p sink (lit->var b) aignet)
+  ;;                        (not (equal (nfix sink) (lit->var a)))
+  ;;                        (not (equal (nfix sink) (lit->var b)))
+  ;;                        (member b (obs-dom-info->doms (nth (lit->var a) obs-dom-array)))
+  ;;                        (member a (obs-dom-info->doms (nth sink obs-dom-array))))
+  ;;                   (not (member a (obs-dom-info->doms (nth (lit->var b) obs-dom-array)))))
+  ;;          :hints (("goal" :use no-mutual-domination-lemma))))
+
+  ;; (defret contradictory-literal-badguy-invar-rw
+  ;;   (implies (and (equal bg badguy)
+  ;;                 (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
   ;;                 (or (not (obs-dom-info->reached (nth source obs-dom-array)))
   ;;                     (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+  ;;                 badguy
+  ;;                 (<= (nfix sweep-position) (nfix sink))
   ;;                 (<= (nfix sweep-position) (nfix source))
-  ;;                 (<= (nfix sweep-position) (lit->var a))
-  ;;                 (<= (nfix sweep-position) (lit->var b))
-  ;;                 (not (equal (lit->var a) (lit->var b)))
-  ;;                 (equal (contradictory-literal-badguy (lit->var a) source invals regvals aignet obs-dom-array)
-  ;;                        (lit-fix b)))
-  ;;            (not (equal (contradictory-literal-badguy (lit->var b) source invals regvals aignet obs-dom-array)
-  ;;                        (lit-fix a))))
-  ;;   :hints (("goal" :use ((:instance contradictory-literal-badguy-invar
-  ;;                          (sink (lit->var a)))
-  ;;                         (:instance contradictory-literal-badguy-invar
-  ;;                          (sink (lit->var b)))
-  ;;                         (:instance no-mutual-domination-lemma
-  ;;                          (sink parent))
-  ;;                         (:instance no-mutual-domination-lemma
-  ;;                          (sink parent) (a b) (b a)))
-  ;;            :in-theory (disable contradictory-literal-badguy-invar)))
-  ;;   :otf-flg t)
+  ;;                 (not (descendant-p sink (lit->var badguy) aignet)))
+  ;;            ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
+  ;;            (member-equal (lit-negate bg) (obs-dom-info->doms (nth sink obs-dom-array))))
+  ;;   :hints (("goal" :induct <call>
+  ;;            :expand (<call>)
+  ;;            :do-not-induct t)
+  ;;           (and stable-under-simplificationp
+  ;;                '(:cases ((equal (stype (car (lookup-id sink aignet))) :and))))
+  ;;           (and stable-under-simplificationp
+  ;;                '(:expand ((:free (bla) (descendant-p sink bla aignet)))))))
+  
+
+  (defthm cross-literal-badguys
+    (b* ((a (fanin :gate0 (lookup-id sink aignet)))
+         (b (fanin :gate1 (lookup-id sink aignet))))
+      
+      (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                    (obs-parent-invar obs-dom-array aignet)
+                    (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                        (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                    (<= (nfix sweep-position) (nfix source))
+                    (<= (nfix sweep-position) (lit->var a))
+                    (<= (nfix sweep-position) (lit->var b))
+                    (equal (stype (car (lookup-id sink aignet))) :and)
+                    (obs-dom-info->reached (nth sink obs-dom-array))
+                    (not (cube-contradictionp (obs-dom-info->doms (nth sink obs-dom-array))))
+                    (not (equal (lit->var a) (lit->var b)))
+                    ;; (not (equal a (lit-negate b)))
+                    (equal (contradictory-literal-badguy (lit->var a) source invals regvals aignet obs-dom-array)
+                           b))
+               (not (equal (contradictory-literal-badguy (lit->var b) source invals regvals aignet obs-dom-array)
+                           a))))
+    :hints (;; ("goal" :use ((:instance contradictory-literal-badguy-invar
+            ;;                (sink (lit->var (fanin :gate0 (lookup-id sink aignet)))))
+            ;;               (:instance contradictory-literal-badguy-invar
+            ;;                (sink (lit->var (fanin :gate1 (lookup-id sink aignet)))))
+            ;;               (:instance no-mutual-domination-lemma
+            ;;                (sink sink)
+            ;;                (a (lit-negate (fanin :gate0 (lookup-id sink aignet))))
+            ;;                (b (fanin :gate1 (lookup-id sink aignet))))
+            ;;               (:instance no-mutual-domination-lemma
+            ;;                (sink sink)
+            ;;                (a (lit-negate (fanin :gate1 (lookup-id sink aignet))))
+            ;;                (b (fanin :gate0 (lookup-id sink aignet))))
+            ;;               (:instance contradictory-literal-badguy-member
+            ;;                (sink (lit->var (fanin :gate0 (lookup-id sink aignet)))))
+            ;;               (:instance contradictory-literal-badguy-member
+            ;;                (sink (lit->var (fanin :gate1 (lookup-id sink aignet))))))
+            ;;  :in-theory (disable contradictory-literal-badguy-invar
+            ;;                      contradictory-literal-badguy-member))
+            ;; ("goal" :in-theory (disable contradictory-literal-badguy-invar))
+            (acl2::use-termhint
+             (b* ((a (fanin :gate0 (lookup-id sink aignet)))
+                  (b (fanin :gate1 (lookup-id sink aignet)))
+                  ((obs-dom-info sinkinf) (nth sink obs-dom-array))
+                  (b-desc-of-a (descendant-p (lit->var a) (lit->var b) aignet))
+                  (a-desc-of-b (descendant-p (lit->var b) (lit->var a) aignet))
+                  ((when (and a-desc-of-b b-desc-of-a))
+                   '(:use ((:instance acl2::mark-clause-is-true (x "mutual descendants")))))
+                  (neg-b-dom-a (member-equal (lit-negate b)
+                                             (obs-dom-info->doms
+                                              (nth (lit->var a) obs-dom-array))))
+                  (neg-a-dom-b (member-equal (lit-negate a)
+                                             (obs-dom-info->doms
+                                              (nth (lit->var b) obs-dom-array))))
+                  ((when (and (not b-desc-of-a) (not neg-b-dom-a)))
+                   `(:use ((:instance acl2::mark-clause-is-true (x "~b must dominate a"))
+                           (:instance contradictory-literal-badguy-invar
+                            (sink (lit->var ,(acl2::hq a)))))
+                     :in-theory (disable contradictory-literal-badguy-invar)))
+                  ((when (and (not a-desc-of-b) (not neg-a-dom-b)))
+                   `(:use ((:instance acl2::mark-clause-is-true (x "~a must dominate b"))
+                           (:instance contradictory-literal-badguy-invar
+                            (sink (lit->var ,(acl2::hq b)))))
+                     :in-theory (disable contradictory-literal-badguy-invar)))
+                  ((when neg-b-dom-a)
+                   `(:use ((:instance acl2::mark-clause-is-true (x "~b dominates a"))
+                           (:instance contradictory-literal-badguy-member
+                            (sink (lit->var ,(acl2::hq b))))
+                           (:instance no-mutual-domination-lemma
+                            (a (lit-negate ,(acl2::hq b)))
+                            (b ,(acl2::hq a))))
+                     :in-theory (disable contradictory-literal-badguy-member
+                                         contradictory-literal-badguy-invar
+                                         ))))
+               `(:use ((:instance acl2::mark-clause-is-true (x "~a dominates b"))
+                       (:instance contradictory-literal-badguy-member
+                            (sink (lit->var ,(acl2::hq a))))
+                       (:instance no-mutual-domination-lemma
+                        (a (lit-negate ,(acl2::hq a)))
+                        (b ,(acl2::hq b))))
+                 :in-theory (disable contradictory-literal-badguy-member
+                                     contradictory-literal-badguy-invar))))))
                   
 
   (local (defthm b-xor-equal-1
@@ -1687,42 +1809,434 @@
                       (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
                       (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))
+            (and stable-under-simplificationp
+                 '(:cases ((equal
+                            (lit->var (fanin :gate0 (lookup-id sink aignet)))
+                            (lit->var (fanin :gate1 (lookup-id sink aignet)))))))
             ;; (and stable-under-simplificationp
             ;;      '(:cases ((< (lit->var (fanin :gate0 (lookup-id sink aignet))) (nfix sweep-position)))))
             ;; (and stable-under-simplificationp
             ;;      '(:cases ((< (lit->var (fanin :gate1 (lookup-id sink aignet))) (nfix sweep-position)))))
             ;; (and stable-under-simplificationp
             ;;      '(:cases ((cube-contradictionp (obs-dom-info->doms (nth sink obs-dom-array))))))
-            )))
+            ))
+
+  (local (defthm aignet-eval-conjunction-when-member
+           (implies (and (equal (lit-eval lit invals regvals aignet) 0)
+                         (member lit lits))
+                    (equal (aignet-eval-conjunction lits invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+  
+  (defthm unreachable-observability-invariant
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (obs-parent-invar obs-dom-array aignet)
+                  (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                      (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                  (<= (nfix sweep-position) (nfix sink))
+                  (<= (nfix sweep-position) (nfix source))
+                  (aignet-idp sink aignet)
+                  (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet))
+             (equal (id-eval-toggle sink source invals regvals aignet)
+                    (id-eval sink invals regvals aignet)))
+    :hints (("goal" :use (contradictory-literals-invariant
+                          (:instance aignet-eval-conjunction-when-member
+                           (lit (contradictory-literal-badguy sink source invals regvals aignet obs-dom-array))
+                           (lits (obs-dom-info->doms (nth sink obs-dom-array)))))
+             :in-theory (e/d (obs-dom-info-eval)
+                             (contradictory-literals-invariant
+                              aignet-eval-conjunction-when-member))))))
+
+
+
+
+
+(define observability-badguy ((sink natp) (source natp)
+                                      invals regvals aignet obs-dom-array)
+  :measure (nfix sink)
+  :returns (badguy maybe-litp)
+  :guard (and (id-existsp sink aignet)
+              (id-existsp source aignet)
+              (<= (num-regs aignet) (bits-length regvals))
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-fanins aignet) (dominfo-length obs-dom-array)))
+  :verify-guards nil
+  (b* ((dominfo (get-dominfo sink obs-dom-array))
+       ((unless (obs-dom-info->reached dominfo)) nil)
+       
+       ((when (< (nfix sink) (nfix source))) nil)
+       (contra (cube-contradictionp (obs-dom-info->doms dominfo)))
+       ((when contra)
+        (if (bit->bool (lit-eval contra invals regvals aignet))
+            (lit-negate contra)
+          contra))
+       ((when (eql (nfix sink) (nfix source))) nil)
+       ((unless (eql (id->type sink aignet) (gate-type))) nil)
+       (fanin0  (gate-id->fanin0 sink aignet))
+       (fanin1  (gate-id->fanin1 sink aignet))
+       (xor (eql (id->regp sink aignet) 1))
+       (badguy0 (observability-badguy (lit->var fanin0)
+                                              source invals regvals aignet obs-dom-array))
+       ((when (eql fanin0 fanin1))
+        (if (or xor (not (obs-dom-info->reached dominfo)))
+            nil
+          badguy0))
+       ((when (eql fanin0 (lit-negate fanin1))) nil)
+       (badguy1 (observability-badguy (lit->var fanin1)
+                                              source invals regvals aignet obs-dom-array))
+       ((unless (obs-dom-info->reached dominfo)) nil)
+       ((when (and badguy0 (or xor (not (eql badguy0 fanin1))))) badguy0)
+       ((when (and badguy1 (or xor (not (eql badguy1 fanin0))))) badguy1))
+    nil)
+  ///
+  (local (in-theory (disable (:d observability-badguy))))
+  (defret observability-badguy-when-less
+    (implies (< (nfix sink) (nfix source))
+             (not badguy))
+    :hints (("goal" :induct <call>
+             :expand (<call>)
+             :do-not-induct t))
+    :rule-classes ((:rewrite :backchain-limit-lst 1)))
+  
+  
+  (defret observability-badguy-member
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  badguy
+                  (<= (nfix sweep-position) (nfix sink))
+                  (<= (nfix sweep-position) (nfix source)))
+             (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array))))
+    :hints (("goal" :induct <call>
+             :expand (<call>))
+            (and stable-under-simplificationp
+                 '(:cases ((equal (stype (car (lookup-id sink aignet))) :and))
+                   :do-not-induct t))))
+
+  ;; (local (defthm lit->var-when-lit-negate-equal
+  ;;          (implies (equal (lit-negate x) y)
+  ;;                   (equal (lit->var x) (lit->var y)))))
+
+  
+  (local (defthm lit-var-when-equal-lit-negate
+           (implies (equal x (lit-negate y))
+                    (and (equal (lit->neg x) (b-not (lit->neg y)))
+                         (equal (lit->var x) (lit->var y))))
+           ;; :rule-classes :forward-chaining
+           ))
+
+  (defret observability-badguy-invar
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                      (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                  badguy
+                  (<= (nfix sweep-position) (nfix sink))
+                  (<= (nfix sweep-position) (nfix source))
+                  (not (descendant-p sink (lit->var badguy) aignet)))
+             ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
+             (member-equal (lit-negate badguy) (obs-dom-info->doms (nth sink obs-dom-array))))
+    :hints (("goal" :induct <call>
+             :expand (<call>)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:cases ((equal (stype (car (lookup-id sink aignet))) :and))))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (bla) (descendant-p sink bla aignet)))))))
+  
+  (defthm descendants-antisymm
+    (implies (and (descendant-p a b aignet)
+                  (not (equal (nfix a) (nfix b))))
+             (not (descendant-p b a aignet)))
+    :hints (("goal" :use ((:instance descendant-p-implies-lte-natp1 (a (nfix a)) (b (nfix b)))
+                          (:instance descendant-p-implies-lte-natp1 (b (nfix a)) (a (nfix b)))))))
+
+  (defthm descendant-p-of-fanins
+    (implies (equal (ctype (stype (car (lookup-id sink aignet)))) :gate)
+             (and (descendant-p sink (lit->var (fanin :gate0 (lookup-id sink aignet))) aignet)
+                  (descendant-p sink (lit->var (fanin :gate1 (lookup-id sink aignet))) aignet)))
+    :hints (("goal" :expand ((:free (source) (descendant-p sink source aignet))))))
+  
+
+
+  ;; (local (defthm no-mutual-domination-lemma-rw
+  ;;          (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                        (obs-parent-invar obs-dom-array aignet)
+  ;;                        (bind-free '((sink . sink)) (sink))
+  ;;                        (<= (nfix sweep-position) (nfix sink))
+  ;;                        (descendant-p sink (lit->var a) aignet)
+  ;;                        (descendant-p sink (lit->var b) aignet)
+  ;;                        (not (equal (nfix sink) (lit->var a)))
+  ;;                        (not (equal (nfix sink) (lit->var b)))
+  ;;                        (member a (obs-dom-info->doms (nth (lit->var b) obs-dom-array)))
+  ;;                        (member a (obs-dom-info->doms (nth sink obs-dom-array))))
+  ;;                   (not (member b (obs-dom-info->doms (nth (lit->var a) obs-dom-array)))))
+  ;;          :hints (("goal" :use no-mutual-domination-lemma))))
+
+  ;; (local (defthm no-mutual-domination-lemma-rw2
+  ;;          (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                        (obs-parent-invar obs-dom-array aignet)
+  ;;                        (bind-free '((sink . sink)) (sink))
+  ;;                        (<= (nfix sweep-position) (nfix sink))
+  ;;                        (descendant-p sink (lit->var a) aignet)
+  ;;                        (descendant-p sink (lit->var b) aignet)
+  ;;                        (not (equal (nfix sink) (lit->var a)))
+  ;;                        (not (equal (nfix sink) (lit->var b)))
+  ;;                        (member b (obs-dom-info->doms (nth (lit->var a) obs-dom-array)))
+  ;;                        (member a (obs-dom-info->doms (nth sink obs-dom-array))))
+  ;;                   (not (member a (obs-dom-info->doms (nth (lit->var b) obs-dom-array)))))
+  ;;          :hints (("goal" :use no-mutual-domination-lemma))))
+
+  ;; (defret observability-badguy-invar-rw
+  ;;   (implies (and (equal bg badguy)
+  ;;                 (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                 (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+  ;;                     (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+  ;;                 badguy
+  ;;                 (<= (nfix sweep-position) (nfix sink))
+  ;;                 (<= (nfix sweep-position) (nfix source))
+  ;;                 (not (descendant-p sink (lit->var badguy) aignet)))
+  ;;            ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
+  ;;            (member-equal (lit-negate bg) (obs-dom-info->doms (nth sink obs-dom-array))))
+  ;;   :hints (("goal" :induct <call>
+  ;;            :expand (<call>)
+  ;;            :do-not-induct t)
+  ;;           (and stable-under-simplificationp
+  ;;                '(:cases ((equal (stype (car (lookup-id sink aignet))) :and))))
+  ;;           (and stable-under-simplificationp
+  ;;                '(:expand ((:free (bla) (descendant-p sink bla aignet)))))))
+  
+
+  (defthm cross-literal-badguys
+    (b* ((a (fanin :gate0 (lookup-id sink aignet)))
+         (b (fanin :gate1 (lookup-id sink aignet))))
+      
+      (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                    (obs-parent-invar obs-dom-array aignet)
+                    (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                        (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                    (<= (nfix sweep-position) (nfix source))
+                    (<= (nfix sweep-position) (lit->var a))
+                    (<= (nfix sweep-position) (lit->var b))
+                    (equal (stype (car (lookup-id sink aignet))) :and)
+                    (obs-dom-info->reached (nth sink obs-dom-array))
+                    (not (cube-contradictionp (obs-dom-info->doms (nth sink obs-dom-array))))
+                    (not (equal (lit->var a) (lit->var b)))
+                    ;; (not (equal a (lit-negate b)))
+                    (equal (observability-badguy (lit->var a) source invals regvals aignet obs-dom-array)
+                           b))
+               (not (equal (observability-badguy (lit->var b) source invals regvals aignet obs-dom-array)
+                           a))))
+    :hints (;; ("goal" :use ((:instance observability-badguy-invar
+            ;;                (sink (lit->var (fanin :gate0 (lookup-id sink aignet)))))
+            ;;               (:instance observability-badguy-invar
+            ;;                (sink (lit->var (fanin :gate1 (lookup-id sink aignet)))))
+            ;;               (:instance no-mutual-domination-lemma
+            ;;                (sink sink)
+            ;;                (a (lit-negate (fanin :gate0 (lookup-id sink aignet))))
+            ;;                (b (fanin :gate1 (lookup-id sink aignet))))
+            ;;               (:instance no-mutual-domination-lemma
+            ;;                (sink sink)
+            ;;                (a (lit-negate (fanin :gate1 (lookup-id sink aignet))))
+            ;;                (b (fanin :gate0 (lookup-id sink aignet))))
+            ;;               (:instance observability-badguy-member
+            ;;                (sink (lit->var (fanin :gate0 (lookup-id sink aignet)))))
+            ;;               (:instance observability-badguy-member
+            ;;                (sink (lit->var (fanin :gate1 (lookup-id sink aignet))))))
+            ;;  :in-theory (disable observability-badguy-invar
+            ;;                      observability-badguy-member))
+            ;; ("goal" :in-theory (disable observability-badguy-invar))
+            (acl2::use-termhint
+             (b* ((a (fanin :gate0 (lookup-id sink aignet)))
+                  (b (fanin :gate1 (lookup-id sink aignet)))
+                  ((obs-dom-info sinkinf) (nth sink obs-dom-array))
+                  (b-desc-of-a (descendant-p (lit->var a) (lit->var b) aignet))
+                  (a-desc-of-b (descendant-p (lit->var b) (lit->var a) aignet))
+                  ((when (and a-desc-of-b b-desc-of-a))
+                   '(:use ((:instance acl2::mark-clause-is-true (x "mutual descendants")))))
+                  (neg-b-dom-a (member-equal (lit-negate b)
+                                             (obs-dom-info->doms
+                                              (nth (lit->var a) obs-dom-array))))
+                  (neg-a-dom-b (member-equal (lit-negate a)
+                                             (obs-dom-info->doms
+                                              (nth (lit->var b) obs-dom-array))))
+                  ((when (and (not b-desc-of-a) (not neg-b-dom-a)))
+                   `(:use ((:instance acl2::mark-clause-is-true (x "~b must dominate a"))
+                           (:instance observability-badguy-invar
+                            (sink (lit->var ,(acl2::hq a)))))
+                     :in-theory (disable observability-badguy-invar)))
+                  ((when (and (not a-desc-of-b) (not neg-a-dom-b)))
+                   `(:use ((:instance acl2::mark-clause-is-true (x "~a must dominate b"))
+                           (:instance observability-badguy-invar
+                            (sink (lit->var ,(acl2::hq b)))))
+                     :in-theory (disable observability-badguy-invar)))
+                  ((when neg-b-dom-a)
+                   `(:use ((:instance acl2::mark-clause-is-true (x "~b dominates a"))
+                           (:instance observability-badguy-member
+                            (sink (lit->var ,(acl2::hq b))))
+                           (:instance no-mutual-domination-lemma
+                            (a (lit-negate ,(acl2::hq b)))
+                            (b ,(acl2::hq a))))
+                     :in-theory (disable observability-badguy-member
+                                         observability-badguy-invar
+                                         ))))
+               `(:use ((:instance acl2::mark-clause-is-true (x "~a dominates b"))
+                       (:instance observability-badguy-member
+                            (sink (lit->var ,(acl2::hq a))))
+                       (:instance no-mutual-domination-lemma
+                        (a (lit-negate ,(acl2::hq a)))
+                        (b ,(acl2::hq b))))
+                 :in-theory (disable observability-badguy-member
+                                     observability-badguy-invar))))))
+                  
+
+  (local (defthm b-xor-equal-1
+           (equal (equal 1 (b-xor x y))
+                  (equal (bfix x) (b-not y)))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
+  (local (defthm b-xor-when-not-equal-b-not
+           (implies (and (bitp a)
+                         (not (equal a (b-not b))))
+                    (equal (b-xor a b) 0))
+           :hints(("Goal" :in-theory (enable b-xor bitp)))))
+  
+  (defret contradictory-badguy-eval
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                      (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                  badguy
+                  (<= (nfix sweep-position) (nfix sink))
+                  (<= (nfix sweep-position) (nfix source)))
+             ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
+             (equal (lit-eval badguy invals regvals aignet) 0))
+    :hints (("goal" :induct <call>
+             :expand (<call>)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:cases ((equal (stype (car (lookup-id sink aignet))) :and))))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (bla) (descendant-p sink bla aignet)))))))
+
+  (local (defret contradictory-badguy-eval-rw
+           (implies (and (equal lit badguy)
+                         (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                         (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                             (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                         badguy
+                         (case-split (<= (nfix sweep-position) (nfix sink)))
+                         (<= (nfix sweep-position) (nfix source)))
+                    ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
+                    (equal (id-eval (lit->var lit) invals regvals aignet)
+                           (lit->neg lit)))
+           :hints (("goal" :use contradictory-badguy-eval
+                    :in-theory (disable contradictory-badguy-eval)
+                    :expand ((lit-eval badguy invals regvals aignet))))))
+
+  (local (defret contradictory-badguy-eval-rw2
+           (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                         (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                             (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                         badguy
+                         (case-split (<= (nfix sweep-position) (nfix sink)))
+                         (<= (nfix sweep-position) (nfix source)))
+                    ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
+                    (equal (id-eval (lit->var badguy) invals regvals aignet)
+                           (lit->neg badguy)))
+           :hints (("goal" :use contradictory-badguy-eval
+                    :in-theory (disable contradictory-badguy-eval)
+                    :expand ((lit-eval badguy invals regvals aignet))))))
+
+  
+  (local (defthm b-xor-b-xors
+           (equal (b-xor (b-xor n1 x) (b-xor n2 x))
+                  (b-xor n1 n2))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
+  (local (defthm b-and-b-xors
+           (equal (b-and (b-xor n1 x) (b-xor n2 x))
+                  (b-and (b-not (b-xor n1 n2)) (b-xor n1 x)))
+           :hints(("Goal" :in-theory (enable b-xor)))))
 
   
   
-  (define choose-observability-badguy ((sink natp) (source natp)
-                                       obs-dom-array invals regvals aignet)
-    :measure (nfix sink)
-    :returns (maybe-badguy maybe-litp :rule-classes :type-prescription)
-    (b* (((when (<= (nfix sink) (nfix source))) nil)
-         ((unless (eql (id->type sink aignet) (gate-type))) nil)
-         (contra (cube-contradictionp (obs-dom-info->doms (get-dominfo sink obs-dom-array))))
-         ((when contra)
-          (if (lit-eval contra invals regvals aignet)
-              (lit-negate contra)
-            contra))
-         (xor (eql (id->regp sink aignet) 1))
-         (fanin0 (gate-id->fanin0 sink aignet))
-         (fanin1 (gate-id->fanin1 sink aignet))
-         (fanin0-toggledp (not (eql (lit-eval fanin0 invals regvals aignet)
-                                    (lit-eval-toggle fanin0 source invals regvals aignet))))
-         (fanin1-toggledp (not (eql (lit-eval fanin1 invals regvals aignet)
-                                    (lit-eval-toggle fanin1 source invals regvals aignet))))
-         ((when xor)
-          (if fanin0-toggledp
-              (choose-observability-badguy (lit->var fanin0) source obs-dom-array invals regvals aignet)
-            (choose-observability-badguy (lit->var fanin1) source obs-dom-array invals regvals aignet)))
-         (
+  (defret observability-badguy-invariant
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (obs-parent-invar obs-dom-array aignet)
+                  (obs-dom-info-eval (nth source obs-dom-array) invals regvals aignet)
+                  (<= (nfix sweep-position) (nfix sink))
+                  (<= (nfix sweep-position) (nfix source))
+                  (aignet-idp sink aignet)
+                  (obs-dom-info->reached (nth sink obs-dom-array))
+                  (not (equal (id-eval sink invals regvals aignet)
+                              (id-eval-toggle sink source invals regvals aignet))))
+             (and badguy
+                  (equal (lit-eval badguy invals regvals aignet) 0)))
+    :hints (("goal" :induct (id-eval-ind sink aignet)
+             ;; :do-not-induct t
+             :expand (<call>
+                      (id-eval sink invals regvals aignet)
+                      (:free (source) (id-eval-toggle sink source invals regvals aignet))
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))
+            (and stable-under-simplificationp
+                 '(:cases ((equal
+                            (lit->var (fanin :gate0 (lookup-id sink aignet)))
+                            (lit->var (fanin :gate1 (lookup-id sink aignet)))))))
+            ;; (and stable-under-simplificationp
+            ;;      '(:cases ((< (lit->var (fanin :gate0 (lookup-id sink aignet))) (nfix sweep-position)))))
+            ;; (and stable-under-simplificationp
+            ;;      '(:cases ((< (lit->var (fanin :gate1 (lookup-id sink aignet))) (nfix sweep-position)))))
+            ;; (and stable-under-simplificationp
+            ;;      '(:cases ((cube-contradictionp (obs-dom-info->doms (nth sink obs-dom-array))))))
+            ))
 
+  (local (defthm aignet-eval-conjunction-when-member
+           (implies (and (equal (lit-eval lit invals regvals aignet) 0)
+                         (member lit lits))
+                    (equal (aignet-eval-conjunction lits invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
   
-  
+  (defthm unreachable-observability-invariant
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (obs-parent-invar obs-dom-array aignet)
+                  (or (not (obs-dom-info->reached (nth source obs-dom-array)))
+                      (cube-contradictionp (obs-dom-info->doms (nth source obs-dom-array))))
+                  (<= (nfix sweep-position) (nfix sink))
+                  (<= (nfix sweep-position) (nfix source))
+                  (aignet-idp sink aignet)
+                  (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet))
+             (equal (id-eval-toggle sink source invals regvals aignet)
+                    (id-eval sink invals regvals aignet)))
+    :hints (("goal" :use (contradictory-literals-invariant
+                          (:instance aignet-eval-conjunction-when-member
+                           (lit (observability-badguy sink source invals regvals aignet obs-dom-array))
+                           (lits (obs-dom-info->doms (nth sink obs-dom-array)))))
+             :in-theory (e/d (obs-dom-info-eval)
+                             (contradictory-literals-invariant
+                              aignet-eval-conjunction-when-member))))))
+
+
+
+(defsection observability-invariant
+
+  ;; (defthm unreachable-observability-invariant
+  ;;   (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                 (obs-parent-invar obs-dom-array aignet)
+                  
+  ;;                 (<= (nfix sweep-position) (nfix sink))
+  ;;                 (<= (nfix sweep-position) (nfix source))
+  ;;                 (aignet-idp sink aignet)
+  ;;                 (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet))
+  ;;            (equal (id-eval sink invals regvals aignet)
+  ;;                   (id-eval-toggle sink source invals regvals aignet)))
+  ;;   :hints (("goal" :use (contradictory-literals-invariant
+  ;;                         (:instance aignet-eval-conjunction-when-member
+  ;;                          (lit (observability-badguy sink source invals regvals aignet obs-dom-array))
+  ;;                          (lits (obs-dom-info->doms (nth sink obs-dom-array)))))
+  ;;            :in-theory (e/d (obs-dom-info-eval)
+  ;;                            (contradictory-literals-invariant
+  ;;                             aignet-eval-conjunction-when-member)))))
 
   ;; Instead, let's focus on one observability dominator.  If a node is not
   ;; observable, then either it is unreachable or else there is some dominator
@@ -1757,27 +2271,27 @@
                   (b-and (b-not (b-xor n1 n2)) (b-xor n1 x)))
            :hints(("Goal" :in-theory (enable b-xor)))))
   
-  (defthm observability-of-unreachables
-    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
-                  (<= (nfix sweep-position) (nfix source))
-                  (<= (nfix sweep-position) (nfix sink))
-                  (aignet-idp sink aignet)
-                  (not (obs-dom-info->reached (nth source obs-dom-array)))
-                  (obs-dom-info->reached (nth sink obs-dom-array))
-                  (not (cube-contradictionp (obs-dom-info->doms (nth sink obs-dom-array))))
-                  ;; (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet)
-                  )
-             (equal (id-eval sink invals regvals aignet)
-                    (id-eval-toggle sink source invals regvals aignet)))
-    :hints (("goal" :induct (id-eval-ind sink aignet)
-             :expand ((id-eval sink invals regvals aignet)
-                      (id-eval-toggle sink source invals regvals aignet)
-                      (:free (x) (lit-eval x invals regvals aignet))
-                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
-                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
-                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+  ;; (defthm observability-of-unreachables
+  ;;   (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+  ;;                 (<= (nfix sweep-position) (nfix source))
+  ;;                 (<= (nfix sweep-position) (nfix sink))
+  ;;                 (aignet-idp sink aignet)
+  ;;                 (not (obs-dom-info->reached (nth source obs-dom-array)))
+  ;;                 (obs-dom-info->reached (nth sink obs-dom-array))
+  ;;                 (not (cube-contradictionp (obs-dom-info->doms (nth sink obs-dom-array))))
+  ;;                 ;; (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet)
+  ;;                 )
+  ;;            (equal (id-eval sink invals regvals aignet)
+  ;;                   (id-eval-toggle sink source invals regvals aignet)))
+  ;;   :hints (("goal" :induct (id-eval-ind sink aignet)
+  ;;            :expand ((id-eval sink invals regvals aignet)
+  ;;                     (id-eval-toggle sink source invals regvals aignet)
+  ;;                     (:free (x) (lit-eval x invals regvals aignet))
+  ;;                     (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+  ;;                     (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+  ;;                     (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+  ;;                     (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+  ;;                     (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
 
   
 
@@ -1785,6 +2299,7 @@
   
   (defthm observability-when-gated
     (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (obs-parent-invar obs-dom-array aignet)
                   (<= (nfix sweep-position) (nfix source))
                   (<= (nfix sweep-position) (nfix sink))
                   (aignet-idp sink aignet)
@@ -1792,17 +2307,45 @@
                   (equal (lit-eval dom invals regvals aignet) 0)
                   (obs-dom-info->reached (nth sink obs-dom-array))
                   (not (member dom (obs-dom-info->doms (nth sink obs-dom-array)))))
-             (equal (id-eval sink invals regvals aignet)
-                    (id-eval-toggle sink source invals regvals aignet)))
-    :hints (("goal" :induct (id-eval-ind sink aignet)
-             :expand ((id-eval sink invals regvals aignet)
-                      (id-eval-toggle sink source invals regvals aignet)
-                      (:free (x) (lit-eval x invals regvals aignet))
-                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
-                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
-                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+             (equal (id-eval-toggle sink source invals regvals aignet)
+                    (id-eval sink invals regvals aignet)))
+    :hints (("goal" :induct (id-eval-ind sink aignet))
+            (and stable-under-simplificationp
+                 '(:expand ((id-eval sink invals regvals aignet)
+                            (id-eval-toggle sink source invals regvals aignet)
+                            (:free (x) (lit-eval x invals regvals aignet))
+                            (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                            (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                            (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                            (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                            (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))))))
+
+
+  (defthm observability-correct
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (obs-parent-invar obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix source))
+                  (<= (nfix sweep-position) (nfix sink))
+                  (aignet-idp sink aignet)
+                  (not (obs-dom-info-eval (nth source obs-dom-array) invals regvals aignet))
+                  (obs-dom-info-eval (nth sink obs-dom-array) invals regvals aignet)
+                  ;; (member dom (obs-dom-info->doms (nth source obs-dom-array)))
+                  ;; (equal (lit-eval dom invals regvals aignet) 0)
+                  ;; (obs-dom-info->reached (nth sink obs-dom-array))
+                  ;; (not (member dom (obs-dom-info->doms (nth sink obs-dom-array))))
+                  )
+             (equal (id-eval-toggle sink source invals regvals aignet)
+                    (id-eval sink invals regvals aignet)))
+    :hints (("goal" :induct (id-eval-ind sink aignet))
+            (and stable-under-simplificationp
+                 '(:expand ((id-eval sink invals regvals aignet)
+                            (id-eval-toggle sink source invals regvals aignet)
+                            (:free (x) (lit-eval x invals regvals aignet))
+                            (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                            (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                            (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                            (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                            (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))))))
              
   
   )
