@@ -3822,7 +3822,7 @@
 
 (define atj-gen-shallow-pkg-methods ((pkg stringp)
                                      (fns-by-pkg string-symbollist-alistp)
-                                     (fns+natives symbol-listp)
+                                     (fns symbol-listp)
                                      (fns-that-may-throw symbol-listp)
                                      (qconsts atj-qconstants-p)
                                      (pkg-class-names string-string-alistp)
@@ -3843,14 +3843,18 @@
   (xdoc::topstring
    (xdoc::p
     "We generate methods for the functions in @('fns-by-pkg')
-     (i.e. the functions to translate to Java, including natives,
-     organized by package)
+     (i.e. the functions to translate to Java, organized by package)
      that are associated to @('pkg').")
    (xdoc::p
-    "We also generate synonym methods for all the functions in @('fns+native')
-     (i.e. the functions to translate to Java, including natives)
+    "We also generate synonym methods for all the functions in @('fns')
+     (i.e. the functions to translate to Java)
      that are in other ACL2 packages but that are imported by @('pkg');
-     see @(tsee atj-gen-shallow-synonym-method) for motivation.")
+     see @(tsee atj-gen-shallow-synonym-method) for motivation.
+     However, if @('fns-by-pkg') has no functions associated to @('pkg'),
+     then we skip these synonym methods,
+     because they are not needed by any other code in the class for @('pkg');
+     in fact, unless the class has fields for symbols,
+     we do not generate the class (see @(tsee atj-gen-shallow-pkg-classes)).")
    (xdoc::p
     "Recall that, for each ACL2 function or function synonym,
      we generate one overloaded method
@@ -3860,15 +3864,15 @@
    (xdoc::p
     "We also collect all the quoted constants
      that occur in the functions in @('pkg') that are translated to Java."))
-  (b* ((fns (cdr (assoc-equal pkg fns-by-pkg)))
+  (b* ((fns-in-pkg (cdr (assoc-equal pkg fns-by-pkg)))
        ((run-when (and verbose$
-                       (consp fns)))
+                       (consp fns-in-pkg)))
         (cw "~%Generate the Java methods ~
                for the ACL2 functions in package ~s0:~%" pkg))
        ((mv fn-methods
             qconsts
             mv-typess)
-        (atj-gen-shallow-all-fn-methods fns
+        (atj-gen-shallow-all-fn-methods fns-in-pkg
                                         fns-that-may-throw
                                         qconsts
                                         pkg-class-names
@@ -3877,14 +3881,16 @@
                                         guards$
                                         verbose$
                                         wrld))
-       (imported-fns (intersection-eq fns+natives (pkg-imports pkg)))
-       (imported-fns (sort-symbol-listp imported-fns))
-       (synonym-methods (atj-gen-shallow-all-synonym-methods imported-fns
-                                                             fns-that-may-throw
-                                                             pkg-class-names
-                                                             fn-method-names
-                                                             guards$
-                                                             wrld))
+       (synonym-methods
+        (and (consp fns-in-pkg)
+             (b* ((imported-fns (intersection-eq fns (pkg-imports pkg)))
+                  (imported-fns (sort-symbol-listp imported-fns)))
+               (atj-gen-shallow-all-synonym-methods imported-fns
+                                                    fns-that-may-throw
+                                                    pkg-class-names
+                                                    fn-method-names
+                                                    guards$
+                                                    wrld))))
        (all-methods (append synonym-methods fn-methods)))
     (mv (mergesort-jmethods all-methods)
         qconsts
