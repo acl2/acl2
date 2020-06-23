@@ -75,10 +75,6 @@
       but only if @(':guards') is @('t').
       See @(see atj-pre-translation-array-analysis).")
     (xdoc::li
-     "We replace calls of the form @('(if a b nil)')
-      with calls of the form @('(and a b)').
-      See @(see atj-pre-translation-conjunctions).")
-    (xdoc::li
      "We mark the lambda-bound variables
       that can be reused and destructively updated in Java.
       See @(see atj-pre-translation-var-reuse).")
@@ -87,7 +83,11 @@
       so that their names are valid Java variable names
       and so that different variables with the same name are renamed apart,
       unless they have been marked for reuse in the previous step.
-      See @(see atj-pre-translation-var-renaming).")))
+      See @(see atj-pre-translation-var-renaming).")
+    (xdoc::li
+     "We replace calls of the form @('(if a b nil)')
+      with calls of the form @('(and a b)').
+      See @(see atj-pre-translation-conjunctions).")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4025,10 +4025,10 @@
                                                                body
                                                                out-arrays
                                                                wrld))
-       (body (atj-restore-and-calls-in-term body))
        ((mv formals body) (atj-mark-formals+body formals body))
        ((mv formals body) (atj-rename-formals+body
-                           formals body (symbol-package-name fn))))
+                           formals body (symbol-package-name fn)))
+       (body (atj-restore-and-calls-in-term body)))
     (mv formals body mv-typess))
   ///
 
