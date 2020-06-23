@@ -3978,10 +3978,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-pkg-fields ((pkg stringp)
-                                    (quoted-symbols symbol-listp)
-                                    (quoted-symbols-by-pkg
-                                     string-symbollist-alistp))
+(define atj-gen-shallow-pkg-fields
+  ((pkg stringp)
+   (quoted-symbols symbol-listp)
+   (quoted-symbols-by-pkg string-symbollist-alistp)
+   (methods-by-pkg string-jmethodlist-alistp))
   :returns (fields jfield-listp)
   :short "Generate all the fields of the class for an ACL2 package."
   :long
@@ -3994,15 +3995,17 @@
      that are associated to @('pkg').
      These are all symbols whose package name is @('pkg').")
    (xdoc::p
-    "We also generate fields for the symbols in @('quoted-symbols')
+    "If the class for the package has any methods,
+     we also generate fields for the symbols in @('quoted-symbols')
      (i.e. all the symbols in @('quoted-symbols-by-pkg'), in a flat list)
      that are imported by @('pkg').
-     This enables the unqualified reference to them in the lass for @('pkg');
+     This enables the unqualified reference to them in those methods;
      see @(tsee atj-gen-shallow-symbol).")
    (xdoc::p
     "We sort all the fields, so that they appear in that order."))
   (b* ((syms (cdr (assoc-equal pkg quoted-symbols-by-pkg)))
-       (imported-syms (intersection-eq quoted-symbols (pkg-imports pkg)))
+       (imported-syms (and (cdr (assoc-equal pkg methods-by-pkg))
+                           (intersection-eq quoted-symbols (pkg-imports pkg))))
        (all-syms (append syms imported-syms))
        (all-fields (atj-gen-shallow-symbol-fields all-syms)))
     (mergesort-jfields all-fields)))
@@ -4019,10 +4022,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-all-pkg-fields ((pkgs string-listp)
-                                        (quoted-symbols symbol-listp)
-                                        (quoted-symbols-by-pkg
-                                         string-symbollist-alistp))
+(define atj-gen-shallow-all-pkg-fields
+  ((pkgs string-listp)
+   (quoted-symbols symbol-listp)
+   (quoted-symbols-by-pkg string-symbollist-alistp)
+   (methods-by-pkg string-jmethodlist-alistp))
   :returns (fields-by-pkg string-jfieldlist-alistp :hyp (string-listp pkgs))
   :verify-guards :after-returns
   :short "Generate all the fields of the class for all the ACL2 packages."
@@ -4039,10 +4043,12 @@
        (pkg (car pkgs))
        (first-fields (atj-gen-shallow-pkg-fields pkg
                                                  quoted-symbols
-                                                 quoted-symbols-by-pkg))
+                                                 quoted-symbols-by-pkg
+                                                 methods-by-pkg))
        (rest-fields (atj-gen-shallow-all-pkg-fields (cdr pkgs)
                                                     quoted-symbols
-                                                    quoted-symbols-by-pkg)))
+                                                    quoted-symbols-by-pkg
+                                                    methods-by-pkg)))
     (if (null first-fields)
         rest-fields
       (acons pkg first-fields rest-fields))))
@@ -4610,7 +4616,8 @@
        (qsymbols-by-pkg (organize-symbols-by-pkg qsymbols))
        (fields-by-pkg (atj-gen-shallow-all-pkg-fields pkgs
                                                       qsymbols
-                                                      qsymbols-by-pkg))
+                                                      qsymbols-by-pkg
+                                                      methods-by-pkg))
        ((run-when verbose$)
         (cw "~%Generate the Java classes for the ACL2 packages:~%"))
        (pkg-classes (atj-gen-shallow-pkg-classes pkgs
