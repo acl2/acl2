@@ -315,6 +315,7 @@
                                           (all-vars string-listp))
      :guard (= (len vars) (len exprs))
      :returns (graph alistp)
+     :parents nil
      (b* (((when (endp vars)) nil)
           (var (car vars))
           (expr (car exprs))
@@ -451,6 +452,7 @@
                  (= (len types) (len exprs)))
      :returns (mv (tmp-block jblockp)
                   (asg-block jblockp))
+     :parents nil
      (b* (((when (endp vars)) (mv nil nil))
           (var (car vars))
           (type (car types))

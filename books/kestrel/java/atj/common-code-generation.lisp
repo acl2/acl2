@@ -184,6 +184,7 @@
   :prepwork
   ((define atj-gen-jboolean-array-aux ((booleans boolean-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp booleans) nil)
            (t (cons (atj-gen-jboolean (boolean-value->bool (car booleans)))
                     (atj-gen-jboolean-array-aux (cdr booleans))))))))
@@ -199,6 +200,7 @@
   :prepwork
   ((define atj-gen-jchar-array-aux ((chars char-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp chars) nil)
            (t (cons (atj-gen-jchar (char-value->nat (car chars)))
                     (atj-gen-jchar-array-aux (cdr chars))))))))
@@ -214,6 +216,7 @@
   :prepwork
   ((define atj-gen-jbyte-array-aux ((bytes byte-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp bytes) nil)
            (t (cons (atj-gen-jbyte (byte-value->int (car bytes)))
                     (atj-gen-jbyte-array-aux (cdr bytes))))))))
@@ -229,6 +232,7 @@
   :prepwork
   ((define atj-gen-jshort-array-aux ((shorts short-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp shorts) nil)
            (t (cons (atj-gen-jshort (short-value->int (car shorts)))
                     (atj-gen-jshort-array-aux (cdr shorts))))))))
@@ -244,6 +248,7 @@
   :prepwork
   ((define atj-gen-jint-array-aux ((ints int-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp ints) nil)
            (t (cons (atj-gen-jint (int-value->int (car ints)))
                     (atj-gen-jint-array-aux (cdr ints))))))))
@@ -259,6 +264,7 @@
   :prepwork
   ((define atj-gen-jlong-array-aux ((longs long-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp longs) nil)
            (t (cons (atj-gen-jlong (long-value->int (car longs)))
                     (atj-gen-jlong-array-aux (cdr longs))))))))

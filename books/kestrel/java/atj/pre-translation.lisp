@@ -610,6 +610,7 @@
   :prepwork
   ((define atj-types-id-aux ((types atj-type-listp))
      :returns (id stringp)
+     :parents nil
      (cond ((endp types) "")
            (t (str::cat (atj-type-id (car types))
                         (atj-types-id-aux (cdr types)))))
@@ -634,6 +635,7 @@
   :prepwork
   ((define atj-types-of-id-aux ((chars character-listp) (id stringp))
      :returns (types atj-type-listp)
+     :parents nil
      (b* (((when (endp chars)) nil)
           ((unless (>= (len chars) 2))
            (raise "Internal error: ~x0 does not identify a list of types." id))
@@ -805,6 +807,7 @@
                                          (dst-types atj-type-listp))
      :guard (= (len src-types) (len dst-types))
      :returns (yes/no booleanp)
+     :parents nil
      (or (endp src-types)
          (and (atj-type-conv-allowed-p (car src-types)
                                        (car dst-types))
@@ -1990,6 +1993,7 @@
      :guard (and (= (len vars) (len args))
                  (consp types))
      :returns (indices nat-listp)
+     :parents nil
      (b* (((when (endp args)) nil)
           ((mv arg arg-src arg-dst) (atj-type-unwrap-term (car args)))
           ((unless (and (not (variablep arg))
@@ -2604,6 +2608,7 @@
                  (= (len arg-types) (len formals)))
      :returns (alist symbol-symbol-alistp :hyp (and (symbol-listp formals)
                                                     (symbol-listp arg-arrays)))
+     :parents nil
      (cond ((endp formals) nil)
            ((atj-type-case (car arg-types) :jprimarr)
             (acons (car formals)
@@ -2619,6 +2624,7 @@
    (define atj-analyze-arrays-output-list ((fn-out-arrays symbol-listp)
                                            (in-arrays symbol-symbol-alistp))
      :returns (list symbol-listp :hyp :guard)
+     :parents nil
      (cond ((endp fn-out-arrays) nil)
            (t (cons (cdr (assoc-eq (car fn-out-arrays) in-arrays))
                     (atj-analyze-arrays-output-list (cdr fn-out-arrays)
@@ -2636,6 +2642,7 @@
                                             (formals symbol-listp))
      :guard (= (len formals) (len arg-arrays))
      :returns (nothing null)
+     :parents nil
      (b* (((when (endp arg-arrays)) nil)
           (arg-array (car arg-arrays))
           ((when (not arg-array))
@@ -2652,6 +2659,7 @@
                                                (indices nat-listp))
      :guard (= (len vars) (len indices))
      :returns (nothing null)
+     :parents nil
      (b* (((when (endp mv-arrays)) nil)
           (mv-array (car mv-arrays))
           ((when (not mv-array))
@@ -2793,6 +2801,7 @@
                                                    (declared symbol-listp))
      :guard (= (len inferred) (len declared))
      :returns (yes/no booleanp)
+     :parents nil
      (or (endp inferred)
          (b* ((inf (car inferred))
               (decl (car declared)))

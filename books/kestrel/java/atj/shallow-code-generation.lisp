@@ -119,6 +119,7 @@
   :prepwork
   ((define atj-gen-shallow-mv-class-name-aux ((types atj-type-listp))
      :returns (class-name-suffix stringp)
+     :parents nil
      (b* (((when (endp types)) "")
           (type (car types))
           (jtype (atj-type-to-jitype type))
@@ -839,6 +840,7 @@
   :prepwork
   ((define atj-adapt-expr-to-types-aux ((expr jexprp) (i natp) (n natp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (if (or (not (mbt (natp i)))
              (not (mbt (natp n)))
              (>= i n))
@@ -949,6 +951,7 @@
      :guard (and (= (len vars) (len args))
                  (consp types))
      :returns (indices nat-listp)
+     :parents nil
      (b* (((when (endp args)) nil)
           ((mv arg arg-src arg-dst) (atj-type-unwrap-term (car args)))
           ((unless (and (not (variablep arg))
@@ -2973,6 +2976,7 @@
     :prepwork
     ((define atj-gen-shallow-mv-let-aux ((expr jexprp) (indices nat-listp))
        :returns (exprs jexpr-listp)
+       :parents nil
        (cond ((endp indices) nil)
              (t (cons (jexpr-get-field expr
                                        (atj-gen-shallow-mv-field-name
@@ -3619,6 +3623,7 @@
   ((define atj-gen-shallow-synonym-method-params-aux ((n natp)
                                                       (acc string-listp))
      :returns (formals string-listp :hyp (string-listp acc))
+     :parents nil
      (cond ((zp n) acc)
            (t (atj-gen-shallow-synonym-method-params-aux
                (1- n) (cons (str::cat "x" (str::natstr n)) acc)))))))
@@ -4154,6 +4159,7 @@
   :prepwork
   ((define atj-gen-shallow-mv-fields-aux ((types atj-type-listp) (index natp))
      :returns (fields jfield-listp)
+     :parents nil
      (b* (((when (endp types)) nil)
           (field (make-jfield :access (jaccess-public)
                               :static? nil
@@ -4186,6 +4192,7 @@
   :prepwork
   ((define atj-gen-shallow-mv-params-aux ((types atj-type-listp) (index natp))
      :returns (params jparam-listp)
+     :parents nil
      (b* (((when (endp types)) nil)
           (type (car types))
           (param (make-jparam :final? nil
@@ -4225,6 +4232,7 @@
   :prepwork
   ((define atj-gen-shallow-mv-asgs-aux ((types atj-type-listp) (index natp))
      :returns (block jblockp)
+     :parents nil
      (b* (((when (endp types)) nil)
           (param-name (atj-gen-shallow-mv-field-name index))
           (field-var (jexpr-name (str::cat *atj-mv-singleton-field-name*
