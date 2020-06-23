@@ -155,4 +155,16 @@ class Acl2RationalTest {
                 compareTo(Acl2Integer.make(-5)) == 0);
     }
 
+    @Test
+    void compareToRatios() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Rational.make(11, 17).
+                compareTo(Acl2Rational.make(12, 17)) < 0);
+        assertTrue(Acl2Rational.make(11, 17).
+                compareTo(Acl2Rational.make(1, 16)) > 0);
+        assertTrue(Acl2Rational.make(11, 17).
+                compareTo(Acl2Rational.make(-22, -34)) == 0);
+        assertTrue(Acl2Rational.make(30, 10).
+                compareTo(Acl2Rational.make(8, 9)) > 0);
+    }
+
 }
