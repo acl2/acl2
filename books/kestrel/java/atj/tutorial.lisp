@@ -2830,6 +2830,82 @@
     the difference is the same as illustrated in the example above
     of external code that calls the Java method for the factorial function."))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atj-tutorial-page shallow-guards
+
+  "Guards in the Shallow Embedding Approach"
+
+  (xdoc::p
+   "This tutorial page provides an initial description of
+    the effect of ATJ's @(':guards') option
+    when @(':guards') is @('t'), i.e. in the "
+   (xdoc::seetopic "atj-tutorial-shallow" "shallow embedding approach")
+   ". We say `initial description' because the @(':guards t') option,
+    combined with other tools and methodologies,
+    provides a rich range of code generation options,
+    described throughout multiple tutorial pages.")
+
+  (atj-tutorial-section "Ignoring Guards")
+
+  (xdoc::p
+   "As briefly noted in
+    the factorial example in @(see atj-tutorial-shallow),
+    the option @(':guards nil') specifies
+    not to assume the satisfaction of guards.
+    As in the "
+   (xdoc::seetopic "atj-tutorial-deep-guards" "deep embedding")
+   ", this means that the generated Java code
+    mimics the execution of ACL2 code in the logic,
+    i.e. ignoring guards completely.")
+
+  (xdoc::p
+   "Accordingly, all the generated Java methods
+    take and return @('Acl2Value')s.
+    They accept any values, whether they satisfy the guards or not,
+    and return the results of the corresponding total ACL2 functions.")
+
+  (xdoc::p
+   "As in the "
+   (xdoc::seetopic "atj-tutorial-deep-guards" "deep embedding")
+   ", when @(':guards') is @('nil')
+    ATJ treats calls of the form @('(mbe :logic a :exec b)')
+    as just @('a'),
+    in the sense that it translates @('a') to Java,
+    ignoring @('b').")
+
+  (atj-tutorial-section "Assuming Guards")
+
+  (xdoc::p
+   "In contrast, the @(':guards t') option,
+    as in the "
+   (xdoc::seetopic "atj-tutorial-deep-guards" "deep embedding")
+   ", specifies to assume the satisfaction of guards.
+    The same caveat applies here:
+    ideally this option should be used when all guards are verified,
+    and when it can be ensured that external Java code
+    calls ATJ-generated code only with values satisfied by the guards;
+    if any guard is not satisfied at run time,
+    incorrect behavior may occur.")
+
+  (xdoc::p
+   "As in the "
+   (xdoc::seetopic "atj-tutorial-deep-guards" "deep embedding")
+   ", when @(':guards') is @('t')
+    ATJ treats calls of the form @('(mbe :logic a :exec b)')
+    as just @('b'),
+    in the sense that it translates @('b') to Java,
+    ignoring @('a').")
+
+  (xdoc::p
+   "Executing the @(':exec') part of @(tsee mbe)s,
+    instead of the @(':logic') part,
+    may result in much faster execution in some cases.
+    However, all the generated methods still take and return
+    inputs and outputs of type @('Acl2Value').
+    Subsequent pages of this tutorial describe
+    how to generate methods with narrow argument and result types."))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate XDOC topics for the (non-top) tutorial pages,
