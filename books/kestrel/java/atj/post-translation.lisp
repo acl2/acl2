@@ -477,6 +477,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-elim-tailrec-gen-block ((arg-exprs jexpr-listp)
+                                    (method-params jparam-listp))
+  :returns (block jblockp)
+  :short "Generate the block for eliminating tail recursion."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee atj-elim-tailrec-in-return).
+     When we encounter a tail-recursive call of the method
+     in a @('return') statement,
+     we generate a block consisting of
+     (1) a parallel assignment of the call's actual arguments
+     to the method's parameters, and
+     (2) a @('continue') statement."))
+  (b* ((names (jparam-list->names method-params))
+       (types (jparam-list->types method-params))
+       ((unless (= (len names) (len arg-exprs))) ; just for guards
+        (raise "Internal error: ~
+                call of tail-recursive method has ~x0 parameters ~
+                but is called with ~x1 arguments."
+               (len names) (len arg-exprs))))
+    (append
+     (atj-make-parallel-asg names types arg-exprs)
+     (jblock-continue))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-elim-tailrec-in-return ((expr? maybe-jexprp)
+                                    (method-params jparam-listp)
+                                    (method-name stringp))
+  :returns (block jblockp)
+  :short "Eliminate any tail-recursive call in a @('return') statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee atj-elim-tailrec-in-jstatem)
+     when a @('return') statement with an expression is encountered.
+     The first input is the optional expression of the @('return').")
+   (xdoc::p
+    "If the expression is a call of the method,
+     we return a block consisting of
+     (1) a parallel assignment of the call's actual arguments
+     to the method's parameters, and
+     (2) a @('continue') statement.")
+   (xdoc::p
+    "If the expression is not a call of the method,
+     we return a block consisting of the single @('return') statement
+     with the given expression;
+     that is, not change to that part of the Java code is made."))
+  (if (and (jexprp expr?)
+           (jexpr-case expr? :method)
+           (equal (jexpr-method->name expr?)
+                  method-name))
+      (atj-elim-tailrec-gen-block (jexpr-method->args expr?)
+                                  method-params)
+    (list (jstatem-return expr?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-elim-tailrec-in-jstatems+jblocks
   :short "Eliminate all the tail-recursive calls in a method's
           statement or block."
@@ -507,22 +566,9 @@
      statem
      :locvar (list statem)
      :expr (list statem)
-     :return (if (and (jexprp statem.expr?)
-                      (jexpr-case statem.expr? :method)
-                      (equal (jexpr-method->name statem.expr?)
-                             method-name))
-                 (b* ((names (jparam-list->names method-params))
-                      (types (jparam-list->types method-params))
-                      (exprs (jexpr-method->args statem.expr?))
-                      ((unless (= (len names) (len exprs))) ; just for guards
-                       (raise "Internal error: ~
-                               call of method ~s0 has ~x1 parameters ~
-                               but is called with ~x2 arguments."
-                              method-name (len names) (len exprs))))
-                   (append
-                    (atj-make-parallel-asg names types exprs)
-                    (jblock-continue)))
-               (list statem))
+     :return (atj-elim-tailrec-in-return statem.expr?
+                                         method-params
+                                         method-name)
      :throw (list statem)
      :break (list statem)
      :continue (list statem)
