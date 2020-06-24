@@ -602,22 +602,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-jprimarr-conversion-methods ()
+(define atj-gen-shallow-jprimarr-tolist-methods ((fns symbol-listp))
+  :guard (and (no-duplicatesp-eq fns)
+              (subsetp-eq fns *atj-jprimarr-conv-tolist-fns*))
   :returns (methods jmethod-listp)
-  :short "Generate all the twelve methods to convert
-          to and from Java primitive arrays."
-  (list (atj-convert-expr-to-jprimarr-method (primitive-type-boolean))
-        (atj-convert-expr-to-jprimarr-method (primitive-type-char))
-        (atj-convert-expr-to-jprimarr-method (primitive-type-byte))
-        (atj-convert-expr-to-jprimarr-method (primitive-type-short))
-        (atj-convert-expr-to-jprimarr-method (primitive-type-int))
-        (atj-convert-expr-to-jprimarr-method (primitive-type-long))
-        (atj-convert-expr-from-jprimarr-method (primitive-type-boolean))
-        (atj-convert-expr-from-jprimarr-method (primitive-type-char))
-        (atj-convert-expr-from-jprimarr-method (primitive-type-byte))
-        (atj-convert-expr-from-jprimarr-method (primitive-type-short))
-        (atj-convert-expr-from-jprimarr-method (primitive-type-int))
-        (atj-convert-expr-from-jprimarr-method (primitive-type-long))))
+  :short "Generate methods to convert from Java primitive arrays to lists."
+  (cond ((endp fns) nil)
+        (t (cons (atj-convert-expr-from-jprimarr-method
+                  (atj-jprimarr-conv-tolist-fn-to-ptype (car fns)))
+                 (atj-gen-shallow-jprimarr-tolist-methods (cdr fns))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-jprimarr-fromlist-methods ((fns symbol-listp))
+  :guard (and (no-duplicatesp-eq fns)
+              (subsetp-eq fns *atj-jprimarr-conv-fromlist-fns*))
+  :returns (methods jmethod-listp)
+  :short "Generate methods to convert to Java primitive arrays from lists."
+  (cond ((endp fns) nil)
+        (t (cons (atj-convert-expr-to-jprimarr-method
+                  (atj-jprimarr-conv-fromlist-fn-to-ptype (car fns)))
+                 (atj-gen-shallow-jprimarr-fromlist-methods (cdr fns))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-gen-shallow-all-jprimarr-conv-methods
+  ((fns-to-translate symbol-listp))
+  :returns (methods jmethod-listp)
+  :short "Generate all the Java primitive array conversion methods."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only generate methods that are
+     in the list of functions to translate to Java."))
+  (append (atj-gen-shallow-jprimarr-tolist-methods
+           (intersection-eq *atj-jprimarr-conv-tolist-fns*
+                            fns-to-translate))
+          (atj-gen-shallow-jprimarr-fromlist-methods
+           (intersection-eq *atj-jprimarr-conv-fromlist-fns*
+                            fns-to-translate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4564,16 +4587,15 @@
      because their Java representations are sometimes generated
      even when these two symbols are not used in any of the ACL2 functions
      that are translated to Java."))
-  (b* ((jprimarr-methods (append
-                          ;; see doc of atj-gen-shallow-primarray-write-methods
-                          ;; (atj-gen-shallow-primarray-write-methods)
-                          (and guards$
-                               (atj-gen-shallow-jprimarr-conversion-methods))))
-       ((unless (no-duplicatesp-eq fns-to-translate))
+  (b* (((unless (no-duplicatesp-eq fns-to-translate))
         (raise "Internal error: ~
                 the list ~x0 of function names has duplicates."
                fns-to-translate)
         (mv (ec-call (jclass-fix :irrelevant)) nil nil))
+       (jprimarr-write-methods
+        nil) ; see ATJ-GEN-SHALLOW-PRIMARRAY-WRITE-METHODS
+       (jprimarr-conv-methods
+        (atj-gen-shallow-all-jprimarr-conv-methods fns-to-translate))
        (fns (if guards$
                 (set-difference-eq fns-to-translate
                                    (union-eq *atj-jprim-fns*
@@ -4649,7 +4671,10 @@
                            (jclasses-to-jcbody-elements pkg-classes)
                            (jfields-to-jcbody-elements all-qconst-fields)
                            (jclasses-to-jcbody-elements mv-classes)
-                           (jmethods-to-jcbody-elements jprimarr-methods))))
+                           (jmethods-to-jcbody-elements
+                            jprimarr-write-methods)
+                           (jmethods-to-jcbody-elements
+                            jprimarr-conv-methods))))
     (mv (make-jclass :access (jaccess-public)
                      :abstract? nil
                      :static? nil
