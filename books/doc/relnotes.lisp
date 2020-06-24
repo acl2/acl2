@@ -380,6 +380,12 @@
      for certain library functions, for the same reason;
      these files can be included as needed.")
 
+   (xdoc::p
+    "The macros @(tsee java::atj-main-function-type)
+     and @(tsee java::atj-other-function-type)
+     have been extended with an option to provide hints
+     for the theorems they prove internally.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::language" "Java Language Formalization"))

@@ -105,6 +105,7 @@
                                               (guard pseudo-termp)
                                               (formal symbolp)
                                               (in-type atj-typep)
+                                              (hints true-listp)
                                               (wrld plist-worldp))
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
   :mode :program ; because of UNTRANSLATE
@@ -133,7 +134,8 @@
     `(local
       (defthm ,thm-name
         ,(untranslate thm-formula t wrld)
-        :rule-classes nil))))
+        :rule-classes nil
+        :hints ,hints))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,6 +143,7 @@
                                                (guard pseudo-termp)
                                                (formals symbol-listp)
                                                (in-types atj-type-listp)
+                                               (hints true-listp)
                                                (wrld plist-worldp))
   :guard (= (len formals) (len in-types))
   :returns (events "A @(tsee acl2::pseudo-event-form-listp).")
@@ -154,9 +157,9 @@
   (if (endp formals)
       nil
     (cons (atj-main-function-type-input-theorem
-           fn guard (car formals) (car in-types) wrld)
+           fn guard (car formals) (car in-types) hints wrld)
           (atj-main-function-type-input-theorems
-           fn guard (cdr formals) (cdr in-types) wrld))))
+           fn guard (cdr formals) (cdr in-types) hints wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,6 +168,7 @@
                                                (formals symbol-listp)
                                                (result maybe-natp)
                                                (out-type atj-typep)
+                                               (hints true-listp)
                                                (wrld plist-worldp))
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
   :mode :program ; because of UNTRANSLATE
@@ -205,7 +209,8 @@
     `(local
       (defthm ,thm-name
         ,(untranslate thm-formula t wrld)
-        :rule-classes nil))))
+        :rule-classes nil
+        :hints ,hints))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,6 +219,7 @@
                                                 (formals symbol-listp)
                                                 (nresults natp)
                                                 (rev-out-types atj-type-listp)
+                                                (hints true-listp)
                                                 (wrld plist-worldp))
   :guard (= nresults (len rev-out-types))
   :returns (events "A @(tsee acl2::pseudo-event-form-listp).")
@@ -232,15 +238,16 @@
   (if (zp nresults)
       nil
     (cons (atj-main-function-type-output-theorem
-           fn guard formals (1- nresults) (car rev-out-types) wrld)
+           fn guard formals (1- nresults) (car rev-out-types) hints wrld)
           (atj-main-function-type-output-theorems
-           fn guard formals (1- nresults) (cdr rev-out-types) wrld))))
+           fn guard formals (1- nresults) (cdr rev-out-types) hints wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atj-main-function-type-fn (fn
                                    in-type-specs
                                    out-type-spec/specs
+                                   (hints true-listp)
                                    (wrld plist-worldp))
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program ; because of ATJ-MAIN-FUNCTION-TYPE-INPUT/OUTPUT-THEOREM(S)
@@ -303,14 +310,28 @@
                    (atj-type-list-to-keyword-list
                     (atj-function-type->outputs main))))))
        (guard (guard fn nil wrld))
-       (input-thms
-        (atj-main-function-type-input-theorems fn guard formals in-types wrld))
+       (input-thms (atj-main-function-type-input-theorems fn
+                                                          guard
+                                                          formals
+                                                          in-types
+                                                          hints
+                                                          wrld))
        (output-thms
         (if (= nresults 1)
-            (list (atj-main-function-type-output-theorem
-                   fn guard formals nil (car out-types) wrld))
-          (atj-main-function-type-output-theorems
-           fn guard formals nresults (rev out-types) wrld)))
+            (list (atj-main-function-type-output-theorem fn
+                                                         guard
+                                                         formals
+                                                         nil
+                                                         (car out-types)
+                                                         hints
+                                                         wrld))
+          (atj-main-function-type-output-theorems fn
+                                                  guard
+                                                  formals
+                                                  nresults
+                                                  (rev out-types)
+                                                  hints
+                                                  wrld)))
        (fn-ty (make-atj-function-type :inputs in-types
                                       :outputs out-types
                                       :arrays arrays))
@@ -349,10 +370,14 @@
      for all the inputs and outputs of the function.
      See the code generation functions for details.")
    (xdoc::@def "atj-main-function-type"))
-  (defmacro atj-main-function-type (fn in-type-specs out-type-spec/specs)
+  (defmacro atj-main-function-type (fn
+                                    in-type-specs
+                                    out-type-spec/specs
+                                    &key
+                                    hints)
     `(make-event
       (atj-main-function-type-fn
-       ',fn ',in-type-specs ',out-type-spec/specs (w state)))))
+       ',fn ',in-type-specs ',out-type-spec/specs ',hints (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,6 +387,7 @@
                                          (in-types atj-type-listp)
                                          (result maybe-natp)
                                          (out-type atj-typep)
+                                         (hints true-listp)
                                          (wrld plist-worldp))
   :guard (= (len formals) (len in-types))
   :returns (event "A @(tsee acl2::pseudo-event-formp).")
@@ -405,7 +431,8 @@
     `(local
       (defthm ,thm-name
         ,(untranslate thm-formula t wrld)
-        :rule-classes nil)))
+        :rule-classes nil
+        :hints ,hints)))
 
   :prepwork
   ((define atj-other-function-type-theorem-aux ((formals symbol-listp)
@@ -428,6 +455,7 @@
                                           (in-types atj-type-listp)
                                           (nresults natp)
                                           (out-types atj-type-listp)
+                                          (hints true-listp)
                                           (wrld plist-worldp))
   :guard (= nresults (len out-types))
   :returns (events "A @(tsee acl2::pseudo-event-form-listp).")
@@ -442,10 +470,22 @@
      counting down from @('nresults - 1') to 0."))
   (if (zp nresults)
       nil
-    (cons (atj-other-function-type-theorem
-           fn guard formals in-types (1- nresults) (car out-types) wrld)
-          (atj-other-function-type-theorems
-           fn guard formals in-types (1- nresults) (cdr out-types) wrld))))
+    (cons (atj-other-function-type-theorem fn
+                                           guard
+                                           formals
+                                           in-types
+                                           (1- nresults)
+                                           (car out-types)
+                                           hints
+                                           wrld)
+          (atj-other-function-type-theorems fn
+                                            guard
+                                            formals
+                                            in-types
+                                            (1- nresults)
+                                            (cdr out-types)
+                                            hints
+                                            wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -584,6 +624,7 @@
 (define atj-other-function-type-fn (fn
                                     in-type-specs
                                     out-type-spec/specs
+                                    (hints true-listp)
                                     (wrld plist-worldp))
   :returns (event "A @(tsee acl2::maybe-pseudo-event-formp).")
   :mode :program ; because of ATJ-OTHER-FUNCTION-TYPE-THEOREM
@@ -645,8 +686,10 @@
        (nresults (atj-number-of-results fn wrld))
        ((mv out-types arrays)
         (if (= nresults 1)
-            (b* (((mv out-type array) (atj-process-output-type-spec
-                                       out-type-spec/specs formals in-types)))
+            (b* (((mv out-type array)
+                  (atj-process-output-type-spec out-type-spec/specs
+                                                formals
+                                                in-types)))
               (mv (list out-type) (list array)))
           (if (tuplep nresults out-type-spec/specs)
               (atj-process-output-type-specs
@@ -692,10 +735,22 @@
        (guard (guard fn nil wrld))
        (thms
         (if (= nresults 1)
-            (list (atj-other-function-type-theorem
-                   fn guard formals in-types nil (car out-types) wrld))
-          (atj-other-function-type-theorems
-           fn guard formals in-types nresults out-types wrld)))
+            (list (atj-other-function-type-theorem fn
+                                                   guard
+                                                   formals
+                                                   in-types
+                                                   nil
+                                                   (car out-types)
+                                                   hints
+                                                   wrld))
+          (atj-other-function-type-theorems fn
+                                            guard
+                                            formals
+                                            in-types
+                                            nresults
+                                            out-types
+                                            hints
+                                            wrld)))
        (new-fn-info (change-atj-function-type-info
                      fn-info? :others (cons new-fn-type other-fn-types))))
     `(encapsulate
@@ -725,7 +780,11 @@
    (xdoc::p
     "Each of the successful calls of this macro
      will result in an overloaded method with the specified types."))
-  (defmacro atj-other-function-type (fn in-types out-type/types)
+  (defmacro atj-other-function-type (fn
+                                     in-types
+                                     out-type/types
+                                     &key
+                                     hints)
     `(make-event
       (atj-other-function-type-fn
-       ',fn ',in-types ',out-type/types (w state)))))
+       ',fn ',in-types ',out-type/types ',hints (w state)))))
