@@ -522,17 +522,49 @@
      to the method's parameters, and
      (2) a @('continue') statement.")
    (xdoc::p
-    "If the expression is not a call of the method,
+    "If the expression is a right-associated conditional conjunction
+     @('expr1 && (expr2 && (... && exprN)...)'),
+     and its rightmost conjunct @('exprN') is a call of the method,
+     we return a block of the form")
+   (xdoc::codeblock
+    "if (expr1 && (expr2 && (... && exprN-1)...)) {"
+    "    <parallel-asg>"
+    "    continue;"
+    "} else {"
+    "    return false;"
+    "}")
+   (xdoc::p
+    "In all other cases,
      we return a block consisting of the single @('return') statement
      with the given expression;
      that is, not change to that part of the Java code is made."))
-  (if (and (jexprp expr?)
-           (jexpr-case expr? :method)
-           (equal (jexpr-method->name expr?)
-                  method-name))
-      (atj-elim-tailrec-gen-block (jexpr-method->args expr?)
-                                  method-params)
-    (list (jstatem-return expr?))))
+  (b* (((unless (jexprp expr?)) (list (jstatem-return nil)))
+       (expr expr?))
+    (cond ((and (jexpr-case expr :method)
+                (equal (jexpr-method->name expr)
+                       method-name))
+           (atj-elim-tailrec-gen-block (jexpr-method->args expr)
+                                       method-params))
+          ((and (jexpr-case expr :binary)
+                (jbinop-case (jexpr-binary->op expr) :condand))
+           (b* ((exprs (unmake-right-assoc-condand expr))
+                ((unless (>= (len exprs) 2))
+                 (raise "Internal error: ~
+                         expression ~x0 has fewer than 2 conjuncts."
+                        exprs)
+                 (ec-call (jblock-fix :irrelevant)))
+                (rightmost (car (last exprs)))
+                (others (butlast exprs 1))
+                ((unless (and (jexpr-case rightmost :method)
+                              (equal (jexpr-method->name rightmost)
+                                     method-name)))
+                 (list (jstatem-return expr?))))
+             (jblock-ifelse (make-right-assoc-condand others)
+                            (atj-elim-tailrec-gen-block
+                             (jexpr-method->args rightmost)
+                             method-params)
+                            (jblock-return (jexpr-literal-false)))))
+          (t (list (jstatem-return expr?))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
