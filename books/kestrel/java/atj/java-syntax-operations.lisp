@@ -400,3 +400,41 @@
                    (:ne (jexpr-binary (jbinop-eq) left right))
                    (otherwise default-result))))
       (otherwise default-result))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-right-assoc-condand ((exprs jexpr-listp))
+  :guard (consp exprs)
+  :returns (expr jexprp)
+  :short "Make a right-associated conditional conjunction
+          from a non-empty list of conjuncts."
+  (cond ((not (mbt (consp exprs))) (ec-call (jexpr-fix :irrelevant)))
+        ((consp (cdr exprs)) (jexpr-binary
+                              (jbinop-condand)
+                              (jexpr-fix (car exprs))
+                              (make-right-assoc-condand (cdr exprs))))
+        (t (jexpr-fix (car exprs))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unmake-right-assoc-condand ((expr jexprp))
+  :returns (exprs jexpr-listp)
+  :short "Split a right-associated conditional conjunction into its conjuncts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Let the expression be @('expr1 && (expr2 && (... && exprN)...)'),
+     where @('exprN') is not a conditional conjunction.
+     We return the list of @('expr1'), @('expr2'), ..., @('exprN')."))
+  (if (and (jexpr-case expr :binary)
+           (jbinop-case (jexpr-binary->op expr) :condand))
+      (cons (jexpr-binary->left expr)
+            (unmake-right-assoc-condand (jexpr-binary->right expr)))
+    (list (jexpr-fix expr)))
+  :measure (jexpr-count expr)
+  :hooks (:fix)
+  ///
+  (defret consp-of-unmake-right-assoc-condand
+    (consp exprs)
+    :rule-classes :type-prescription))
