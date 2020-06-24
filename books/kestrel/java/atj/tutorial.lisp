@@ -2607,7 +2607,7 @@
 
   (xdoc::p
    "As in the deep embedding approach,
-    two Java file, @('Acl2Code.java') and @('Acl2CodeEnvironment'),
+    two Java files, @('Acl2Code.java') and @('Acl2CodeEnvironment'),
     are generated (in the current directory),
     each of which contains
     a single Java class with the same name (without @('.java'));
