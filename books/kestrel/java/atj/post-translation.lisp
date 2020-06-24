@@ -359,13 +359,19 @@
      which is calculated elsewhere via a topological sort.")
    (xdoc::p
     "We go through the serialization, and for each element (i.e. variable name)
-     we find the position in the @('names') list,
+     we find the position in the @('vars') list,
      and use that position to pick the corresponding expression
-     to use in the assignment."))
+     to use in the assignment.")
+   (xdoc::p
+    "We exclude trivial assignments of a variable to itself.
+     These arise when formal arguments of tail-recursive ACL2 functions
+     are passed unchanged as actual arguments to the recursive calls."))
   (b* (((when (endp serialization)) nil)
        (var (car serialization))
        (pos (acl2::index-of var vars))
        (expr (nth pos exprs))
+       ((when (jexpr-equiv expr (jexpr-name var)))
+        (atj-serialize-parallel-asg (cdr serialization) vars exprs))
        (first-asg (jblock-asg (jexpr-name var) expr))
        (rest-asg (atj-serialize-parallel-asg (cdr serialization) vars exprs)))
     (append first-asg rest-asg)))
