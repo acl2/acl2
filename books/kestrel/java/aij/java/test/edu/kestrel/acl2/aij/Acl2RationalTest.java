@@ -54,6 +54,13 @@ class Acl2RationalTest {
     }
 
     @Test
+    void makeIntIntIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(1, 1) instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(-50, 5) instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(0, -17) instanceof Acl2Integer);
+    }
+
+    @Test
     void getNumeratorFromMakeIntInt() {
         assertEquals(Acl2Rational.make(3, 4).getNumerator(),
                 Acl2Integer.make(3));
