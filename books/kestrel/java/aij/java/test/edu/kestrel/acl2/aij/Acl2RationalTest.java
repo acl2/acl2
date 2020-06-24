@@ -61,6 +61,31 @@ class Acl2RationalTest {
     }
 
     @Test
+    void makeLongLongIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(2000000000000L, 1000000000000L)
+                instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(3L, 1) instanceof Acl2Integer);
+    }
+
+    @Test
+    void makeBigIntegerBigIntegerIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(BigInteger.TEN, BigInteger.TWO)
+                instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make
+                (new BigInteger("-55"), new BigInteger("11"))
+                instanceof Acl2Integer);
+    }
+
+    @Test
+    void makeAcl2IntegerAcl2IntegerIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(Acl2Integer.ZERO, Acl2Integer.make(-1))
+                instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(Acl2Integer.make(-20),
+                Acl2Integer.make(10))
+                instanceof Acl2Integer);
+    }
+
+    @Test
     void getNumeratorFromMakeIntInt() {
         assertEquals(Acl2Rational.make(3, 4).getNumerator(),
                 Acl2Integer.make(3));
