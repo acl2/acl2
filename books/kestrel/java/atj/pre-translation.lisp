@@ -3949,10 +3949,10 @@
                  (if (and (eq fn 'if)
                           (int= 3 ; this should be always true
                                 (len (pseudo-term-fncall->args uterm)))
-                          (b* (((mv 3rd-arg & &)
+                          (b* (((mv else & &)
                                 (atj-type-unwrap-term
                                  (nth 2 (pseudo-term-fncall->args uterm)))))
-                            (pseudo-term-equiv 3rd-arg
+                            (pseudo-term-equiv else
                                                (pseudo-term-quote nil))))
                      (atj-type-wrap-term
                       (pseudo-term-fncall
