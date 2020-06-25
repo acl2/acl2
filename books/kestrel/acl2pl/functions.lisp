@@ -46,7 +46,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod function
   :short "Fixtype of (defined) functions."
@@ -71,7 +71,7 @@
   :short "Fixtype of functions and @('nil')."
   :pred maybe-functionp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define function-lookup ((name symbol-valuep) (functions function-setp))
   :returns (function? maybe-functionp)
@@ -102,7 +102,7 @@
   (fty::deffixequiv function-lookup
     :hints (("Goal" :in-theory (enable function-set-fix)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-function ((fn symbolp) (wrld plist-worldp))
   :returns (function functionp)
