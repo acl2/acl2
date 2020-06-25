@@ -1691,59 +1691,78 @@
                                  (right-expr jexprp)
                                  (types atj-type-listp)
                                  (jvar-tmp-base stringp)
-                                 (jvar-tmp-index posp)
-                                 (pkg-class-names string-string-alistp)
-                                 (curr-pkg stringp)
-                                 (guards$ booleanp))
-  :guard (and (consp types)
-              (not (equal curr-pkg "")))
+                                 (jvar-tmp-index posp))
+  :guard (consp types)
   :returns (mv (block jblockp)
                (expr jexprp)
                (new-jvar-tmp-index posp :hyp (posp jvar-tmp-index)))
-  :short "Generate a shallowly embedded ACL2 @('or') call."
+  :short "Generate a shallowly embedded ACL2 @(tsee or) call."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is called after translating the arguments to Java.
      The resulting blocks and expressions are passed as parameters here.")
    (xdoc::p
-    "This is for the @('or') ACL2 ``pseudo-function''
-     (see the AIJ documentation for details).
-     We treat @('(or a b)') non-strictly like @('(if a a b)'),
-     but we avoid calculating @('a') twice.
-     Somewhat similarly to how we treat @(tsee if),
-     we generate the Java block")
+    "Recall that ATJ's pre-translation
+     (see @(see atj-pre-translation-disjunctions))
+     turns (annotated) terms @('(if a a b)') into @('(or a b)').
+     Here we recognize, and treat specially, these @(tsee or) calls.")
+   (xdoc::p
+    "The parameter @('types') is the type (list) of both operands.
+     They have the same type because the type annotation step
+     ensures that both branches of @(tsee if)s,
+     including those of the form @('(if a a b)')
+     that are turned into @('(or a b)'),
+     have the same types.")
+   (xdoc::p
+    "If both operands have type @(':aboolean'),
+     we generate the block @('<left-block>')
+     and the non-strict expression @('<left-expr> || <right-expr>'):
+     in other words,
+     we translate ACL2's boolean @(tsee or) calls (in the original term)
+     to a @('||') binary expression in Java,
+     preceded by any computations needed by @('<left-expr>');
+     but this is possible only if the calculation of the right operand,
+     which must be executed only if the first operand is true,
+     involves just an expression @('<right-expr>')
+     and not a (non-empty) block @('<right-block>').
+     In all other cases, we generate the block")
    (xdoc::codeblock
-    "<a-block>"
+    "<left-block>"
     "<type> <tmp> = <a-expr>;"
     "if (<tmp> == NIL) {"
-    "    <b-blocks>"
+    "    <b-block>"
     "    <tmp> = <b-expr>;"
     "}")
    (xdoc::p
-    "and the Java expression @('<tmp>')."))
-  (b* ((jtype (atj-gen-shallow-jtype types))
-       ((mv result-locvar-block
-            jvar-tmp
-            jvar-tmp-index)
-        (atj-gen-jlocvar-indexed jtype
-                                 jvar-tmp-base
-                                 jvar-tmp-index
-                                 left-expr))
-       (if-block (jblock-if
-                  (jexpr-binary (jbinop-eq)
-                                (jexpr-name jvar-tmp)
-                                (atj-gen-shallow-symbol
-                                 nil pkg-class-names curr-pkg guards$))
-                  (append right-block
-                          (jblock-asg-name jvar-tmp right-expr))))
-       (block (append (jblock-fix left-block)
-                      result-locvar-block
-                      if-block))
-       (expr (jexpr-name jvar-tmp)))
-    (mv block
-        expr
-        jvar-tmp-index)))
+    "and the Java expression @('<tmp>'), where:
+     @('<tmp>') consists of
+     the base name in the parameter @('jvar-tmp-base')
+     followed by the numeric index in the parameter @('jvar-tmp-index');
+     and @('<type>') is the Java type of the operands."))
+  (if (and (equal types (list (atj-type-acl2 (atj-atype-boolean))))
+           (null right-block))
+      (mv (jblock-fix left-block)
+          (jexpr-binary (jbinop-condor) left-expr right-expr)
+          jvar-tmp-index)
+    (b* (((mv tmp-locvar-block
+              jvar-tmp
+              jvar-tmp-index)
+          (atj-gen-jlocvar-indexed (atj-gen-shallow-jtype types)
+                                   jvar-tmp-base
+                                   jvar-tmp-index
+                                   left-expr))
+         (if-block (jblock-if
+                    (jexpr-binary (jbinop-eq)
+                                  (jexpr-name jvar-tmp)
+                                  (atj-gen-symbol nil t nil))
+                    (append right-block
+                            (jblock-asg-name jvar-tmp right-expr)))))
+      (mv (append (jblock-fix left-block)
+                  tmp-locvar-block
+                  if-block)
+          (jexpr-name jvar-tmp)
+          jvar-tmp-index))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2392,37 +2411,20 @@
      appropriate to the method's formal argument types."))
   (b* (((when (and (eq fn 'if)
                    (int= (len args) 3))) ; should be always true
-        (b* ((first (first args))
-             (second (second args)))
-          (if (equal first second)
-              (b* (((mv left-block & right-block)
-                    (atj-jblock-list-to-3-jblocks arg-blocks))
-                   ((mv left-expr & right-expr)
-                    (atj-jexpr-list-to-3-jexprs arg-exprs)))
-                (atj-gen-shallow-or-call left-block
-                                         right-block
-                                         left-expr
-                                         right-expr
-                                         dst-types ; = SRC-TYPES
-                                         jvar-tmp-base
-                                         jvar-tmp-index
-                                         pkg-class-names
-                                         curr-pkg
-                                         guards$))
-            (b* (((mv test-block then-block else-block)
-                  (atj-jblock-list-to-3-jblocks arg-blocks))
-                 ((mv test-expr then-expr else-expr)
-                  (atj-jexpr-list-to-3-jexprs arg-exprs)))
-              (atj-gen-shallow-if-call test-block
-                                       then-block
-                                       else-block
-                                       test-expr
-                                       then-expr
-                                       else-expr
-                                       (first args)
-                                       dst-types ; = SRC-TYPES
-                                       jvar-tmp-base
-                                       jvar-tmp-index)))))
+        (b* (((mv test-block then-block else-block)
+              (atj-jblock-list-to-3-jblocks arg-blocks))
+             ((mv test-expr then-expr else-expr)
+              (atj-jexpr-list-to-3-jexprs arg-exprs)))
+          (atj-gen-shallow-if-call test-block
+                                   then-block
+                                   else-block
+                                   test-expr
+                                   then-expr
+                                   else-expr
+                                   (first args)
+                                   dst-types ; = SRC-TYPES
+                                   jvar-tmp-base
+                                   jvar-tmp-index)))
        ((when (and (eq fn 'and)
                    (int= (len args) 2))) ; should be always true
         (b* (((mv left-block right-block)
@@ -2439,6 +2441,20 @@
                                     right-types
                                     jvar-tmp-base
                                     jvar-tmp-index)))
+       ((when (and (eq fn 'or)
+                   (int= (len args) 2))) ; should be always true
+        (b* (((mv left-block right-block)
+              (atj-jblock-list-to-2-jblocks arg-blocks))
+             ((mv left-expr right-expr)
+              (atj-jexpr-list-to-2-jexprs arg-exprs))
+             ((mv & & types) (atj-type-unwrap-term (second args))))
+          (atj-gen-shallow-or-call left-block
+                                   right-block
+                                   left-expr
+                                   right-expr
+                                   types
+                                   jvar-tmp-base
+                                   jvar-tmp-index)))
        ((when (and guards$
                    (eq fn 'not)
                    (int= (len args) 1))) ; should be always true

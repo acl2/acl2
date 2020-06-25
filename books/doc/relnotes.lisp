@@ -344,7 +344,9 @@
      are now avoided in favor of using Java's @('!') operator
      or Java's @('==') operator with the symbol @('nil').
      Calls of ACL2's @(tsee and) are translated
-     to Java's @('&&') operator when possible.")
+     to Java's @('&&') operator when possible.
+     Calls of ACL2's @(tsee or) are translated
+     to Java's @('||') operator when possible.")
 
    (xdoc::p
     "A new post-translation step has been added
