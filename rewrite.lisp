@@ -5443,7 +5443,10 @@
         (t (or (eq fn (car fnstack))
                (being-openedp-rec fn (cdr fnstack))))))
 
-(defmacro being-openedp (fn fnstack clique)
+(defstub being-openedp-limited-for-nonrec () t)
+(defattach being-openedp-limited-for-nonrec constant-t-function-arity-0)
+
+(defmacro being-openedp (fn fnstack clique settled-down-p)
 
 ; We found a 1.8% slowdown when we modified the code, in a preliminary cut at
 ; Version_2.7, to improve the speed of being-openedp when large cliques are on
@@ -5458,10 +5461,22 @@
   (declare (xargs :guard (symbolp fnstack)))
   `(and ,fnstack
         (let ((clique ,clique))
-          (being-openedp-rec (if clique
-                                 (car clique)
-                               ,fn)
-                             ,fnstack))))
+          (and (or clique
+
+; At one time this fnstack check could completely stop the opening up of a
+; non-recursive function call.  After Version_8.3 we decided that we would like
+; to avoid making that stop (based on an example that arose), but for backward
+; compatibility we defeat this fnstack check only when "desperate": when
+; simplification of the clause has just settled down (before attempting to
+; eliminate destructors).  An attachable function allows the original, full
+; being-openedp check to take place after all.
+
+                   (not ,settled-down-p)
+                   (not (being-openedp-limited-for-nonrec)))
+               (being-openedp-rec (if clique
+                                      (car clique)
+                                    ,fn)
+                                  ,fnstack)))))
 
 (defun recursive-fn-on-fnstackp (fnstack)
 
@@ -15446,8 +15461,12 @@
                      (not (eq obj t))
                      (not (equal (access rewrite-rule lemma :rhs) *nil*)))
                  (or (flambdap (ffn-symb term)) ; hence not on fnstack
-                     (not (being-openedp (ffn-symb term) fnstack
-                                         (recursivep (ffn-symb term) t wrld)))
+                     (not (being-openedp (ffn-symb term)
+                                         fnstack
+                                         (recursivep (ffn-symb term) t wrld)
+                                         (eq (access rewrite-constant rcnst
+                                                     :rewriter-state)
+                                             'settled-down)))
                      (not (ffnnamep (ffn-symb term)
                                     (access rewrite-rule lemma :rhs)))))
             (let ((lhs (access rewrite-rule lemma :lhs))
@@ -15638,7 +15657,10 @@
           (recursivep (and rule ; it's a don't-care if (flambdap fn)
                            (car (access rewrite-rule rule :heuristic-info)))))
      (cond ((and (not (flambdap fn))
-                 (or (being-openedp fn fnstack recursivep)
+                 (or (being-openedp fn fnstack recursivep
+                                    (eq (access rewrite-constant rcnst
+                                                :rewriter-state)
+                                        'settled-down))
                      (fnstack-term-member term fnstack)))
             (prepend-step-limit
              2

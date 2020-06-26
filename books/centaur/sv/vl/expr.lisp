@@ -3011,8 +3011,11 @@ a cons of two vttrees.</p>"
 (defthm vl-warninglist-add-ctx-of-null-context
   (equal (vl-warninglist-add-ctx warnings nil)
          (list-fix (vl-warninglist-fix warnings)))
-  :hints(("Goal" :in-theory (enable vl-warninglist-add-ctx vl-warning-add-ctx vl-warninglist-fix
-                                    vl-warning-fix-redef))))
+  :hints(("Goal" :in-theory (e/d (vl-warninglist-add-ctx vl-warning-add-ctx vl-warninglist-fix
+                                                         vl-warning-fix-redef)
+; Matt K. mod, 6/2020: avoid loop between vl-warning-fix-redef and
+; vl-warning-of-fields.
+                                 (vl-warning-of-fields)))))
 
 (define vttree->warnings ((x vttree-p))
   :returns (warnings vl-warninglist-p)
@@ -3074,8 +3077,12 @@ a cons of two vttrees.</p>"
   (defthm constraintlist-add-ctx-of-null-ctx
     (equal (constraintlist-add-ctx constraints nil)
            (list-fix (sv::constraintlist-fix constraints)))
-    :hints(("Goal" :in-theory (enable constraintlist-add-ctx sv::constraintlist-fix
-                                      sv::constraint-fix-redef)))))
+    :hints(("Goal" :in-theory (e/d (constraintlist-add-ctx
+                                    sv::constraintlist-fix
+                                    sv::constraint-fix-redef)
+; Matt K. mod, 6/2020: avoid loop between sv::constraint-fix-redef and
+; sv::constraint-of-fields.
+                                   (sv::constraint-of-fields))))))
 
 
 (define vttree->constraints-acc ((x vttree-p)
