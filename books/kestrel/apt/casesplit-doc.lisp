@@ -12,7 +12,6 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
-(include-book "casesplit")
 
 ; (depends-on "design-notes/casesplit.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -66,7 +65,20 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form-auto casesplit)
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(casesplit old"
+     "           conditions"
+     "           theorems"
+     "           :new-name       ; default :auto"
+     "           :new-enable     ; default :auto"
+     "           :thm-name       ; default :auto"
+     "           :thm-enable     ; default t"
+     "           :verify-guards  ; default :auto"
+     "           :hints          ; default nil"
+     "           :print          ; default :result"
+     "           :show-only      ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -137,23 +137,23 @@
 
    (xdoc::evmac-section-form
     (xdoc::codeblock
-     " (expdata old"
-     "          surjmaps"
-     "          :predicate           ; default nil"
-     "          :new-name            ; default :auto"
-     "          :new-enable          ; default :auto"
-     "          :old-to-new-name     ; default from table"
-     "          :old-to-new-enable   ; default from table"
-     "          :new-to-old-name     ; default from table"
-     "          :new-to-old-enable   ; default from table"
-     "          :newp-of-new-name    ; default :auto"
-     "          :newp-of-new-enable  ; default t"
-     "          :verify-guards       ; default :auto"
-     "          :untranslate         ; default :nice"
-     "          :hints               ; default nil"
-     "          :print               ; default :result"
-     "          :show-only           ; default nil"
-     "          )"))
+     "(expdata old"
+     "         surjmaps"
+     "         :predicate           ; default nil"
+     "         :new-name            ; default :auto"
+     "         :new-enable          ; default :auto"
+     "         :old-to-new-name     ; default from table"
+     "         :old-to-new-enable   ; default from table"
+     "         :new-to-old-name     ; default from table"
+     "         :new-to-old-enable   ; default from table"
+     "         :newp-of-new-name    ; default :auto"
+     "         :newp-of-new-enable  ; default t"
+     "         :verify-guards       ; default :auto"
+     "         :untranslate         ; default :nice"
+     "         :hints               ; default nil"
+     "         :print               ; default :result"
+     "         :show-only           ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
