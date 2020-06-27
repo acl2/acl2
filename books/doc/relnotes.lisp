@@ -177,6 +177,16 @@
      Utilities to set and retrieve certain defaults have also been added.")
 
    (xdoc::p
+    "A new expanded data transformation, @(tsee apt::expdata), has been added.
+     This can realize data type refinements where
+     each instance of the old data may be represented by
+     multiple instances of the new data,
+     according to a surjective mapping from the new to the old data.
+     These are more general data type refinements than @(tsee apt::isodata),
+     but the transformation is not inherently reversible
+     (e.g. for raising the level of abstraction in program analysis).")
+
+   (xdoc::p
     "The @(tsee apt::isodata) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
