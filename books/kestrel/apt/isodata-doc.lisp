@@ -10,8 +10,8 @@
 
 (in-package "APT")
 
-(include-book "kestrel/apt/utilities/xdoc-constructors" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "utilities/xdoc-constructors")
 
 ; (depends-on "design-notes/isodata.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
