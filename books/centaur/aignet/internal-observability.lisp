@@ -1192,14 +1192,19 @@
         nil)
        (fanin0 (gate-id->fanin0 parent aignet))
        (fanin1 (gate-id->fanin1 parent aignet)))
-    (and (or (and (eql (lnfix child) (lit->var fanin0))
-                  (or xor (not (member (lit-negate fanin1) inf.doms))))
-             (and (eql (lnfix child) (lit->var fanin1))
-                  (or xor (not (member (lit-negate fanin0) inf.doms)))))
+    (and (not (eql fanin0 (lit-negate fanin1)))
          (if xor
-             (and (not (eql fanin0 (lit-negate fanin1)))
-                  (not (eql fanin0 fanin1)))
-           (not (eql fanin0 (lit-negate fanin1))))))
+             (and (not (eql fanin0 fanin1))
+                  (cond ((eql (lnfix child) (lit->var fanin0)) :xor0)
+                        ((eql (lnfix child) (lit->var fanin1)) :xor1)))
+           (cond ((eql (lnfix child) (lit->var fanin0))
+                  (and (not (member (lit-negate fanin1) inf.doms))
+                       (if (eql fanin0 fanin1)
+                           :and=
+                         :and0)))
+                 ((eql (lnfix child) (lit->var fanin1))
+                  (and (not (member (lit-negate fanin0) inf.doms))
+                       :and1))))))
   ///
   (defthm not-obs-parent-p-when-less
     (implies (<= (nfix parent) (nfix child))
@@ -1517,7 +1522,7 @@
 ;; We'll generalize this by defining a chain of such structures ending in a loop.
 
 ;; Base 2-loop:
-;; Spine is a proper ancestor of Base and Dom
+;; Spine is not a descendant of Base ;; or Dom
 ;; Dom dominates Spine
 ;; Dom dominates Base
 ;; Base dominates Dom
@@ -1527,7 +1532,8 @@
 ;; Otherwise ~Spine must dominate Parent.
 
 ;; A chain link:
-;; Spine is a proper ancestor of Spine(prev) and Dom
+;; Prev is another chain link or a 2-loop
+;; Spine is a proper ancestor of Spine(prev) and not a descendant of Dom
 ;; Dom dominates Spine
 ;; Dom(prev) dominates Dom
 
@@ -1535,7 +1541,7 @@
 ;; base must dominate parent, so we add a chain link with
 ;;   spine <- parent
 ;;   dom   <- base
-;; Satisfies: parent is a proper ancestor of spine and base
+;; Satisfies: parent is a proper ancestor of spine and not a descendant of base
 ;;            base dominates parent
 ;;            dom dominates base
 
@@ -1543,7 +1549,7 @@
 ;; dominate parent, so we add a chain link with
 ;;   spine <- parent
 ;;   dom <- ~spine
-;; Satsifies: parent is a proper ancestor of spine and ~spine
+;; Satsifies: parent is a proper ancestor of spine and not a descendant of ~spine
 ;;            ~spine dominates parent
 ;;            dom dominates spine
 
@@ -1551,7 +1557,7 @@
 ;; then dom(prev) must dominate parent, so we remove the top chain link and
 ;; modify the previous chain link to set
 ;;   spine <- parent.
-;; Satisfies: parent is a proper ancestor of spine, dom(prev)
+;; Satisfies: parent is a proper ancestor of spine,not a descendant of dom(prev)
 ;;            dom(prev) dominates parent
 ;;    If the previous node was a chain link, then we have
 ;;            dom(prev(prev)) still dominates dom(prev)
@@ -1559,13 +1565,64 @@
 ;;            dom(prev) dominates base(prev)
 ;;            base(prev) dominates dom(prev).
 
+;; Either dom(prev(prev)) or base(prev) (depending on the kind of prev) dominates dom(prev)
+;; so if dom does not equal this then it dominates parent and the chain continues.
+
 ;; In the case where the parent is not an obs-parent of dom,
 ;; then ~spine must dominate parent, so add a chain link with
 ;;    spine <- parent
 ;;    dom <- ~spine
-;; Satisfies: parent is a proper ancestor of spine and ~spine
+;; Satisfies: parent is a proper ancestor of spine and not a descendant of ~spine
 ;;            ~spine dominates parent
 ;;            dom dominates spine.
+
+
+
+
+;; Spine(prev) is not a descendant of Base(prev)
+;; Dom(prev) dominates Spine(prev)
+;; Dom(prev) dominates Base(prev)
+;; Base(prev) dominates Dom(prev)
+
+;; Spine is a proper ancestor of Spine(prev) and not a descendant of Dom
+;; Dom dominates Spine
+;; Dom(prev) dominates Dom
+;; Dom(prev) = spine
+;;   Dom dominates Dom(prev)
+;; parent = dom(prev) & dom
+
+;; Induct on a 2loop node with
+;; spine = parent
+;; base = dom(prev)
+;; dom = base(prev)
+;; satisfies: parent is not a descendant of dom(prev)
+;;   base(prev) dominates parent
+;;   base(prev) dominates dom(prev)
+;;   dom(prev) dominates base(prev)
+
+;; if base(prev) = dom:
+;; Spine(prev) is not a descendant of Base(prev)
+;; Dom(prev) dominates Spine(prev)
+;; Dom(prev) dominates Base(prev)
+;; Base(prev) dominates Dom(prev)
+
+;; Spine is a proper ancestor of Spine(prev) and not a descendant of Dom
+;; Dom dominates Spine
+;; Dom(prev) dominates Base(prev)
+;; Dom(prev) = spine
+;;   Base(prev) dominates Dom(prev)
+;; parent = dom(prev) & base(prev)
+
+
+
+
+p.base - p.spine - p.dom
+          p.dom     base
+
+
+
+
+
 
 (fty::deftagsum obs-dom-2lasso
   (:2loop
@@ -1627,30 +1684,61 @@
   :measure (obs-dom-2lasso-count x)
   :verify-guards nil
   (obs-dom-2lasso-case x
-    :2loop (and (not (equal x.spine (lit->var x.base)))
+    :2loop (and ;; (not (ancestor-p (lit->var x.dom) x.spine aignet))
+                (not (ancestor-p (lit->var x.base) x.spine aignet))
+                ;; (not (equal x.spine (lit->var x.base)))
                 ;; (not (equal (lit->var x.base) (lit->var x.dom)))
-                (not (equal x.spine (lit->var x.dom)))
-                (ancestor-p x.spine (lit->var x.base) aignet)
-                (ancestor-p x.spine (lit->var x.dom) aignet)
+                ;; (not (equal x.spine (lit->var x.dom)))
+                ;; ;; (ancestor-p x.spine (lit->var x.base) aignet)
+                ;; (ancestor-p x.spine (lit->var x.dom) aignet)
+            
                 (member x.dom  (obs-dom-info->doms (get-dominfo x.spine obs-dom-array)))
                 (member x.dom  (obs-dom-info->doms (get-dominfo (lit->var x.base) obs-dom-array)))
                 (member x.base (obs-dom-info->doms (get-dominfo (lit->var x.dom) obs-dom-array))))
     :chain (b* ((prev-spine (obs-dom-2lasso->spine x.prev))
                 (prev-dom (obs-dom-2lasso->dom x.prev)))
-             (and (not (equal x.spine prev-spine))
-                  (not (equal x.spine (lit->var x.dom)))
-                  (ancestor-p x.spine prev-spine aignet)
-                  (ancestor-p x.spine (lit->var x.dom) aignet)
+             (and ;; (not (equal x.spine prev-spine))
+                  ;; (not (equal x.spine (lit->var x.dom)))
+              (ancestor-p x.spine prev-spine aignet)
+              (not (ancestor-p (lit->var prev-dom) x.spine aignet))
+                  (not (ancestor-p (lit->var x.dom) x.spine aignet))
                   (member x.dom    (obs-dom-info->doms (get-dominfo x.spine obs-dom-array)))
                   (member prev-dom (obs-dom-info->doms (get-dominfo (lit->var x.dom) obs-dom-array)))
                   (obs-dom-2lasso-correct-p x.prev obs-dom-array aignet)))))
 
 
-(define obs-dom-2lasso-base ((x obs-dom-2lasso-p))
+;; (define obs-dom-2lasso-base ((x obs-dom-2lasso-p))
+;;   :measure (obs-dom-2lasso-count x)
+;;   (obs-dom-2lasso-case x
+;;     :2loop x.base
+;;     :chain (obs-dom-2lasso-base x.prev))
+;;   ///
+;;   (local (defthm ancestor-p-implies-gte
+;;            (implies (and (ancestor-p x y aignet)
+;;                          (natp x) (natp y))
+;;                     (<= y x))
+;;            :hints(("Goal" :in-theory (enable ancestor-p)))
+;;            :rule-classes :forward-chaining))
+;;   (defthm obs-dom-2lasso-spine-greater-than-base
+;;     (implies (obs-dom-2lasso-correct-p x obs-dom-array aignet)
+;;              (< (lit->var (obs-dom-2lasso-base x)) (obs-dom-2lasso->spine x)))
+;;     :hints(("Goal" :in-theory (enable obs-dom-2lasso-correct-p)))
+;;     :rule-classes ((:linear :trigger-terms ((obs-dom-2lasso->spine x)))))
+;;   (defthm obs-dom-2lasso-base-of-chain
+;;     (equal (obs-dom-2lasso-base (obs-dom-2lasso-chain spine dom prev))
+;;            (obs-dom-2lasso-base prev))
+;;     :hints (("goal" :expand ((obs-dom-2lasso-base (obs-dom-2lasso-chain spine dom prev))))))
+;;   (defthm obs-dom-2lasso-base-of-2loop
+;;     (equal (obs-dom-2lasso-base (obs-dom-2lasso-2loop spine dom base))
+;;            (lit-fix base))
+;;     :hints (("goal" :expand ((obs-dom-2lasso-base (obs-dom-2lasso-2loop spine dom base)))))))
+
+
+(define obs-dom-2lasso-basespine ((x obs-dom-2lasso-p))
   :measure (obs-dom-2lasso-count x)
   (obs-dom-2lasso-case x
-    :2loop x.base
-    :chain (obs-dom-2lasso-base x.prev))
+    :2loop x.spine
+    :chain (obs-dom-2lasso-basespine x.prev))
   ///
   (local (defthm ancestor-p-implies-gte
            (implies (and (ancestor-p x y aignet)
@@ -1658,46 +1746,19 @@
                     (<= y x))
            :hints(("Goal" :in-theory (enable ancestor-p)))
            :rule-classes :forward-chaining))
-  (defthm obs-dom-2lasso-spine-greater-than-base
+  (defthm obs-dom-2lasso-spine-greater-than-basespine
     (implies (obs-dom-2lasso-correct-p x obs-dom-array aignet)
-             (< (lit->var (obs-dom-2lasso-base x)) (obs-dom-2lasso->spine x)))
+             (<= (obs-dom-2lasso-basespine x) (obs-dom-2lasso->spine x)))
     :hints(("Goal" :in-theory (enable obs-dom-2lasso-correct-p)))
     :rule-classes ((:linear :trigger-terms ((obs-dom-2lasso->spine x)))))
-  (defthm obs-dom-2lasso-base-of-chain
-    (equal (obs-dom-2lasso-base (obs-dom-2lasso-chain spine dom prev))
-           (obs-dom-2lasso-base prev))
-    :hints (("goal" :expand ((obs-dom-2lasso-base (obs-dom-2lasso-chain spine dom prev))))))
-  (defthm obs-dom-2lasso-base-of-2loop
-    (equal (obs-dom-2lasso-base (obs-dom-2lasso-2loop spine dom base))
-           (lit-fix base))
-    :hints (("goal" :expand ((obs-dom-2lasso-base (obs-dom-2lasso-2loop spine dom base)))))))
-
-
-(define obs-dom-2lasso-base ((x obs-dom-2lasso-p))
-  :measure (obs-dom-2lasso-count x)
-  (obs-dom-2lasso-case x
-    :2loop x.base
-    :chain (obs-dom-2lasso-base x.prev))
-  ///
-  (local (defthm ancestor-p-implies-gte
-           (implies (and (ancestor-p x y aignet)
-                         (natp x) (natp y))
-                    (<= y x))
-           :hints(("Goal" :in-theory (enable ancestor-p)))
-           :rule-classes :forward-chaining))
-  (defthm obs-dom-2lasso-spine-greater-than-base
-    (implies (obs-dom-2lasso-correct-p x obs-dom-array aignet)
-             (< (lit->var (obs-dom-2lasso-base x)) (obs-dom-2lasso->spine x)))
-    :hints(("Goal" :in-theory (enable obs-dom-2lasso-correct-p)))
-    :rule-classes ((:linear :trigger-terms ((obs-dom-2lasso->spine x)))))
-  (defthm obs-dom-2lasso-base-of-chain
-    (equal (obs-dom-2lasso-base (obs-dom-2lasso-chain spine dom prev))
-           (obs-dom-2lasso-base prev))
-    :hints (("goal" :expand ((obs-dom-2lasso-base (obs-dom-2lasso-chain spine dom prev))))))
-  (defthm obs-dom-2lasso-base-of-2loop
-    (equal (obs-dom-2lasso-base (obs-dom-2lasso-2loop spine dom base))
-           (lit-fix base))
-    :hints (("goal" :expand ((obs-dom-2lasso-base (obs-dom-2lasso-2loop spine dom base)))))))
+  (defthm obs-dom-2lasso-basespine-of-chain
+    (equal (obs-dom-2lasso-basespine (obs-dom-2lasso-chain spine dom prev))
+           (obs-dom-2lasso-basespine prev))
+    :hints (("goal" :expand ((obs-dom-2lasso-basespine (obs-dom-2lasso-chain spine dom prev))))))
+  (defthm obs-dom-2lasso-basespine-of-2loop
+    (equal (obs-dom-2lasso-basespine (obs-dom-2lasso-2loop spine dom base))
+           (nfix spine))
+    :hints (("goal" :expand ((obs-dom-2lasso-basespine (obs-dom-2lasso-2loop spine dom base)))))))
 
 (local (include-book "std/util/termhints" :dir :system))
 
@@ -1737,7 +1798,11 @@
                    :dom x.base
                    :prev x)
            :chain (obs-dom-2lasso-case x.prev
-                    :2loop (change-obs-dom-2lasso-2loop x.prev :spine parent)
+                    :2loop ;; (if (eql (lit->var x.prev.dom) x.spine)
+                           ;;     (make-obs-dom-2lasso-2loop :spine parent
+                           ;;                                :base x.prev.dom
+                           ;;                                :dom x.prev.base)
+                             (change-obs-dom-2lasso-2loop x.prev :spine parent)
                     :chain (change-obs-dom-2lasso-chain x.prev :spine parent)))
          obs-dom-array aignet)))
     (obs-dom-2lasso-ind
@@ -1999,34 +2064,60 @@
   (local (defthm fanin-not-equal-negate-of-obs-parent
            (b* ((parent (obs-parent child obs-dom-array aignet)))
              (implies parent
-                      (not (equal (fanin :gate0 (lookup-id parent aignet))
-                                  (lit-negate (fanin :gate1 (lookup-id parent aignet)))))))
+                      (and (not (equal (fanin :gate1 (lookup-id parent aignet))
+                                       (lit-negate (fanin :gate0 (lookup-id parent aignet)))))
+                           (not (equal (fanin :gate0 (lookup-id parent aignet))
+                                       (lit-negate (fanin :gate1 (lookup-id parent aignet))))))))
            :hints (("goal" :use ((:instance obs-parent-p-of-obs-parent))
                     :in-theory (e/d (obs-parent-p)
-                                    (obs-parent-p-of-obs-parent))))))
+                                    (obs-parent-p-of-obs-parent))))
+           :rule-classes :forward-chaining))
   
+  (local (defthm fanin-equals-negate2
+           (b* ((lit1 (fanin :gate0 tail))
+                (lit0 (fanin :gate1 tail)))
+             (implies (and (not (equal lit0 lit1))
+                           (equal (lit->var lit0) x))
+                      (equal (equal (lit->var lit1) x)
+                             (equal lit0 (lit-negate lit1)))))
+           :hints (("goal" :use ((:instance arg
+                                  (lit0 (fanin :gate1 tail))
+                                  (lit1 (fanin :gate0 tail))))))))
+
+
+  (local (defthm ancestor-p-implies-not-fanin
+           (implies (and (ancestor-p (lit->var x) parent aignet)
+                         (equal (ctype (stype (car (lookup-id parent aignet)))) :gate))
+                    (and (not (equal x (fanin :gate0 (lookup-id parent aignet))))
+                         (not (equal x (fanin :gate1 (lookup-id parent aignet))))))
+           :hints (("goal" :use ((:instance ancestor-p-implies-gte
+                                  (y (nfix parent))
+                                  (x (lit->var x))))
+                    :in-theory (e/d (fanin-id-lte-fanin-count-strong)
+                                    (ancestor-p-implies-gte))))))
   (defthm obs-dom-2lasso-nonexistence
     (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
                   (obs-parent-invar obs-dom-array aignet)
-                  (<= (nfix sweep-position) (lit->var (obs-dom-2lasso-base x))))
+                  (<= (nfix sweep-position) (obs-dom-2lasso-basespine x)))
              (not (obs-dom-2lasso-correct-p x obs-dom-array aignet)))
     :hints (("goal" :induct (obs-dom-2lasso-ind x obs-dom-array aignet)
              :expand ((obs-dom-2lasso-correct-p x obs-dom-array aignet)
-                      (obs-dom-2lasso-base x)
+                      (obs-dom-2lasso-basespine x)
                       (:free (spine dom prev)
                        (obs-dom-2lasso-correct-p
                         (obs-dom-2lasso-chain spine dom prev) obs-dom-array aignet))
                       (:free (spine dom base)
                        (obs-dom-2lasso-correct-p
                         (obs-dom-2lasso-2loop spine dom base) obs-dom-array aignet)))
-             :do-not-induct t)
+             ;; :do-not-induct t
+             )
             (acl2::use-termhint
              (b* ((spine (obs-dom-2lasso->spine x))
                   (dom (obs-dom-2lasso->dom x))
                   (parent (obs-parent spine obs-dom-array aignet))
                   (regular-expands
                    '((obs-dom-2lasso-correct-p x obs-dom-array aignet)
-                     (obs-dom-2lasso-base x)
+                     (obs-dom-2lasso-basespine x)
                      (:free (spine dom x)
                       (obs-dom-2lasso-correct-p
                        (obs-dom-2lasso-chain spine dom x) obs-dom-array aignet))
@@ -2040,7 +2131,7 @@
                           :chain
                           `((obs-dom-2lasso-correct-p ,(acl2::hq x.prev)
                                                       obs-dom-array aignet)
-                            (obs-dom-2lasso-base ,(acl2::hq x.prev)))
+                            (obs-dom-2lasso-basespine ,(acl2::hq x.prev)))
                           :otherwise nil)))
                   (xor-casesplit
                    (and (equal (stype (car (lookup-id parent aignet))) :xor)
@@ -2054,17 +2145,6 @@
             ;; (and stable-under-simplificationp
             ;;      '(:in-theory (enable fanin-equals-negate)))
             ))
-
-  (local (defthm fanin-equals-negate2
-           (b* ((lit1 (fanin :gate0 tail))
-                (lit0 (fanin :gate1 tail)))
-             (implies (and (not (equal lit0 lit1))
-                           (equal (lit->var lit0) x))
-                      (equal (equal (lit->var lit1) x)
-                             (equal lit0 (lit-negate lit1)))))
-           :hints (("goal" :use ((:instance arg
-                                  (lit0 (fanin :gate1 tail))
-                                  (lit1 (fanin :gate0 tail))))))))
 
   (local (defthm equal-of-lit-negate
            (implies (and (litp x) (litp y))
@@ -2094,7 +2174,39 @@
                                     fanin1-var-is-child-if-not-fanin0
                                     fanin0-var-is-child-if-not-fanin1
                                     fanin-not-equal-negate-of-obs-parent
-                                    ctype-of-obs-parent)))))))
+                                    ctype-of-obs-parent))
+                   :cases ((equal (stype (car (lookup-id (obs-parent (lit->var x)
+                                                                     obs-dom-array aignet)
+                                                         aignet)))
+                                  :and))))))
+
+  ;; (defthm not-ancestor-when-obs-parent-p
+  ;;   (implies (obs-parent-p parent child obs-dom-array aignet)
+  ;;            (not (ancestor-p child parent aignet)))
+  ;;   :hints(("Goal" :in-theory (enable obs-parent-p
+  ;;                                     fanin-id-lte-fanin-count-strong))))
+  
+  (defthm no-mutual-domination
+    (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
+                  (obs-parent-invar obs-dom-array aignet)
+                  (obs-parent-p parent (lit->var x) obs-dom-array aignet)
+                  (<= (nfix sweep-position) (nfix parent))
+                  (not (equal (fanin :gate0 (lookup-id parent aignet)) (lit-fix y)))
+                  (not (equal (fanin :gate1 (lookup-id parent aignet)) (lit-fix y)))
+                  (member x (obs-dom-info->doms (nth (lit->var y) obs-dom-array))))
+             (not (member y (obs-dom-info->doms (nth (lit->var x) obs-dom-array)))))
+    :hints (("goal" :use ((:instance obs-dom-2lasso-nonexistence
+                           (x (make-obs-dom-2lasso-2loop
+                               :base x
+                               :dom y
+                               :spine parent))))
+             :in-theory (e/d (obs-dom-2lasso-correct-p
+                              obs-parent-p
+                              fanin-id-lte-fanin-count-strong)
+                             (obs-dom-2lasso-nonexistence)))
+            (and stable-under-simplificationp
+                 '(:cases ((equal (stype (car (lookup-id parent aignet)))
+                                  :and)))))))
 
 
 
