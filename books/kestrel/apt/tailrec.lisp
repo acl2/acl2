@@ -1929,8 +1929,7 @@
                  `(:instance ,combine-left-identity-ground-name
                    :extra-bindings-ok
                    (,(tailrec-gen-id-var-u old$ wrld)
-                    ,(apply-term old$ (formals old$
-                                               wrld)))))
+                    ,(apply-term old$ (formals old$ wrld)))))
                 (new-to-old-instance
                  `(:instance ,new-to-old-name
                    :extra-bindings-ok
