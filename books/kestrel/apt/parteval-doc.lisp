@@ -20,8 +20,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *parteval-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/parteval.pdf"
-               "@('parteval') design notes"))
+  (xdoc::&& "@('parteval') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/parteval.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,7 +63,7 @@
       but does not change its parameters.")
 
     (xdoc::p
-     "These " *parteval-design-notes* ", which use "
+     "The " *parteval-design-notes* ", which use "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.

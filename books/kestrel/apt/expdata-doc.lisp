@@ -19,12 +19,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *expdata-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/expdata.pdf"
-               "@('expdata') design notes"))
+  (xdoc::&& "@('expdata') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/expdata.pdf"
+                         "design notes")))
 
 (defconst *isodata-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf"
-               "@('isodata') design notes"))
+  (xdoc::&& "@('isodata') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,7 +130,7 @@
       Given that, as noted above,
       the current version of @('expdata') is very similar to @(tsee isodata),
       the @('expdata') design notes mostly refer to
-      the @(tsee isodata) design notes;
+      the " *isodata-design-notes* ";
       thus, the @(tsee isodata) design notes should be read as well."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

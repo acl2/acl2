@@ -20,8 +20,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *tailrec-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/tailrec.pdf"
-               "@('tailrec') design notes"))
+  (xdoc::&& "@('tailrec') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/tailrec.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,7 +54,7 @@
       that does not run out of space due to the call stack growth.")
 
     (xdoc::p
-     "These " *tailrec-design-notes* ", which use "
+     "The " *tailrec-design-notes* ", which use "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.

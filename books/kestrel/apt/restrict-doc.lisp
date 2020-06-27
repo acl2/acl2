@@ -20,8 +20,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *restrict-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf"
-               "@('restrict') design notes"))
+  (xdoc::&& "@('restrict') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,7 +52,7 @@
       by taking advantage of the added restrictions.")
 
     (xdoc::p
-     "These " *restrict-design-notes* ", which use "
+     "The " *restrict-design-notes* ", which use "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.

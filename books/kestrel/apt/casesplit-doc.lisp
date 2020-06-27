@@ -20,8 +20,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *casesplit-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/casesplit.pdf"
-               "@('casesplit') design notes"))
+  (xdoc::&& "@('casesplit') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/casesplit.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,7 +57,7 @@
       a use of @(tsee restrict) with the corresponding condition.")
 
     (xdoc::p
-     "These " *casesplit-design-notes* ", which use "
+     "The " *casesplit-design-notes* ", which use "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
