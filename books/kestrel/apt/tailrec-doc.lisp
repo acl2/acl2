@@ -74,7 +74,6 @@
      "         :wrapper-enable  ; default t"
      "         :thm-name        ; default :auto"
      "         :thm-enable      ; default t"
-     "         :non-executable  ; default :auto"
      "         :verify-guards   ; default :auto"
      "         :hints           ; default nil"
      "         :print           ; default :result"
@@ -258,8 +257,6 @@
     (xdoc::desc-apt-input-thm-name :optional)
 
     (xdoc::desc-apt-input-thm-enable :optional)
-
-    (xdoc::desc-apt-input-non-executable :optional)
 
     (xdoc::desc-apt-input-verify-guards :optional)
 

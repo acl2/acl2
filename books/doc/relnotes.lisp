@@ -227,6 +227,14 @@
       This input is allowed only if some result is being transformed,
       because otherwise no @('newp-of-new') theorems is generated."))
 
+   (xdoc::p
+    "The @(tsee apt::tailrec) transformation has been simplified
+     by removing the @(':non-executable') option,
+     which does not seem necessary or useful.
+     The new function is marked non-executable
+     if and only if the target function is;
+     the wrapper is never marked non-executable.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "ethereum::ethereum" "Ethereum Library"))
