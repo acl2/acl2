@@ -186,6 +186,8 @@
   ;; thanks.
   (defcong nat-equiv equal (take n x) 1))
 
+(defcong nat-equiv equal (nthcdr n l) 1)
+
 (defcong
   str::charlisteqv equal (chars=>nats x)
   1
@@ -1557,6 +1559,9 @@
   (declare (xargs :guard (m1-file-alist-p x)))
   (hifat-bounded-file-alist-p-helper x *ms-max-dir-ent-count*))
 
+;; This can't be converted to forward-chaining - a lot of proofs stop
+;; working. We'll just have to put up with a lot of useless frames and tries on
+;; (len x) terms...
 (defthm
   len-when-hifat-bounded-file-alist-p
   (implies (hifat-bounded-file-alist-p x)
@@ -1658,7 +1663,7 @@
  file-table-element
  ((pos natp) ;; index within the file
   ;; mode ?
-  (fid fat32-filename-list-p) ;; pathname of the file
+  (fid fat32-filename-list-p) ;; path of the file
   ))
 
 (fty::defalist
@@ -1799,26 +1804,26 @@
 ;; entry - and nowhere is there a directory entry for the root. Any
 ;; directory other than the root will be caught before a recursive call which
 ;; makes it the root.
-(defund hifat-find-file (fs pathname)
+(defund hifat-find-file (fs path)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)
-                              (fat32-filename-list-p pathname))
-                  :measure (acl2-count pathname)))
+                              (fat32-filename-list-p path))
+                  :measure (acl2-count path)))
   (b* ((fs (hifat-file-alist-fix fs))
-       ((unless (consp pathname))
+       ((unless (consp path))
         (mv (make-m1-file) *enoent*))
-       (name (mbe :logic (fat32-filename-fix (car pathname))
-                  :exec (car pathname)))
+       (name (mbe :logic (fat32-filename-fix (car path))
+                  :exec (car path)))
        (alist-elem (assoc-equal name fs))
        ((unless (consp alist-elem))
         (mv (make-m1-file) *enoent*))
        ((when (m1-directory-file-p (cdr alist-elem)))
-        (if (atom (cdr pathname))
+        (if (atom (cdr path))
             (mv (cdr alist-elem) 0)
           (hifat-find-file
            (m1-file->contents (cdr alist-elem))
-           (cdr pathname))))
-       ((unless (atom (cdr pathname)))
+           (cdr path))))
+       ((unless (atom (cdr path)))
         (mv (make-m1-file) *enotdir*)))
     (mv (cdr alist-elem) 0)))
 
@@ -1831,30 +1836,30 @@
 (defthm
   hifat-find-file-correctness-1
   (mv-let (file error-code)
-    (hifat-find-file fs pathname)
+    (hifat-find-file fs path)
     (and (m1-file-p file)
          (integerp error-code)))
-  :hints (("goal" :induct (hifat-find-file fs pathname)
+  :hints (("goal" :induct (hifat-find-file fs path)
            :in-theory (enable hifat-find-file))))
 
 (defthmd hifat-find-file-of-fat32-filename-list-fix
   (equal
-   (hifat-find-file fs (fat32-filename-list-fix pathname))
-   (hifat-find-file fs pathname))
+   (hifat-find-file fs (fat32-filename-list-fix path))
+   (hifat-find-file fs path))
   :hints (("Goal" :in-theory (enable hifat-find-file))))
 
 (defthm hifat-find-file-of-hifat-file-alist-fix
-  (equal (hifat-find-file (hifat-file-alist-fix fs) pathname)
-         (hifat-find-file fs pathname))
+  (equal (hifat-find-file (hifat-file-alist-fix fs) path)
+         (hifat-find-file fs path))
   :hints (("Goal" :in-theory (enable hifat-find-file))))
 
-(defcong fat32-filename-list-equiv equal (hifat-find-file fs pathname) 2
+(defcong fat32-filename-list-equiv equal (hifat-find-file fs path) 2
   :hints
   (("goal"
     :in-theory (enable fat32-filename-list-equiv)
     :use (hifat-find-file-of-fat32-filename-list-fix
           (:instance hifat-find-file-of-fat32-filename-list-fix
-                     (pathname pathname-equiv))))))
+                     (path path-equiv))))))
 
 (defthm
   m1-file-alist-p-of-put-assoc-equal
@@ -1865,36 +1870,43 @@
 
 (defund
   hifat-place-file
-  (fs pathname file)
+  (fs path file)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)
-                              (fat32-filename-list-p pathname)
+                              (fat32-filename-list-p path)
                               (m1-file-p file))
-                  :measure (acl2-count pathname)))
+                  :measure (acl2-count path)))
   (b*
       ((fs (mbe :logic (hifat-file-alist-fix fs) :exec fs))
        (file (mbe :logic (m1-file-fix file)
                   :exec file))
-       ;; Pathnames aren't going to be empty lists. Even the emptiest of
-       ;; empty pathnames has to have at least a slash in it, because we are
-       ;; absolutely dealing in absolute pathnames.
-       ((unless (consp pathname))
+       ;; Paths aren't going to be empty lists. Even the emptiest of
+       ;; empty paths has to have at least a slash in it, because we are
+       ;; absolutely dealing in absolute paths.
+       ((unless (consp path))
         (mv fs *enoent*))
-       (name (fat32-filename-fix (car pathname)))
+       (name (fat32-filename-fix (car path)))
        (alist-elem (assoc-equal name fs))
        ((unless (consp alist-elem))
-        (if (atom (cdr pathname))
+        (if (atom (cdr path))
             (mv (put-assoc-equal name file fs) 0)
           (mv fs *enotdir*)))
        ((when (and (not (m1-directory-file-p (cdr alist-elem)))
-                   (or (consp (cdr pathname))
+                   (or (consp (cdr path))
                        ;; This is the case where a regular file could get replaced by
                        ;; a directory, which is a bad idea.
                        (m1-directory-file-p file))))
         (mv fs *enotdir*))
        ((when (not (or (m1-directory-file-p (cdr alist-elem))
-                       (consp (cdr pathname))
+                       (consp (cdr path))
                        (m1-directory-file-p file)
+                       (and
+                        (atom (assoc-equal name fs))
+                        (>= (len fs) *ms-max-dir-ent-count*)))))
+        (mv (put-assoc-equal name file fs) 0))
+       ((when (not (or (m1-regular-file-p (cdr alist-elem))
+                       (consp (cdr path))
+                       (m1-regular-file-p file)
                        (and
                         (atom (assoc-equal name fs))
                         (>= (len fs) *ms-max-dir-ent-count*)))))
@@ -1904,7 +1916,7 @@
        ((mv new-contents error-code)
         (hifat-place-file
          (m1-file->contents (cdr alist-elem))
-         (cdr pathname)
+         (cdr path)
          file)))
     (mv
      (put-assoc-equal
@@ -1917,36 +1929,36 @@
 (defthm
   hifat-place-file-correctness-1
   (mv-let (fs error-code)
-    (hifat-place-file fs pathname file)
+    (hifat-place-file fs path file)
     (and (m1-file-alist-p fs)
          (integerp error-code)))
   :hints
   (("goal" :in-theory (enable hifat-place-file)
-    :induct (hifat-place-file fs pathname file))))
+    :induct (hifat-place-file fs path file))))
 
 (defthmd
   hifat-place-file-of-fat32-filename-list-fix
   (equal
-   (hifat-place-file fs (fat32-filename-list-fix pathname)
+   (hifat-place-file fs (fat32-filename-list-fix path)
                                  file)
-   (hifat-place-file fs pathname file))
+   (hifat-place-file fs path file))
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defthm hifat-place-file-of-hifat-file-alist-fix
   (equal
-   (hifat-place-file (hifat-file-alist-fix fs) pathname file)
-   (hifat-place-file fs pathname file))
+   (hifat-place-file (hifat-file-alist-fix fs) path file)
+   (hifat-place-file fs path file))
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defcong fat32-filename-list-equiv equal
-  (hifat-place-file fs pathname file) 2
+  (hifat-place-file fs path file) 2
   :hints
   (("goal"
     :in-theory
     (enable hifat-place-file fat32-filename-list-equiv)
     :use (hifat-place-file-of-fat32-filename-list-fix
           (:instance hifat-place-file-of-fat32-filename-list-fix
-                     (pathname pathname-equiv))))))
+                     (path path-equiv))))))
 
 ;; This can't be made local.
 (defthm
@@ -1960,13 +1972,13 @@
 
 (defthm
   hifat-place-file-correctness-3
-  (implies (not (zp (mv-nth 1 (hifat-place-file fs pathname file))))
-           (equal (mv-nth 0 (hifat-place-file fs pathname file))
+  (implies (not (zp (mv-nth 1 (hifat-place-file fs path file))))
+           (equal (mv-nth 0 (hifat-place-file fs path file))
                   (hifat-file-alist-fix fs)))
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defcong m1-file-equiv equal
-  (hifat-place-file fs pathname file) 3
+  (hifat-place-file fs path file) 3
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
 ;; Do not make this local, it's needed elsewhere.
@@ -1980,24 +1992,45 @@
 
 (defthm
   hifat-no-dups-p-of-hifat-place-file
-  (implies (or (hifat-no-dups-p (m1-file->contents file))
-               (m1-regular-file-p file))
-           (hifat-no-dups-p (mv-nth 0 (hifat-place-file fs pathname file))))
-  :hints (("goal" :in-theory (enable hifat-place-file))))
+  (implies (hifat-no-dups-p (m1-file->contents file))
+           (hifat-no-dups-p (mv-nth 0 (hifat-place-file fs path file))))
+  :hints
+  (("goal"
+    :in-theory (enable hifat-place-file)
+    :induct (hifat-place-file fs path file)
+    :expand
+    (:with
+     (:rewrite hifat-no-dups-p-of-put-assoc)
+     (hifat-no-dups-p
+      (put-assoc-equal
+       (fat32-filename-fix (car path))
+       (m1-file
+        (m1-file->dir-ent
+         (cdr (assoc-equal (fat32-filename-fix (car path))
+                           (hifat-file-alist-fix fs))))
+        (mv-nth
+         0
+         (hifat-place-file
+          (m1-file->contents
+           (cdr (assoc-equal (fat32-filename-fix (car path))
+                             (hifat-file-alist-fix fs))))
+          (cdr path)
+          file)))
+       (hifat-file-alist-fix fs)))))))
 
 (defund
-  hifat-remove-file (fs pathname)
+  hifat-remove-file (fs path)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)
-                              (fat32-filename-list-p pathname))
-                  :measure (acl2-count pathname)))
+                              (fat32-filename-list-p path))
+                  :measure (acl2-count path)))
   (b*
       ((fs (mbe :logic (hifat-file-alist-fix fs) :exec fs))
-       ((unless (consp pathname))
+       ((unless (consp path))
         (mv fs *enoent*))
        ;; Design choice - calls which ask for the entire root directory to be
        ;; affected will fail.
-       (name (fat32-filename-fix (car pathname)))
+       (name (fat32-filename-fix (car path)))
        (alist-elem (assoc-equal name fs))
        ;; If it's not there, it can't be removed
        ((unless (consp alist-elem))
@@ -2007,7 +2040,7 @@
        ;; also remove all possible copies for the filename, even though we
        ;; try to avoid having multiple copies of a file, whether or not they're
        ;; identical.
-       ((when (atom (cdr pathname)))
+       ((when (atom (cdr path)))
         (mv (remove-assoc-equal name fs) 0))
        ;; ENOTDIR - can't delete anything that supposedly exists inside a
        ;; regular file.
@@ -2017,7 +2050,7 @@
        ((mv new-contents error-code)
         (hifat-remove-file
          (m1-file->contents (cdr alist-elem))
-         (cdr pathname))))
+         (cdr path))))
     (mv
      (put-assoc-equal
       name
@@ -2029,24 +2062,24 @@
 (defthm
   hifat-remove-file-correctness-1
   (mv-let (fs error-code)
-    (hifat-remove-file fs pathname)
+    (hifat-remove-file fs path)
     (and (m1-file-alist-p fs)
          (integerp error-code)))
   :hints (("goal" :in-theory (enable hifat-remove-file)
-           :induct (hifat-remove-file fs pathname)))
+           :induct (hifat-remove-file fs path)))
   :rule-classes
   ((:rewrite
-    :corollary (m1-file-alist-p (mv-nth 0 (hifat-remove-file fs pathname))))
+    :corollary (m1-file-alist-p (mv-nth 0 (hifat-remove-file fs path))))
    (:type-prescription
-    :corollary (integerp (mv-nth 1 (hifat-remove-file fs pathname))))
+    :corollary (integerp (mv-nth 1 (hifat-remove-file fs path))))
    (:type-prescription
-    :corollary (not (stringp (mv-nth 0 (hifat-remove-file fs pathname)))))))
+    :corollary (not (stringp (mv-nth 0 (hifat-remove-file fs path)))))))
 
 (defthm
   hifat-remove-file-correctness-2
   (equal
-   (hifat-remove-file (hifat-file-alist-fix fs) pathname)
-   (hifat-remove-file fs pathname))
+   (hifat-remove-file (hifat-file-alist-fix fs) path)
+   (hifat-remove-file fs path))
   :hints (("goal" :in-theory (enable hifat-remove-file))))
 
 (local
@@ -2060,7 +2093,7 @@
 
 (defthm
   hifat-remove-file-correctness-3
-  (hifat-no-dups-p (mv-nth 0 (hifat-remove-file fs pathname)))
+  (hifat-no-dups-p (mv-nth 0 (hifat-remove-file fs path)))
   :hints (("goal" :in-theory (enable hifat-remove-file))))
 
 (local
@@ -2073,9 +2106,9 @@
    :hints (("Goal" :in-theory (enable hifat-no-dups-p)) )))
 
 (defthm hifat-remove-file-correctness-4
-  (implies (not (equal (mv-nth 1 (hifat-remove-file fs pathname))
+  (implies (not (equal (mv-nth 1 (hifat-remove-file fs path))
                        0))
-           (equal (mv-nth 0 (hifat-remove-file fs pathname))
+           (equal (mv-nth 0 (hifat-remove-file fs path))
                   (hifat-file-alist-fix fs)))
   :hints (("goal" :in-theory (e/d (hifat-remove-file) (put-assoc-equal)))))
 
@@ -2100,6 +2133,30 @@
    (prefixp (fat32-filename-list-fix x) (fat32-filename-list-fix y)))
   :hints (("Goal" :in-theory (enable fat32-filename-list-prefixp prefixp))))
 
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  1
+  :hints
+  (("goal"
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defcong
+  fat32-filename-list-equiv
+  equal (fat32-filename-list-prefixp x y)
+  2
+  :hints
+  (("goal"
+    :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defthm
+  m1-read-after-write-lemma-1
+  (implies (m1-regular-file-p file)
+           (hifat-no-dups-p (m1-file->contents file)))
+  :hints
+  (("goal" :in-theory (enable m1-regular-file-p hifat-no-dups-p)
+    :do-not-induct t)))
+
 (encapsulate
   ()
 
@@ -2110,25 +2167,25 @@
   (local
    (defun
        induction-scheme
-       (pathname1 pathname2 fs)
-     (declare (xargs :guard (and (fat32-filename-list-p pathname1)
-                                 (fat32-filename-list-p pathname2)
+       (path1 path2 fs)
+     (declare (xargs :guard (and (fat32-filename-list-p path1)
+                                 (fat32-filename-list-p path2)
                                  (m1-file-alist-p fs))))
      (if
-         (or (atom pathname1) (atom pathname2))
+         (or (atom path1) (atom path2))
          1
        (if
-           (not (fat32-filename-equiv (car pathname2) (car pathname1)))
+           (not (fat32-filename-equiv (car path2) (car path1)))
            2
          (let*
-             ((alist-elem (assoc-equal (fat32-filename-fix (car pathname1)) fs)))
+             ((alist-elem (assoc-equal (fat32-filename-fix (car path1)) fs)))
            (if
                (atom alist-elem)
                3
              (if
                  (m1-directory-file-p (cdr alist-elem))
-                 (induction-scheme (cdr pathname1)
-                                   (cdr pathname2)
+                 (induction-scheme (cdr path1)
+                                   (cdr path2)
                                    (m1-file->contents (cdr alist-elem)))
                4)))))))
 
@@ -2137,9 +2194,9 @@
      m1-read-after-write-lemma-3
      (b*
          (((mv original-file original-error-code)
-           (hifat-find-file fs pathname1))
+           (hifat-find-file fs path1))
           ((mv new-fs new-error-code)
-           (hifat-place-file fs pathname2 file2)))
+           (hifat-place-file fs path2 file2)))
        (implies
         (and (m1-file-alist-p fs)
              (hifat-no-dups-p fs)
@@ -2147,12 +2204,12 @@
              (equal original-error-code 0)
              (m1-regular-file-p original-file)
              (equal new-error-code 0))
-        (equal (hifat-find-file new-fs pathname1)
-               (if (fat32-filename-list-equiv pathname1 pathname2)
+        (equal (hifat-find-file new-fs path1)
+               (if (fat32-filename-list-equiv path1 path2)
                    (mv file2 0)
-                 (hifat-find-file fs pathname1)))))
+                 (hifat-find-file fs path1)))))
      :hints
-     (("goal" :induct (induction-scheme pathname1 pathname2 fs)
+     (("goal" :induct (induction-scheme path1 path2 fs)
        :in-theory (enable m1-regular-file-p
                           fat32-filename-list-fix)))))
 
@@ -2160,20 +2217,20 @@
     m1-read-after-write
     (b*
         (((mv original-file original-error-code)
-          (hifat-find-file fs pathname1))
+          (hifat-find-file fs path1))
          ((mv new-fs new-error-code)
-          (hifat-place-file fs pathname2 file2)))
+          (hifat-place-file fs path2 file2)))
       (implies
        (and (m1-regular-file-p file2)
             (equal original-error-code 0)
             (m1-regular-file-p original-file)
             (equal new-error-code 0))
-       (equal (hifat-find-file new-fs pathname1)
-              (if (fat32-filename-list-equiv pathname1 pathname2)
+       (equal (hifat-find-file new-fs path1)
+              (if (fat32-filename-list-equiv path1 path2)
                   (mv file2 0)
-                (hifat-find-file fs pathname1)))))
+                (hifat-find-file fs path1)))))
     :hints
-    (("goal" :induct (induction-scheme pathname1 pathname2 fs)
+    (("goal" :induct (induction-scheme path1 path2 fs)
       :in-theory (enable m1-regular-file-p
                          fat32-filename-list-fix))))
 
@@ -2182,9 +2239,9 @@
      m1-read-after-create-lemma-1
      (b*
          (((mv & original-error-code)
-           (hifat-find-file fs pathname1))
+           (hifat-find-file fs path1))
           ((mv new-fs new-error-code)
-           (hifat-place-file fs pathname2 file2)))
+           (hifat-place-file fs path2 file2)))
        (implies
         (and (m1-file-alist-p fs)
              (hifat-no-dups-p fs)
@@ -2192,14 +2249,14 @@
              (not (equal original-error-code 0))
              (equal new-error-code 0))
         (equal
-         (hifat-find-file new-fs pathname1)
-         (if (fat32-filename-list-equiv pathname1 pathname2)
+         (hifat-find-file new-fs path1)
+         (if (fat32-filename-list-equiv path1 path2)
              (mv file2 0)
-           (if (fat32-filename-list-prefixp pathname2 pathname1)
+           (if (fat32-filename-list-prefixp path2 path1)
                (mv (make-m1-file) *enotdir*)
-             (hifat-find-file fs pathname1))))))
+             (hifat-find-file fs path1))))))
      :hints
-     (("goal" :induct (induction-scheme pathname1 pathname2 fs)
+     (("goal" :induct (induction-scheme path1 path2 fs)
        :in-theory (enable fat32-filename-list-fix
                           m1-regular-file-p)))))
 
@@ -2207,22 +2264,22 @@
     m1-read-after-create
     (b*
         (((mv & original-error-code)
-          (hifat-find-file fs pathname1))
+          (hifat-find-file fs path1))
          ((mv new-fs new-error-code)
-          (hifat-place-file fs pathname2 file2)))
+          (hifat-place-file fs path2 file2)))
       (implies
        (and (m1-regular-file-p file2)
             (not (equal original-error-code 0))
             (equal new-error-code 0))
        (equal
-        (hifat-find-file new-fs pathname1)
-        (if (fat32-filename-list-equiv pathname1 pathname2)
+        (hifat-find-file new-fs path1)
+        (if (fat32-filename-list-equiv path1 path2)
             (mv file2 0)
-          (if (fat32-filename-list-prefixp pathname2 pathname1)
+          (if (fat32-filename-list-prefixp path2 path1)
               (mv (make-m1-file) *enotdir*)
-            (hifat-find-file fs pathname1))))))
+            (hifat-find-file fs path1))))))
     :hints
-    (("goal" :induct (induction-scheme pathname1 pathname2 fs)
+    (("goal" :induct (induction-scheme path1 path2 fs)
       :in-theory (enable fat32-filename-list-fix
                          m1-regular-file-p))))
 
@@ -2230,55 +2287,55 @@
    (defthm
      m1-read-after-delete-lemma-2
      (implies
-      (equal (mv-nth 1 (hifat-find-file fs pathname))
+      (equal (mv-nth 1 (hifat-find-file fs path))
              *enoent*)
-      (equal (hifat-find-file fs pathname)
+      (equal (hifat-find-file fs path)
              (mv (make-m1-file) *enoent*)))))
 
   (local
    (defthmd
      m1-read-after-delete-lemma-3
      (b* (((mv & error-code)
-           (hifat-find-file fs pathname1))
+           (hifat-find-file fs path1))
           ((mv new-fs &)
-           (hifat-remove-file fs pathname2)))
+           (hifat-remove-file fs path2)))
        (implies (and
                  (m1-file-alist-p fs)
                  (hifat-no-dups-p fs)
                  (equal error-code *enoent*))
-                (equal (hifat-find-file new-fs pathname1)
+                (equal (hifat-find-file new-fs path1)
                        (mv (make-m1-file) *enoent*))))
      :hints
-     (("goal" :induct (induction-scheme pathname1 pathname2 fs)
+     (("goal" :induct (induction-scheme path1 path2 fs)
        :in-theory (enable fat32-filename-list-fix
                           m1-regular-file-p)
        :expand
        ((:free (fs)
-               (hifat-find-file fs pathname1))
+               (hifat-find-file fs path1))
         (:free (fs)
-               (hifat-remove-file fs pathname2)))))))
+               (hifat-remove-file fs path2)))))))
 
   (local
    (defthmd
      m1-read-after-delete-lemma-4
      (b*
          (((mv original-file &)
-           (hifat-find-file fs pathname1))
+           (hifat-find-file fs path1))
           ((mv new-fs error-code)
-           (hifat-remove-file fs pathname2)))
+           (hifat-remove-file fs path2)))
        (implies
         (and
          (m1-file-alist-p fs)
          (hifat-no-dups-p fs)
          (m1-regular-file-p original-file))
         (equal
-         (hifat-find-file new-fs pathname1)
-         (if (and (fat32-filename-list-prefixp pathname2 pathname1)
+         (hifat-find-file new-fs path1)
+         (if (and (fat32-filename-list-prefixp path2 path1)
                   (equal error-code 0))
              (mv (make-m1-file) *enoent*)
-           (hifat-find-file fs pathname1)))))
+           (hifat-find-file fs path1)))))
      :hints
-     (("goal" :induct (induction-scheme pathname1 pathname2 fs)
+     (("goal" :induct (induction-scheme path1 path2 fs)
        :in-theory (enable fat32-filename-list-fix
                           m1-regular-file-p)))))
 
@@ -2287,9 +2344,9 @@
      m1-read-after-delete-lemma-1
      (b*
          (((mv original-file original-error-code)
-           (hifat-find-file fs pathname1))
+           (hifat-find-file fs path1))
           ((mv new-fs new-error-code)
-           (hifat-remove-file fs pathname2)))
+           (hifat-remove-file fs path2)))
        (implies
         (and
          (m1-file-alist-p fs)
@@ -2297,14 +2354,14 @@
          (or (equal original-error-code *enoent*)
              (m1-regular-file-p original-file)))
         (equal
-         (hifat-find-file new-fs pathname1)
+         (hifat-find-file new-fs path1)
          (if
              (or
               (equal original-error-code *enoent*)
               (and (equal new-error-code 0)
-                   (fat32-filename-list-prefixp pathname2 pathname1)))
+                   (fat32-filename-list-prefixp path2 path1)))
              (mv (make-m1-file) *enoent*)
-           (hifat-find-file fs pathname1)))))
+           (hifat-find-file fs path1)))))
      :hints (("goal" :use (m1-read-after-delete-lemma-4
                            m1-read-after-delete-lemma-3)))))
 
@@ -2312,21 +2369,21 @@
     m1-read-after-delete
     (b*
         (((mv original-file original-error-code)
-          (hifat-find-file fs pathname1))
+          (hifat-find-file fs path1))
          ((mv new-fs new-error-code)
-          (hifat-remove-file fs pathname2)))
+          (hifat-remove-file fs path2)))
       (implies
        (or (equal original-error-code *enoent*)
            (m1-regular-file-p original-file))
        (equal
-        (hifat-find-file new-fs pathname1)
+        (hifat-find-file new-fs path1)
         (if
             (or
              (equal original-error-code *enoent*)
              (and (equal new-error-code 0)
-                  (fat32-filename-list-prefixp pathname2 pathname1)))
+                  (fat32-filename-list-prefixp path2 path1)))
             (mv (make-m1-file) *enoent*)
-          (hifat-find-file fs pathname1)))))
+          (hifat-find-file fs path1)))))
     :hints (("Goal"
              :use (:instance m1-read-after-delete-lemma-1
                              (fs (hifat-file-alist-fix fs)))) )))
@@ -2374,50 +2431,50 @@
   :hints (("Goal" :in-theory (enable find-new-index))))
 
 ;; Here's a problem with our current formulation: realpath-helper will receive
-;; something that was emitted by pathname-to-fat32-pathname, and that means all
+;; something that was emitted by path-to-fat32-path, and that means all
 ;; absolute paths will start with *empty-fat32-name* or "        ". That's
 ;; problematic because then anytime we have to compute the realpath of "/.." or
 ;; "/home/../.." we will return something that breaks this convention of having
 ;; absolute paths begin with *empty-fat32-name*. Most likely, the convention
 ;; itself is hard to sustain.
-(defun realpath-helper (pathname ac)
-  (cond ((atom pathname) (revappend ac nil))
-        ((equal (car pathname)
+(defun realpath-helper (path ac)
+  (cond ((atom path) (revappend ac nil))
+        ((equal (car path)
                 *current-dir-fat32-name*)
-         (realpath-helper (cdr pathname) ac))
-        ((equal (car pathname)
+         (realpath-helper (cdr path) ac))
+        ((equal (car path)
                 *parent-dir-fat32-name*)
-         (realpath-helper (cdr pathname)
+         (realpath-helper (cdr path)
                           (cdr ac)))
-        (t (realpath-helper (cdr pathname)
-                            (cons (car pathname) ac)))))
+        (t (realpath-helper (cdr path)
+                            (cons (car path) ac)))))
 
 (defthm
   realpath-helper-correctness-1
   (implies
-   (and (not (member-equal *current-dir-fat32-name* pathname))
-        (not (member-equal *parent-dir-fat32-name* pathname)))
-   (equal (realpath-helper pathname ac)
-          (revappend ac (true-list-fix pathname))))
+   (and (not (member-equal *current-dir-fat32-name* path))
+        (not (member-equal *parent-dir-fat32-name* path)))
+   (equal (realpath-helper path ac)
+          (revappend ac (true-list-fix path))))
   :hints
   (("goal" :in-theory (disable (:rewrite revappend-removal)
                                revappend-of-true-list-fix)
-    :induct (realpath-helper pathname ac))
+    :induct (realpath-helper path ac))
    ("subgoal *1/1"
     :use (:instance revappend-of-true-list-fix (x ac)
-                    (y pathname)))))
+                    (y path)))))
 
-(defund realpath (relpathname abspathname)
-  (realpath-helper (append abspathname relpathname) nil))
+(defund realpath (relpath abspath)
+  (realpath-helper (append abspath relpath) nil))
 
 (defthm
   realpath-correctness-1
   (implies
-   (and (not (member-equal *current-dir-fat32-name* (append abspathname relpathname)))
-        (not (member-equal *parent-dir-fat32-name* (append abspathname relpathname))))
-   (equal (realpath relpathname abspathname)
+   (and (not (member-equal *current-dir-fat32-name* (append abspath relpath)))
+        (not (member-equal *parent-dir-fat32-name* (append abspath relpath))))
+   (equal (realpath relpath abspath)
           (true-list-fix
-           (append abspathname relpathname))))
+           (append abspath relpath))))
   :hints
   (("goal" :in-theory (enable realpath))))
 
@@ -2554,7 +2611,7 @@
 ;; can have one layer of abstraction for generating the absolute path, but
 ;; right now we don't have any per-process data structure for storing the
 ;; current directory, nor are we planning to implement chdir.
-(defund pathname-to-fat32-pathname (character-list)
+(defund path-to-fat32-path (character-list)
   (declare (xargs :guard (character-listp character-list)))
   (b*
       (((when (atom character-list))
@@ -2565,7 +2622,7 @@
                                          (len slash-and-later-characters))
                                       character-list))
        ((when (atom characters-before-slash))
-        (pathname-to-fat32-pathname (cdr slash-and-later-characters)))
+        (path-to-fat32-path (cdr slash-and-later-characters)))
        ;; We want to treat anything that ends with a slash the same way we
        ;; would if the slash weren't there.
        ((when (or (atom slash-and-later-characters)
@@ -2574,39 +2631,39 @@
          (coerce (name-to-fat32-name characters-before-slash) 'string))))
     (cons
      (coerce (name-to-fat32-name characters-before-slash) 'string)
-     (pathname-to-fat32-pathname (cdr slash-and-later-characters)))))
+     (path-to-fat32-path (cdr slash-and-later-characters)))))
 
 (assert-event
  (and
-  (equal (pathname-to-fat32-pathname (coerce "/bin/mkdir" 'list))
+  (equal (path-to-fat32-path (coerce "/bin/mkdir" 'list))
          (list "BIN        " "MKDIR      "))
-  (equal (pathname-to-fat32-pathname (coerce "//bin//mkdir" 'list))
+  (equal (path-to-fat32-path (coerce "//bin//mkdir" 'list))
          (list "BIN        " "MKDIR      "))
-  (equal (pathname-to-fat32-pathname (coerce "/bin/" 'list))
+  (equal (path-to-fat32-path (coerce "/bin/" 'list))
          (list "BIN        "))
-  (equal (pathname-to-fat32-pathname (coerce "books/build/cert.pl" 'list))
+  (equal (path-to-fat32-path (coerce "books/build/cert.pl" 'list))
          (list "BOOKS      " "BUILD      " "CERT    PL "))
-  (equal (pathname-to-fat32-pathname (coerce "books/build/" 'list))
+  (equal (path-to-fat32-path (coerce "books/build/" 'list))
          (list "BOOKS      " "BUILD      "))))
 
 ;; for later
-;; (defthmd pathname-to-fat32-pathname-correctness-1
+;; (defthmd path-to-fat32-path-correctness-1
 ;;   (implies
 ;;    (and (character-listp character-list)
 ;;         (consp character-list)
 ;;         (equal (last character-list)
 ;;                (coerce "\/" 'list)))
 ;;    (equal
-;;     (pathname-to-fat32-pathname (take (- (len character-list) 1)
+;;     (path-to-fat32-path (take (- (len character-list) 1)
 ;;                                       character-list))
-;;     (pathname-to-fat32-pathname character-list)))
+;;     (path-to-fat32-path character-list)))
 ;;   :hints (("Goal"
-;;            :induct (pathname-to-fat32-pathname character-list)
+;;            :induct (path-to-fat32-path character-list)
 ;;            :in-theory (disable name-to-fat32-name)
-;;            :expand (PATHNAME-TO-FAT32-PATHNAME (TAKE (+ -1 (LEN CHARACTER-LIST))
+;;            :expand (PATH-TO-FAT32-PATH (TAKE (+ -1 (LEN CHARACTER-LIST))
 ;;                                                      CHARACTER-LIST))) ))
 
-(defun fat32-pathname-to-pathname (string-list)
+(defun fat32-path-to-path (string-list)
   ;; (declare (xargs :guard (string-listp string-list)))
   (if (atom string-list)
       nil
@@ -2614,18 +2671,18 @@
             (if (atom (cdr string-list))
                 nil
               (list* #\/
-                     (fat32-pathname-to-pathname (cdr string-list)))))))
+                     (fat32-path-to-path (cdr string-list)))))))
 
 (assert-event
  (and
-  (equal (coerce (fat32-pathname-to-pathname (list "BOOKS      " "BUILD      "
+  (equal (coerce (fat32-path-to-path (list "BOOKS      " "BUILD      "
                                                    "CERT    PL "))
                  'string)
          "books/build/cert.pl")
-  (equal (coerce (fat32-pathname-to-pathname (list "           " "BIN        "
+  (equal (coerce (fat32-path-to-path (list "           " "BIN        "
                                                    "MKDIR      "))
                  'string)
          "/bin/mkdir")))
 
-(defthm character-listp-of-fat32-pathname-to-pathname
-  (character-listp (fat32-pathname-to-pathname string-list)))
+(defthm character-listp-of-fat32-path-to-path
+  (character-listp (fat32-path-to-path string-list)))
