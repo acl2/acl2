@@ -13,7 +13,6 @@
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/basic/defs" :dir :system)
-(include-book "std/lists/rev" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -204,32 +203,21 @@
     "bindings,
      but a binder of the form @('(unless (not <condition>))')
      is turned into @('(when <condition>)') to improve readability."))
-  (def-error-checker-bindings-aux conditions-messages error-erp error-val nil)
-
-  :prepwork
-  ((define def-error-checker-bindings-aux
-     ((conditions-messages true-list-listp)
-      (error-erp symbolp)
-      (error-val symbolp)
-      (rev-current-bindings true-list-listp))
-     :returns (final-bindings true-list-listp
-                              :hyp (true-list-listp rev-current-bindings))
-     :parents nil
-     (b* (((when (endp conditions-messages)) (rev rev-current-bindings))
-          (condition-message (car conditions-messages))
-          (condition (car condition-message))
-          (message (cdr condition-message))
-          ((mv unless/when condition)
-           (case-match condition
-             (('not negated-condition) (mv 'when negated-condition))
-             (& (mv 'unless condition))))
-          (binding `((,unless/when ,condition)
-                     (er-soft+ ctx ,error-erp ,error-val ,@message))))
-       (def-error-checker-bindings-aux
-         (cdr conditions-messages)
-         error-erp
-         error-val
-         (cons binding rev-current-bindings))))))
+  (b* (((when (endp conditions-messages)) nil)
+       (condition-message (car conditions-messages))
+       (condition (car condition-message))
+       (message (cdr condition-message))
+       ((mv unless/when condition)
+        (case-match condition
+          (('not negated-condition) (mv 'when negated-condition))
+          (& (mv 'unless condition))))
+       (binding `((,unless/when ,condition)
+                  (er-soft+ ctx ,error-erp ,error-val ,@message)))
+       (bindings (def-error-checker-bindings
+                   (cdr conditions-messages)
+                   error-erp
+                   error-val)))
+    (cons binding bindings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,22 +225,11 @@
   :returns (x-symbols true-listp)
   :short "Turn each @('xi') symbol into itself
           and each @('xi') extended formal into its underlying symbol."
-  (def-error-checker-x-symbols-aux xs nil)
-
-  :prepwork
-  ((define def-error-checker-x-symbols-aux
-     ((xs true-listp)
-      (rev-current-x-symbols true-listp))
-     :returns (final-x-symbols true-listp
-                               :hyp (true-listp rev-current-x-symbols)
-                               :rule-classes :type-prescription)
-     :parents nil
-     (cond ((endp xs) (rev rev-current-x-symbols))
-           (t (let* ((x (car xs))
-                     (x-symbol (if (atom x) x (car x))))
-                (def-error-checker-x-symbols-aux
-                  (cdr xs)
-                  (cons x-symbol rev-current-x-symbols))))))))
+  (b* (((when (endp xs)) nil)
+       (x (car xs))
+       (x-symbol (if (atom x) x (car x)))
+       (x-symbols (def-error-checker-x-symbols (cdr xs))))
+    (cons x-symbol x-symbols)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
