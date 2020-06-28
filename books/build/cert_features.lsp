@@ -88,6 +88,9 @@
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_THINKS_BOOK_DIR_IS" channel state))
            (state (newline channel state))
+; Matt K. mod: It seems to be too much trouble to arrange that the
+; @useless-runes.lsp files be used for ACL2(r) and ACL2(p) in addition to ACL2.
+           #-(or acl2-par non-standard-analysis)
            (state (princ$ "export ACL2_USELESS_RUNES ?= -25" channel state))
            (state (newline channel state))
            (state (princ$ "EXPORTED_VARS += ACL2_USELESS_RUNES" channel state))

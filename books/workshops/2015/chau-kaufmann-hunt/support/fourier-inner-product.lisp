@@ -1023,7 +1023,8 @@
                                                  i k (/ (acl2-pi) L)))
                    (sum-coefficients i)))
    :hints (("Subgoal *1/1"
-            :expand (hide (sum-coefficients 0))))))
+; Matt K. mod after ACL2 8.3 for use of COMMENT with HIDE:
+            :expand ((:free (v) (hide v)))))))
 
 (local
  (defthm int-sum-prod-fn-i*k-prime-lemma-2

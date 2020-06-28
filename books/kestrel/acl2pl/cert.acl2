@@ -9,3 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "portcullis")
+
+; Added by Matt K. 6/28/2020 to avoid ACL2(r) failure for proof of guard
+; conjecture for eval-complex, file primitive-functions.lisp.
+; cert_param: (non-acl2r)
