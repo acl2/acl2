@@ -469,6 +469,10 @@
      to check if a term is a all of @(tsee if)
      and to return its three arguments if that is the case.")
 
+   (xdoc::p
+    "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
+     which lifts @(tsee fresh-namep-msg-weak) to lists.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
