@@ -36,7 +36,7 @@
 (local (include-book "std/strings/explode-atom" :dir :system))
 (local (include-book "std/strings/strtok" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 
 
