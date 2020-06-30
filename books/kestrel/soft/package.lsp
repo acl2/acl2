@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,6 +23,7 @@
                          defchoose-strengthen
                          defchoosep
                          definedp
+                         defmacro+
                          defpun
                          defun-sk-bound-vars
                          defun-sk-definition-name
@@ -44,9 +45,11 @@
                          function-symbol-listp
                          guard-verified-p
                          impossible
+                         irecursivep
                          keywords-of-keyword-value-list
                          lambda-body
                          lambda-formals
+                         logicp
                          make-event-terse
                          make-lambda
                          maybe-msgp
