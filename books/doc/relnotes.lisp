@@ -551,6 +551,10 @@
 
    (xdoc::h3 "Build System Updates")
 
+   (xdoc::p
+    "By default, @('make') commands for certifying ACL2 books take advantage of
+     files @('*@useless-runes.lsp').  See @(see useless-runes).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
@@ -558,6 +562,11 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
+
+   (xdoc::p
+    "The line containing @('#!/bin/bash') at the top of various shell scripts
+     has been replaced by a line containing @('#!/usr/bin/env bash'), for
+     increased portability.")
 
    ))
 
