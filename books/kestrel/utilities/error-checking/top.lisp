@@ -27,45 +27,61 @@
 
 (def-error-checker ensure-nil
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not @('nil')."
+  :body
   (((eq x nil) "~@0 must be NIL." description)))
 
 (def-error-checker ensure-boolean
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a boolean."
+  :body
   (((booleanp x) "~@0 must be T or NIL." description)))
 
 (def-error-checker ensure-symbol
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a symbol."
+  :body
   (((symbolp x) "~@0 must be a symbol." description)))
 
 (def-error-checker ensure-string
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a string."
+  :body
   (((stringp x) "~@0 must be a string." description)))
 
 (def-error-checker ensure-string-or-nil
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a string or @('nil')."
+  :body
   (((maybe-stringp x) "~@0 must be a string or NIL." description)))
 
 (def-error-checker ensure-symbol-list
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a true list of symbols."
+  :body
   (((symbol-listp x)
     "~@0 must be a true list of symbols." description)))
 
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a true alist
    whose keys are symbols."
+  :body
   (((symbol-alistp x)
     "~@0 must be an alist with symbols as keys." description)))
 
 (def-error-checker ensure-symbol-truelist-alist
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not an alist from symbols to true lists."
+  :body
   (((symbol-truelist-alistp x)
     "~@0 must be an alist from symbols to true lists."
     description)))
@@ -74,21 +90,27 @@
   ((symb symbolp "Symbol to check.")
    (symb1 symbolp "Symbol that @('symb') must be different from.")
    (description1 msgp "Description of @('symb1'), for the error message."))
+  :short
   "Cause an error if a symbol is the same as another symbol."
+  :body
   (((not (eq symb symb1))
     "~@0 must be different from ~@1." description description1)))
 
 (def-error-checker ensure-list-no-duplicates
   ((list true-listp "List to check."))
+  :short
   "Cause an error if a true list has duplicates."
+  :body
   (((no-duplicatesp-equal list)
     "~@0 must have no duplicates." description)))
 
 (def-error-checker ensure-list-subset
   ((list true-listp "List to check.")
    (super true-listp "List that must include all the elements of @('list')."))
+  :short
   "Cause an error if any element of a true list
    is not a member of another true list."
+  :body
   (((subsetp-equal list super)
     "~@0 must have only elements in the list ~x1, but it includes the ~@2."
     description
@@ -100,15 +122,19 @@
 
 (def-error-checker ensure-doublet-list
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a true list of doublets."
+  :body
   (((doublet-listp x)
     "~@0 must be a true list of doublets."
     description)))
 
 (def-error-checker ensure-keyword-value-list
   ((x "Value to check."))
+  :short
   "Cause an error if a value if not a true list of even length
    with keywords at its even-numbered positions (counting from 0)."
+  :body
   (((keyword-value-listp x) "~@0 must a true list of even length ~
                              with keywords at its even-numbered positions ~
                              (counting from 0)." description)))
@@ -117,7 +143,9 @@
   ((x "Value to check.")
    (list true-listp "List that must include @('x') as member.")
    (list-description msgp "Description of @('list') for the error message."))
+  :short
   "Cause an error if a value is not a member of a list."
+  :body
   (((member-equal x list)
     "~@0 must be ~@1." description list-description)))
 
@@ -125,19 +153,25 @@
   ((x "Value to check.")
    (list true-listp "List that must not include @('x') as member.")
    (list-description msgp "Description of @('list') for the error message."))
+  :short
   "Cause an error if a value is a member of a list."
+  :body
   (((not (member-equal x list))
     "~@0 must not be ~@1." description list-description)))
 
 (def-error-checker ensure-symbol-not-keyword
   ((symb symbolp "Symbol to check."))
+  :short
   "Cause an error if a symbol is a keyword."
+  :body
   (((not (keywordp symb)) "~@0 must not be a keyword." description)))
 
 (def-error-checker ensure-tuple
   ((x "Value to check.")
    (n natp "Length that @('x') must have."))
+  :short
   "Cause an error if a value is not a tuple of a given length."
+  :body
   (((acl2::tuplep n x)
     "~@0 must be a NIL-terminated list of ~x1 elements."
     description n)))
@@ -146,12 +180,16 @@
 
 (def-error-checker ensure-defun-mode
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a @(see defun-mode)."
+  :body
   (((logic/program-p x) "~@0 must be :LOGIC or :PROGRAM." description)))
 
 (def-error-checker ensure-defun-mode-or-auto
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a @(see defun-mode) or @(':auto')."
+  :body
   (((logic/program/auto-p x)
     "~@0 must be :LOGIC, :PROGRAM, or :AUTO." description)))
 
@@ -159,14 +197,18 @@
 
 (def-error-checker ensure-boolean-or-auto
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a boolean or @(':auto')."
+  :body
   (((t/nil/auto-p x) "~@0 must be T, NIL, or :AUTO." description)))
 
 (def-error-checker ensure-boolean-or-auto-and-return-boolean
   ((x "Value to check.")
    (r booleanp "Value to return if @('x') is @(':auto')."))
+  :short
   "Cause an error if a value is not @('t'), @('nil'), or @(':auto');
    otherwise return a boolean result."
+  :body
   (((t/nil/auto-p x) "~@0 must be T, NIL, or :AUTO." description))
   :returns (val (and (implies erp (equal val error-val))
                      (implies (and (not erp) error-erp (booleanp r))
@@ -183,31 +225,41 @@
 
 (def-error-checker ensure-variable-name
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a valid variable name."
+  :body
   (((legal-variablep x)
     "~@0 must be a valid name for a variable." description)))
 
 (def-error-checker ensure-constant-name
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not a valid constant name."
+  :body
   (((legal-constantp x)
     "~@0 must be a valid name for a constant." description)))
 
 (def-error-checker ensure-symbol-not-stobj
   ((symb symbolp "Symbol to check."))
+  :short
   "Cause an error if a symbol is the name of a @(see stobj)."
+  :body
   (((not (stobjp symb t (w state)))
     "~@0 must not be the name of a STOBJ." description)))
 
 (def-error-checker ensure-symbol-function
   ((symb symbolp "Symbol to check."))
+  :short
   "Cause an error if a symbol is not the name of an existing function."
+  :body
   (((function-symbolp symb (w state))
     "~@0 must name an existing function." description)))
 
 (def-error-checker ensure-symbol-new-event-name
   ((symb symbolp "Symbol to check."))
+  :short
   "Cause an error if a symbol cannot be the name of a new event."
+  :body
   (((not (equal (symbol-package-name symb) *main-lisp-package-name*))
     "~@0 must not be in the main Lisp package." description)
    ((not (keywordp symb))
@@ -226,22 +278,28 @@
 
 (def-error-checker ensure-function-name
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not the name of an existing function."
+  :body
   (((function-namep x (w state))
     "~@0 must be the name of an existing function." description)))
 
 (def-error-checker ensure-function-name-list
   ((x "Value to check."))
+  :short
   "Cause an error if a value is not
    a true list of names of existing functions."
+  :body
   (((function-name-listp x (w state))
     "~@0 must be a true list of names of existing functions."
     description)))
 
 (def-error-checker ensure-list-functions
   ((list true-listp "List to check."))
+  :short
   "Cause an error if a true list
    does not consist of names of existing functions."
+  :body
   (((and (symbol-listp list)
          (function-symbol-listp list (w state)))
     "~@0 must consist of names of existing functions." description)))
@@ -465,37 +523,49 @@
 
 (def-error-checker ensure-function-logic-mode
   ((fn (function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function is in program mode."
+  :body
   (((logicp fn (w state))
     "~@0 must be in logic mode." description)))
 
 (def-error-checker ensure-function-program-mode
   ((fn (function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function is in logic mode."
+  :body
   (((programp fn (w state))
     "~@0 must be in program mode." description)))
 
 (def-error-checker ensure-function-defined
   ((fn (logic-function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function is not defined."
+  :body
   (((definedp fn (w state))
     "~@0 must be defined." description)))
 
 (def-error-checker ensure-function-non-recursive
   ((fn (logic-function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function is recursive."
+  :body
   (((not (recursivep fn nil (w state)))
     "~@0 must not be recursive." description)))
 
 (def-error-checker ensure-function-recursive
   ((fn (logic-function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function is not recursive."
+  :body
   (((recursivep fn nil (w state))
     "~@0 must be recursive." description)))
 
 (def-error-checker ensure-function-singly-recursive
   ((fn (logic-function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function is not singly recursive."
+  :body
   (((= (len (recursivep fn nil (w state))) 1)
     "~@0 must be singly recursive." description)))
 
@@ -503,8 +573,10 @@
   ((fn (and (logic-function-namep fn (w state))
             (recursivep fn nil (w state)))
        "Function to check."))
+  :short
   "Cause an error if a recursive function
    has an unknown measure (i.e. one with @(':?'))."
+  :body
   (((not (eq (car (measure fn (w state))) :?))
     "~@0 must have a known measure, i.e. not one of the form (:? ...)."
     description))
@@ -514,8 +586,10 @@
   ((fn (and (logic-function-namep fn (w state))
             (recursivep fn nil (w state)))
        "Function to check."))
+  :short
   "Cause an error if a recursive function
    occurs in its own termination theorem."
+  :body
   (((not (member-eq fn (all-ffn-symbs (termination-theorem fn (w state)) nil)))
     "~@0 must not occur in its own termination theorem, which is~%~x1."
     description (termination-theorem fn (w state))))
@@ -524,7 +598,9 @@
 (def-error-checker ensure-function-no-stobjs
   ((fn (and (function-namep fn (w state))
             (not (member-eq fn *stobjs-out-invalid*))) "Function to check."))
+  :short
   "Cause an error if a function has input or output @(see stobj)s."
+  :body
   (((no-stobjs-p fn (w state))
     "~@0 must have no input or output stobjs." description))
   :long
@@ -536,7 +612,9 @@
 (def-error-checker ensure-function-arity
   ((fn (function-namep fn (w state)) "Function to check.")
    (n natp "Arity that @('fn') must have."))
+  :short
   "Cause an error if a function does not have a given arity."
+  :body
   (((= (arity fn (w state)) n)
     "~@0 must take ~x1 ~@2."
     description n (if (= n 1) "argument" "arguments")))
@@ -544,7 +622,9 @@
 
 (def-error-checker ensure-function-has-args
   ((fn (function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function has no arguments."
+  :body
   (((/= (arity fn (w state)) 0)
     "~@0 must take at least one argument." description))
   :verify-guards nil)
@@ -553,7 +633,9 @@
   ((fn (and (function-namep fn (w state))
             (not (member-eq fn *stobjs-out-invalid*))) "Function to check.")
    (n posp "Number of results that @('fn') must have."))
+  :short
   "Cause an error if a function does not have a given number of results."
+  :body
   (((= (number-of-results fn (w state)) n)
     "~@0 must return ~x1 ~@2."
     description n (if (= n 1) "result" "results")))
@@ -564,7 +646,9 @@
 
 (def-error-checker ensure-function-guard-verified
   ((fn (function-namep fn (w state)) "Function to check."))
+  :short
   "Cause an error if a function is not guard-verified."
+  :body
   (((guard-verified-p fn (w state))
     "~@0 must be guard-verified." description)))
 
@@ -572,7 +656,9 @@
 
 (def-error-checker ensure-term-logic-mode
   ((term pseudo-termp "Term to check."))
+  :short
   "Cause an error if a term calls any program-mode function."
+  :body
   (((logic-fnsp term (w state))
     "~@0 must call only logic-mode functions, ~
      but it calls the program-mode ~@1."
@@ -586,7 +672,9 @@
   ((term pseudo-termp "Term to check.")
    (vars symbol-listp
          "Variables that must include all the free variables of @('term')."))
+  :short
   "Cause an error if a term includes free variables outside a given set."
+  :body
   (((subsetp-eq (all-vars term) vars)
     "~@0 must contain no free variables other than ~&1, ~
      but it contains the ~@2."
@@ -600,7 +688,9 @@
 
 (def-error-checker ensure-term-ground
   ((term pseudo-termp "Term to check."))
+  :short
   "Cause an error if a term is not ground (i.e. it has free variables)."
+  :body
   (((null (all-vars term))
     "~@0 must contain no free variables, but it contains the ~@1."
     description
@@ -614,13 +704,17 @@
     symbol-listp
     "@(tsee stobjs-out) list of the term
      whose @(see stobj)s are to be checked."))
+  :short
   "Cause an error if a term has output @(see stobj)s."
+  :body
   (((all-nils stobjs-out)
     "~@0 must have no (output) stobjs." description)))
 
 (def-error-checker ensure-term-guard-verified-fns
   ((term pseudo-termp "Term to check."))
+  :short
   "Cause an error if a term calls any non-guard-verified function."
+  :body
   (((guard-verified-fnsp term (w state))
     "~@0 must call only guard-verified functions ~
      but it calls the non-guard-verified ~@1."
@@ -633,8 +727,10 @@
 
 (def-error-checker ensure-term-guard-verified-exec-fns
   ((term pseudo-termp "Term to check."))
+  :short
   "Cause an error if a term
    calls any non-guard-verified function for execution."
+  :body
   (((guard-verified-exec-fnsp term (w state))
     "~@0 must call only guard-verified functions ~
      (except possibly in the :LOGIC subterms of MBEs and via EC-CALL), ~
@@ -649,12 +745,16 @@
 (def-error-checker ensure-term-does-not-call
   ((term pseudo-termp "Term to check.")
    (fn symbolp "Function that @('term') must not call."))
+  :short
   "Cause an error if a term calls a given function."
+  :body
   (((not (ffnnamep fn term)) "~@0 must not call ~x1." description fn)))
 
 (def-error-checker ensure-term-if-call
   ((term pseudo-termp "Term to check."))
+  :short
   "Cause an error if a term is not a call of @(tsee if)."
+  :body
   (((and (nvariablep term)
          (not (fquotep term))
          (eq (ffn-symb term) 'if))
@@ -673,7 +773,9 @@
 (def-error-checker ensure-term-not-call-of
   ((term pseudo-termp "Term to check.")
    (fn symbolp "Function that @('term') must not be a call of."))
+  :short
   "Cause an error if a term is a call of a given function."
+  :body
   (((or (variablep term)
         (fquotep term)
         (not (eq (ffn-symb term) fn)))
@@ -683,7 +785,9 @@
 
 (def-error-checker ensure-lambda-logic-mode
   ((lambd pseudo-lambdap "Lambda expression to check."))
+  :short
   "Cause an error if a lambda expression calls any program-mode function."
+  :body
   (((lambda-logic-fnsp lambd (w state))
     "~@0 must call only logic-mode functions, ~
      but it calls the program-mode ~@1."
@@ -697,7 +801,9 @@
 (def-error-checker ensure-lambda-arity
   ((lambd pseudo-lambdap "Lambda expression to check.")
    (n natp "Arity that @('lambd') must have."))
+  :short
   "Cause an error if a lambda expression does not have a given arity."
+  :body
   (((= (arity lambd (w state)) n)
     "~@0 must take ~x1 ~@2."
     description n (if (= n 1) "argument" "arguments")))
@@ -705,7 +811,9 @@
 
 (def-error-checker ensure-lambda-guard-verified-fns
   ((lambd pseudo-lambdap "Lambda expression to check."))
+  :short
   "Cause an error if a lambda expression calls any non-guard-verified function."
+  :body
   (((lambda-guard-verified-fnsp lambd (w state))
     "~@0 must call only guard-verified functions, ~
      but it calls the non-guard-verified ~@1."
@@ -718,8 +826,10 @@
 
 (def-error-checker ensure-lambda-guard-verified-exec-fns
   ((lambd pseudo-lambdap "Lambda expression to check."))
+  :short
   "Cause an error if a lambda expression
    calls any non-guard-verified function for execution."
+  :body
   (((lambda-guard-verified-exec-fnsp lambd (w state))
     "~@0 must call only guard-verified functions ~
      (except possibly in the :LOGIC subterms of MBEs and via EC-CALL), ~
@@ -733,7 +843,9 @@
 
 (def-error-checker ensure-lambda-closed
   ((lambd pseudo-lambdap "Lambda expression to check."))
+  :short
   "Cause an error if a lambda expression is not closed."
+  :body
   (((lambda-closedp lambd) "~@0 must be closed." description)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -744,8 +856,10 @@
     "@(tsee stobjs-in) list of the function or lambda expression
      whose arity is to be checked.")
    (n natp "Arity that the function or lambda expression must have."))
+  :short
   "Cause an error if a function or lambda expression
    does not have a given arity."
+  :body
   (((= (len stobjs-in) n)
     "~@0 must take ~x1 ~@2."
     description n (if (= n 1) "argument" "arguments")))
@@ -771,8 +885,10 @@
     symbol-listp
     "@(tsee stobjs-out) list of the function or lambda expression
      whose @(see stobj)s are to be checked."))
+  :short
   "Cause an error if a function or lambda expression
    has input or output @(see stobj)s."
+  :body
   (((and (all-nils stobjs-in)
          (all-nils stobjs-out))
     "~@0 must have no input or output stobjs." description))
@@ -910,8 +1026,10 @@
 
 (def-error-checker ensure-function/lambda-closed
   ((fn/lambda pseudo-termfnp "Function or lambda expression to check."))
+  :short
   "Cause an error if a function or lambda expression is
    a non-closed lambda expression."
+  :body
   (((or (symbolp fn/lambda) (lambda-closedp fn/lambda))
     "~@0 must be closed." description))
   :long
@@ -935,8 +1053,10 @@
    (n posp
       "Number of results that
        the function or lambda expression or term must have."))
+  :short
   "Cause an error if a function or lambda expression or term
    does not have a given number of results."
+  :body
   (((= (len stobjs-out) n)
     "~@0 must return ~x1 ~@2."
     description n (if (= n 1) "result" "results")))

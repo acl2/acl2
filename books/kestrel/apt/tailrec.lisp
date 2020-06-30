@@ -458,7 +458,8 @@
 
 (def-error-checker tailrec-process-variant
   (variant)
-  "Process the @('variant') input."
+  :short "Process the @('variant') input."
+  :body
   (((tailrec-variantp variant)
     "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description)))
 
