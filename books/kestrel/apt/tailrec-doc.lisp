@@ -101,21 +101,44 @@
      (xdoc::p
       "With the body in <see topic='@(url acl2::term)'>translated</see> form,
        and after expanding all lambda expressions (i.e. @(tsee let)s),
-       the function must have the form")
+       the function must have one of the forms")
      (xdoc::codeblock
+      ";; form 1:"
       "(defun old (x1 ... xn)"
       "  (if test<x1,...,xn>"
       "      base<x1,...,xn>"
       "    combine<nonrec<x1,...,xn>,"
       "            (old update-x1<x1,...,xn>"
       "                 ..."
-      "                 update-xn<x1,...,xn>)>))")
+      "                 update-xn<x1,...,xn>)>))"
+      ""
+      ";; form 2:"
+      "(defun old (x1 ... xn)"
+      "  (if ntest<x1,...,xn>"
+      "      combine<nonrec<x1,...,xn>,"
+      "              (old update-x1<x1,...,xn>"
+      "                   ..."
+      "                   update-xn<x1,...,xn>)>"
+      "    base<x1,...,xn>))")
      (xdoc::p
       "where:")
      (xdoc::ul
       (xdoc::li
-       "The term @('test<x1,...,xn>') does not call @('old').
-        This term computes the exit test of the recursion.
+       "The term @('test<x1,...,xn>') (in form 1)
+        or @('ntest<x1,...,xn>') (in form 2)
+        does not call @('old').
+        This term computes the exit test of the recursion (in form 1)
+        or its negation (in form 2).
+        If @('old') has form 2,
+        let @('test<x1,...,xn>') be:
+        either (i) the negation of @('ntest<x1,...,xn>'),
+        i.e. @('(not ntest<x1,...,xn>)')
+        if @('ntest<x1,...,xn>') is not a call of @(tsee not);
+        or (ii) the argument of @('ntest<x1,...,xn>')
+        if @('ntest<x1,...,xn>') is a call of @(tsee not),
+        i.e. @('ntest<x1,...,xn>') is @('(not test<x1,...,xn>)').
+        Thus, in the rest of this documentation,
+        we can assume that @('old') has form 1 without loss of generality.
         In the " *tailrec-design-notes* ",
         @('test<x1,...,xn>') is denoted by @($a(\\overline{x})$).")
       (xdoc::li

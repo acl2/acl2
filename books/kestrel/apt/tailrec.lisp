@@ -386,12 +386,25 @@
                  (unwrapped-nonexec-body old$ wrld)
                (ubody old$ wrld)))
        (body (remove-lambdas body))
-       ((er (list test base combine-nonrec-reccall))
+       ((er (list test then else))
         (ensure-term-if-call$ body
                               (msg "After translation and LET expansion, ~
                                     the body ~x0 of the target function ~x1"
                                    body old$)
                               t nil))
+       (then-calls-old-p (ffnnamep old$ then))
+       (else-calls-old-p (ffnnamep old$ else))
+       ((when (and then-calls-old-p else-calls-old-p))
+        (er-soft+ ctx t nil
+                  "After translation and LET expansion, ~
+                   the body ~x0 of the target fuction ~x1 ~
+                   must have one non-recursive top-level IF branch;
+                   however, both branches call ~x1."
+                  body old$))
+       ((mv test base combine-nonrec-reccall)
+        (if then-calls-old-p
+            (mv (dumb-negate-lit test) else then)
+          (mv test then else)))
        ((er &) (ensure-term-does-not-call$
                 test old$
                 (msg "After translation and LET expansion, ~
@@ -399,19 +412,12 @@
                       of the target function ~x1"
                      test old$)
                 t nil))
-       ((er &) (ensure-term-does-not-call$
-                base old$
-                (msg "After translation and LET expansion, ~
-                      the first branch ~x0 ~
-                      of the target function ~x1"
-                     base old$)
-                t nil))
        ((er &) (if (member-eq variant '(:monoid :monoid-alt))
                    (ensure-term-ground$
                     base
                     (msg "Since the :VARIANT input is ~s0~x1, ~
                           after translation and LET expansion, ~
-                          the first branch ~x2 ~
+                          the non-recursive branch ~x2 ~
                           of the target function ~x3"
                          (if (eq variant :monoid)
                              "(perhaps by default) "

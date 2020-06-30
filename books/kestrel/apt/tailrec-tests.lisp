@@ -104,12 +104,7 @@
       nil))
   (must-fail (tailrec f)))
 
- ;; first branch calls function:
- (must-succeed*
-  (defun f (x) (if (consp x) (f (cdr x)) nil))
-  (must-fail (tailrec f)))
-
- ;; first branch is not ground and variant is :MONOID or :MONOID-ALT:
+ ;; base branch is not ground and variant is :MONOID or :MONOID-ALT:
  (must-succeed*
   (defun f (x) (if (atom x) (list x) (f (cdr x))))
   (must-fail (tailrec f :variant :monoid))
@@ -1064,6 +1059,20 @@
    (must-be-redundant (tailrec f :verify-guards nil)))
   (must-fail-local
    (must-be-redundant (tailrec f :new-name f-new)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test handling of swapped base and recursive branches.")
+
+ (defun fact (n)
+   (declare (xargs :guard (natp n)))
+   (if (not (zp n))
+       (* n (fact (1- n)))
+     1))
+
+ (tailrec fact))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

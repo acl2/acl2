@@ -228,12 +228,20 @@
       because otherwise no @('newp-of-new') theorems is generated."))
 
    (xdoc::p
-    "The @(tsee apt::tailrec) transformation has been simplified
-     by removing the @(':non-executable') option,
-     which does not seem necessary or useful.
-     The new function is marked non-executable
-     if and only if the target function is;
-     the wrapper is never marked non-executable.")
+    "The @(tsee apt::tailrec) transformation has been improved as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "The transformation has been simplified
+      by removing the @(':non-executable') option,
+      which does not seem necessary or useful.
+      The new function is marked non-executable
+      if and only if the target function is;
+      the wrapper is never marked non-executable.")
+    (xdoc::li
+     "The transformation also accepts functions whose @(tsee if) body,
+      after translation and @(tsee let) expansion,
+      have a recursive `then' branch and a non-recursive `else' branch.
+      This makes the transformation more widely applicable."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
