@@ -33,7 +33,7 @@
 (include-book "../basetypes")
 (include-book "std/lists/acl2-count" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/util/tests/utils" :dir :system)
 
 (in-theory (disable acl2-count))
