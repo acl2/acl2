@@ -927,3 +927,15 @@
    :print :all
    :rule-classes nil)
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; DEFSOFT:
+
+(defun thrice[?f] (x)
+  (?f (?f (?f x))))
+
+(defsoft thrice[?f])
+
+(defun-inst thrice[wrap]
+  (thrice[?f] (?f . wrap)))
