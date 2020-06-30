@@ -31,7 +31,7 @@
 (in-package "LISPFLOAT")
 (include-book "ops-logic")
 (include-book "tools/include-raw" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 ; (depends-on "ops-exec-raw.lsp")
 
 
