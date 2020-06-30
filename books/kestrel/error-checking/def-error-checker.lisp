@@ -45,9 +45,9 @@
     "               state)"
     "  :mode <mode>"
     "  :verify-guards <verify-guards> ; may be absent"
-    "  :parents <parents>  ; may be absent"
-    "  :short <short>"
-    "  :long <long>  ; may be absent"
+    "  :parents <parents> ; may be absent"
+    "  :short <short> ; may be absent"
+    "  :long <long> ; may be absent"
     "  (b* (((unless <condition1>) (er-soft+"
     "                               ctx error-erp error-val . <message1>))"
     "       ..."
@@ -115,6 +115,7 @@
       If @('<parents>') is not supplied as argument, @(':parents') is absent.")
     (xdoc::li
      "@('<short>') and @('<long>') are strings that document the function.
+      If @('<short>') is not supplied as argument, @(':short') is absent.
       If @('<long>') is not supplied as argument, @(':long') is absent.")
     (xdoc::li
      "Each @('<conditionj>') is a term
@@ -149,13 +150,13 @@
    (xdoc::codeblock
     "(def-error-checker <name>"
     "  (<x1> ... <xn>)"
-    "  <short>"
-    "  ((<condition1> . <message1>) ... (<conditionm> . <messagem>))"
+    "  :body ((<condition1> . <message1>) ... (<conditionm> . <messagem>))"
     "  :returns <val> ; default not used"
     "  :result <result> ; default is nil"
     "  :mode <mode> ; default is :logic"
     "  :verify-guards <verify-guards> ; default not used"
     "  :parents <parents> ; default not used"
+    "  :short <short> ; default not used"
     "  :long <long> ; default not used"
     "  )")
 
@@ -244,8 +245,9 @@
                               (verify-guards-supplied-p booleanp)
                               (parents (symbol-listp parents))
                               (parents-supplied-p booleanp)
-                              (short stringp)
-                              (long (stringp long))
+                              short ; could be a form with XDOC constructors
+                              (short-supplied-p booleanp)
+                              long ; could be a form with XDOC constructors
                               (long-supplied-p booleanp)
                               (def-error-checker-call pseudo-event-formp)
                               state)
@@ -295,7 +297,8 @@
                   (list :verify-guards verify-guards))
            ,@(and parents-supplied-p
                   (list :parents parents))
-           :short ,short
+           ,@(and short-supplied-p
+                  (list :short short))
            ,@(and long-supplied-p
                   (list :long long))
            (b* ,(def-error-checker-bindings
@@ -342,21 +345,21 @@
                                def-error-checker-call
                                name
                                xs
-                               short
-                               conditions-messages
                                &key
+                               body
                                (returns 'nil returns-supplied-p)
                                (result 'nil)
                                (mode ':logic)
                                (verify-guards 'nil verify-guards-supplied-p)
                                (parents 'nil parents-supplied-p)
+                               (short '"" short-supplied-p)
                                (long '"" long-supplied-p))
     `(make-event (def-error-checker-fn
                    ',name
                    ',xs
                    ',returns
                    ',returns-supplied-p
-                   ',conditions-messages
+                   ',body
                    ',result
                    ',mode
                    ',verify-guards
@@ -364,6 +367,7 @@
                    ',parents
                    ',parents-supplied-p
                    ',short
+                   ',short-supplied-p
                    ',long
                    ',long-supplied-p
                    ',def-error-checker-call
