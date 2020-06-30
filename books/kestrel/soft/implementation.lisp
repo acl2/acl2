@@ -18,10 +18,12 @@
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
+(include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/measure" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation" :dir :system)
 (include-book "kestrel/std/system/uguard" :dir :system)
+(include-book "kestrel/std/util/defmacro-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -1886,3 +1888,98 @@
 
   (defmacro acl2::show-defun-inst (&rest args)
     `(show-defun-inst ,@args)))
+
+(define defsoft-fn (fn ctx state)
+  :returns (mv erp event state)
+  :mode :program
+  :short "Generate the event submitted by @(tsee defsoft)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(tsee defsoft) macro records an ACL2 function
+     as a (SOFT) second-order function.
+     This macro will become the primary one
+     to introduce second-order functions,
+     and @(tsee defun2), @(tsee defchoose2), and @(tsee defun-sk2)
+     will be redefined as @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
+     followed by @(tsee defsoft).")
+   (xdoc::p
+    "The input @('fn') must be a symbol that denotes an existing function
+     that is introduced by @(tsee defchoose),
+     or otherwise is introduced by @(tsee defun-sk),
+     or otherwise has an unnormalized body
+     (which implies that is is introduced by @(tsee defun)).
+     Note that @(tsee defun-sk) functions
+     are internally introduced by @(tsee defun),
+     so it is important to check for @(tsee defun-sk) first.
+     Functions introduced by @(tsee defun) but without an unnormalized body
+     (such as the built-in program-mode functions)
+     are disallowed because we cannot calculate
+     the function variables that such functions depend on.
+     For the same reason,
+     constrained functions introduced by @(tsee encapsulate) are disallowed.")
+   (xdoc::p
+    "We collect the function variables that the function depends on,
+     directly or indirecty; there must be at least one.
+     If the function is introduced by @(tsee defun-sk),
+     we also ensure that the associated rewrite rule
+     does not depend on additional function variables.
+     If the function is recursive,
+     we also ensure that the well-founded relation is @(tsee o<)."))
+  (b* ((wrld (w state))
+       ((unless (symbolp fn))
+        (er-soft+ ctx t nil
+                  "The input must be a symbol, but it is ~x0 instead."
+                  fn))
+       ((unless (function-symbolp fn wrld))
+        (er-soft+ ctx t nil
+                  "The symbol ~x0 must be a function symbol, ~
+                   but it is not."
+                  fn))
+       ((unless (or (defchoosep fn wrld)
+                    (defun-sk-p fn wrld)
+                    (ubody fn wrld)))
+        (er-soft+ ctx t nil
+                  "The function ~x0 must ~
+                   be introduced by DEFCHOOSE, ~
+                   be introduced by DEFUN-SK, ~
+                   or have a non-NIL unnormalized body."
+                  fn))
+       (funvars (cond ((defchoosep fn wrld) (funvars-of-choice-fn fn wrld))
+                      ((defun-sk-p fn wrld) (funvars-of-quantifier-fn fn wrld))
+                      (t (funvars-of-plain-fn fn wrld))))
+       (funvars (remove-duplicates-eq funvars))
+       ((unless (consp funvars))
+        (er-soft+ ctx t nil
+                  "The function ~x0 is not second-order:
+                   it depends on no function variables, directly or indirectly."
+                  fn))
+       (table-event `(table second-order-functions ',fn ',funvars))
+       (print-event `(cw-event "The second-order function ~x0 ~
+                                depends on the function variables ~x1.~%"
+                               ',fn ',funvars))
+       ((when (and (defun-sk-p fn wrld)
+                   (check-qrewrite-rule-funvars fn wrld)))
+        (er-soft+ ctx t nil
+                  "The rewrite rule associated to the function ~x0 ~
+                   must depend on no additional function variables."
+                  fn))
+       ((when (and (acl2::logicp fn wrld)
+                   (acl2::irecursivep fn wrld)
+                   (not (eq (well-founded-relation fn wrld) 'o<))))
+        (er-soft+ ctx t nil
+                  "The well-founded relation of the recursive function ~x0 ~
+                   must be O<, but it is ~x1 instead."
+                  (well-founded-relation fn wrld))))
+    (value
+     `(progn
+        ,table-event
+        ,print-event
+        (value-triple :invisible)))))
+
+(acl2::defmacro+ defsoft (fn)
+  :short "Record a function as a second-order function."
+  `(make-event-terse (defsoft-fn ',fn (cons 'defsoft ',fn) state)))
+
+(defmacro acl2::defsoft (&rest args)
+  `(defsoft ,@args))
