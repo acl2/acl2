@@ -43,6 +43,7 @@
                          assume-true-false-aggressive-p
                          attachment-pair
                          body
+                         check-numbered-name
                          check-user-lambda
                          clausify
                          clean-up-0ary-lambdas-in-untranslated-term
@@ -249,6 +250,8 @@
                          mvify
                          named-formulas-to-thm-events
                          negate-term
+                         next-fresh-numbered-name
+                         next-fresh-numbered-names
                          next-numbered-name
                          non-executablep
                          number-of-results
