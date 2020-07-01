@@ -267,13 +267,67 @@
       "In the " *tailrec-design-notes* ",
        @('domain') is denoted by @($D$)."))
 
-    (xdoc::desc-apt-input-new-name)
+    (xdoc::desc
+     "@(':new-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the generated new function:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the name generated as follows.
+        If the function symbol @('old') is a numbered name,
+        let @('base') and @('index') be its base and index;
+        otherwise, let @('base') be @('old') and @('index') be 0.
+        If @(':wrapper') is @('nil'),
+        then the name of the new function is
+        the numbered name consisting of @('base') and @('next'),
+        where @('next') is the smallest integer above @('index')
+        such that the new function's name is not already in use.
+        If @(':wrapper') is @('t') and @(':wrapper-name') is not @(':auto'),
+        the new index @('next') is chosen so that the new function name
+        is also distinct from the explicitly specified wrapper function name.
+        If @(':wrapper') is @('t') and @(':wrapper-name') is @(':auto'),
+        then the name of the new function is
+        the numbered name consists of @('base') followed by @('-aux') as base,
+        and the smallest index @('next') above @('index')
+        such that the new function's name is not already in use.
+        Also see the description of the @(':wrapper-name') input below.")
+      (xdoc::li
+       "Any other symbol
+        (that is not in the main Lisp package and that is not a keyword),
+        to use as the name of the function."))
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('new') be this function."))
 
     (xdoc::desc-apt-input-new-enable)
 
     (xdoc::desc-apt-input-wrapper)
 
-    (xdoc::desc-apt-input-wrapper-name :optional)
+    (xdoc::desc
+     "@(':wrapper-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the generated wrapper function:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the name generated as follows.
+        If the function symbol @('old') is a numbered name,
+        let @('base') and @('index') be its base and index;
+        otherwise, let @('base') be @('old') and @('index') be 0.
+        The name of the wrapper function is
+        the numbered name consisting of @('base') and @('next'),
+        where @('next') is the smallest integer above @('index')
+        such that the wrapper function's name is not already in use.
+        Also see the description of the @(':new-name') input above.")
+      (xdoc::li
+       "Any other symbol
+        (that is not in the main Lisp package and that is not a keyword),
+        to use as the name of the function."))
+     (xdoc::p
+      "This input may be present only if
+       the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('wrapper') be this function."))
 
     (xdoc::desc-apt-input-wrapper-enable :optional)
 

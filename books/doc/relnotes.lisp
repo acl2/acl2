@@ -238,9 +238,25 @@
       if and only if the target function is;
       the wrapper is never marked non-executable.")
     (xdoc::li
-     "The transformation also accepts functions whose @(tsee if) body,
+     "The generated names for the new and wrapper functions,
+      when @(':new-name') is @(':auto')
+      and/or @(':wrapper-name') is @(':auto'),
+      have been improved.
+      If the target function is @('f{i}') (where we view @('f') as @('f{0}')),
+      now the new function is @('f{j}') if no wrapper is generated;
+      otherwise, the new function is @('f-aux{j}')
+      and the wrapper is @('f{j}').
+      Here @('j') is the smallest integer above @('i')
+      that results in fresh function names.
+      Note that, in this way, these automatically generated names
+      are always numbered names,
+      which facilitates the application of further transformations.")
+    (xdoc::li
+     "The target function's @(tsee if) body,
       after translation and @(tsee let) expansion,
-      have a recursive `then' branch and a non-recursive `else' branch.
+      can now have a recursive `then' branch and a non-recursive `else' branch.
+      Before, the `then' branch had to be the non-recursive one
+      and the `else' branch had to be the recursive one.
       This makes the transformation more widely applicable."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
