@@ -430,6 +430,19 @@
      have been extended with an option to provide hints
      for the theorems they prove internally.")
 
+   (xdoc::p
+    "An option @(':ignore-whitelist') has been added
+     to ignore the whitelist of ACL2 functions with raw Lisp code,
+     i.e. to translate them to Java (so long as they have an unnormalized body).
+     This must be used by caution: side effects in the raw Lisp code
+     will not be replicated in Java,
+     e.g. @(tsee hard-error) will just return @('nil').
+     This could be useful when the functions in question
+     are unreachable under guard verification, for instance.
+     The default is @('nil'), i.e. do not ignore the whitelist,
+     so the user must explicitly write @(':ignore-whitelist t')
+     to ignore the whitelist.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::language" "Java Language Formalization"))

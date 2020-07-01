@@ -82,7 +82,8 @@
     (xdoc::seetopic "acl2::ubody" "unnormalized body")
     " or an attachment and
      (2) either do not have raw Lisp code
-     or have raw Lisp code but belong to a whitelist.
+     or have raw Lisp code but belong to a whitelist
+     (but also see the @(':ignore-whitelist') option below).
      The ACL2 functions with raw Lisp code
      are the ones for which @(tsee rawp) holds;
      of these, the ones in the whitelist
@@ -267,13 +268,14 @@
 
    (xdoc::codeblock
     "(atj fn1 ... fnp"
-    "     :deep         ..."
-    "     :guards       ..."
-    "     :java-package ..."
-    "     :java-class   ..."
-    "     :output-dir   ..."
-    "     :tests        ..."
-    "     :verbose      ..."
+    "     :deep             ..."
+    "     :guards           ..."
+    "     :java-package     ..."
+    "     :java-class       ..."
+    "     :output-dir       ..."
+    "     :tests            ..."
+    "     :ignore-whitelist ..."
+    "     :verbose          ..."
     "  )")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -287,7 +289,8 @@
     (xdoc::p
      "Each @('fni') must be a symbol that names a function that
       either has an unnormalized body
-      and no raw Lisp code (unless it is in the whitelist),
+      and no raw Lisp code (unless it is in the whitelist;
+      but also see the @(':ignore-whitelist') option below),
       or has an attachment,
       or is natively implemented in AIJ.
       Each of these functions must have
@@ -577,6 +580,19 @@
       @(':jlong[]')
       assigned to the corresponding argument
       via @(tsee atj-main-function-type)."))
+
+   (xdoc::desc
+    "@(':ignore-whitelist') &mdash; default @('nil')."
+    (xdoc::p
+     "If @('t'), this tells ATJ to ignore
+      the whitelist of functions with raw Lisp code,
+      i.e. to accept any function with raw Lisp code,
+      provided that it has an unnormalized body.
+      This means that any side effects that happen in ACL2 execution
+      will not happen in the generated Java code.
+      This should be only used in special circumstances,
+      e.g. when the non-whitelisted functions
+      are unreachable under guard verification."))
 
    (xdoc::desc
     "@(':verbose') &mdash; default @('nil')"
