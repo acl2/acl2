@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/std/system/fresh-namep" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
@@ -380,6 +381,25 @@
         (intern (implode name-chars) "ACL2")
       (intern-in-package-of-symbol (implode name-chars) base))))
 
+(define make-numbered-name-list ((bases symbol-listp)
+                                 (indices/wildcards nat-listp)
+                                 (wrld plist-worldp))
+  :guard (= (len bases) (len indices/wildcards))
+  :returns (names symbol-listp)
+  :verify-guards nil
+  :parents (numbered-names)
+  :short "Lift @(tsee make-numbered-name) to lists."
+  (cond ((endp bases) nil)
+        (t (cons (make-numbered-name (car bases)
+                                     (car indices/wildcards)
+                                     wrld)
+                 (make-numbered-name-list (cdr bases)
+                                          (cdr indices/wildcards)
+                                          wrld))))
+  ///
+  (defret len-of-make-numbered-name-list
+    (equal (len names) (len bases))))
+
 (define set-numbered-name-index
   ((name symbolp) (index posp) (wrld plist-worldp))
   :returns (new-name symbolp)
@@ -548,6 +568,36 @@
        (if (logical-namep name wrld)
            (next-numbered-name-aux base (1+ current-index) wrld)
          current-index)))))
+
+(define next-fresh-numbered-names ((bases symbol-listp)
+                                   (index posp)
+                                   (names-to-avoid symbol-listp)
+                                   (wrld plist-worldp))
+  :returns (mv (names "A @(tsee symbol-listp).")
+               (new-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Add to each of the given bases the lowest index,
+          starting with the given index,
+          such that the resulting names are not already in use."
+  (b* ((names (make-numbered-name-list bases (repeat (len bases) index) wrld))
+       ((when (and (null (fresh-name-listp-msg-weak names 'function wrld))
+                   (not (intersectp-eq names names-to-avoid))))
+        (mv names (append names names-to-avoid))))
+    (next-fresh-numbered-names bases (1+ index) names-to-avoid wrld)))
+
+(define next-fresh-numbered-name ((base symbolp)
+                                  (index posp)
+                                  (names-to-avoid symbol-listp)
+                                  (wrld plist-worldp))
+  :returns (mv (name "A @(tsee symbolp).")
+               (new-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Specialize @(tsee next-fresh-numbered-names) to a single name."
+  (b* (((mv names names-to-avoid) (next-fresh-numbered-names (list base)
+                                                             index
+                                                             names-to-avoid
+                                                             wrld)))
+    (mv (car names) names-to-avoid)))
 
 (defxdoc global-numbered-name-index
   :parents (numbered-names)
