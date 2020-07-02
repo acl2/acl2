@@ -17,7 +17,7 @@
 (include-book "std/typed-alists/symbol-truelist-alistp" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(include-book "def-error-checker")
+(include-book "kestrel/error-checking/def-error-checker" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
