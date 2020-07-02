@@ -169,11 +169,10 @@
   (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
   (tailrec f)
   (must-be-redundant
-   (defun f-aux{1} (x r)
+   (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
-     (if (atom x) r (f-aux{1} (cdr x) (lub r (car x)))))
-   (defun f{1} (x) (f-aux{1} x nil))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x)))))
+     (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
+   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; without guard verification:
  (must-succeed*
@@ -182,13 +181,10 @@
     (if (atom x) nil (lub (car x) (f (cdr x)))))
   (tailrec f)
   (must-be-redundant
-   (defun f-aux{1} (x r)
+   (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x) :verify-guards nil))
-     (if (atom x) r (f-aux{1} (cdr x) (lub r (car x)))))
-   (defun f{1} (x)
-     (declare (xargs :verify-guards nil))
-     (f-aux{1} x nil))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x))))))
+     (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
+   (defthm f-~>-f{1} (equal (f x) (f{1} x nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,41 +210,39 @@
  (must-succeed*
   (tailrec f)
   (must-be-redundant
-   (defun f-aux{1} (x r)
+   (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
-     (if (atom x) r (f-aux{1} (cdr x) (lub r (car x)))))
-   (defun f{1} (x) (f-aux{1} x nil))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x)))))
+     (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
+   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; monoidal:
  (must-succeed*
   (tailrec f :variant :monoid)
   (must-be-redundant
-   (defun f-aux{1} (x r)
+   (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
-     (if (atom x) r (f-aux{1} (cdr x) (lub r (car x)))))
-   (defun f{1} (x) (f-aux{1} x nil))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x)))))
+     (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
+   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; alternative monoidal:
  (must-succeed*
   (tailrec f :variant :monoid-alt)
   (must-be-redundant
-   (defun f-aux{1} (x r)
+   (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
-     (if (atom x) r (f-aux{1} (cdr x) (lub r (car x)))))
-   (defun f{1} (x) (f-aux{1} x nil))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x)))))
+     (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
+   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; associative:
  (must-succeed*
   (tailrec f :variant :assoc)
   (must-be-redundant
-   (defun f-aux{1} (x r)
+   (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
-     (if (atom x) (lub r nil) (f-aux{1} (cdr x) (lub r (car x)))))
-   (defun f{1} (x) (and (not (atom x)) (f-aux{1} (cdr x) (car x))))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x))))))
+     (if (atom x) (lub r nil) (f{1} (cdr x) (lub r (car x)))))
+   (defthm f-~>-f{1}
+     (equal (f x)
+            (and (not (atom x)) (f{1} (cdr x) (car x))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,66 +320,51 @@
   (must-succeed*
    (tailrec fact)
    (must-be-redundant
-    (defun fact-aux{1} (n r)
+    (defun fact{1} (n r)
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
-      (if (zp n) r (fact-aux{1} (+ -1 n) (* r n))))
-    (defun fact{1} (n)
-      (declare (xargs :guard (natp n)))
-      (fact-aux{1} n 1))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n)))))
+      (if (zp n) r (fact{1} (+ -1 n) (* r n))))
+    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; automatic:
   (must-succeed*
    (tailrec fact :domain :auto)
    (must-be-redundant
-    (defun fact-aux{1} (n r)
+    (defun fact{1} (n r)
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
-      (if (zp n) r (fact-aux{1} (+ -1 n) (* r n))))
-    (defun fact{1} (n)
-      (declare (xargs :guard (natp n)))
-      (fact-aux{1} n 1))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n)))))
+      (if (zp n) r (fact{1} (+ -1 n) (* r n))))
+    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; function name:
   (must-succeed*
    (tailrec fact :domain natp)
    (must-be-redundant
-    (defun fact-aux{1} (n r)
+    (defun fact{1} (n r)
       (declare (xargs :measure (acl2-count n) :guard (and (natp n) (natp r))))
-      (if (zp n) r (fact-aux{1} (+ -1 n) (* r n))))
-    (defun fact{1} (n)
-      (declare (xargs :guard (natp n)))
-      (fact-aux{1} n 1))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n)))))
+      (if (zp n) r (fact{1} (+ -1 n) (* r n))))
+    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; macro name:
   (must-succeed*
    (defmacro intp (m) `(integerp ,m))
    (tailrec fact :domain intp)
    (must-be-redundant
-    (defun fact-aux{1} (n r)
+    (defun fact{1} (n r)
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (integerp r))))
-      (if (zp n) r (fact-aux{1} (+ -1 n) (* r n))))
-    (defun fact{1} (n)
-      (declare (xargs :guard (natp n)))
-      (fact-aux{1} n 1))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n)))))
+      (if (zp n) r (fact{1} (+ -1 n) (* r n))))
+    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; lambda expression:
   (must-succeed*
    (tailrec fact :domain (lambda (a) (acl2-numberp a)))
    (must-be-redundant
-    (defun fact-aux{1} (n r)
+    (defun fact{1} (n r)
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
-      (if (zp n) r (fact-aux{1} (+ -1 n) (* r n))))
-    (defun fact{1} (n)
-      (declare (xargs :guard (natp n)))
-      (fact-aux{1} n 1))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n)))))))
+      (if (zp n) r (fact{1} (+ -1 n) (* r n))))
+    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,12 +398,12 @@
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (function-namep 'f-aux{1} (w state))))
+  (assert! (function-namep 'f{1} (w state))))
 
  ;; automatic:
  (must-succeed*
   (tailrec f :new-name :auto)
-  (assert! (function-namep 'f-aux{1} (w state))))
+  (assert! (function-namep 'f{1} (w state))))
 
  ;; specified:
  (must-succeed*
@@ -454,46 +433,46 @@
  ;; default, with target function enabled:
  (must-succeed*
   (tailrec f)
-  (assert! (fundef-enabledp 'f-aux{1} state)))
+  (assert! (fundef-enabledp 'f{1} state)))
 
  ;; default, with target function disabled:
  (must-succeed*
   (in-theory (disable f))
   (tailrec f)
-  (assert! (fundef-disabledp 'f-aux{1} state)))
+  (assert! (fundef-disabledp 'f{1} state)))
 
  ;; automatic, with target function enabled:
  (must-succeed*
   (tailrec f :new-enable :auto)
-  (assert! (fundef-enabledp 'f-aux{1} state)))
+  (assert! (fundef-enabledp 'f{1} state)))
 
  ;; automatic, with target function disabled:
  (must-succeed*
   (in-theory (disable f))
   (tailrec f :new-enable :auto)
-  (assert! (fundef-disabledp 'f-aux{1} state)))
+  (assert! (fundef-disabledp 'f{1} state)))
 
  ;; enable, with target function enabled:
  (must-succeed*
   (tailrec f :new-enable t)
-  (assert! (fundef-enabledp 'f-aux{1} state)))
+  (assert! (fundef-enabledp 'f{1} state)))
 
  ;; enable, with target function disabled:
  (must-succeed*
   (in-theory (disable f))
   (tailrec f :new-enable t)
-  (assert! (fundef-enabledp 'f-aux{1} state)))
+  (assert! (fundef-enabledp 'f{1} state)))
 
  ;; disable, with target function enabled:
  (must-succeed*
   (tailrec f :new-enable nil)
-  (assert! (fundef-disabledp 'f-aux{1} state)))
+  (assert! (fundef-disabledp 'f{1} state)))
 
  ;; disable, with target function disabled:
  (must-succeed*
   (in-theory (disable f))
   (tailrec f :new-enable nil)
-  (assert! (fundef-disabledp 'f-aux{1} state))))
+  (assert! (fundef-disabledp 'f{1} state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -518,18 +497,22 @@
  ;; default:
  (must-succeed*
   (tailrec f)
+  (assert! (not (function-namep 'f-aux{1} (w state))))
   (assert! (function-namep 'f{1} (w state)))
-  (assert! (not (irecursivep 'f{1} (w state)))))
+  (assert! (irecursivep 'f{1} (w state))))
 
  ;; generate:
  (must-succeed*
   (tailrec f :wrapper t)
+  (assert! (function-namep 'f-aux{1} (w state)))
   (assert! (function-namep 'f{1} (w state)))
+  (assert! (irecursivep 'f-aux{1} (w state)))
   (assert! (not (irecursivep 'f{1} (w state)))))
 
  ;; do not generate:
  (must-succeed*
   (tailrec f :wrapper nil)
+  (assert! (not (function-namep 'f-aux{1} (w state))))
   (assert! (function-namep 'f{1} (w state)))
   (assert! (irecursivep 'f{1} (w state)))))
 
@@ -551,31 +534,34 @@
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
  ;; not a symbol:
- (must-fail (tailrec f :wrapper-name 33))
+ (must-fail (tailrec f :wrapper t :wrapper-name 33))
 
  ;; in the main Lisp package:
- (must-fail (tailrec f :wrapper-name cons))
+ (must-fail (tailrec f :wrapper t :wrapper-name cons))
 
  ;; keyword (other than :AUTO):
- (must-fail (tailrec f :wrapper-name :g))
+ (must-fail (tailrec f :wrapper t :wrapper-name :g))
 
  ;; name that already exists:
- (must-fail (tailrec f :wrapper-name car-cdr-elim))
+ (must-fail (tailrec f :wrapper t :wrapper-name car-cdr-elim))
 
  ;; default:
  (must-succeed*
-  (tailrec f)
-  (assert! (function-namep 'f{1} (w state))))
+  (tailrec f :wrapper t)
+  (assert! (function-namep 'f{1} (w state)))
+  (assert! (not (irecursivep 'f{1} (w state)))))
 
  ;; automatic:
  (must-succeed*
-  (tailrec f :wrapper-name :auto)
-  (assert! (function-namep 'f{1} (w state))))
+  (tailrec f :wrapper t :wrapper-name :auto)
+  (assert! (function-namep 'f{1} (w state)))
+  (assert! (not (irecursivep 'f{1} (w state)))))
 
  ;; specified:
  (must-succeed*
-  (tailrec f :wrapper-name g)
-  (assert! (function-namep 'g (w state)))))
+  (tailrec f :wrapper t :wrapper-name g)
+  (assert! (function-namep 'g (w state)))
+  (assert! (not (irecursivep 'g (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -595,21 +581,21 @@
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
  ;; not T or NIL:
- (must-fail (tailrec f :wrapper-enable 4))
+ (must-fail (tailrec f :wrapper t :wrapper-enable 4))
 
  ;; default:
  (must-succeed*
-  (tailrec f)
+  (tailrec f :wrapper t)
   (assert! (fundef-enabledp 'f{1} state)))
 
  ;; enable:
  (must-succeed*
-  (tailrec f :wrapper-enable t)
+  (tailrec f :wrapper t :wrapper-enable t)
   (assert! (fundef-enabledp 'f{1} state)))
 
  ;; disable:
  (must-succeed*
-  (tailrec f :wrapper-enable nil)
+  (tailrec f :wrapper t :wrapper-enable nil)
   (assert! (fundef-disabledp 'f{1} state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -725,14 +711,11 @@
 
  ;; transforming F preserves executability:
  (tailrec f)
- (assert! (not (non-executablep 'f-aux{1} (w state))))
  (assert! (not (non-executablep 'f{1} (w state))))
 
  ;; transforming G preserves non-executability:
  (tailrec g)
- (assert! (non-executablep 'g-aux{1} (w state)))
- ;; but the wrapper is always executable:
- (assert! (not (non-executablep 'g{1} (w state)))))
+ (assert! (non-executablep 'g{1} (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -763,27 +746,27 @@
  ;; default, with target function guard-verified:
  (must-succeed*
   (tailrec f)
-  (assert! (guard-verified-p 'f-aux{1} (w state))))
+  (assert! (guard-verified-p 'f{1} (w state))))
 
  ;; default, with target function not guard-verified:
  (must-succeed*
   (tailrec g)
-  (assert! (not (guard-verified-p 'g-aux{1} (w state)))))
+  (assert! (not (guard-verified-p 'g{1} (w state)))))
 
  ;; automatic, with target function guard-verified:
  (must-succeed*
   (tailrec f :verify-guards :auto)
-  (assert! (guard-verified-p 'f-aux{1} (w state))))
+  (assert! (guard-verified-p 'f{1} (w state))))
 
  ;; automatic, with target function not guard-verified:
  (must-succeed*
   (tailrec g :verify-guards :auto)
-  (assert! (not (guard-verified-p 'g-aux{1} (w state)))))
+  (assert! (not (guard-verified-p 'g{1} (w state)))))
 
  ;; verify guards, with target function guard-verified:
  (must-succeed*
   (tailrec f :verify-guards t)
-  (assert! (guard-verified-p 'f-aux{1} (w state))))
+  (assert! (guard-verified-p 'f{1} (w state))))
 
  ;; verify guards, with target function not guard-verified:
  (must-succeed*
@@ -792,12 +775,12 @@
  ;; do not verify guards, with target function guard-verified:
  (must-succeed*
   (tailrec f :verify-guards nil)
-  (assert! (not (guard-verified-p 'f-aux{1} (w state)))))
+  (assert! (not (guard-verified-p 'f{1} (w state)))))
 
  ;; do not verify guards, with target function not guard-verified:
  (must-succeed*
   (tailrec g :verify-guards nil)
-  (assert! (not (guard-verified-p 'g-aux{1} (w state))))))
+  (assert! (not (guard-verified-p 'g{1} (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -926,18 +909,18 @@
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (function-namep 'f-aux{1} (w state))))
+  (assert! (function-namep 'f{1} (w state))))
 
  ;; show only:
  (must-succeed*
   (tailrec f :show-only t)
-  (assert! (not (function-namep 'f-aux{1} (w state))))
+  (assert! (not (function-namep 'f{1} (w state))))
   :with-output-off nil)
 
  ;; submit events:
  (must-succeed*
   (tailrec f :show-only nil)
-  (assert! (function-namep 'f-aux{1} (w state))))
+  (assert! (function-namep 'f{1} (w state))))
 
  :with-output-off nil)
 
@@ -1093,14 +1076,11 @@
     (if (zp n) 0 (+ n (tri (1- n)))))
   (tailrec tri :domain rationalp)
   (must-be-redundant
-   (defun tri-aux{1} (n r)
+   (defun tri{1} (n r)
      (declare (xargs :measure (acl2-count n)
                      :guard (and (natp n) (rationalp r))))
-     (if (zp n) r (tri-aux{1} (+ -1 n) (+ r n))))
-   (defun tri{1} (n)
-     (declare (xargs :guard (natp n)))
-     (tri-aux{1} n 0))
-   (defthm tri-~>-tri{1} (equal (tri n) (tri{1} n)))))
+     (if (zp n) r (tri{1} (+ -1 n) (+ r n))))
+   (defthm tri-~>-tri{1} (equal (tri n) (tri{1} n 0)))))
 
  ;; pyramidal numbers (i.e. sum of squares):
  (must-succeed*
@@ -1109,14 +1089,11 @@
     (if (zp n) 0 (+ (* n n) (pyr (1- n)))))
   (tailrec pyr :domain integerp)
   (must-be-redundant
-   (defun pyr-aux{1} (n r)
+   (defun pyr{1} (n r)
      (declare (xargs :measure (acl2-count n)
                      :guard (and (natp n) (integerp r))))
-     (if (zp n) r (pyr-aux{1} (+ -1 n) (+ r (* n n)))))
-   (defun pyr{1} (n)
-     (declare (xargs :guard (natp n)))
-     (pyr-aux{1} n 0))
-   (defthm pyr-~>-pyr{1} (equal (pyr n) (pyr{1} n)))))
+     (if (zp n) r (pyr{1} (+ -1 n) (+ r (* n n)))))
+   (defthm pyr-~>-pyr{1} (equal (pyr n) (pyr{1} n 0)))))
 
  ;; sum list elements:
  (must-succeed*
@@ -1125,15 +1102,12 @@
     (if (endp l) 0 (+ (car l) (list-sum (cdr l)))))
   (tailrec list-sum :variant :monoid-alt :domain acl2-numberp)
   (must-be-redundant
-   (defun list-sum-aux{1} (l r)
+   (defun list-sum{1} (l r)
      (declare (xargs :measure (acl2-count l)
                      :guard (and (acl2-number-listp l) (acl2-numberp r))))
-     (if (endp l) r (list-sum-aux{1} (cdr l) (+ r (car l)))))
-   (defun list-sum{1} (l)
-     (declare (xargs :guard (acl2-number-listp l)))
-     (list-sum-aux{1} l 0))
+     (if (endp l) r (list-sum{1} (cdr l) (+ r (car l)))))
    (defthm list-sum-~>-list-sum{1}
-     (equal (list-sum l) (list-sum{1} l)))))
+     (equal (list-sum l) (list-sum{1} l 0)))))
 
  ;; length of list:
  (must-succeed*
@@ -1142,15 +1116,12 @@
     (if (endp l) 0 (1+ (list-len (cdr l)))))
   (tailrec list-len :domain natp)
   (must-be-redundant
-   (defun list-len-aux{1} (l r)
+   (defun list-len{1} (l r)
      (declare (xargs :measure (acl2-count l)
                      :guard (and (true-listp l) (natp r))))
-     (if (endp l) r (list-len-aux{1} (cdr l) (+ r 1))))
-   (defun list-len{1} (l)
-     (declare (xargs :guard (true-listp l)))
-     (list-len-aux{1} l 0))
+     (if (endp l) r (list-len{1} (cdr l) (+ r 1))))
    (defthm list-len-~>-list-len{1}
-     (equal (list-len l) (list-len{1} l)))))
+     (equal (list-len l) (list-len{1} l 0)))))
 
  ;; reverse list:
  (must-succeed*
@@ -1158,12 +1129,11 @@
     (if (atom l) nil (append (list-rev (cdr l)) (list (car l)))))
   (tailrec list-rev :domain true-listp)
   (must-be-redundant
-   (defun list-rev-aux{1} (l r)
+   (defun list-rev{1} (l r)
      (declare (xargs :measure (acl2-count l) :guard (true-listp r)))
-     (if (atom l) r (list-rev-aux{1} (cdr l) (append (list (car l)) r))))
-   (defun list-rev{1} (l) (list-rev-aux{1} l nil))
+     (if (atom l) r (list-rev{1} (cdr l) (append (list (car l)) r))))
    (defthm list-rev-~>-list-rev{1}
-     (equal (list-rev l) (list-rev{1} l)))))
+     (equal (list-rev l) (list-rev{1} l nil)))))
 
  ;; raise to power:
  (must-succeed*
@@ -1172,13 +1142,10 @@
     (if (zp n) 1 (* x (power x (1- n)))))
   (tailrec power :variant :monoid-alt :domain acl2-numberp)
   (must-be-redundant
-   (defun power-aux{1} (x n r)
+   (defun power{1} (x n r)
      (declare (xargs :measure (acl2-count n)
                      :guard (and (and (acl2-numberp x) (natp n))
                                  (acl2-numberp r))))
-     (if (zp n) r (power-aux{1} x (+ -1 n) (* r x))))
-   (defun power{1} (x n)
-     (declare (xargs :guard (and (acl2-numberp x) (natp n))))
-     (power-aux{1} x n 1))
+     (if (zp n) r (power{1} x (+ -1 n) (* r x))))
    (defthm power-~>-power{1}
-     (equal (power x n) (power{1} x n))))))
+     (equal (power x n) (power{1} x n 1))))))

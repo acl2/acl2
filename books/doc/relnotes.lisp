@@ -252,6 +252,11 @@
       are always numbered names,
       which facilitates the application of further transformations.")
     (xdoc::li
+     "The default of the @(':wrapper') input
+      has been changed from @('t') to @('nil').
+      The rationale is that not generating the wrapper is expected to be
+      more frequent than generating it.")
+    (xdoc::li
      "The target function's @(tsee if) body,
       after translation and @(tsee let) expansion,
       can now have a recursive `then' branch and a non-recursive `else' branch.

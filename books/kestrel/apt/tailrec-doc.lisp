@@ -69,7 +69,7 @@
      "         :domain          ; default :auto"
      "         :new-name        ; default :auto"
      "         :new-enable      ; default :auto"
-     "         :wrapper         ; default t"
+     "         :wrapper         ; default nil"
      "         :wrapper-name    ; default :auto"
      "         :wrapper-enable  ; default t"
      "         :thm-name        ; default :auto"

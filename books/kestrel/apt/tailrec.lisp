@@ -737,7 +737,7 @@
                               (list* new-name wrapper-name names-to-avoid))))))
       (if wrapper-name-present
           (er-soft+ ctx t nil
-                    "Since the :WRAPPER input is NIL, ~
+                    "Since the :WRAPPER input is (perhaps by default) NIL, ~
                      no :WRAPPER-NAME input may be supplied.")
         (if (eq new-name :auto)
             (b* (((mv new-name$ names-to-avoid)
@@ -776,8 +776,8 @@
       (ensure-boolean$ wrapper-enable "The :WRAPPER-ENABLE input" t nil)
     (if wrapper-enable-present
         (er-soft+ ctx t nil
-                  "Since the :WRAPPER input is NIL, ~
-                   no :WRAPPER-enable input may be supplied.")
+                  "Since the :WRAPPER input is (perhaps by default) NIL, ~
+                   no :WRAPPER-ENABLE input may be supplied.")
       (value nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1951,6 +1951,7 @@
                                     (new-name$ symbolp)
                                     (wrapper$ booleanp)
                                     (thm-name$ symbolp)
+                                    (thm-enable$ booleanp)
                                     (names-to-avoid symbol-listp)
                                     (appcond-thm-names symbol-symbol-alistp)
                                     (domain-of-old-name symbolp)
@@ -1992,7 +1993,7 @@
    We always generate a local event for this theorem.
    If the @(':wrapper') input is @('nil'),
    we also generate an exported event because in that case
-   there is no wrapper an no old-to-wrapper theorem.
+   there is no wrapper and no old-to-wrapper theorem.
    </p>"
   (b* ((name (if wrapper$
                  (fresh-logical-name-with-$s-suffix 'old-to-new
@@ -2041,8 +2042,8 @@
                               ,formula
                               :hints ,hints)))
        (exported-event? (and (not wrapper$)
-                             `(defthm ,name
-                                ,formula))))
+                             `(,(theorem-intro-macro thm-enable$) ,name
+                               ,formula))))
     (mv local-event exported-event? name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2406,6 +2407,7 @@
                                     new-name$
                                     wrapper$
                                     thm-name$
+                                    thm-enable$
                                     names-to-avoid
                                     appcond-thm-names
                                     domain-of-old-name
@@ -2642,7 +2644,7 @@
                      (domain ':auto)
                      (new-name ':auto)
                      (new-enable ':auto)
-                     (wrapper 't)
+                     (wrapper 'nil)
                      (wrapper-name ':auto wrapper-name-present)
                      (wrapper-enable 't wrapper-enable-present)
                      (thm-name ':auto)
