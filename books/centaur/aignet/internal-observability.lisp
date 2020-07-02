@@ -117,6 +117,14 @@
                            )))
 (local (std::add-default-post-define-hook :fix))
 
+
+;; Observability deals with situations in which a change in value of a node may
+;; or may not be observable at the outputs (or some other distinguished set of
+;; nodes).  To begin reasoning about it we define id-eval-toggle and
+;; lit-eval-toggle, which gives the value of a (node/literal) when a certain
+;; node's value has been negated.  A source node is unobservable from a sink
+;; node if for all inputs, the id-eval-toggle of the sink node with source node
+;; as the toggle input equals the id-eval of the sink node.
 (defines id-eval-toggle
   :prepwork ((local (in-theory (disable lookup-id-in-bounds-when-positive
                                         lookup-id-out-of-bounds))))
@@ -191,7 +199,21 @@
         ans)))
   ///
   (fty::deffixequiv-mutual id-eval-toggle)
-  (verify-guards id-eval-toggle))
+  (verify-guards id-eval-toggle)
+
+  (defthm id-eval-toggle-when-less
+    (implies (< (nfix x) (nfix toggle))
+             (equal (id-eval-toggle x toggle invals regvals aignet)
+                    (id-eval x invals regvals aignet)))
+    :hints (("goal" :induct (id-eval-ind x aignet)
+             :expand ((id-eval x invals regvals aignet)
+                      (id-eval-toggle x toggle invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))))))
 
 
 
@@ -209,42 +231,359 @@
 
 
 
-;; For each node starting at the outputs and working our way back, we need to
-;; find the intersection of the observability dominators among all the fanouts,
-;; with two exceptions: (1) a node connected to a CO has no observability
-;; dominators and (2) a node whose only fanout is an AND gate additionally has its sibling
-;; as an observability dominator.
-
-;; To track this easily, we'll sweep first over the COs and then backwards over
-;; the nodes.  At all times, each node tracks its observability info, which is either
-;;   - T, meaning it hasn't been found to be observable yet
-;;   - a list of literals, the possible observability dominators from the fanouts swept so far.
 
 
-;; What invariant is maintained by this algorithm?  Once a node's observability
-;; info has been completed, it suggests a set of conditions under which the
-;; node is known not to be observable:
-;;  - if not reached (T) , then it's never observable
-;;  - if some dominator evaluates to 0, it's not observable.
-;; This is formalized as obs-dom-info-observable-p.
 
-;; When we're all done with a node, it'll be the case that when it is not
-;; observable (under some inputs), it can be toggled without causing a change
-;; in value in any node that is observable (under those inputs).  Call this
-;; property OBSERVABILITY-DONE-INVARIANT.
 
-;; But until we're done with a node, what does its observability info mean?
-;; When we've swept some but not all of its fanouts, a toggle in that node
-;; could still cause a change in some fanout that has been swept.  E.g. if node
-;; A is a direct fanin of B, but also a fanin of C which is the other fanin of
-;; B, and we have swept B but not C, then A's observability info might seem to
-;; allow it to be toggled without affecting B, but in fact it could still
-;; affect B through C.  Similarly, it could affect B through a longer chain.
+;; We formalize the notion of a path between a source and sink node.  This is
+;; just a list of bits saying which child to traverse at each two-input gate
+;; along the way.
 
-;; So instead we'll state an invariant in terms of direct fanouts of A that
-;; have been swept, and that is more explicitly in terms of the observability
-;; structure.  When all direct fanouts of A have been swept, this will imply
-;; OBSERVABILITY-DONE-INVARIANT.
+;; The main result we prove is that if source toggles sink under some inputs,
+;; then there must be a path between them such that:
+;;  1) no two AND siblings of the path are contradictory literals
+;;  2) no AND sibling of the path is 0 under both values of source.
+
+
+;; A path through some descendants of a sink exists if all the nodes it says to
+;; traverse are gate nodes.
+(define path-existsp ((sink natp) (path bit-listp) aignet)
+  :guard (id-existsp sink aignet)
+  (if (atom path)
+      t
+    (and (eql (id->type sink aignet) (gate-type))
+         (path-existsp (lit->var (snode->fanin (id->slot sink (car path) aignet)))
+                       (cdr path) aignet)))
+  ///
+  (defthm path-existsp-when-consp
+    (implies (and (path-existsp sink path aignet)
+                  (consp path))
+             (and (equal (ctype (stype (car (lookup-id sink aignet)))) :gate)
+                  (implies (equal (car path) 1)
+                           (path-existsp (lit->var (fanin :gate1 (lookup-id sink aignet)))
+                                         (cdr path) aignet))
+                  (implies (not (equal (car path) 1))
+                           (path-existsp (lit->var (fanin :gate0 (lookup-id sink aignet)))
+                                         (cdr path) aignet)))))
+
+  (defthm path-existsp-of-cons-0
+    (equal (path-existsp sink (cons 0 path) aignet)
+           (and (equal (ctype (stype (car (lookup-id sink aignet)))) :gate)
+                (path-existsp (lit->var (fanin :gate0 (lookup-id sink aignet))) path aignet))))
+
+  (defthm path-existsp-of-cons-1
+    (equal (path-existsp sink (cons 1 path) aignet)
+           (and (equal (ctype (stype (car (lookup-id sink aignet)))) :gate)
+                (path-existsp (lit->var (fanin :gate1 (lookup-id sink aignet))) path aignet))))
+  
+  (defthm path-existsp-of-nil
+    (equal (path-existsp sink nil aignet) t))
+
+  (local (in-theory (disable (:d path-existsp)))))
+
+
+;; The endpoint of a path from a sink node is the source node it ends up at.
+(define path-endpoint ((sink natp) (path bit-listp) aignet)
+  :guard (and (id-existsp sink aignet)
+              (path-existsp sink path aignet))
+  (if (atom path)
+      (lnfix sink)
+    (path-endpoint (lit->var
+                    (mbe :logic (non-exec (fanin (if (eql (car path) 1) :gate1 :gate0)
+                                                 (lookup-id sink aignet)))
+                         :exec (snode->fanin (id->slot sink (car path) aignet))))
+                   (cdr path) aignet))
+  ///
+  (defthm path-endpoint-of-cons-0
+    (equal (path-endpoint sink (cons 0 rest) aignet)
+           (path-endpoint (lit->var (fanin :gate0 (lookup-id sink aignet))) rest aignet)))
+  
+  (defthm path-endpoint-of-cons-1
+    (equal (path-endpoint sink (cons 1 rest) aignet)
+           (path-endpoint (lit->var (fanin :gate1 (lookup-id sink aignet))) rest aignet)))
+
+  (defthm path-endpoint-of-nil
+    (equal (path-endpoint sink nil aignet)
+           (nfix sink)))
+
+  (local (in-theory (disable (:d path-endpoint)))))
+
+
+;; Check whether any AND gate in a path has x as the sibling (i.e. the other
+;; branch, that the path did not take).
+(define path-contains-and-sibling ((x litp) (sink natp) (path bit-listp) aignet)
+  :guard (and (id-existsp sink aignet)
+              (path-existsp sink path aignet))
+  :measure (len path)
+  :guard-hints (("Goal" :expand ((path-existsp sink path aignet))))
+  :prepwork ((local (in-theory (disable satlink::equal-of-lit-fix-backchain
+                                        lookup-id-out-of-bounds
+                                        lookup-id-in-bounds-when-positive))))
+  :returns (contains)
+  (b* (((when (atom path)) nil)
+       (next (mbe :logic (non-exec (fanin (if (eql (car path) 1) :gate1 :gate0)
+                                          (lookup-id sink aignet)))
+                  :exec (snode->fanin (id->slot sink (car path) aignet))))
+       ((unless (mbe :logic (non-exec (eq (stype (car (lookup-id sink aignet))) :and))
+                     :exec (eql (id->regp sink aignet) 0)))
+        (path-contains-and-sibling x (lit->var next) (cdr path) aignet))
+       (sib (mbe :logic (non-exec (fanin (if (eql (car path) 1) :gate0 :gate1)
+                                         (lookup-id sink aignet)))
+                 :exec (snode->fanin (id->slot sink (b-not (car path)) aignet))))
+       ((when (eql sib (lit-fix x))) t))
+    (path-contains-and-sibling x (lit->var next) (cdr path) aignet))
+  ///
+  (local (in-theory (disable (:d path-contains-and-sibling))))
+
+  (local (defthm equal-of-lit-fix-implies-lit->var
+           (implies (equal x (lit-fix y))
+                    (equal (lit->var x) (lit->var y)))
+           :rule-classes :forward-chaining))
+
+  (defthm path-contains-and-sibling-of-nil
+    (equal (path-contains-and-sibling x sink nil aignet) nil)
+    :hints (("goal" :expand ((path-contains-and-sibling x sink nil aignet)))))
+  
+  (defretd path-contains-and-sibling-when-gte-sink
+    (implies (and (<= (nfix sink) (lit->var x))
+                  (path-existsp sink path aignet))
+             (not contains))
+    :hints (("goal" :induct <call> :expand (<call> (path-existsp sink path aignet))))))
+
+;; Check whether any two AND siblings in the path are contradictory literals.
+(define path-contains-contradictory-siblings ((sink natp) (path bit-listp) aignet)
+  :guard (and (id-existsp sink aignet)
+              (path-existsp sink path aignet))
+  :measure (len path)
+  :guard-hints (("Goal" :expand ((path-existsp sink path aignet))))
+  :prepwork ((local (in-theory (disable satlink::equal-of-lit-fix-backchain
+                                        lookup-id-out-of-bounds
+                                        lookup-id-in-bounds-when-positive))))
+  (b* (((when (atom path)) nil)
+       (next (mbe :logic (non-exec (fanin (if (eql (car path) 1) :gate1 :gate0)
+                                          (lookup-id sink aignet)))
+                  :exec (snode->fanin (id->slot sink (car path) aignet))))
+       ((unless (mbe :logic (non-exec (eq (stype (car (lookup-id sink aignet))) :and))
+                     :exec (eql (id->regp sink aignet) 0)))
+        (path-contains-contradictory-siblings (lit->var next) (cdr path) aignet))
+       (sib (mbe :logic (non-exec (fanin (if (eql (car path) 1) :gate0 :gate1)
+                                         (lookup-id sink aignet)))
+                 :exec (snode->fanin (id->slot sink (b-not (car path)) aignet)))))
+    (or (path-contains-and-sibling (lit-negate sib) (lit->var next) (cdr path) aignet)
+        (path-contains-contradictory-siblings (lit->var next) (cdr path) aignet)))
+  ///
+  (local (in-theory (disable (:d path-contains-contradictory-siblings)))))
+
+
+;; Check whether any AND siblings in the path are 0 under the inputs with the
+;; source both toggled and not toggled.
+(define path-contains-const0-sibling ((sink natp) (source natp) invals regvals (path bit-listp) aignet)
+  :guard (and (id-existsp sink aignet)
+              (id-existsp source aignet)
+              (path-existsp sink path aignet)
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals)))
+  :measure (len path)
+  :guard-hints (("Goal" :expand ((path-existsp sink path aignet))))
+  :prepwork ((local (in-theory (disable satlink::equal-of-lit-fix-backchain
+                                        lookup-id-out-of-bounds
+                                        lookup-id-in-bounds-when-positive))))
+  :returns (contains)
+  (b* (((when (atom path)) nil)
+       (next (mbe :logic (non-exec (fanin (if (eql (car path) 1) :gate1 :gate0)
+                                          (lookup-id sink aignet)))
+                  :exec (snode->fanin (id->slot sink (car path) aignet))))
+       ((unless (mbe :logic (non-exec (eq (stype (car (lookup-id sink aignet))) :and))
+                     :exec (eql (id->regp sink aignet) 0)))
+        (path-contains-const0-sibling (lit->var next) source invals regvals (cdr path) aignet))
+       (sib (mbe :logic (non-exec (fanin (if (eql (car path) 1) :gate0 :gate1)
+                                         (lookup-id sink aignet)))
+                 :exec (snode->fanin (id->slot sink (b-not (car path)) aignet)))))
+    (or (and (eql 0 (lit-eval sib invals regvals aignet))
+             (eql 0 (lit-eval-toggle sib source invals regvals aignet)))
+        (path-contains-const0-sibling (lit->var next) source invals regvals (cdr path) aignet)))
+  ///
+  (local (in-theory (disable (:d path-contains-const0-sibling))))
+
+  (defret path-contains-const0-sibling-when-has-sibling
+    (implies (and (path-contains-and-sibling x sink path aignet)
+                  (equal (lit-eval x invals regvals aignet) 0)
+                  (equal (lit-eval-toggle x source invals regvals aignet) 0))
+             contains)
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (path-contains-and-sibling x sink path aignet))))))
+
+(local (in-theory (disable member
+                           lookup-id-in-bounds-when-positive
+                           lookup-id-out-of-bounds
+                           satlink::equal-of-lit-negate-backchain
+                           satlink::lit-negate-not-equal-when-vars-mismatch)))
+
+(define toggle-witness-path ((sink natp) (source natp) invals regvals aignet)
+  ;; Given that sink is toggled by source, find a path from sink to source
+  ;; containing no contradictory AND siblings and no const0 siblings.
+  :guard (and (id-existsp sink aignet)
+              (id-existsp source aignet)
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals)))
+  :measure (nfix sink)
+  :returns (path bit-listp)
+  :prepwork ((local (in-theory (disable satlink::equal-of-lit-fix-backchain
+                                        lookup-id-out-of-bounds
+                                        lookup-id-in-bounds-when-positive))))
+  (b* (((when (or (<= (lnfix sink) (lnfix source))
+                  (not (eql (id->type sink aignet) (gate-type)))))
+        nil)
+       (fanin0 (gate-id->fanin0 sink aignet))
+       (fanin1 (gate-id->fanin1 sink aignet))
+       (xor (eql (id->regp sink aignet) 1))
+       (fanin0-val (lit-eval fanin0 invals regvals aignet))
+       (fanin1-val (lit-eval fanin1 invals regvals aignet))
+       (fanin0-toggles (not (eql (lit-eval-toggle fanin0 source invals regvals aignet)
+                                 fanin0-val)))
+       (fanin1-toggles (not (eql (lit-eval-toggle fanin1 source invals regvals aignet)
+                                 fanin1-val)))
+       ((when xor)
+        (if fanin0-toggles
+            (cons 0 (toggle-witness-path (lit->var fanin0) source invals regvals aignet))
+          (cons 1 (toggle-witness-path (lit->var fanin1) source invals regvals aignet))))
+       ((unless fanin0-toggles)
+        ;; fanin0 must be const 1.
+        (cons 1 (toggle-witness-path (lit->var fanin1) source invals regvals aignet)))
+       ((unless fanin1-toggles)
+        (cons 0 (toggle-witness-path (lit->var fanin0) source invals regvals aignet)))
+       ((when (<= (lit->var fanin0) (lit->var fanin1)))
+        (cons 0 (toggle-witness-path (lit->var fanin0) source invals regvals aignet))))
+    (cons 1 (toggle-witness-path (lit->var fanin1) source invals regvals aignet)))
+  ///
+  (local (in-theory (disable (:d toggle-witness-path))))
+  
+  (defret path-existsp-of-toggle-witness-path
+    (path-existsp sink path aignet)
+    :hints (("goal" :induct <call> :expand (<call>))))
+
+  (local (defthm cancel-equal-b-xor
+           (equal (equal (b-xor a b) (b-xor a c))
+                  (equal (bfix b) (bfix c)))
+           :hints(("Goal" :in-theory (enable b-xor bfix)))))
+  
+  (local (defthm equal-of-b-and-first-same
+           (equal (equal (b-and a b) (b-and a c))
+                  (or (equal (bfix a) 0)
+                      (equal (bfix b) (bfix c))))
+           :hints(("Goal" :in-theory (enable b-and bfix)))))
+
+  (local (defthm equal-of-b-and-second-same
+           (equal (equal (b-and b a) (b-and c a))
+                  (or (equal (bfix a) 0)
+                      (equal (bfix b) (bfix c))))
+           :hints(("Goal" :in-theory (enable b-and bfix)))))
+
+  (local (defthm equal-of-b-and-first/second
+           (equal (equal (b-and b a) (b-and a c))
+                  (or (equal (bfix a) 0)
+                      (equal (bfix b) (bfix c))))
+           :hints(("Goal" :in-theory (enable b-and bfix)))))
+
+  (defret path-endpoint-of-<fn>
+    (implies (not (equal (id-eval sink invals regvals aignet)
+                         (id-eval-toggle sink source invals regvals aignet)))
+             (equal (path-endpoint sink path aignet) (nfix source)))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (id-eval sink invals regvals aignet)
+                      (id-eval-toggle sink source invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+
+  (defret const0-siblings-of-<fn>
+    (implies (not (equal (id-eval sink invals regvals aignet)
+                         (id-eval-toggle sink source invals regvals aignet)))
+             (not (path-contains-const0-sibling
+                   sink source invals regvals path aignet)))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (id-eval sink invals regvals aignet)
+                      (id-eval-toggle sink source invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))
+                      (:free (p source)
+                       (path-contains-const0-sibling
+                        sink source invals regvals p aignet))))))
+
+  (local (defret path-contains-no-and-sibling-when-no-const0-sibling
+           (implies (and (bind-free '((invals . invals) (regvals . regvals) (source . source))
+                                    (invals regvals source))
+                         (not contains)
+                         (equal (lit-eval x invals regvals aignet) 0)
+                         (equal (lit-eval-toggle x source invals regvals aignet) 0))
+                    (not (path-contains-and-sibling x sink path aignet)))
+           :fn path-contains-const0-sibling))
+
+  (local (defthm equal-b-not-of-bits
+           (implies (and (bitp x) (bitp y))
+                    (equal (equal (b-not x) y)
+                           (not (equal x y))))
+           :hints(("Goal" :in-theory (enable bitp)))))
+
+  ;; (local (defthm not-equal-of-id-eval-toggle
+  ;;          (implies (not (equal (id-eval-toggle sink source invals regvals aignet)
+  ;;                               (id-eval sink invals regvals aignet)))
+  ;;                   (equal (id-eval-toggle sink source invals regvals aignet)
+  ;;                          (b-not (id-eval sink invals regvals aignet))))
+  ;;          :hints(("Goal" :in-theory (enable bitp)))
+  ;;          :rule-classes :forward-chaining))
+  
+  ;; (local (defthm b-xor-b-not-1
+  ;;          (equal (b-xor (b-not x) y)
+  ;;                 (b-not (b-xor x y)))
+  ;;          :hints(("Goal" :in-theory (enable b-xor b-not)))))
+  ;; (local (defthm b-xor-b-not-2
+  ;;          (equal (b-xor x (b-not y))
+  ;;                 (b-not (b-xor x y)))
+  ;;          :hints(("Goal" :in-theory (enable b-xor b-not)))))
+
+  ;; (local (defthm equal-b-and-b-nots
+  ;;          (equal (equal (b-and a b) (b-and (b-not a) (b-not b)))
+  ;;                 (not (equal (bfix a) (bfix b))))
+  ;;          :hints(("Goal" :in-theory (enable bfix)))))
+
+  (local (in-theory (enable path-contains-and-sibling-when-gte-sink)))
+  
+  (defret contradictions-of-<fn>
+    (implies (not (equal (id-eval sink invals regvals aignet)
+                         (id-eval-toggle sink source invals regvals aignet)))
+             (not (path-contains-contradictory-siblings
+                   sink path aignet)))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (id-eval sink invals regvals aignet)
+                      (id-eval-toggle sink source invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))
+                      (:free (p)
+                       (path-contains-contradictory-siblings
+                        sink p aignet)))))))
+
+
+;; Dominator info for each node is stored as either
+;; (1) T, signifying that every path from an output to the node contains
+;;     contradictory literals, or
+;; (2) a list of literals, all of which must occur as AND-siblings in every
+;;     path from an output to the node not containing contradictory literals.
 
 
 (define obs-dom-info-p (x)
@@ -314,23 +653,6 @@
                               (doms . obs-dom-info->doms))
                             args acl2::forms acl2::rest-expr))
 
-;; (fty::defflexsum obs-dom-info
-;;   :kind nil
-;;   (:info
-;;    :type-name obs-dom-info
-;;    :cond t
-;;    :fields ((reached :acc-body (eq x t) :type booleanp :rule-classes :type-prescription)
-;;             (doms :acc-body (if (eq x t) nil x) :type lit-listp))
-;;    :ctor-body 
-   
-
-
-;; (fty::defprod obs-dom-info
-;;   ((reached booleanp "have any reachable fanouts been swept"
-;;             :rule-classes :type-prescription)
-;;    (doms    lit-listp   "intersection of fanout dominators, if reached"))
-;;   :layout :list)
-
 (define obs-dom-info-well-formedp ((info obs-dom-info-p) aignet)
   :returns wfp
   (b* (((obs-dom-info info)))
@@ -343,15 +665,8 @@
                (aignet-lit-listp info.doms aignet)))
     :hints (("goal" :in-theory (enable obs-dom-info->reached obs-dom-info->doms)))))
 
-(define obs-dom-info-eval ((info obs-dom-info-p)
-                           invals regvals aignet)
-  :guard (and (<= (num-ins aignet) (bits-length invals))
-              (<= (num-regs aignet) (bits-length regvals))
-              (obs-dom-info-well-formedp info aignet))
-  (b* (((obs-dom-info info)))
-    (and info.reached
-         (bit->bool (aignet-eval-conjunction info.doms invals regvals aignet)))))
- 
+
+
 
 
 (fty::deflist obs-dom-info-list :elt-type obs-dom-info :true-listp t)
@@ -413,6 +728,522 @@
              (and (member-equal contradictionp x)
                   (member (lit-negate contradictionp) x)))))
 
+
+
+(define obs-dom-info-subsetp ((x obs-dom-info-p)
+                              (y obs-dom-info-p))
+  :returns (subsetp)
+  (b* (((obs-dom-info x))
+       ((obs-dom-info y)))
+    (or (not y.reached)
+        (cube-contradictionp y.doms)
+        (and x.reached
+             (subsetp x.doms y.doms))))
+  ///
+  (local (defthm aignet-eval-conjunction-when-member
+           (implies (and (equal (lit-eval x invals regvals aignet) 0)
+                         (member (lit-fix x) (lit-list-fix  y)))
+                    (equal (aignet-eval-conjunction y invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+  (local (defthm aignet-eval-conjunction-when-subsetp
+           (implies (and (equal (aignet-eval-conjunction x invals regvals aignet) 0)
+                         (subsetp (lit-list-fix x) (lit-list-fix y)))
+                    (equal (aignet-eval-conjunction y invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable aignet-eval-conjunction
+                                             subsetp lit-list-fix)
+                   :induct (lit-list-fix x)))))
+  ;; (defretd <fn>-implies
+  ;;   (implies (and subsetp (obs-dom-info-eval y invals regvals aignet))
+  ;;            (obs-dom-info-eval x invals regvals aignet))
+  ;;   :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
+
+  (defretd <fn>-implies-reached
+    (implies (and subsetp
+                  (obs-dom-info->reached y)
+                  (not (cube-contradictionp (obs-dom-info->doms y)))
+                  )
+             (obs-dom-info->reached x)))
+
+  (defretd <fn>-implies-member
+    (implies (and subsetp
+                  (obs-dom-info->reached y)
+                  (not (cube-contradictionp (obs-dom-info->doms y)))
+                  (not (member-equal lit (obs-dom-info->doms y))))
+             (not (member lit (obs-dom-info->doms x))))))
+
+(define obs-dom-info-add ((lit litp) (x obs-dom-info-p))
+  :returns (new obs-dom-info-p)
+  (b* (((obs-dom-info x)))
+    (if x.reached
+        (make-obs-dom-info-reached (cons (lit-fix lit) x.doms))
+      (make-obs-dom-info-unreached)))
+  ///
+  ;; (defret eval-of-<fn>
+  ;;   (equal (obs-dom-info-eval new invals regvals aignet)
+  ;;          (and (bit->bool (lit-eval lit invals regvals aignet))
+  ;;               (obs-dom-info-eval x invals regvals aignet)))
+  ;;   :hints(("Goal" :in-theory (enable obs-dom-info-eval
+  ;;                                     aignet-eval-conjunction))))
+
+  (defret <fn>-when-unreached
+    (implies (not (obs-dom-info->reached x))
+             (equal new (make-obs-dom-info-unreached))))
+
+  (defret <fn>-when-reached
+    (implies (obs-dom-info->reached x)
+             (obs-dom-info->reached new)))
+
+  (defret member-of-<fn>
+    (implies (obs-dom-info->reached x)
+             (iff (member-equal dom (obs-dom-info->doms new))
+                  (or (equal dom (lit-fix lit))
+                      (member-equal dom (obs-dom-info->doms x)))))))
+
+;; (define node-level-rank< ((node1 natp)
+;;                           (node2 natp)
+;;                           levels)
+;;   :guard (and (< node1 (le
+
+
+
+(define obs-dom-info-for-child ((fanout-info obs-dom-info-p)
+                                (fanout natp)
+                                (fanin bitp)
+                                aignet)
+  :guard (and (id-existsp fanout aignet)
+              (eql (id->type fanout aignet) (gate-type)))
+  :returns (child-fanout-info obs-dom-info-p)
+  (b* (;; (fanin0 (gate-id->fanin0 fanout aignet))
+       ;; (fanin1 (gate-id->fanin1 fanout aignet))
+       (xor (eql 1 (id->regp fanout aignet))))
+    (if xor
+        ;; Won't complicate things with this optimization since hashing should prevent this anyhow.
+        ;; (if (or (eql fanin0 fanin1)
+        ;;         (eql fanin0 (lit-negate fanin1)))
+        ;;     (make-obs-dom-info-unreached)
+        (obs-dom-info-fix fanout-info)
+      ;; (cond ((eql fanin0 fanin1) (obs-dom-info-fix fanout-info))
+      ;;       ((eql fanin0 (lit-negate fanin1)) (make-obs-dom-info-unreached))
+      ;;       (t
+      (obs-dom-info-add (snode->fanin (id->slot-fn fanout (b-not fanin) aignet)) fanout-info)))
+  ///
+  ;; (defret eval-of-<fn>
+  ;;   (implies (not (obs-dom-info-eval fanout-info invals regvals aignet))
+  ;;            (not (obs-dom-info-eval child-fanout-info invals regvals aignet))))
+
+  (defret <fn>-when-xor
+    (implies (equal (stype (car (lookup-id fanout aignet))) :xor)
+             (equal child-fanout-info
+                    ;; (b* ((fanin0 (gate-id->fanin0 fanout aignet))
+                    ;;      (fanin1 (gate-id->fanin1 fanout aignet)))
+                    ;;   (if (or (eql fanin0 fanin1)
+                    ;;           (eql fanin0 (lit-negate fanin1)))
+                    ;;       (make-obs-dom-info-unreached)
+                    (obs-dom-info-fix fanout-info))))
+  ;; (defret <fn>-when-fanin1
+  ;;   (implies (bit->bool fanin)
+  ;;            (equal child-fanout-info (obs-dom-info-fix fanout-info))))
+  ;; (defret <fn>-when-and-fanin0
+  ;;   (implies (and (equal (stype (car (lookup-id fanout aignet))) :and)
+  ;;                 (not (bit->bool fanin)))
+  ;;            (equal child-fanout-info
+  ;;                   (obs-dom-info-add (fanin (if (equal fanin 1) :gate0 :gate1)
+  ;;                                            (lookup-id fanout aignet))
+  ;;                                     fanout-info))))
+  (defret <fn>-when-and
+    (implies (equal (stype (car (lookup-id fanout aignet))) :and)
+             (equal child-fanout-info
+                    ;; (cond ((equal (gate-id->fanin0 fanout aignet)
+                    ;;               (gate-id->fanin1 fanout aignet))
+                    ;;        (obs-dom-info-fix fanout-info))
+                    ;;       ((equal (gate-id->fanin0 fanout aignet)
+                    ;;               (lit-negate (gate-id->fanin1 fanout aignet)))
+                    ;;        (make-obs-dom-info-unreached))
+                    ;;       (t
+                    (obs-dom-info-add (fanin (if (equal fanin 1) :gate0 :gate1)
+                                             (lookup-id fanout aignet))
+                                      fanout-info)))))
+
+
+
+(define obs-dom-fanout-ok ((fanout natp) obs-dom-array aignet)
+  :guard (and (id-existsp fanout aignet)
+              (<= (num-fanins aignet) (dominfo-length obs-dom-array)))
+  (or (not (equal (id->type fanout aignet) (gate-type)))
+      (and (obs-dom-info-subsetp
+            (get-dominfo (lit->var (gate-id->fanin0 fanout aignet)) obs-dom-array)
+            (obs-dom-info-for-child
+             (get-dominfo fanout obs-dom-array) fanout 0 aignet))
+           (obs-dom-info-subsetp
+            (get-dominfo (lit->var (gate-id->fanin1 fanout aignet)) obs-dom-array)
+            (obs-dom-info-for-child
+             (get-dominfo fanout obs-dom-array) fanout 1 aignet))))
+  ///
+  (defthm obs-dom-fanout-ok-implies
+    (implies (and (obs-dom-fanout-ok fanout obs-dom-array aignet)
+                  (equal (ctype (stype (car (lookup-id fanout aignet)))) :gate))
+             (and (obs-dom-info-subsetp
+                   (nth (lit->var (fanin :gate0 (lookup-id fanout aignet))) obs-dom-array)
+                   (obs-dom-info-for-child
+                    (nth fanout obs-dom-array) fanout 0 aignet))
+                  (obs-dom-info-subsetp
+                   (nth (lit->var (fanin :gate1 (lookup-id fanout aignet))) obs-dom-array)
+                   (obs-dom-info-for-child
+                    (nth fanout obs-dom-array) fanout 1 aignet))))))
+
+
+
+
+
+(define obs-dom-info-normalize ((x obs-dom-info-p))
+  :returns (new-x obs-dom-info-p)
+  (b* (((obs-dom-info x)))
+    (if (and x.reached
+             (cube-contradictionp x.doms))
+        (make-obs-dom-info-unreached)
+      (obs-dom-info-fix x)))
+  ///
+  ;; (defret eval-of-<fn>
+  ;;   (equal (obs-dom-info-eval new-x invals regvals aignet)
+  ;;          (obs-dom-info-eval x invals regvals aignet))
+  ;;   :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
+
+  (local (defthm cube-contradictionp-by-member
+           (implies (and (member x cube)
+                         (member (lit-negate x) cube)
+                         (lit-listp cube))
+                    (cube-contradictionp cube))
+           :hints(("Goal" :in-theory (enable cube-contradictionp)))))
+  
+  (local (defthm cube-contradictionp-when-subsetp
+           (implies (and (subsetp x y)
+                         (cube-contradictionp x)
+                         (lit-listp y) (lit-listp x))
+                    (cube-contradictionp y))
+           :hints(("Goal" :in-theory (enable cube-contradictionp
+                                             subsetp)))))
+  
+  (defret subsetp-of-<fn>-1
+    (iff (obs-dom-info-subsetp new-x y)
+         (obs-dom-info-subsetp x y))
+    :hints(("Goal" :in-theory (enable obs-dom-info-subsetp))))
+
+  (defret subsetp-of-<fn>-2
+    (iff (obs-dom-info-subsetp y new-x)
+         (obs-dom-info-subsetp y x))
+    :hints(("Goal" :in-theory (enable obs-dom-info-subsetp)))))
+
+(define obs-dom-info-intersect ((x obs-dom-info-p) (y obs-dom-info-p))
+  :returns (int obs-dom-info-p)
+  (b* (((obs-dom-info x))
+       ((obs-dom-info y)))
+    (if (and x.reached (not (cube-contradictionp x.doms)))
+        (if (and y.reached (not (cube-contradictionp y.doms)))
+            (make-obs-dom-info-reached (intersection$ x.doms y.doms))
+          (obs-dom-info-fix x))
+      (obs-dom-info-normalize y)))
+  ///
+  (local (in-theory (enable obs-dom-info-subsetp
+                            obs-dom-info-normalize)))
+  
+  (local (defthm subsetp-of-intersect-1
+           (subsetp (intersection$ x y) x)))
+  (local (defthm subsetp-of-intersect-2
+           (subsetp (intersection$ x y) y)))
+  (local (defthm lit-negate-by-equal-lit-negate
+           (implies (equal (lit-negate x) (lit-fix y))
+                    (equal (lit-negate y) (lit-fix x)))))
+  (local (defthm cube-contradictionp-implies-not-member
+           (implies (and (not (cube-contradictionp y))
+                         (member-equal (lit-negate x) (lit-list-fix y)))
+                    (not (member-equal (lit-fix x) (lit-list-fix y))))
+           :hints(("Goal" :in-theory (enable cube-contradictionp lit-list-fix)))))
+  (local (defthm cube-contradiction-by-subsetp
+           (implies (and (subsetp (lit-list-fix x) (lit-list-fix y))
+                         (not (cube-contradictionp y)))
+                    (not (cube-contradictionp x)))
+           :hints(("Goal" :in-theory (enable cube-contradictionp lit-list-fix)
+                   :induct (lit-list-fix x)))))
+
+  (local (defthm cube-contradiction-by-subsetp-lits
+           (implies (and (subsetp x y)
+                         (lit-listp x) (lit-listp y)
+                         (not (cube-contradictionp y)))
+                    (not (cube-contradictionp x)))
+           :hints (("goal" :use ((:instance cube-contradiction-by-subsetp))
+                    :in-theory (disable cube-contradiction-by-subsetp)))))
+  
+  (defret obs-dom-info-subsetp-of-obs-dom-info-intersect-1
+    (obs-dom-info-subsetp int x))
+
+  (defret obs-dom-info-subsetp-of-obs-dom-info-intersect-2
+    (obs-dom-info-subsetp int y))
+
+  (defret obs-dom-info-intersect-preserves-obs-dom-info-subsetp-1
+    (implies (obs-dom-info-subsetp x z)
+             (obs-dom-info-subsetp int z)))
+  
+  (defret obs-dom-info-intersect-preserves-obs-dom-info-subsetp-2
+    (implies (obs-dom-info-subsetp y z)
+             (obs-dom-info-subsetp int z))))
+
+
+(define obs-dom-info-sweep-node ((n natp) obs-dom-array aignet)
+  :guard (and (id-existsp n aignet)
+              (< n (dominfo-length obs-dom-array)))
+  :returns new-obs-dom-array
+  (b* ((slot0 (id->slot n 0 aignet))
+       (type (snode->type slot0))
+       (node-info (get-dominfo n obs-dom-array)))
+    (aignet-case
+      type
+      :gate
+      (b* ((lit0 (snode->fanin slot0))
+           (slot1 (id->slot n 1 aignet))
+           (lit1 (snode->fanin slot1))
+           (lit0-info (get-dominfo (lit->var lit0) obs-dom-array))
+           (new-lit0-info (obs-dom-info-intersect
+                           (obs-dom-info-for-child node-info n 0 aignet) lit0-info))
+           (obs-dom-array (set-dominfo (lit->var lit0) new-lit0-info obs-dom-array))
+           (lit1-info (get-dominfo (lit->var lit1) obs-dom-array))
+           (new-lit1-info (obs-dom-info-intersect
+                           (obs-dom-info-for-child node-info n 1 aignet) lit1-info)))
+        (set-dominfo (lit->var lit1) new-lit1-info obs-dom-array))
+      :otherwise obs-dom-array))
+  ///
+  (defret <fn>-length
+    (implies (< (nfix n) (len obs-dom-array))
+             (equal (len new-obs-dom-array)
+                    (len obs-dom-array))))
+
+  (defret <fn>-preserves-correct
+    (implies (and (< (nfix n) (nfix i))
+                  (obs-dom-fanout-ok i obs-dom-array aignet))
+             (obs-dom-fanout-ok i new-obs-dom-array aignet))
+    :hints(("Goal" :in-theory (enable obs-dom-fanout-ok)
+            :do-not-induct t)))
+
+  (defret <fn>-sets-correct
+    (obs-dom-fanout-ok n new-obs-dom-array aignet)
+    :hints(("Goal" :in-theory (enable obs-dom-fanout-ok)
+            :do-not-induct t))))
+
+
+
+(define obs-dom-info-sweep-nodes ((n natp) obs-dom-array aignet)
+  :guard (and (<= n (num-fanins aignet))
+              (<= n (dominfo-length obs-dom-array)))
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
+  :returns new-obs-dom-array
+  (b* (((when (zp n))
+        obs-dom-array)
+       (obs-dom-array (obs-dom-info-sweep-node (1- n) obs-dom-array aignet)))
+    (obs-dom-info-sweep-nodes (1- n) obs-dom-array aignet))
+  ///
+  (defret <fn>-length
+    (implies (<= (nfix n) (len obs-dom-array))
+             (equal (len new-obs-dom-array)
+                    (len obs-dom-array))))
+
+  (defret <fn>-preserves-correct
+    (implies (and (<= (nfix n) (nfix i))
+                  (obs-dom-fanout-ok i obs-dom-array aignet))
+             (obs-dom-fanout-ok i new-obs-dom-array aignet)))
+
+  (defret <fn>-sets-correct
+    (implies (< (nfix i) (nfix n))
+             (obs-dom-fanout-ok i new-obs-dom-array aignet))))
+
+
+(defsection obs-dom-array-correct
+  (defthmd obs-dom-fanout-ok-out-of-bounds
+    (implies (< (fanin-count aignet) (nfix n))
+             (obs-dom-fanout-ok n obs-dom-array aignet))
+    :hints(("Goal" :in-theory (enable obs-dom-fanout-ok))))
+  
+  (defun-sk obs-dom-array-correct (obs-dom-array aignet)
+    (forall fanout
+            (obs-dom-fanout-ok fanout obs-dom-array aignet))
+    :rewrite :direct)
+
+  (in-theory (disable obs-dom-array-correct)))
+
+
+
+(define path-contains-and-siblings ((x lit-listp) (sink natp) (path bit-listp) aignet)
+  :guard (and (id-existsp sink aignet)
+              (path-existsp sink path aignet))
+  (if (atom x)
+      nil
+    (and (path-contains-and-sibling (car x) sink path aignet)
+         (path-contains-and-siblings (cdr x) sink path aignet)))
+  ///
+  (defthm path-contains-and-siblings-implies-member
+    (implies (and (member lit x)
+                  (path-contains-and-siblings x sink path aignet)
+                  (litp lit) (lit-listp x))
+             (path-contains-and-sibling lit sink path aignet))))
+
+(define path-last ((x bit-listp))
+  :guard (consp x)
+  :returns (last bitp :rule-classes :type-prescription)
+  (lbfix (car (last x))))
+
+(define path-butlast ((x bit-listp))
+  :guard (consp x)
+  :returns (prefix bit-listp)
+  (bit-list-fix (butlast x 1))
+  ///
+  (defret len-of-<fn>
+    (implies (consp x)
+             (equal (len prefix) (+ -1 (len x)))))
+  
+  (defret path-exists-of-path-butlast
+    (implies (path-existsp sink x aignet)
+             (path-existsp sink prefix aignet))
+    :hints(("Goal" :in-theory (enable path-existsp))))
+
+  (local (defthm len-equal-0
+           (equal (equal (len x) 0)
+                  (not (consp x)))))
+
+  (local (in-theory (disable satlink::equal-of-lit-fix-backchain)))
+
+  (defret path-endpoint-child-of-path-butlast-when-last-0
+    (implies (and (equal (path-last x) 0)
+                  (path-existsp sink x aignet)
+                  (consp x))
+             (equal (lit->var (fanin :gate0 (lookup-id (path-endpoint sink prefix aignet) aignet)))
+                    (path-endpoint sink x aignet)))
+    :hints(("Goal" :in-theory (enable (:i path-endpoint) path-last)
+            :induct (path-endpoint sink x aignet)
+            :expand ((path-endpoint sink x aignet)
+                     (path-existsp sink x aignet)))
+           (and stable-under-simplificationp
+                '(:expand ((:free (sink) (path-endpoint sink (cdr x) aignet))
+                           (:free (sink) (path-existsp sink (cdr x) aignet)))))))
+
+  (defthm path-contains-and-sibling-in-terms-of-butlast
+    (implies (consp path)
+             (equal (path-contains-and-sibling x sink path aignet)
+                    (or (path-contains-and-sibling x sink (path-butlast path) aignet)
+                        (let ((sink2 (path-endpoint sink (path-butlast path) aignet)))
+                          (and (equal (stype (car (lookup-id sink2 aignet))) :and)
+                               (equal (fanin (if (eql (path-last path) 1) :gate0 :gate1)
+                                             (lookup-id sink2 aignet))
+                                      (lit-fix x)))))))
+    :hints(("Goal" :in-theory (enable path-last (:i path-endpoint))
+            :induct (path-endpoint sink path aignet)
+            :expand ((:free (path) (path-endpoint sink path aignet))
+                     (:free (path) (path-contains-and-sibling x sink path aignet))))
+           (and stable-under-simplificationp
+                '(:expand ((:free (sink) (path-endpoint sink (cdr path) aignet))
+                           (:free (sink) (path-contains-and-sibling x sink (cdr path) aignet)))))))
+
+  (defthm path-contains-contradictory-siblings-in-terms-of-butlast
+    (implies (consp path)
+             (equal (path-contains-contradictory-siblings sink path aignet)
+                    (or (path-contains-contradictory-siblings sink (path-butlast path) aignet)
+                        (let ((sink2 (path-endpoint sink (path-butlast path) aignet)))
+                          (and (equal (stype (car (lookup-id sink2 aignet))) :and)
+                               (path-contains-and-sibling
+                                (lit-negate (fanin (if (eql (path-last path) 1) :gate0 :gate1)
+                                                   (lookup-id sink2 aignet)))
+                                sink
+                                (path-butlast path) aignet))))))
+    :hints(("Goal" :in-theory (enable path-last (:i path-endpoint))
+            :induct (path-endpoint sink path aignet)
+            :expand ((:free (path) (path-endpoint sink path aignet))
+                     (:free (path) (path-contains-contradictory-siblings sink path aignet))))
+           (and stable-under-simplificationp
+                '(:expand ((:free (sink) (path-endpoint sink (cdr path) aignet))
+                           (:free (sink) (path-contains-contradictory-siblings sink (cdr path) aignet))
+                           (:free (x sink) (path-contains-and-sibling x sink (cdr path) aignet))))))))
+
+
+(define path-induct-reverse ((x bit-listp))
+  :measure (len x)
+  (if (atom x)
+      (bit-list-fix x)
+    (path-induct-reverse (path-butlast x))))
+
+
+(defsection obs-dom-array-implies-path-contains-dominators
+
+  
+
+(defthm obs-dom-array-implies-path-contains-dominators
+  (implies (and (obs-dom-array-correct obs-dom-array aignet)
+                (path-existsp sink path aignet)
+                (not (path-contains-contradictory-siblings sink path aignet))
+                (obs-dom-info->reached (nth sink obs-dom-array))
+                (equal (obs-dom-info->doms (nth sink obs-dom-array)) nil))
+           (let ((source (path-endpoint sink path aignet)))
+             (and (obs-dom-info->reached (nth source aignet))
+                  (path-contains-and-siblings
+                   (obs-dom-info->doms source) sink path aignet))))
+  :hints (("goal" :induct (path-induct-reverse path)
+           :in-theory (enable (:i path-induct-reverse)))))
+                
+  
+
+
+
+
+
+
+
+
+
+;; For each node starting at the outputs and working our way back, we need to
+;; find the intersection of the observability dominators among all the fanouts,
+;; with two exceptions: (1) a node connected to a CO has no observability
+;; dominators and (2) a node whose only fanout is an AND gate additionally has its sibling
+;; as an observability dominator.
+
+;; To track this easily, we'll sweep first over the COs and then backwards over
+;; the nodes.  At all times, each node tracks its observability info, which is either
+;;   - T, meaning it hasn't been found to be observable yet
+;;   - a list of literals, the possible observability dominators from the fanouts swept so far.
+
+
+;; What invariant is maintained by this algorithm?  Once a node's observability
+;; info has been completed, it suggests a set of conditions under which the
+;; node is known not to be observable:
+;;  - if not reached (T) , then it's never observable
+;;  - if some dominator evaluates to 0, it's not observable.
+;; This is formalized as obs-dom-info-observable-p.
+
+;; When we're all done with a node, it'll be the case that when it is not
+;; observable (under some inputs), it can be toggled without causing a change
+;; in value in any node that is observable (under those inputs).  Call this
+;; property OBSERVABILITY-DONE-INVARIANT.
+
+;; But until we're done with a node, what does its observability info mean?
+;; When we've swept some but not all of its fanouts, a toggle in that node
+;; could still cause a change in some fanout that has been swept.  E.g. if node
+;; A is a direct fanin of B, but also a fanin of C which is the other fanin of
+;; B, and we have swept B but not C, then A's observability info might seem to
+;; allow it to be toggled without affecting B, but in fact it could still
+;; affect B through C.  Similarly, it could affect B through a longer chain.
+
+;; So instead we'll state an invariant in terms of direct fanouts of A that
+;; have been swept, and that is more explicitly in terms of the observability
+;; structure.  When all direct fanouts of A have been swept, this will imply
+;; OBSERVABILITY-DONE-INVARIANT.
+
+
+(define obs-dom-info-eval ((info obs-dom-info-p)
+                           invals regvals aignet)
+  :guard (and (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals))
+              (obs-dom-info-well-formedp info aignet))
+  (b* (((obs-dom-info info)))
+    (and info.reached
+         (bit->bool (aignet-eval-conjunction info.doms invals regvals aignet)))))
+ 
+
+
 ;; (define obs-dom-info-intersect ((x obs-dom-info-p)
 ;;                                 (y obs-dom-info-p))
 ;;   :returns (int obs-dom-info-p)
@@ -456,138 +1287,7 @@
 ;;     :hints(("Goal" :in-theory (enable obs-dom-info-subsetp)))))
 
 
-(define obs-dom-info-subsetp ((x obs-dom-info-p)
-                              (y obs-dom-info-p))
-  :returns (subsetp)
-  (b* (((obs-dom-info x))
-       ((obs-dom-info y)))
-    (or (not y.reached)
-        (cube-contradictionp y.doms)
-        (and x.reached
-             (subsetp x.doms y.doms))))
-  ///
-  (local (defthm aignet-eval-conjunction-when-member
-           (implies (and (equal (lit-eval x invals regvals aignet) 0)
-                         (member (lit-fix x) (lit-list-fix  y)))
-                    (equal (aignet-eval-conjunction y invals regvals aignet) 0))
-           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
-  (local (defthm aignet-eval-conjunction-when-subsetp
-           (implies (and (equal (aignet-eval-conjunction x invals regvals aignet) 0)
-                         (subsetp (lit-list-fix x) (lit-list-fix y)))
-                    (equal (aignet-eval-conjunction y invals regvals aignet) 0))
-           :hints(("Goal" :in-theory (enable aignet-eval-conjunction
-                                             subsetp lit-list-fix)
-                   :induct (lit-list-fix x)))))
-  (defretd <fn>-implies
-    (implies (and subsetp (obs-dom-info-eval y invals regvals aignet))
-             (obs-dom-info-eval x invals regvals aignet))
-    :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
 
-  (defretd <fn>-implies-reached
-    (implies (and subsetp
-                  (obs-dom-info->reached y)
-                  (not (cube-contradictionp (obs-dom-info->doms y)))
-                  )
-             (obs-dom-info->reached x))
-    :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
-
-  (defretd <fn>-implies-member
-    (implies (and subsetp
-                  (obs-dom-info->reached y)
-                  (not (cube-contradictionp (obs-dom-info->doms y)))
-                  (not (member-equal lit (obs-dom-info->doms y))))
-             (not (member lit (obs-dom-info->doms x))))))
-
-(define obs-dom-info-add ((lit litp) (x obs-dom-info-p))
-  :returns (new obs-dom-info-p)
-  (b* (((obs-dom-info x)))
-    (if x.reached
-        (make-obs-dom-info-reached (cons (lit-fix lit) x.doms))
-      (make-obs-dom-info-unreached)))
-  ///
-  (defret eval-of-<fn>
-    (equal (obs-dom-info-eval new invals regvals aignet)
-           (and (bit->bool (lit-eval lit invals regvals aignet))
-                (obs-dom-info-eval x invals regvals aignet)))
-    :hints(("Goal" :in-theory (enable obs-dom-info-eval
-                                      aignet-eval-conjunction))))
-
-  (defret <fn>-when-unreached
-    (implies (not (obs-dom-info->reached x))
-             (equal new (make-obs-dom-info-unreached))))
-
-  (defret <fn>-when-reached
-    (implies (obs-dom-info->reached x)
-             (obs-dom-info->reached new)))
-
-  (defret member-of-<fn>
-    (implies (obs-dom-info->reached x)
-             (iff (member-equal dom (obs-dom-info->doms new))
-                  (or (equal dom (lit-fix lit))
-                      (member-equal dom (obs-dom-info->doms x)))))))
-
-;; (define node-level-rank< ((node1 natp)
-;;                           (node2 natp)
-;;                           levels)
-;;   :guard (and (< node1 (le
-
-
-
-(define obs-dom-info-for-child ((fanout-info obs-dom-info-p)
-                                (fanout natp)
-                                (fanin bitp)
-                                aignet)
-  :guard (and (id-existsp fanout aignet)
-              (eql (id->type fanout aignet) (gate-type)))
-  :returns (child-fanout-info obs-dom-info-p)
-  (b* ((fanin0 (gate-id->fanin0 fanout aignet))
-       (fanin1 (gate-id->fanin1 fanout aignet))
-       (xor (eql 1 (id->regp fanout aignet))))
-    (if xor
-        (if (or (eql fanin0 fanin1)
-                (eql fanin0 (lit-negate fanin1)))
-            (make-obs-dom-info-unreached)
-          (obs-dom-info-fix fanout-info))
-      (cond ((eql fanin0 fanin1) (obs-dom-info-fix fanout-info))
-            ((eql fanin0 (lit-negate fanin1)) (make-obs-dom-info-unreached))
-            (t
-             (obs-dom-info-add (snode->fanin (id->slot-fn fanout (b-not fanin) aignet)) fanout-info)))))
-  ///
-  ;; (defret eval-of-<fn>
-  ;;   (implies (not (obs-dom-info-eval fanout-info invals regvals aignet))
-  ;;            (not (obs-dom-info-eval child-fanout-info invals regvals aignet))))
-
-  (defret <fn>-when-xor
-    (implies (equal (stype (car (lookup-id fanout aignet))) :xor)
-             (equal child-fanout-info
-                    (b* ((fanin0 (gate-id->fanin0 fanout aignet))
-                         (fanin1 (gate-id->fanin1 fanout aignet)))
-                      (if (or (eql fanin0 fanin1)
-                              (eql fanin0 (lit-negate fanin1)))
-                          (make-obs-dom-info-unreached)
-                        (obs-dom-info-fix fanout-info))))))
-  ;; (defret <fn>-when-fanin1
-  ;;   (implies (bit->bool fanin)
-  ;;            (equal child-fanout-info (obs-dom-info-fix fanout-info))))
-  ;; (defret <fn>-when-and-fanin0
-  ;;   (implies (and (equal (stype (car (lookup-id fanout aignet))) :and)
-  ;;                 (not (bit->bool fanin)))
-  ;;            (equal child-fanout-info
-  ;;                   (obs-dom-info-add (fanin (if (equal fanin 1) :gate0 :gate1)
-  ;;                                            (lookup-id fanout aignet))
-  ;;                                     fanout-info))))
-  (defret <fn>-when-and
-    (implies (equal (stype (car (lookup-id fanout aignet))) :and)
-             (equal child-fanout-info
-                    (cond ((equal (gate-id->fanin0 fanout aignet)
-                                  (gate-id->fanin1 fanout aignet))
-                           (obs-dom-info-fix fanout-info))
-                          ((equal (gate-id->fanin0 fanout aignet)
-                                  (lit-negate (gate-id->fanin1 fanout aignet)))
-                           (make-obs-dom-info-unreached))
-                          (t (obs-dom-info-add (fanin (if (equal fanin 1) :gate0 :gate1)
-                                                      (lookup-id fanout aignet))
-                                               fanout-info)))))))
                                 
 
 
@@ -626,44 +1326,7 @@
 
 
 
-;; (define obs-dom-info-normalize ((x obs-dom-info-p))
-;;   :returns (new-x obs-dom-info-p)
-;;   (b* (((obs-dom-info x)))
-;;     (if x.reached
-;;         (if (cube-contradictionp x.doms)
-;;             (make-obs-dom-info-unreached)
-;;           (make-obs-dom-info-reached x.doms))
-;;       (make-obs-dom-info-unreached)))
-;;   ///
-;;   (defret eval-of-<fn>
-;;     (equal (obs-dom-info-eval new-x invals regvals aignet)
-;;            (obs-dom-info-eval x invals regvals aignet))
-;;     :hints(("Goal" :in-theory (enable obs-dom-info-eval))))
 
-;;   (local (defthm cube-contradictionp-by-member
-;;            (implies (and (member x cube)
-;;                          (member (lit-negate x) cube)
-;;                          (lit-listp cube))
-;;                     (cube-contradictionp cube))
-;;            :hints(("Goal" :in-theory (enable cube-contradictionp)))))
-  
-;;   (local (defthm cube-contradictionp-when-subsetp
-;;            (implies (and (subsetp x y)
-;;                          (cube-contradictionp x)
-;;                          (lit-listp y) (lit-listp x))
-;;                     (cube-contradictionp y))
-;;            :hints(("Goal" :in-theory (enable cube-contradictionp
-;;                                              subsetp)))))
-  
-;;   (defret subsetp-of-<fn>-1
-;;     (equal (obs-dom-info-subsetp new-x y)
-;;            (obs-dom-info-subsetp x y))
-;;     :hints(("Goal" :in-theory (enable obs-dom-info-subsetp))))
-
-;;   (defret subsetp-of-<fn>-2
-;;     (equal (obs-dom-info-subsetp y new-x)
-;;            (obs-dom-info-subsetp y x))
-;;     :hints(("Goal" :in-theory (enable obs-dom-info-subsetp)))))
     
 
 
@@ -700,19 +1363,7 @@
   ;;   :hints (("goal" :use ((:instance obs-dom-info-sweep-invariant-necc
   ;;                          (fanout (nfix fanout)))))))
   
-  (defthm id-eval-toggle-when-less
-    (implies (< (nfix x) (nfix toggle))
-             (equal (id-eval-toggle x toggle invals regvals aignet)
-                    (id-eval x invals regvals aignet)))
-    :hints (("goal" :induct (id-eval-ind x aignet)
-             :expand ((id-eval x invals regvals aignet)
-                      (id-eval-toggle x toggle invals regvals aignet)
-                      (:free (x) (lit-eval x invals regvals aignet))
-                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
-                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
-                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+  
 
 
   (local (defthm obs-dom-info-eval-when-contradictionp
@@ -2651,6 +3302,58 @@ p.base - p.spine - p.dom
               (<= (num-ins aignet) (bits-length invals))
               (<= (num-fanins aignet) (dominfo-length obs-dom-array)))
   :verify-guards nil
+  (b* (((when (< (nfix sink) (nfix source))) nil)
+       ((when (eql (nfix sink) (nfix source)))
+        (cube-find-false-lit dominfo.doms invals regvals aignet))
+       ((unless (eql (id->type sink aignet) (gate-type))) nil)
+       (contra (cube-contradictionp dominfo.doms))
+       ((when contra)
+        (if (bit->bool (lit-eval contra invals regvals aignet))
+            (lit-negate contra)
+          contra))
+       (fanin0  (gate-id->fanin0 sink aignet))
+       (fanin1  (gate-id->fanin1 sink aignet))
+       (xor (eql (id->regp sink aignet) 1))
+
+       (fanin0-same (eql (lit-eval fanin0 invals regvals aignet)
+                         (lit-eval-toggle fanin0 invals regvals aignet)))
+       (fanin1-same (eql (lit-eval fanin0 invals regvals aignet)
+                         (lit-eval-toggle fanin0 invals regvals aignet)))
+       ((when fanin0-same)
+        ;; Assuming sink is not preserved by toggle, then fanin0 must evaluate
+        ;; to 1 (with and without toggle) and fanin1 must depend on toggle.  If
+        ;; sink is not an obs-parent of fanin1, it is because ~fanin0 is a
+        ;; dominator of sink, so we return ~fanin0.  Otherwise, the badguy of
+        ;; fanin1 cannot be fanin0 because it evaluates to 1, therefore the
+        ;; badguy of fanin1 must be a dominator of sink and we return it.
+        (b* (((when (and (not xor) (member (lit-negate fanin0) dominfo.doms)))
+              (lit-negate fanin0)))
+          (observability-badguy (lit->var fanin1) source invals regvals aignet)))
+       ((when fanin1-same)
+        ;; same argument as above
+        (b* (((when (and (not xor) (member (lit-negate fanin1) dominfo.doms)))
+              (lit-negate fanin1)))
+          (observability-badguy (lit->var fanin0) source invals regvals aignet)))
+       ;; Both fanins toggle.  Sink must be an AND because if it were an xor it
+       ;; wouldn't toggle.  Fanins must toggle both from 1 to 0 or both from 0
+       ;; to 1 since sink toggles.
+
+       ;; Suppose ~fanin0 and ~fanin1 dominate sink.  Then sink isn't an
+       ;; obs-parent of either fanin, so their dominators aren't limited to
+       ;; sink's.   
+       
+       ;; If ~fanin0 is a dominator of sink, then sink is not an obs-parent of fanin1,
+       ;;  so fanin1's dominators have nothing to do with sink's.  Fanin0's badgu
+    (or (b* ((badguy (observability-badguy (lit->var fanin1) source invals regvals aignet)))
+          (and (or xor (not (eql badguy0 fanin0))) badguy))
+        (b* ((badguy (observability-badguy (lit->var fanin0) source invals regvals aignet)))
+          (and (or xor (not (eql badguy0 fanin1))) badguy))))
+  ;; Invariant: either badguy = cube-find-false-lit(source doms), or else sink
+  ;; is not a dominator of badguy.
+
+  ;; If 
+
+  
   (b* (((obs-dom-info dominfo) (get-dominfo sink obs-dom-array))
        ((unless dominfo.reached) nil)
        
@@ -2723,7 +3426,10 @@ p.base - p.spine - p.dom
                   (<= (nfix sweep-position) (nfix sink))
                   (<= (nfix sweep-position) (nfix source))
                   (not (ancestor-p sink (lit->var badguy) aignet))
-                  (not (member-equal badguy (obs-dom-info->doms (nth source obs-dom-array)))))
+                  (not (equal badguy
+                              (cube-find-false-lit
+                               (obs-dom-info->doms (nth source obs-dom-array))
+                               invals regvals aignet))))
              ;; (and (member-equal badguy (obs-dom-info->doms (nth sink obs-dom-array)))
              (member-equal (lit-negate badguy) (obs-dom-info->doms (nth sink obs-dom-array))))
     :hints (("goal" :induct <call>
@@ -2748,7 +3454,28 @@ p.base - p.spine - p.dom
     :hints (("goal" :expand ((:free (source) (ancestor-p sink source aignet))))))
   
 
+  ;; Cross-fanin argument:
+  ;; The two fanins of an AND gate can't be each other's badguys.
+  ;; The badguy of each fanin must be a member of that fanin's dominators AND
+  ;;  it must either:
+  ;;     1.    equal the particular false literal selected from the source's dominators
+  ;;  or 2.    have the negation of the badguy also among its dominators
+  ;;  or 3.    be an ancestor of the badguy.
 
+  ;; Neither fanin can have 2., because of no-mutual-domination.  Both can't
+  ;; satisfy 3, or they'd be ancestors of each other.  Both can't satisfy 1.,
+  ;; or they'd be equal. So we need one to satisfy 1. and the other to satisfy
+  ;; 3.
+
+  ;; Suppose fanin0 satisfies 1 and fanin1 satisfies 3.
+  ;;   Then fanin1 is the badguy of the source and an ancestor of fanin0.
+  ;; 
+  
+  ;; So a counterexample would look like
+  ;;   parent = source & dom
+  ;;   dom = f(source)
+  
+  
   ;; (local (defthm no-mutual-domination-lemma-rw
   ;;          (implies (and (obs-dom-info-sweep-invariant sweep-position obs-dom-array aignet)
   ;;                        (obs-parent-invar obs-dom-array aignet)
@@ -2797,6 +3524,9 @@ p.base - p.spine - p.dom
   ;;                '(:expand ((:free (bla) (ancestor-p sink bla aignet)))))))
   
 
+
+
+  
   ;; (defthm cross-literal-observability-badguys
   ;;   (b* ((a (fanin :gate0 (lookup-id sink aignet)))
   ;;        (b (fanin :gate1 (lookup-id sink aignet))))
@@ -3262,3 +3992,280 @@ p.base - p.spine - p.dom
 ;; ; fanout AND node where its sibling is A and the AND node is observable under
 ;; ; condition B.  Its full observability condition is the OR of all the
 ;; ; observability conditions due to its fanouts.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(define cons-to-each (x y)
+  (if (atom y)
+      nil
+    (cons (cons x (car y))
+          (cons-to-each x (cdr y))))
+  ///
+  (defthm consp-of-cons-to-each
+    (equal (consp (cons-to-each x y))
+           (consp y)))
+  (defthm cons-to-each-of-nil
+    (equal (cons-to-each x nil) nil)))
+
+
+
+(define path-conjunct-lists ((sink natp) (src natp) aignet)
+  :measure (nfix sink)
+  :guard (id-existsp sink aignet)
+  :returns (conj-lists lit-list-listp)
+  :prepwork ((local (defthm lit-list-listp-of-cons-to-each
+                      (implies (and (litp x) (lit-list-listp y))
+                               (lit-list-listp (cons-to-each x y)))
+                      :hints(("Goal" :in-theory (enable cons-to-each)))))
+             (local (defthm lit-list-listp-of-append
+                      (implies (and (lit-list-listp x)
+                                    (lit-list-listp y))
+                               (lit-list-listp (append x y))))))
+  (b* (((when (eql (lnfix sink) (lnfix src))) (list nil))
+       ((unless (eql (id->type sink aignet) (gate-type)))
+        nil)
+       ((when (eql (id->regp sink aignet) 1))
+        (append (path-conjunct-lists (lit->var (gate-id->fanin0 sink aignet)) src aignet)
+                (path-conjunct-lists (lit->var (gate-id->fanin1 sink aignet)) src aignet))))
+    (append (cons-to-each (gate-id->fanin1 sink aignet)
+                          (path-conjunct-lists (lit->var (gate-id->fanin0 sink aignet)) src aignet))
+            (cons-to-each (gate-id->fanin0 sink aignet)
+                          (path-conjunct-lists (lit->var (gate-id->fanin1 sink aignet)) src aignet))))
+  ///
+  (defret path-conjunct-lists-when-less
+    (implies (< (nfix sink) (nfix src))
+             (equal conj-lists nil)))
+
+  (defret path-conjunct-lists-nonempty-when-ancestor-p
+    (implies (ancestor-p sink src aignet)
+             (consp (path-conjunct-lists sink src aignet)))
+    :hints(("Goal" :in-theory (enable ancestor-p)
+            :induct <call>))))
+
+
+
+;; The set of paths for which all AND siblings that are not ancestors of src
+;; are true.
+(define basic-viable-paths ((sink natp) (src natp) invals regvals aignet)
+  :measure (nfix sink)
+  :guard (and (id-existsp sink aignet)
+              (id-existsp src aignet)
+              (<= (num-regs aignet) (bits-length regvals))
+              (<= (num-ins aignet) (bits-length invals)))
+  :returns (paths lit-list-listp)
+  :prepwork ((local (defthm lit-list-listp-of-cons-to-each
+                      (implies (and (litp x) (lit-list-listp y))
+                               (lit-list-listp (cons-to-each x y)))
+                      :hints(("Goal" :in-theory (enable cons-to-each)))))
+             (local (defthm lit-list-listp-of-append
+                      (implies (and (lit-list-listp x)
+                                    (lit-list-listp y))
+                               (lit-list-listp (append x y))))))
+  (b* (((when (eql (lnfix sink) (lnfix src))) (list nil))
+       ((unless (eql (id->type sink aignet) (gate-type)))
+        nil)
+       ((when (eql (id->regp sink aignet) 1))
+        (append (basic-viable-paths (lit->var (gate-id->fanin0 sink aignet)) src invals regvals aignet)
+                (basic-viable-paths (lit->var (gate-id->fanin1 sink aignet)) src invals regvals aignet))))
+    (append (and
+             (or (ancestor-p (lit->var (gate-id->fanin1 sink aignet)) src aignet)
+                 (eql 1 (lit-eval (gate-id->fanin1 sink aignet) invals regvals aignet)))
+             (cons-to-each (gate-id->fanin1 sink aignet)
+                           (basic-viable-paths (lit->var (gate-id->fanin0 sink aignet)) src invals regvals aignet)))
+            (and
+             (or (ancestor-p (lit->var (gate-id->fanin0 sink aignet)) src aignet)
+                 (eql 1 (lit-eval (gate-id->fanin0 sink aignet) invals regvals aignet)))
+             (cons-to-each (gate-id->fanin0 sink aignet)
+                           (basic-viable-paths (lit->var (gate-id->fanin1 sink aignet)) src invals regvals aignet)))))
+  ///
+  (defretd <fn>-when-less
+    (implies (< (nfix sink) (nfix src))
+             (equal paths nil)))
+
+  (defthm id-eval-toggle-when-not-ancestor-p
+    (implies (not (ancestor-p sink src aignet))
+             (equal (id-eval-toggle sink src invals regvals aignet)
+                    (id-eval sink invals regvals aignet)))
+    :hints (("goal" :induct (id-eval-ind sink aignet)
+             :expand ((ancestor-p sink src aignet)
+                      (id-eval sink invals regvals aignet)
+                      (id-eval-toggle sink src invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+  
+  (defret basic-viable-paths-exist-when-src-toggles-sink
+    (implies (not (equal (id-eval-toggle sink src invals regvals aignet)
+                         (id-eval sink invals regvals aignet)))
+             (consp paths))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (id-eval sink invals regvals aignet)
+                      (id-eval-toggle sink src invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))))))
+
+
+(define remove-contradictory-paths ((x lit-list-listp))
+  :returns (paths lit-list-listp)
+  (if (atom x)
+      nil
+    (if (cube-contradictionp (car x))
+        (remove-contradictory-paths (cdr x))
+      (cons (lit-list-fix (car x))
+            (remove-contradictory-paths (cdr x))))))
+
+(define remove-paths-containing ((lit litp) (x lit-list-listp))
+  :returns (paths lit-list-listp)
+  (if (atom x)
+      nil
+    (if (member (lit-fix lit) (lit-list-fix (car x)))
+        (remove-paths-containing lit (cdr x))
+      (cons (lit-list-fix (car x))
+            (remove-paths-containing lit (cdr x)))))
+  ///
+  (defthm remove-paths-containing-of-nil
+    (equal (remove-paths-containing lit nil) nil)))
+    
+
+
+
+    
+
+
+
+  
+  (define viable-path-p ((path lit-listp) (src natp) invals regvals aignet)
+    :guard (aignet-lit-listp path aignet)
+    
+  
+
+(define nonbasic-viable-path ((sink natp) (src natp) invals regvals aignet)
+  :measure (nfix sink)
+  :guard (and (id-existsp sink aignet)
+              (id-existsp src aignet)
+              (<= (num-regs aignet) (bits-length regvals))
+              (<= (num-ins aignet) (bits-length invals)))
+  :returns (mv ok (path lit-listp))
+  :prepwork ((local (defthm lit-list-listp-of-cons-to-each
+                      (implies (and (litp x) (lit-list-listp y))
+                               (lit-list-listp (cons-to-each x y)))
+                      :hints(("Goal" :in-theory (enable cons-to-each)))))
+             (local (defthm lit-list-listp-of-append
+                      (implies (and (lit-list-listp x)
+                                    (lit-list-listp y))
+                               (lit-list-listp (append x y))))))
+  :verify-guards nil
+  (b* (((when (eql (lnfix sink) (lnfix src))) (mv t nil))
+       ((unless (eql (id->type sink aignet) (gate-type)))
+        (mv nil nil))
+       ((when (eql (id->regp sink aignet) 1))
+        (append (nonbasic-viable-paths (lit->var (gate-id->fanin0 sink aignet)) src invals regvals aignet)
+                (nonbasic-viable-paths (lit->var (gate-id->fanin1 sink aignet)) src invals regvals aignet))))
+    (append (and
+             (or (ancestor-p (lit->var (gate-id->fanin1 sink aignet)) src aignet)
+                 (eql 1 (lit-eval (gate-id->fanin1 sink aignet) invals regvals aignet)))
+             (cons-to-each (gate-id->fanin1 sink aignet)
+                           (remove-paths-containing
+                            (lit-negate (gate-id->fanin1 sink aignet))
+                            (nonbasic-viable-paths (lit->var (gate-id->fanin0 sink aignet)) src invals regvals aignet))))
+            (and
+             (or (ancestor-p (lit->var (gate-id->fanin0 sink aignet)) src aignet)
+                 (eql 1 (lit-eval (gate-id->fanin0 sink aignet) invals regvals aignet)))
+             (cons-to-each (gate-id->fanin0 sink aignet)
+                           (remove-paths-containing
+                            (lit-negate (gate-id->fanin0 sink aignet))
+                            (nonbasic-viable-paths (lit->var (gate-id->fanin1 sink aignet)) src invals regvals aignet))))))
+
+  
+(define nonbasic-viable-paths ((sink natp) (src natp) invals regvals aignet)
+  :measure (nfix sink)
+  :guard (and (id-existsp sink aignet)
+              (id-existsp src aignet)
+              (<= (num-regs aignet) (bits-length regvals))
+              (<= (num-ins aignet) (bits-length invals)))
+  :returns (paths lit-list-listp)
+  :prepwork ((local (defthm lit-list-listp-of-cons-to-each
+                      (implies (and (litp x) (lit-list-listp y))
+                               (lit-list-listp (cons-to-each x y)))
+                      :hints(("Goal" :in-theory (enable cons-to-each)))))
+             (local (defthm lit-list-listp-of-append
+                      (implies (and (lit-list-listp x)
+                                    (lit-list-listp y))
+                               (lit-list-listp (append x y))))))
+  :verify-guards nil
+  (b* (((when (eql (lnfix sink) (lnfix src))) (list nil))
+       ((unless (eql (id->type sink aignet) (gate-type)))
+        nil)
+       ((when (eql (id->regp sink aignet) 1))
+        (append (nonbasic-viable-paths (lit->var (gate-id->fanin0 sink aignet)) src invals regvals aignet)
+                (nonbasic-viable-paths (lit->var (gate-id->fanin1 sink aignet)) src invals regvals aignet))))
+    (append (and
+             (or (ancestor-p (lit->var (gate-id->fanin1 sink aignet)) src aignet)
+                 (eql 1 (lit-eval (gate-id->fanin1 sink aignet) invals regvals aignet)))
+             (cons-to-each (gate-id->fanin1 sink aignet)
+                           (remove-paths-containing
+                            (lit-negate (gate-id->fanin1 sink aignet))
+                            (nonbasic-viable-paths (lit->var (gate-id->fanin0 sink aignet)) src invals regvals aignet))))
+            (and
+             (or (ancestor-p (lit->var (gate-id->fanin0 sink aignet)) src aignet)
+                 (eql 1 (lit-eval (gate-id->fanin0 sink aignet) invals regvals aignet)))
+             (cons-to-each (gate-id->fanin0 sink aignet)
+                           (remove-paths-containing
+                            (lit-negate (gate-id->fanin0 sink aignet))
+                            (nonbasic-viable-paths (lit->var (gate-id->fanin1 sink aignet)) src invals regvals aignet))))))
+  ///
+  (verify-guards nonbasic-viable-paths)
+  (defretd <fn>-when-less
+    (implies (< (nfix sink) (nfix src))
+             (equal paths nil)))
+
+  ;; (defthm id-eval-toggle-when-not-ancestor-p
+  ;;   (implies (not (ancestor-p sink src aignet))
+  ;;            (equal (id-eval-toggle sink src invals regvals aignet)
+  ;;                   (id-eval sink invals regvals aignet)))
+  ;;   :hints (("goal" :induct (id-eval-ind sink aignet)
+  ;;            :expand ((ancestor-p sink src aignet)
+  ;;                     (id-eval sink invals regvals aignet)
+  ;;                     (id-eval-toggle sink src invals regvals aignet)
+  ;;                     (:free (x) (lit-eval x invals regvals aignet))
+  ;;                     (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+  ;;                     (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+  ;;                     (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+  ;;                     (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+  ;;                     (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
+  
+  (defret nonbasic-viable-paths-exist-when-src-toggles-sink
+    (implies (not (equal (id-eval-toggle sink src invals regvals aignet)
+                         (id-eval sink invals regvals aignet)))
+             (consp paths))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (id-eval sink invals regvals aignet)
+                      (id-eval-toggle sink src invals regvals aignet)
+                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (x y) (lit-eval-toggle x y invals regvals aignet))
+                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
+                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))))))
+  
