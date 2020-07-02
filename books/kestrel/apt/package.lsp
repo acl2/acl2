@@ -78,6 +78,7 @@
                          definj
                          defiso
                          defiso-lookup
+                         defmacro+
                          defmap
                          defmapping-info
                          defmapping-infop
