@@ -10107,9 +10107,11 @@
 ; Finally, assume the following: ev is not ancestral in any defaxiom or in
 ; EXTRA-FNS; no ancestor of ev or EXTRA-FNS with an attachment is ancestral in
 ; meta-fn or hyp-fn; and no ancestor of any defaxiom has an attachment.  (See
-; chk-evaluator-use-in-rule for enforcement.  Also see the Appendix below for a
-; remark about allowing an attachment to ev even if it is ancestral in meta-fn
-; or hyp-fn.)
+; chk-evaluator-use-in-rule for enforcement.  See the example towards the end
+; of :DOC evaluator-restrictions for necessity of ruling out functions that are
+; "both ancestral in the evaluator and also ancestral in the meta or
+; clause-processor functions."  Also see the Appendix below for a remark about
+; allowing an attachment to ev even if it is ancestral in meta-fn or hyp-fn.)
 
 ; Then the following is a theorem of (mfc-world *mfc*), or equivalently (since
 ; the worlds have the same logical theory), (w *the-live-state*):
