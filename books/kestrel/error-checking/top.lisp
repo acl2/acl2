@@ -12,6 +12,8 @@
 
 (include-book "def-error-checker")
 
+(include-book "ensure-value-is-boolean")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc error-checking
