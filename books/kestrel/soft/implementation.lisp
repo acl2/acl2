@@ -1964,8 +1964,8 @@
                   "The rewrite rule associated to the function ~x0 ~
                    must depend on no additional function variables."
                   fn))
-       ((when (and (acl2::logicp fn wrld)
-                   (acl2::irecursivep fn wrld)
+       ((when (and (logicp fn wrld)
+                   (irecursivep fn wrld)
                    (not (eq (well-founded-relation fn wrld) 'o<))))
         (er-soft+ ctx t nil
                   "The well-founded relation of the recursive function ~x0 ~
