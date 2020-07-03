@@ -68,4 +68,5 @@
                          ubody
                          uguard
                          variablep
-                         well-founded-relation)))
+                         well-founded-relation
+                         well-founded-relation+)))

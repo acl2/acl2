@@ -22,6 +22,7 @@
 (include-book "kestrel/std/system/measure" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
 (include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
@@ -1889,6 +1890,20 @@
   (defmacro acl2::show-defun-inst (&rest args)
     `(show-defun-inst ,@args)))
 
+(define ensure-wfrel-o< ((fn symbolp) ctx state)
+  :returns (mv erp (nothing null) state)
+  :short "Ensure that a function, if logic-mode and recursive,
+          has @(tsee o<) as well-founded relation."
+  (b* ((wrld (w state))
+       ((unless (logicp fn wrld)) (value nil))
+       ((unless (irecursivep fn wrld)) (value nil))
+       (wfrel (well-founded-relation+ fn wrld))
+       ((when (eq wfrel 'o<)) (value nil)))
+    (er-soft+ ctx t nil
+              "The well-founded relation of the recursive function ~x0 ~
+               must be O<, but it is ~x1 instead."
+              fn wfrel)))
+
 (define defsoft-fn (fn ctx state)
   :returns (mv erp event state)
   :mode :program
@@ -1964,13 +1979,7 @@
                   "The rewrite rule associated to the function ~x0 ~
                    must depend on no additional function variables."
                   fn))
-       ((when (and (logicp fn wrld)
-                   (irecursivep fn wrld)
-                   (not (eq (well-founded-relation fn wrld) 'o<))))
-        (er-soft+ ctx t nil
-                  "The well-founded relation of the recursive function ~x0 ~
-                   must be O<, but it is ~x1 instead."
-                  (well-founded-relation fn wrld))))
+       ((er &) (ensure-wfrel-o< fn ctx state)))
     (value
      `(progn
         ,table-event
