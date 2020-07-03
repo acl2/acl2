@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -773,7 +774,8 @@
                state)
   :short "Process the @(':wrapper-enable') input."
   (if wrapper$
-      (ensure-boolean$ wrapper-enable "The :WRAPPER-ENABLE input" t nil)
+      (ensure-value-is-boolean$ wrapper-enable
+                                "The :WRAPPER-ENABLE input" t nil)
     (if wrapper-enable-present
         (er-soft+ ctx t nil
                   "Since the :WRAPPER input is (perhaps by default) NIL, ~
@@ -917,7 +919,7 @@
        ((er domain$) (tailrec-process-domain
                       domain old$ combine q r variant verify-guards$
                       verbose ctx state))
-       ((er &) (ensure-boolean$ wrapper "The :WRAPPER input" t nil))
+       ((er &) (ensure-value-is-boolean$ wrapper "The :WRAPPER input" t nil))
        ((er (list new-name$ wrapper-name$ &))
         (tailrec-process-new/wrapper-names new-name
                                            wrapper-name
@@ -938,7 +940,8 @@
                         thm-name
                         old$ new-name$ wrapper wrapper-name$
                         ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
+       ((er &) (ensure-value-is-boolean$ thm-enable
+                                         "The :THM-ENABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
