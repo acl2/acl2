@@ -1941,9 +1941,9 @@ value under the same input/register assignment.</p>"
 
   ;; (defthm outs-comb-equiv-implies-lit-eval-of-fanin-if-co
   ;;   (implies (outs-comb-equiv aignet aignet2)
-  ;;            (equal (equal (lit-eval (fanin :co (lookup-stype n :po aignet))
+  ;;            (equal (equal (lit-eval (fanin 0 (lookup-stype n :po aignet))
   ;;                                    invals regvals aignet)
-  ;;                          (lit-eval (fanin :co (lookup-stype n :po aignet2))
+  ;;                          (lit-eval (fanin 0 (lookup-stype n :po aignet2))
   ;;                                    invals regvals aignet2))
   ;;                   t))
   ;;   :hints (("goal" :use outs-comb-equiv-necc
@@ -1951,9 +1951,9 @@ value under the same input/register assignment.</p>"
 
   (defthm outs-comb-equiv-implies-lit-eval-of-fanin
     (implies (outs-comb-equiv aignet aignet2)
-             (equal (equal (lit-eval (fanin :co (lookup-stype n :po aignet))
+             (equal (equal (lit-eval (fanin 0 (lookup-stype n :po aignet))
                                      invals regvals aignet)
-                           (lit-eval (fanin :co (lookup-stype n :po aignet2))
+                           (lit-eval (fanin 0 (lookup-stype n :po aignet2))
                                      invals regvals aignet2))
                     t))
     :hints (("goal" :use outs-comb-equiv-necc
@@ -2122,9 +2122,9 @@ same input/register assignment.</li></ul>
 
   (defthmd comb-equiv-necc-lit-eval
     (implies (comb-equiv aignet aignet2)
-             (and (equal (equal (lit-eval (fanin :co (lookup-stype n (po-stype) aignet))
+             (and (equal (equal (lit-eval (fanin 0 (lookup-stype n (po-stype) aignet))
                                           invals regvals aignet)
-                                (lit-eval (fanin :co (lookup-stype n (po-stype) aignet2))
+                                (lit-eval (fanin 0 (lookup-stype n (po-stype) aignet2))
                                           invals regvals aignet2))
                    t)
                   (equal (equal (lit-eval (lookup-reg->nxst n aignet)

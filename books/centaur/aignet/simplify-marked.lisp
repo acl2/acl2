@@ -119,9 +119,9 @@
 
   (defret lookup-output-of-<fn>
     (implies (<= (bits-length bitarr) (num-fanins aignet))
-             (equal (fanin :co (lookup-stype m (po-stype) new-aignet))
+             (equal (fanin 0 (lookup-stype m (po-stype) new-aignet))
                     (cond ((< (nfix m) (num-outs aignet))
-                           (fanin :co (lookup-stype m (po-stype) aignet)))
+                           (fanin 0 (lookup-stype m (po-stype) aignet)))
                           ((< (nfix m) (+ (num-outs aignet) (count-1s (nthcdr n bitarr))))
                            (make-lit (+ (nfix n)
                                         (index-of-nth-set-bit (- (nfix m) (num-outs aignet))
@@ -164,7 +164,7 @@
            (if (or (< (nfix m) (nfix n))
                    (not (equal 1 (nth m bitarr))))
                (nth-lit m litarr)
-             (fanin :co (lookup-stype (+ (nfix out)
+             (fanin 0 (lookup-stype (+ (nfix out)
                                          (count-1s (nthcdr n (take m bitarr))))
                                       (po-stype)
                                       aignet))))
@@ -199,7 +199,7 @@
 
 (local (defthm lit-eval-of-fanin-equals-output-eval
          (implies (< (nfix n) (stype-count :po aignet))
-                  (equal (lit-eval (fanin :co (lookup-stype n :po aignet))
+                  (equal (lit-eval (fanin 0 (lookup-stype n :po aignet))
                                    invals regvals aignet)
                          (output-eval n invals regvals aignet)))
          :hints(("Goal" :in-theory (enable output-eval)

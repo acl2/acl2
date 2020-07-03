@@ -565,16 +565,16 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 ;;       nil
 ;;     (cons (case (car lits)
 ;;             (y0 (if (member 'x0 all-lits)
-;;                     '(fanin :gate0 (lookup-id (lit-id x0) aignet))
+;;                     '(fanin 0 (lookup-id (lit-id x0) aignet))
 ;;                   'y0))
 ;;             (y1 (if (member 'x0 all-lits)
-;;                     '(fanin :gate1 (lookup-id (lit-id x0) aignet))
+;;                     '(fanin 1 (lookup-id (lit-id x0) aignet))
 ;;                   'y1))
 ;;             (y2 (if (member 'x1 all-lits)
-;;                     '(fanin :gate0 (lookup-id (lit-id x1) aignet))
+;;                     '(fanin 0 (lookup-id (lit-id x1) aignet))
 ;;                   'y2))
 ;;             (y3 (if (member 'x1 all-lits)
-;;                     '(fanin :gate1 (lookup-id (lit-id x1) aignet))
+;;                     '(fanin 1 (lookup-id (lit-id x1) aignet))
 ;;                   'y3))
 ;;             (t (car lits)))
 ;;           (substitute-lits (cdr lits) all-lits))))
@@ -589,8 +589,8 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                  (axi-term-case x0.abs
                    :var nil :const nil
                    :gate ;; (append '((equal (ctype (stype (car (lookup-id (lit-id x0) aignet)))) :gate)
-                         ;;           (equal y0 (fanin :gate0 (lookup-id (lit-id x0) aignet)))
-                         ;;           (equal y1 (fanin :gate1 (lookup-id (lit-id x0) aignet))))
+                         ;;           (equal y0 (fanin 0 (lookup-id (lit-id x0) aignet)))
+                         ;;           (equal y1 (fanin 1 (lookup-id (lit-id x0) aignet))))
                          ;;         `((equal (regp (stype (car (lookup-id (lit-id x0) aignet))))
                          ;;                  ,(if (eq x0.abs.op 'and) 0 1))
                          ;;           (equal ,(if x0.negp 1 0) (lit->neg^ x0))))
@@ -602,8 +602,8 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                  (axi-term-case x1.abs
                    :var nil :const nil
                    :gate ;; (append '((equal (ctype (stype (car (lookup-id (lit-id x1) aignet)))) :gate)
-                         ;;           (equal y2 (fanin :gate0 (lookup-id (lit-id x1) aignet)))
-                         ;;           (equal y3 (fanin :gate1 (lookup-id (lit-id x1) aignet))))
+                         ;;           (equal y2 (fanin 0 (lookup-id (lit-id x1) aignet)))
+                         ;;           (equal y3 (fanin 1 (lookup-id (lit-id x1) aignet))))
                          ;;         `((equal (regp (stype (car (lookup-id (lit-id x1) aignet))))
                          ;;                  ,(if (eq x1.abs.op 'and) 0 1))
                          ;;           (equal ,(if x1.negp 1 0) (lit->neg^ x1))))
@@ -1574,6 +1574,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                    (fanin-id-lte-fanin-count-strong
                                     fanin-id-lte-fanin-count))
             :use ((:instance fanin-id-lte-fanin-count
+                   (which type)
                    (aignet (lookup-id id aignet)))))
            (and stable-under-simplificationp
                 '(:cases ((consp (lookup-id id aignet))))))))
@@ -1581,13 +1582,13 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 
 (local (defthm lit->var-of-gate-fanin0
          (implies (equal (ctype (stype (car x))) :gate)
-                  (< (lit->var (fanin :gate0 x)) (fanin-count x)))
+                  (< (lit->var (fanin 0 x)) (fanin-count x)))
          :hints(("Goal" :in-theory (enable fanin aignet-id-fix aignet-idp)))
          :rule-classes :linear))
 
 (local (defthm lit->var-of-gate-fanin1
          (implies (equal (ctype (stype (car x))) :gate)
-                  (< (lit->var (fanin :gate1 x)) (fanin-count x)))
+                  (< (lit->var (fanin 1 x)) (fanin-count x)))
          :hints(("Goal" :in-theory (enable fanin aignet-id-fix aignet-idp)))
          :rule-classes :linear))
 
@@ -2086,9 +2087,9 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                            (node (car suff)))
                         (and (equal (stype node)
                                     (if (bit->bool xorp) :xor :and))
-                             (equal (fanin :gate0 suff)
+                             (equal (fanin 0 suff)
                                     (lit-fix lit1))
-                             (equal (fanin :gate1 suff)
+                             (equal (fanin 1 suff)
                                     (lit-fix lit2)))))))
       :hints(("Goal" :in-theory (enable aignet-litp))))
 

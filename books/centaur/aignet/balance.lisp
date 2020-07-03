@@ -1647,7 +1647,7 @@
   (forall n
           (implies (< (nfix n) (num-outs aignet))
                    (b* ((out-suffix (lookup-stype n :po aignet)))
-                     (equal (nth (lit-id (fanin :co out-suffix))
+                     (equal (nth (lit-id (fanin 0 out-suffix))
                                  mark)
                             1))))
   :rewrite :direct)
@@ -1809,7 +1809,7 @@
   (defret output-fanin-marked-of-aignet-balance-outs
     (implies (and (<= (nfix n) (nfix m))
                   (< (nfix m) (num-outs aignet)))
-             (equal (nth (lit-id (fanin :co (lookup-stype m :po aignet))) new-mark) 1)))
+             (equal (nth (lit-id (fanin 0 (lookup-stype m :po aignet))) new-mark) 1)))
 
   (defret aignet-output-fanins-marked-of-aignet-balance-outs
     (implies (zp n)
@@ -2042,7 +2042,7 @@
 ;;                                    (id-eval (+ 1 (nfix n) (fanin-count suff)) invals regvals aignet))
 ;;                                   (aignet-copy-outs-from-fanins-iter (+ 1 (nfix n)) aignet copy aignet2)
 ;;                                   (:free (x)
-;;                                    (lit-eval (fanin :co x)
+;;                                    (lit-eval (fanin 0 x)
 ;;                                              invals regvals aignet))))))))
 
   

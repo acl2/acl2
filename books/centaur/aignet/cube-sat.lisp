@@ -469,9 +469,9 @@
   
 ;;   (defret lookup-po-of-<fn>
 ;;     (implies (aignet-lit-list-copies-in-bounds lits copy aignet2)
-;;              (equal (fanin :co (lookup-stype n :po new-aignet2))
+;;              (equal (fanin 0 (lookup-stype n :po new-aignet2))
 ;;                     (cond ((< (nfix n) (stype-count :po aignet2))
-;;                            (fanin :co (lookup-stype n :po aignet2)))
+;;                            (fanin 0 (lookup-stype n :po aignet2)))
 ;;                           ((< (nfix n) (+ (len lits) (stype-count :po aignet2)))
 ;;                            (lit-copy (nth (- (nfix n) (stype-count :po aignet2)) lits) copy))
 ;;                           (t 0))))
@@ -591,7 +591,7 @@
 
   (defret output-lit-eval-of-<fn>
     (implies (aignet-lit-listp lits aignet)
-             (equal (lit-eval (fanin :co (lookup-stype 0 :po new-aignet2)) invals regvals new-aignet2)
+             (equal (lit-eval (fanin 0 (lookup-stype 0 :po new-aignet2)) invals regvals new-aignet2)
                     (aignet-eval-conjunction lits invals regvals aignet)))
     :hints (("goal" :do-not-induct t
              :use output-eval-of-aignet-copy-with-conjoined-output
@@ -636,7 +636,7 @@
 
 ;;   (defret output-lit-eval-of-<fn>
 ;;     (implies (aignet-lit-listp lits aignet)
-;;              (equal (lit-eval (fanin :co (lookup-stype n :po new-aignet2)) invals regvals new-aignet2)
+;;              (equal (lit-eval (fanin 0 (lookup-stype n :po new-aignet2)) invals regvals new-aignet2)
 ;;                     (if (< (nfix n) (len lits))
 ;;                         (lit-eval (nth n lits) invals regvals aignet)
 ;;                       0)))
@@ -921,7 +921,7 @@
   (set-ignore-ok t)
 
   (local (defthm lit-eval-output-to-output-eval
-           (equal (lit-eval (fanin :co (lookup-stype n :po aignet))
+           (equal (lit-eval (fanin 0 (lookup-stype n :po aignet))
                             invals regvals aignet)
                   (output-eval n invals regvals aignet))
            :hints(("Goal" :in-theory (enable output-eval)))))

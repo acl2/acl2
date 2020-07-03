@@ -2060,10 +2060,10 @@
 
     (std::defret lookup-output-fanin-of-aig-fsm-add-outs
       (implies (aignet-lit-listp out-lits aignet)
-               (equal (fanin :co (lookup-stype n :po new-aignet))
+               (equal (fanin 0 (lookup-stype n :po new-aignet))
                       ;;
                       (cond ((< (nfix n) (stype-count :po aignet))
-                             (fanin :co (lookup-stype n :po aignet)))
+                             (fanin 0 (lookup-stype n :po aignet)))
                             ((< (nfix n) (+ (stype-count :po aignet) (len out-lits)))
                              (lit-fix (nth (- (nfix n) (stype-count :po aignet)) out-lits)))
                             (t 0))
@@ -2231,7 +2231,7 @@
            (env (aignet-eval-to-env varmap in-vals reg-vals aignet)))
         (implies (and (acl2::aig-var-listp (alist-keys reg-alist))
                       (< (nfix n) (len out-list)))
-                 (equal (lit-eval (fanin :co (lookup-stype n (po-stype) aignet))
+                 (equal (lit-eval (fanin 0 (lookup-stype n (po-stype) aignet))
                                   in-vals reg-vals aignet)
                         (acl2::bool->bit (aig-eval (nth n out-list) env)))))
       :hints (("goal" :do-not-induct t
@@ -2842,7 +2842,7 @@
                     (< (nfix k) (len (stobjs::2darr->rows frames)))
                     (acl2::aig-var-listp (alist-keys regs))
                     (no-duplicatesp (alist-keys regs)))
-               (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
+               (equal (lit-eval-seq k (fanin 0 (lookup-stype n :po aignet))
                                     frames initsts aignet)
                       (acl2::bool->bit (nth n (nth k (aig-fsm-run outs regs aig-initst aig-ins)))))))
     :hints (("Goal" :use ((:instance frame-regvals-of-aig-fsm-to-aignet))

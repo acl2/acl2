@@ -140,7 +140,7 @@
 
 (local (defthm lit-eval-of-fanin-equals-output-eval
          (implies (< (nfix n) (stype-count :po aignet))
-                  (equal (lit-eval (fanin :co (lookup-stype n :po aignet))
+                  (equal (lit-eval (fanin 0 (lookup-stype n :po aignet))
                                    invals regvals aignet)
                          (output-eval n invals regvals aignet)))
          :hints(("Goal" :in-theory (enable output-eval)

@@ -172,7 +172,7 @@
                    (if (eql xor 1)
                        (aig-xor aig0 aig1)
                      (aig-and aig0 aig1)))
-           :const nil)))
+           :otherwise nil)))
       (set-aig id aig aigtrans))
     :returns aigtrans
     :index id
