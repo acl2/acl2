@@ -151,7 +151,7 @@
     "(def-error-checker <name>"
     "  (<x1> ... <xn>)"
     "  :body ((<condition1> . <message1>) ... (<conditionm> . <messagem>))"
-    "  :returns <val> ; default not used"
+    "  :returns <returns> ; default not used"
     "  :result <result> ; default is nil"
     "  :mode <mode> ; default is :logic"
     "  :verify-guards <verify-guards> ; default not used"
