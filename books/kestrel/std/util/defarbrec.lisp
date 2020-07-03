@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
@@ -604,7 +605,7 @@
 (define defarbrec-process-show-only (show-only ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :short "Process the @(':show-only') input."
-  (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil))
+  (ensure-value-is-boolean$ show-only "The :SHOW-ONLY input" t nil))
 
 (define defarbrec-process-inputs (fn
                                   x1...xn
