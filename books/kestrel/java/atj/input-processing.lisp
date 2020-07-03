@@ -15,6 +15,7 @@
 (include-book "java-primitive-arrays")
 (include-book "test-structures")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
@@ -1390,8 +1391,8 @@
        (ignore-whitelist (cdr (assoc-eq :ignore-whitelist options)))
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atj-process-targets targets deep guards ctx state))
-       ((er &) (ensure-boolean$ deep "The :DEEP intput" t nil))
-       ((er &) (ensure-boolean$ guards "The :GUARDS intput" t nil))
+       ((er &) (ensure-value-is-boolean$ deep "The :DEEP intput" t nil))
+       ((er &) (ensure-value-is-boolean$ guards "The :GUARDS intput" t nil))
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets deep guards ctx state))
@@ -1399,9 +1400,9 @@
                   output-file-env$
                   output-file-test$))
         (atj-process-output-dir output-dir java-class$ tests$ ctx state))
-       ((er &) (ensure-boolean$ ignore-whitelist
-                                "The :IGNORE-WHITELIST input" t nil))
-       ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
+       ((er &) (ensure-value-is-boolean$ ignore-whitelist
+                                         "The :IGNORE-WHITELIST input" t nil))
+       ((er &) (ensure-value-is-boolean$ verbose "The :VERBOSE input" t nil))
        ((er (list fns-to-translate call-graph))
         (atj-fns-to-translate
          targets deep guards ignore-whitelist verbose ctx state))

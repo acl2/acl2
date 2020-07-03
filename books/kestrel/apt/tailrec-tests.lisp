@@ -13,6 +13,7 @@
 (include-book "tailrec")
 
 (include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-fail-local" :dir :system)
@@ -473,6 +474,47 @@
   (in-theory (disable f))
   (tailrec f :new-enable nil)
   (assert! (fundef-disabledp 'f{1} state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :ACCUMULATOR option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; not a legal variable name and not :AUTO:
+ (must-fail (tailrec f :accumulator "acc"))
+ (must-fail (tailrec f :accumulator 15))
+ (must-fail (tailrec f :accumulator (acc)))
+ (must-fail (tailrec f :accumulator :acc))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'r))
+
+ ;; automatic:
+ (must-succeed*
+  (tailrec f :accumulator :auto)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'r))
+
+ ;; specified:
+ (must-succeed*
+  (tailrec f :accumulator a)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'a))
+ (must-succeed*
+  (tailrec f :accumulator acc)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'acc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

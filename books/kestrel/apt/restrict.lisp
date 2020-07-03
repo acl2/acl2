@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -331,7 +332,8 @@
                           "The :NEW-ENABLE input" t nil))
        ((er thm-name$) (restrict-process-thm-name
                         thm-name old$ new-name$ ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
+       ((er &) (ensure-value-is-boolean$ thm-enable
+                                         "The :THM-ENABLE input" t nil))
        ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
                               non-executable
                               (non-executablep old wrld)

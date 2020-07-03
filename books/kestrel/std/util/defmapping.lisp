@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
@@ -490,7 +491,8 @@
   :mode :program
   :short "Process all the inputs."
   (b* (((er &) (defmapping-process-name name ctx state))
-       ((er &) (ensure-boolean$ guard-thms "The :GUARD-THMS input" t nil))
+       ((er &) (ensure-value-is-boolean$ guard-thms
+                                         "The :GUARD-THMS input" t nil))
        ((er (list doma$ domb$ alpha$ beta$)) (defmapping-process-functions
                                                doma
                                                domb
@@ -499,11 +501,12 @@
                                                guard-thms
                                                ctx
                                                state))
-       ((er &) (ensure-boolean$ beta-of-alpha-thm
-                                "The :BETA-OF-ALPHA-THM input" t nil))
-       ((er &) (ensure-boolean$ alpha-of-beta-thm
-                                "The :ALPHA-OF-BETA-THM input" t nil))
-       ((er &) (ensure-boolean$ unconditional "The :UNCONDITIONAL input" t nil))
+       ((er &) (ensure-value-is-boolean$ beta-of-alpha-thm
+                                         "The :BETA-OF-ALPHA-THM input" t nil))
+       ((er &) (ensure-value-is-boolean$ alpha-of-beta-thm
+                                         "The :ALPHA-OF-BETA-THM input" t nil))
+       ((er &) (ensure-value-is-boolean$ unconditional
+                                         "The :UNCONDITIONAL input" t nil))
        ((when (and unconditional
                    (not beta-of-alpha-thm)
                    (not alpha-of-beta-thm)))

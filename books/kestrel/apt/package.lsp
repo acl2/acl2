@@ -113,7 +113,6 @@
                          enabled-xfnp
                          encapsulate-report-errors
                          ens
-                         ensure-boolean$
                          ensure-boolean-or-auto-and-return-boolean$
                          ensure-doublet-list$
                          ensure-function-defined$
@@ -154,6 +153,7 @@
                          ensure-term-no-stobjs$
                          ensure-term-not-call-of$
                          ensure-tuple$
+                         ensure-value-is-boolean$
                          equivalence-relationp
                          er-soft+
                          evmac-appcond-listp

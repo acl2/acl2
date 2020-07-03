@@ -69,6 +69,7 @@
      "         :domain          ; default :auto"
      "         :new-name        ; default :auto"
      "         :new-enable      ; default :auto"
+     "         :accumulator     ; default :auto"
      "         :wrapper         ; default nil"
      "         :wrapper-name    ; default :auto"
      "         :wrapper-enable  ; default t"
@@ -300,6 +301,20 @@
        let @('new') be this function."))
 
     (xdoc::desc-apt-input-new-enable)
+
+    (xdoc::desc
+     "@(':accumulator') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the accumulator argument of @('new'):")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the fresh variable @('r') described above.")
+      (xdoc::li
+       "Any other symbol that is a valid formal parameter name
+        and that is distinct from @('x1'), ..., @('xn')."))
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('a') be this variable."))
 
     (xdoc::desc-apt-input-wrapper)
 
@@ -632,27 +647,27 @@
       "Tail-recursive equivalent of @('old'):")
      (xdoc::codeblock
       ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
-      "(defun new (x1 ... xn r)"
+      "(defun new (x1 ... xn a)"
       "  (if test<x1,...,xn>"
-      "      r"
+      "      a"
       "    (new update-x1<x1,...,xn>"
       "         ..."
       "         update-xn<x1,...,xn>"
-      "         combine<r,nonrec<x1,...,xn>>)))"
+      "         combine<a,nonrec<x1,...,xn>>)))"
       ""
       ";; when the :variant input of tailrec is :assoc:"
-      "(defun new (x1 ... xn r)"
+      "(defun new (x1 ... xn a)"
       "  (if test<x1,...,xn>"
-      "      combine<r,base<x1,...,xn>>"
+      "      combine<a,base<x1,...,xn>>"
       "    (new update-x1<x1,...,xn>"
       "         ..."
       "         update-xn<x1,...,xn>"
-      "         combine<r,nonrec<x1,...,xn>>)))")
+      "         combine<a,nonrec<x1,...,xn>>)))")
      (xdoc::p
       "The measure term and well-founded relation of @('new')
        are the same as @('old').")
      (xdoc::p
-      "The guard is @('(and old-guard<x1,...,xn> (domain r))'),
+      "The guard is @('(and old-guard<x1,...,xn> (domain a))'),
        where @('old-guard<x1,...,xn>') is the guard term of @('old').")
      (xdoc::p
       "In the " *tailrec-design-notes* ",
