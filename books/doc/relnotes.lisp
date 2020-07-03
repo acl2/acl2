@@ -266,6 +266,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
+
+   (xdoc::p
+    "This library is being moved
+     from @('[books]/kestrel/utilities/error-checking/')
+     to @('[books]/kestrel/error-checking/').
+     It is also being refactored and improved in the process.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "ethereum::ethereum" "Ethereum Library"))
 
    (xdoc::p
