@@ -14121,7 +14121,12 @@
                         ((*hcomp-book-ht* (make-hash-table :test 'equal)))
 
 ; Populate appropriate hash tables; see the Essay on Hash Table Support for
-; Compilation.
+; Compilation.  It may be tempting to move this call of include-book-raw-top
+; into include-book-fn1, for example to print ttag notes before potentially
+; redefining print-ttag-note as a no-op; but that is probably would not be
+; helpful, since we probably want include-book-raw-top to (continue to)
+; populate hash tables before evaluation of the portcullis commands, but ttag
+; information is read from the certificate after that evaluation.
 
                         #-acl2-loop-only
                         (include-book-raw-top full-book-name directory-name
