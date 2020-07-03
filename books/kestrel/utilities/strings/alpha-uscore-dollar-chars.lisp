@@ -10,16 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "alpha-digit-chars")
-(include-book "alpha-digit-dash-chars")
-(include-book "alpha-digit-uscore-dollar-chars")
-(include-book "alpha-uscore-dollar-chars")
-(include-book "nondigit-chars")
-(include-book "printable-chars")
+(include-book "std/strings/charset" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc character-kinds
-  :parents (string-utilities)
-  :short "Predicates that characterize various kinds of characters,
-          and true lists thereof.")
+(str::defcharset alpha/uscore/dollar
+  (or (and (standard-char-p x)
+           (alpha-char-p x))
+      (eql x #\_)
+      (eql x #\$))
+  :parents (character-kinds)
+  :short "Recognize letters, underscores, and dollar signs.")

@@ -10,16 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "alpha-digit-chars")
-(include-book "alpha-digit-dash-chars")
-(include-book "alpha-digit-uscore-dollar-chars")
-(include-book "alpha-uscore-dollar-chars")
-(include-book "nondigit-chars")
-(include-book "printable-chars")
+(include-book "std/strings/charset" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc character-kinds
-  :parents (string-utilities)
-  :short "Predicates that characterize various kinds of characters,
-          and true lists thereof.")
+(str::defcharset printable
+  (b* ((code (char-code x)))
+    (and (<= #x20 code)
+         (<= code #x7e)))
+  :parents (character-kinds)
+  :short "Recognize printable ASCII characters,
+          i.e. spaces and visible ASCII characters.")
