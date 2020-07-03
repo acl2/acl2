@@ -114,6 +114,9 @@
 
   "@('combine') is the term @('combine<q,r>') described in the documentation."
 
+  "@('a') is the homonymous accumulator variable
+   described in the documentation."
+
   "@('verbose') is a flag saying
    whether to print certain informative messages or not."
 
@@ -457,8 +460,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-error-checker tailrec-process-variant
-  (variant)
+(def-error-checker tailrec-process-variant (variant)
   :short "Process the @('variant') input."
   :body
   (((tailrec-variantp variant)
@@ -764,6 +766,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tailrec-process-accumulator (accumulator
+                                     (old$ symbolp)
+                                     (r symbolp)
+                                     ctx
+                                     state)
+  :returns (mv erp (a symbolp) state)
+  :short "Process the @(':accumulator') input."
+  (if (eq accumulator :auto)
+      (value (mbe :logic (acl2::symbol-fix r) :exec r))
+    (b* (((unless (legal-variablep accumulator))
+          (er-soft+ ctx t nil
+                    "The :ACCUMULATOR input must be a legal variable name,
+                     but ~x0 is not a legal variable name."
+                    accumulator))
+         ;; ((er &) (ensure-symbol$ accumulator "The :ACCUMULATOR input" t nil))
+         (x1...xn (formals+ old$ (w state)))
+         ((er &) (ensure-not-member-of-list$
+                  accumulator
+                  x1...xn
+                  (msg "one of the formal arguments ~&0 of ~x1" x1...xn old$)
+                  (msg "The :ACCUMULATOR input ~x0" accumulator)
+                  t
+                  nil)))
+      (value accumulator))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-process-wrapper-enable (wrapper-enable
                                         (wrapper-enable-present booleanp)
                                         (wrapper$ booleanp)
@@ -839,6 +868,7 @@
                                 domain
                                 new-name
                                 new-enable
+                                accumulator
                                 wrapper
                                 wrapper-name
                                 (wrapper-name-present booleanp)
@@ -864,6 +894,7 @@
                                     domain$
                                     new-name$
                                     new-enable$
+                                    a
                                     wrapper-name$
                                     thm-name$
                                     verify-guards$
@@ -882,43 +913,33 @@
                                          booleanp
                                          symbolp
                                          symbolp
+                                         symbolp
                                          booleanp
                                          symbol-alistp
                                          result)').")
                state)
   :mode :program
   :short "Process all the inputs."
-  :long
-  "<p>
-   The inputs are processed
-   in the order in which they appear in the documentation,
-   except that @(':print') is processed just before @('old')
-   so that the @('verbose') argument of @(tsee tailrec-process-old)
-   can be computed from @(':print'),
-   and except that @(':verify-guards') is processed just before @('domain')
-   because the result of processing @(':verify-guards')
-   is used to process @('domain').
-   @('old') is processed before @(':verify-guards')
-   because the result of processing @('old')
-   is used to process @(':verify-guards').
-   @(':verify-guards') is also used to process @('old'),
-   but it is only tested for equality with @('t')
-   (see @(tsee tailrec-process-old)).
-   </p>"
   (b* ((wrld (w state))
        ((er &) (evmac-process-input-print print ctx state))
        (verbose (and (member-eq print '(:info :all)) t))
        ((er (list old$ test base nonrec updates combine q r))
-        (tailrec-process-old old variant verify-guards
-                             verbose ctx state))
+        (tailrec-process-old old variant verify-guards verbose ctx state))
        ((er &) (tailrec-process-variant$ variant "The :VARIANT input" t nil))
        ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
                              verify-guards
                              (guard-verified-p old$ wrld)
                              "The :VERIFY-GUARDS input" t nil))
-       ((er domain$) (tailrec-process-domain
-                      domain old$ combine q r variant verify-guards$
-                      verbose ctx state))
+       ((er domain$) (tailrec-process-domain domain
+                                             old$
+                                             combine
+                                             q
+                                             r
+                                             variant
+                                             verify-guards$
+                                             verbose
+                                             ctx
+                                             state))
        ((er &) (ensure-value-is-boolean$ wrapper "The :WRAPPER input" t nil))
        ((er (list new-name$ wrapper-name$ &))
         (tailrec-process-new/wrapper-names new-name
@@ -933,13 +954,19 @@
                           new-enable
                           (fundef-enabledp old state)
                           "The :NEW-ENABLE input" t nil))
-       ((er &) (tailrec-process-wrapper-enable
-                wrapper-enable wrapper-enable-present
-                wrapper ctx state))
-       ((er thm-name$) (tailrec-process-thm-name
-                        thm-name
-                        old$ new-name$ wrapper wrapper-name$
-                        ctx state))
+       ((er a) (tailrec-process-accumulator accumulator old$ r ctx state))
+       ((er &) (tailrec-process-wrapper-enable wrapper-enable
+                                               wrapper-enable-present
+                                               wrapper
+                                               ctx
+                                               state))
+       ((er thm-name$) (tailrec-process-thm-name thm-name
+                                                 old$
+                                                 new-name$
+                                                 wrapper
+                                                 wrapper-name$
+                                                 ctx
+                                                 state))
        ((er &) (ensure-value-is-boolean$ thm-enable
                                          "The :THM-ENABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
@@ -955,6 +982,7 @@
                  domain$
                  new-name$
                  new-enable$
+                 a
                  wrapper-name$
                  thm-name$
                  verify-guards$
@@ -1233,6 +1261,7 @@
                             (domain$ pseudo-termfnp)
                             (new-name$ symbolp)
                             (new-enable$ booleanp)
+                            (a symbolp)
                             (verify-guards$ booleanp)
                             (appcond-thm-names symbol-symbol-alistp)
                             (wrld plist-worldp))
@@ -1251,7 +1280,7 @@
    <p>
    The formals of the new function consist of
    the formals of the old function
-   followed by the variable @('r') generated
+   followed by the variable @('a') generated
    during the decomposition of the recursive branch of the old function.
    This variable is distinct from the formals of the old function
    by construction.
@@ -1273,7 +1302,7 @@
    <p>
    The guard of the new function is obtained
    by conjoining the guard of the old function
-   with the fact that the additional formal @('r') is in the domain,
+   with the fact that the additional formal @('a') is in the domain,
    as described in the documentation.
    </p>
    <p>
@@ -1285,15 +1314,15 @@
    (which will ignore some of the supplied facts).
    </p>"
   (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
-       (new-formals (rcons r (formals old$ wrld)))
+       (new-formals (rcons a (formals old$ wrld)))
        (body
         (b* ((combine-op (tailrec-gen-combine-op combine q r))
              (nonrec-branch (case variant$
-                              ((:monoid :monoid-alt) r)
-                              (:assoc (apply-term* combine-op r base))
+                              ((:monoid :monoid-alt) a)
+                              (:assoc (apply-term* combine-op a base))
                               (t (impossible))))
-             (rec-branch (subcor-var (cons r (formals old$ wrld))
-                                     (cons (apply-term* combine-op r nonrec)
+             (rec-branch (subcor-var (cons a (formals old$ wrld))
+                                     (cons (apply-term* combine-op a nonrec)
                                            updates)
                                      (apply-term new-name$ new-formals)))
              (body `(if ,test
@@ -1305,7 +1334,7 @@
        (termination-hints
         `(("Goal" :use (:termination-theorem ,old$) :in-theory nil)))
        (guard (untranslate (conjoin2 (guard old$ nil wrld)
-                                     (apply-term* domain$ r))
+                                     (apply-term* domain$ a))
                            t wrld))
        (guard-hints
         (case variant$
@@ -1326,21 +1355,21 @@
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                    :extra-bindings-ok
-                   (,(tailrec-gen-var-u old$) ,r)
+                   (,(tailrec-gen-var-u old$) ,a)
                    (,(tailrec-gen-var-v old$) ,nonrec)))
                 (domain-guard-instance
                  `(:instance ,domain-guard-thm
                    :extra-bindings-ok
-                   (,z ,r)))
+                   (,z ,a)))
                 (combine-guard-instance-base
                  `(:instance ,combine-guard-thm
                    :extra-bindings-ok
-                   (,q ,r)
+                   (,q ,a)
                    (,r ,base)))
                 (combine-guard-instance-nonrec
                  `(:instance ,combine-guard-thm
                    :extra-bindings-ok
-                   (,q ,r)
+                   (,q ,a)
                    (,r ,nonrec))))
              `(("Goal"
                 :in-theory nil
@@ -1369,21 +1398,21 @@
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                    :extra-bindings-ok
-                   (,(tailrec-gen-var-u old$) ,r)
+                   (,(tailrec-gen-var-u old$) ,a)
                    (,(tailrec-gen-var-v old$) ,nonrec)))
                 (domain-guard-instance
                  `(:instance ,domain-guard-thm
                    :extra-bindings-ok
-                   (,z ,r)))
+                   (,z ,a)))
                 (combine-guard-instance-base
                  `(:instance ,combine-guard-thm
                    :extra-bindings-ok
-                   (,q ,r)
+                   (,q ,a)
                    (,r ,base)))
                 (combine-guard-instance-nonrec
                  `(:instance ,combine-guard-thm
                    :extra-bindings-ok
-                   (,q ,r)
+                   (,q ,a)
                    (,r ,nonrec))))
              `(("Goal"
                 :in-theory nil
@@ -1426,6 +1455,7 @@
                                     (variant$ tailrec-variantp)
                                     (domain$ pseudo-termfnp)
                                     (new-name$ symbolp)
+                                    (a symbolp)
                                     (names-to-avoid symbol-listp)
                                     (appcond-thm-names symbol-symbol-alistp)
                                     (old-unnorm-name symbolp)
@@ -1437,16 +1467,16 @@
                (name "A @(tsee symbolp) that names the theorem."))
   :mode :program
   :short "Generate the theorem equating the new function
-          to a combination of the old function with @('r')
+          to a combination of the old function with @('a')
           (@($f'{}f$) in the design notes)."
   :long
   "<p>
    The theorem's formula is
    </p>
    @({
-     (implies (domain r)
-              (equal (new x1 ... xn r)
-                     combine<r,(old x1 ... xn)>))
+     (implies (domain a)
+              (equal (new x1 ... xn a)
+                     combine<a,(old x1 ... xn)>))
    })
    <p>
    The equality is unconditional
@@ -1471,10 +1501,10 @@
                                                 wrld))
        (formula
         (untranslate (implicate
-                      (apply-term* domain$ r)
+                      (apply-term* domain$ a)
                       `(equal ,(apply-term new-name$ new-formals)
                               ,(apply-term* (tailrec-gen-combine-op combine q r)
-                                            r
+                                            a
                                             (apply-term old$
                                                         (formals old$
                                                                  wrld)))))
@@ -1493,12 +1523,12 @@
                 (domain-of-combine-instance
                  `(:instance ,domain-of-combine-thm
                    :extra-bindings-ok
-                   (,(tailrec-gen-var-u old$) ,r)
+                   (,(tailrec-gen-var-u old$) ,a)
                    (,(tailrec-gen-var-v old$) ,nonrec)))
                 (combine-associativity-instance
                  `(:instance ,combine-associativity-thm
                    :extra-bindings-ok
-                   (,(tailrec-gen-var-u old$) ,r)
+                   (,(tailrec-gen-var-u old$) ,a)
                    (,(tailrec-gen-var-v old$) ,nonrec)
                    (,(tailrec-gen-var-w old$)
                     ,(apply-term old$ updates))))
@@ -1506,12 +1536,11 @@
                  (and combine-right-identity-thm?
                       `(:instance ,combine-right-identity-thm?
                         :extra-bindings-ok
-                        (,(tailrec-gen-id-var-u old$ wrld) ,r))))
+                        (,(tailrec-gen-id-var-u old$ wrld) ,a))))
                 (domain-of-old-instance
                  `(:instance ,domain-of-old-name
                    :extra-bindings-ok
-                   ,@(alist-to-doublets (pairlis$ (formals old$
-                                                           wrld)
+                   ,@(alist-to-doublets (pairlis$ (formals old$ wrld)
                                                   updates)))))
              `(("Goal"
                 :in-theory '(,old-unnorm-name
@@ -1535,19 +1564,19 @@
                 (domain-of-combine-uncond-instance
                  `(:instance ,domain-of-combine-uncond-thm
                    :extra-bindings-ok
-                   (,(tailrec-gen-var-u old$) ,r)
+                   (,(tailrec-gen-var-u old$) ,a)
                    (,(tailrec-gen-var-v old$) ,nonrec)))
                 (combine-associativity-uncond-instance
                  `(:instance ,combine-associativity-uncond-thm
                    :extra-bindings-ok
-                   (,(tailrec-gen-var-u old$) ,r)
+                   (,(tailrec-gen-var-u old$) ,a)
                    (,(tailrec-gen-var-v old$) ,nonrec)
                    (,(tailrec-gen-var-w old$)
                     ,(apply-term old$ updates))))
                 (combine-right-identity-instance
                  `(:instance ,combine-right-identity-thm
                    :extra-bindings-ok
-                   (,(tailrec-gen-id-var-u old$ wrld) ,r))))
+                   (,(tailrec-gen-id-var-u old$ wrld) ,a))))
              `(("Goal"
                 :in-theory '(,old-unnorm-name
                              ,new-unnorm-name
@@ -1907,7 +1936,7 @@
                                      (base pseudo-termp)
                                      (nonrec pseudo-termp)
                                      (updates pseudo-term-listp)
-                                     (r symbolp)
+                                     (a symbolp)
                                      (variant$ tailrec-variantp)
                                      (new-name$ symbolp)
                                      (new-formals symbol-listp)
@@ -1934,11 +1963,11 @@
                  (:assoc
                   `(if ,test
                        ,base
-                     ,(subcor-var (cons r (formals old$ wrld))
+                     ,(subcor-var (cons a (formals old$ wrld))
                                   (cons nonrec updates)
                                   (apply-term new-name$ new-formals))))
                  ((:monoid :monoid-alt)
-                  (subst-var base r (apply-term new-name$ new-formals)))
+                  (subst-var base a (apply-term new-name$ new-formals)))
                  (t (impossible)))
                nil wrld))
 
@@ -1949,7 +1978,7 @@
                                     (base pseudo-termp)
                                     (nonrec pseudo-termp)
                                     (updates pseudo-term-listp)
-                                    (r symbolp)
+                                    (a symbolp)
                                     (variant$ tailrec-variantp)
                                     (new-name$ symbolp)
                                     (wrapper$ booleanp)
@@ -2006,7 +2035,7 @@
                thm-name$))
        (formula `(equal ,(apply-term old$ (formals old$ wrld))
                         ,(tailrec-gen-old-as-new-term
-                          old$ test base nonrec updates r variant$
+                          old$ test base nonrec updates a variant$
                           new-name$ new-formals wrld)))
        (hints
         (case variant$
@@ -2019,7 +2048,7 @@
                 (new-to-old-instance
                  `(:instance ,new-to-old-name
                    :extra-bindings-ok
-                   (,r ,base))))
+                   (,a ,base))))
              `(("Goal"
                 :in-theory nil
                 :use (,domain-of-ground-base-name
@@ -2033,7 +2062,7 @@
                 (new-to-old-instance
                  `(:instance ,new-to-old-name
                    :extra-bindings-ok
-                   (,r ,nonrec)
+                   (,a ,nonrec)
                    ,@(alist-to-doublets (pairlis$ formals updates)))))
              `(("Goal"
                 :in-theory nil
@@ -2056,7 +2085,7 @@
                                 (base pseudo-termp)
                                 (nonrec pseudo-termp)
                                 (updates pseudo-term-listp)
-                                (r symbolp)
+                                (a symbolp)
                                 (variant$ tailrec-variantp)
                                 (new-name$ symbolp)
                                 (wrapper-name$ symbolp)
@@ -2100,7 +2129,7 @@
   (b* ((macro (function-intro-macro wrapper-enable$ nil))
        (formals (formals old$ wrld))
        (body (tailrec-gen-old-as-new-term
-              old$ test base nonrec updates r variant$
+              old$ test base nonrec updates a variant$
               new-name$ new-formals wrld))
        (guard (untranslate (guard old$ nil wrld) t wrld))
        (guard-hints
@@ -2196,6 +2225,7 @@
    (domain$ pseudo-termfnp)
    (new-name$ symbolp)
    (new-enable$ booleanp)
+   (a symbolp)
    (wrapper$ booleanp)
    (wrapper-name$ symbolp)
    (wrapper-enable$ booleanp)
@@ -2312,7 +2342,7 @@
         (tailrec-gen-new-fn old$
                             test base nonrec updates combine q r
                             variant$ domain$
-                            new-name$ new-enable$
+                            new-name$ new-enable$ a
                             verify-guards$
                             appcond-thm-names
                             wrld))
@@ -2328,6 +2358,7 @@
         (tailrec-gen-new-to-old-thm old$ nonrec updates combine q r
                                     variant$ domain$
                                     new-name$
+                                    a
                                     names-to-avoid
                                     appcond-thm-names
                                     old-unnorm-name
@@ -2405,7 +2436,7 @@
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event?
             old-to-new-name)
-        (tailrec-gen-old-to-new-thm old$ test base nonrec updates r
+        (tailrec-gen-old-to-new-thm old$ test base nonrec updates a
                                     variant$
                                     new-name$
                                     wrapper$
@@ -2424,7 +2455,7 @@
             wrapper-fn-exported-event?)
         (if wrapper$
             (tailrec-gen-wrapper-fn old$
-                                    test base nonrec updates r
+                                    test base nonrec updates a
                                     variant$
                                     new-name$
                                     wrapper-name$ wrapper-enable$
@@ -2534,6 +2565,7 @@
                     domain
                     new-name
                     new-enable
+                    accumulator
                     wrapper
                     wrapper-name
                     (wrapper-name-present booleanp)
@@ -2579,6 +2611,7 @@
                   domain$
                   new-name$
                   new-enable$
+                  a
                   wrapper-name$
                   thm-name$
                   verify-guards$
@@ -2588,6 +2621,7 @@
                                 domain
                                 new-name
                                 new-enable
+                                accumulator
                                 wrapper
                                 wrapper-name
                                 wrapper-name-present
@@ -2613,6 +2647,7 @@
                                            domain$
                                            new-name$
                                            new-enable$
+                                           a
                                            wrapper
                                            wrapper-name$
                                            wrapper-enable
@@ -2647,6 +2682,7 @@
                      (domain ':auto)
                      (new-name ':auto)
                      (new-enable ':auto)
+                     (accumulator ':auto)
                      (wrapper 'nil)
                      (wrapper-name ':auto wrapper-name-present)
                      (wrapper-enable 't wrapper-enable-present)
@@ -2661,6 +2697,7 @@
                                    ',domain
                                    ',new-name
                                    ',new-enable
+                                   ',accumulator
                                    ',wrapper
                                    ',wrapper-name
                                    ',wrapper-name-present
