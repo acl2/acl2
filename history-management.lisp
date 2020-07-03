@@ -17939,18 +17939,6 @@
                                                    include-bookp ctx
                                                    state))))))
 
-(defun chk-acceptable-ttags (vals include-bookp ctx wrld state)
-
-; See chk-acceptable-ttag1 for a description of the value returned based on the
-; current book being included (if any), the value of state global
-; 'tags-allowed, and the value of world global 'ttags-seen.
-
-  (chk-acceptable-ttags1 vals
-                         (active-book-name wrld state)
-                         (f-get-global 'ttags-allowed state)
-                         (global-val 'ttags-seen wrld)
-                         include-bookp ctx state))
-
 ; Next we handle the table event.  We formerly did this in other-events.lisp,
 ; but in v2-9 we moved it here, in order to avoid a warning in admitting
 ; add-pc-command-1 that the *1* function for table-fn is undefined.

@@ -12,7 +12,7 @@
 
 (include-book "kestrel/std/system/fresh-namep" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
-(include-book "kestrel/utilities/strings/char-kinds" :dir :system)
+(include-book "kestrel/utilities/strings/nondigit-chars" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "system/kestrel" :dir :system)

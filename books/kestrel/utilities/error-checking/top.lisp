@@ -32,13 +32,6 @@
   :body
   (((eq x nil) "~@0 must be NIL." description)))
 
-(def-error-checker ensure-boolean
-  ((x "Value to check."))
-  :short
-  "Cause an error if a value is not a boolean."
-  :body
-  (((booleanp x) "~@0 must be T or NIL." description)))
-
 (def-error-checker ensure-symbol
   ((x "Value to check."))
   :short

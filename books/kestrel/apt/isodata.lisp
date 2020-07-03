@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -1115,12 +1116,12 @@
                (old-to-new-enable$ booleanp)
                state)
   :short "Process the @(':old-to-new-enable') input."
-  (b* (((er &) (ensure-boolean$ old-to-new-enable
-                                "The :OLD-TO-NEW-ENABLE input" t nil)))
+  (b* (((er &) (ensure-value-is-boolean$ old-to-new-enable
+                                         "The :OLD-TO-NEW-ENABLE input" t nil)))
     (value (if old-to-new-enable-suppliedp
                old-to-new-enable
              (get-default-input-old-to-new-enable (w state)))))
-  :prepwork ((local (in-theory (enable acl2::ensure-boolean)))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1186,12 +1187,12 @@
                (new-to-old-enable$ booleanp)
                state)
   :short "Process the @(':new-to-old-enable') input."
-  (b* (((er &) (ensure-boolean$ new-to-old-enable
-                                "The :NEW-TO-OLD-ENABLE input" t nil)))
+  (b* (((er &) (ensure-value-is-boolean$ new-to-old-enable
+                                         "The :NEW-TO-OLD-ENABLE input" t nil)))
     (value (if new-to-old-enable-suppliedp
                new-to-old-enable
              (get-default-input-new-to-old-enable (w state)))))
-  :prepwork ((local (in-theory (enable acl2::ensure-boolean)))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1336,7 +1337,8 @@
                                  names-to-avoid
                                  ctx
                                  state))
-       ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
+       ((er &) (ensure-value-is-boolean$ predicate
+                                         "The :PREDICATE input" t nil))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old$ state)
@@ -1368,9 +1370,9 @@
                       "Internal error: ~
                        the default :OLD-TO-NEW-ENABLE and :NEW-TO-OLD-ENABLE ~
                        are both T."))))
-       ((er &) (ensure-boolean$ newp-of-new-enable
-                                "The :NEWP-OF-NEW-ENABLE input"
-                                t nil))
+       ((er &) (ensure-value-is-boolean$ newp-of-new-enable
+                                         "The :NEWP-OF-NEW-ENABLE input"
+                                         t nil))
        ((when (and newp-of-new-name-suppliedp
                    (not res-isomaps)))
         (er-soft+ ctx t nil

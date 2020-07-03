@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -67,8 +68,8 @@
   (b* (((er &) (ensure-symbol$ f "The first input" t nil))
        ((er &) (ensure-symbol$ y "The second input" t nil))
        ((er &) (ensure-symbol-list$ x1...xn "The third input" t nil))
-       ((er &) (ensure-boolean$ verify-guards
-                                "The :VERIFY-GUARDS input" t nil)))
+       ((er &) (ensure-value-is-boolean$ verify-guards
+                                         "The :VERIFY-GUARDS input" t nil)))
     (value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

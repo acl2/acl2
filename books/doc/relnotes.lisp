@@ -257,12 +257,25 @@
       The rationale is that not generating the wrapper is expected to be
       more frequent than generating it.")
     (xdoc::li
+     "An @(':accumulator') input has been added to optinally specify
+      the name of the accumulator argument of the new function.")
+    (xdoc::li
      "The target function's @(tsee if) body,
       after translation and @(tsee let) expansion,
       can now have a recursive `then' branch and a non-recursive `else' branch.
       Before, the `then' branch had to be the non-recursive one
       and the `else' branch had to be the recursive one.
       This makes the transformation more widely applicable."))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
+
+   (xdoc::p
+    "This library is being moved
+     from @('[books]/kestrel/utilities/error-checking/')
+     to @('[books]/kestrel/error-checking/').
+     It is also being refactored and improved in the process.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
