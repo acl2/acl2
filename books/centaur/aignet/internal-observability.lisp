@@ -233,8 +233,6 @@
 
 
 
-
-
 ;; We formalize the notion of a path between a source and sink node.  This is
 ;; just a list of bits saying which child to traverse at each two-input gate
 ;; along the way.
@@ -275,6 +273,10 @@
     (equal (path-existsp sink (cons 1 path) aignet)
            (and (equal (ctype (stype (car (lookup-id sink aignet)))) :gate)
                 (path-existsp (lit->var (fanin :gate1 (lookup-id sink aignet))) path aignet))))
+
+  (defthm path-existsp-of-atom
+    (implies (not (consp path))
+             (equal (path-existsp sink path aignet) t)))
   
   (defthm path-existsp-of-nil
     (equal (path-existsp sink nil aignet) t))
@@ -302,6 +304,11 @@
     (equal (path-endpoint sink (cons 1 rest) aignet)
            (path-endpoint (lit->var (fanin :gate1 (lookup-id sink aignet))) rest aignet)))
 
+  (defthm path-endpoint-of-atom
+    (implies (not (consp path))
+             (equal (path-endpoint sink path aignet)
+                    (nfix sink))))
+  
   (defthm path-endpoint-of-nil
     (equal (path-endpoint sink nil aignet)
            (nfix sink)))
@@ -340,6 +347,23 @@
                     (equal (lit->var x) (lit->var y)))
            :rule-classes :forward-chaining))
 
+  (defthm path-contains-and-sibling-of-atom
+    (implies (not (consp path))
+             (equal (path-contains-and-sibling x sink path aignet) nil))
+    :hints (("goal" :expand ((path-contains-and-sibling x sink path aignet)))))
+
+  (defthm path-contains-and-sibling-of-cons
+    (equal (path-contains-and-sibling x sink (cons first rest) aignet)
+           (or (and (equal (stype (car (lookup-id sink aignet))) :and)
+                    (equal (fanin (if (equal first 1) :gate0 :gate1)
+                                  (lookup-id sink aignet))
+                           (lit-fix x)))
+               (path-contains-and-sibling
+                x
+                (lit->var (fanin (if (equal first 1) :gate1 :gate0) (lookup-id sink aignet)))
+                rest aignet)))
+    :hints (("goal" :expand ((:free (path) (path-contains-and-sibling x sink path aignet))))))
+  
   (defthm path-contains-and-sibling-of-nil
     (equal (path-contains-and-sibling x sink nil aignet) nil)
     :hints (("goal" :expand ((path-contains-and-sibling x sink nil aignet)))))
@@ -372,7 +396,36 @@
     (or (path-contains-and-sibling (lit-negate sib) (lit->var next) (cdr path) aignet)
         (path-contains-contradictory-siblings (lit->var next) (cdr path) aignet)))
   ///
-  (local (in-theory (disable (:d path-contains-contradictory-siblings)))))
+  (local (in-theory (disable (:d path-contains-contradictory-siblings))))
+
+  (defthm path-contains-contradictory-siblings-of-atom
+    (implies (not (consp path))
+             (equal (path-contains-contradictory-siblings sink path aignet) nil))
+    :hints (("goal" :expand ((path-contains-contradictory-siblings sink path aignet)))))
+
+  (defthm path-contains-contradictory-siblings-of-cons
+    (equal (path-contains-contradictory-siblings sink (cons first rest) aignet)
+           (let ((next (fanin (if (equal first 1) :gate1 :gate0) (lookup-id sink aignet))))
+             (or (and (equal (stype (car (lookup-id sink aignet))) :and)
+                      (path-contains-and-sibling
+                       (lit-negate (fanin (if (equal first 1) :gate0 :gate1)
+                                          (lookup-id sink aignet)))
+                       (lit->var next) rest aignet))
+                 (path-contains-contradictory-siblings
+                  (lit->var next) rest aignet))))
+    :hints (("goal" :expand ((:free (path) (path-contains-contradictory-siblings sink path aignet))))))
+  
+  (defthm path-contains-contradictory-siblings-of-nil
+    (equal (path-contains-contradictory-siblings sink nil aignet) nil)
+    :hints (("goal" :expand ((path-contains-contradictory-siblings sink nil aignet)))))
+
+  (defthm path-contains-contradictory-siblings-when-contains-contradictory-and-siblings
+    (implies (and (path-contains-and-sibling lit sink path aignet)
+                  (path-contains-and-sibling (lit-negate lit) sink path aignet))
+             (path-contains-contradictory-siblings sink path aignet))
+    :hints (("Goal" :induct (path-contains-contradictory-siblings sink path aignet)
+             :expand ((path-contains-contradictory-siblings sink path aignet)
+                      (:free (lit) (path-contains-and-sibling lit sink path aignet)))))))
 
 
 ;; Check whether any AND siblings in the path are 0 under the inputs with the
@@ -573,10 +626,7 @@
                       (:free (x y) (eval-and-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
                       (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
-                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))
-                      (:free (p)
-                       (path-contains-contradictory-siblings
-                        sink p aignet)))))))
+                      (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))))))
 
 
 ;; Dominator info for each node is stored as either
@@ -1074,7 +1124,7 @@
   :guard (and (id-existsp sink aignet)
               (path-existsp sink path aignet))
   (if (atom x)
-      nil
+      t
     (and (path-contains-and-sibling (car x) sink path aignet)
          (path-contains-and-siblings (cdr x) sink path aignet)))
   ///
@@ -1082,7 +1132,11 @@
     (implies (and (member lit x)
                   (path-contains-and-siblings x sink path aignet)
                   (litp lit) (lit-listp x))
-             (path-contains-and-sibling lit sink path aignet))))
+             (path-contains-and-sibling lit sink path aignet)))
+
+  (defthm path-contains-and-siblings-when-atom
+    (implies (not (consp x))
+             (equal (path-contains-and-siblings x sink path aignet) t))))
 
 (define path-last ((x bit-listp))
   :guard (consp x)
@@ -1109,57 +1163,97 @@
 
   (local (in-theory (disable satlink::equal-of-lit-fix-backchain)))
 
-  (defret path-endpoint-child-of-path-butlast-when-last-0
-    (implies (and (equal (path-last x) 0)
-                  (path-existsp sink x aignet)
-                  (consp x))
-             (equal (lit->var (fanin :gate0 (lookup-id (path-endpoint sink prefix aignet) aignet)))
-                    (path-endpoint sink x aignet)))
-    :hints(("Goal" :in-theory (enable (:i path-endpoint) path-last)
-            :induct (path-endpoint sink x aignet)
-            :expand ((path-endpoint sink x aignet)
-                     (path-existsp sink x aignet)))
-           (and stable-under-simplificationp
-                '(:expand ((:free (sink) (path-endpoint sink (cdr x) aignet))
-                           (:free (sink) (path-existsp sink (cdr x) aignet)))))))
+  ;; (defret path-endpoint-child-of-path-butlast-when-last-0
+  ;;   (implies (and (equal (path-last x) 0)
+  ;;                 (path-existsp sink x aignet)
+  ;;                 (consp x))
+  ;;            (equal (lit->var (fanin :gate0 (lookup-id (path-endpoint sink prefix aignet) aignet)))
+  ;;                   (path-endpoint sink x aignet)))
+  ;;   :hints(("Goal" :in-theory (enable (:i path-endpoint) path-last)
+  ;;           :induct (path-endpoint sink x aignet)
+  ;;           :expand ((path-endpoint sink x aignet)
+  ;;                    (path-existsp sink x aignet)))))
 
-  (defthm path-contains-and-sibling-in-terms-of-butlast
-    (implies (consp path)
-             (equal (path-contains-and-sibling x sink path aignet)
-                    (or (path-contains-and-sibling x sink (path-butlast path) aignet)
-                        (let ((sink2 (path-endpoint sink (path-butlast path) aignet)))
-                          (and (equal (stype (car (lookup-id sink2 aignet))) :and)
-                               (equal (fanin (if (eql (path-last path) 1) :gate0 :gate1)
-                                             (lookup-id sink2 aignet))
-                                      (lit-fix x)))))))
+  (defthmd path-endpoint-in-terms-of-butlast
+    (equal (path-endpoint sink path aignet)
+           (if (atom path)
+               (nfix sink)
+             (b* ((prev (path-endpoint sink (path-butlast path) aignet))
+                  (last (path-last path)))
+               (lit->var (fanin (if (equal last 1) :gate1 :gate0) (lookup-id prev aignet))))))
+    :hints(("Goal" :in-theory (enable path-last (:i path-endpoint))
+            :induct (path-endpoint sink path aignet)
+            :expand ((:free (path) (path-endpoint sink path aignet))))))
+
+  (defthmd path-contains-and-sibling-in-terms-of-butlast
+    ;;(implies (consp path)
+    (equal (path-contains-and-sibling x sink path aignet)
+           (if (atom path)
+               nil
+             (or (path-contains-and-sibling x sink (path-butlast path) aignet)
+                 (let ((sink2 (path-endpoint sink (path-butlast path) aignet)))
+                   (and (equal (stype (car (lookup-id sink2 aignet))) :and)
+                        (equal (fanin (if (eql (path-last path) 1) :gate0 :gate1)
+                                      (lookup-id sink2 aignet))
+                               (lit-fix x)))))))
     :hints(("Goal" :in-theory (enable path-last (:i path-endpoint))
             :induct (path-endpoint sink path aignet)
             :expand ((:free (path) (path-endpoint sink path aignet))
-                     (:free (path) (path-contains-and-sibling x sink path aignet))))
-           (and stable-under-simplificationp
-                '(:expand ((:free (sink) (path-endpoint sink (cdr path) aignet))
-                           (:free (sink) (path-contains-and-sibling x sink (cdr path) aignet)))))))
+                     (:free (path) (path-contains-and-sibling x sink path aignet)))))
+    :rule-classes ((:definition :controller-alist ((path-contains-and-sibling nil nil t nil)))))
 
-  (defthm path-contains-contradictory-siblings-in-terms-of-butlast
-    (implies (consp path)
-             (equal (path-contains-contradictory-siblings sink path aignet)
-                    (or (path-contains-contradictory-siblings sink (path-butlast path) aignet)
-                        (let ((sink2 (path-endpoint sink (path-butlast path) aignet)))
-                          (and (equal (stype (car (lookup-id sink2 aignet))) :and)
-                               (path-contains-and-sibling
-                                (lit-negate (fanin (if (eql (path-last path) 1) :gate0 :gate1)
-                                                   (lookup-id sink2 aignet)))
-                                sink
-                                (path-butlast path) aignet))))))
-    :hints(("Goal" :in-theory (enable path-last (:i path-endpoint))
+  (defthmd path-contains-contradictory-siblings-in-terms-of-butlast
+    (equal (path-contains-contradictory-siblings sink path aignet)
+           (if (atom path)
+               nil
+             (or (path-contains-contradictory-siblings sink (path-butlast path) aignet)
+                 (let ((sink2 (path-endpoint sink (path-butlast path) aignet)))
+                   (and (equal (stype (car (lookup-id sink2 aignet))) :and)
+                        (path-contains-and-sibling
+                         (lit-negate (fanin (if (eql (path-last path) 1) :gate0 :gate1)
+                                            (lookup-id sink2 aignet)))
+                         sink
+                         (path-butlast path) aignet))))))
+    :hints(("Goal" :in-theory (e/d (path-last (:i path-endpoint)))
             :induct (path-endpoint sink path aignet)
             :expand ((:free (path) (path-endpoint sink path aignet))
-                     (:free (path) (path-contains-contradictory-siblings sink path aignet))))
-           (and stable-under-simplificationp
-                '(:expand ((:free (sink) (path-endpoint sink (cdr path) aignet))
-                           (:free (sink) (path-contains-contradictory-siblings sink (cdr path) aignet))
-                           (:free (x sink) (path-contains-and-sibling x sink (cdr path) aignet))))))))
+                     (:free (path) (path-contains-contradictory-siblings sink path aignet))
+                     (:with path-contains-and-sibling-in-terms-of-butlast
+                      (:free (x sink) (path-contains-and-sibling x sink (cdr path) aignet))))))
+    :rule-classes ((:definition :controller-alist ((path-contains-contradictory-siblings nil t nil)))))
 
+  (local (defthm path-contains-and-siblings-of-remove-equal
+           (implies (path-contains-and-sibling lit sink path aignet)
+                    (equal (path-contains-and-siblings (remove-equal lit x) sink path aignet)
+                           (path-contains-and-siblings x sink path aignet)))
+           :hints(("Goal" :in-theory (enable path-contains-and-siblings remove-equal)))))
+  
+  (local (defthm lit-listp-of-remove-equal
+           (implies (lit-listp x)
+                    (lit-listp (remove-equal k x)))))
+
+  (local (defthm remove-equal-same
+           (equal (remove-equal k (remove-equal k x))
+                  (remove-equal k x))))
+  
+  (defthmd path-contains-and-siblings-in-terms-of-butlast
+    (equal (path-contains-and-siblings x sink path aignet)
+           (b* (((when (atom path)) (atom x))
+                (prev-endpoint (path-endpoint sink (path-butlast path) aignet))
+                (last (path-last path))
+                (sib (fanin (if (equal last 1) :gate0 :gate1) (lookup-id prev-endpoint aignet)))
+                ((when (equal (stype (car (lookup-id prev-endpoint aignet))) :and))
+                 (path-contains-and-siblings
+                  (remove sib (lit-list-fix x))
+                  sink (path-butlast path) aignet)))
+             (path-contains-and-siblings
+              x sink (path-butlast path) aignet)))
+    :hints(("Goal" :in-theory (enable path-contains-and-siblings)
+            :induct (path-contains-and-siblings x sink path aignet)
+            :expand ((:free (path) (path-contains-and-siblings x sink path aignet))
+                     (:with path-contains-and-sibling-in-terms-of-butlast
+                      (:free (x) (path-contains-and-sibling x sink path aignet)))
+                     (lit-list-fix x))))))
 
 (define path-induct-reverse ((x bit-listp))
   :measure (len x)
@@ -1168,9 +1262,26 @@
     (path-induct-reverse (path-butlast x))))
 
 
-(defsection obs-dom-array-implies-path-contains-dominators
 
-  
+
+(defthm path-contains-and-siblings-implies-not-cube-contradictionp
+  (implies (and (path-contains-and-siblings
+                 lits sink path aignet)
+                (not (path-contains-contradictory-siblings
+                      sink path aignet)))
+           (not (cube-contradictionp lits)))
+  :hints (("Goal" :use ((:instance path-contains-and-siblings-implies-member
+                         (lit (cube-contradictionp lits))
+                         (x (lit-list-fix lits)))
+                        (:instance path-contains-and-siblings-implies-member
+                         (lit (lit-negate (cube-contradictionp lits)))
+                         (x (lit-list-fix lits))))
+           :in-theory (disable path-contains-and-siblings-implies-member))))
+
+
+(defthm obs-dom-fanout-ok-implies-reachable
+
+
 
 (defthm obs-dom-array-implies-path-contains-dominators
   (implies (and (obs-dom-array-correct obs-dom-array aignet)
@@ -1179,11 +1290,20 @@
                 (obs-dom-info->reached (nth sink obs-dom-array))
                 (equal (obs-dom-info->doms (nth sink obs-dom-array)) nil))
            (let ((source (path-endpoint sink path aignet)))
-             (and (obs-dom-info->reached (nth source aignet))
+             (and (obs-dom-info->reached (nth source obs-dom-array))
                   (path-contains-and-siblings
-                   (obs-dom-info->doms source) sink path aignet))))
+                   (obs-dom-info->doms (nth source obs-dom-array))
+                   sink path aignet))))
   :hints (("goal" :induct (path-induct-reverse path)
-           :in-theory (enable (:i path-induct-reverse)))))
+           :in-theory (enable (:i path-induct-reverse))
+           :expand ((:with path-contains-contradictory-siblings-in-terms-of-butlast
+                     (path-contains-contradictory-siblings sink path aignet))
+                    (:with path-contains-and-siblings-in-terms-of-butlast
+                     (:free (doms)
+                      (path-contains-and-siblings
+                       doms sink path aignet)))
+                    (:with path-endpoint-in-terms-of-butlast
+                     (path-endpoint sink path aignet))))))
                 
   
 
