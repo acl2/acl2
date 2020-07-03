@@ -1238,7 +1238,7 @@
                             (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
                (exported-event "A @(tsee pseudo-event-formp).")
-               (formals "A @(tsee symbol-listp)."))
+               (new-formals "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the new function definition."
   :long
@@ -1285,7 +1285,7 @@
    (which will ignore some of the supplied facts).
    </p>"
   (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
-       (formals (rcons r (formals old$ wrld)))
+       (new-formals (rcons r (formals old$ wrld)))
        (body
         (b* ((combine-op (tailrec-gen-combine-op combine q r))
              (nonrec-branch (case variant$
@@ -1295,7 +1295,7 @@
              (rec-branch (subcor-var (cons r (formals old$ wrld))
                                      (cons (apply-term* combine-op r nonrec)
                                            updates)
-                                     (apply-term new-name$ formals)))
+                                     (apply-term new-name$ new-formals)))
              (body `(if ,test
                         ,nonrec-branch
                       ,rec-branch)))
@@ -1397,7 +1397,7 @@
           (t (impossible))))
        (local-event
         `(local
-          (,macro ,new-name$ (,@formals)
+          (,macro ,new-name$ (,@new-formals)
                   (declare (xargs :well-founded-relation ,wfrel
                                   :measure ,measure
                                   :hints ,termination-hints
@@ -1407,13 +1407,13 @@
                                          (list :guard-hints guard-hints))))
                   ,body)))
        (exported-event
-        `(,macro ,new-name$ (,@formals)
+        `(,macro ,new-name$ (,@new-formals)
                  (declare (xargs :well-founded-relation ,wfrel
                                  :measure ,measure
                                  :guard ,guard
                                  :verify-guards ,verify-guards$))
                  ,body)))
-    (mv local-event exported-event formals)))
+    (mv local-event exported-event new-formals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
