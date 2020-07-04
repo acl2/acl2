@@ -5278,6 +5278,20 @@
                            (l (dirname path))
                            (n (+ -1 (len path)))))))
 
+;; This lemma goes through with the tau-system, but I'm puzzled as to what's
+;; really happening in terms of rules used.
+(thm
+ (implies
+  (stringp
+   (mv-nth
+    0
+    (hifat-place-file
+     (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car x))
+                                          (hifat-file-alist-fix fs))))
+     y file)))
+  nil)
+ :hints (("goal" :in-theory (enable hifat-place-file hifat-find-file))))
+
 (defthm
   abs-mkdir-correctness-lemma-95
   (implies
