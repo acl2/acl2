@@ -58,7 +58,11 @@
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
       These notes should be read alongside this reference documentation,
-      which refers to them in some places."))
+      which refers to them in some places.")
+
+    (xdoc::p
+     "The file @('[books]/kestrel/apt/tailrec-examples.lisp')
+      contains some commented examples of use of @('tailrec')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
