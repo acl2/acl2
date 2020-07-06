@@ -525,7 +525,7 @@
        "The combination operator is unconditionally associative:")
       (xdoc::codeblock
        "(equal combine<u,combine<v,w>>"
-       "      combine<combine<u,v>,w>)"))
+       "       combine<combine<u,v>,w>)"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($\\mathit{ASC}'$)"
      :presence "the @(':variant') input of @('tailrec') is @(':monoid-alt')")
@@ -538,9 +538,9 @@
       is left identity of the combination operator:")
       (xdoc::codeblock
        "(implies (and test<x1,...,xn>"
-       "             (domain u))"
-       "        (equal combine<base<x1...,xn>,u>"
-       "               u))"))
+       "              (domain u))"
+       "         (equal combine<base<x1...,xn>,u>"
+       "                u))"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($\\mathit{LI}$)"
      :presence "the @(':variant') input of @('tailrec')
@@ -554,9 +554,9 @@
        is right identity of the combination operator:")
       (xdoc::codeblock
        "(implies (and test<x1,...,xn>"
-       "             (domain u))"
-       "        (equal combine<u,base<x1...,xn>>"
-       "               u))"))
+       "              (domain u))"
+       "         (equal combine<u,base<x1...,xn>>"
+       "                u))"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($\\mathit{RI}$)"
      :presence "the @(':variant') input of @('tailrec')
@@ -588,8 +588,8 @@
         on every value in the domain:")
       (xdoc::codeblock
        "(implies (and (domain q)"
-       "             (domain r))"
-       "        combine-guard<q,r>)")
+       "              (domain r))"
+       "         combine-guard<q,r>)")
       (xdoc::p
        "where @('combine-guard<q,r>') is
         the guard obligation of @('combine<q,r>')."))
@@ -609,8 +609,8 @@
         and under the guard of @('old'):")
       (xdoc::codeblock
        "(implies (and old-guard<x1,...,xn>"
-       "             (not test<x1,...,xn>))"
-       "        (domain nonrec<x1,...,xn>))")
+       "              (not test<x1,...,xn>))"
+       "         (domain nonrec<x1,...,xn>))")
       (xdoc::p
        "where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
      :design-notes *tailrec-design-notes*
