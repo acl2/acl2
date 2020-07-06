@@ -272,6 +272,12 @@
       and the `else' branch had to be the recursive one.
       This makes the transformation more widely applicable."))
 
+   (xdoc::p
+    "A file @('[books]/kestrel/apt/tailrec-examples.lisp') has been added.
+     It contains examples of uses of @(tsee apt::tailrec),
+     with explanatory comments.
+     This could serve as a preliminary tutorial.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
