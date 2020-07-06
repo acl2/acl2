@@ -924,13 +924,13 @@
      (33 33
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (16 16 (:REWRITE DEFUNG::QUOTED-TRUE)))
-(MIXED-REC-IS-ZERO (128 128
+(MIXED-REC-IS-ZERO (134 134
                         (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-                   (128 112 (:REWRITE DEFAULT-+-2))
-                   (126 112 (:REWRITE DEFAULT-+-1))
-                   (110 110 (:META CANCEL_PLUS-LESSP-CORRECT))
-                   (86 64 (:REWRITE DEFAULT-<-2))
-                   (64 64 (:REWRITE DEFAULT-<-1))
+                   (131 115 (:REWRITE DEFAULT-+-2))
+                   (129 115 (:REWRITE DEFAULT-+-1))
+                   (116 116 (:META CANCEL_PLUS-LESSP-CORRECT))
+                   (89 67 (:REWRITE DEFAULT-<-2))
+                   (67 67 (:REWRITE DEFAULT-<-1))
                    (52 52
                        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                    (36 18
@@ -2322,14 +2322,14 @@
      (16 16 (:REWRITE DEFUNG::QUOTED-TRUE))
      (9 9
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
-(ZERO-FN-UNWINDING (1143 20 (:DEFINITION ZERO-FN-DEFINITION))
-                   (183 183
+(ZERO-FN-UNWINDING (1189 20 (:DEFINITION ZERO-FN-DEFINITION))
+                   (189 189
                         (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-                   (152 152 (:META CANCEL_PLUS-LESSP-CORRECT))
-                   (140 136 (:REWRITE DEFAULT-+-2))
-                   (136 136 (:REWRITE DEFAULT-+-1))
-                   (117 87 (:REWRITE DEFAULT-<-2))
-                   (87 87 (:REWRITE DEFAULT-<-1))
+                   (158 158 (:META CANCEL_PLUS-LESSP-CORRECT))
+                   (143 139 (:REWRITE DEFAULT-+-2))
+                   (139 139 (:REWRITE DEFAULT-+-1))
+                   (120 90 (:REWRITE DEFAULT-<-2))
+                   (90 90 (:REWRITE DEFAULT-<-1))
                    (44 22
                        (:REWRITE INTEGERP-IMPLIES-INTEGERP-ZERO-FN))
                    (36 6 (:REWRITE O-INFP->NEQ-0))
@@ -2539,15 +2539,15 @@
                (9 9 (:REWRITE O-INFP->NEQ-0)))
 (ZERO4-DOMAIN)
 (ZERO4)
-(ZERO4-REDUCTION (6044 213 (:REWRITE OPEN-ZERO4-INDUCTION))
-                 (1170 1115 (:REWRITE DEFAULT-+-2))
-                 (1115 1115 (:REWRITE DEFAULT-+-1))
-                 (933 933 (:META CANCEL_PLUS-LESSP-CORRECT))
-                 (696 690 (:REWRITE DEFAULT-<-2))
-                 (690 690 (:REWRITE DEFAULT-<-1))
-                 (519 519
+(ZERO4-REDUCTION (6852 213 (:REWRITE OPEN-ZERO4-INDUCTION))
+                 (1225 1174 (:REWRITE DEFAULT-+-2))
+                 (1174 1174 (:REWRITE DEFAULT-+-1))
+                 (1025 1025 (:META CANCEL_PLUS-LESSP-CORRECT))
+                 (751 745 (:REWRITE DEFAULT-<-2))
+                 (745 745 (:REWRITE DEFAULT-<-1))
+                 (593 593
                       (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-                 (61 61
+                 (57 57
                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                  (24 4 (:REWRITE O-INFP->NEQ-0))
                  (12 12 (:TYPE-PRESCRIPTION O-FINP))
@@ -3435,16 +3435,16 @@
                  (10 10 (:TYPE-PRESCRIPTION BOOLEANP))
                  (7 7 (:META CANCEL_TIMES-EQUAL-CORRECT))
                  (7 7 (:META CANCEL_PLUS-EQUAL-CORRECT)))
-(F91-UNWINDING (3627 394 (:REWRITE F91-UNWINDING-2))
-               (3487 393 (:REWRITE OPEN-F91-BASE))
-               (2925 93 (:REWRITE OPEN-F91-INDUCTION))
-               (1298 1190 (:REWRITE DEFAULT-<-2))
-               (1190 1190 (:REWRITE DEFAULT-<-1))
-               (1190 1190 (:META CANCEL_PLUS-LESSP-CORRECT))
-               (964 896 (:REWRITE DEFAULT-+-2))
-               (924 896 (:REWRITE DEFAULT-+-1))
+(F91-UNWINDING (4612 414 (:REWRITE OPEN-F91-BASE))
+               (4211 415 (:REWRITE F91-UNWINDING-2))
+               (3489 93 (:REWRITE OPEN-F91-INDUCTION))
+               (1625 1505 (:REWRITE DEFAULT-<-2))
+               (1505 1505 (:REWRITE DEFAULT-<-1))
+               (1505 1505 (:META CANCEL_PLUS-LESSP-CORRECT))
+               (1084 1016 (:REWRITE DEFAULT-+-2))
+               (1044 1016 (:REWRITE DEFAULT-+-1))
                (375 89 (:DEFINITION |F91-base|))
-               (204 204
+               (216 216
                     (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                (9 3
                   (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
@@ -3619,13 +3619,13 @@
                (6 6 (:META CANCEL_PLUS-EQUAL-CORRECT)))
 (TARAI-DOMAIN)
 (TARAI)
-(NATP-TARAI (5959 5959
+(NATP-TARAI (6021 6021
                   (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-            (4123 4123 (:REWRITE DEFAULT-+-2))
-            (4123 4123 (:REWRITE DEFAULT-+-1))
-            (3483 2736 (:META CANCEL_PLUS-LESSP-CORRECT))
-            (3103 2075 (:REWRITE DEFAULT-<-2))
-            (2285 2075 (:REWRITE DEFAULT-<-1))
+            (4135 4135 (:REWRITE DEFAULT-+-2))
+            (4135 4135 (:REWRITE DEFAULT-+-1))
+            (3499 2748 (:META CANCEL_PLUS-LESSP-CORRECT))
+            (3121 2085 (:REWRITE DEFAULT-<-2))
+            (2295 2085 (:REWRITE DEFAULT-<-1))
             (1264 316 (:REWRITE <-0-+-NEGATIVE-1))
             (451 451
                  (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
@@ -3639,14 +3639,14 @@
                (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
             (4 4 (:META CANCEL_TIMES-EQUAL-CORRECT))
             (4 4 (:META CANCEL_PLUS-EQUAL-CORRECT)))
-(TARAI-UNWINDING (16634 16634
+(TARAI-UNWINDING (19031 19031
                         (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
-                 (10230 7426 (:REWRITE DEFAULT-+-2))
-                 (7426 7426 (:REWRITE DEFAULT-+-1))
-                 (7089 7089
+                 (10816 7994 (:REWRITE DEFAULT-+-2))
+                 (7994 7994 (:REWRITE DEFAULT-+-1))
+                 (7627 7627
                        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                 (6506 3253 (:REWRITE DEFAULT-<-2))
-                 (6506 3253 (:REWRITE DEFAULT-<-1))
+                 (7386 3693 (:REWRITE DEFAULT-<-2))
+                 (7386 3693 (:REWRITE DEFAULT-<-1))
                  (259 80
                       (:REWRITE DEFUNG::BOOLEAN-EQUAL-REDUCTION))
                  (156 156 (:TYPE-PRESCRIPTION BOOLEANP))

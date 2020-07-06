@@ -250,8 +250,8 @@
 (L4-STRICTER-FS-P)
 (L4-WRCHS-RETURNS-FS (2181 727
                            (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                     (1700 1333 (:REWRITE DEFAULT-CAR))
-                     (1671 1262 (:REWRITE DEFAULT-CDR))
+                     (1709 1342 (:REWRITE DEFAULT-CAR))
+                     (1683 1274 (:REWRITE DEFAULT-CDR))
                      (1584 24
                            (:DEFINITION FETCH-BLOCKS-BY-INDICES))
                      (1580 41 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
@@ -264,14 +264,14 @@
                      (800 4 (:DEFINITION SET-INDICES))
                      (775 155 (:DEFINITION ASSOC-EQUAL))
                      (744 24 (:DEFINITION NTH))
-                     (715 419 (:REWRITE DEFAULT-+-2))
+                     (721 422 (:REWRITE DEFAULT-+-2))
                      (672 24 (:DEFINITION TAKE))
                      (517 49 (:DEFINITION CHARACTER-LISTP))
                      (501 41
                           (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
-                     (452 419 (:REWRITE DEFAULT-+-1))
-                     (448 358 (:REWRITE DEFAULT-<-2))
-                     (403 358 (:REWRITE DEFAULT-<-1))
+                     (455 422 (:REWRITE DEFAULT-+-1))
+                     (453 363 (:REWRITE DEFAULT-<-2))
+                     (408 363 (:REWRITE DEFAULT-<-1))
                      (364 28 (:DEFINITION COUNT-FREE-BLOCKS))
                      (240 60 (:REWRITE ZP-OPEN))
                      (240 16 (:DEFINITION BLOCK-LISTP))
@@ -280,7 +280,7 @@
                      (189 52 (:REWRITE COMMUTATIVITY-OF-+))
                      (181 48
                           (:REWRITE L3-STAT-CORRECTNESS-2-LEMMA-2))
-                     (160 160
+                     (166 166
                           (:REWRITE BOUNDED-NAT-LISTP-CORRECTNESS-1))
                      (159 159 (:LINEAR POSITION-WHEN-MEMBER))
                      (159 159
@@ -4806,24 +4806,24 @@
                       (1352 88
                             (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-3
                                       . 1))
-                      (613 515 (:REWRITE DEFAULT-CDR))
-                      (532 507 (:REWRITE DEFAULT-CAR))
-                      (421 46 (:DEFINITION NAT-LISTP))
-                      (374 34 (:DEFINITION COUNT-FREE-BLOCKS))
-                      (310 124
+                      (625 527 (:REWRITE DEFAULT-CDR))
+                      (541 516 (:REWRITE DEFAULT-CAR))
+                      (451 49 (:DEFINITION NAT-LISTP))
+                      (394 132
                            (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-1))
-                      (264 151 (:REWRITE DEFAULT-+-2))
-                      (257 84 (:DEFINITION NATP))
+                      (374 34 (:DEFINITION COUNT-FREE-BLOCKS))
+                      (272 89 (:DEFINITION NATP))
+                      (270 154 (:REWRITE DEFAULT-+-2))
                       (208 16 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
                       (195 39 (:DEFINITION ASSOC-EQUAL))
-                      (185 151 (:REWRITE DEFAULT-+-1))
+                      (188 154 (:REWRITE DEFAULT-+-1))
+                      (140 117 (:REWRITE DEFAULT-<-1))
                       (136 34 (:REWRITE COMMUTATIVITY-OF-+))
-                      (135 112 (:REWRITE DEFAULT-<-1))
+                      (129 117 (:REWRITE DEFAULT-<-2))
                       (128 16 (:DEFINITION MEMBER-EQUAL))
-                      (124 112 (:REWRITE DEFAULT-<-2))
-                      (92 4 (:DEFINITION SET-INDICES))
-                      (90 90
+                      (96 96
                           (:REWRITE BOUNDED-NAT-LISTP-CORRECTNESS-1))
+                      (92 4 (:DEFINITION SET-INDICES))
                       (90 18 (:DEFINITION BOOLEAN-LISTP))
                       (80 80 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                       (54 6 (:DEFINITION REMOVE1-ASSOC-EQUAL))

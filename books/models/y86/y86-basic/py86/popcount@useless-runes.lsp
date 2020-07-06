@@ -1096,185 +1096,187 @@
      (1 1 (:REWRITE ZIP-OPEN)))
 (|(logcount x)|
      (106884 99 (:REWRITE |(* 1/2 (floor x y))| . 1))
-     (90955 5960
+     (91234 6239
             (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
-     (78382 364 (:REWRITE CANCEL-FLOOR-+))
+     (79246 382 (:REWRITE CANCEL-FLOOR-+))
      (66024 81 (:REWRITE UGLY-UNHIDE-HACK-THM-1))
-     (55956 803 (:REWRITE |(* (- x) y)|))
-     (51259 364 (:REWRITE FLOOR-ZERO . 3))
-     (51142 51142
+     (56238 839 (:REWRITE |(* (- x) y)|))
+     (54022 54022
             (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-     (51142 51142
+     (54022 54022
             (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-     (51142 51142
+     (54022 54022
             (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (47261 375 (:REWRITE DEFAULT-FLOOR-RATIO))
-     (41256 120 (:LINEAR LINEAR-FLOOR-BOUNDS-1))
-     (39225 364 (:REWRITE FLOOR-ZERO . 4))
-     (38106 364 (:REWRITE FLOOR-X-Y-=-1 . 2))
-     (36069 3489
+     (52387 382 (:REWRITE FLOOR-ZERO . 3))
+     (50422 136 (:LINEAR LINEAR-FLOOR-BOUNDS-1))
+     (47435 393 (:REWRITE DEFAULT-FLOOR-RATIO))
+     (39765 382 (:REWRITE FLOOR-ZERO . 4))
+     (38664 382 (:REWRITE FLOOR-X-Y-=-1 . 2))
+     (37707 3615
             (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
-     (30876 870 (:REWRITE THE-FLOOR-ABOVE))
-     (29499 364 (:REWRITE FLOOR-CANCEL-*-CONST))
-     (25209 3489
+     (32931 37 (:REWRITE ZIP-OPEN))
+     (30930 924 (:REWRITE THE-FLOOR-ABOVE))
+     (29589 382 (:REWRITE FLOOR-CANCEL-*-CONST))
+     (26343 3615
             (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1))
-     (25209 3489
+     (26343 3615
             (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-     (18030 150 (:REWRITE |(+ y x)|))
+     (18094 158 (:REWRITE |(+ y x)|))
      (16803 99 (:REWRITE |(* 1/2 (floor x y))| . 3))
      (16803 99 (:REWRITE |(* 1/2 (floor x y))| . 2))
-     (16701 432 (:REWRITE DEFAULT-PLUS-2))
-     (16636 28 (:REWRITE ZIP-OPEN))
-     (15587 6313 (:REWRITE DEFAULT-TIMES-1))
-     (14349 3489
+     (16741 448 (:REWRITE DEFAULT-PLUS-2))
+     (15891 6617 (:REWRITE DEFAULT-TIMES-1))
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-ZERO . 4))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 3))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 3))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 2))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 3))
-     (14349 3489
+     (14979 3615
             (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
-     (13535 364 (:REWRITE FLOOR-=-X/Y . 2))
-     (10800 6313 (:REWRITE DEFAULT-TIMES-2))
-     (10737 432 (:REWRITE DEFAULT-PLUS-1))
-     (10722 192 (:REWRITE NORMALIZE-ADDENDS))
-     (8866 97
+     (13841 382 (:REWRITE FLOOR-=-X/Y . 2))
+     (11104 6617 (:REWRITE DEFAULT-TIMES-2))
+     (10777 448 (:REWRITE DEFAULT-PLUS-1))
+     (10730 200 (:REWRITE NORMALIZE-ADDENDS))
+     (9065 106
            (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (8442 18 (:REWRITE |(- (if a b c))|))
-     (8296 97 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (7623 671 (:REWRITE DEFAULT-MINUS))
-     (7588 1098 (:REWRITE INTEGERP-MINUS-X))
+     (8305 106 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (8009 1165 (:REWRITE INTEGERP-MINUS-X))
+     (7779 707 (:REWRITE DEFAULT-MINUS))
      (7410 477 (:REWRITE |(* (* x y) z)|))
-     (5960 5960
+     (6239 6239
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-     (5960 5960
+     (6239 6239
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-     (5960 5960
+     (6239 6239
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-     (5230 97
+     (5999 106
            (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
      (5184 18
            (:REWRITE |(floor (floor x y) z)| . 1))
-     (4594 364 (:REWRITE FLOOR-ZERO . 5))
-     (4593 364 (:REWRITE FLOOR-X-Y-=--1 . 2))
-     (4014 1134
+     (5148 1260
            (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
+     (4684 382 (:REWRITE FLOOR-ZERO . 5))
+     (4683 382 (:REWRITE FLOOR-X-Y-=--1 . 2))
+     (4653 68 (:LINEAR LINEAR-FLOOR-BOUNDS-3))
+     (4014 117
+           (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
      (3528 18 (:REWRITE |(- (+ x y))|))
      (3465 45 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
      (3465 45 (:DEFINITION FIX))
-     (3417 60 (:LINEAR LINEAR-FLOOR-BOUNDS-3))
-     (3243 107
-           (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
-     (3189 364 (:REWRITE FLOOR-ZERO . 2))
-     (3189 364 (:REWRITE FLOOR-X-Y-=-1 . 3))
-     (3189 364 (:REWRITE FLOOR-X-Y-=--1 . 3))
-     (3066 825
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (3066 825
-           (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-     (3065 825 (:REWRITE DEFAULT-LESS-THAN-1))
-     (3062 3062
+     (3279 382 (:REWRITE FLOOR-ZERO . 2))
+     (3279 382 (:REWRITE FLOOR-X-Y-=-1 . 3))
+     (3279 382 (:REWRITE FLOOR-X-Y-=--1 . 3))
+     (3223 3223
            (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (2988 252
-           (:REWRITE |(< (* (/ x) y) 1) with (< 0 x)|))
-     (2651 599 (:REWRITE |(- (* c x))|))
-     (2574 1134
+     (3204 1260
            (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 3))
-     (2574 1134
+     (3204 1260
            (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 2))
-     (2220 271
+     (3168 879
+           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (3168 879
+           (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (3167 879 (:REWRITE DEFAULT-LESS-THAN-1))
+     (3006 270
+           (:REWRITE |(< (* (/ x) y) 1) with (< 0 x)|))
+     (2813 635 (:REWRITE |(- (* c x))|))
+     (2238 289
            (:REWRITE FLOOR-CANCEL-*-REWRITING-GOAL-LITERAL))
-     (2009 479 (:REWRITE |(* c (* d x))|))
-     (1745 375 (:REWRITE DEFAULT-FLOOR-1))
-     (1620 252
+     (2013 480 (:REWRITE |(* c (* d x))|))
+     (1763 393 (:REWRITE DEFAULT-FLOOR-1))
+     (1638 270
            (:REWRITE |(< (* (/ x) y) 1) with (< x 0)|))
      (1488 93 (:REWRITE |(* y (* x z))|))
-     (1312 825
+     (1384 879
            (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
-     (1312 825
+     (1384 879
            (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
-     (1068 15 (:REWRITE FLOOR-ZERO . 1))
-     (974 974 (:TYPE-PRESCRIPTION ABS))
-     (870 870 (:REWRITE THE-FLOOR-BELOW))
-     (826 825 (:REWRITE DEFAULT-LESS-THAN-2))
-     (825 825 (:REWRITE SIMPLIFY-SUMS-<))
-     (825 825
+     (1076 23 (:REWRITE FLOOR-ZERO . 1))
+     (1010 1010 (:TYPE-PRESCRIPTION ABS))
+     (924 924 (:REWRITE THE-FLOOR-BELOW))
+     (880 879 (:REWRITE DEFAULT-LESS-THAN-2))
+     (879 879 (:REWRITE SIMPLIFY-SUMS-<))
+     (879 879
           (:REWRITE REMOVE-STRICT-INEQUALITIES))
-     (825 825
+     (879 879
           (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
-     (825 825 (:REWRITE INTEGERP-<-CONSTANT))
-     (825 825 (:REWRITE CONSTANT-<-INTEGERP))
-     (825 825
+     (879 879 (:REWRITE INTEGERP-<-CONSTANT))
+     (879 879 (:REWRITE CONSTANT-<-INTEGERP))
+     (879 879
           (:REWRITE |(< c (/ x)) positive c --- present in goal|))
-     (825 825
+     (879 879
           (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
-     (825 825
+     (879 879
           (:REWRITE |(< c (/ x)) negative c --- present in goal|))
-     (825 825
+     (879 879
           (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
-     (825 825 (:REWRITE |(< c (- x))|))
-     (825 825
+     (879 879 (:REWRITE |(< c (- x))|))
+     (879 879
           (:REWRITE |(< (/ x) c) positive c --- present in goal|))
-     (825 825
+     (879 879
           (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
-     (825 825
+     (879 879
           (:REWRITE |(< (/ x) c) negative c --- present in goal|))
-     (825 825
+     (879 879
           (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
-     (825 825 (:REWRITE |(< (/ x) (/ y))|))
-     (825 825 (:REWRITE |(< (- x) c)|))
-     (825 825 (:REWRITE |(< (- x) (- y))|))
-     (775 271
+     (879 879 (:REWRITE |(< (/ x) (/ y))|))
+     (879 879 (:REWRITE |(< (- x) c)|))
+     (879 879 (:REWRITE |(< (- x) (- y))|))
+     (865 289
           (:REWRITE FLOOR-CANCEL-*-NOT-REWRITING-GOAL-LITERAL))
+     (847 271
+          (:REWRITE |(floor (* x (/ y)) z) not rewriting-goal-literal|))
+     (801 801 (:REWRITE REDUCE-INTEGERP-+))
+     (801 801 (:META META-INTEGERP-CORRECT))
+     (780 271
+          (:REWRITE |(floor (* x (/ y)) z) rewriting-goal-literal|))
      (774 774
           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 1))
      (774 774 (:TYPE-PRESCRIPTION FLOOR))
-     (762 253
-          (:REWRITE |(floor (* x (/ y)) z) rewriting-goal-literal|))
-     (757 253
-          (:REWRITE |(floor (* x (/ y)) z) not rewriting-goal-literal|))
-     (752 752 (:REWRITE REDUCE-INTEGERP-+))
-     (752 752 (:META META-INTEGERP-CORRECT))
-     (375 375 (:REWRITE DEFAULT-FLOOR-2))
-     (336 60 (:LINEAR LINEAR-FLOOR-BOUNDS-2))
-     (319 319 (:REWRITE REMOVE-WEAK-INEQUALITIES))
-     (253 253 (:REWRITE |(floor x (- y))| . 2))
-     (253 253 (:REWRITE |(floor x (- y))| . 1))
-     (253 253
+     (490 68 (:LINEAR LINEAR-FLOOR-BOUNDS-2))
+     (393 393 (:REWRITE DEFAULT-FLOOR-2))
+     (337 337 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (271 271 (:REWRITE |(floor x (- y))| . 2))
+     (271 271 (:REWRITE |(floor x (- y))| . 1))
+     (271 271
           (:REWRITE |(floor x (* y (/ z))) rewriting-goal-literal|))
-     (253 253
+     (271 271
           (:REWRITE |(floor x (* y (/ z))) not rewriting-goal-literal|))
-     (253 253 (:REWRITE |(floor (- x) y)| . 2))
-     (253 253 (:REWRITE |(floor (- x) y)| . 1))
-     (147 147
+     (271 271 (:REWRITE |(floor (- x) y)| . 2))
+     (271 271 (:REWRITE |(floor (- x) y)| . 1))
+     (155 155
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (97 97
-         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (97 97
-         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (97 97
-         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (97 97 (:REWRITE |(equal c (/ x))|))
-     (97 97 (:REWRITE |(equal c (- x))|))
-     (97 97 (:REWRITE |(equal (/ x) c)|))
-     (97 97 (:REWRITE |(equal (/ x) (/ y))|))
-     (97 97 (:REWRITE |(equal (- x) c)|))
-     (97 97 (:REWRITE |(equal (- x) (- y))|))
+     (115 23 (:REWRITE FLOOR-=-X/Y . 4))
+     (106 106
+          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (106 106
+          (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (106 106
+          (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (106 106 (:REWRITE |(equal c (/ x))|))
+     (106 106 (:REWRITE |(equal c (- x))|))
+     (106 106 (:REWRITE |(equal (/ x) c)|))
+     (106 106 (:REWRITE |(equal (/ x) (/ y))|))
+     (106 106 (:REWRITE |(equal (- x) c)|))
+     (106 106 (:REWRITE |(equal (- x) (- y))|))
+     (99 99 (:TYPE-PRESCRIPTION LOGNOT))
      (93 93 (:REWRITE |(* a (/ a) b)|))
-     (92 92 (:TYPE-PRESCRIPTION LOGNOT))
      (90 45 (:REWRITE BUBBLE-DOWN-+-MATCH-1))
      (81 81 (:REWRITE UGLY-UNHIDE-HACK-THM-2))
-     (75 15 (:REWRITE FLOOR-=-X/Y . 4))
+     (70 14
+         (:REWRITE |(equal (floor (+ x y) z) x)|))
      (45 45 (:REWRITE |(+ x (- x))|))
      (45 45 (:REWRITE |(+ 0 x)|))
      (39 39
@@ -1287,8 +1289,7 @@
          (:TYPE-PRESCRIPTION UGLY-UNHIDE-HACK))
      (32 5
          (:REWRITE |(integerp (* 1/2 (lognot x)))|))
-     (30 6
-         (:REWRITE |(equal (floor (+ x y) z) x)|))
+     (28 2 (:REWRITE |(equal (lognot x) 0)|))
      (18 18
          (:REWRITE |(floor (floor x y) z)| . 5))
      (18 18
@@ -1297,7 +1298,8 @@
          (:REWRITE |(floor (floor x y) z)| . 3))
      (18 18
          (:REWRITE |(floor (floor x y) z)| . 2))
-     (14 1 (:REWRITE |(equal (lognot x) 0)|))
+     (14 14
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
      (13 13
          (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
      (10 10
@@ -1306,17 +1308,15 @@
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
      (10 10 (:REWRITE |(< 0 (/ x))|))
      (10 10 (:REWRITE |(< 0 (* x y))|))
-     (6 6
-        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
      (6 6 (:REWRITE DEFAULT-LOGNOT))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-4F))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-4D))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-3F))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-3D))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-2F))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-2D))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-1F))
-     (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-1D))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-4F))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-4D))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-3F))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-3D))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-2F))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-2D))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-1F))
+     (3 3 (:TYPE-PRESCRIPTION NOT-INTEGERP-1D))
      (2 2
         (:REWRITE LOGNOT-OF-NEGATIVE-IS-POSITIVE))
      (2 2 (:REWRITE |(equal (+ (- c) x) y)|)))

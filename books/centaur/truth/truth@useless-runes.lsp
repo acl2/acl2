@@ -2603,7 +2603,7 @@
                         (2 1 (:LINEAR BITOPS::B-NOT-BOUND))
                         (1 1 (:REWRITE FOLD-CONSTS-IN-+)))
 (TRUTH::MINUS-ASH-1-IS-INSTALL-BIT
-     (3951 10
+     (3952 10
            (:REWRITE BITOPS::INSTALL-BIT-WHEN-REDUNDANT))
      (3710 1512
            (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
@@ -2612,7 +2612,7 @@
      (3496 28 (:DEFINITION BITMASKP**))
      (2465 10 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
      (1646 1646 (:TYPE-PRESCRIPTION NATP))
-     (1442 4 (:REWRITE EQUAL-0-OF-BOOL->BIT))
+     (1443 4 (:REWRITE EQUAL-0-OF-BOOL->BIT))
      (1371 41 (:REWRITE ZIP-OPEN))
      (1123 91 (:REWRITE BITOPS::LOGCAR-OF-BIT))
      (711 67 (:REWRITE BITOPS::LOGCDR-OF-BIT))
@@ -2629,7 +2629,7 @@
      (135 135
           (:TYPE-PRESCRIPTION BITMASKP$INLINE))
      (130 130 (:META CANCEL_PLUS-LESSP-CORRECT))
-     (124 23 (:REWRITE ZP-WHEN-INTEGERP))
+     (125 23 (:REWRITE ZP-WHEN-INTEGERP))
      (90 62 (:REWRITE DEFAULT-+-2))
      (84 62 (:REWRITE DEFAULT-+-1))
      (70 70 (:REWRITE DEFAULT-<-2))
@@ -3850,7 +3850,7 @@
                         (2 1 (:LINEAR BITOPS::B-NOT-BOUND))
                         (1 1 (:REWRITE FOLD-CONSTS-IN-+)))
 (TRUTH::MINUS-ASH-1-IS-INSTALL-BIT
-     (7520 17
+     (7522 17
            (:REWRITE BITOPS::INSTALL-BIT-WHEN-REDUNDANT))
      (6376 2547
            (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
@@ -3859,7 +3859,7 @@
      (5829 41 (:DEFINITION BITMASKP**))
      (4772 17 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
      (2797 2797 (:TYPE-PRESCRIPTION NATP))
-     (2672 7 (:REWRITE EQUAL-0-OF-BOOL->BIT))
+     (2674 7 (:REWRITE EQUAL-0-OF-BOOL->BIT))
      (2270 50 (:REWRITE ZIP-OPEN))
      (1935 138 (:REWRITE BITOPS::LOGCAR-OF-BIT))
      (1225 99 (:REWRITE BITOPS::LOGCDR-OF-BIT))
@@ -3871,7 +3871,7 @@
      (268 67 (:REWRITE <-0-+-NEGATIVE-1))
      (240 34 (:REWRITE ZP-WHEN-GT-0))
      (216 216 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
-     (209 34 (:REWRITE ZP-WHEN-INTEGERP))
+     (211 34 (:REWRITE ZP-WHEN-INTEGERP))
      (202 202
           (:TYPE-PRESCRIPTION BITMASKP$INLINE))
      (187 16 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
@@ -7861,7 +7861,7 @@
         (:REWRITE BITOPS::B-AND-EQUAL-1-IN-HYP))
      (1 1
         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
-(TRUTH::ASH-OF-LOGAND (57156 137 (:DEFINITION BITMASKP**))
+(TRUTH::ASH-OF-LOGAND (57157 137 (:DEFINITION BITMASKP**))
                       (50774 34
                              (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
                       (45137 17265
@@ -7874,12 +7874,12 @@
                       (21147 914 (:REWRITE BITOPS::LOGCDR-OF-BIT))
                       (18824 18824 (:TYPE-PRESCRIPTION NATP))
                       (18620 29 (:REWRITE BITOPS::LOGCDR-OF-LOGNOT))
-                      (14529 34
+                      (14530 34
                              (:REWRITE BITOPS::LOGAND-WITH-BITMASK))
                       (12965 936 (:REWRITE UNSIGNED-BYTE-P-PLUS))
                       (11401 56 (:REWRITE BITOPS::LOGCAR-OF-LOGTAIL))
                       (11345 56 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
-                      (10930 95 (:DEFINITION LOGBITP**))
+                      (10931 95 (:DEFINITION LOGBITP**))
                       (9378 997
                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP))
                       (8651 190
@@ -7904,11 +7904,11 @@
                       (1784 1784
                             (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
                       (1738 208 (:REWRITE ZP-WHEN-GT-0))
-                      (1518 208 (:REWRITE ZP-WHEN-INTEGERP))
+                      (1519 208 (:REWRITE ZP-WHEN-INTEGERP))
                       (1312 328 (:REWRITE <-0-+-NEGATIVE-2))
                       (1272 1272
                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                      (1257 22 (:REWRITE BIT->BOOL-OF-BOOL->BIT))
+                      (1258 22 (:REWRITE BIT->BOOL-OF-BOOL->BIT))
                       (1060 1060 (:META CANCEL_PLUS-LESSP-CORRECT))
                       (1058 29 (:REWRITE BITOPS::LOGCAR-OF-LOGNOT))
                       (998 998 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
@@ -8663,7 +8663,7 @@
      (537 186 (:REWRITE DEFAULT-+-2))
      (518 82 (:REWRITE ZP-WHEN-GT-0))
      (450 450 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
-     (431 82 (:REWRITE ZP-WHEN-INTEGERP))
+     (434 82 (:REWRITE ZP-WHEN-INTEGERP))
      (425 32 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (417 96 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
      (398 68 (:REWRITE DEFAULT-*-2))
@@ -8786,7 +8786,7 @@
      (40 4 (:REWRITE EQUAL-0-OF-BOOL->BIT))
      (25 25 (:REWRITE EQUAL-CONSTANT-+))
      (16 16 (:REWRITE FOLD-CONSTS-IN-+)))
-(TRUTH::ASH-OF-LOGAND (56960 137 (:DEFINITION BITMASKP**))
+(TRUTH::ASH-OF-LOGAND (56961 137 (:DEFINITION BITMASKP**))
                       (50570 34
                              (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
                       (45137 17265
@@ -8799,12 +8799,12 @@
                       (21147 914 (:REWRITE BITOPS::LOGCDR-OF-BIT))
                       (18824 18824 (:TYPE-PRESCRIPTION NATP))
                       (18584 29 (:REWRITE BITOPS::LOGCDR-OF-LOGNOT))
-                      (14477 34
+                      (14478 34
                              (:REWRITE BITOPS::LOGAND-WITH-BITMASK))
                       (12965 936 (:REWRITE UNSIGNED-BYTE-P-PLUS))
                       (11177 56 (:REWRITE BITOPS::LOGCAR-OF-LOGTAIL))
                       (11121 56 (:REWRITE BITOPS::LOGBIT-TO-LOGBITP))
-                      (10770 95 (:DEFINITION LOGBITP**))
+                      (10771 95 (:DEFINITION LOGBITP**))
                       (9378 997
                             (:TYPE-PRESCRIPTION BITOPS::LOGTAIL-NATP))
                       (8651 190
@@ -8829,11 +8829,11 @@
                       (1780 29
                             (:REWRITE BITOPS::BIT->BOOL-OF-B-NOT))
                       (1738 208 (:REWRITE ZP-WHEN-GT-0))
-                      (1518 208 (:REWRITE ZP-WHEN-INTEGERP))
+                      (1519 208 (:REWRITE ZP-WHEN-INTEGERP))
                       (1312 328 (:REWRITE <-0-+-NEGATIVE-2))
                       (1272 1272
                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                      (1221 22 (:REWRITE BIT->BOOL-OF-BOOL->BIT))
+                      (1222 22 (:REWRITE BIT->BOOL-OF-BOOL->BIT))
                       (1060 1060 (:META CANCEL_PLUS-LESSP-CORRECT))
                       (1022 29 (:REWRITE BITOPS::LOGCAR-OF-LOGNOT))
                       (998 998 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
