@@ -424,7 +424,11 @@
        has the form @('(op q r)') or @('(op r q)'),
        where @('op') is a named function, with formals @('y1') and @('y2').")
      (xdoc::li
-      "The guard term of @('op') has the form @('(and (dom y1) (dom y2))'),
+      "The guard term of @('op') has one of the forms
+       (i) @('(and (dom y1) (dom y2))'),
+       (ii) @('(and (dom y2) (dom y1))'),
+       (iii) @('(dom y1)'), and
+       (iv) @('(dom y2)'),
        where @('dom') is a named function."))
 
     (xdoc::p

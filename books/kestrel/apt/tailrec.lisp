@@ -478,10 +478,9 @@
   :verify-guards nil
   :short "Infer the domain over which some applicability conditions must hold."
   :long
-  "<p>
-   This is used when the @(':domain') input is @(':auto').
-   A domain is inferred as described in the documentation.
-   </p>"
+  (xdoc::topstring-p
+   "This is used when the @(':domain') input is @(':auto').
+    A domain is inferred as described in the documentation.")
   (b* ((default '(lambda (x) 't))
        (domain
         (if (member-eq variant$ '(:monoid :monoid-alt))
@@ -495,6 +494,18 @@
                     (guard (uguard op wrld)))
                  (case-match guard
                    (('if (dom !y1) (dom !y2) *nil*)
+                    (if (symbolp dom)
+                        dom
+                      default))
+                   (('if (dom !y2) (dom !y1) *nil*)
+                    (if (symbolp dom)
+                        dom
+                      default))
+                   ((dom !y1)
+                    (if (symbolp dom)
+                        dom
+                      default))
+                   ((dom !y2)
                     (if (symbolp dom)
                         dom
                       default))

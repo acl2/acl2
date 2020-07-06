@@ -260,6 +260,10 @@
      "An @(':accumulator') input has been added to optinally specify
       the name of the accumulator argument of the new function.")
     (xdoc::li
+     "The heuristics for inferring the domain of the binary operator
+      (when the @(':domain') input is, generally by default, @(':auto'),
+      have been extended to infer more cases automatically.")
+    (xdoc::li
      "The target function's @(tsee if) body,
       after translation and @(tsee let) expansion,
       can now have a recursive `then' branch and a non-recursive `else' branch.
