@@ -243,11 +243,10 @@
 ; The following example, list reversal, does not involve numbers at all:
 ; it involves lists instead.
 
-; Here the :MONOID variant works, but we need to supply an explicit :DOMAIN,
-; because TAILREC's current domain inference heuristics do not suffice.
-; Given that the binary operation is APPEND (more precisely, BINARY-APPEND),
-; TRUE-LISP is a natural choice for the domain;
-; the identity is NIL.
+; Here the :MONOID variant works.
+; The binary operator is APPEND (more precisely, BINARY-APPEND),
+; for which TAILREC automatically infers TRUE-LISTP as domain.
+; The identity is NIL, of course.
 
 (defun list-reverse (l)
   (declare (xargs :guard (true-listp l)))
@@ -255,7 +254,7 @@
       nil
     (append (list-reverse (cdr l)) (list (car l)))))
 
-(apt::tailrec list-reverse :domain true-listp)
+(apt::tailrec list-reverse)
 
 (must-be-redundant
  (defun list-reverse{1} (l r)
