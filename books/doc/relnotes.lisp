@@ -177,7 +177,8 @@
      Utilities to set and retrieve certain defaults have also been added.")
 
    (xdoc::p
-    "A new expanded data transformation, @(tsee apt::expdata), has been added.
+    "A new transformation has been added:
+     @(tsee apt::expdata), the `expanded data transformation'.
      This can realize data type refinements where
      each instance of the old data may be represented by
      multiple instances of the new data,
