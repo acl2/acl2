@@ -221,12 +221,6 @@
    (forall (z w) (equal (?f (?g x y)) (cons z w))))
  :with-output-off nil)
 
-(must-fail ; bad :PRINT option
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print (1 2 2))
- :with-output-off nil)
-
 (defun-sk2 ex (x y)
   (exists (z w) (equal (?f (?g x y)) (cons z w))))
 
@@ -289,46 +283,6 @@
 ;; Example 1 in :DOC DEFUN-SK2:
 (defun-sk2 injective[?f] ()
   (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
-
-(must-succeed ; print everything
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; print nothing
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print nil)
- :with-output-off nil)
-
-(must-succeed ; print the function output only
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print :fn-output)
- :with-output-off nil)
-
-(must-succeed ; :PRINT after another option
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :skolem-name h-wit
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; :PRINT before another option
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print :all
-   :skolem-name h-wit)
- :with-output-off nil)
-
-(must-succeed ; :PRINT between two options
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :thm-name h-thm
-   :print :all
-   :skolem-name h-wit)
- :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
