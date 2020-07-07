@@ -2139,7 +2139,39 @@
     more forms of @(tsee return-last) calls,
     and to relax the checks on possibly-side-effecting functions,
     as also mentioned earlier in this tutorial page.
-    This is future work."))
+    This is future work.")
+
+  (atj-tutorial-section "Ignoring the Whitelist")
+
+  (xdoc::p
+   "ATJ provides an optional input @(':ignore-whitelist').
+    When this input is @('nil') (which is the default),
+    the whitelist mentioned above is not ignored.
+    That is, a function with raw Lisp code must be in the whitelist
+    in order for the ATJ call to succeed, as explained above.")
+
+  (xdoc::p
+   "When @(':ignore-whitelist') is @('t'), the whitelist is ignored instead.
+    So long as a function with raw Lisp code has an unnormalized body,
+    ATJ will translate that unnormalized body to Java code,
+    regardless of whether it is functionally equivalent to the raw Lisp code.
+    In particular, this means that
+    any side effects carried out by the raw Lisp code
+    will not be replicated by the generated Java code.
+    For instance, @(tsee hard-error) has @('\'nil') as unnormalized body,
+    so the Java code generated for @(tsee hard-error) just returns @('nil'):
+    it does not stop execution with an error, as in ACL2.")
+
+  (xdoc::p
+   "There is thus a potential danger of generating incorrect Java code
+    (with respect to a reasonable or expected evaluation semantics of ACL2)
+    when @(':ignore-whitelist') is @('t').
+    Nonetheless, this option may be useful if, for instance,
+    the ACL2 code that calls the side-effecting functions
+    is unreachable under the guards.
+    In any case, once the user explicitly sets @(':ignore-whitelist') to @('t'),
+    they assume the responsibility for the adequacy of
+    translating side-effecting ACL2 code to non-side-effecting Java code."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
