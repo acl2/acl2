@@ -308,6 +308,13 @@
      have been moved here
      from @('[books]/kestrel/utilities/user-interface.lisp').")
 
+   (xdoc::p
+    "The XDOC constructor @('xdoc::evmac-section-form-auto') has been removed.
+     Not being able to use this XDOC constructor avoids
+     additional inter-dependencies among books
+     that do not seem worth the small savings in writing user documentation,
+     whose general form section should be normally a small fraction.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
