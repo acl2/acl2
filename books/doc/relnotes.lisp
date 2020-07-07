@@ -176,7 +176,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
 
    (xdoc::p
     "An " (xdoc::seetopic "apt::defaults-table" "APT defaults table")
@@ -316,6 +316,13 @@
      @(tsee try-event)
      have been moved here
      from @('[books]/kestrel/utilities/user-interface.lisp').")
+
+   (xdoc::p
+    "The XDOC constructor @('xdoc::evmac-section-form-auto') has been removed.
+     Not being able to use this XDOC constructor avoids
+     additional inter-dependencies among books
+     that do not seem worth the small savings in writing user documentation,
+     whose general form section should be normally a small fraction.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -508,6 +515,22 @@
    (xdoc::p
     "Added an operation to create an omap
      from a list of keys and a corresponding list of values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "soft::soft" "SOFT Library"))
+
+   (xdoc::p
+    "A new macro @(tsee soft::defsoft) has been added,
+     to record a function as second-order
+     after the function has been introduced via a non-SOFT event.
+     The SOFT macros
+     @(tsee soft::defun2),
+     @(tsee soft::defchoose2), and
+     @(tsee soft::defun-sk2)
+     have been simplified to be abbreviations of
+     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
+     followed by @(tsee soft::defsoft).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

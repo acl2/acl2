@@ -10,7 +10,7 @@
 
 (in-package "FTY")
 
-(include-book "deffixequiv-sk")
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,7 +58,11 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form-auto deffixequiv-sk)
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(deffixequiv-sk fn"
+     "                :args ((arg1 pred1) ... (argn predn))  ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
