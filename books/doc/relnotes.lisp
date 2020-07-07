@@ -502,6 +502,22 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "soft::soft" "SOFT Library"))
+
+   (xdoc::p
+    "A new macro @(tsee soft::defsoft) has been added,
+     to record a function as second-order
+     after the function has been introduced via a non-SOFT event.
+     The SOFT macros
+     @(tsee soft::defun2),
+     @(tsee soft::defchoose2), and
+     @(tsee soft::defun-sk2)
+     have been simplified to be abbreviations of
+     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk2)
+     followed by @(tsee soft::defsoft).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
 
    (xdoc::p
