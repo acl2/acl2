@@ -146,10 +146,6 @@
   :with-output-off nil)
  :with-output-off nil)
 
-(must-fail ; bad :PRINT option
- (defun2 h (x) (?f x) :print 456)
- :with-output-off nil)
-
 (defun2 nonrec (x y)
   (cons (?f x) (?g x y)))
 
@@ -191,18 +187,6 @@
 (defun2 fold[?f][?g] (bt)
   (cond ((atom bt) (?f bt))
         (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))
-
-(must-succeed ; print everything
- (defun2 h (x) (?f x) :print :all)
- :with-output-off nil)
-
-(must-succeed ; print nothing
- (defun2 h (x) (?f x) :print nil)
- :with-output-off nil)
-
-(must-succeed ; print the function output only
- (defun2 h (x) (?f x) :print :fn-output)
- :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
