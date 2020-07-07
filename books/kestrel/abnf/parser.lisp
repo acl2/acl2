@@ -355,6 +355,7 @@
         (mv nil (car input) (cdr input))
       (mv *grammar-parser-error-msg* nil input)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -366,11 +367,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-any-linear
-               :rule-classes :linear))
-
-  (defrule parse-any-of-nat-list-fix
-    (equal (parse-any (nat-list-fix input))
-           (parse-any input))))
+               :rule-classes :linear)))
 
 (define parse-exact ((nat natp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -390,6 +387,7 @@
             (mv *grammar-parser-error-msg* nil (cons input-nat input))))
          (return (tree-leafterm (list nat)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -397,11 +395,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-exact-linear
-               :rule-classes :linear))
-
-  (defrule parse-exact-of-nat-list-fix
-    (equal (parse-exact nat (nat-list-fix input))
-           (parse-exact nat input))))
+               :rule-classes :linear)))
 
 (define parse-in-range ((min natp) (max natp) (input nat-listp))
   :guard (<= min max)
@@ -423,6 +417,7 @@
          (return (tree-leafterm (list nat)))))
   :guard-hints (("Goal" :cases ((natp (mv-nth 1 (parse-any input))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -430,11 +425,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-in-range-linear
-               :rule-classes :linear))
-
-  (defrule parse-in-range-of-nat-list-fix
-    (equal (parse-in-range min max (nat-list-fix input))
-           (parse-in-range min max input))))
+               :rule-classes :linear)))
 
 (define parse-in-either-range ((min1 natp) (max1 natp)
                                (min2 natp) (max2 natp)
@@ -463,16 +454,15 @@
   :no-function t
   ///
 
+  (fty::deffixequiv parse-in-either-range
+    :args ((input nat-listp)))
+
   (more-returns
    (rest-input (and (<= (len rest-input) (len input))
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-in-either-range-linear
-               :rule-classes :linear))
-
-  (defrule parse-in-either-range-of-nat-list-fix
-    (equal (parse-in-either-range min1 max1 min2 max2 (nat-list-fix input))
-           (parse-in-either-range min1 max1 min2 max2 input))))
+               :rule-classes :linear)))
 
 (define parse-*-in-either-range ((min1 natp) (max1 natp)
                                  (min2 natp) (max2 natp)
@@ -500,14 +490,13 @@
   :no-function t
   ///
 
+  (fty::deffixequiv parse-*-in-either-range
+    :args ((input nat-listp)))
+
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*-in-either-range-linear
-               :rule-classes :linear))
-
-  (defrule parse-*-in-either-range-of-nat-list-fix
-    (equal (parse-*-in-either-range min1 max1 min2 max2 (nat-list-fix input))
-           (parse-*-in-either-range min1 max1 min2 max2 input))))
+               :rule-classes :linear)))
 
 (define parse-ichar ((char characterp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -527,6 +516,7 @@
          (return-raw (mv *grammar-parser-error-msg* nil (cons nat input))))
        (return (tree-leafterm (list nat))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -534,11 +524,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-ichar-linear
-               :rule-classes :linear))
-
-  (defrule parse-ichar-of-nat-list-fix
-    (equal (parse-ichar char (nat-list-fix input))
-           (parse-ichar char input))))
+               :rule-classes :linear)))
 
 (define parse-ichars ((char1 characterp) (char2 characterp) (input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -561,6 +547,7 @@
          (return-raw (mv *grammar-parser-error-msg* nil (cons nat2 input))))
        (return (tree-leafterm (list nat1 nat2))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -568,11 +555,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-ichars-linear
-               :rule-classes :linear))
-
-  (defrule parse-ichars-of-nat-list-fix
-    (equal (parse-ichars char1 char2 (nat-list-fix input))
-           (parse-ichars char1 char2 input))))
+               :rule-classes :linear)))
 
 (define parse-alpha ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -590,6 +573,7 @@
                   (return (make-tree-nonleaf :rulename? *alpha*
                                              :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -597,11 +581,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-alpha-linear
-               :rule-classes :linear))
-
-  (defrule parse-alpha-of-nat-list-fix
-    (equal (parse-alpha (nat-list-fix input))
-           (parse-alpha input))))
+               :rule-classes :linear)))
 
 (define parse-bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -619,6 +599,7 @@
                   (return (make-tree-nonleaf :rulename? *bit*
                                              :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -626,11 +607,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-bit-linear
-               :rule-classes :linear))
-
-  (defrule parse-bit-of-nat-list-fix
-    (equal (parse-bit (nat-list-fix input))
-           (parse-bit input))))
+               :rule-classes :linear)))
 
 (define parse-cr ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -645,6 +622,7 @@
        (return (make-tree-nonleaf :rulename? *cr*
                                   :branches (list (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -652,11 +630,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-cr-linear
-               :rule-classes :linear))
-
-  (defrule parse-cr-of-nat-list-fix
-    (equal (parse-cr (nat-list-fix input))
-           (parse-cr input))))
+               :rule-classes :linear)))
 
 (define parse-digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -671,6 +645,7 @@
        (return (make-tree-nonleaf :rulename? *digit*
                                   :branches (list (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -678,11 +653,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-digit-of-nat-list-fix
-    (equal (parse-digit (nat-list-fix input))
-           (parse-digit input))))
+               :rule-classes :linear)))
 
 (define parse-dquote ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -697,6 +668,7 @@
        (return
         (make-tree-nonleaf :rulename? *dquote* :branches (list (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -704,11 +676,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dquote-linear
-               :rule-classes :linear))
-
-  (defrule parse-dquote-of-nat-list-fix
-    (equal (parse-dquote (nat-list-fix input))
-           (parse-dquote input))))
+               :rule-classes :linear)))
 
 (define parse-htab ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -723,6 +691,7 @@
        (return (make-tree-nonleaf :rulename? *htab*
                                   :branches (list (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -730,11 +699,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-htab-linear
-               :rule-classes :linear))
-
-  (defrule parse-htab-of-nat-list-fix
-    (equal (parse-htab (nat-list-fix input))
-           (parse-htab input))))
+               :rule-classes :linear)))
 
 (define parse-lf ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -749,6 +714,7 @@
        (return (make-tree-nonleaf :rulename? *lf*
                                   :branches (list (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -756,11 +722,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-lf-linear
-               :rule-classes :linear))
-
-  (defrule parse-lf-of-nat-list-fix
-    (equal (parse-lf (nat-list-fix input))
-           (parse-lf input))))
+               :rule-classes :linear)))
 
 (define parse-sp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -775,6 +737,7 @@
        (return (make-tree-nonleaf :rulename? *sp*
                                   :branches (list (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -782,11 +745,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-sp-linear
-               :rule-classes :linear))
-
-  (defrule parse-sp-of-nat-list-fix
-    (equal (parse-sp (nat-list-fix input))
-           (parse-sp input))))
+               :rule-classes :linear)))
 
 (define parse-vchar ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -801,6 +760,7 @@
        (return
         (make-tree-nonleaf :rulename? *vchar* :branches (list (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -808,11 +768,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-vchar-linear
-               :rule-classes :linear))
-
-  (defrule parse-vchar-of-nat-list-fix
-    (equal (parse-vchar (nat-list-fix input))
-           (parse-vchar input))))
+               :rule-classes :linear)))
 
 (define parse-crlf ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -829,6 +785,7 @@
         (make-tree-nonleaf :rulename? *crlf* :branches (list (list tree-cr)
                                                              (list tree-lf)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -836,11 +793,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-crlf-linear
-               :rule-classes :linear))
-
-  (defrule parse-crlf-of-nat-list-fix
-    (equal (parse-crlf (nat-list-fix input))
-           (parse-crlf input))))
+               :rule-classes :linear)))
 
 (define parse-hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -874,6 +827,7 @@
     (return (make-tree-nonleaf :rulename? *hexdig*
                                :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -881,11 +835,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-hexdig-linear
-               :rule-classes :linear))
-
-  (defrule parse-hexdig-of-nat-list-fix
-    (equal (parse-hexdig (nat-list-fix input))
-           (parse-hexdig input))))
+               :rule-classes :linear)))
 
 (define parse-wsp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -902,6 +852,7 @@
    ((tree := (parse-htab input))
     (return (make-tree-nonleaf :rulename? *wsp* :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -909,11 +860,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-wsp-linear
-               :rule-classes :linear))
-
-  (defrule parse-wsp-of-nat-list-fix
-    (equal (parse-wsp (nat-list-fix input))
-           (parse-wsp input))))
+               :rule-classes :linear)))
 
 (define parse-prose-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -933,6 +880,7 @@
                                            trees-text
                                            (list tree-close-angle)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -940,11 +888,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-prose-val-linear
-               :rule-classes :linear))
-
-  (defrule parse-prose-val-of-nat-list-fix
-    (equal (parse-prose-val (nat-list-fix input))
-           (parse-prose-val input))))
+               :rule-classes :linear)))
 
 (define parse-*bit ((input nat-listp))
   :returns (mv (error? not)
@@ -960,16 +904,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*bit-linear
-               :rule-classes :linear))
-
-  (defrule parse-*bit-of-nat-list-fix
-    (equal (parse-*bit (nat-list-fix input))
-           (parse-*bit input))))
+               :rule-classes :linear)))
 
 (define parse-*digit ((input nat-listp))
   :returns (mv (error? not)
@@ -985,16 +926,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-*digit-of-nat-list-fix
-    (equal (parse-*digit (nat-list-fix input))
-           (parse-*digit input))))
+               :rule-classes :linear)))
 
 (define parse-*hexdig ((input nat-listp))
   :returns (mv (error? not)
@@ -1010,16 +948,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*hexdig-linear
-               :rule-classes :linear))
-
-  (defrule parse-*hexdig-of-nat-list-fix
-    (equal (parse-*hexdig (nat-list-fix input))
-           (parse-*hexdig input))))
+               :rule-classes :linear)))
 
 (define parse-1*bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1033,6 +968,7 @@
        (trees := (parse-*bit input))
        (return (cons tree trees)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1040,11 +976,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-1*bit-linear
-               :rule-classes :linear))
-
-  (defrule parse-1*bit-of-nat-list-fix
-    (equal (parse-1*bit (nat-list-fix input))
-           (parse-1*bit input))))
+               :rule-classes :linear)))
 
 (define parse-1*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1058,6 +990,7 @@
        (trees := (parse-*digit input))
        (return (cons tree trees)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1065,11 +998,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-1*digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-1*digit-of-nat-list-fix
-    (equal (parse-1*digit (nat-list-fix input))
-           (parse-1*digit input))))
+               :rule-classes :linear)))
 
 (define parse-1*hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1083,6 +1012,7 @@
        (trees := (parse-*hexdig input))
        (return (cons tree trees)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1090,11 +1020,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-1*hexdig-linear
-               :rule-classes :linear))
-
-  (defrule parse-1*hexdig-of-nat-list-fix
-    (equal (parse-1*hexdig (nat-list-fix input))
-           (parse-1*hexdig input))))
+               :rule-classes :linear)))
 
 (define parse-dot-1*bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1110,6 +1036,7 @@
        (return
         (make-tree-nonleaf :rulename? nil :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1117,11 +1044,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dot-*1bit-linear
-               :rule-classes :linear))
-
-  (defrule parse-dot-1*bit-of-nat-list-fix
-    (equal (parse-dot-1*bit (nat-list-fix input))
-           (parse-dot-1*bit input))))
+               :rule-classes :linear)))
 
 (define parse-dot-1*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1137,6 +1060,7 @@
        (return
         (make-tree-nonleaf :rulename? nil :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1144,11 +1068,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dot-*1digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-dot-1*digit-of-nat-list-fix
-    (equal (parse-dot-1*digit (nat-list-fix input))
-           (parse-dot-1*digit input))))
+               :rule-classes :linear)))
 
 (define parse-dot-1*hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1164,6 +1084,7 @@
        (return
         (make-tree-nonleaf :rulename? nil :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1171,11 +1092,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dot-*1hexdig-linear
-               :rule-classes :linear))
-
-  (defrule parse-dot-1*hexdig-of-nat-list-fix
-    (equal (parse-dot-1*hexdig (nat-list-fix input))
-           (parse-dot-1*hexdig input))))
+               :rule-classes :linear)))
 
 (define parse-dash-1*bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1191,6 +1108,7 @@
        (return
         (make-tree-nonleaf :rulename? nil :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1198,11 +1116,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dash-*1bit-linear
-               :rule-classes :linear))
-
-  (defrule parse-dash-1*bit-of-nat-list-fix
-    (equal (parse-dash-1*bit (nat-list-fix input))
-           (parse-dash-1*bit input))))
+               :rule-classes :linear)))
 
 (define parse-dash-1*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1218,6 +1132,7 @@
        (return
         (make-tree-nonleaf :rulename? nil :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1225,11 +1140,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dash-*1digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-dash-1*digit-of-nat-list-fix
-    (equal (parse-dash-1*digit (nat-list-fix input))
-           (parse-dash-1*digit input))))
+               :rule-classes :linear)))
 
 (define parse-dash-1*hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1245,6 +1156,7 @@
        (return
         (make-tree-nonleaf :rulename? nil :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1252,11 +1164,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dash-*1hexdig-linear
-               :rule-classes :linear))
-
-  (defrule parse-dash-1*hexdig-of-nat-list-fix
-    (equal (parse-dash-1*hexdig (nat-list-fix input))
-           (parse-dash-1*hexdig input))))
+               :rule-classes :linear)))
 
 (define parse-*-dot-1*bit ((input nat-listp))
   :returns (mv (error? not)
@@ -1273,16 +1181,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*-dot-*1bit-linear
-               :rule-classes :linear))
-
-  (defrule parse-*-dot-1*bit-of-nat-list-fix
-    (equal (parse-*-dot-1*bit (nat-list-fix input))
-           (parse-*-dot-1*bit input))))
+               :rule-classes :linear)))
 
 (define parse-*-dot-1*digit ((input nat-listp))
   :returns (mv (error? not)
@@ -1299,16 +1204,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*-dot-*1digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-*-dot-1*digit-of-nat-list-fix
-    (equal (parse-*-dot-1*digit (nat-list-fix input))
-           (parse-*-dot-1*digit input))))
+               :rule-classes :linear)))
 
 (define parse-*-dot-1*hexdig ((input nat-listp))
   :returns (mv (error? not)
@@ -1325,16 +1227,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*-dot-*1hexdig-linear
-               :rule-classes :linear))
-
-  (defrule parse-*-dot-1*hexdig-of-nat-list-fix
-    (equal (parse-*-dot-1*hexdig (nat-list-fix input))
-           (parse-*-dot-1*hexdig input))))
+               :rule-classes :linear)))
 
 (define parse-1*-dot-1*bit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1348,6 +1247,7 @@
        (trees := (parse-*-dot-1*bit input))
        (return (cons tree trees)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1355,11 +1255,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-1*-dot-1*bit-linear
-               :rule-classes :linear))
-
-  (defrule parse-1*-dot-1*bit-of-nat-list-fix
-    (equal (parse-1*-dot-1*bit (nat-list-fix input))
-           (parse-1*-dot-1*bit input))))
+               :rule-classes :linear)))
 
 (define parse-1*-dot-1*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1373,6 +1269,7 @@
        (trees := (parse-*-dot-1*digit input))
        (return (cons tree trees)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1380,11 +1277,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-1*-dot-1*digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-1*-dot-1*digit-of-nat-list-fix
-    (equal (parse-1*-dot-1*digit (nat-list-fix input))
-           (parse-1*-dot-1*digit input))))
+               :rule-classes :linear)))
 
 (define parse-1*-dot-1*hexdig ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1398,6 +1291,7 @@
        (trees := (parse-*-dot-1*hexdig input))
        (return (cons tree trees)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1405,11 +1299,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-1*-dot-1*hexdig-linear
-               :rule-classes :linear))
-
-  (defrule parse-1*-dot-1*hexdig-of-nat-list-fix
-    (equal (parse-1*-dot-1*hexdig (nat-list-fix input))
-           (parse-1*-dot-1*hexdig input))))
+               :rule-classes :linear)))
 
 (define parse-bin-val-rest ((input nat-listp))
   :returns (mv (error? not)
@@ -1428,16 +1318,13 @@
                     (make-tree-nonleaf :rulename? nil :branches nil)
                     (nat-list-fix input)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-bin-val-rest-linear
-               :rule-classes :linear))
-
-  (defrule parse-bin-val-rest-of-nat-list-fix
-    (equal (parse-bin-val-rest (nat-list-fix input))
-           (parse-bin-val-rest input))))
+               :rule-classes :linear)))
 
 (define parse-dec-val-rest ((input nat-listp))
   :returns (mv (error? not)
@@ -1456,16 +1343,13 @@
                     (make-tree-nonleaf :rulename? nil :branches nil)
                     (nat-list-fix input)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-dec-val-rest-linear
-               :rule-classes :linear))
-
-  (defrule parse-dec-val-rest-of-nat-list-fix
-    (equal (parse-dec-val-rest (nat-list-fix input))
-           (parse-dec-val-rest input))))
+               :rule-classes :linear)))
 
 (define parse-hex-val-rest ((input nat-listp))
   :returns (mv (error? not)
@@ -1484,16 +1368,13 @@
                     (make-tree-nonleaf :rulename? nil :branches nil)
                     (nat-list-fix input)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-hex-val-rest-linear
-               :rule-classes :linear))
-
-  (defrule parse-hex-val-rest-of-nat-list-fix
-    (equal (parse-hex-val-rest (nat-list-fix input))
-           (parse-hex-val-rest input))))
+               :rule-classes :linear)))
 
 (define parse-bin-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1513,6 +1394,7 @@
                                            trees
                                            (list tree-rest)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1520,11 +1402,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name parse-bin-val-linear
-               :rule-classes :linear))
-
-  (defrule parse-bin-val-of-nat-list-fix
-    (equal (parse-bin-val (nat-list-fix input))
-           (parse-bin-val input))))
+               :rule-classes :linear)))
 
 (define parse-dec-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1544,6 +1422,7 @@
                                            trees
                                            (list tree-rest)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1551,11 +1430,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-dec-val-linear
-               :rule-classes :linear))
-
-  (defrule parse-dec-val-of-nat-list-fix
-    (equal (parse-dec-val (nat-list-fix input))
-           (parse-dec-val input))))
+               :rule-classes :linear)))
 
 (define parse-hex-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1575,6 +1450,7 @@
                                            trees
                                            (list tree-rest)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1582,11 +1458,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-hex-val-linear
-               :rule-classes :linear))
-
-  (defrule parse-hex-val-of-nat-list-fix
-    (equal (parse-hex-val (nat-list-fix input))
-           (parse-hex-val input))))
+               :rule-classes :linear)))
 
 (define parse-bin/dec/hex-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1605,6 +1477,7 @@
    ((tree := (parse-hex-val input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1612,11 +1485,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-bin/dec/hex-val-linear
-               :rule-classes :linear))
-
-  (defrule parse-bin/dec/hex-val-of-nat-list-fix
-    (equal (parse-bin/dec/hex-val (nat-list-fix input))
-           (parse-bin/dec/hex-val input))))
+               :rule-classes :linear)))
 
 (define parse-num-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1633,6 +1502,7 @@
         (make-tree-nonleaf :rulename? *num-val*
                            :branches (list (list tree-%) (list tree-val)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1640,11 +1510,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-num-val-linear
-               :rule-classes :linear))
-
-  (defrule parse-num-val-of-nat-list-fix
-    (equal (parse-num-val (nat-list-fix input))
-           (parse-num-val input))))
+               :rule-classes :linear)))
 
 (define parse-quoted-string ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1663,6 +1529,7 @@
                                                   trees
                                                   (list tree-close-quote)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1670,11 +1537,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-quoted-string-linear
-               :rule-classes :linear))
-
-  (defrule parse-quoted-string-of-nat-list-fix
-    (equal (parse-quoted-string (nat-list-fix input))
-           (parse-quoted-string input))))
+               :rule-classes :linear)))
 
 (define parse-?%i ((input nat-listp))
   :returns (mv (error? not)
@@ -1690,16 +1553,13 @@
                     (make-tree-nonleaf :rulename? nil :branches nil)
                     (nat-list-fix input)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-?%i-rest-linear
-               :rule-classes :linear))
-
-  (defrule parse-?%i-of-nat-list-fix
-    (equal (parse-?%i (nat-list-fix input))
-           (parse-?%i input))))
+               :rule-classes :linear)))
 
 (define parse-case-insensitive-string ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1716,6 +1576,7 @@
                                   :branches (list (list tree-%i)
                                                   (list tree-qstring)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1723,11 +1584,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-case-insensitive-string-linear
-               :rule-classes :linear))
-
-  (defrule parse-case-insensitive-string-of-nat-list-fix
-    (equal (parse-case-insensitive-string (nat-list-fix input))
-           (parse-case-insensitive-string input))))
+               :rule-classes :linear)))
 
 (define parse-case-sensitive-string ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1744,6 +1601,7 @@
                                   :branches (list (list tree-%s)
                                                   (list tree-qstring)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1751,11 +1609,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-case-sensitive-string-linear
-               :rule-classes :linear))
-
-  (defrule parse-case-sensitive-string-of-nat-list-fix
-    (equal (parse-case-sensitive-string (nat-list-fix input))
-           (parse-case-sensitive-string input))))
+               :rule-classes :linear)))
 
 (define parse-char-val ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1774,6 +1628,7 @@
     (return (make-tree-nonleaf :rulename? *char-val*
                                :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1781,11 +1636,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-char-val-linear
-               :rule-classes :linear))
-
-  (defrule parse-char-val-of-nat-list-fix
-    (equal (parse-char-val (nat-list-fix input))
-           (parse-char-val input))))
+               :rule-classes :linear)))
 
 (define parse-wsp/vchar ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1802,6 +1653,7 @@
    ((tree := (parse-vchar input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1809,11 +1661,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-wsp/vchar-linear
-               :rule-classes :linear))
-
-  (defrule parse-wsp/vchar-of-nat-list-fix
-    (equal (parse-wsp/vchar (nat-list-fix input))
-           (parse-wsp/vchar input))))
+               :rule-classes :linear)))
 
 (define parse-*wsp/vchar ((input nat-listp))
   :returns (mv (error? not)
@@ -1829,16 +1677,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*wsp/vchar-linear
-               :rule-classes :linear))
-
-  (defrule parse-*wsp/vchar-of-nat-list-fix
-    (equal (parse-*wsp/vchar (nat-list-fix input))
-           (parse-*wsp/vchar input))))
+               :rule-classes :linear)))
 
 (define parse-comment ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1857,6 +1702,7 @@
                                                   trees-text
                                                   (list tree-crlf)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1864,11 +1710,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-comment-linear
-               :rule-classes :linear))
-
-  (defrule parse-comment-of-nat-list-fix
-    (equal (parse-comment (nat-list-fix input))
-           (parse-comment input))))
+               :rule-classes :linear)))
 
 (define parse-cnl ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1887,6 +1729,7 @@
     (return (make-tree-nonleaf :rulename? *c-nl*
                                :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1894,11 +1737,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-cnl-linear
-               :rule-classes :linear))
-
-  (defrule parse-cnl-of-nat-list-fix
-    (equal (parse-cnl (nat-list-fix input))
-           (parse-cnl input))))
+               :rule-classes :linear)))
 
 (define parse-cnl-wsp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1915,6 +1754,7 @@
                                   :branches (list (list tree-cnl)
                                                   (list tree-wsp)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1922,11 +1762,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-cnl-wsp-linear
-               :rule-classes :linear))
-
-  (defrule parse-cnl-wsp-of-nat-list-fix
-    (equal (parse-cnl-wsp (nat-list-fix input))
-           (parse-cnl-wsp input))))
+               :rule-classes :linear)))
 
 (define parse-cwsp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1946,6 +1782,7 @@
     (return (make-tree-nonleaf :rulename? *c-wsp*
                                :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -1953,11 +1790,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-cwsp-linear
-               :rule-classes :linear))
-
-  (defrule parse-cwsp-of-nat-list-fix
-    (equal (parse-cwsp (nat-list-fix input))
-           (parse-cwsp input))))
+               :rule-classes :linear)))
 
 (define parse-*cwsp ((input nat-listp))
   :returns (mv (error? not)
@@ -1973,16 +1806,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*cwsp-linear
-               :rule-classes :linear))
-
-  (defrule parse-*cwsp-of-nat-list-fix
-    (equal (parse-*cwsp (nat-list-fix input))
-           (parse-*cwsp input))))
+               :rule-classes :linear)))
 
 (define parse-1*cwsp ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -1996,6 +1826,7 @@
        (trees := (parse-*cwsp input))
        (return (cons tree trees)))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2003,11 +1834,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-1*cwsp-linear
-               :rule-classes :linear))
-
-  (defrule parse-1*cwsp-of-nat-list-fix
-    (equal (parse-1*cwsp (nat-list-fix input))
-           (parse-1*cwsp input))))
+               :rule-classes :linear)))
 
 (define parse-*digit-star-*digit ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2025,6 +1852,7 @@
                                                                  (list tree)
                                                                  trees2))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2032,11 +1860,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-*digit-star-*digit-linear
-               :rule-classes :linear))
-
-  (defrule parse-*digit-star-*digit-of-nat-list-fix
-    (equal (parse-*digit-star-*digit (nat-list-fix input))
-           (parse-*digit-star-*digit input))))
+               :rule-classes :linear)))
 
 (define parse-repeat ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2060,6 +1884,7 @@
    ((trees := (parse-1*digit input))
     (return (make-tree-nonleaf :rulename? *repeat* :branches (list trees)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2067,11 +1892,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-repeat-linear
-               :rule-classes :linear))
-
-  (defrule parse-repeat-of-nat-list-fix
-    (equal (parse-repeat (nat-list-fix input))
-           (parse-repeat input))))
+               :rule-classes :linear)))
 
 (define parse-?repeat ((input nat-listp))
   :returns (mv (error? not)
@@ -2087,16 +1908,13 @@
                     (make-tree-nonleaf :rulename? nil :branches nil)
                     (nat-list-fix input)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-?repeat-linear
-               :rule-classes :linear))
-
-  (defrule parse-?repeat-of-nat-list-fix
-    (equal (parse-?repeat (nat-list-fix input))
-           (parse-?repeat input))))
+               :rule-classes :linear)))
 
 (define parse-alpha/digit/dash ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2115,6 +1933,7 @@
    ((tree := (parse-ichar #\- input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2122,11 +1941,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-alpha/digit/dash-linear
-               :rule-classes :linear))
-
-  (defrule parse-alpha/digit/dash-of-nat-list-fix
-    (equal (parse-alpha/digit/dash (nat-list-fix input))
-           (parse-alpha/digit/dash input))))
+               :rule-classes :linear)))
 
 (define parse-*-alpha/digit/dash ((input nat-listp))
   :returns (mv (error? not)
@@ -2142,16 +1957,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*-alpha/digit/dash-linear
-               :rule-classes :linear))
-
-  (defrule parse-*-alpha/digit/dash-of-nat-list-fix
-    (equal (parse-*-alpha/digit/dash (nat-list-fix input))
-           (parse-*-alpha/digit/dash input))))
+               :rule-classes :linear)))
 
 (define parse-rulename ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2167,6 +1979,7 @@
        (return (make-tree-nonleaf :rulename? *rulename*
                                   :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2174,11 +1987,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-rulename-linear
-               :rule-classes :linear))
-
-  (defrule parse-rulename-of-nat-list-fix
-    (equal (parse-rulename (nat-list-fix input))
-           (parse-rulename input))))
+               :rule-classes :linear)))
 
 (defines parse-alt/conc/rep/elem/group/option
   :verify-guards nil ; done below
@@ -2684,57 +2493,7 @@
 
   (verify-guards parse-alternation)
 
-  (defthm-parse-alt/conc/rep/elem/group/option-flag
-
-    (defthm parse-alternation-of-nat-list-fix
-      (equal (parse-alternation (nat-list-fix input))
-             (parse-alternation input))
-      :flag parse-alternation)
-
-    (defthm parse-concatenation-of-nat-list-fix
-      (equal (parse-concatenation (nat-list-fix input))
-             (parse-concatenation input))
-      :flag parse-concatenation)
-
-    (defthm parse-repetition-of-nat-list-fix
-      (equal (parse-repetition (nat-list-fix input))
-             (parse-repetition input))
-      :flag parse-repetition)
-
-    (defthm parse-element-of-nat-list-fix
-      (equal (parse-element (nat-list-fix input))
-             (parse-element input))
-      :flag parse-element)
-
-    (defthm parse-group-of-nat-list-fix
-      (equal (parse-group (nat-list-fix input))
-             (parse-group input))
-      :flag parse-group)
-
-    (defthm parse-option-of-nat-list-fix
-      (equal (parse-option (nat-list-fix input))
-             (parse-option input))
-      :flag parse-option)
-
-    (defthm parse-alt-rest-of-nat-list-fix
-      (equal (parse-alt-rest (nat-list-fix input))
-             (parse-alt-rest input))
-      :flag parse-alt-rest)
-
-    (defthm parse-alt-rest-comp-of-nat-list-fix
-      (equal (parse-alt-rest-comp (nat-list-fix input))
-             (parse-alt-rest-comp input))
-      :flag parse-alt-rest-comp)
-
-    (defthm parse-conc-rest-of-nat-list-fix
-      (equal (parse-conc-rest (nat-list-fix input))
-             (parse-conc-rest input))
-      :flag parse-conc-rest)
-
-    (defthm parse-conc-rest-comp-of-nat-list-fix
-      (equal (parse-conc-rest-comp (nat-list-fix input))
-             (parse-conc-rest-comp input))
-      :flag parse-conc-rest-comp)))
+  (fty::deffixequiv-mutual parse-alt/conc/rep/elem/group/option :args (input)))
 
 (define parse-elements ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2750,6 +2509,7 @@
        (return (make-tree-nonleaf :rulename? *elements*
                                   :branches (list (list tree) trees))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2757,11 +2517,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-elements-linear
-               :rule-classes :linear))
-
-  (defrule parse-elements-of-nat-list-fix
-    (equal (parse-elements (nat-list-fix input))
-           (parse-elements input))))
+               :rule-classes :linear)))
 
 (define parse-equal-/-equal-slash ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2782,6 +2538,7 @@
    ((tree := (parse-ichar #\= input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2789,11 +2546,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-equal-/-equal-slash-linear
-               :rule-classes :linear))
-
-  (defrule parse-equal-/-equal-slash-of-nat-list-fix
-    (equal (parse-equal-/-equal-slash (nat-list-fix input))
-           (parse-equal-/-equal-slash input))))
+               :rule-classes :linear)))
 
 (define parse-defined-as ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2812,6 +2565,7 @@
                                                   (list tree)
                                                   trees2))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2819,11 +2573,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-defined-as-linear
-               :rule-classes :linear))
-
-  (defrule parse-defined-as-of-nat-list-fix
-    (equal (parse-defined-as (nat-list-fix input))
-           (parse-defined-as input))))
+               :rule-classes :linear)))
 
 (define parse-rule ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2844,6 +2594,7 @@
                                                   (list tree3)
                                                   (list tree4)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2851,11 +2602,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-rule-linear
-               :rule-classes :linear))
-
-  (defrule parse-rule-of-nat-list-fix
-    (equal (parse-rule (nat-list-fix input))
-           (parse-rule input))))
+               :rule-classes :linear)))
 
 (define parse-*cwsp-cnl ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2871,6 +2618,7 @@
        (return (make-tree-nonleaf :rulename? nil
                                   :branches (list trees (list tree)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2878,11 +2626,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-*cwsp-cnl-linear
-               :rule-classes :linear))
-
-  (defrule parse-*cwsp-cnl-of-nat-list-fix
-    (equal (parse-*cwsp-cnl (nat-list-fix input))
-           (parse-*cwsp-cnl input))))
+               :rule-classes :linear)))
 
 (define parse-rule-/-*cwsp-cnl ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2899,6 +2643,7 @@
    ((tree := (parse-*cwsp-cnl input))
     (return (make-tree-nonleaf :rulename? nil :branches (list (list tree))))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2906,11 +2651,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-rule-/-*cwsp-cnl-linear
-               :rule-classes :linear))
-
-  (defrule parse-rule-/-*cwsp-cnl-of-nat-list-fix
-    (equal (parse-rule-/-*cwsp-cnl (nat-list-fix input))
-           (parse-rule-/-*cwsp-cnl input))))
+               :rule-classes :linear)))
 
 (define parse-*-rule-/-*cwsp-cnl ((input nat-listp))
   :returns (mv (error? not)
@@ -2927,16 +2668,13 @@
   :measure (len input)
   :ruler-extenders :all
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
    (rest-input (<= (len rest-input) (len input))
                :name len-of-parse-*-rule-/-*cwsp-cnl-linear
-               :rule-classes :linear))
-
-  (defrule parse-*-rule-/-*cwsp-cnl-of-nat-list-fix
-    (equal (parse-*-rule-/-*cwsp-cnl (nat-list-fix input))
-           (parse-*-rule-/-*cwsp-cnl input))))
+               :rule-classes :linear)))
 
 (define parse-rulelist ((input nat-listp))
   :returns (mv (error? maybe-msgp)
@@ -2952,6 +2690,7 @@
        (return (make-tree-nonleaf :rulename? *rulelist*
                                   :branches (list (cons tree trees)))))
   :no-function t
+  :hooks (:fix)
   ///
 
   (more-returns
@@ -2959,11 +2698,7 @@
                     (implies (not error?)
                              (< (len rest-input) (len input))))
                :name len-of-parse-rulelist-linear
-               :rule-classes :linear))
-
-  (defrule parse-rulelist-of-nat-list-fix
-    (equal (parse-rulelist (nat-list-fix input))
-           (parse-rulelist input))))
+               :rule-classes :linear)))
 
 (define parse-grammar ((nats nat-listp))
   :returns (tree? maybe-treep)
@@ -2982,11 +2717,7 @@
        ((when rest) nil))
     tree?)
   :no-function t
-  ///
-
-  (defrule parse-grammar-of-nat-list-fix
-    (equal (parse-grammar (nat-list-fix nats))
-           (parse-grammar nats))))
+  :hooks (:fix))
 
 (define parse-grammar-from-file ((filename acl2::stringp) state)
   :returns (mv (tree? maybe-treep)
