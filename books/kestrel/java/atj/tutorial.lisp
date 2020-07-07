@@ -1924,8 +1924,7 @@
    "(java::atj f1 f2 f3 ...)")
   (xdoc::p
    "ATJ generates code not only for the functions explicitly given,
-    but also for all the ones called by them directly or indirectly,
-    except for the ACL2 primitive function.
+    but also for all the ones called by them directly or indirectly.
     Normally, ATJ should be called on the top-level function(s)
     for which Java code must be generated;
     it is harmless, but unnecessary,
@@ -1979,6 +1978,16 @@
     it has no definition.
     Therefore, according to the definition above,
     @('f') does not call any other function directly, or indirectly.")
+
+  (xdoc::p
+   "If @('f') is a non-primitive function "
+   (xdoc::seetopic "atj-tutorial-native-functions"
+                   "natively implemented in Java")
+   ", ATJ does not look at its unnormalized body.
+    The function is thus regarded, like primitive functions,
+    as not calling any other function directly, or indirectly.
+    (Recall that all primitive functions are natively implemented in Java,
+    but some non-primitive functions are also natively implemented in Java.)")
 
   (atj-tutorial-section "Calling Closure")
 
