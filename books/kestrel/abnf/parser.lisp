@@ -11,6 +11,7 @@
 (in-package "ABNF")
 
 (include-book "concrete-syntax")
+(include-book "parsing-primitives")
 
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 
@@ -335,39 +336,6 @@
 
   (defruled msgp-of-*grammar-parser-error-msg*
     (msgp *grammar-parser-error-msg*)))
-
-(define parse-any ((input nat-listp))
-  :returns (mv (error? maybe-msgp)
-               (nat? (and (maybe-natp nat?)
-                          (implies (not error?) (natp nat?))
-                          (implies error? (not nat?))))
-               (rest-input nat-listp))
-  :parents (grammar-parser-implementation)
-  :short "Parse any natural number."
-  :long
-  (xdoc::topstring-p
-   "Unlike the other parsing functions,
-    this one does not return a (lists of) tree(s),
-    but it returns the parsed natural number (or @('nil') if parsing fails).
-    This function is the basic building block of the other parsing functions.")
-  (b* ((input (mbe :logic (nat-list-fix input) :exec input)))
-    (if (consp input)
-        (mv nil (car input) (cdr input))
-      (mv *grammar-parser-error-msg* nil input)))
-  :no-function t
-  :hooks (:fix)
-  ///
-
-  (more-returns
-   (nat? (implies (not error?)
-                  (natp nat?))
-         :name natp-of-parse-any
-         :rule-classes :type-prescription)
-   (rest-input (and (<= (len rest-input) (len input))
-                    (implies (not error?)
-                             (< (len rest-input) (len input))))
-               :name len-of-parse-any-linear
-               :rule-classes :linear)))
 
 (define parse-exact ((nat natp) (input nat-listp))
   :returns (mv (error? maybe-msgp)

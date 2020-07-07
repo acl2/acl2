@@ -17,6 +17,7 @@
 (include-book "operations")
 (include-book "core-rules")
 (include-book "concrete-syntax")
+(include-book "parsing-primitives")
 (include-book "parser")
 (include-book "parser-verification")
 (include-book "abstractor")

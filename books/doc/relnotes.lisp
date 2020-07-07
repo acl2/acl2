@@ -165,6 +165,15 @@
      does not necessarily also includes the proofs,
      and so that book certification can be faster.")
 
+   (xdoc::p
+    "A new file and XDOC topic has been started
+     to collect parsing primitives,
+     i.e. parsing functions from the ABNF grammar parser
+     that are more generally useful than that parser.
+     These parsing primitives may be useful to write parsers
+     for other languages specified by ABNF grammars
+     (besides ABNF itself, which is what the grammar parser does).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
