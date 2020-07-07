@@ -167,7 +167,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
 
    (xdoc::p
     "An " (xdoc::seetopic "apt::defaults-table" "APT defaults table")
