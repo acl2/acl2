@@ -2029,7 +2029,7 @@
         ,print-event
         (value-triple :invisible)))))
 
-(acl2::defmacro+ defsoft (fn)
+(defmacro+ defsoft (fn)
   :short "Record a function as a second-order function."
   `(make-event-terse (defsoft-fn ',fn (cons 'defsoft ',fn) state)))
 
