@@ -513,7 +513,7 @@
      @(tsee soft::defchoose2), and
      @(tsee soft::defun-sk2)
      have been simplified to be abbreviations of
-     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk2)
+     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
      followed by @(tsee soft::defsoft).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
