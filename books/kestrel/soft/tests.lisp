@@ -197,12 +197,6 @@
    (< (fix b) (fix (?f (?g x y)))))
  :with-output-off nil)
 
-(must-fail ; bad :PRINT option
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print "all")
- :with-output-off nil)
-
 (defchoose2 choose (b) (x y)
   (< (fix b) (fix (?f (?g x y)))))
 
@@ -217,38 +211,6 @@
 ;; Example 1 in :DOC DEFCHOOSE2:
 (defchoose2 fixpoint[?f] x ()
   (equal (?f x) x))
-
-(must-succeed ; print everything
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; print nothing
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print nil)
- :with-output-off nil)
-
-(must-succeed ; print the function output only
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print :fn-output)
- :with-output-off nil)
-
-(must-succeed ; :PRINT after another option
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :strengthen t
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; :PRINT before another option
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print :all
-   :strengthen t)
- :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
