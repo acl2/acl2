@@ -13,6 +13,8 @@
 (include-book "concrete-syntax")
 (include-book "parsing-primitives")
 
+(include-book "std/io/read-file-characters" :dir :system)
+
 (local (include-book "kestrel/utilities/typed-lists/nat-list-fix-theorems" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
