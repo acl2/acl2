@@ -39,15 +39,15 @@
 
  isodata
 
- :item-state t
-
- :item-wrld t
-
- :item-ctx t
-
  :items
 
- ("@('old'),
+ (xdoc::*evmac-topic-implementation-item-state*
+
+  xdoc::*evmac-topic-implementation-item-wrld*
+
+  xdoc::*evmac-topic-implementation-item-ctx*
+
+  "@('old'),
    @('isomaps'),
    @('predicate'),
    @('new-name'),
