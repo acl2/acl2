@@ -270,6 +270,11 @@
      "An @(':accumulator') input has been added to optinally specify
       the name of the accumulator argument of the new function.")
     (xdoc::li
+     "The @(':thm-name') input has been replaced with
+      two new inputs @(':old-to-new-name') and @(':old-to-wrapper-name'),
+      which individually control the names of the theorems that relate
+      the target function with the new or wrapper function.")
+    (xdoc::li
      "The heuristics for inferring the domain of the binary operator
       (when the @(':domain') input is, generally by default, @(':auto'),
       have been extended to infer more cases automatically.")

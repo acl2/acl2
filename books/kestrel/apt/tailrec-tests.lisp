@@ -644,7 +644,7 @@
 
 (must-succeed*
 
- (test-title "Test the :THM-NAME option.")
+ (test-title "Test the :OLD-TO-NEW-NAME option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
  ;; and all the other values between NIL and T and incomparable to each other:
@@ -658,21 +658,18 @@
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
  ;; not a symbol:
- (must-fail (tailrec f :thm-name 33))
+ (must-fail (tailrec f :old-to-new-name 33))
 
  ;; in the main Lisp package:
- (must-fail (tailrec f :thm-name cons))
-
- ;; keyword (other than :AUTO):
- (must-fail (tailrec f :thm-name :f))
+ (must-fail (tailrec f :old-to-new-name cons))
 
  ;; name that already exists:
- (must-fail (tailrec f :thm-name car-cdr-elim))
+ (must-fail (tailrec f :old-to-new-name car-cdr-elim))
 
  ;; determining a name that already exists:
  (must-succeed*
   (defun f-is-f{1} () nil)
-  (must-fail (tailrec f :thm-name :is)))
+  (must-fail (tailrec f :old-to-new-name :-is-)))
 
  ;; determining, by default, a name that already exists:
  (must-succeed*
@@ -686,12 +683,73 @@
 
  ;; automatic:
  (must-succeed*
-  (tailrec f :thm-name :auto)
+  (tailrec f :old-to-new-name :auto)
   (assert! (theorem-namep 'f-~>-f{1} (w state))))
+
+ ;; specified separator:
+ (must-succeed*
+  (tailrec f :old-to-new-name :-becomes-)
+  (assert! (theorem-namep 'f-becomes-f{1} (w state))))
 
  ;; specified:
  (must-succeed*
-  (tailrec f :thm-name f-thm)
+  (tailrec f :old-to-new-name f-thm)
+  (assert! (theorem-namep 'f-thm (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :OLD-TO-WRAPPER-NAME option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; not a symbol:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-name 33))
+
+ ;; in the main Lisp package:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-name cons))
+
+ ;; name that already exists:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-name car-cdr-elim))
+
+ ;; determining a name that already exists:
+ (must-succeed*
+  (defun f-is-f{1} () nil)
+  (must-fail (tailrec f :wrapper t :old-to-wrapper-name :-is-)))
+
+ ;; determining, by default, a name that already exists:
+ (must-succeed*
+  (defun f-~>-f{1} () nil)
+  (must-fail (tailrec f :wrapper t)))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f :wrapper t)
+  (assert! (theorem-namep 'f-~>-f{1} (w state))))
+
+ ;; automatic:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-name :auto)
+  (assert! (theorem-namep 'f-~>-f{1} (w state))))
+
+ ;; specified separator:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-name :-becomes-)
+  (assert! (theorem-namep 'f-becomes-f{1} (w state))))
+
+ ;; specified:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-name f-thm)
   (assert! (theorem-namep 'f-thm (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
