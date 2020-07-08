@@ -38,6 +38,7 @@
 (include-book "defsort/defsort" :dir :system)
 (include-book "centaur/aignet/levels" :dir :system)
 (include-book "count")
+(include-book "supergate")
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system ))
 (local (include-book "centaur/aignet/bit-lemmas" :dir :system))
@@ -100,22 +101,6 @@
   (defcong acl2::set-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 1
     :hints(("Goal" :in-theory (enable acl2::set-equiv)
             :cases ((equal 1 (aignet-eval-conjunction lits invals regvals aignet)))))))
-
-(define aignet-eval-parity ((lits lit-listp) invals regvals aignet)
-  :guard (and (aignet-lit-listp lits aignet)
-              (<= (num-ins aignet) (bits-length invals))
-              (<= (num-regs aignet) (bits-length regvals)))
-  :returns (res bitp)
-  (if (atom lits)
-      0
-    (b-xor (lit-eval (car lits) invals regvals aignet)
-           (aignet-eval-parity (cdr lits) invals regvals aignet)))
-  ///
-  (defthm aignet-eval-parity-preserved-by-extension
-    (implies (and (aignet-extension-binding)
-                  (aignet-lit-listp lits orig))
-             (equal (aignet-eval-parity lits invals regvals new)
-                    (aignet-eval-parity lits invals regvals orig)))))
 
 
 
@@ -1212,116 +1197,7 @@
                   (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2) (stype-count stype aignet2)))))
 
-(define lit-collect-superxor ((lit litp)
-                              top
-                              (limit natp)
-                              (superxor lit-listp)
-                              aignet-refcounts aignet)
-  :guard (and (< (lit-id lit) (u32-length aignet-refcounts))
-              (fanin-litp lit aignet)
-              (true-listp superxor))
-  :measure (lit-id lit)
-  :verify-guards nil
-  :returns (mv (res lit-listp :hyp (and (lit-listp superxor) (litp lit)))
-               (rem-limit natp :rule-classes :type-prescription))
-  (b* ((lit (lit-fix lit))
-       (superxor (lit-list-fix superxor))
-       ((when (or (int= (lit-neg lit) 1)
-                  (not (int= (id->type (lit-id lit) aignet) (gate-type)))
-                  (int= (id->regp (lit-id lit) aignet) 0) ;; and
-                  (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))
-                  (zp limit)))
-        (mv (cons lit superxor)
-            (if (zp limit) 0 (1- limit))))
-       ((mv superxor limit)
-        (lit-collect-superxor (gate-id->fanin0 (lit-id lit) aignet)
-                              nil limit superxor aignet-refcounts aignet)))
-    (lit-collect-superxor (gate-id->fanin1 (lit-id lit) aignet)
-                          nil limit superxor aignet-refcounts aignet))
-  ///
-  ;; (defthm true-listp-of-collect-superxor
-  ;;   (implies (true-listp superxor)
-  ;;            (true-listp (lit-collect-superxor lit top use-muxes superxor
-  ;;                                               aignet-refcounts aignet)))
-  ;;   :hints (("goal" :induct (lit-collect-superxor lit top use-muxes superxor
-  ;;                                                  aignet-refcounts aignet)
-  ;;            :do-not-induct t
-  ;;            :in-theory (enable (:induction lit-collect-superxor))
-  ;;            :expand ((:free (top use-muxes)
-  ;;                      (lit-collect-superxor lit top use-muxes superxor
-  ;;                                             aignet-refcounts aignet))))))
-  (local (defthm lit-listp-true-listp
-           (implies (lit-listp x) (true-listp x))))
-  (verify-guards lit-collect-superxor)
-  (defret aignet-lit-listp-of-collect-superxor
-    (implies (and (aignet-litp lit aignet)
-                  (aignet-lit-listp superxor aignet))
-             (aignet-lit-listp res
-              aignet))
-    :hints (("goal" :induct <call>
-             :do-not-induct t
-             :in-theory (disable (:definition lit-collect-superxor))
-             :expand ((:free (top) <call>)))))
 
-  (defret collect-superxor-correct
-    (equal (aignet-eval-parity res invals regvals aignet)
-           (acl2::b-xor (lit-eval lit invals regvals aignet)
-                        (aignet-eval-parity superxor invals regvals aignet)))
-    :hints (("goal" :induct <call>
-             :do-not-induct t
-             :in-theory (e/d (eval-xor-of-lits)
-                             ((:definition lit-collect-superxor)))
-             :expand ((:free (top) <call>)))
-            (and stable-under-simplificationp
-                 '(:expand ((lit-eval lit invals regvals aignet)
-                            (aignet-eval-parity (cons lit superxor) invals regvals aignet)
-                            (id-eval (lit-id lit) invals regvals aignet))))))
-
-  
-
-  (local (in-theory (disable lookup-id-out-of-bounds
-                             lookup-id-in-bounds-when-positive
-                             member
-                             (:d lit-collect-superxor))))
-
-  (defretd lits-max-id-val-of-lit-collect-superxor
-    (<= (lits-max-id-val res)
-        (max (lit-id lit) (lits-max-id-val superxor)))
-    :hints(("Goal" :in-theory (enable lits-max-id-val)
-            :induct <call>
-            :expand ((:free (top) <call>)))))
-
-  (defret superxor-decr-top
-    (implies (and (int= (id->type id aignet) (gate-type))
-                  (eql (id->regp id aignet) 1)
-                  (not (zp limit)))
-             (< (lits-max-id-val
-                 (mv-nth 0 (lit-collect-superxor
-                            (mk-lit id 0)
-                            t limit nil aignet-refcounts aignet)))
-                (nfix id)))
-    :hints (("goal" :expand ((:free (use-muxes)
-                              (lit-collect-superxor
-                               (mk-lit id 0)
-                               t limit nil aignet-refcounts aignet)))
-             :use ((:instance lits-max-id-val-of-lit-collect-superxor
-                    (lit (gate-id->fanin0 id aignet))
-                    (top nil)
-                    (superxor nil))
-                   (:instance lits-max-id-val-of-lit-collect-superxor
-                    (lit (gate-id->fanin1 id aignet))
-                    (top nil)
-                    (superxor (mv-nth 0 (lit-collect-superxor
-                                          (gate-id->fanin0 id aignet)
-                                          nil limit nil aignet-refcounts aignet)))
-                    (limit  (mv-nth 1 (lit-collect-superxor
-                                       (gate-id->fanin0 id aignet)
-                                       nil limit nil aignet-refcounts aignet)))))
-             :in-theory (e/d () (lits-max-id-val-of-lit-collect-superxor
-                                 lit-collect-superxor)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable id-is-mux))))
-    :rule-classes (:rewrite :linear)))
 
 
 

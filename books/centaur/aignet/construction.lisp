@@ -32,6 +32,7 @@
 (include-book "semantics")
 (include-book "deps")
 (include-book "axi-reductions")
+(include-book "maybe-litp")
 (include-book "centaur/fty/bitstruct" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -202,56 +203,6 @@
          :rule-classes :compound-recognizer))
 
 
-(defsection maybe-litp
-  :parents (litp)
-  :short "Recognizer for lits and @('nil')."
-  :long "<p>This is like an <a
-href='https://en.wikipedia.org/wiki/Option_type'>option type</a>; when @('x')
-satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
-
-  (defund-inline maybe-litp (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (litp x)))
-
-  (local (in-theory (enable maybe-litp)))
-
-  (defthm maybe-litp-compound-recognizer
-    (equal (maybe-litp x)
-           (or (not x)
-               (litp x)))
-    :rule-classes :compound-recognizer))
-
-(defsection maybe-lit-fix
-  :parents (fty::basetypes maybe-litp)
-  :short "@(call maybe-lit-fix) is the identity for @(see maybe-litp)s, or
-  coerces any non-@(see litp) to @('nil')."
-  :long "<p>Performance note.  In the execution this is just an inlined
-  identity function, i.e., it should have zero runtime cost.</p>"
-
-  (defund-inline maybe-lit-fix (x)
-    (declare (xargs :guard (maybe-litp x)
-                    :guard-hints (("Goal" :in-theory (e/d (maybe-litp)
-                                                          ())))))
-    (mbe :logic (if x (lit-fix x) nil)
-         :exec x))
-
-  (local (in-theory (enable maybe-litp maybe-lit-fix)))
-
-  (defthm maybe-litp-of-maybe-lit-fix
-    (maybe-litp (maybe-lit-fix x))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm maybe-lit-fix-when-maybe-litp
-    (implies (maybe-litp x)
-             (equal (maybe-lit-fix x) x)))
-
-  (defthm maybe-lit-fix-under-iff
-    (iff (maybe-lit-fix x) x))
-
-  (defthm maybe-lit-fix-under-lit-equiv
-    (lit-equiv (maybe-lit-fix x) x)
-    :hints(("Goal" :in-theory (enable maybe-lit-fix)))))
 
 
 (fty::defbitstruct simpcode

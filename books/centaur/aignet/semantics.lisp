@@ -1469,6 +1469,7 @@
   (defcong bits-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 3))
 
 
+
 (define output-eval ((n natp) invals regvals aignet)
   :guard (and (< n (num-outs aignet))
               (<= (num-ins aignet) (bits-length invals))
