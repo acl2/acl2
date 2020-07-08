@@ -54,7 +54,67 @@
     (implies contradictionp
              (equal (aignet-eval-conjunction x invals regvals aignet)
                     0))
-    :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+    :hints(("Goal" :in-theory (enable aignet-eval-conjunction))))
+
+  (local (defthm lit-negate-when-equal-lit-negate
+           (implies (equal (lit-negate x) (lit-fix y))
+                    (equal (lit-negate y) (lit-fix x)))
+           :hints(("Goal" :in-theory (enable lit-negate
+                                             satlink::equal-of-make-lit)))))
+
+  (local (defthm member-lit-list-fix-implies-litp
+           (implies (member k (lit-list-fix x))
+                    (litp k))
+           :hints(("Goal" :in-theory (enable lit-list-fix)))))
+  
+  (defretd cube-contradictionp-by-member
+    (implies (and (member k (lit-list-fix x))
+                  (member (lit-negate k) (lit-list-fix x)))
+             contradictionp)
+    :hints(("Goal" :in-theory (enable lit-list-fix)))))
+
+
+(local
+ (defsection subsetp-lit-list-fix
+   
+   (defthm member-lit-fix-of-lit-list-fix
+     (implies (member k x)
+              (member (lit-fix k) (lit-list-fix x)))
+     :hints(("Goal" :in-theory (enable lit-list-fix))))
+
+   (defthm subsetp-equal-of-lit-list-fix
+     (implies (subsetp-equal x y)
+              (subsetp-equal (lit-list-fix x) (lit-list-fix y)))
+     :hints(("Goal" :in-theory (enable lit-list-fix subsetp-equal))))
+
+   (defcong acl2::set-equiv acl2::set-equiv (lit-list-fix x) 1
+     :hints(("Goal" :in-theory (enable acl2::set-equiv lit-list-fix subsetp-equal)))
+     :otf-flg t)
+
+   (defthm member-when-subsetp-lit-list-fix
+     (implies (and (subsetp x y)
+                   (member-equal lit (lit-list-fix x)))
+              (member-equal lit (lit-list-fix y)))
+     :hints (("Goal" :use subsetp-equal-of-lit-list-fix
+              :in-theory (disable subsetp-equal-of-lit-list-fix))))))
+
+(defsection cube-contradictionp-set-equiv
+  
+  
+  (defthmd cube-contradictionp-when-subsetp
+    (implies (and (subsetp-equal x y)
+                  (cube-contradictionp x))
+             (cube-contradictionp y))
+    :hints(("Goal" :in-theory (enable cube-contradictionp)
+            :induct (cube-contradictionp x))
+           (and stable-under-simplificationp
+                '(:use ((:instance cube-contradictionp-by-member
+                         (k (lit-fix (car x))) (x y)))))))
+  
+  (defcong acl2::set-equiv equal (cube-contradictionp x) 1
+    :hints(("Goal" :in-theory (enable acl2::set-equiv
+                                      cube-contradictionp-when-subsetp) 
+            :cases ((cube-contradictionp x))))))
 
 (define cube-contradiction-witness ((x lit-listp))
   :returns (contra litp :rule-classes :type-prescription)
@@ -110,7 +170,24 @@
   (defthm two-cubes-contradictionp-nil-second
     (equal (two-cubes-contradictionp x nil) nil)
     :hints(("Goal" :in-theory (e/d (two-cubes-contradictionp
-                                    lit-list-fix))))))
+                                    lit-list-fix)))))
+
+  (defthm two-cubes-contradictionp-when-subsetp-1
+    (implies (and (subsetp-equal x y)
+                  (two-cubes-contradictionp x z))
+             (two-cubes-contradictionp y z)))
+  (defthm two-cubes-contradictionp-when-subsetp-2
+    (implies (and (subsetp-equal y z)
+                  (two-cubes-contradictionp x y))
+             (two-cubes-contradictionp x z)))
+  
+  (defcong acl2::set-equiv equal (two-cubes-contradictionp x y) 1
+    :hints(("Goal" :in-theory (enable acl2::set-equiv)
+            :cases ((two-cubes-contradictionp x y)))))
+
+  (defcong acl2::set-equiv equal (two-cubes-contradictionp x y) 2
+    :hints(("Goal" :in-theory (enable acl2::set-equiv)
+            :cases ((two-cubes-contradictionp x y))))))
 
 
 

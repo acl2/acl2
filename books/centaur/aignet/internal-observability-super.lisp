@@ -38,7 +38,10 @@
 (include-book "cube-contradictionp")
 (include-book "eval-toggle")
 (include-book "centaur/fty/baselists" :dir :system)
+(include-book "std/osets/element-list" :dir :system)
 
+(local (include-book "std/osets/under-set-equiv" :dir :system))
+  
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 ;; (local (include-book "data-structures/list-defthms" :dir :system))
@@ -46,6 +49,7 @@
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
 (local (in-theory (enable* acl2::arith-equiv-forwarding)))
 (local (in-theory (disable nth
                            update-nth
@@ -59,6 +63,7 @@
                            ;; set::sets-are-true-lists
                            acl2::nth-when-zp
                            ;; acl2::nth-with-large-index
+                           set::pick-a-point-subsetp-equal-strategy
                            )))
 (local (std::add-default-post-define-hook :fix))
 
@@ -879,3 +884,1011 @@
                                       source invals regvals aignet)
                                      (gate-node-supergate sink refcounts aignet))))))))))
 
+
+
+
+;; Dominator info for each node is stored as either
+;; (1) T, signifying that every path from an output to the node contains
+;;     contradictory literals, or
+;; (2) a list of literals, all of which must occur as AND-siblings in every
+;;     path from an output to the node not containing contradictory literals,
+;;     mergesorted.
+
+(define obs-dom-info-p (x)
+  (or (eq x t)
+      (and (lit-listp x) (set::setp x)))
+  ///
+  (define obs-dom-info-fix ((x obs-dom-info-p))
+    :returns (new-x obs-dom-info-p)
+    :inline t
+    (mbe :logic (if (eq x t) t (set::mergesort (lit-list-fix x)))
+         :exec x)
+    ///
+    (defthm obs-dom-info-fix-when-obs-dom-info-p
+      (implies (obs-dom-info-p x)
+               (equal (obs-dom-info-fix x) x)))
+
+    (fty::deffixtype obs-dom-info :pred obs-dom-info-p :fix obs-dom-info-fix
+      :equiv obs-dom-info-equiv :define t :forward t)))
+
+(define make-obs-dom-info-unreached ()
+  :returns (info obs-dom-info-p)
+  :inline t
+  t)
+
+(define make-obs-dom-info-reached ((doms lit-listp))
+  :guard (set::setp doms)
+  :returns (info obs-dom-info-p
+                 :hints (("goal" :in-theory (Enable obs-dom-info-p))))
+  :inline t
+  (mbe :logic (set::mergesort (lit-list-fix doms))
+       :exec doms))
+
+(define obs-dom-info->reached ((x obs-dom-info-p))
+  :inline t
+  :hooks nil
+  (not (eq x t))
+  ///
+  (defthm obs-dom-info->reached-of-make-obs-dom-info-reached
+    (obs-dom-info->reached (make-obs-dom-info-reached doms)))
+
+  (fty::deffixequiv obs-dom-info->reached
+    :hints (("goal" :in-theory (enable obs-dom-info-fix)))))
+
+
+(define obs-dom-info->doms ((x obs-dom-info-p))
+  :inline t
+  ;; :guard (obs-dom-info->reached x)
+  :returns (doms lit-listp)
+  :guard-hints (("goal" :in-theory (enable obs-dom-info-p obs-dom-info->reached)))
+  :hooks nil
+  (if (eq x t)
+      nil
+    (mbe :logic (set::mergesort (lit-list-fix x))
+         :exec x))
+  ///
+  (defret setp-of-<fn>
+    (set::setp doms))
+  
+  (defthm obs-dom-info->doms-of-make-obs-dom-info-reached
+    (equal (obs-dom-info->doms (make-obs-dom-info-reached doms))
+           (set::mergesort (lit-list-fix doms)))
+    :hints (("goal" :in-theory (enable make-obs-dom-info-reached))))
+
+  (fty::deffixequiv obs-dom-info->doms
+    :hints (("goal" :in-theory (enable obs-dom-info-fix))))
+
+  (defthm make-obs-dom-info-reached-of-doms
+    (implies (obs-dom-info->reached x)
+             (equal (make-obs-dom-info-reached (obs-dom-info->doms x))
+                    (obs-dom-info-fix x)))
+    :hints(("Goal" :in-theory (enable make-obs-dom-info-reached
+                                      obs-dom-info-fix)))))
+
+
+(acl2::def-b*-binder
+  obs-dom-info
+  :body (std::da-patbind-fn 'obs-dom-info
+                            '((reached . obs-dom-info->reached)
+                              (doms . obs-dom-info->doms))
+                            args acl2::forms acl2::rest-expr))
+
+(define obs-dom-info-well-formedp ((info obs-dom-info-p) aignet)
+  :returns wfp
+  (b* (((obs-dom-info info)))
+    (or (not info.reached)
+        (aignet-lit-listp info.doms aignet)))
+  ///
+  (defret aignet-lit-listp-of-doms-when-<fn>
+    (b* (((obs-dom-info info)))
+      (implies wfp
+               (aignet-lit-listp info.doms aignet)))
+    :hints (("goal" :in-theory (enable obs-dom-info->reached obs-dom-info->doms)))))
+
+
+
+
+
+(fty::deflist obs-dom-info-list :elt-type obs-dom-info :true-listp t)
+
+(make-event
+ `(acl2::def-1d-arr obs-dom-array
+    :slotname dominfo
+    :pred obs-dom-info-p
+    :fix obs-dom-info-fix
+    :default-val ,(make-obs-dom-info-unreached)
+    :rename ((resize-dominfos . resize-dominfo)
+             (dominfos-length . dominfo-length))))
+
+(defthm obs-dom-array$ap-is-obs-dom-info-list-p
+  (equal (obs-dom-array$ap x)
+         (obs-dom-info-list-p x)))
+
+
+(local
+ (defsection set-stuff-in-terms-of-list-stuff
+   
+   (defthm head-when-setp
+     (implies (set::setp x)
+              (equal (set::head x) (car x)))
+     :hints(("Goal" :in-theory (enable set::head))))
+
+   (defthm tail-when-setp
+     (implies (set::setp x)
+              (equal (set::tail x) (cdr x)))
+     :hints(("Goal" :in-theory (enable set::tail))))
+
+   (defthm empty-when-setp
+     (implies (set::setp x)
+              (equal (set::empty x) (atom x)))
+     :hints(("Goal" :in-theory (enable set::empty))))
+
+   (defthm setp-of-cdr
+     (implies (set::setp x)
+              (set::setp (cdr x)))
+     :hints(("Goal" :in-theory (enable set::setp))))
+
+
+   (defthm in-when-setp
+     (implies (set::setp x)
+              (iff (set::in k x)
+                   (member-equal k x)))
+     :hints(("Goal" :in-theory (enable set::in))))
+
+   (defthm subset-when-setp
+     (implies (and (set::setp x) (set::setp y))
+              (equal (set::subset x y)
+                     (subsetp-equal x y)))
+     :hints(("Goal" :in-theory (enable set::subset))))))
+
+(define obs-dom-info-subsetp ((x obs-dom-info-p)
+                              (y obs-dom-info-p))
+  :returns (subsetp)
+  (b* (((obs-dom-info x))
+       ((obs-dom-info y)))
+    (or (not y.reached)
+        (cube-contradictionp y.doms)
+        (and x.reached
+             (mbe :logic (subsetp-equal x.doms y.doms)
+                  :exec (set::subset x.doms y.doms)))))
+  ///
+  (local (defthm aignet-eval-conjunction-when-member
+           (implies (and (equal (lit-eval x invals regvals aignet) 0)
+                         (member (lit-fix x) (lit-list-fix y)))
+                    (equal (aignet-eval-conjunction y invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+  (local (defthm aignet-eval-conjunction-when-subsetp
+           (implies (and (equal (aignet-eval-conjunction x invals regvals aignet) 0)
+                         (subsetp (lit-list-fix x) (lit-list-fix y)))
+                    (equal (aignet-eval-conjunction y invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable aignet-eval-conjunction
+                                             subsetp lit-list-fix)
+                   :induct (lit-list-fix x)))))
+
+  (defretd <fn>-implies-reached
+    (implies (and subsetp
+                  (obs-dom-info->reached y)
+                  (not (cube-contradictionp (obs-dom-info->doms y)))
+                  )
+             (obs-dom-info->reached x)))
+
+  (defretd <fn>-implies-member
+    (implies (and subsetp
+                  (obs-dom-info->reached y)
+                  (not (cube-contradictionp (obs-dom-info->doms y)))
+                  (not (member-equal lit (obs-dom-info->doms y))))
+             (not (member lit (obs-dom-info->doms x))))))
+
+
+
+(define obs-dom-info-add-lits ((lits lit-listp) (x obs-dom-info-p))
+  :returns (new obs-dom-info-p)
+  (b* (((obs-dom-info x)))
+    (if x.reached
+        (make-obs-dom-info-reached (set::union (set::mergesort (lit-list-fix lits)) x.doms))
+      (make-obs-dom-info-unreached)))
+  ///
+
+  (defret <fn>-when-unreached
+    (implies (not (obs-dom-info->reached x))
+             (equal new (make-obs-dom-info-unreached))))
+
+  (defret <fn>-when-reached
+    (implies (obs-dom-info->reached x)
+             (obs-dom-info->reached new)))
+
+  (defret member-of-<fn>
+    (implies (obs-dom-info->reached x)
+             (iff (member-equal dom (obs-dom-info->doms new))
+                  (or (member-equal dom (lit-list-fix lits))
+                      (member-equal dom (obs-dom-info->doms x)))))))
+
+(define obs-dom-info-for-child ((fanout-info obs-dom-info-p)
+                                (fanout natp)
+                                refcounts
+                                aignet)
+  :guard (and (id-existsp fanout aignet)
+              (eql (id->type fanout aignet) (gate-type))
+              (< fanout (u32-length refcounts)))
+  :returns (child-fanout-info obs-dom-info-p)
+  (b* (;; (fanin0 (gate-id->fanin0 fanout aignet))
+       ;; (fanin1 (gate-id->fanin1 fanout aignet))
+       (xor (eql 1 (id->regp fanout aignet))))
+    (if xor
+        ;; Won't complicate things with this optimization since hashing should prevent this anyhow.
+        ;; (if (or (eql fanin0 fanin1)
+        ;;         (eql fanin0 (lit-negate fanin1)))
+        ;;     (make-obs-dom-info-unreached)
+        (obs-dom-info-fix fanout-info)
+      ;; (cond ((eql fanin0 fanin1) (obs-dom-info-fix fanout-info))
+      ;;       ((eql fanin0 (lit-negate fanin1)) (make-obs-dom-info-unreached))
+      ;;       (t
+      (obs-dom-info-add-lits
+       (gate-node-supergate fanout refcounts aignet)
+       fanout-info)))
+  ///
+
+  (defret <fn>-when-xor
+    (implies (equal (stype (car (lookup-id fanout aignet))) :xor)
+             (equal child-fanout-info
+                    (obs-dom-info-fix fanout-info))))
+  
+  (defret <fn>-when-and
+    (implies (equal (stype (car (lookup-id fanout aignet))) :and)
+             (equal child-fanout-info
+                    (obs-dom-info-add-lits (gate-node-supergate fanout refcounts aignet)
+                                           fanout-info)))))
+
+
+(define obs-dom-fanins-ok ((super lit-listp)
+                           (parent-info obs-dom-info-p)
+                           obs-dom-array)
+  :guard (< (lits-max-id-val super) (dominfo-length obs-dom-array))
+  (if (atom super)
+      t
+    (and (obs-dom-info-subsetp (get-dominfo (lit->var (car super)) obs-dom-array)
+                               parent-info)
+         (obs-dom-fanins-ok (cdr super) parent-info obs-dom-array)))
+  ///
+  (defthm obs-dom-fanins-ok-implies-member-subset
+    (implies (and (obs-dom-fanins-ok super parent-info obs-dom-array)
+                  (member lit super))
+             (obs-dom-info-subsetp (nth (lit->var lit) obs-dom-array) parent-info)))
+
+  (defthm obs-dom-fanins-ok-when-unreached
+    (implies (not (obs-dom-info->reached parent-info))
+             (obs-dom-fanins-ok super parent-info obs-dom-array))
+    :hints(("Goal" :in-theory (enable obs-dom-info-subsetp)))))
+
+(define obs-dom-fanout-ok ((fanout natp) obs-dom-array refcounts aignet)
+  :guard (and (id-existsp fanout aignet)
+              (<= (num-fanins aignet) (dominfo-length obs-dom-array))
+              (<= (num-fanins aignet) (u32-length refcounts)))
+  (or (not (eql (id->type fanout aignet) (gate-type)))
+      (let* ((super (gate-node-supergate fanout refcounts aignet))
+             (dominfo (get-dominfo fanout obs-dom-array)))
+        (if (eql (id->regp fanout aignet) 1)
+            (obs-dom-fanins-ok super dominfo obs-dom-array)
+          (obs-dom-fanins-ok
+           super (obs-dom-info-add-lits super dominfo) obs-dom-array))))
+  ///
+  (defthm obs-dom-fanout-ok-implies-xor-child
+    (implies (and (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet)
+                  (equal (stype (car (lookup-id fanout aignet))) :xor)
+                  (member lit (gate-node-supergate fanout refcounts aignet)))
+             (obs-dom-info-subsetp (nth (lit->var lit) obs-dom-array)
+                                   (nth fanout obs-dom-array))))
+
+  (defthm obs-dom-fanout-ok-implies-and-child
+    (implies (and (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet)
+                  (equal (stype (car (lookup-id fanout aignet))) :and)
+                  (member lit (gate-node-supergate fanout refcounts aignet)))
+             (obs-dom-info-subsetp (nth (lit->var lit) obs-dom-array)
+                                   (obs-dom-info-add-lits
+                                    (gate-node-supergate fanout refcounts aignet)
+                                    (nth fanout obs-dom-array)))))
+
+  (defthmd obs-dom-fanout-ok-out-of-bounds
+    (implies (< (fanin-count aignet) (nfix n))
+             (obs-dom-fanout-ok n obs-dom-array refcounts aignet))
+    :hints(("Goal" :in-theory (enable obs-dom-fanout-ok)))))
+
+
+
+(define cube-contradictionp-sorted ((x lit-listp))
+  :guard (set::setp x)
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable cube-contradictionp
+                                           cube-contradictionp-sorted)))
+  (mbe :logic (cube-contradictionp x)
+       :exec
+       (if (set::empty x)
+           nil
+         (or (set::in (lit-negate (set::head x)) (set::tail x))
+             (cube-contradictionp-sorted (set::tail x))))))
+
+(define obs-dom-info-normalize ((x obs-dom-info-p))
+  :returns (new-x obs-dom-info-p)
+  (b* (((obs-dom-info x)))
+    (if (and x.reached
+             (cube-contradictionp-sorted x.doms))
+        (make-obs-dom-info-unreached)
+      (obs-dom-info-fix x)))
+  ///
+
+  ;; (local (defthm cube-contradictionp-by-member
+  ;;          (implies (and (member x cube)
+  ;;                        (member (lit-negate x) cube)
+  ;;                        (lit-listp cube))
+  ;;                   (cube-contradictionp cube))
+  ;;          :hints(("Goal" :in-theory (enable cube-contradictionp)))))
+  
+  ;; (local (defthm cube-contradictionp-when-subsetp
+  ;;          (implies (and (subsetp x y)
+  ;;                        (cube-contradictionp x)
+  ;;                        (lit-listp y) (lit-listp x))
+  ;;                   (cube-contradictionp y))
+  ;;          :hints(("Goal" :in-theory (enable cube-contradictionp
+  ;;                                            subsetp)))))
+  
+  (defret subsetp-of-<fn>-1
+    (iff (obs-dom-info-subsetp new-x y)
+         (obs-dom-info-subsetp x y))
+    :hints(("Goal" :in-theory (enable obs-dom-info-subsetp
+                                      cube-contradictionp-when-subsetp))))
+
+  (defret subsetp-of-<fn>-2
+    (iff (obs-dom-info-subsetp y new-x)
+         (obs-dom-info-subsetp y x))
+    :hints(("Goal" :in-theory (enable obs-dom-info-subsetp)))))
+
+(define obs-dom-info-intersect ((x obs-dom-info-p) (y obs-dom-info-p))
+  :returns (int obs-dom-info-p)
+  (b* (((obs-dom-info x))
+       ((obs-dom-info y)))
+    (if (and x.reached (not (cube-contradictionp-sorted x.doms)))
+        (if (and y.reached (not (cube-contradictionp-sorted y.doms)))
+            (make-obs-dom-info-reached (set::intersect x.doms y.doms))
+          (obs-dom-info-fix x))
+      (obs-dom-info-normalize y)))
+  ///
+  (local (in-theory (enable obs-dom-info-subsetp
+                            obs-dom-info-normalize)))
+  
+  (local (defthm subsetp-of-intersect-1
+           (subsetp (intersection$ x y) x)))
+  (local (defthm subsetp-of-intersect-2
+           (subsetp (intersection$ x y) y)))
+  (local (defthm lit-negate-by-equal-lit-negate
+           (implies (equal (lit-negate x) (lit-fix y))
+                    (equal (lit-negate y) (lit-fix x)))))
+  (local (defthm cube-contradictionp-implies-not-member
+           (implies (and (not (cube-contradictionp y))
+                         (member-equal (lit-negate x) (lit-list-fix y)))
+                    (not (member-equal (lit-fix x) (lit-list-fix y))))
+           :hints(("Goal" :in-theory (enable cube-contradictionp lit-list-fix)))))
+  (local (defthm cube-contradiction-by-subsetp
+           (implies (and (subsetp (lit-list-fix x) (lit-list-fix y))
+                         (not (cube-contradictionp y)))
+                    (not (cube-contradictionp x)))
+           :hints(("Goal" :in-theory (enable cube-contradictionp lit-list-fix)
+                   :induct (lit-list-fix x)))))
+
+  (local (defthm cube-contradiction-by-subsetp-lits
+           (implies (and (subsetp x y)
+                         (lit-listp x) (lit-listp y)
+                         (not (cube-contradictionp y)))
+                    (not (cube-contradictionp x)))
+           :hints (("goal" :use ((:instance cube-contradiction-by-subsetp))
+                    :in-theory (disable cube-contradiction-by-subsetp)))))
+  
+  (defret obs-dom-info-subsetp-of-obs-dom-info-intersect-1
+    (obs-dom-info-subsetp int x))
+
+  (defret obs-dom-info-subsetp-of-obs-dom-info-intersect-2
+    (obs-dom-info-subsetp int y))
+
+  (defret obs-dom-info-intersect-preserves-obs-dom-info-subsetp-1
+    (implies (obs-dom-info-subsetp x z)
+             (obs-dom-info-subsetp int z)))
+  
+  (defret obs-dom-info-intersect-preserves-obs-dom-info-subsetp-2
+    (implies (obs-dom-info-subsetp y z)
+             (obs-dom-info-subsetp int z)))
+
+  (local (defthm cube-contradictionp-of-intersect
+           (implies (and (not (cube-contradictionp x))
+                         (set::setp x))
+                    (not (cube-contradictionp (set::intersect x y))))
+           :hints(("Goal" :use ((:instance cube-contradictionp-when-subsetp
+                                 (x (set::intersect x y))
+                                 (y x)))))))
+  
+  (defret obs-dom-info-intersect-idempotent
+    (equal (obs-dom-info-intersect (obs-dom-info-intersect x y) y)
+           (obs-dom-info-intersect x y))))
+
+(define lit-list-vars ((x lit-listp))
+  :returns (vars nat-listp)
+  (if (atom x)
+      nil
+    (cons (lit->var (car x))
+          (lit-list-vars (cdr x)))))
+
+
+(define obs-dom-info-store-intersections ((super lit-listp)
+                                          (dominfo obs-dom-info-p)
+                                          (obs-dom-array))
+  :guard (< (lits-max-id-val super) (dominfo-length obs-dom-array))
+  :returns (new-obs-dom-array)
+  (b* (((when (atom super)) obs-dom-array)
+       (var (lit->var (car super)))
+       (obs-dom-array
+        (set-dominfo var
+                     (obs-dom-info-intersect
+                      (get-dominfo var obs-dom-array)
+                      dominfo)
+                     obs-dom-array)))
+    (obs-dom-info-store-intersections (cdr super) dominfo obs-dom-array))
+  ///
+  (defret <fn>-length
+    (implies (< (lits-max-id-val super) (len obs-dom-array))
+             (equal (len new-obs-dom-array)
+                    (len obs-dom-array))))
+
+  (defret <fn>-index
+    (equal (nth i new-obs-dom-array)
+           (if (member-equal (nfix i) (lit-list-vars super))
+               (obs-dom-info-intersect (nth i obs-dom-array) dominfo)
+             (nth i obs-dom-array)))
+    :hints(("Goal" :in-theory (enable lit-list-vars))))
+
+  (defret obs-dom-fanins-ok-of-obs-dom-info-store-intersections
+    (implies (obs-dom-fanins-ok lits fanout-dominfo obs-dom-array)
+             (obs-dom-fanins-ok lits fanout-dominfo new-obs-dom-array))
+    :hints (("goal" :in-theory (enable obs-dom-fanins-ok)
+             :induct (obs-dom-fanins-ok lits fanout-dominfo obs-dom-array))))
+
+  (defret obs-dom-fanins-ok-of-obs-dom-info-store-intersections
+    (implies (obs-dom-fanins-ok lits fanout-dominfo obs-dom-array)
+             (obs-dom-fanins-ok lits fanout-dominfo new-obs-dom-array))
+    :hints (("goal" :in-theory (enable obs-dom-fanins-ok)
+             :induct (obs-dom-fanins-ok lits fanout-dominfo obs-dom-array))))
+
+  (local (defthm member-lit->var-of-lit-list-vars
+           (implies (member k x)
+                    (member (lit->var k) (lit-list-vars x)))
+           :hints(("Goal" :in-theory (enable member lit-list-vars)))))
+  
+  (defret obs-dom-fanins-ok-of-obs-dom-info-store-intersections-self
+    (implies (subsetp-equal lits super)
+             (obs-dom-fanins-ok lits dominfo new-obs-dom-array))
+    :hints (("goal" :in-theory (enable obs-dom-fanins-ok subsetp-equal)
+             :induct (subsetp-equal lits super)))))
+
+
+
+(define obs-dom-info-sweep-node ((n natp) obs-dom-array refcounts aignet)
+  :guard (and (id-existsp n aignet)
+              (< n (dominfo-length obs-dom-array))
+              (< n (u32-length refcounts)))
+  :returns new-obs-dom-array
+  (b* ((slot0 (id->slot n 0 aignet))
+       (type (snode->type slot0)))
+    (aignet-case
+      type
+      :gate (b* ((dominfo (get-dominfo n obs-dom-array))
+                 ((unless (obs-dom-info->reached dominfo))
+                  obs-dom-array)
+                 (super (gate-node-supergate n refcounts aignet))
+                 (xor (eql (id->regp n aignet) 1))
+                 (child-dominfo (if xor dominfo (obs-dom-info-add-lits super dominfo))))
+              (obs-dom-info-store-intersections
+               super child-dominfo obs-dom-array))
+      :otherwise obs-dom-array))
+  ///
+  (defret <fn>-length
+    (implies (< (nfix n) (len obs-dom-array))
+             (equal (len new-obs-dom-array)
+                    (len obs-dom-array))))
+
+  (local (defthm member-lit-list-vars-when-lits-max-id-val
+           (implies (< (lits-max-id-val lits) i)
+                    (not (member-equal i (lit-list-vars lits))))
+           :hints(("Goal" :in-theory (enable lits-max-id-val lit-list-vars)))))
+  
+  (defret <fn>-preserves-correct
+    (implies (and (< (nfix n) (nfix i))
+                  (obs-dom-fanout-ok i obs-dom-array refcounts aignet))
+             (obs-dom-fanout-ok i new-obs-dom-array refcounts aignet))
+    :hints(("Goal" :in-theory (enable obs-dom-fanout-ok)
+            :do-not-induct t))
+    :otf-flg t)
+
+  (defret <fn>-sets-correct
+    (obs-dom-fanout-ok n new-obs-dom-array refcounts aignet)
+    :hints(("Goal" :in-theory (enable obs-dom-fanout-ok)
+            :do-not-induct t)))
+
+  ;; (local (defthm intersection-with-nil
+  ;;          (equal (intersection-equal x nil) nil)
+  ;;          :hints(("Goal" :in-theory (enable intersection-equal)))))
+  (local (defthm intersect-with-nil
+           (equal (set::intersect nil x) nil)
+           :hints(("Goal" :use ((:instance set::double-containment
+                                 (x (set::intersect nil x)) (y nil)))))))
+  
+  (defret <fn>-preserves-empty-dominators
+    (implies (equal (nth i obs-dom-array)
+                    (make-obs-dom-info-reached nil))
+             (equal (nth i new-obs-dom-array)
+                    (make-obs-dom-info-reached nil)))
+    :hints(("Goal" :in-theory (enable obs-dom-info-intersect)))))
+
+
+(define obs-dom-info-sweep-nodes ((n natp) obs-dom-array refcounts aignet)
+  :guard (and (<= n (num-fanins aignet))
+              (<= n (dominfo-length obs-dom-array))
+              (<= n (u32-length refcounts)))
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
+  :returns new-obs-dom-array
+  (b* (((when (zp n))
+        obs-dom-array)
+       (obs-dom-array (obs-dom-info-sweep-node (1- n) obs-dom-array refcounts aignet)))
+    (obs-dom-info-sweep-nodes (1- n) obs-dom-array refcounts aignet))
+  ///
+  (defret <fn>-length
+    (implies (<= (nfix n) (len obs-dom-array))
+             (equal (len new-obs-dom-array)
+                    (len obs-dom-array))))
+
+  (defret <fn>-preserves-correct
+    (implies (and (<= (nfix n) (nfix i))
+                  (obs-dom-fanout-ok i obs-dom-array refcounts aignet))
+             (obs-dom-fanout-ok i new-obs-dom-array refcounts aignet)))
+
+  (defret <fn>-sets-correct
+    (implies (< (nfix i) (nfix n))
+             (obs-dom-fanout-ok i new-obs-dom-array refcounts aignet)))
+  
+  (defret <fn>-preserves-empty-dominators
+    (implies (equal (nth i obs-dom-array)
+                    (make-obs-dom-info-reached nil))
+             (equal (nth i new-obs-dom-array)
+                    (make-obs-dom-info-reached nil)))
+    :hints(("Goal" :in-theory (enable obs-dom-info-intersect)))))
+
+
+(define obs-dom-info-set-pos ((n natp) obs-dom-array aignet)
+  :guard (and (<= n (num-outs aignet))
+              (<= (num-fanins aignet) (dominfo-length obs-dom-array)))
+  :measure (nfix (- (num-outs aignet) (nfix n)))
+  :returns new-obs-dom-array
+  (b* (((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
+                   :exec (eql n (num-outs aignet))))
+        obs-dom-array)
+       (fanin-node (lit->var (outnum->fanin n aignet)))
+       (obs-dom-array (set-dominfo fanin-node (make-obs-dom-info-reached nil) obs-dom-array)))
+    (obs-dom-info-set-pos (1+ (lnfix n)) obs-dom-array aignet))
+  ///
+  (defret <fn>-length
+    (implies (< (fanin-count aignet) (len obs-dom-array))
+             (equal (len new-obs-dom-array)
+                    (len obs-dom-array))))
+
+  (defret <fn>-preserves-empty-dominators
+    (implies (equal (nth i obs-dom-array)
+                    (make-obs-dom-info-reached nil))
+             (equal (nth i new-obs-dom-array)
+                    (make-obs-dom-info-reached nil))))
+
+  (defret fanin-dominfo-of-<fn>
+    (implies (and (<= (nfix n) (nfix k))
+                  (< (nfix k) (num-outs aignet)))
+             (equal (nth (lit->var (fanin 0 (lookup-stype k :po aignet))) new-obs-dom-array)
+                    (make-obs-dom-info-reached nil)))))
+
+(define obs-dom-info-set-nxsts ((n natp) obs-dom-array aignet)
+  :guard (and (<= n (num-regs aignet))
+              (<= (num-fanins aignet) (dominfo-length obs-dom-array)))
+  :measure (nfix (- (num-regs aignet) (nfix n)))
+  :returns new-obs-dom-array
+  (b* (((when (mbe :logic (zp (- (num-regs aignet) (nfix n)))
+                   :exec (eql n (num-regs aignet))))
+        obs-dom-array)
+       (fanin-node (lit->var (regnum->nxst n aignet)))
+       (obs-dom-array (set-dominfo fanin-node (make-obs-dom-info-reached nil) obs-dom-array)))
+    (obs-dom-info-set-nxsts (1+ (lnfix n)) obs-dom-array aignet))
+  ///
+  (defret <fn>-length
+    (implies (< (fanin-count aignet) (len obs-dom-array))
+             (equal (len new-obs-dom-array)
+                    (len obs-dom-array))))
+
+  (defret <fn>-preserves-empty-dominators
+    (implies (equal (nth i obs-dom-array)
+                    (make-obs-dom-info-reached nil))
+             (equal (nth i new-obs-dom-array)
+                    (make-obs-dom-info-reached nil))))
+
+  (defret fanin-dominfo-of-<fn>
+    (implies (and (<= (nfix n) (nfix k))
+                  (< (nfix k) (num-regs aignet)))
+             (equal (nth (lit->var (lookup-reg->nxst k aignet)) new-obs-dom-array)
+                    (make-obs-dom-info-reached nil)))))
+
+
+(define aignet-compute-obs-dom-info (obs-dom-array refcounts aignet)
+  :returns new-obs-dom-array
+  :guard (<= (num-fanins aignet) (u32-length refcounts))
+  (b* ((obs-dom-array (resize-dominfo 0 obs-dom-array))
+       (obs-dom-array (resize-dominfo (num-fanins aignet) obs-dom-array))
+       (obs-dom-array (obs-dom-info-set-pos 0 obs-dom-array aignet))
+       (obs-dom-array (obs-dom-info-set-nxsts 0 obs-dom-array aignet)))
+    (obs-dom-info-sweep-nodes (num-fanins aignet) obs-dom-array refcounts aignet))
+  ///
+  (defret <fn>-length
+    (equal (len new-obs-dom-array) (num-fanins aignet)))
+
+  (defret po-dominfo-of-<fn>
+    (implies (< (nfix k) (num-outs aignet))
+             (equal (nth (lit->var (fanin 0 (lookup-stype k :po aignet))) new-obs-dom-array)
+                    (make-obs-dom-info-reached nil))))
+
+  (defret nxst-dominfo-of-<fn>
+    (implies (< (nfix k) (num-regs aignet))
+             (equal (nth (lit->var (lookup-reg->nxst k aignet)) new-obs-dom-array)
+                    (make-obs-dom-info-reached nil))))
+
+  (defret <fn>-fanouts-ok
+    (obs-dom-fanout-ok i new-obs-dom-array refcounts aignet)
+    :hints(("Goal" :in-theory (enable obs-dom-fanout-ok-out-of-bounds)
+            :cases ((< (nfix i) (+ 1 (fanin-count aignet))))))))
+
+
+
+(defsection obs-dom-array-correct
+  
+  (defun-sk obs-dom-array-correct (obs-dom-array refcounts aignet)
+    (forall fanout
+            (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet))
+    :rewrite :direct)
+
+  (in-theory (disable obs-dom-array-correct))
+
+  (defthm obs-dom-array-correct-of-obs-dom-info-sweep-nodes
+    (obs-dom-array-correct
+     (obs-dom-info-sweep-nodes (+ 1 (fanin-count aignet)) obs-dom-array refcounts aignet)
+     refcounts
+     aignet)
+    :hints(("Goal" :in-theory (enable obs-dom-array-correct
+                                      obs-dom-fanout-ok-out-of-bounds)
+            :cases ((<= (nfix
+                         (obs-dom-array-correct-witness
+                          (obs-dom-info-sweep-nodes (+ 1 (fanin-count aignet)) 
+                                                    obs-dom-array refcounts aignet)
+                          refcounts
+                          aignet))
+                        (fanin-count aignet))))))
+
+  (defthm obs-dom-array-correct-of-aignet-compute-obs-dom-info
+    (obs-dom-array-correct (aignet-compute-obs-dom-info obs-dom-array refcounts aignet)
+                           refcounts aignet)
+    :hints(("Goal" :in-theory (enable obs-dom-array-correct)))))
+
+
+
+
+
+(define spath-last ((x nat-listp))
+  :guard (consp x)
+  :returns (last natp :rule-classes :type-prescription)
+  (lnfix (car (last x))))
+
+(define spath-butlast ((x nat-listp))
+  :guard (consp x)
+  :returns (prefix nat-listp)
+  (acl2::nat-list-fix (butlast x 1))
+  ///
+  (defret len-of-<fn>
+    (implies (consp x)
+             (equal (len prefix) (+ -1 (len x)))))
+  
+  (defret spath-exists-of-spath-butlast
+    (implies (spath-existsp sink x refcounts aignet)
+             (spath-existsp sink prefix refcounts aignet))
+    :hints(("Goal" :in-theory (enable spath-existsp))))
+
+  (local (defthm len-equal-0
+           (equal (equal (len x) 0)
+                  (not (consp x)))))
+
+  (local (in-theory (disable satlink::equal-of-lit-fix-backchain)))
+
+  (defthmd spath-endpoint-in-terms-of-butlast
+    (equal (spath-endpoint sink path refcounts aignet)
+           (if (atom path)
+               (nfix sink)
+             (b* ((prev (spath-endpoint sink (spath-butlast path) refcounts aignet))
+                  (last (spath-last path)))
+               (lit->var (nth last (gate-node-supergate prev refcounts aignet))))))
+    :hints(("Goal" :in-theory (enable spath-last (:i spath-endpoint))
+            :induct (spath-endpoint sink path refcounts aignet)
+            :expand ((:free (path) (spath-endpoint sink path refcounts aignet)))))
+    :rule-classes ((:definition :controller-alist ((spath-endpoint nil t nil nil)))))
+
+    (defthmd spath-existsp-in-terms-of-butlast
+      (equal (spath-existsp sink path refcounts aignet)
+             (if (atom path)
+                 t
+               (and (spath-existsp sink (spath-butlast path) refcounts aignet)
+                    (b* ((prev (spath-endpoint sink (spath-butlast path) refcounts aignet)))
+                      (and (equal (ctype (stype (car (lookup-id prev aignet))))
+                                  :gate)
+                           (< (spath-last path) (len (gate-node-supergate prev refcounts aignet))))))))
+      :hints(("Goal" :in-theory (enable spath-endpoint spath-existsp spath-last)
+              :induct (spath-endpoint sink path refcounts aignet)
+              :expand ((:with spath-endpoint (:free (path) (spath-endpoint sink path refcounts aignet)))
+                       (:free (path) (spath-existsp sink path refcounts aignet)))))
+      :rule-classes ((:definition :controller-alist ((spath-existsp nil t nil nil)))))
+
+    (defthmd spath-and-literals-in-terms-of-butlast
+      (equal (spath-and-literals sink path refcounts aignet)
+             (if (atom path)
+                 nil
+               (append (spath-and-literals sink (spath-butlast path) refcounts aignet)
+                       (b* ((prev (spath-endpoint sink (spath-butlast path) refcounts aignet)))
+                         (and (equal (stype (car (lookup-id prev aignet))) :and)
+                              (gate-node-supergate prev refcounts aignet))))))
+    :hints(("Goal" :in-theory (enable spath-last (:i spath-endpoint))
+            :induct (spath-endpoint sink path refcounts aignet)
+            :expand ((:with spath-endpoint (:free (path) (spath-endpoint sink path refcounts aignet)))
+                     (:free (path) (spath-and-literals sink path refcounts aignet)))))
+    :rule-classes ((:definition :controller-alist ((spath-and-literals nil t nil nil))))))
+
+
+
+(defsection obs-dom-array-implies-path-contains-dominators
+  (local
+   (progn
+     (define spath-induct-reverse ((x nat-listp))
+       :measure (len x)
+       (if (atom x)
+           (acl2::nat-list-fix x)
+         (spath-induct-reverse (spath-butlast x))))
+
+     ;; (defthm path-contains-and-siblings-implies-not-cube-contradictionp
+     ;;   (implies (and (path-contains-and-siblings
+     ;;                  lits sink path aignet)
+     ;;                 (not (path-contains-contradictory-siblings
+     ;;                       sink path aignet)))
+     ;;            (not (cube-contradictionp lits)))
+     ;;   :hints (("Goal" :use ((:instance path-contains-and-siblings-implies-member
+     ;;                          (lit (cube-contradictionp lits))
+     ;;                          (x (lit-list-fix lits)))
+     ;;                         (:instance path-contains-and-siblings-implies-member
+     ;;                          (lit (lit-negate (cube-contradictionp lits)))
+     ;;                          (x (lit-list-fix lits))))
+     ;;            :in-theory (disable path-contains-and-siblings-implies-member))))
+
+     ;; (defthm path-contains-and-siblings-implies-not-member
+     ;;   (implies (and (path-contains-and-siblings
+     ;;                  lits sink path aignet)
+     ;;                 (not (path-contains-and-sibling lit sink path aignet))
+     ;;                 (litp lit) (lit-listp lits))
+     ;;            (not (member lit lits)))
+     ;;   :hints(("Goal" :in-theory (enable member path-contains-and-siblings))))
+
+
+     (defthm obs-dom-fanout-ok-implies-reachable-and
+       (implies (and (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet)
+                     (equal (stype (car (lookup-id fanout aignet))) :and)
+                     (obs-dom-info->reached (nth fanout obs-dom-array))
+                     (not (cube-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))))
+                     (not (cube-contradictionp (gate-node-supergate fanout refcounts aignet)))
+                     (not (two-cubes-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))
+                           (gate-node-supergate fanout refcounts aignet)))
+                     (< (nfix k) (len (gate-node-supergate fanout refcounts aignet))))
+                (obs-dom-info->reached (nth (lit->var
+                                             (nth k (gate-node-supergate fanout refcounts aignet)))
+                                            obs-dom-array)))
+       :hints(("Goal" :in-theory (e/d (obs-dom-info-for-child
+                                       obs-dom-info-add-lits
+                                       obs-dom-info-subsetp
+                                       cube-contradictionp-of-append)
+                                      (obs-dom-fanout-ok-implies-and-child))
+               :expand ((:free (a b) (cube-contradictionp (cons a b))))
+               :use ((:instance obs-dom-fanout-ok-implies-and-child
+                      (lit (nth k (gate-node-supergate fanout refcounts aignet))))))))
+
+     (defthm obs-dom-fanout-ok-implies-reachable-xor
+       (implies (and (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet)
+                     (equal (stype (car (lookup-id fanout aignet))) :xor)
+                     (obs-dom-info->reached (nth fanout obs-dom-array))
+                     (not (cube-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))))
+                     (< (nfix k) (len (gate-node-supergate fanout refcounts aignet)))
+                     ;; (not (member-equal
+                     ;;       (lit-negate (fanin (b-not dir)
+                     ;;                          (lookup-id fanout aignet)))
+                     ;;       (obs-dom-info->doms (nth fanout obs-dom-array))))
+                     )
+                (obs-dom-info->reached (nth (lit->var
+                                             (nth k (gate-node-supergate fanout refcounts aignet)))
+                                            obs-dom-array)))
+       :hints(("Goal" :in-theory (e/d (obs-dom-info-for-child
+                                       obs-dom-info-add-lits
+                                       obs-dom-info-subsetp
+                                       cube-contradictionp-of-append)
+                                      (obs-dom-fanout-ok-implies-xor-child))
+               :expand ((:free (a b) (cube-contradictionp (cons a b))))
+               :use ((:instance obs-dom-fanout-ok-implies-xor-child
+                      (lit (nth k (gate-node-supergate fanout refcounts aignet))))))))
+
+
+
+     (defthm subsetp-of-doms-when-reached
+       (implies (and (obs-dom-info-subsetp x y)
+                     (obs-dom-info->reached y)
+                     (not (cube-contradictionp
+                           (obs-dom-info->doms y))))
+                (subsetp (obs-dom-info->doms x) (obs-dom-info->doms y)))
+       :hints(("Goal" :in-theory (enable obs-dom-info-subsetp))))
+
+     ;; (defthm path-contains-and-siblings-when-subsetp
+     ;;   (implies (and (path-contains-and-siblings x sink path aignet)
+     ;;                 (subsetp y x))
+     ;;            (path-contains-and-siblings y sink path aignet))
+     ;;   :hints(("Goal" :in-theory (enable path-contains-and-siblings subsetp)
+     ;;           :induct (path-contains-and-siblings y sink path aignet)
+     ;;           :expand ((path-contains-and-siblings y sink path aignet)
+     ;;                    (subsetp y x)))))
+
+
+     (defthm obs-dom-fanout-ok-implies-subsetp-xor
+       (implies (and (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet)
+                     (equal (stype (car (lookup-id fanout aignet))) :xor)
+                     (obs-dom-info->reached (nth fanout obs-dom-array))
+                     (not (cube-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))))
+                     (< (nfix k) (len (gate-node-supergate fanout refcounts aignet))))
+                (subsetp (obs-dom-info->doms
+                          (nth (lit->var
+                                (nth k (gate-node-supergate fanout refcounts aignet)))
+                               obs-dom-array))
+                         (obs-dom-info->doms
+                          (nth fanout obs-dom-array))))
+       :hints (("goal" :use ((:instance obs-dom-fanout-ok-implies-xor-child
+                              (lit (nth k (gate-node-supergate fanout refcounts aignet)))))
+                :in-theory (e/d (obs-dom-info-for-child)
+                                (obs-dom-fanout-ok-implies-xor-child)))))
+
+     (defthm obs-dom-fanout-ok-implies-subsetp-and
+       (implies (and (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet)
+                     (equal (stype (car (lookup-id fanout aignet))) :and)
+                     (obs-dom-info->reached (nth fanout obs-dom-array))
+                     (not (cube-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))))
+                     (not (cube-contradictionp (gate-node-supergate fanout refcounts aignet)))
+                     (not (two-cubes-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))
+                           (gate-node-supergate fanout refcounts aignet)))
+                     (< (nfix k) (len (gate-node-supergate fanout refcounts aignet))))
+                (subsetp (obs-dom-info->doms
+                          (nth (lit->var
+                                (nth k (gate-node-supergate fanout refcounts aignet)))
+                               obs-dom-array))
+                         (append (obs-dom-info->doms (nth fanout obs-dom-array))
+                                 (gate-node-supergate fanout refcounts aignet))))
+       :hints(("Goal" :in-theory (e/d (obs-dom-info-for-child
+                                       obs-dom-info-add-lits
+                                       obs-dom-info-subsetp
+                                       cube-contradictionp-of-append)
+                                      (obs-dom-fanout-ok-implies-and-child))
+               :expand ((:free (a b) (cube-contradictionp (cons a b))))
+               :use ((:instance obs-dom-fanout-ok-implies-and-child
+                      (lit (nth k (gate-node-supergate fanout refcounts aignet))))))))
+
+     (defthm obs-dom-fanout-ok-implies-subsetp-and-rw
+       (implies (and (obs-dom-fanout-ok fanout obs-dom-array refcounts aignet)
+                     (equal (stype (car (lookup-id fanout aignet))) :and)
+                     (obs-dom-info->reached (nth fanout obs-dom-array))
+                     (not (cube-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))))
+                     (not (cube-contradictionp (gate-node-supergate fanout refcounts aignet)))
+                     (not (two-cubes-contradictionp
+                           (obs-dom-info->doms (nth fanout obs-dom-array))
+                           (gate-node-supergate fanout refcounts aignet)))
+                     (< (nfix k) (len (gate-node-supergate fanout refcounts aignet)))
+                     (subsetp
+                      (append (obs-dom-info->doms (nth fanout obs-dom-array))
+                              (gate-node-supergate fanout refcounts aignet))
+                      full-set))
+                (subsetp (obs-dom-info->doms
+                          (nth (lit->var
+                                (nth k (gate-node-supergate fanout refcounts aignet)))
+                               obs-dom-array))
+                         full-set))
+       :hints (("goal" :use obs-dom-fanout-ok-implies-subsetp-and
+                :in-theory (disable obs-dom-fanout-ok-implies-subsetp-and))))
+     ))
+     ;; (defthm subsetp-remove-equal
+     ;;   (implies (subsetp x (cons k y))
+     ;;            (subsetp (remove k x) y))
+     ;;   :hints(("Goal" :in-theory (enable subsetp remove))))
+
+  (local
+   (defthm not-cube-contradictionp-when-subsetp
+     (implies (and (subsetp-equal x y)
+                   (not (cube-contradictionp y)))
+              (not (cube-contradictionp x)))
+     :hints(("Goal" :in-theory (enable cube-contradictionp-when-subsetp)))))
+
+  (local
+   (defthm not-two-cubes-contradictionp-when-subsetp
+     (implies (and (subsetp-equal x y)
+                   (not (two-cubes-contradictionp y z)))
+              (not (two-cubes-contradictionp x z)))))
+
+  (defthm obs-dom-array-implies-path-contains-dominators
+    (b* ((path-lits (spath-and-literals sink path refcounts aignet)))
+      (implies (and (obs-dom-array-correct obs-dom-array refcounts aignet)
+                    (spath-existsp sink path refcounts aignet)
+                    (not (cube-contradictionp path-lits))
+                    (obs-dom-info->reached (nth sink obs-dom-array))
+                    (equal (obs-dom-info->doms (nth sink obs-dom-array)) nil))
+               (let ((source (spath-endpoint sink path refcounts aignet)))
+                 (and (obs-dom-info->reached (nth source obs-dom-array))
+                      (subsetp
+                       (obs-dom-info->doms (nth source obs-dom-array)) path-lits)))))
+    :hints (("goal" :induct (spath-induct-reverse path)
+             :in-theory (enable (:i spath-induct-reverse)
+                                cube-contradictionp-of-append
+                                cube-contradictionp-when-subsetp)
+             :expand ((:with spath-and-literals-in-terms-of-butlast
+                       (spath-and-literals sink path refcounts aignet))
+                      (:with spath-existsp-in-terms-of-butlast
+                       (spath-existsp sink path refcounts aignet))
+                      (:with spath-endpoint-in-terms-of-butlast
+                       (spath-endpoint sink path refcounts aignet))))
+            (and stable-under-simplificationp
+                 ))))
+
+
+
+(defthm toggle-does-not-affect-sink-when-not-reached
+  (implies (and (obs-dom-array-correct obs-dom-array refcounts aignet)
+                (not (obs-dom-info->reached (nth source obs-dom-array)))
+                (obs-dom-info->reached (nth sink obs-dom-array))
+                (equal (obs-dom-info->doms (nth sink obs-dom-array)) nil)
+                (< 1 (nfix (nth source refcounts))))
+           (equal (id-eval-toggle sink source invals regvals aignet)
+                  (id-eval sink invals regvals aignet)))
+  :hints (("goal" :use ((:instance obs-dom-array-implies-path-contains-dominators
+                         (path (toggle-witness-spath sink source invals regvals refcounts aignet))))
+           :in-theory (disable obs-dom-array-implies-path-contains-dominators))))
+
+
+
+(defthm toggle-does-not-affect-output-when-dominator-false
+  (implies (and (obs-dom-array-correct obs-dom-array refcounts aignet)
+                (member-equal lit (obs-dom-info->doms (nth source obs-dom-array)))
+                (equal (lit-eval lit invals regvals aignet) 0)
+                (equal (lit-eval-toggle lit source invals regvals aignet) 0)
+                (obs-dom-info->reached (nth sink obs-dom-array))
+                (equal (obs-dom-info->doms (nth sink obs-dom-array)) nil)
+                (< 1 (nfix (nth source refcounts))))
+           (equal (id-eval-toggle sink source invals regvals aignet)
+                  (id-eval sink invals regvals aignet)))
+  :hints (("goal" :use ((:instance obs-dom-array-implies-path-contains-dominators
+                         (path (toggle-witness-spath sink source invals regvals refcounts aignet)))
+                        (:instance lit-list-has-const0-under-toggle-when-member
+                         (x (spath-and-literals
+                             sink
+                             (toggle-witness-spath sink source invals regvals refcounts aignet)
+                             refcounts aignet))
+                         (toggle source)))
+           :in-theory (disable obs-dom-array-implies-path-contains-dominators
+                               lit-list-has-const0-under-toggle-when-member))))
