@@ -69,20 +69,21 @@
    (xdoc::evmac-section-form
     (xdoc::codeblock
      "(tailrec old"
-     "         :variant         ; default :monoid"
-     "         :domain          ; default :auto"
-     "         :new-name        ; default :auto"
-     "         :new-enable      ; default :auto"
-     "         :accumulator     ; default :auto"
-     "         :wrapper         ; default nil"
-     "         :wrapper-name    ; default :auto"
-     "         :wrapper-enable  ; default t"
-     "         :thm-name        ; default :auto"
-     "         :thm-enable      ; default t"
-     "         :verify-guards   ; default :auto"
-     "         :hints           ; default nil"
-     "         :print           ; default :result"
-     "         :show-only       ; default nil"
+     "         :variant              ; default :monoid"
+     "         :domain               ; default :auto"
+     "         :new-name             ; default :auto"
+     "         :new-enable           ; default :auto"
+     "         :accumulator          ; default :auto"
+     "         :wrapper              ; default nil"
+     "         :wrapper-name         ; default :auto"
+     "         :wrapper-enable       ; default t"
+     "         :old-to-new-name      ; default :auto"
+     "         :old-to-wrapper-name  ; default :auto"
+     "         :thm-enable           ; default t"
+     "         :verify-guards        ; default :auto"
+     "         :hints                ; default nil"
+     "         :print                ; default :result"
+     "         :show-only            ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -350,7 +351,73 @@
 
     (xdoc::desc-apt-input-wrapper-enable :optional)
 
-    (xdoc::desc-apt-input-thm-name :optional)
+    (xdoc::desc
+     "@(':old-to-new-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the theorem that
+       relates the old function to the new function.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the "
+       (xdoc::seetopic "acl2::paired-names" "paired name")
+       " obtained by "
+       (xdoc::seetopic "acl2::make-paired-name" "pairing")
+       " the name of @('old') and the name of @('new'),
+        putting the result into the same package as @('new').")
+      (xdoc::li
+       "Any other keyword, to use as separator between
+        the names of @('old') and @('new').
+        A keyword @(':kwd') specifies the theorem name @('oldkwdnew'),
+        in the same package as @('new').")
+      (xdoc::li
+       "A non-keyword symbol,
+        to use as the name of the theorem."))
+     (xdoc::p
+      "This must be absent if the @(':wrapper') input is @('t').
+       In this case, no theorem is generated
+       relating the old function to the new function;
+       instead, a theorem is generated
+       relating the old function to the wrapper.")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('old-to-new') be the name of this theorem,
+       if it is generated."))
+
+    (xdoc::desc
+     "@(':old-to-wrapper-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the theorem that
+       relates the old function to the wrapper.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the "
+       (xdoc::seetopic "acl2::paired-names" "paired name")
+       " obtained by "
+       (xdoc::seetopic "acl2::make-paired-name" "pairing")
+       " the name of @('old') and the name of @('wrapper'),
+        putting the result into the same package as @('wrapper').")
+      (xdoc::li
+       "Any other keyword, to use as separator between
+        the names of @('old') and @('wrapper').
+        A keyword @(':kwd') specifies the theorem name @('oldkwdwrapper'),
+        in the same package as @('wrapper').")
+      (xdoc::li
+       "A non-keyword symbol,
+        to use as the name of the theorem."))
+     (xdoc::p
+      "This must be absent if the @(':wrapper') input is @('nil').
+       In this case, no theorem is generated
+       relating the old function to the wrapper;
+       instead, a theorem is generated
+       relating the old function to the new function.")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('old-to-wrapper') be the name of this theorem,
+       if it is generated."))
 
     (xdoc::desc-apt-input-thm-enable :optional)
 
