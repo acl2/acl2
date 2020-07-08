@@ -763,16 +763,18 @@
    (xdoc::p
     "The topic lists the names used for arguments and results of functions,
      along with brief descriptions of the names.
-     This listing consists of bullet in an unordered list.
+     This listing consists of bullets  in an unordered list.
      The @(':items') argument must be a list of XDOC trees,
      each of which is wrapped into an @(tsee xdoc::li),
      and the so-wrapped items are put into an @(tsee xdoc::ul).")
    (xdoc::p
     "Certain common items, like the @('state') variable,
      can be included among the items just by setting
-     the corresponding keyword options to @('t').")
+     the corresponding keyword options to @('t').
+     Alternatively, we provide some named constants for
+     the entries for these certain common items.")
    (xdoc::p
-    "If there are items, the list is omitted altogether.")
+    "If there are no items, the list is omitted altogether.")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -827,6 +829,21 @@
          :short ,short
          ,@(and long (list :long long))
          :order-subtopics t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst xdoc::*evmac-topic-implementation-item-state*
+  (xdoc::&& "@('state') is the ACL2 "
+            (xdoc::seetopic "acl2::state" "state")
+            "."))
+
+(defconst xdoc::*evmac-topic-implementation-item-wrld*
+  (xdoc::&& "@('wrld') is the ACL2 "
+            (xdoc::seetopic "acl2::world" "world")
+            "."))
+
+(defconst xdoc::*evmac-topic-implementation-item-ctx*
+  "@('ctx') is the context used for errors.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
