@@ -31,12 +31,12 @@
 
  deffixequiv-sk
 
- :item-wrld t
-
  :items
 
- ("@('fn') and @('args') are
-   the homonymous inputs of @(tsee deffixequiv-sk)."
+ (xdoc::*evmac-topic-implementation-item-wrld*
+
+  "@('fn') and @('args') are
+    the homonymous inputs of @(tsee deffixequiv-sk)."
 
   "@('fn-witness') is the witness function associated to @('fn').
    See the option @(':skolem-name') of @(tsee defun-sk)."
