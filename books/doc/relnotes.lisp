@@ -638,6 +638,10 @@
    (xdoc::p
     "Support for @(':prepwork') has been added to @(tsee std::deflist).")
 
+   (xdoc::p
+    "Support for @(tsee defun-sk)'s option @(':constrain')
+     has been added to @(tsee define-sk).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
