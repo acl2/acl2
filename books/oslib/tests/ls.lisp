@@ -32,7 +32,7 @@
 (include-book "../ls")
 (include-book "../catpath")
 (include-book "std/util/defconsts" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defconsts (*files* state)
   (oslib::ls! "."))
@@ -57,7 +57,7 @@
 
 (defconsts (*files3* state)
   (b* ((acl2-src-dir (f-get-global 'acl2::system-books-dir state))
-       (oslib-dir    (oslib::catpath acl2-src-dir "oslib"))) 
+       (oslib-dir    (oslib::catpath acl2-src-dir "oslib")))
     (oslib::ls! oslib-dir)))
 
 (defconsts (*files4* state)
@@ -145,5 +145,5 @@
 
 ;; this doesn't work yet
 ;; subdir3 is a symlink to subdir1/subdir2, so when we do subdir3/.., we
-;; should end up in subdir1(!) 
+;; should end up in subdir1(!)
 ;; (ensure-has "lstest-dir/subdir3/.." "file2.txt")
