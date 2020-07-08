@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "kestrel/abnf/concrete-syntax" :dir :system)
+(include-book "kestrel/utilities/messages" :dir :system)
+(include-book "misc/seq" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

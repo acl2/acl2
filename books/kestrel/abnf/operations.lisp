@@ -12,6 +12,8 @@
 
 (include-book "semantics")
 
+(include-book "kestrel/utilities/integers-from-to" :dir :system)
+(include-book "kestrel/utilities/osets" :dir :system)
 (include-book "kestrel/utilities/strings/char-kinds" :dir :system)
 (include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 
