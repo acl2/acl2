@@ -49,7 +49,8 @@
    @('wrapper'),
    @('wrapper-name'),
    @('wrapper-enable'),
-   @('thm-name'),
+   @('old-to-new-name'),
+   @('old-to-wrapper-name'),
    @('thm-enable'),
    @('verify-guards'),
    @('hints'),
@@ -75,7 +76,8 @@
    @('wrapper$'),
    @('wrapper-name$'),
    @('wrapper-enable$'),
-   @('thm-name$'),
+   @('old-to-new-name$'),
+   @('old-to-wrapper-name$'),
    @('thm-enable$'),
    @('verify-guards$'),
    @('hints$'),
@@ -824,53 +826,124 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tailrec-process-thm-name (thm-name
-                                  (old$ symbolp)
-                                  (new-name$ symbolp)
-                                  (wrapper$ booleanp)
-                                  (wrapper-name$ symbolp)
-                                  ctx
-                                  state)
+(define tailrec-process-old-to-new-name (old-to-new-name
+                                         (old-to-new-name-present booleanp)
+                                         (old$ symbolp)
+                                         (new-name$ symbolp)
+                                         (wrapper$ booleanp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
   :returns (mv erp
-               (thm-name$ "A @(tsee symbolp)
-                           to use for the theorem that
-                           relates the old and new or wrapper functions.")
+               (result "A list @('(old-to-new$ new-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp symbol-listp result)').")
                state)
   :mode :program
-  :short "Process the @(':thm-name') input."
-  (b* ((new/wrapper-name (if wrapper$ wrapper-name$ new-name$))
-       ((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
-       (name (if (eq thm-name :auto)
-                 (make-paired-name old$ new/wrapper-name 2 (w state))
-               thm-name))
-       (description (msg "The name ~x0 of the theorem ~
-                          that relates the target function ~x1 ~
-                          to the ~s2 function ~x3, ~
-                          ~@4,"
-                         name
-                         old$
-                         (if wrapper$ "wrapper" "new")
-                         new/wrapper-name
-                         (if (eq thm-name :auto)
-                             "automatically generated ~
-                              since the :THM-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :THM-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ name description t nil))
-       ((er &) (ensure-symbol-different$
-                name new-name$
-                (msg "the name ~x0 of the new function ~
-                      (determined by the :NEW-NAME input)." new-name$)
-                description
-                t nil))
-       ((when (not wrapper$)) (value name))
-       ((er &) (ensure-symbol-different$
-                name wrapper-name$
-                (msg "the name ~x0 of the wrapper function ~
-                      (determined by the :WRAPPER-NAME input)." wrapper-name$)
-                description
-                t nil)))
-    (value name)))
+  :short "Process the @(':old-to-new-name') input."
+  (if wrapper$
+      (if old-to-new-name-present
+          (er-soft+ ctx t nil
+                    "Since the :WRAPPER input is T, ~
+                     no :OLD-TO-NEW-NAME input may be supplied,
+                     but ~x0 was supplied instead."
+                    old-to-new-name)
+        (value (list nil names-to-avoid)))
+    (b* ((wrld (w state))
+         ((er &) (ensure-symbol$ old-to-new-name
+                                 "The :OLD-TO-NEW-NAME input" t nil))
+         (name (cond ((eq old-to-new-name :auto)
+                      (make-paired-name old$ new-name$ 2 wrld))
+                     ((keywordp old-to-new-name)
+                      (intern-in-package-of-symbol
+                       (concatenate 'string
+                                    (symbol-name old$)
+                                    (symbol-name old-to-new-name)
+                                    (symbol-name new-name$))
+                       new-name$))
+                     (t old-to-new-name)))
+         (description (msg "The name ~x0 of the theorem ~
+                            that relates the old function ~x1 ~
+                            to the new function ~x2, ~
+                            specified (perhaps by default) ~
+                            by the :OLD-TO-NEW-NAME input ~x3,"
+                           name old$ new-name$ name))
+         (error-msg? (fresh-namep-msg-weak name nil wrld))
+         ((when error-msg?)
+          (er-soft+ ctx t nil
+                    "~@0 must be a valid fresh theorem name. ~@1"
+                    description error-msg?))
+         ((er &) (ensure-not-member-of-list$
+                  name
+                  names-to-avoid
+                  (msg "among the names ~x0 of other events ~
+                        generated by this transformation"
+                       names-to-avoid)
+                  description
+                  t
+                  nil)))
+      (value (list name (cons name names-to-avoid))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tailrec-process-old-to-wrapper-name
+  (old-to-wrapper-name
+   (old-to-wrapper-name-present booleanp)
+   (old$ symbolp)
+   (wrapper-name$ symbolp)
+   (wrapper$ booleanp)
+   (names-to-avoid symbol-listp)
+   ctx
+   state)
+  :returns (mv erp
+               (result "A list @('(old-to-wrapper$ new-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp symbol-listp result)').")
+               state)
+  :mode :program
+  :short "Process the @(':old-to-wrapper-name') input."
+  (if (not wrapper$)
+      (if old-to-wrapper-name-present
+          (er-soft+ ctx t nil
+                    "Since the :WRAPPER input is (perhaps by default) NIL, ~
+                     no :OLD-TO-WRAPPER-NAME input may be supplied,
+                     but ~x0 was supplied instead."
+                    old-to-wrapper-name)
+        (value (list nil names-to-avoid)))
+    (b* ((wrld (w state))
+         ((er &) (ensure-symbol$ old-to-wrapper-name
+                                 "The :OLD-TO-WRAPPER-NAME input" t nil))
+         (name (cond ((eq old-to-wrapper-name :auto)
+                      (make-paired-name old$ wrapper-name$ 2 wrld))
+                     ((keywordp old-to-wrapper-name)
+                      (intern-in-package-of-symbol
+                       (concatenate 'string
+                                    (symbol-name old$)
+                                    (symbol-name old-to-wrapper-name)
+                                    (symbol-name wrapper-name$))
+                       wrapper-name$))
+                     (t old-to-wrapper-name)))
+         (description (msg "The name ~x0 of the theorem ~
+                            that relates the old function ~x1 ~
+                            to the wrapper function ~x2, ~
+                            specified (perhaps by default) ~
+                            by the :OLD-TO-WRAPPER-NAME input ~x3,"
+                           name old$ wrapper-name$ name))
+         (error-msg? (fresh-namep-msg-weak name nil wrld))
+         ((when error-msg?)
+          (er-soft+ ctx t nil
+                    "~@0 must be a valid fresh theorem name. ~@1"
+                    description error-msg?))
+         ((er &) (ensure-not-member-of-list$
+                  name
+                  names-to-avoid
+                  (msg "among the names ~x0 of other events ~
+                        generated by this transformation"
+                       names-to-avoid)
+                  description
+                  t
+                  nil)))
+      (value (list name (cons name names-to-avoid))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -885,7 +958,10 @@
                                 (wrapper-name-present booleanp)
                                 wrapper-enable
                                 (wrapper-enable-present booleanp)
-                                thm-name
+                                old-to-new-name
+                                (old-to-new-name-present booleanp)
+                                old-to-wrapper-name
+                                (old-to-wrapper-name-present booleanp)
                                 thm-enable
                                 verify-guards
                                 hints
@@ -907,9 +983,11 @@
                                     new-enable$
                                     a
                                     wrapper-name$
-                                    thm-name$
+                                    old-to-new-name$
+                                    old-to-wrapper-name$
                                     verify-guards$
-                                    hints$)')
+                                    hints$
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -925,8 +1003,10 @@
                                          symbolp
                                          symbolp
                                          symbolp
+                                         symbolp
                                          booleanp
                                          symbol-alistp
+                                         symbol-listp
                                          result)').")
                state)
   :mode :program
@@ -971,13 +1051,25 @@
                                                wrapper
                                                ctx
                                                state))
-       ((er thm-name$) (tailrec-process-thm-name thm-name
-                                                 old$
-                                                 new-name$
-                                                 wrapper
-                                                 wrapper-name$
-                                                 ctx
-                                                 state))
+       (names-to-avoid nil)
+       ((er (list old-to-new-name$ names-to-avoid))
+        (tailrec-process-old-to-new-name old-to-new-name
+                                         old-to-new-name-present
+                                         old$
+                                         new-name$
+                                         wrapper
+                                         names-to-avoid
+                                         ctx
+                                         state))
+       ((er (list old-to-wrapper-name$ names-to-avoid))
+        (tailrec-process-old-to-wrapper-name old-to-wrapper-name
+                                             old-to-wrapper-name-present
+                                             old$
+                                             wrapper-name$
+                                             wrapper
+                                             names-to-avoid
+                                             ctx
+                                             state))
        ((er &) (ensure-value-is-boolean$ thm-enable
                                          "The :THM-ENABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
@@ -995,9 +1087,11 @@
                  new-enable$
                  a
                  wrapper-name$
-                 thm-name$
+                 old-to-new-name$
+                 old-to-wrapper-name$
                  verify-guards$
-                 hints$))))
+                 hints$
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1993,7 +2087,7 @@
                                     (variant$ tailrec-variantp)
                                     (new-name$ symbolp)
                                     (wrapper$ booleanp)
-                                    (thm-name$ symbolp)
+                                    (old-to-new-name$ symbolp)
                                     (thm-enable$ booleanp)
                                     (names-to-avoid symbol-listp)
                                     (appcond-thm-names symbol-symbol-alistp)
@@ -2043,7 +2137,7 @@
                                                     nil
                                                     names-to-avoid
                                                     wrld)
-               thm-name$))
+               old-to-new-name$))
        (formula `(equal ,(apply-term old$ (formals old$ wrld))
                         ,(tailrec-gen-old-as-new-term
                           old$ test base nonrec updates a variant$
@@ -2178,7 +2272,7 @@
 
 (define tailrec-gen-old-to-wrapper-thm ((old$ symbolp)
                                         (wrapper-name$ symbolp)
-                                        (thm-name$ symbolp)
+                                        (old-to-wrapper-name$ symbolp)
                                         (thm-enable$ booleanp)
                                         (old-to-new-name symbolp)
                                         (wrapper-unnorm-name symbolp)
@@ -2214,10 +2308,10 @@
        (hints `(("Goal"
                  :in-theory '(,wrapper-unnorm-name)
                  :use ,old-to-new-name)))
-       (local-event `(local (,macro ,thm-name$
+       (local-event `(local (,macro ,old-to-wrapper-name$
                                     ,formula
                                     :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
+       (exported-event `(,macro ,old-to-wrapper-name$
                                 ,formula)))
     (mv local-event exported-event)))
 
@@ -2240,13 +2334,15 @@
    (wrapper$ booleanp)
    (wrapper-name$ symbolp)
    (wrapper-enable$ booleanp)
-   (thm-name$ symbolp)
+   (old-to-new-name$ symbolp)
+   (old-to-wrapper-name$ symbolp)
    (thm-enable$ booleanp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
    (print$ evmac-input-print-p)
    (show-only$ booleanp)
    (call pseudo-event-formp)
+   (names-to-avoid symbol-listp)
    ctx
    state)
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
@@ -2310,11 +2406,11 @@
    </p>"
   (b* ((wrld (w state))
        (names-to-avoid (if wrapper$
-                           (list new-name$
-                                 wrapper-name$
-                                 thm-name$)
-                         (list new-name$
-                               thm-name$)))
+                           (list* new-name$
+                                  wrapper-name$
+                                  names-to-avoid)
+                         (list* new-name$
+                                names-to-avoid)))
        (appconds (tailrec-gen-appconds old$
                                        test
                                        base
@@ -2451,7 +2547,7 @@
                                     variant$
                                     new-name$
                                     wrapper$
-                                    thm-name$
+                                    old-to-new-name$
                                     thm-enable$
                                     names-to-avoid
                                     appcond-thm-names
@@ -2491,7 +2587,7 @@
         (if wrapper$
             (tailrec-gen-old-to-wrapper-thm old$
                                             wrapper-name$
-                                            thm-name$
+                                            old-to-wrapper-name$
                                             thm-enable$
                                             old-to-new-name
                                             wrapper-unnorm-name?
@@ -2582,7 +2678,10 @@
                     (wrapper-name-present booleanp)
                     wrapper-enable
                     (wrapper-enable-present booleanp)
-                    thm-name
+                    old-to-new-name
+                    (old-to-new-name-present booleanp)
+                    old-to-wrapper-name
+                    (old-to-wrapper-name-present booleanp)
                     thm-enable
                     verify-guards
                     hints
@@ -2624,9 +2723,11 @@
                   new-enable$
                   a
                   wrapper-name$
-                  thm-name$
+                  old-to-new-name$
+                  old-to-wrapper-name$
                   verify-guards$
-                  hints$))
+                  hints$
+                  names-to-avoid))
         (tailrec-process-inputs old
                                 variant
                                 domain
@@ -2638,7 +2739,10 @@
                                 wrapper-name-present
                                 wrapper-enable
                                 wrapper-enable-present
-                                thm-name
+                                old-to-new-name
+                                old-to-new-name-present
+                                old-to-wrapper-name
+                                old-to-wrapper-name-present
                                 thm-enable
                                 verify-guards
                                 hints
@@ -2662,13 +2766,15 @@
                                            wrapper
                                            wrapper-name$
                                            wrapper-enable
-                                           thm-name$
+                                           old-to-new-name$
+                                           old-to-wrapper-name$
                                            thm-enable
                                            verify-guards$
                                            hints$
                                            print
                                            show-only
                                            call
+                                           names-to-avoid
                                            ctx
                                            state)))
     (value event)))
@@ -2697,7 +2803,8 @@
                      (wrapper 'nil)
                      (wrapper-name ':auto wrapper-name-present)
                      (wrapper-enable 't wrapper-enable-present)
-                     (thm-name ':auto)
+                     (old-to-new-name ':auto old-to-new-name-present)
+                     (old-to-wrapper-name ':auto old-to-wrapper-name-present)
                      (thm-enable 't)
                      (verify-guards ':auto)
                      (hints 'nil)
@@ -2714,7 +2821,10 @@
                                    ',wrapper-name-present
                                    ',wrapper-enable
                                    ',wrapper-enable-present
-                                   ',thm-name
+                                   ',old-to-new-name
+                                   ',old-to-new-name-present
+                                   ',old-to-wrapper-name
+                                   ',old-to-wrapper-name-present
                                    ',thm-enable
                                    ',verify-guards
                                    ',hints
