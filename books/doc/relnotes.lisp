@@ -640,7 +640,7 @@
 
    (xdoc::p
     "Support for @(tsee defun-sk)'s option @(':constrain')
-     has been added to @(tsee define-sk).")
+     has been added to @(tsee std::define-sk).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
