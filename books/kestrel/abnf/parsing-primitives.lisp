@@ -91,7 +91,7 @@
   :short "Parse a given natural number
           into a tree that matches
           a direct numeric value notation that consists of that number."
-  (b* ((nat (mbe :logic (nfix nat) :exec nat)))
+  (b* ((nat (lnfix nat)))
     (seq input
          (input-nat := (parse-any input))
          (unless (eql input-nat nat)
