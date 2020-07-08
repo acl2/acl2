@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,9 +10,10 @@
 
 (in-package "ABNF")
 
-(include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "misc/seq" :dir :system)
+
+(include-book "semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,6 +75,42 @@
     :rule-classes :linear)
 
   (defret len-of-parse-any-linear-<
+    (implies (not error?)
+             (< (len rest-input)
+                (len input)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-exact ((nat natp) (input nat-listp))
+  :returns (mv (error? maybe-msgp)
+               (tree? (and (maybe-treep tree?)
+                           (implies (not error?) (treep tree?))
+                           (implies error? (not tree?))))
+               (rest-input nat-listp))
+  :short "Parse a given natural number
+          into a tree that matches
+          a direct numeric value notation that consists of that number."
+  (b* ((nat (mbe :logic (nfix nat) :exec nat)))
+    (seq input
+         (input-nat := (parse-any input))
+         (unless (eql input-nat nat)
+           (return-raw
+            (mv (msg "Failed to parse ~x0; found ~x1 instead."
+                     nat input-nat)
+                nil
+                (cons input-nat input))))
+         (return (tree-leafterm (list nat)))))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defret len-of-parse-exact-linear-<=
+    (<= (len rest-input)
+        (len input))
+    :rule-classes :linear)
+
+  (defret len-of-parse-exact-linear-<
     (implies (not error?)
              (< (len rest-input)
                 (len input)))

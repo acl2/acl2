@@ -337,34 +337,6 @@
   (defruled msgp-of-*grammar-parser-error-msg*
     (msgp *grammar-parser-error-msg*)))
 
-(define parse-exact ((nat natp) (input nat-listp))
-  :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
-                           (implies (not error?) (treep tree?))
-                           (implies error? (not tree?))))
-               (rest-input nat-listp))
-  :parents (grammar-parser-implementation)
-  :short "Parse a given natural number
-          into a tree that matches
-          a direct numeric value notation that consists of that number."
-  (b* ((nat (mbe :logic (nfix nat) :exec nat)))
-    (seq input
-         (input-nat := (parse-any input))
-         (unless (eql input-nat nat)
-           (return-raw
-            (mv *grammar-parser-error-msg* nil (cons input-nat input))))
-         (return (tree-leafterm (list nat)))))
-  :no-function t
-  :hooks (:fix)
-  ///
-
-  (more-returns
-   (rest-input (and (<= (len rest-input) (len input))
-                    (implies (not error?)
-                             (< (len rest-input) (len input))))
-               :name len-of-parse-exact-linear
-               :rule-classes :linear)))
-
 (define parse-in-range ((min natp) (max natp) (input nat-listp))
   :guard (<= min max)
   :returns (mv (error? maybe-msgp)
