@@ -33,7 +33,7 @@
 (include-book "std/util/defval" :dir :system)
 (include-book "centaur/fty/fixequiv" :dir :system)
 (include-book "centaur/fty/basetypes" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (in-theory (enable acl2::arith-equiv-forwarding)))
@@ -202,6 +202,3 @@ for what we are trying to accomplish in VL.</p>")
   (b* (((mv ?col acc)
         (vl-html-encode-string-aux x 0 (length x) 0 tabsize nil)))
     (str::rchars-to-string acc)))
-
-
-
