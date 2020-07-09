@@ -69,21 +69,22 @@
    (xdoc::evmac-section-form
     (xdoc::codeblock
      "(tailrec old"
-     "         :variant              ; default :monoid"
-     "         :domain               ; default :auto"
-     "         :new-name             ; default :auto"
-     "         :new-enable           ; default :auto"
-     "         :accumulator          ; default :auto"
-     "         :wrapper              ; default nil"
-     "         :wrapper-name         ; default :auto"
-     "         :wrapper-enable       ; default t"
-     "         :old-to-new-name      ; default :auto"
-     "         :old-to-wrapper-name  ; default :auto"
-     "         :thm-enable           ; default t"
-     "         :verify-guards        ; default :auto"
-     "         :hints                ; default nil"
-     "         :print                ; default :result"
-     "         :show-only            ; default nil"
+     "         :variant                ; default :monoid"
+     "         :domain                 ; default :auto"
+     "         :new-name               ; default :auto"
+     "         :new-enable             ; default :auto"
+     "         :accumulator            ; default :auto"
+     "         :wrapper                ; default nil"
+     "         :wrapper-name           ; default :auto"
+     "         :wrapper-enable         ; default t"
+     "         :old-to-new-name        ; default :auto"
+     "         :old-to-new-enable      ; default t"
+     "         :old-to-wrapper-name    ; default :auto"
+     "         :old-to-wrapper-enable  ; default t"
+     "         :verify-guards          ; default :auto"
+     "         :hints                  ; default nil"
+     "         :print                  ; default :result"
+     "         :show-only              ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -379,17 +380,35 @@
        In this case, no theorem is generated
        relating the old function to the new function;
        instead, a theorem is generated
-       relating the old function to the wrapper.")
+       relating the old function to the wrapper function.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('old-to-new') be the name of this theorem,
        if it is generated."))
 
     (xdoc::desc
+     "@(':old-to-new-enable') &mdash; default @('t')"
+     (xdoc::p
+      "Determines whether @('old-to-new') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it."))
+     (xdoc::p
+      "This must be absent if the @(':wrapper') input is @('t').
+       In this case, no theorem is generated
+       relating the old function to the new function;
+       instead, a theorem is generated
+       relating the old function to the wrapper function."))
+
+    (xdoc::desc
      "@(':old-to-wrapper-name') &mdash; default @(':auto')"
      (xdoc::p
       "Determines the name of the theorem that
-       relates the old function to the wrapper.")
+       relates the old function to the wrapper function.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
@@ -411,7 +430,7 @@
      (xdoc::p
       "This must be absent if the @(':wrapper') input is @('nil').
        In this case, no theorem is generated
-       relating the old function to the wrapper;
+       relating the old function to the wrapper function;
        instead, a theorem is generated
        relating the old function to the new function.")
      (xdoc::p
@@ -419,7 +438,23 @@
        let @('old-to-wrapper') be the name of this theorem,
        if it is generated."))
 
-    (xdoc::desc-apt-input-thm-enable :optional)
+    (xdoc::desc
+     "@(':old-to-wrapper-enable') &mdash; default @('t')"
+     (xdoc::p
+      "Determines whether @('old-to-wrapper') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it."))
+     (xdoc::p
+      "This must be absent if the @(':wrapper') input is @('nil').
+       In this case, no theorem is generated
+       relating the old function to the wrapper function;
+       instead, a theorem is generated
+       relating the old function to the new function."))
 
     (xdoc::desc-apt-input-verify-guards :optional)
 

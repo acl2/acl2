@@ -657,6 +657,9 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper t :old-to-new-name g))
+
  ;; not a symbol:
  (must-fail (tailrec f :old-to-new-name 33))
 
@@ -713,6 +716,9 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper nil :old-to-wrapper-name g))
+
  ;; not a symbol:
  (must-fail (tailrec f :wrapper t :old-to-wrapper-name 33))
 
@@ -756,7 +762,7 @@
 
 (must-succeed*
 
- (test-title "Test the :THM-ENABLE option.")
+ (test-title "Test the :OLD-TO-NEW-ENABLE option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
  ;; and all the other values between NIL and T and incomparable to each other:
@@ -769,8 +775,12 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper t :old-to-new-enable t))
+ (must-fail (tailrec f :wrapper t :old-to-new-enable nil))
+
  ;; not T or NIL:
- (must-fail (tailrec f :thm-enable 7))
+ (must-fail (tailrec f :old-to-new-enable 7))
 
  ;; default:
  (must-succeed*
@@ -779,12 +789,51 @@
 
  ;; enable:
  (must-succeed*
-  (tailrec f :thm-enable t)
+  (tailrec f :old-to-new-enable t)
   (assert! (rune-enabledp '(:rewrite f-~>-f{1}) state)))
 
  ;; disable:
  (must-succeed*
-  (tailrec f :thm-enable nil)
+  (tailrec f :old-to-new-enable nil)
+  (assert! (rune-disabledp '(:rewrite f-~>-f{1}) state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :OLD-TO-WRAPPER-ENABLE option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper nil :old-to-wrapper-enable t))
+ (must-fail (tailrec f :wrapper nil :old-to-wrapper-enable nil))
+
+ ;; not T or NIL:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-enable 7))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f :wrapper t)
+  (assert! (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+
+ ;; enable:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-enable t)
+  (assert! (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+
+ ;; disable:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-enable nil)
   (assert! (rune-disabledp '(:rewrite f-~>-f{1}) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
