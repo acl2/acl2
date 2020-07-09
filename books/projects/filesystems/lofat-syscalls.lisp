@@ -346,48 +346,6 @@
            (max-entry-count fat32-in-memory)))
          path))))))))
 
-(defthm hifat-find-file-correctness-3-lemma-8
-  (implies (and (not (consp (assoc-equal name m1-file-alist2)))
-                (m1-file-alist-p m1-file-alist1)
-                (hifat-subsetp m1-file-alist1 m1-file-alist2))
-           (not (consp (assoc-equal name m1-file-alist1))))
-  :hints (("goal" :in-theory (enable hifat-subsetp m1-file-alist-p))))
-
-(defthm
-  hifat-find-file-correctness-3
-  (implies
-   (and (m1-file-alist-p m1-file-alist1)
-        (m1-file-alist-p m1-file-alist2)
-        (hifat-no-dups-p m1-file-alist1)
-        (hifat-no-dups-p m1-file-alist2)
-        (hifat-equiv m1-file-alist2 m1-file-alist1))
-   (mv-let
-     (file error-code)
-     (hifat-find-file m1-file-alist1 path)
-     (declare (ignore error-code))
-     (implies
-      (m1-regular-file-p file)
-      (equal
-       (m1-file->contents
-        (mv-nth 0
-                (hifat-find-file m1-file-alist2 path)))
-       (m1-file->contents file)))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (e/d (m1-file-alist-p hifat-equiv))
-    :use
-    ((:instance
-      hifat-find-file-correctness-3-lemma-5
-      (m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
-      (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
-     (:instance
-      hifat-find-file-correctness-3-lemma-5
-      (m1-file-alist1 (hifat-file-alist-fix m1-file-alist2))
-      (m1-file-alist2
-       (hifat-file-alist-fix m1-file-alist1)))))))
-
 (defund
   lofat-unlink (fat32-in-memory path)
   (declare

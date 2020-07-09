@@ -97,6 +97,22 @@
          (abs-find-file-helper fs path))
   :hints (("goal" :in-theory (enable abs-find-file-helper))))
 
+(defthm
+  abs-find-file-helper-of-append-1
+  (equal
+   (abs-find-file-helper fs (append x y))
+   (cond ((atom y) (abs-find-file-helper fs x))
+         ((and (zp (mv-nth 1 (abs-find-file-helper fs x)))
+               (abs-directory-file-p (mv-nth 0 (abs-find-file-helper fs x))))
+          (abs-find-file-helper
+           (abs-file->contents (mv-nth 0 (abs-find-file-helper fs x)))
+           y))
+         ((zp (mv-nth 1 (abs-find-file-helper fs x)))
+          (mv (abs-file-fix nil) *enotdir*))
+         ((atom x) (abs-find-file-helper fs y))
+         (t (abs-find-file-helper fs x))))
+  :hints (("goal" :in-theory (enable abs-find-file-helper))))
+
 (defund
   abs-find-file (frame path)
   (declare

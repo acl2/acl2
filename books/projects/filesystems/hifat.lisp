@@ -1862,6 +1862,22 @@
                      (path path-equiv))))))
 
 (defthm
+  hifat-find-file-of-append-1
+  (equal
+   (hifat-find-file fs (append x y))
+   (cond
+    ((atom y) (hifat-find-file fs x))
+    ((and (zp (mv-nth 1 (hifat-find-file fs x)))
+          (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+     (hifat-find-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                      y))
+    ((zp (mv-nth 1 (hifat-find-file fs x)))
+     (mv (m1-file-fix nil) *enotdir*))
+    ((atom x) (hifat-find-file fs y))
+    (t (hifat-find-file fs x))))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
+(defthm
   m1-file-alist-p-of-put-assoc-equal
   (implies
    (m1-file-alist-p alist)
@@ -2017,6 +2033,55 @@
           (cdr path)
           file)))
        (hifat-file-alist-fix fs)))))))
+
+(defthm hifat-place-file-of-append-lemma-1
+  (not (stringp (mv-nth 0 (hifat-place-file fs path file))))
+  :hints (("goal" :in-theory (enable hifat-place-file)))
+  :rule-classes :type-prescription)
+
+(defthm
+  hifat-place-file-of-append-1
+  (implies
+   (and (zp (mv-nth 1 (hifat-find-file fs x)))
+        (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+   (equal
+    (hifat-place-file fs (append x y) file)
+    (if
+        (consp y)
+        (mv
+         (mv-nth
+          0
+          (hifat-place-file
+           fs x
+           (make-m1-file
+            :contents
+            (mv-nth 0
+                    (hifat-place-file
+                     (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                     y file))
+            :dir-ent (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x))))))
+         (mv-nth
+          1
+          (hifat-place-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                            y file)))
+      (hifat-place-file fs x file))))
+  :hints
+  (("goal"
+    :in-theory (enable hifat-place-file hifat-find-file)
+    :induct
+    (mv
+     (mv-nth
+      0
+      (hifat-place-file
+       fs x
+       (m1-file
+        (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x)))
+        (mv-nth 0
+                (hifat-place-file
+                 (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                 y file)))))
+     (append x y)
+     (mv-nth 0 (hifat-find-file fs x))))))
 
 (defund
   hifat-remove-file (fs path)
