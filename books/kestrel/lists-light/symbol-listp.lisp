@@ -68,3 +68,15 @@
            (symbolp (car x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable symbol-listp))))
+
+;; Avoids name clash with std
+(defthm symbol-listp-of-take-simple
+  (implies (symbol-listp l)
+           (symbol-listp (take n l)))
+  :hints (("Goal" :in-theory (enable take))))
+
+;; Avoids name clash with std
+(defthm symbol-listp-of-nthcdr-simple
+  (implies (symbol-listp l)
+           (symbol-listp (nthcdr n l)))
+  :hints (("Goal" :in-theory (enable nthcdr))))
