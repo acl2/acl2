@@ -95,6 +95,7 @@
 (include-book "transform-utils")
 (include-book "levels")
 (include-book "eval-toggle")
+(include-book "cube-contradictionp")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 ;; (local (include-book "data-structures/list-defthms" :dir :system))
@@ -614,35 +615,35 @@
                   (eqlable-listp x))))
 
 
-(define cube-contradictionp ((x lit-listp))
-  :returns (contradictionp maybe-litp :rule-classes :type-prescription)
-  (if (atom x)
-      nil
-    (if (member (lit-negate (car x)) (lit-list-fix (cdr x)))
-        (lit-fix (car x))
-      (cube-contradictionp (cdr x))))
-  ///
-  (local (defthm aignet-eval-conjunction-when-member
-           (implies (and (member x (lit-list-fix y))
-                         (equal (lit-eval x invals regvals aignet) 0))
-                    (equal (aignet-eval-conjunction y invals regvals aignet) 0))
-           :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
+;; (define cube-contradictionp ((x lit-listp))
+;;   :returns (contradictionp maybe-litp :rule-classes :type-prescription)
+;;   (if (atom x)
+;;       nil
+;;     (if (member (lit-negate (car x)) (lit-list-fix (cdr x)))
+;;         (lit-fix (car x))
+;;       (cube-contradictionp (cdr x))))
+;;   ///
+;;   (local (defthm aignet-eval-conjunction-when-member
+;;            (implies (and (member x (lit-list-fix y))
+;;                          (equal (lit-eval x invals regvals aignet) 0))
+;;                     (equal (aignet-eval-conjunction y invals regvals aignet) 0))
+;;            :hints(("Goal" :in-theory (enable aignet-eval-conjunction)))))
   
-  (defret <fn>-correct
-    (implies contradictionp
-             (equal (aignet-eval-conjunction x invals regvals aignet)
-                    0))
-    :hints(("Goal" :in-theory (enable aignet-eval-conjunction))))
+;;   (defret <fn>-correct
+;;     (implies contradictionp
+;;              (equal (aignet-eval-conjunction x invals regvals aignet)
+;;                     0))
+;;     :hints(("Goal" :in-theory (enable aignet-eval-conjunction))))
 
-  (defret <fn>-membership
-    (implies contradictionp
-             (and (member-equal contradictionp (lit-list-fix x))
-                  (member (lit-negate contradictionp) (lit-list-fix x)))))
+;;   (defret <fn>-membership
+;;     (implies contradictionp
+;;              (and (member-equal contradictionp (lit-list-fix x))
+;;                   (member (lit-negate contradictionp) (lit-list-fix x)))))
 
-  (defret <fn>-membership-no-fix
-    (implies (and contradictionp (lit-listp x))
-             (and (member-equal contradictionp x)
-                  (member (lit-negate contradictionp) x)))))
+;;   (defret <fn>-membership-no-fix
+;;     (implies (and contradictionp (lit-listp x))
+;;              (and (member-equal contradictionp x)
+;;                   (member (lit-negate contradictionp) x)))))
 
 
 
@@ -787,20 +788,22 @@
       (obs-dom-info-fix x)))
   ///
 
-  (local (defthm cube-contradictionp-by-member
-           (implies (and (member x cube)
-                         (member (lit-negate x) cube)
-                         (lit-listp cube))
-                    (cube-contradictionp cube))
-           :hints(("Goal" :in-theory (enable cube-contradictionp)))))
+  ;; (local (defthm cube-contradictionp-by-member
+  ;;          (implies (and (member x cube)
+  ;;                        (member (lit-negate x) cube)
+  ;;                        (lit-listp cube))
+  ;;                   (cube-contradictionp cube))
+  ;;          :hints(("Goal" :in-theory (enable cube-contradictionp)))))
   
-  (local (defthm cube-contradictionp-when-subsetp
-           (implies (and (subsetp x y)
-                         (cube-contradictionp x)
-                         (lit-listp y) (lit-listp x))
-                    (cube-contradictionp y))
-           :hints(("Goal" :in-theory (enable cube-contradictionp
-                                             subsetp)))))
+  ;; (local (defthm cube-contradictionp-when-subsetp
+  ;;          (implies (and (subsetp x y)
+  ;;                        (cube-contradictionp x)
+  ;;                        (lit-listp y) (lit-listp x))
+  ;;                   (cube-contradictionp y))
+  ;;          :hints(("Goal" :in-theory (enable cube-contradictionp
+  ;;                                            subsetp)))))
+  (local (in-theory (enable cube-contradictionp-by-member
+                            cube-contradictionp-when-subsetp)))
   
   (defret subsetp-of-<fn>-1
     (iff (obs-dom-info-subsetp new-x y)
@@ -1219,10 +1222,10 @@
                            sink path aignet)))
                 (not (cube-contradictionp lits)))
        :hints (("Goal" :use ((:instance path-contains-and-siblings-implies-member
-                              (lit (cube-contradictionp lits))
+                              (lit (cube-contradiction-witness lits))
                               (x (lit-list-fix lits)))
                              (:instance path-contains-and-siblings-implies-member
-                              (lit (lit-negate (cube-contradictionp lits)))
+                              (lit (lit-negate (cube-contradiction-witness lits)))
                               (x (lit-list-fix lits))))
                 :in-theory (disable path-contains-and-siblings-implies-member))))
 
