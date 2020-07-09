@@ -329,6 +329,12 @@
      that do not seem worth the small savings in writing user documentation,
      whose general form section should be normally a small fraction.")
 
+   (xdoc::p
+    "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
+     has been simplified by removing its
+     @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
+     Instead, named constants have been provided for these common items.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
