@@ -275,6 +275,11 @@
       which individually control the names of the theorems that relate
       the target function with the new or wrapper function.")
     (xdoc::li
+     "The @(':thm-enable') input has been replaced with
+      two new inputs @(':old-to-new-enable') and @(':old-to-wrapper-enable'),
+      which individually control the enablement of the theorems that relate
+      the target function with the new or wrapper function.")
+    (xdoc::li
      "The heuristics for inferring the domain of the binary operator
       (when the @(':domain') input is, generally by default, @(':auto'),
       have been extended to infer more cases automatically.")
@@ -328,6 +333,12 @@
      additional inter-dependencies among books
      that do not seem worth the small savings in writing user documentation,
      whose general form section should be normally a small fraction.")
+
+   (xdoc::p
+    "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
+     has been simplified by removing its
+     @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
+     Instead, named constants have been provided for these common items.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -50,8 +50,9 @@
    @('wrapper-name'),
    @('wrapper-enable'),
    @('old-to-new-name'),
+   @('old-to-new-enable'),
    @('old-to-wrapper-name'),
-   @('thm-enable'),
+   @('old-to-wrapper-enable'),
    @('verify-guards'),
    @('hints'),
    @('print'), and
@@ -77,8 +78,9 @@
    @('wrapper-name$'),
    @('wrapper-enable$'),
    @('old-to-new-name$'),
+   @('old-to-new-enable$'),
    @('old-to-wrapper-name$'),
-   @('thm-enable$'),
+   @('old-to-wrapper-enable$'),
    @('verify-guards$'),
    @('hints$'),
    @('print$'), and
@@ -886,6 +888,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tailrec-process-old-to-new-enable (old-to-new-enable
+                                           (old-to-new-enable-present booleanp)
+                                           (wrapper$ booleanp)
+                                           ctx
+                                           state)
+  :returns (mv erp (nothing null) state)
+  :short "Process the @(':old-to-new-enable') input."
+  (if wrapper$
+      (if old-to-new-enable-present
+          (er-soft+ ctx t nil
+                    "Since the :WRAPPER input is T, ~
+                     no :OLD-TO-NEW-ENABLE input may be supplied,
+                     but ~x0 was supplied instead."
+                    old-to-new-enable)
+        (value nil))
+    (b* (((er &) (ensure-value-is-boolean$
+                  old-to-new-enable "The :OLD-TO-NEW-ENABLE input" t nil)))
+      (value nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-process-old-to-wrapper-name
   (old-to-wrapper-name
    (old-to-wrapper-name-present booleanp)
@@ -947,6 +970,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tailrec-process-old-to-wrapper-enable
+  (old-to-wrapper-enable
+   (old-to-wrapper-enable-present booleanp)
+   (wrapper$ booleanp)
+   ctx
+   state)
+  :returns (mv erp (nothing null) state)
+  :short "Process the @(':old-to-wrapper-enable') input."
+  (if (not wrapper$)
+      (if old-to-wrapper-enable-present
+          (er-soft+ ctx t nil
+                    "Since the :WRAPPER input is (perhaps by default) NIL, ~
+                     no :OLD-TO-WRAPPER-ENABLE input may be supplied,
+                     but ~x0 was supplied instead."
+                    old-to-wrapper-enable)
+        (value nil))
+    (b* (((er &) (ensure-value-is-boolean$
+                  old-to-wrapper-enable
+                  "The :OLD-TO-WRAPPER-ENABLE input" t nil)))
+      (value nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tailrec-process-inputs (old
                                 variant
                                 domain
@@ -960,9 +1006,12 @@
                                 (wrapper-enable-present booleanp)
                                 old-to-new-name
                                 (old-to-new-name-present booleanp)
+                                old-to-new-enable
+                                (old-to-new-enable-present booleanp)
                                 old-to-wrapper-name
                                 (old-to-wrapper-name-present booleanp)
-                                thm-enable
+                                old-to-wrapper-enable
+                                (old-to-wrapper-enable-present booleanp)
                                 verify-guards
                                 hints
                                 print
@@ -1070,8 +1119,17 @@
                                              names-to-avoid
                                              ctx
                                              state))
-       ((er &) (ensure-value-is-boolean$ thm-enable
-                                         "The :THM-ENABLE input" t nil))
+       ((er &) (tailrec-process-old-to-new-enable old-to-new-enable
+                                                  old-to-new-enable-present
+                                                  wrapper
+                                                  ctx
+                                                  state))
+       ((er &)
+        (tailrec-process-old-to-wrapper-enable old-to-wrapper-enable
+                                               old-to-wrapper-enable-present
+                                               wrapper
+                                               ctx
+                                               state))
        ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -2088,7 +2146,7 @@
                                     (new-name$ symbolp)
                                     (wrapper$ booleanp)
                                     (old-to-new-name$ symbolp)
-                                    (thm-enable$ booleanp)
+                                    (old-to-new-enable$ booleanp)
                                     (names-to-avoid symbol-listp)
                                     (appcond-thm-names symbol-symbol-alistp)
                                     (domain-of-old-name symbolp)
@@ -2179,7 +2237,7 @@
                               ,formula
                               :hints ,hints)))
        (exported-event? (and (not wrapper$)
-                             `(,(theorem-intro-macro thm-enable$) ,name
+                             `(,(theorem-intro-macro old-to-new-enable$) ,name
                                ,formula))))
     (mv local-event exported-event? name)))
 
@@ -2273,7 +2331,7 @@
 (define tailrec-gen-old-to-wrapper-thm ((old$ symbolp)
                                         (wrapper-name$ symbolp)
                                         (old-to-wrapper-name$ symbolp)
-                                        (thm-enable$ booleanp)
+                                        (old-to-wrapper-enable$ booleanp)
                                         (old-to-new-name symbolp)
                                         (wrapper-unnorm-name symbolp)
                                         (wrld plist-worldp))
@@ -2300,7 +2358,7 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (theorem-intro-macro thm-enable$))
+  (b* ((macro (theorem-intro-macro old-to-wrapper-enable$))
        (formals (formals old$ wrld))
        (formula (untranslate `(equal ,(apply-term old$ formals)
                                      ,(apply-term wrapper-name$ formals))
@@ -2335,8 +2393,9 @@
    (wrapper-name$ symbolp)
    (wrapper-enable$ booleanp)
    (old-to-new-name$ symbolp)
+   (old-to-new-enable$ booleanp)
    (old-to-wrapper-name$ symbolp)
-   (thm-enable$ booleanp)
+   (old-to-wrapper-enable$ booleanp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
    (print$ evmac-input-print-p)
@@ -2548,7 +2607,7 @@
                                     new-name$
                                     wrapper$
                                     old-to-new-name$
-                                    thm-enable$
+                                    old-to-new-enable$
                                     names-to-avoid
                                     appcond-thm-names
                                     domain-of-old-name
@@ -2588,7 +2647,7 @@
             (tailrec-gen-old-to-wrapper-thm old$
                                             wrapper-name$
                                             old-to-wrapper-name$
-                                            thm-enable$
+                                            old-to-wrapper-enable$
                                             old-to-new-name
                                             wrapper-unnorm-name?
                                             wrld)
@@ -2680,9 +2739,12 @@
                     (wrapper-enable-present booleanp)
                     old-to-new-name
                     (old-to-new-name-present booleanp)
+                    old-to-new-enable
+                    (old-to-new-enable-present booleanp)
                     old-to-wrapper-name
                     (old-to-wrapper-name-present booleanp)
-                    thm-enable
+                    old-to-wrapper-enable
+                    (old-to-wrapper-enable-present booleanp)
                     verify-guards
                     hints
                     print
@@ -2741,9 +2803,12 @@
                                 wrapper-enable-present
                                 old-to-new-name
                                 old-to-new-name-present
+                                old-to-new-enable
+                                old-to-new-enable-present
                                 old-to-wrapper-name
                                 old-to-wrapper-name-present
-                                thm-enable
+                                old-to-wrapper-enable
+                                old-to-wrapper-enable-present
                                 verify-guards
                                 hints
                                 print
@@ -2767,8 +2832,9 @@
                                            wrapper-name$
                                            wrapper-enable
                                            old-to-new-name$
+                                           old-to-new-enable
                                            old-to-wrapper-name$
-                                           thm-enable
+                                           old-to-wrapper-enable
                                            verify-guards$
                                            hints$
                                            print
@@ -2804,8 +2870,9 @@
                      (wrapper-name ':auto wrapper-name-present)
                      (wrapper-enable 't wrapper-enable-present)
                      (old-to-new-name ':auto old-to-new-name-present)
+                     (old-to-new-enable 't old-to-new-enable-present)
                      (old-to-wrapper-name ':auto old-to-wrapper-name-present)
-                     (thm-enable 't)
+                     (old-to-wrapper-enable 't old-to-wrapper-enable-present)
                      (verify-guards ':auto)
                      (hints 'nil)
                      (print ':result)
@@ -2823,9 +2890,12 @@
                                    ',wrapper-enable-present
                                    ',old-to-new-name
                                    ',old-to-new-name-present
+                                   ',old-to-new-enable
+                                   ',old-to-new-enable-present
                                    ',old-to-wrapper-name
                                    ',old-to-wrapper-name-present
-                                   ',thm-enable
+                                   ',old-to-wrapper-enable
+                                   ',old-to-wrapper-enable-present
                                    ',verify-guards
                                    ',hints
                                    ',print
