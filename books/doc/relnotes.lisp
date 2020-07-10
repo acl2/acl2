@@ -289,7 +289,15 @@
       can now have a recursive `then' branch and a non-recursive `else' branch.
       Before, the `then' branch had to be the non-recursive one
       and the `else' branch had to be the recursive one.
-      This makes the transformation more widely applicable."))
+      This makes the transformation more widely applicable.")
+    (xdoc::li
+     "The theorem that relates the target function to the new function
+      is now always generated, regardless of the @(':wrapper') input.
+      If @(':wrapper') is @('t'),
+      the theorem that relates the target function to the wrapper function
+      is also generated,
+      along with a theory invariant preventing this and the old-to-new theorem
+      from being both enabled at the same time."))
 
    (xdoc::p
     "A file @('[books]/kestrel/apt/tailrec-examples.lisp') has been added.

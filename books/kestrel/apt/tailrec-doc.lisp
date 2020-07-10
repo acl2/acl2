@@ -78,7 +78,7 @@
      "         :wrapper-name           ; default :auto"
      "         :wrapper-enable         ; default t"
      "         :old-to-new-name        ; default :auto"
-     "         :old-to-new-enable      ; default t"
+     "         :old-to-new-enable      ; default (not :wrapper)"
      "         :old-to-wrapper-name    ; default :auto"
      "         :old-to-wrapper-enable  ; default t"
      "         :verify-guards          ; default :auto"
@@ -376,18 +376,12 @@
        "A non-keyword symbol,
         to use as the name of the theorem."))
      (xdoc::p
-      "This must be absent if the @(':wrapper') input is @('t').
-       In this case, no theorem is generated
-       relating the old function to the new function;
-       instead, a theorem is generated
-       relating the old function to the wrapper function.")
-     (xdoc::p
       "In the rest of this documentation page,
        let @('old-to-new') be the name of this theorem,
        if it is generated."))
 
     (xdoc::desc
-     "@(':old-to-new-enable') &mdash; default @('t')"
+     "@(':old-to-new-enable') &mdash; negation of @(':wrapper')"
      (xdoc::p
       "Determines whether @('old-to-new') is enabled.")
      (xdoc::p
@@ -398,11 +392,13 @@
       (xdoc::li
        "@('nil'), to disable it."))
      (xdoc::p
-      "This must be absent if the @(':wrapper') input is @('t').
-       In this case, no theorem is generated
-       relating the old function to the new function;
-       instead, a theorem is generated
-       relating the old function to the wrapper function."))
+      "If this input is absent,
+       @('old-to-new') is enabled if the @(':wrapper') input is @('nil'),
+       it is disabled if the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "This input must be @('nil') if
+       the @(':wrapper') input is @('t')
+       and the @(':old-to-wrapper-enable') input is @('t')."))
 
     (xdoc::desc
      "@(':old-to-wrapper-name') &mdash; default @(':auto')"
@@ -428,11 +424,8 @@
        "A non-keyword symbol,
         to use as the name of the theorem."))
      (xdoc::p
-      "This must be absent if the @(':wrapper') input is @('nil').
-       In this case, no theorem is generated
-       relating the old function to the wrapper function;
-       instead, a theorem is generated
-       relating the old function to the new function.")
+      "This input may be present only if
+       the @(':wrapper') input is @('t').")
      (xdoc::p
       "In the rest of this documentation page,
        let @('old-to-wrapper') be the name of this theorem,
@@ -450,11 +443,11 @@
       (xdoc::li
        "@('nil'), to disable it."))
      (xdoc::p
-      "This must be absent if the @(':wrapper') input is @('nil').
-       In this case, no theorem is generated
-       relating the old function to the wrapper function;
-       instead, a theorem is generated
-       relating the old function to the new function."))
+      "This input may be present only if
+       the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "This input must be @('nil') if
+       the @(':old-to-new-enable') input is @('t')."))
 
     (xdoc::desc-apt-input-verify-guards :optional)
 
@@ -828,8 +821,6 @@
       "                update-xn<x1,...,xn>"
       "                nonrec<x1,...,xn>))))")
      (xdoc::p
-      "This is generated only if the @(':wrapper') input is @('nil').")
-     (xdoc::p
       "In the " *tailrec-design-notes* ",
        @('old-to-new') is denoted by @($f\\!f'$)."))
 
@@ -845,7 +836,13 @@
       "This is generated only if the @(':wrapper') input is @('t').")
      (xdoc::p
       "In the " *tailrec-design-notes* ",
-       @('old-to-wrapper') is denoted by @($f\\!\\tilde{f}$).")))
+       @('old-to-wrapper') is denoted by @($f\\!\\tilde{f}$)."))
+
+    (xdoc::p
+     "If the @(':wrapper') input is @('t'),
+      a theory invariant is also generated to prevent
+      both @('old-to-new') and @('old-to-wrapper')
+      from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

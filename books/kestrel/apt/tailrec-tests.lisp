@@ -657,9 +657,6 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
- ;; supplied when disallowed:
- (must-fail (tailrec f :wrapper t :old-to-new-name g))
-
  ;; not a symbol:
  (must-fail (tailrec f :old-to-new-name 33))
 
@@ -775,10 +772,6 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
- ;; supplied when disallowed:
- (must-fail (tailrec f :wrapper t :old-to-new-enable t))
- (must-fail (tailrec f :wrapper t :old-to-new-enable nil))
-
  ;; not T or NIL:
  (must-fail (tailrec f :old-to-new-enable 7))
 
@@ -795,7 +788,11 @@
  ;; disable:
  (must-succeed*
   (tailrec f :old-to-new-enable nil)
-  (assert! (rune-disabledp '(:rewrite f-~>-f{1}) state))))
+  (assert! (rune-disabledp '(:rewrite f-~>-f{1}) state)))
+
+ ;; enabled when also the old-to-wrapper theorem is:
+ (must-fail
+  (tailrec f :wrapper t :old-to-new-enable t :old-to-wrapper-enable t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
