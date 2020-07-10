@@ -2978,6 +2978,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines atj-vars-in-jexpr
+  :short "Variables that will occur in the Java expression
+          generated from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding approach,
+     each Java term is translated to a Java expression
+     preceded by a Java block (which may be empty or not).
+     The block is non-empty when the term involves
+     lambda expressions, which become local variable assignments in Java,
+     and @(tsee if) calls, which become @('if') statements in Java.
+     As detailed below, some of the variables in the ACL2 term
+     will occur (as corresponding Java variables) in the Java expression;
+     while others will only occur in the Java block.
+     The ones that will occur in the Java expression
+     are important for the correct marking of variables.
+     This function returns the ACL2 variables in a term
+     (as a set represented as a list without duplicates)
+     that will occur in the Java expression generated from the term.")
+   (xdoc::p
+    "A quoted constant has no variables,
+     and is always translated to a Java expression without variables.
+     Thus, we return @('nil') (i.e. the empty list of variables) in this case.")
+   (xdoc::p
+    "An ACL2 variable is translated to a corresponding variable in Java,
+     and thus in this case we return the singleton list of the variable.")
+   (xdoc::p
+    "An @(tsee if) call is translated to a block with an @('if') statement
+     that performs all the evaluations of the test and branches,
+     and the resulting Java expression is just a single fresh Java variable
+     that has no counterpart in the ACL2 term.
+     Thus, in this case we return @('nil') (the empty list of variables).")
+   (xdoc::p
+    "A call of a named function different from @(tsee if) is translated
+     to an expression that has subexpressions obtained by translating
+     the arguments of the ACL2 function call.
+     The expression is often a method call,
+     with the subexpressions being its actual arguments,
+     but it may also be an expression involving a Java operator (e.g. @('+'))
+     with the subexpressions as operands.
+     Thus, in this case we return the union of the variables
+     recursively computed for the argument terms.")
+   (xdoc::p
+    "A call of a lamda expression is translated to
+     a Java block that assigns expressions to local variables
+     that correspond to the formal parameters of the lambda expression,
+     and to a Java expression obtained by translating
+     the body of the lambda expression.
+     Thus, in this case we return the variables
+     recursively computed for the body of the lambda expression."))
+
+  (define atj-vars-in-jexpr ((term pseudo-termp))
+    :returns (vars symbol-listp)
+    (pseudo-term-case term
+                      :null (raise "Internal error: null term.")
+                      :quote nil
+                      :var (list term.name)
+                      :fncall (if (eq term.fn 'if)
+                                  (list nil)
+                                (atj-vars-in-jexpr-list term.args))
+                      :lambda (atj-vars-in-jexpr term.body))
+    :measure (pseudo-term-count term))
+
+  (define atj-vars-in-jexpr-list ((terms pseudo-term-listp))
+    :returns (vars symbol-listp)
+    (cond ((endp terms) nil)
+          (t (union-eq (atj-vars-in-jexpr (car terms))
+                       (atj-vars-in-jexpr-list (cdr terms)))))
+    :measure (pseudo-term-list-count terms))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-vars-in-jexpr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-mark-term
   :short "Mark the variables in a term as `new' or `old'."
   :long
@@ -3017,7 +3094,7 @@
      (i.e. passed as argument and returned, possibly updated, as result).
      When processing a lambda expression applied to arguments,
      @('vars-in-scope') is threaded first through the arguments,
-     and then through the body (which is evaluated after the argument),
+     and then through the body (which is evaluated after the arguments),
      after augmenting it with the formal parameters.
      The exception mentioned above is for @(tsee if),
      which is turned into a Java @('if')
@@ -3043,10 +3120,9 @@
      which has already been marked).")
    (xdoc::p
     "The parameter @('vars-used-after') consists of the variables
-     that occur free (i.e. whose current value is used)
-     ``after'' the term under consideration.
+     whose current values are used ``after'' the term under consideration.
      At the top level (see @(tsee atj-mark-formals+body)),
-     it is initialized with @('nil'),
+     this is initialized with @('nil'),
      because no variables are used after evaluating the body of the function.
      As we descend into subterms,
      @('vars-used-after') is extended as needed,
@@ -3068,7 +3144,12 @@
      as the argument terms are processed,
      but terms are not expected to be too large in the near future;
      this may be eventually optimized when needed.
-     Calls of @(tsee if) are treated a little differently,
+     Furthermore, as we traverse the arguments of a function call,
+     we augment the used variables with the ones that will occur
+     in the Java expressions generated for the preceding arguments;
+     see @(tsee atj-vars-in-jexpr).")
+   (xdoc::p
+    "Calls of @(tsee if) are treated a little differently,
      because the arguments are not evaluated left-to-right
      in the generated Java code:
      when marking the test, we augment @('vars-used-after')
@@ -3079,8 +3160,9 @@
      The @(tsee or) form of @(tsee if) is treated slightly differently as usual,
      but the essence is the same.
      Unlike @('vars-in-scope'), @('var-used-after') is not threaded through;
-     it is simply passed down, and augmented as needed.
-     The body of a lambda expression is evaluated after its actual arguments:
+     it is simply passed down, and augmented as needed.")
+   (xdoc::p
+    "The body of a lambda expression is evaluated after its actual arguments:
      thus, when marking the actual arguments of a lambda expression
      we must augment @('vars-used-after')
      with the free variables of the lambda expression,
@@ -3221,6 +3303,7 @@
          ((mv marked-args vars-in-scope) (atj-mark-terms args
                                                          vars-in-scope
                                                          vars-used-after-args
+                                                         nil
                                                          vars-to-mark-new))
          ((when (symbolp fn)) (mv (fcons-term fn marked-args)
                                   vars-in-scope))
@@ -3244,6 +3327,7 @@
   (define atj-mark-terms ((terms pseudo-term-listp)
                           (vars-in-scope symbol-listp)
                           (vars-used-after symbol-listp)
+                          (vars-used-in-jexprs symbol-listp)
                           (vars-to-mark-new symbol-listp))
     :returns (mv (marked-terms (and (pseudo-term-listp marked-terms)
                                     (equal (len marked-terms)
@@ -3263,15 +3347,20 @@
          (vars-used-after-first-term (union-eq vars-used-after
                                                (all-vars-open-lst rest-terms)))
          ((mv marked-first-term
-              vars-in-scope) (atj-mark-term first-term
-                                            vars-in-scope
-                                            vars-used-after-first-term
-                                            vars-to-mark-new))
+              vars-in-scope)
+          (atj-mark-term first-term
+                         vars-in-scope
+                         (union-eq vars-used-after-first-term
+                                   vars-used-in-jexprs)
+                         vars-to-mark-new))
          ((mv marked-rest-terms
-              vars-in-scope) (atj-mark-terms rest-terms
-                                             vars-in-scope
-                                             vars-used-after
-                                             vars-to-mark-new)))
+              vars-in-scope)
+          (atj-mark-terms rest-terms
+                          vars-in-scope
+                          vars-used-after
+                          (union-eq vars-used-in-jexprs
+                                    (atj-vars-in-jexpr first-term))
+                          vars-to-mark-new)))
       (mv (cons marked-first-term marked-rest-terms)
           vars-in-scope)))
 
