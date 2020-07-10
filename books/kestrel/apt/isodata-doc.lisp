@@ -989,8 +989,8 @@
 
     (xdoc::p
      "A theory invariant is also generated to prevent
-       both @('new-to-old') and @('old-to-new')
-       from being enabled at the same time."))
+      both @('new-to-old') and @('old-to-new')
+      from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
