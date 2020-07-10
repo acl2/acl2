@@ -1323,11 +1323,17 @@
   :returns (new-obs-sdom-array)
   (b* (((when (atom super)) obs-sdom-array)
        (var (lit->var (car super)))
+       (var-sdominfo (get-sdominfo var obs-sdom-array))
        (obs-sdom-array
         (set-sdominfo var
                      (obs-sdom-info-intersect
-                      (get-sdominfo var obs-sdom-array)
-                      sdominfo)
+                      var-sdominfo
+                      (b* (((obs-sdom-info sdominfo)))
+                        (if (and sdominfo.reached
+                                 (set::in (lit-fix (car super)) sdominfo.doms))
+                            (make-obs-dom-info-reached
+                             (set::delete (lit-fix (car super)) sdominfo.doms))
+                          sdominfo)))
                      obs-sdom-array)))
     (obs-sdom-info-store-intersections (cdr super) sdominfo obs-sdom-array))
   ///
@@ -1892,3 +1898,13 @@
                          (toggle source)))
            :in-theory (disable obs-sdom-array-implies-path-contains-dominators
                                lit-list-has-const0-under-toggle-when-member))))
+
+
+(define obs-sdom-array-collect ((n natp) obs-sdom-array)
+  :guard (<= n (sdominfo-length obs-sdom-array))
+  :measure (nfix (- (sdominfo-length obs-sdom-array) (nfix n)))
+  (b* (((when (mbe :logic (zp (- (sdominfo-length obs-sdom-array) (nfix n)))
+                   :exec (eql (sdominfo-length obs-sdom-array) n)))
+        nil))
+    (cons (get-sdominfo n obs-sdom-array)
+          (obs-sdom-array-collect (1+ (lnfix n)) obs-sdom-array))))

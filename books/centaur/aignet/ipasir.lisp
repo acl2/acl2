@@ -362,10 +362,11 @@
                (ipasir (ipasir::mux-add-clauses-ipasir id c tb fb sat-lits ipasir)))
             (mv sat-lits ipasir)))
          (lit (mk-lit id 0))
-         ((mv supergate &)
-          (lit-collect-supergate
+         (supergate
+          (lit-collect-supergate-rem-dups
            lit t use-muxes 1000 nil aignet-refcounts aignet))
-         ((when (member 0 supergate))
+         ((when (or (member 0 supergate)
+                    (fast-cube-contradictionp supergate)))
           ;; one of the fanins is const 0, so the node is const 0
           (b* ((sat-lits (sat-add-aignet-lit lit sat-lits aignet))
                (sat-lit (aignet-id->sat-lit id sat-lits))
