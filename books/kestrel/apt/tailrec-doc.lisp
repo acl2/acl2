@@ -79,6 +79,8 @@
      "         :wrapper-enable         ; default t"
      "         :old-to-new-name        ; default :auto"
      "         :old-to-new-enable      ; default (not :wrapper)"
+     "         :new-to-old-name        ; default :auto"
+     "         :new-to-old-enable      ; default nil"
      "         :old-to-wrapper-name    ; default :auto"
      "         :old-to-wrapper-enable  ; default t"
      "         :verify-guards          ; default :auto"
@@ -397,6 +399,52 @@
        it is disabled if the @(':wrapper') input is @('t').")
      (xdoc::p
       "This input must be @('nil') if
+       the @(':wrapper') input is @('t')
+       and the @(':old-to-wrapper-enable') input is @('t')."))
+
+    (xdoc::desc
+     "@(':new-to-old-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the theorem that
+       relates the new function to the old function.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the "
+       (xdoc::seetopic "acl2::paired-names" "paired name")
+       " obtained by "
+       (xdoc::seetopic "acl2::make-paired-name" "pairing")
+       " the name of @('new') and the name of @('old'),
+        putting the result into the same package as @('new').")
+      (xdoc::li
+       "Any other keyword, to use as separator between
+        the names of @('new') and @('old').
+        A keyword @(':kwd') specifies the theorem name @('newkwdold'),
+        in the same package as @('new').")
+      (xdoc::li
+       "A non-keyword symbol,
+        to use as the name of the theorem."))
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('new-to-old') be the name of this theorem,
+       if it is generated."))
+
+    (xdoc::desc
+     "@(':new-to-old-enable') &mdash; @('nil')"
+     (xdoc::p
+      "Determines whether @('new-to-old') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it."))
+     (xdoc::p
+      "This input must be @('nil') if @('old-to-new') is enabled,
+       which is determined by the @(':old-to-new-enable') input (see above).
+       This input must be @('nil') if
        the @(':wrapper') input is @('t')
        and the @(':old-to-wrapper-enable') input is @('t')."))
 
@@ -804,7 +852,7 @@
     (xdoc::desc
      "@('old-to-new')"
      (xdoc::p
-      "Theorem that relates @('old') to @('new'):")
+      "Theorem that rewrites @('old') in terms of @('new'):")
      (xdoc::codeblock
       ";; when the :variant input of tailrec is :monoir od :monoid-alt:"
       "(defthm old-to-new"
@@ -825,9 +873,21 @@
        @('old-to-new') is denoted by @($f\\!f'$)."))
 
     (xdoc::desc
+     "@('new-to-old')"
+     (xdoc::p
+      "Theorem that rewrites @('new') in terms of @('old'):")
+     (xdoc::codeblock
+      "(defthm new-to-old"
+      "  (equal (new x1 ... xn a)"
+      "         combine<a,(old x1 ... xn)>))")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('new-to-old') is denoted by @($f'\\!f$)."))
+
+    (xdoc::desc
      "@('old-to-wrapper')"
      (xdoc::p
-      "Theorem that relates @('old') to @('wrapper'):")
+      "Theorem that rewrites @('old') in terms of @('wrapper'):")
      (xdoc::codeblock
       "(defthm old-to-wrapper"
       "  (equal (old x1 ... xn)"
@@ -839,10 +899,15 @@
        @('old-to-wrapper') is denoted by @($f\\!\\tilde{f}$)."))
 
     (xdoc::p
+     "A theory invariant is also generated to prevent
+      @('old-to-new') and @('new-to-old')
+      from being both enabled at the same time.")
+
+    (xdoc::p
      "If the @(':wrapper') input is @('t'),
       a theory invariant is also generated to prevent
-      both @('old-to-new') and @('old-to-wrapper')
-      from being enabled at the same time."))
+      @('old-to-new') and @('old-to-wrapper')
+      from being both enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

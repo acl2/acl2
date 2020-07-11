@@ -295,9 +295,12 @@
       is now always generated, regardless of the @(':wrapper') input.
       If @(':wrapper') is @('t'),
       the theorem that relates the target function to the wrapper function
-      is also generated,
-      along with a theory invariant preventing this and the old-to-new theorem
-      from being both enabled at the same time."))
+      is also generated.")
+    (xdoc::li
+     "Now the transformation also generates a theorem
+      that rewrites the new function in terms of the old function.
+      The name and enablement of this theorem are controlled
+      by two new inputs @(':new-to-old-name') and @(':new-to-old-enable')."))
 
    (xdoc::p
     "A file @('[books]/kestrel/apt/tailrec-examples.lisp') has been added.

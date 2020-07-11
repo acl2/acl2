@@ -700,6 +700,62 @@
 
 (must-succeed*
 
+ (test-title "Test the :NEW-TO-OLD-NAME option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; not a symbol:
+ (must-fail (tailrec f :new-to-old-name 33))
+
+ ;; in the main Lisp package:
+ (must-fail (tailrec f :new-to-old-name cons))
+
+ ;; name that already exists:
+ (must-fail (tailrec f :new-to-old-name car-cdr-elim))
+
+ ;; determining a name that already exists:
+ (must-succeed*
+  (defun f{1}-is-f () nil)
+  (must-fail (tailrec f :new-to-old-name :-is-)))
+
+ ;; determining, by default, a name that already exists:
+ (must-succeed*
+  (defun f{1}-~>-f () nil)
+  (must-fail (tailrec f)))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f)
+  (assert! (theorem-namep 'f{1}-~>-f (w state))))
+
+ ;; automatic:
+ (must-succeed*
+  (tailrec f :new-to-old-name :auto)
+  (assert! (theorem-namep 'f{1}-~>-f (w state))))
+
+ ;; specified separator:
+ (must-succeed*
+  (tailrec f :new-to-old-name :-becomes-)
+  (assert! (theorem-namep 'f{1}-becomes-f (w state))))
+
+ ;; specified:
+ (must-succeed*
+  (tailrec f :new-to-old-name f-thm)
+  (assert! (theorem-namep 'f-thm (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
  (test-title "Test the :OLD-TO-WRAPPER-NAME option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
@@ -793,6 +849,49 @@
  ;; enabled when also the old-to-wrapper theorem is:
  (must-fail
   (tailrec f :wrapper t :old-to-new-enable t :old-to-wrapper-enable t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :NEW-TO-OLD-ENABLE option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; not T or NIL:
+ (must-fail (tailrec f :new-to-old-enable 7))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f)
+  (assert! (rune-disabledp '(:rewrite f{1}-~>-f) state)))
+
+ ;; enable:
+ (must-succeed*
+  (tailrec f :new-to-old-enable t :old-to-new-enable nil)
+  (assert! (rune-enabledp '(:rewrite f{1}-~>-f) state)))
+
+ ;; disable:
+ (must-succeed*
+  (tailrec f :new-to-old-enable nil)
+  (assert! (rune-disabledp '(:rewrite f{1}-~>-f) state)))
+
+ ;; enabled when also the old-to-new theorem is:
+ (must-fail
+  (tailrec f :new-to-old-enable t :old-to-new-enable t))
+
+ ;; enabled when also the old-to-wrapper theorem is:
+ (must-fail
+  (tailrec f :wrapper t :new-to-old-enable t :old-to-wrapper-enable t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
