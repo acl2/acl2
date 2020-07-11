@@ -115,9 +115,19 @@
 
 ;;; Memory test
 
-(defstobj big ; maybe too big by far if executable
-  (ar :type (array t (100000000000)))
-  :non-executable t)
+; In 64-bit LispWorks, constant array-dimension-limit has value (1- (expt 2
+; 29)) = 536870911.  The implementation of defstobj checks that the size of an
+; array field is strictly less than this number.  We thus make the test below
+; depend on the Lisp, with a robust test for all Lisps besides LispWorks.
+; This event is local to support compilation for multiple Lisps by setting
+; "make" variable ACL2_COMP=1.
+(local
+ (defstobj big ; maybe too big by far if executable
+   (ar :type (array t (#+lispworks
+                       536870910
+                       #-lispworks
+                       100000000000)))
+   :non-executable t))
 
 ;;; Redundancy
 
