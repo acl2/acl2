@@ -196,8 +196,6 @@
 (deffilter filter-assoc (syms subst) (assoc syms subst)
   :fixed subst)
 
-(defmap zip2 (l1 l2) (cons l1 l2))
-
 (defforall variable-listp (l) (variablep l) :true-listp t :guard t)
 
 (deffilter remove-keys-from-alist (al keys) (not (member-equal (car al) keys))
@@ -1910,7 +1908,7 @@ Example: int10-map-p-->-int20-map-p
        (fun1-is-iso-fun (pack$ fun1 '-is-iso- fun))
        (arg-sig (or (lookup-arg-types fun fn-infos)
                     (arg-signature formals old-guard-list iso-infos)))
-       (arg-ty-alist (acl2::zip-variable-type-alist formals arg-sig))
+       (arg-ty-alist (pairlis$ formals arg-sig))
        (ret-sig (result-signature* body fn-infos arg-ty-alist (lookup-result-types fun fn-infos)))
        ;; new-iso-pred-p means that it is a predicate that references an existing iso so we want to add it to our isos
        (new-iso-pred-p (and (equal ret-sig '(booleanp))
@@ -2394,8 +2392,8 @@ Example: int10-map-p-->-int20-map-p
        ;; for which we already have the refinement F2,
        ;; we skip the first event tuple and start with the next one:
        (eventups (event-tuples-between-pairs event-regions eventups))
-       (fn-renaming (append (zip2 (strip-cars iso-infos) (map-iso-domb iso-infos))
-                            (zip2 (source-fns fn-infos) (target-fns fn-infos))))
+       (fn-renaming (append (pairlis$ (strip-cars iso-infos) (map-iso-domb iso-infos))
+                            (pairlis$ (source-fns fn-infos) (target-fns fn-infos))))
        (renaming (append (renaming-from-fn-infos fn-infos)
                          (renaming-from-iso-infos iso-infos)))
        (fn-infos (incorporate-iso-infos iso-infos fn-infos))
