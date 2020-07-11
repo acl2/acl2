@@ -92,3 +92,111 @@
      The normalized body of a function may differ from the unnormalized one
      because the former may be obtained from the latter
      via some simplifications.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc function-name-generation
+  :short "How APT transformations generate function names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "APT transformations normally generate
+     transformed functions from existing functions.
+     The names of the generated functions may be specified explicitly,
+     or may be automatically generated from the names of the existing functions,
+     according to some rules.
+     Certain APT transformations do that according to the rules described here.
+     These rules apply only to the APT transformations
+     whose user documentation explicitly references this XDOC topic.")
+   (xdoc::p
+    "The name generation rules described here are based on "
+    (xdoc::seetopic "acl2::numbered-names" "numbered names")
+    ": see their topic first.
+     Roughly speaking, the application of an APT transformation
+     to a target function whose name is a numbered name
+     generates a new function with the next numbered name,
+     i.e. the numbered name with the same base as the target function
+     and with the smallest index greater than the one of the target function
+     that makes the new function's name fresh, i.e. valid for a new function.
+     Such an index is often one plus the index of the target function,
+     but in general it may be larger if that name already happens to exist
+     (which would not be a recommended way to organize an APT derivation,
+     but cannot be prevented in general).")
+   (xdoc::p
+    "Certain APT transformations, when applied to a target function,
+     generate a single new function.
+     These transformations have a @(':new-name') input, which is
+     either @(':auto') (the default) to specify automatic name generation,
+     or an explicitly specified symbol to use for the new function.
+     When the @(':new-name') input is @(':auto'),
+     the name of the new function is determined
+     just as explained in the previous paragraph.")
+   (xdoc::p
+    "Certain APT transformations may generate, besides the new function,
+     also an additional wrapper function,
+     This happens when the new function has different arguments
+     (i.e. different in number and/or in types)
+     from the target function:
+     the wrapper function has
+     the same number and types of arguments as the target function,
+     and calls the new function with suitable arguments,
+     i.e. it ``wraps'' the new function to match the old function.
+     The wrapper function is optional:
+     these transformations have a @(':wrapper') boolean input
+     that specifies whether the wrapper function is generated (@('t'))
+     or not (@('nil'), the default).
+     When the @(':wrapper') input is @('nil'),
+     only the new function is generated,
+     and when the @(':new-name') input is @(':auto')
+     its name is again generated as explained above.")
+   (xdoc::p
+    "If instead the @(':wrapper') input is @('t'),
+     then another input of the transformation, @(':wrapper-name'),
+     becomes relevant
+     (this input may be present only if @(':wrapper') is @('nil')).
+     Similarly to @(':new-name'), also @(':wrapper-name') may be
+     either @(':auto') to specify automatic name generation
+     or a symbol to use as the wrapper function name.
+     Note that one of @(':new-name') and @(':wrapper-name') may be @(':auto'),
+     but not the other.
+     The rules for automatic name generation are as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "If neither @(':new-name') nor @(':wrapper-name') is @(':auto'),
+      then there is actually no automatic name generation.")
+    (xdoc::li
+     "If @(':new-name') is @(':auto') but @(':wrapper-name') is not,
+      the name of the new function is determined as above,
+      with the additional constraint that the new index must be such that
+      the resulting name is distinct from
+      the explicitly specified wrapper function name.
+      In a well-structured APT derivation,
+      this additional constraint is expected to be normally satisfied
+      by one plus the index of the target function.")
+    (xdoc::li
+     "If @(':wrapper-name') is @(':auto') but @(':new-name') is not,
+      the rules are the same as the previous case,
+      but with the roles of the new and wrapper function names swapped.
+      That is, the wrapper function name is a numberd name
+      whose base is the same as the target function,
+      and whose index is the smallest one that is
+      greater than the index of the target function
+      and also distinct from the explicitly specified new function name.")
+    (xdoc::li
+     "If both @(':new-name') and @(':wrapper-name') are @(':auto'),
+      then both the new and wrapper function names are numbered names,
+      determined as follows.
+      The base of the new function's name is
+      the concatenation of the target function's name followed by @('-aux').
+      The base of the wrapper function's name is
+      the same as the target function's name.
+      The index of both new and wrapper function names is the smallest one
+      that is greater than the one of the target function
+      and that makes both the new and wrapper function names fresh.
+      In well-structured APT derivations,
+      this index is normally expected to be
+      just one plus the target function's index."))
+   (xdoc::p
+    "The @('-aux') in the new function name in the last case above
+     means `auxiliary', which is a common naming convention
+     for the ``loop'' of a function (in this case, the wrapper function).")))
