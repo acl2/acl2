@@ -282,24 +282,28 @@
       "Determines the name of the generated new function:")
      (xdoc::ul
       (xdoc::li
-       "@(':auto'), to use the name generated as follows.
+       "@(':auto'), to use the name constructed as follows.
         If the function symbol @('old') is a numbered name,
         let @('base') and @('index') be its base and index;
         otherwise, let @('base') be @('old') and @('index') be 0.
-        If @(':wrapper') is @('nil'),
+        If the @(':wrapper') input is @('nil'),
         then the name of the new function is
-        the numbered name consisting of @('base') and @('next'),
+        the numbered name consisting of
+        @('base') as base and @('next') as index,
         where @('next') is the smallest integer above @('index')
         such that the new function's name is not already in use.
-        If @(':wrapper') is @('t') and @(':wrapper-name') is not @(':auto'),
+        If the @(':wrapper') input is @('t')
+        and the @(':wrapper-name') input is not @(':auto'),
         the new index @('next') is chosen so that the new function name
         is also distinct from the explicitly specified wrapper function name.
-        If @(':wrapper') is @('t') and @(':wrapper-name') is @(':auto'),
+        If the @(':wrapper') input is @('t')
+        and the @(':wrapper-name') input is @(':auto'),
         then the name of the new function is
-        the numbered name consists of @('base') followed by @('-aux') as base,
+        the numbered name consisting of @('base') followed by @('-aux') as base,
         and the smallest index @('next') above @('index')
-        such that the new function's name is not already in use.
-        Also see the description of the @(':wrapper-name') input below.")
+        such that the new function's name is not already in use
+        and that the wrapper function's name is not already in use;
+        see the description of the @(':wrapper-name') input below.")
       (xdoc::li
        "Any other symbol
         (that is not in the main Lisp package and that is not a keyword),
