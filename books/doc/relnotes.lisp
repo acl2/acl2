@@ -272,13 +272,13 @@
     (xdoc::li
      "The @(':thm-name') input has been replaced with
       two new inputs @(':old-to-new-name') and @(':old-to-wrapper-name'),
-      which individually control the names of the theorems that relate
-      the target function with the new or wrapper function.")
+      which individually control the names of the theorems that rewrite
+      the target function in terms of the new or wrapper function.")
     (xdoc::li
      "The @(':thm-enable') input has been replaced with
       two new inputs @(':old-to-new-enable') and @(':old-to-wrapper-enable'),
-      which individually control the enablement of the theorems that relate
-      the target function with the new or wrapper function.")
+      which individually control the enablement of the theorems that rewrites
+      the target function in terms of the new or wrapper function.")
     (xdoc::li
      "The heuristics for inferring the domain of the binary operator
       (when the @(':domain') input is, generally by default, @(':auto'),
@@ -291,16 +291,25 @@
       and the `else' branch had to be the recursive one.
       This makes the transformation more widely applicable.")
     (xdoc::li
-     "The theorem that relates the target function to the new function
+     "The theorem that rewrites the target function
+      in terms of the new function
       is now always generated, regardless of the @(':wrapper') input.
       If @(':wrapper') is @('t'),
-      the theorem that relates the target function to the wrapper function
+      the theorem that rewrites the target function
+      in terms of the wrapper function
       is also generated.")
     (xdoc::li
      "Now the transformation also generates a theorem
       that rewrites the new function in terms of the old function.
       The name and enablement of this theorem are controlled
-      by two new inputs @(':new-to-old-name') and @(':new-to-old-enable')."))
+      by two new inputs @(':new-to-old-name') and @(':new-to-old-enable').")
+    (xdoc::li
+     "Now the transformation also generates a theorem
+      that rewrites the wrapper function in terms of the old function
+      (when the @(':wrapper') input is @('t').
+      The name and enablement of this theorem are controlled
+      by two new inputs
+      @(':wrapper-to-old-name') and @(':wrapper-to-old-enable')."))
 
    (xdoc::p
     "A file @('[books]/kestrel/apt/tailrec-examples.lisp') has been added.

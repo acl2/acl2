@@ -83,6 +83,8 @@
      "         :new-to-old-enable      ; default nil"
      "         :old-to-wrapper-name    ; default :auto"
      "         :old-to-wrapper-enable  ; default t"
+     "         :wrapper-to-old-name    ; default :auto"
+     "         :wrapper-to-old-enable  ; default nil"
      "         :verify-guards          ; default :auto"
      "         :hints                  ; default nil"
      "         :print                  ; default :result"
@@ -362,7 +364,7 @@
      "@(':old-to-new-name') &mdash; default @(':auto')"
      (xdoc::p
       "Determines the name of the theorem that
-       relates the old function to the new function.")
+       rewrites the old function in terms of the new function.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
@@ -402,15 +404,17 @@
        @('old-to-new') is enabled if the @(':wrapper') input is @('nil'),
        it is disabled if the @(':wrapper') input is @('t').")
      (xdoc::p
-      "This input must be @('nil') if
+      "This input must be @('nil') if the @(':new-to-old') input is @('t').
+       This input must be @('nil') if
        the @(':wrapper') input is @('t')
-       and the @(':old-to-wrapper-enable') input is @('t')."))
+       and either the @(':old-to-wrapper-enable') input is @('t')
+       or the @(':wrapper-to-old-enable') input is @('t')."))
 
     (xdoc::desc
      "@(':new-to-old-name') &mdash; default @(':auto')"
      (xdoc::p
       "Determines the name of the theorem that
-       relates the new function to the old function.")
+       rewrites the new function in terms of the old function.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
@@ -446,8 +450,8 @@
       (xdoc::li
        "@('nil'), to disable it."))
      (xdoc::p
-      "This input must be @('nil') if @('old-to-new') is enabled,
-       which is determined by the @(':old-to-new-enable') input (see above).
+      "This input must be @('nil') if @('old-to-new') is enabled
+       (which is determined by the @(':old-to-new-enable') input).
        This input must be @('nil') if
        the @(':wrapper') input is @('t')
        and the @(':old-to-wrapper-enable') input is @('t')."))
@@ -456,7 +460,7 @@
      "@(':old-to-wrapper-name') &mdash; default @(':auto')"
      (xdoc::p
       "Determines the name of the theorem that
-       relates the old function to the wrapper function.")
+       rewrites the old function in terms of the wrapper function.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
@@ -499,7 +503,60 @@
        the @(':wrapper') input is @('t').")
      (xdoc::p
       "This input must be @('nil') if
-       the @(':old-to-new-enable') input is @('t')."))
+       the @(':wrapper-to-old-enable') input is @('t')
+       or the @(':old-to-new-enable') input is @('t')."))
+
+    (xdoc::desc
+     "@(':wrapper-to-old-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the theorem that
+       rewrites the wrapper function in terms of the old function.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the "
+       (xdoc::seetopic "acl2::paired-names" "paired name")
+       " obtained by "
+       (xdoc::seetopic "acl2::make-paired-name" "pairing")
+       " the name of @('wrapper') and the name of @('old'),
+        putting the result into the same package as @('wrapper').")
+      (xdoc::li
+       "Any other keyword, to use as separator between
+        the names of @('wrapper') and @('old').
+        A keyword @(':kwd') specifies the theorem name @('wrapperkwdold'),
+        in the same package as @('wrapper').")
+      (xdoc::li
+       "A non-keyword symbol,
+        to use as the name of the theorem."))
+     (xdoc::p
+      "This input may be present only if
+       the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('wrapper-to-old') be the name of this theorem,
+       if it is generated."))
+
+    (xdoc::desc
+     "@(':wrapper-to-old-enable') &mdash; default @('nil')"
+     (xdoc::p
+      "Determines whether @('wrapper-to-old') is enabled.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to enable the theorem.")
+      (xdoc::li
+       "@('nil'), to disable it."))
+     (xdoc::p
+      "This input may be present only if
+       the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "This input must be @('nil') if
+       the @(':old-to-wrapper-enable') input is @('t'),
+       or the @(':wrapper-enable') input is @('t'),
+       or @('old-to-new') is enabled
+       (which is determined by the @(':old-to-new-enable') input)."))
 
     (xdoc::desc-apt-input-verify-guards :optional)
 
@@ -902,16 +959,23 @@
       "In the " *tailrec-design-notes* ",
        @('old-to-wrapper') is denoted by @($f\\!\\tilde{f}$)."))
 
-    (xdoc::p
-     "A theory invariant is also generated to prevent
-      @('old-to-new') and @('new-to-old')
-      from being both enabled at the same time.")
+    (xdoc::desc
+     "@('wrapper-to-old')"
+     (xdoc::p
+      "Theorem that rewrites @('wrapper') in terms of @('old'):")
+     (xdoc::codeblock
+      "(defthm wrapper-to-old"
+      "  (equal (wrapper x1 ... xn)"
+      "         (old x1 ... xn)))")
+     (xdoc::p
+      "This is generated only if the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('old-to-wrapper') is denoted by @($\\tilde{f}\\!f$)."))
 
     (xdoc::p
-     "If the @(':wrapper') input is @('t'),
-      a theory invariant is also generated to prevent
-      @('old-to-new') and @('old-to-wrapper')
-      from being both enabled at the same time."))
+     "Theory invariants are also generated to prevent
+      certain pairs of generated theorems from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
