@@ -201,6 +201,8 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    FMT-HARD-RIGHT-MARGIN
+    FMT-SOFT-RIGHT-MARGIN
   ))
 
 (defconst *special-ops*
