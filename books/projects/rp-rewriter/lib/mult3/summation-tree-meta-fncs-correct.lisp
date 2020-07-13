@@ -89,22 +89,22 @@
 
 (local
  (defthm-rp-equal
-   (defthm rp-order-is-rp-equal
+   (defthm s-order-is-rp-equal
      (implies (and (rp-termp term1)
                    (rp-termp term2))
-              (equal (mv-nth 1 (rp-order term1 term2))
+              (equal (mv-nth 1 (s-order term1 term2))
                      (rp-equal term1 term2)))
      :flag rp-equal)
-   (defthm rp-order-lst-is-rp-equal-subterms
+   (defthm s-order-lst-is-rp-equal-subterms
      (implies (and (rp-term-listp subterm1)
                    (rp-term-listp subterm2))
-              (equal (mv-nth 1 (rp-order-lst subterm1 subterm2))
+              (equal (mv-nth 1 (s-order-lst subterm1 subterm2))
                      (rp-equal-subterms subterm1 subterm2)))
      :flag rp-equal-subterms)
    :hints (("goal"
-            :expand ((rp-order term1 term2))
-            :in-theory (e/d (rp-order-lst
-                             rp-order) ())))))
+            :expand ((s-order term1 term2))
+            :in-theory (e/d (s-order-lst
+                             s-order) ())))))
 
 (progn
   (defthm rp-trans-opener

@@ -156,7 +156,17 @@
                (mv y t 1))
               (('bit-of & &)
                (mv y t 1))
-              (& (mv y nil -1)))))
+              (& (mv y nil -1))))
+
+           #|((mv x y atom-x atom-y len-x len-y)
+            (if (and (equal len-x 2)
+                     (equal len-y 2))
+                (mv x y atom-x atom-y len-x len-y)
+              (mv y x atom-x atom-y len-x len-y)))||#
+                
+                
+           
+           )
         (cond
          ((not (equal len-x len-y))
           (cond
@@ -616,7 +626,7 @@
 ;;                'nil))
 
 (define can-c-merge-fast-aux (s-lst pp c/d)
-  :inline t
+  ;;:inline t
   (if (atom s-lst)
       nil
     (or (b* ((cur-s (ex-from-rp-loose (car s-lst))))
@@ -627,7 +637,7 @@
                (equal pp-arg pp) (equal c/d-arg c/d) 
                ;;(rp-equal-cnt c/d-arg c/d 10) (rp-equal-cnt pp-arg pp 10)
                )))))
-;(can-c-merge-fast-aux (cdr s-lst) pp c/d)
+        ;;(can-c-merge-fast-aux (cdr s-lst) pp c/d)
         )))
 
 (define can-c-merge-fast (c/d1 c/d2)
@@ -1186,60 +1196,16 @@
        (c/d-merge-fast-aux pp-arg1 pp-arg2 pp-coughed-from-arg
                            s-arg2 s-coughed-from-arg
                            c/d-arg
-                           clean-flg)
-       #|(b* ((- (fast-merge-profile))
-
-       ((mv pp-arg pp-arg-cnt1) (pp-sum-merge pp-arg1 pp-arg2))
-       ((mv pp-arg pp-arg-cnt2) (pp-sum-merge pp-coughed-from-arg pp-arg))
-       (pp-arg-cnt (+ ;;(expt 2 20) ;;test and remove later when sure...
-       pp-arg-cnt1 pp-arg-cnt2))
-
-       (s-arg `(list . ,(cddr s-arg2)))
-       ;;(s-arg (remove-s-from-for-fast-merge s-arg2 pp-arg1 c/d-arg1))
-       ;;(s-arg (s-sum-merge s-arg2 `(list (-- (s ,pp-arg1 ,c/d-arg1)))))
-       (s-arg (s-sum-merge s-arg s-coughed-from-arg))
-
-       ((mv s-coughed s-arg pp-coughed pp-arg)
-       (clean-c/d-args s-arg pp-arg pp-arg-cnt clean-flg))
-       (c-merged
-       (create-c-instance s-arg pp-arg c/d-arg))
-       #|(if (and (equal s-arg ''nil)
-       (equal c/d-arg ''0)
-       (case-match pp (('list ('binary-and & &)) t)))
-       ''0
-       `(c ,s-arg ,pp-arg ,c/d-arg))||#)
-       (mv s-coughed pp-coughed c-merged))||#)
+                           clean-flg))
       (t
        (b* ((c/d1-is-c (eq type1 'c))
             (c/d2-is-c (eq type2 'c))
-
-            ;; ((mv pp-arg pp-arg-cnt1) (pp-sum-merge pp-arg1 pp-arg2))
-            ;; ((mv pp-arg pp-arg-cnt2) (pp-sum-merge pp-coughed-from-arg pp-arg))
-            ;; (pp-arg-cnt (+ ;;(expt 2 20) ;;test and remove later when sure...
-            ;;              pp-arg-cnt1 pp-arg-cnt2))
-
-            ;; (s-arg (s-sum-merge s-arg2 s-coughed-from-arg))
-            ;; (s-arg (s-sum-merge s-arg1 s-arg))
-
             (extra-s-arg1 (and c/d1-is-c
                                (get-extra-s-arg s-arg1 pp-arg1
                                                 c/d-arg1 (1- limit))))
             (extra-s-arg2 (and c/d2-is-c
                                (get-extra-s-arg s-arg2 pp-arg2
-                                                c/d-arg2 (1- limit))))
-
-            ;; (s-arg (cond ((and c/d1-is-c c/d2-is-c)
-            ;;               (s-sum-merge s-arg (s-sum-merge extra-s-arg1 extra-s-arg2)))
-            ;;              (c/d1-is-c (s-sum-merge s-arg extra-s-arg1))
-            ;;              (c/d2-is-c (s-sum-merge s-arg extra-s-arg2))
-            ;;              (t s-arg)))
-
-            ;; ((mv s-coughed s-arg pp-coughed pp-arg)
-            ;;  (clean-c/d-args s-arg pp-arg pp-arg-cnt clean-flg))
-
-            ;; (d-res `(d (rp 'evenpi (d-sum ,s-arg ,pp-arg ,c/d-arg))))
-            ;; (c/d-merged (if clean-flg (d-to-c d-res) d-res))
-            )
+                                                c/d-arg2 (1- limit)))))
          (c/d-merge-slow-aux pp-arg1 pp-arg2 pp-coughed-from-arg
                              s-arg1 s-arg2 s-coughed-from-arg
                              extra-s-arg1
@@ -1247,9 +1213,7 @@
                              c/d-arg
                              clean-flg
                              c/d1-is-c
-                             c/d2-is-c)
-         ;;(mv s-coughed pp-coughed c/d-merged)
-         ))))))
+                             c/d2-is-c)))))))
 
 ;; (define c/d-merge-aux (c/d1-is-c
 ;;                        c/d2-is-c
