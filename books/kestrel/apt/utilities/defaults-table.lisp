@@ -32,9 +32,8 @@
    (xdoc::p
     "Support for more defaults will be added as needed.")
    (xdoc::p
-    "We provide event-level macros to change the defaults.
-     These should be used instead of modifying the table directly.
-     Some defaults may have a default (i.e. initial) value.")
+    "We provide event macros to change the defaults.
+     These should be used instead of modifying the table directly.")
    (xdoc::p
     "Internally, each default is represented by a pair in the table.
      The key is always a keyword, while the value depends on the default."))
@@ -245,7 +244,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Some APT transformations include an @(':new-to-old-enable') input
+    "Some APT transformations include a @(':new-to-old-enable') input
      that specifies whether to enable the generated theorem
      that rewrites (a term involving) a call of the old function
      to (a term involving) a call of the new function.")
