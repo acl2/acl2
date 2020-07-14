@@ -57,7 +57,7 @@
      (factorial{1} (+ -1 n) (* r n)))))
 
 (must-be-redundant
- (defthm factorial-~>-factorial{1}
+ (defthm factorial-to-factorial{1}
    (equal (factorial n)
           (factorial{1} n 1))))
 
@@ -91,7 +91,7 @@
      (triangular{1} (+ -1 n) (+ a n)))))
 
 (must-be-redundant
- (defthm triangular-~>-triangular{1}
+ (defthm triangular-to-triangular{1}
    (equal (triangular n)
           (triangular{1} n 0))))
 
@@ -125,7 +125,7 @@
      (pyramidal{1} (+ -1 n) (+ r (* n n))))))
 
 (must-be-redundant
- (defthm pyramidal-~>-pyramidal{1}
+ (defthm pyramidal-to-pyramidal{1}
    (equal (pyramidal n)
           (pyramidal{1} n 0))))
 
@@ -164,7 +164,7 @@
      (len{1} (cdr x) (+ r 1)))))
 
 (must-be-redundant
- (defthm len-~>-len{1}
+ (defthm len-to-len{1}
    (equal (len x)
           (len{1} x 0))))
 
@@ -200,7 +200,7 @@
      (list-sum{1} (cdr l) (+ r (car l))))))
 
 (must-be-redundant
- (defthm list-sum-~>-list-sum{1}
+ (defthm list-sum-to-list-sum{1}
    (equal (list-sum l)
           (list-sum{1} l 0))))
 
@@ -234,7 +234,7 @@
      (power{1} x (+ -1 n) (* r x)))))
 
 (must-be-redundant
- (defthm power-~>-power{1}
+ (defthm power-to-power{1}
    (equal (power x n)
           (power{1} x n 1))))
 
@@ -265,6 +265,6 @@
      (list-reverse{1} (cdr l) (append (list (car l)) r)))))
 
 (must-be-redundant
- (defthm list-reverse-~>-list-reverse{1}
+ (defthm list-reverse-to-list-reverse{1}
    (equal (list-reverse l)
           (list-reverse{1} l nil))))

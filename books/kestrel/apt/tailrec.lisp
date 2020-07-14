@@ -24,6 +24,7 @@
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(include-book "utilities/defaults-table")
 (include-book "utilities/input-processing")
 (include-book "utilities/transformation-table")
 
@@ -834,6 +835,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tailrec-process-old-to-new-name (old-to-new-name
+                                         (old-to-new-name-suppliedp booleanp)
                                          (old$ symbolp)
                                          (new-name$ symbolp)
                                          (names-to-avoid symbol-listp)
@@ -847,24 +849,26 @@
   :mode :program
   :short "Process the @(':old-to-new-name') input."
   (b* ((wrld (w state))
-       ((er &) (ensure-symbol$ old-to-new-name
-                               "The :OLD-TO-NEW-NAME input" t nil))
-       (name (cond ((eq old-to-new-name :auto)
-                    (make-paired-name old$ new-name$ 2 wrld))
-                   ((keywordp old-to-new-name)
-                    (intern-in-package-of-symbol
-                     (concatenate 'string
-                                  (symbol-name old$)
-                                  (symbol-name old-to-new-name)
-                                  (symbol-name new-name$))
-                     new-name$))
-                   (t old-to-new-name)))
+       ((er &)
+        (ensure-symbol$ old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
+       (name (if (or (not old-to-new-name-suppliedp)
+                     (keywordp old-to-new-name))
+                 (b* ((kwd (if old-to-new-name-suppliedp
+                               old-to-new-name
+                             (get-default-input-old-to-new-name wrld))))
+                   (intern-in-package-of-symbol
+                    (concatenate 'string
+                                 (symbol-name old$)
+                                 (symbol-name kwd)
+                                 (symbol-name new-name$))
+                    new-name$))
+               old-to-new-name))
        (description (msg "The name ~x0 of the theorem ~
                           that relates the old function ~x1 ~
                           to the new function ~x2, ~
                           specified (perhaps by default) ~
                           by the :OLD-TO-NEW-NAME input ~x3,"
-                         name old$ new-name$ name))
+                         name old$ new-name$ old-to-new-name))
        (error-msg? (fresh-namep-msg-weak name nil wrld))
        ((when error-msg?)
         (er-soft+ ctx t nil
@@ -1135,6 +1139,7 @@
                                 wrapper-enable
                                 (wrapper-enable-present booleanp)
                                 old-to-new-name
+                                (old-to-new-name-present booleanp)
                                 old-to-new-enable
                                 (old-to-new-enable-present booleanp)
                                 new-to-old-name
@@ -1244,6 +1249,7 @@
        (names-to-avoid nil)
        ((er (list old-to-new-name$ names-to-avoid))
         (tailrec-process-old-to-new-name old-to-new-name
+                                         old-to-new-name-present
                                          old$
                                          new-name$
                                          names-to-avoid
@@ -3032,6 +3038,7 @@
                     wrapper-enable
                     (wrapper-enable-present booleanp)
                     old-to-new-name
+                    (old-to-new-name-present booleanp)
                     old-to-new-enable
                     (old-to-new-enable-present booleanp)
                     new-to-old-name
@@ -3103,6 +3110,7 @@
                                 wrapper-enable
                                 wrapper-enable-present
                                 old-to-new-name
+                                old-to-new-name-present
                                 old-to-new-enable
                                 old-to-new-enable-present
                                 new-to-old-name
@@ -3179,7 +3187,7 @@
                      (wrapper 'nil)
                      (wrapper-name ':auto wrapper-name-present)
                      (wrapper-enable 't wrapper-enable-present)
-                     (old-to-new-name ':auto)
+                     (old-to-new-name ':irrelevant old-to-new-name-present)
                      (old-to-new-enable ':irrelevant old-to-new-enable-present)
                      (new-to-old-name ':auto)
                      (new-to-old-enable 'nil)
@@ -3203,6 +3211,7 @@
                                    ',wrapper-enable
                                    ',wrapper-enable-present
                                    ',old-to-new-name
+                                   ',old-to-new-name-present
                                    ',old-to-new-enable
                                    ',old-to-new-enable-present
                                    ',new-to-old-name

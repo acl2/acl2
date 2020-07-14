@@ -173,7 +173,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; without guard verification:
  (must-succeed*
@@ -185,7 +185,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x) :verify-guards nil))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x nil))))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,7 +214,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; monoidal:
  (must-succeed*
@@ -223,7 +223,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; alternative monoidal:
  (must-succeed*
@@ -232,7 +232,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defthm f-~>-f{1} (equal (f x) (f{1} x nil)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; associative:
  (must-succeed*
@@ -241,7 +241,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) (lub r nil) (f{1} (cdr x) (lub r (car x)))))
-   (defthm f-~>-f{1}
+   (defthm f-to-f{1}
      (equal (f x)
             (and (not (atom x)) (f{1} (cdr x) (car x))))))))
 
@@ -325,7 +325,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; automatic:
   (must-succeed*
@@ -335,7 +335,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; function name:
   (must-succeed*
@@ -344,7 +344,7 @@
     (defun fact{1} (n r)
       (declare (xargs :measure (acl2-count n) :guard (and (natp n) (natp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; macro name:
   (must-succeed*
@@ -355,7 +355,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (integerp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; lambda expression:
   (must-succeed*
@@ -365,7 +365,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defthm fact-~>-fact{1} (equal (fact n) (fact{1} n 1)))))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,18 +673,13 @@
 
  ;; determining, by default, a name that already exists:
  (must-succeed*
-  (defun f-~>-f{1} () nil)
+  (defun f-to-f{1} () nil)
   (must-fail (tailrec f)))
 
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (theorem-namep 'f-~>-f{1} (w state))))
-
- ;; automatic:
- (must-succeed*
-  (tailrec f :old-to-new-name :auto)
-  (assert! (theorem-namep 'f-~>-f{1} (w state))))
+  (assert! (theorem-namep 'f-to-f{1} (w state))))
 
  ;; specified separator:
  (must-succeed*
@@ -893,17 +888,17 @@
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable:
  (must-succeed*
   (tailrec f :old-to-new-enable t)
-  (assert! (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; disable:
  (must-succeed*
   (tailrec f :old-to-new-enable nil)
-  (assert! (rune-disabledp '(:rewrite f-~>-f{1}) state)))
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enabled when also the old-to-wrapper theorem is:
  (must-fail

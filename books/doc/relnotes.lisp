@@ -248,6 +248,14 @@
       if and only if the target function is;
       the wrapper is never marked non-executable.")
     (xdoc::li
+     "The @(':old-to-new-name') input has been simplified to be
+      either the symbol to use for the theorem,
+      or a keyword that specifies a separator (e.g. @(':-to-'))
+      between old and new function name.
+      If absent, the keyword separator is taken from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
      "The generated names for the new and wrapper functions,
       when @(':new-name') is @(':auto')
       and/or @(':wrapper-name') is @(':auto'),
