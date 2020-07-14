@@ -11,7 +11,6 @@
 (local (include-book "std/lists/intersectp" :dir :system))
 
 (local (in-theory (e/d (abs-file-p-when-m1-regular-file-p
-                        nat-listp-of-strip-cars-when-frame-p
                         len-when-consp)
                        ((:definition member-equal)
                         (:rewrite
@@ -1279,13 +1278,6 @@
   :hints (("goal" :do-not-induct t
            :in-theory (enable abs-find-file-src frame-with-root))))
 
-(defthm abs-mkdir-guard-lemma-2
-  (implies (atom path)
-           (equal (1st-complete-under-path frame path)
-                  (1st-complete frame)))
-  :hints (("goal" :in-theory (enable 1st-complete-under-path
-                                     1st-complete prefixp))))
-
 (defthm
   abs-mkdir-guard-lemma-3
   (implies (and (mv-nth 1 (collapse frame))
@@ -1642,55 +1634,51 @@
   :hints (("goal" :do-not-induct t
            :in-theory (enable frame->root))))
 
-(encapsulate
-  ()
+(defthm
+  addrs-at-of-abs-disassoc-1
+  (equal (addrs-at (mv-nth 1 (abs-disassoc fs path new-index))
+                   relpath)
+         (cond ((or (equal (mv-nth 1 (abs-disassoc fs path new-index))
+                           (abs-fs-fix fs))
+                    (not (fat32-filename-list-prefixp path relpath)))
+                (addrs-at (abs-fs-fix fs) relpath))
+               ((fat32-filename-list-equiv relpath path)
+                (list (nfix new-index)))
+               (t nil)))
+  :hints
+  (("goal"
+    :in-theory (e/d (abs-top-addrs addrs-at abs-fs-fix
+                                   abs-disassoc fat32-filename-list-fix
+                                   fat32-filename-list-equiv
+                                   fat32-filename-equiv
+                                   abs-fs-p abs-file-alist-p abs-no-dups-p)
+                    ((:rewrite abs-no-dups-p-of-put-assoc-equal)
+                     (:rewrite abs-fs-fix-of-put-assoc-equal-lemma-1)
+                     (:rewrite abs-fs-p-when-hifat-no-dups-p)
+                     (:rewrite hifat-find-file-correctness-1-lemma-1)
+                     (:rewrite consp-of-assoc-of-abs-fs-fix)
+                     (:rewrite abs-file->contents-when-m1-file-p)
+                     (:rewrite subsetp-when-prefixp)
+                     (:rewrite
+                      m1-file-alist-p-of-cdr-when-m1-file-alist-p)
+                     (:rewrite abs-file-alist-p-correctness-1)
+                     (:rewrite abs-no-dups-p-when-m1-file-alist-p)
+                     (:rewrite
+                      abs-file-alist-p-when-m1-file-alist-p)
+                     (:rewrite abs-disassoc-correctness-1)
+                     (:rewrite
+                      abs-fs-fix-of-put-assoc-equal-lemma-3)
+                     (:rewrite abs-no-dups-p-of-cdr)
+                     (:rewrite abs-addrs-of-put-assoc-lemma-1)
+                     (:rewrite abs-addrs-when-m1-file-alist-p)
+                     (:rewrite
+                      abs-fs-fix-of-put-assoc-equal-lemma-2)
+                     (:rewrite abs-file-alist-p-of-cdr)))
+    :induct (mv (fat32-filename-list-prefixp path relpath)
+                (addrs-at fs relpath))
+    :expand ((:free (fs) (addrs-at fs relpath))
+             (abs-disassoc fs path new-index)))))
 
-  (local
-   (defthmd
-     lemma
-     (implies
-      (natp new-index)
-      (equal (addrs-at (mv-nth 1 (abs-disassoc fs path new-index))
-                       relpath)
-             (cond ((or (equal (mv-nth 1 (abs-disassoc fs path new-index))
-                               (abs-fs-fix fs))
-                        (not (fat32-filename-list-prefixp path relpath)))
-                    (addrs-at (abs-fs-fix fs) relpath))
-                   ((fat32-filename-list-equiv relpath path)
-                    (list (nfix new-index)))
-                   (t nil))))
-     :hints
-     (("goal"
-       :in-theory (e/d (abs-top-addrs addrs-at
-                                      abs-disassoc fat32-filename-list-fix
-                                      fat32-filename-list-equiv fat32-filename-equiv
-                                      abs-fs-p abs-file-alist-p abs-no-dups-p)
-                       ((:rewrite abs-no-dups-p-of-put-assoc-equal)
-                        (:rewrite abs-fs-fix-of-put-assoc-equal-lemma-1)
-                        (:rewrite abs-fs-p-when-hifat-no-dups-p)
-                        (:rewrite hifat-find-file-correctness-1-lemma-1)
-                        (:rewrite consp-of-assoc-of-abs-fs-fix)
-                        (:rewrite abs-file->contents-when-m1-file-p)
-                        (:rewrite subsetp-when-prefixp)))
-       :induct (mv (fat32-filename-list-prefixp path relpath)
-                   (addrs-at fs relpath))
-       :expand ((:free (fs) (addrs-at fs relpath))
-                (abs-disassoc fs path new-index))))))
-
-  (defthm
-    addrs-at-of-abs-disassoc-1
-    (equal (addrs-at (mv-nth 1 (abs-disassoc fs path new-index))
-                     relpath)
-           (cond ((or (equal (mv-nth 1 (abs-disassoc fs path new-index))
-                             (abs-fs-fix fs))
-                      (not (fat32-filename-list-prefixp path relpath)))
-                  (addrs-at (abs-fs-fix fs) relpath))
-                 ((fat32-filename-list-equiv relpath path)
-                  (list (nfix new-index)))
-                 (t nil)))
-    :hints
-    (("goal"
-      :use (:instance lemma (new-index (nfix new-index)))))))
 
 (defthm ctx-app-ok-of-abs-disassoc-1
   (implies
@@ -2180,139 +2168,20 @@
            (dist-names (list n) relpath frame))
   :hints (("goal" :in-theory (enable names-at abs-fs-fix dist-names))))
 
-(defthm assoc-equal-of-frame-with-root0
+(defthm abs-mkdir-correctness-lemma-77
   (implies (atom n)
            (equal (names-at (list n) relpath) nil))
   :hints (("goal" :in-theory (enable names-at abs-fs-fix))))
 
 (defthm
-  assoc-equal-of-frame-with-root1
-  (equal (collapse (frame-with-root (frame->root frame)
-                                    (frame->frame frame)))
-         (collapse frame))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d (collapse collapse-this)
-         ((:rewrite partial-collapse-correctness-lemma-24)
-          (:definition no-duplicatesp-equal)
-          (:definition assoc-equal)
-          (:rewrite subsetp-when-prefixp)
-          (:rewrite prefixp-when-equal-lengths)
-          (:definition remove-equal)
-          (:rewrite strip-cars-of-remove-assoc)
-          (:rewrite assoc-after-put-assoc)
-          (:rewrite strip-cars-of-put-assoc)
-          (:rewrite no-duplicatesp-of-strip-cars-of-frame->frame)
-          (:definition remove-assoc-equal)
-          (:rewrite remove-when-absent)
-          (:rewrite remove-assoc-of-put-assoc)
-          (:rewrite remove-assoc-of-remove-assoc)
-          abs-separate-of-frame->frame-of-collapse-this-lemma-8))
-    :do-not-induct t
-    :expand ((collapse frame)
-             (collapse (frame-with-root (frame->root frame)
-                                        (frame->frame frame))))))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (collapse-equiv (frame-with-root (frame->root frame)
-                                     (frame->frame frame))
-                    frame)
-    :hints (("Goal" :in-theory (enable collapse-equiv))))))
-
-;; (thm (implies
-;;       (and (collapse-equiv frame1 frame2)
-;;            (consp (assoc-equal 0 frame1))
-;;            (not (consp (frame-val->path (cdr (assoc-equal 0 frame1)))))
-;;            (mv-nth 1 (collapse frame1))
-;;            (frame-p frame1)
-;;            (no-duplicatesp-equal (strip-cars frame1))
-;;            (subsetp-equal (abs-addrs (frame->root frame1))
-;;                           (frame-addrs-root (frame->frame frame1)))
-;;            (abs-separate frame1)
-;;            (or
-;;             (m1-regular-file-p (mv-nth 0 (abs-find-file frame1 path)))
-;;             (abs-complete
-;;              (abs-file->contents (mv-nth 0 (abs-find-file frame1 path)))))
-;;            (consp (assoc-equal 0 frame2))
-;;            (not (consp (frame-val->path (cdr (assoc-equal 0 frame2)))))
-;;            (mv-nth 1 (collapse frame2))
-;;            (frame-p frame2)
-;;            (no-duplicatesp-equal (strip-cars frame2))
-;;            (subsetp-equal (abs-addrs (frame->root frame2))
-;;                           (frame-addrs-root (frame->frame frame2)))
-;;            (abs-separate frame2)
-;;            (or
-;;             (m1-regular-file-p (mv-nth 0 (abs-find-file frame2 path)))
-;;             (abs-complete
-;;              (abs-file->contents (mv-nth 0 (abs-find-file frame2 path))))))
-;;       (equal (abs-find-file frame1 path)
-;;              (abs-find-file frame2 path)))
-;;      :hints
-;;      (("goal"
-;;        :do-not-induct t
-;;        :in-theory (e/d
-;;                    (collapse-equiv)
-;;                    (abs-find-file-correctness-2
-;;                     abs-mkdir-correctness-lemma-26))
-;;        :use ((:instance
-;;               abs-find-file-correctness-2 (frame frame1))
-;;              (:instance
-;;               abs-find-file-correctness-2 (frame frame2)))))
-;;      :otf-flg t)
-
-(defthm
-  assoc-equal-of-frame-with-root2
-  (implies (and (mv-nth 1 (collapse frame))
-                (atom path))
-           (equal (partial-collapse frame path)
-                  (if (atom (frame->frame frame))
-                      frame
-                      (frame-with-root (mv-nth 0 (collapse frame))
-                                       nil))))
-  :hints
-  (("goal"
-    :in-theory (e/d (partial-collapse collapse)
-                    ((:definition no-duplicatesp-equal)
-                     (:rewrite partial-collapse-correctness-lemma-24)
-                     (:definition assoc-equal)
-                     (:rewrite subsetp-when-prefixp)
-                     (:definition true-listp)
-                     (:rewrite put-assoc-equal-without-change . 2)
-                     abs-separate-of-frame->frame-of-collapse-this-lemma-8
-                     (:rewrite true-list-fix-when-true-listp)
-                     (:rewrite true-listp-when-string-list)
-                     (:definition string-listp)
-                     (:definition put-assoc-equal)
-                     (:rewrite remove-assoc-of-put-assoc)
-                     (:rewrite abs-fs-p-when-hifat-no-dups-p)
-                     (:definition remove-assoc-equal)
-                     (:definition remove-equal)
-                     (:rewrite fat32-filename-p-correctness-1)))
-    :induct (collapse frame)
-    :expand ((partial-collapse frame path)
-             (collapse-this frame
-                            (1st-complete (frame->frame frame)))))))
-
-(defthm
-  assoc-equal-of-frame-with-root3
+  abs-mkdir-correctness-lemma-78
   (implies (natp n)
            (ctx-app-ok (list n) n nil))
   :hints (("goal" :in-theory (enable ctx-app-ok addrs-at abs-fs-fix)
            :do-not-induct t)))
 
-(defthmd assoc-equal-of-frame-with-root4
-  (implies (and (not (null x))
-                (atom (remove-assoc-equal x alist))
-                (no-duplicatesp-equal (strip-cars alist)))
-           (list-equiv alist
-                       (if (consp (assoc-equal x alist))
-                           (list (assoc-equal x alist)) nil))))
-
 (defthmd
-  assoc-equal-of-frame-with-root5
+  when-atom-of-frame->frame-1
   (implies (and (atom (frame->frame frame))
                 (no-duplicatesp-equal (strip-cars frame))
                 (consp (assoc-equal 0 frame))
@@ -2327,39 +2196,26 @@
                   frame))
   :hints (("goal" :in-theory (enable frame->frame frame->root frame-p)
            :do-not-induct t
-           :use (:instance assoc-equal-of-frame-with-root4 (x 0)
+           :use (:instance when-atom-of-remove-assoc (x 0)
                            (alist frame))
            :expand (assoc-equal 0 frame))))
 
 (defthm
-  assoc-equal-of-frame-with-root6
+  subsetp-of-abs-addrs-of-abs-disassoc-1
   (implies
-   (and (member-equal new-index y)
+   (and (member-equal (nfix new-index) y)
         (subsetp-equal (abs-addrs (abs-fs-fix fs))
-                       y)
-        (natp new-index))
+                       y))
    (subsetp-equal (abs-addrs (mv-nth 1 (abs-disassoc fs path new-index)))
                   y))
   :hints (("goal" :in-theory (enable abs-disassoc)
            :expand (abs-addrs (list new-index)))))
 
-(defthm assoc-equal-of-frame-with-root7
+(defthm abs-mkdir-correctness-lemma-79
   (implies (not (consp (frame->frame frame)))
            (dist-names (frame->root frame)
                        nil (remove-assoc-equal 0 frame)))
   :hints (("goal" :in-theory (enable frame->frame))))
-
-(defthm assoc-equal-of-frame-with-root8
-  (implies (atom path)
-           (equal (abs-find-file-helper fs path)
-                  (mv (abs-file-fix nil) *enoent*)))
-  :hints (("goal" :in-theory (enable abs-find-file-helper))))
-
-(defthm assoc-equal-of-frame-with-root9
-  (implies (atom path)
-           (equal (abs-find-file frame path)
-                  (mv (abs-file-fix nil) *enoent*)))
-  :hints (("goal" :in-theory (enable abs-find-file))))
 
 (defthm
   abs-mkdir-correctness-lemma-40
@@ -4307,7 +4163,6 @@
          (:rewrite
           abs-separate-of-frame->frame-of-collapse-this-lemma-8
           . 2)
-         (:rewrite partial-collapse-correctness-lemma-28)
          (:rewrite nthcdr-when->=-n-len-l)
          (:rewrite strip-cars-of-frame->frame-of-collapse-this)
          (:definition len)
@@ -5848,16 +5703,16 @@
     (("goal"
       :in-theory (e/d (abs-file-p-alt absfat-equiv hifat-subsetp
                                       abs-fs-fix m1-regular-file-p)
-                      ((:rewrite abs-find-file-helper-of-collapse-lemma-7)))
+                      ((:rewrite abs-file-p-of-abs-find-file-helper)))
       :do-not-induct t
       :use ((:instance lemma (fs1 (abs-fs-fix fs1))
                        (fs2 (abs-fs-fix fs2)))
             (:instance lemma (fs1 (abs-fs-fix fs2))
                        (fs2 (abs-fs-fix fs1)))
-            (:instance (:rewrite abs-find-file-helper-of-collapse-lemma-7)
+            (:instance (:rewrite abs-file-p-of-abs-find-file-helper)
                        (path path)
                        (fs fs2))
-            (:instance (:rewrite abs-find-file-helper-of-collapse-lemma-7)
+            (:instance (:rewrite abs-file-p-of-abs-find-file-helper)
                        (path path)
                        (fs fs1)))))
     :rule-classes :congruence))
@@ -6360,81 +6215,6 @@
            :do-not-induct t)))
 
 (defthm
-  abs-mkdir-correctness-lemma-81
-  (implies
-   (and
-    (abs-separate (frame->frame frame))
-    (frame-p (frame->frame frame))
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (mv-nth 1
-            (ctx-app-list
-             (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-             (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
-             frame
-             (frame-addrs-before frame x (collapse-1st-index frame x)))))
-   (equal
-    (set-difference-equal
-     (abs-addrs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
-     (frame-addrs-before frame x (collapse-1st-index frame x)))
-    nil))
-  :instructions
-  (:promote
-   (:claim
-    (equal
-     nil
-     (abs-addrs
-      (mv-nth
-       0
-       (ctx-app-list
-        (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-        (frame-val->path (cdr (assoc-equal x (frame->frame frame))))
-        frame
-        (frame-addrs-before frame
-                            x (collapse-1st-index frame x))))))
-    :hints (("goal" :do-not-induct t
-             :in-theory (e/d nil
-                             (partial-collapse-correctness-lemma-63))
-             :use partial-collapse-correctness-lemma-63)))
-   :bash))
-
-;; This could be kinda important, although for now we're keeping it disabled to
-;; avoid weird stuff coming in from nowhere.
-(defthmd
-  abs-mkdir-correctness-lemma-107
-  (implies
-   (and
-    (abs-separate (frame->frame frame))
-    (frame-p (frame->frame frame))
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame))))
-   (set-equiv
-    (abs-addrs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
-    (frame-addrs-before frame x (collapse-1st-index frame x))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (e/d
-     (set-equiv partial-collapse-correctness-lemma-62)
-     (abs-mkdir-correctness-lemma-81 (:rewrite abs-addrs-of-ctx-app-list)))
-    :use
-    (abs-mkdir-correctness-lemma-81
-     (:instance
-      (:rewrite subsetp-when-atom-set-difference$)
-      (l2 (frame-addrs-before frame x (collapse-1st-index frame x)))
-      (l1 (abs-addrs
-           (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
-     (:instance
-      (:rewrite abs-addrs-of-ctx-app-list)
-      (relpath (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-      (frame frame)
-      (fs (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
-      (l (frame-addrs-before frame
-                             x (collapse-1st-index frame x))))))))
-
-(defthm
   abs-mkdir-correctness-lemma-126
   (implies
    (and (abs-separate (frame->frame frame))
@@ -6448,15 +6228,15 @@
   :hints
   (("goal" :do-not-induct t
     :in-theory (e/d ()
-                    ((:rewrite partial-collapse-correctness-lemma-78
+                    ((:rewrite chain-ends-in-abs-complete-lemma-5
                                . 1)))
-    :use ((:instance (:rewrite partial-collapse-correctness-lemma-78
+    :use ((:instance (:rewrite chain-ends-in-abs-complete-lemma-5
                                . 1)
                      (y (strip-cars (frame->frame frame)))
                      (n (collapse-1st-index frame x))
                      (x x)
                      (frame frame))
-          abs-mkdir-correctness-lemma-107)))
+          chain-ends-in-abs-complete-lemma-9)))
   :rule-classes
   (:rewrite
    (:rewrite
@@ -6557,8 +6337,6 @@
           (:rewrite
            partial-collapse-correctness-lemma-1)
           (:rewrite
-           partial-collapse-correctness-lemma-28)
-          (:rewrite
            abs-separate-of-frame->frame-of-collapse-this-lemma-15)
           (:rewrite m1-file-alist-p-when-subsetp-equal)
           (:type-prescription
@@ -6610,8 +6388,6 @@
           (:rewrite
            abs-separate-of-frame->frame-of-collapse-this-lemma-7)
           (:rewrite nth-when-prefixp)
-          (:rewrite
-           partial-collapse-correctness-lemma-77)
           (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
           (:rewrite
            collapse-1st-index-correctness-lemma-1)
@@ -8986,7 +8762,7 @@
         (e/d (abs-mkdir collapse frame-reps-fs)
              (abs-file-alist-p-correctness-1 abs-fs-p-correctness-1
                                              abs-fs-p-when-hifat-no-dups-p
-                                             assoc-equal-of-frame-with-root2
+                                             partial-collapse-when-atom
                                              abs-separate-correctness-1
                                              collapse-congruence-lemma-4
                                              frame->frame-of-frame-with-root

@@ -861,7 +861,19 @@
                      (:rewrite
                       abs-find-file-helper-of-collapse-lemma-2)
                      (:definition remove-equal)
-                     abs-find-file-of-put-assoc-lemma-7))
+                     abs-find-file-of-put-assoc-lemma-7
+                     collapse-of-frame-with-root-of-frame->root-and-frame->frame
+                     (:definition assoc-equal)
+                     (:rewrite
+                      partial-collapse-correctness-lemma-24)
+                     (:rewrite assoc-of-car-when-member)
+                     (:rewrite subsetp-car-member)
+                     (:rewrite consp-of-assoc-of-frame->frame)
+                     (:rewrite abs-find-file-correctness-lemma-21)
+                     (:definition remove-assoc-equal)
+                     (:definition len)
+                     (:rewrite put-assoc-equal-without-change . 2)
+                     (:linear len-of-seq-this-1)))
     :induct (collapse frame))))
 
 (defthm
@@ -887,8 +899,8 @@
     (("goal"
       :in-theory (e/d (abs-file-p abs-directory-file-p abs-file-contents-p
                                   abs-file->contents abs-addrs)
-                      ((:rewrite abs-find-file-helper-of-collapse-lemma-7)))
-      :use (:rewrite abs-find-file-helper-of-collapse-lemma-7))))))
+                      ((:rewrite abs-file-p-of-abs-find-file-helper)))
+      :use (:rewrite abs-file-p-of-abs-find-file-helper))))))
 
 (defthm
   abs-find-file-correctness-lemma-26
