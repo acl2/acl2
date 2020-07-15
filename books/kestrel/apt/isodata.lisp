@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -626,13 +627,14 @@
     "If the processing is successful,
      we return the isomorphic mapping record specified by @('iso')."))
   (if (atom iso)
-      (b* (((er &) (ensure-symbol$ iso
-                                   (msg "The ~n0 ISO component ~x1 ~
-                                         of the second input ~
-                                         must be a symbol or a list. ~
-                                         Since it is an atom,"
-                                        (list k) iso)
-                                   t nil))
+      (b* (((er &) (ensure-value-is-symbol$
+                    iso
+                    (msg "The ~n0 ISO component ~x1 ~
+                          of the second input ~
+                          must be a symbol or a list. ~
+                          Since it is an atom,"
+                         (list k) iso)
+                    t nil))
            (info (defiso-lookup iso (w state)))
            ((unless info)
             (er-soft+ ctx t nil
@@ -1070,7 +1072,8 @@
   :short "Process the @(':old-to-new-name') input."
   (b* ((wrld (w state))
        ((er &)
-        (ensure-symbol$ old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
+        (ensure-value-is-symbol$
+         old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
        (name (if (or (not old-to-new-name-suppliedp)
                      (keywordp old-to-new-name))
                  (b* ((kwd (if old-to-new-name-suppliedp
@@ -1141,7 +1144,8 @@
   :short "Process the @(':new-to-old-name') input."
   (b* ((wrld (w state))
        ((er &)
-        (ensure-symbol$ new-to-old-name "The :NEW-TO-OLD-NAME input" t nil))
+        (ensure-value-is-symbol$
+         new-to-old-name "The :NEW-TO-OLD-NAME input" t nil))
        (name (if (or (not new-to-old-name-suppliedp)
                      (keywordp new-to-old-name))
                  (b* ((kwd (if new-to-old-name-suppliedp
@@ -1209,7 +1213,8 @@
   :mode :program
   :short "Process the @(':newp-of-new-name') input."
   (b* (((er &)
-        (ensure-symbol$ newp-of-new-name "The :NEWP-OF-NEW-NAME input" t nil))
+        (ensure-value-is-symbol$
+         newp-of-new-name "The :NEWP-OF-NEW-NAME input" t nil))
        (newp-of-new$ (case newp-of-new-name
                        (:auto (add-suffix new$ "-NEW-REPRESENTATION"))
                        (t newp-of-new-name)))

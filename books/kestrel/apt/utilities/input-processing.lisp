@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -38,7 +39,7 @@
      In the second case, the name of the new function
      is the directly specified symbol,
      which must therefore be a valid name for a new function."))
-  (b* (((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ new-name "The :NEW-NAME input" t nil))
        (new-name (case new-name
                    (:auto (next-numbered-name old (w state)))
                    (t new-name)))
