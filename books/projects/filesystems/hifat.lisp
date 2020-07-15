@@ -439,6 +439,14 @@
            (> (ceiling i j) 0))
   :rule-classes :linear)
 
+(defthmd when-atom-of-remove-assoc
+  (implies (and (not (null x))
+                (atom (remove-assoc-equal x alist))
+                (no-duplicatesp-equal (strip-cars alist)))
+           (list-equiv alist
+                       (if (consp (assoc-equal x alist))
+                           (list (assoc-equal x alist)) nil))))
+
 (defund dir-ent-p (x)
   (declare (xargs :guard t))
   (and (unsigned-byte-listp 8 x)

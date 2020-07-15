@@ -1636,3 +1636,9 @@
                                     (remove1-assoc-equal name alist))))))
 
 (defthmd last-alt (equal (last x) (nthcdr (- (len x) 1) x)))
+
+;; Move later.
+(defthm nat-listp-when-subsetp
+  (implies (and (subsetp-equal x y) (nat-listp y))
+           (nat-listp (true-list-fix x)))
+  :hints (("goal" :in-theory (enable subsetp-equal))))

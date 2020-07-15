@@ -113,6 +113,12 @@
          (t (abs-find-file-helper fs x))))
   :hints (("goal" :in-theory (enable abs-find-file-helper))))
 
+(defthm abs-find-file-helper-when-atom
+  (implies (atom path)
+           (equal (abs-find-file-helper fs path)
+                  (mv (abs-file-fix nil) *enoent*)))
+  :hints (("goal" :in-theory (enable abs-find-file-helper))))
+
 (defund
   abs-find-file (frame path)
   (declare
@@ -175,8 +181,14 @@
                             (frame frame-equiv))
                  abs-find-file-of-true-list-fix))))
 
+(defthm abs-find-file-when-atom
+  (implies (atom path)
+           (equal (abs-find-file frame path)
+                  (mv (abs-file-fix nil) *enoent*)))
+  :hints (("goal" :in-theory (enable abs-find-file))))
+
 (defthm
-  abs-find-file-helper-of-collapse-lemma-7
+  abs-file-p-of-abs-find-file-helper
   (abs-file-p (mv-nth 0 (abs-find-file-helper fs path)))
   :hints (("goal" :in-theory (enable abs-find-file-helper))))
 
@@ -1145,19 +1157,6 @@
   :hints (("goal" :do-not-induct t
            :in-theory (e/d (abs-find-file frame->root frame->frame)
                            nil))))
-
-(defthm
-  abs-find-file-correctness-lemma-20
-  (implies (and (atom (frame-val->path (cdr (assoc-equal 0 frame))))
-                (abs-separate frame))
-           (dist-names (frame->root frame)
-                       nil (frame->frame frame)))
-  :hints (("goal" :in-theory (e/d (abs-separate frame->root frame->frame)))))
-
-(defthm abs-find-file-correctness-lemma-8
-  (implies (abs-separate frame)
-           (abs-separate (frame->frame frame)))
-  :hints (("goal" :in-theory (e/d (abs-separate frame->frame)))))
 
 (defthm
   abs-find-file-correctness-1-lemma-30
@@ -2535,8 +2534,7 @@
              (e/d (collapse len-of-fat32-filename-list-fix)
                   ((:rewrite partial-collapse-correctness-lemma-1)
                    (:rewrite partial-collapse-correctness-lemma-24)
-                   (:rewrite partial-collapse-correctness-lemma-33)
-                   (:rewrite partial-collapse-correctness-lemma-77)))))))
+                   (:rewrite partial-collapse-correctness-lemma-33)))))))
 
 ;; Kinda general
 (defthm
@@ -3756,8 +3754,7 @@
                             (:definition assoc-equal)
                             (:rewrite assoc-after-put-assoc)
                             (:definition member-equal)
-                            (:rewrite abs-find-file-correctness-1-lemma-27)
-                            (:rewrite partial-collapse-correctness-lemma-77)))
+                            (:rewrite abs-find-file-correctness-1-lemma-27)))
     :use ((:instance
            (:rewrite abs-find-file-of-put-assoc-lemma-4)
            (path path)
@@ -4296,11 +4293,6 @@
     (len (frame-val->path (cdr (assoc-equal 0 (frame-with-root root frame)))))
     0))
   :hints (("goal" :in-theory (enable frame-with-root))))
-
-(defthm abs-find-file-correctness-lemma-4
-  (implies (abs-separate frame)
-           (no-duplicatesp-equal (abs-addrs (frame->root frame))))
-  :hints (("goal" :in-theory (enable frame->root))))
 
 (defthm
   abs-find-file-correctness-lemma-2

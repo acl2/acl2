@@ -2450,3 +2450,26 @@
           (11 11
               (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
           (11 2 (:DEFINITION NFIX)))
+(NAT-LISTP-WHEN-SUBSETP (166 6
+                             (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+                        (118 13
+                             (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
+                        (95 7 (:DEFINITION TRUE-LISTP))
+                        (81 14 (:DEFINITION STRING-LISTP))
+                        (63 63 (:TYPE-PRESCRIPTION STRING-LISTP))
+                        (38 37 (:REWRITE DEFAULT-CDR))
+                        (34 33 (:REWRITE DEFAULT-CAR))
+                        (28 28 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                        (28 4 (:DEFINITION MEMBER-EQUAL))
+                        (8 8 (:REWRITE SUBSETP-MEMBER . 4))
+                        (8 8 (:REWRITE SUBSETP-MEMBER . 3))
+                        (8 8 (:REWRITE SUBSETP-MEMBER . 2))
+                        (8 8 (:REWRITE SUBSETP-MEMBER . 1))
+                        (8 8 (:REWRITE DEFAULT-<-2))
+                        (8 8 (:REWRITE DEFAULT-<-1))
+                        (7 7 (:REWRITE SUBSETP-TRANS))
+                        (7 7 (:REWRITE INTERSECT-WITH-SUBSET . 16))
+                        (7 7 (:REWRITE INTERSECT-WITH-SUBSET . 15))
+                        (7 7 (:REWRITE INTERSECT-WITH-SUBSET . 14))
+                        (7 7
+                           (:REWRITE INTERSECT-WITH-SUBSET . 13)))
