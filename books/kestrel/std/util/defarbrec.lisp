@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
@@ -226,7 +227,7 @@
   :verify-guards nil
   :short "Process the @('fn') input."
   (b* ((description "The first input")
-       ((er &) (ensure-symbol$ fn description t nil))
+       ((er &) (ensure-value-is-symbol$ fn description t nil))
        ((er &) (ensure-symbol-new-event-name$ fn description t nil)))
     (value nil)))
 
@@ -429,7 +430,7 @@
     "For now we use, for witness and rewrite rule,
      the same names that @(tsee defun-sk) would generate by default.
      But this might change in the future."))
-  (b* (((er &) (ensure-symbol$
+  (b* (((er &) (ensure-value-is-symbol$
                 terminates-name "The :TERMINATES-NAME input" t nil))
        (symbol (or terminates-name (add-suffix-to-fn fn$ "-TERMINATES")))
        (symbol-witness (add-suffix symbol "-WITNESS"))
@@ -504,7 +505,8 @@
   :long
   (xdoc::topstring-p
    "Return the name to use for the measure function.")
-  (b* (((er &) (ensure-symbol$ measure-name "The :MEASURE-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ measure-name
+                                        "The :MEASURE-NAME input" t nil))
        (symbol (or measure-name (add-suffix-to-fn fn$ "-MEASURE")))
        (description (msg "The name ~x0 of the measure function, ~
                           determined (perhaps by default) by ~

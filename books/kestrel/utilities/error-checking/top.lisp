@@ -18,6 +18,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "kestrel/error-checking/def-error-checker" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,13 +32,6 @@
   "Cause an error if a value is not @('nil')."
   :body
   (((eq x nil) "~@0 must be NIL." description)))
-
-(def-error-checker ensure-symbol
-  ((x "Value to check."))
-  :short
-  "Cause an error if a value is not a symbol."
-  :body
-  (((symbolp x) "~@0 must be a symbol." description)))
 
 (def-error-checker ensure-string
   ((x "Value to check."))
@@ -325,7 +319,7 @@
    because it occurs at the beginning of all the error messages except one;
    for that one, @(tsee msg-downcase-first) is applied to the description.
    </p>"
-  (b* (((er &) (ensure-symbol$ x description error-erp error-val))
+  (b* (((er &) (ensure-value-is-symbol$ x description error-erp error-val))
        (name (resolve-numbered-name-wildcard x (w state)))
        ((er &) (ensure-symbol-function$
                 name

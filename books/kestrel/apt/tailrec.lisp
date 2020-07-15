@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -660,8 +661,9 @@
   :mode :program
   :short "Process the @(':new-name') and @(':wrapper-name') inputs."
   (b* ((wrld (w state))
-       ((er &) (ensure-symbol$ new-name "The :NEW-NAME input" t nil))
-       ((er &) (ensure-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
+       ((er &) (ensure-value-is-symbol$ new-name "The :NEW-NAME input" t nil))
+       ((er &)
+        (ensure-value-is-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
        ((mv numbered-name-p base index) (check-numbered-name old$ wrld))
        ((mv base index) (if numbered-name-p
                             (mv base index)
@@ -802,7 +804,6 @@
                     "The :ACCUMULATOR input must be a legal variable name,
                      but ~x0 is not a legal variable name."
                     accumulator))
-         ;; ((er &) (ensure-symbol$ accumulator "The :ACCUMULATOR input" t nil))
          (x1...xn (formals+ old$ (w state)))
          ((er &) (ensure-not-member-of-list$
                   accumulator
@@ -851,7 +852,8 @@
   :short "Process the @(':old-to-new-name') input."
   (b* ((wrld (w state))
        ((er &)
-        (ensure-symbol$ old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
+        (ensure-value-is-symbol$
+         old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
        (name (if (or (not old-to-new-name-present)
                      (keywordp old-to-new-name))
                  (b* ((kwd (if old-to-new-name-present
@@ -926,7 +928,8 @@
   :short "Process the @(':new-to-old-name') input."
   (b* ((wrld (w state))
        ((er &)
-        (ensure-symbol$ new-to-old-name "The :NEW-TO-OLD-NAME input" t nil))
+        (ensure-value-is-symbol$
+         new-to-old-name "The :NEW-TO-OLD-NAME input" t nil))
        (name (if (or (not new-to-old-name-present)
                      (keywordp new-to-old-name))
                  (b* ((kwd (if new-to-old-name-present
@@ -988,8 +991,8 @@
                     old-to-wrapper-name)
         (value (list nil names-to-avoid)))
     (b* ((wrld (w state))
-         ((er &) (ensure-symbol$ old-to-wrapper-name
-                                 "The :OLD-TO-WRAPPER-NAME input" t nil))
+         ((er &) (ensure-value-is-symbol$
+                  old-to-wrapper-name "The :OLD-TO-WRAPPER-NAME input" t nil))
          (name (cond ((eq old-to-wrapper-name :auto)
                       (make-paired-name old$ wrapper-name$ 2 wrld))
                      ((keywordp old-to-wrapper-name)
@@ -1072,8 +1075,8 @@
                     wrapper-to-old-name)
         (value (list nil names-to-avoid)))
     (b* ((wrld (w state))
-         ((er &) (ensure-symbol$ wrapper-to-old-name
-                                 "The :WRAPPER-TO-OLD-NAME input" t nil))
+         ((er &) (ensure-value-is-symbol$
+                  wrapper-to-old-name "The :WRAPPER-TO-OLD-NAME input" t nil))
          (name (cond ((eq wrapper-to-old-name :auto)
                       (make-paired-name wrapper-name$ old$ 1 wrld))
                      ((keywordp wrapper-to-old-name)

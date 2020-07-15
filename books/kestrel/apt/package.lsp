@@ -138,7 +138,6 @@
                          ensure-list-subset$
                          ensure-named-formulas
                          ensure-not-member-of-list$
-                         ensure-symbol$
                          ensure-symbol-different$
                          ensure-symbol-list$
                          ensure-symbol-new-event-name
@@ -154,6 +153,7 @@
                          ensure-term-not-call-of$
                          ensure-tuple$
                          ensure-value-is-boolean$
+                         ensure-value-is-symbol$
                          equivalence-relationp
                          er-soft+
                          evmac-appcond-listp

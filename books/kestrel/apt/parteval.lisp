@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -207,7 +208,7 @@
                state)
   :mode :program
   :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
                  (make-paired-name old$ new-name$ 2 (w state))
                thm-name))
