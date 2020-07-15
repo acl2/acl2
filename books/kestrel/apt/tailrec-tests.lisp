@@ -724,18 +724,13 @@
 
  ;; determining, by default, a name that already exists:
  (must-succeed*
-  (defun f{1}-~>-f () nil)
+  (defun f{1}-to-f () nil)
   (must-fail (tailrec f)))
 
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (theorem-namep 'f{1}-~>-f (w state))))
-
- ;; automatic:
- (must-succeed*
-  (tailrec f :new-to-old-name :auto)
-  (assert! (theorem-namep 'f{1}-~>-f (w state))))
+  (assert! (theorem-namep 'f{1}-to-f (w state))))
 
  ;; specified separator:
  (must-succeed*
@@ -927,17 +922,17 @@
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (rune-disabledp '(:rewrite f{1}-~>-f) state)))
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state)))
 
  ;; enable:
  (must-succeed*
   (tailrec f :new-to-old-enable t :old-to-new-enable nil)
-  (assert! (rune-enabledp '(:rewrite f{1}-~>-f) state)))
+  (assert! (rune-enabledp '(:rewrite f{1}-to-f) state)))
 
  ;; disable:
  (must-succeed*
   (tailrec f :new-to-old-enable nil)
-  (assert! (rune-disabledp '(:rewrite f{1}-~>-f) state)))
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state)))
 
  ;; enabled when also the old-to-new theorem is:
  (must-fail

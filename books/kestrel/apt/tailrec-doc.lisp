@@ -79,7 +79,7 @@
      "         :wrapper-enable         ; default t"
      "         :old-to-new-name        ; default from table"
      "         :old-to-new-enable      ; default (not :wrapper)"
-     "         :new-to-old-name        ; default :auto"
+     "         :new-to-old-name        ; default from table"
      "         :new-to-old-enable      ; default nil"
      "         :old-to-wrapper-name    ; default :auto"
      "         :old-to-wrapper-enable  ; default t"
@@ -407,7 +407,8 @@
        or the @(':wrapper-to-old-enable') input is @('t')."))
 
     (xdoc::desc
-     "@(':new-to-old-name') &mdash; default @(':auto')"
+     "@(':new-to-old-name') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
      (xdoc::p
       "Determines the name of the theorem that
        rewrites the new function in terms of the old function.")
@@ -415,24 +416,19 @@
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@(':auto'), to use the "
-       (xdoc::seetopic "acl2::paired-names" "paired name")
-       " obtained by "
-       (xdoc::seetopic "acl2::make-paired-name" "pairing")
-       " the name of @('new') and the name of @('old'),
-        putting the result into the same package as @('new').")
-      (xdoc::li
-       "Any other keyword, to use as separator between
+       "A keyword, to use as separator between
         the names of @('new') and @('old').
         A keyword @(':kwd') specifies the theorem name @('newkwdold'),
         in the same package as @('new').")
       (xdoc::li
        "A non-keyword symbol,
-        to use as the name of the theorem."))
+        to use as the name of the theorem.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-new-to-old-name)."))
      (xdoc::p
       "In the rest of this documentation page,
-       let @('new-to-old') be the name of this theorem,
-       if it is generated."))
+       let @('new-to-old') be the name of this theorem."))
 
     (xdoc::desc
      "@(':new-to-old-enable') &mdash; @('nil')"
