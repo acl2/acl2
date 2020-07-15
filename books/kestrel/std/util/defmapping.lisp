@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
@@ -223,7 +224,7 @@
   :returns (mv erp (nothing null) state)
   :verify-guards nil
   :short "Process the @('name') input."
-  (b* (((er &) (ensure-symbol$ name "The first input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ name "The first input" t nil))
        ((er &) (ensure-symbol-not-keyword$ name "The first input" t nil)))
     (value nil)))
 
@@ -449,7 +450,7 @@
                               (if pair
                                   "supplied in the :THM-NAMES input"
                                 "automatically generated")))
-            ((er &) (ensure-symbol$ thm-name description t nil))
+            ((er &) (ensure-value-is-symbol$ thm-name description t nil))
             ((er &) (ensure-symbol-new-event-name$ thm-name description t nil))
             ((er alist) (defmapping-process-thm-names-aux
                           (cdr thm-keywords) thm-names-alist name$ ctx state)))
