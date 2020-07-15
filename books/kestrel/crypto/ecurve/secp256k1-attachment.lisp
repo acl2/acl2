@@ -56,7 +56,11 @@
     :no-function t
     :hooks (:fix))
 
-  (defattach secp256k1-priv-to-pub secp256k1-priv-to-pub-exec)
+  (defruledl verify-guards-lemma
+    (rtl::primep
+     115792089237316195423570985008687907853269984665640564039457584007908834671663)
+    :use secp256k1-prime-is-prime
+    :enable secp256k1-prime)
 
   (define secp256k1-add-wrapper ((point1 secp256k1-pointp)
                                  (point2 secp256k1-pointp))
@@ -82,7 +86,8 @@
       result)
     :hooks (:fix)
     :guard-hints (("Goal"
-                   :in-theory (e/d (secp256k1-fieldp
+                   :in-theory (e/d (verify-guards-lemma
+                                    secp256k1-fieldp
                                     secp256k1-a
                                     secp256k1-b
                                     pointp
@@ -98,16 +103,7 @@
                           (point1 (cons (secp256k1-point->x point1)
                                         (secp256k1-point->y point1)))
                           (point2 (cons (secp256k1-point->x point2)
-                                        (secp256k1-point->y point2)))))))
-
-    :prepwork
-    ((defrulel verify-guards-lemma
-       (rtl::primep
-        115792089237316195423570985008687907853269984665640564039457584007908834671663)
-       :use secp256k1-prime-is-prime
-       :enable secp256k1-prime)))
-
-  (defattach secp256k1-add secp256k1-add-wrapper)
+                                        (secp256k1-point->y point2))))))))
 
   (define secp256k1-mul-wrapper ((nat natp) (point secp256k1-pointp))
     :returns (result secp256k1-pointp)
@@ -129,7 +125,8 @@
       result)
     :hooks (:fix)
     :guard-hints (("Goal"
-                   :in-theory (e/d (secp256k1-fieldp
+                   :in-theory (e/d (verify-guards-lemma
+                                    secp256k1-fieldp
                                     secp256k1-a
                                     secp256k1-b
                                     pointp
@@ -145,13 +142,6 @@
                           (point (cons (secp256k1-point->x point)
                                        (secp256k1-point->y point)))))))
 
-    :prepwork
-    ((defrulel verify-guards-lemma
-       (rtl::primep
-        115792089237316195423570985008687907853269984665640564039457584007908834671663)
-       :use secp256k1-prime-is-prime
-       :enable secp256k1-prime))
-
     ///
 
     (defrule secp256k1-mul-wrapper-yields-pub-from-priv
@@ -160,5 +150,9 @@
                (secp256k1-pub-key-p (secp256k1-mul-wrapper nat point)))
       :enable secp256k1-pub-key-p
       :disable ((:e point-on-elliptic-curve-p))))
+
+  (defattach secp256k1-priv-to-pub secp256k1-priv-to-pub-exec)
+
+  (defattach secp256k1-add secp256k1-add-wrapper)
 
   (defattach secp256k1-mul secp256k1-mul-wrapper))
