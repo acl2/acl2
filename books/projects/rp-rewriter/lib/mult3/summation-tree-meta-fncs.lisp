@@ -94,7 +94,7 @@
 
   (defwarrant sum-char-codes)
 
-  (define pp-instance-hash (e)
+  #|(define pp-instance-hash (e)
     (declare (ignorable e))
     :returns (hash-code integerp)
     :inline t
@@ -123,10 +123,21 @@
            (nfix e))
           (t
            (+ (pp-instance-hash (car e))
-              (* 4 (pp-instance-hash (cdr e)))))))
+              (* 4 (pp-instance-hash (cdr e)))))))||#
 
   ;;(memoize 'pp-instance-hash)
 
+  (define pp-instance-hash (e)
+    :returns (hash integerp)
+    :inline t
+    (case-match e
+      (('and-list ('quote hash) &)
+       (ifix hash))
+      (''1
+       1)
+      (& 0)))
+
+  
   (defwarrant pp-instance-hash$inline)
 
   (define pp-lst-hash (pp-lst)
@@ -145,8 +156,8 @@
     :inline t
     (case-match pp
       (('list . pp-lst)
-       (let ((len (len pp-lst))) (* len len))
-       ;;(pp-lst-hash pp-lst)
+       ;;(let ((len (len pp-lst))) (* len len))
+       (pp-lst-hash pp-lst)
        )
       (& 0)))
 
@@ -228,15 +239,23 @@
   (define calculate-s-hash (pp c)
     :returns (hash-code integerp)
 ;:inline t
-    (* 4 (+ (* 2 (calculate-pp-hash pp))
-            (get-hash-code-of-c c))))
+    (+ (calculate-pp-hash pp)
+       (* 2 (get-hash-code-of-c c)))
+    #|(* 4 (+ (* 2 (calculate-pp-hash pp))
+    (get-hash-code-of-c c)))||#
+    )
 
   (define calculate-c-hash (s pp c)
     :returns (hash-code integerp)
 ;:inline t
-    (* 4 (+ (* 2 (calculate-pp-hash pp))
+    (+ (get-hash-code-of-s s)
+       (calculate-pp-hash pp)
+       (* 2 (get-hash-code-of-c c)))
+       
+    #|(* 4 (+ (* 2 (calculate-pp-hash pp))
             (get-hash-code-of-s s)
-            (get-hash-code-of-c c)))))
+    (get-hash-code-of-c c)))||#
+    ))
 
 (define is-rp-bitp (term)
   (case-match term
@@ -285,7 +304,7 @@
                                        (rp-termp c)))
   (cond ((or (and (equal c ''nil)
                   (equal s ''nil)
-                  (case-match pp (('list ('list ('and-list &)) ''nil ''nil ''nil) t)))
+                  (case-match pp (('list ('and-list & &)) t)))
              (and (equal c ''nil)
                   (equal pp ''nil)
                   (case-match s (('list ('s & & &)) t)
@@ -319,6 +338,21 @@
    :hints (("Goal"
             :in-theory (e/d (is-rp) ())))))
 
+(define can-s-be-compressed (pp c)
+  :inline t
+  (case-match c
+    (('list ('c & ''nil c-pp &))
+     (equal pp c-pp))))
+
+(define compress-s (pp c)
+  (case-match c
+    (('list ('c & ''nil c-pp c-c))
+     (b* (((unless (equal pp c-pp))
+           `(rp 'bitp (s ',(calculate-s-hash pp c) ,pp ,c))))
+       (compress-s c-pp c-c)))))
+      
+               
+
 (define create-s-instance (pp c)
   :inline t
   :returns (res rp-termp
@@ -330,8 +364,8 @@
               (consp (cdr c)))
          `',(s 0 (unquote pp) (unquote c)))
         ((and (equal c ''nil)
-              (case-match pp (('list ('list ('and-list &)) ''nil ''nil ''nil) t)))
-         (cadr (cadr pp)))
+              (case-match pp (('list ('and-list & &)) t)))
+         (cadr pp))
         ((and (equal pp ''nil)
               (case-match c
                 (('list single-c)
@@ -342,6 +376,8 @@
                 (('list single-c)
                  (is-c-bitp-traverse single-c))))
          `(rp 'bitp ,(cadr c)))
+        ((can-s-be-compressed pp c)
+         (compress-s pp c))
         ((and
           (case-match pp
             (('list & &) t))
@@ -1111,7 +1147,7 @@
                   (hard-error 's-of-s-fix-aux "" nil)
                   (mv `(cons ,cur-s ,pp-lst-lst) c-lst))))))))
 
-(define s-of-s-fix (s pp c-lst)
+(define s-of-s-fix (s pp c-lst &key clean-pp)
   ;; pp is not clean
   ;; returns a new pair of pp and c-lst
   ;; :returns (mv pp c-lst)
@@ -1130,7 +1166,9 @@
           (pp (pp-lst-to-pp pp-lst)))
        (mv pp c-lst)))
     (''nil
-     (mv (s-fix-args pp) c-lst))
+     (if clean-pp
+         (mv (s-fix-args pp) c-lst)
+       (mv pp c-lst)))
     (& (progn$ (cw "Unexpected s format ~p0 ~%" s)
                (hard-error 's-of-s-fix "" nil)
                (mv `(binary-append ,pp ,s) c-lst)))))
@@ -1628,7 +1666,9 @@
        (cons term-orig acc))
       (('c-res & & &)
        (cons term-orig acc))
-      (('sum-list-list &)
+      (('sum-list &)
+       (cons term-orig acc))
+      (('and-list & &)
        (cons term-orig acc))
       (('binary-sum a b)
        (b* ((acc (extract-new-sum-element a acc))
@@ -1695,11 +1735,14 @@
             (pp-lst-lst (cons-pp-to-pp-lst-lst pp-arg pp-lst-lst))
             (pp-lst-lst (append-pp-lst-lsts coughed-pp-lst-lst pp-lst-lst)))
          (mv s pp-lst-lst c-lst)))
-      (('sum-list-list arg-pp)
+      (('sum-list arg-pp)
        (b* ((pp-lst-lst (cons-pp-to-pp-lst-lst arg-pp  pp-lst-lst)))
          (mv s pp-lst-lst c-lst)))
+      (('and-list & &)
+       (b* ((pp-lst-lst (pp-cons (list term)  pp-lst-lst)))
+         (mv s pp-lst-lst c-lst)))
       (('quote &)
-       (b* ((pp-lst-lst (pp-cons (list nil nil nil (list term))  pp-lst-lst)))
+       (b* ((pp-lst-lst (pp-cons (list term)  pp-lst-lst)))
          (mv s pp-lst-lst c-lst)))
       (& (cond ((good-4vec-term-p term)
                 (b* ((term (4vec->pp-term term-orig))
@@ -1732,6 +1775,8 @@
           (rest-res (well-formed-new-sum rest)))
        (cond ((good-4vec-term-p x)
               rest-res)
+             ((case-match x (('and-list & &) t))
+              rest-res)
              ((case-match x (('s & & &) t))
               rest-res)
              ((case-match x (('c & & & &) t))
@@ -1740,7 +1785,7 @@
              rest-res)||#
              ((case-match x (('c-res & & &) t))
               rest-res)
-             ((case-match x (('sum-list-list ('list . &)) t))
+             ((case-match x (('sum-list &) t))
               rest-res)
              ((equal x ''0)
               rest-res)
@@ -1946,6 +1991,8 @@
                ((case-match x (('s & & &) t))
                 (mv (1+ rest-sum) t))
                ((case-match x-orig (('rp ''bitp ('c & & & &)) t))
+                (mv (1+ rest-sum) t))
+               ((case-match x-orig (('and-list & &) t))
                 (mv (1+ rest-sum) t))
                ((case-match x-orig (('rp ''bitp ('c-res & & &)) t))
                 (mv (1+ rest-sum) t))

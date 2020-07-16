@@ -83,7 +83,7 @@
 
 (define s (hash-code pp c)
   (declare (ignore hash-code))
-  (mod (sum (sum-list-list pp)
+  (mod (sum (sum-list pp)
             (sum-list c))
        2)
   :returns (res integerp)
@@ -93,7 +93,7 @@
 (define c (hash-code s pp c)
   (declare (ignore hash-code))
   (floor (sum (sum-list s)
-              (sum-list-list pp)
+              (sum-list pp)
               (sum-list c))
          2)
   :returns (res integerp)
@@ -197,13 +197,18 @@
 
 (add-macro-fn and$ binary-and t)
 
-(define and-list (lst)
+(define and-list (hash-code lst)
+  (declare (ignorable hash-code))
   (if (atom lst)
       1
     (if (atom (cdr lst))
-        (car lst)
+        (and$ (car lst) 1)
       (and$ (car lst)
-            (and-list (cdr lst))))))
+            (and-list hash-code (cdr lst)))))
+  ///
+  (def-rp-rule bitp-and-list
+    (and (bitp (and-list hash y))
+         (natp (and-list hash y)))))
 
 (define binary-or (bit1 bit2)
   (if (and (equal (bit-fix bit1) 0)
@@ -489,7 +494,8 @@
                   ((equal (car term) 'binary-not)
                    (not$ (safe-i-nth 0 args)))
                   ((equal (car term) 'and-list)
-                   (and-list (safe-i-nth 0 args)))
+                   (and-list (safe-i-nth 0 args)
+                             (safe-i-nth 1 args)))
                   ((equal (car term) 'sum-list)
                    (sum-list (safe-i-nth 0 args)))
                   ((equal (car term) 'rp)

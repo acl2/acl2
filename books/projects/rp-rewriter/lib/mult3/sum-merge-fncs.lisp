@@ -51,26 +51,6 @@
 
 (local
  (in-theory (disable +-IS-SUM)))
-
-(define create-list-instance (lst)
-  :returns (res rp-termp :hyp (rp-term-listp lst))
-  (cond ((or (Not lst)
-             (equal lst (list ''0)))
-         ''nil)
-        (t
-         `(list . ,lst))))
-
-(defmacro pp-cons (a b)
-  `(cons ,a ,b))
-
-(defmacro pp-cons-with-hint (a b hint)
-  (declare (ignorable hint))
-  `(cons-with-hint ,a ,b ,hint)
-  ;;`(hons ,a ,b)
-  )
-
-
-
     
 
 (define valid-list-termp (term)
@@ -201,7 +181,34 @@
     :inline t
     (case-match x (('-- a) a) (& x)))
 
+
   (define pp-order (x y)
+    :inline t
+    :returns (mv (order)
+                 (equals booleanp))
+    (b* (((mv x-lst x-hash)
+          (case-match x
+            (('and-list ('quote hash) ('list . lst))
+             (mv lst (ifix hash)))
+            (''1
+             (mv '('1) 1))
+            (&
+             (mv (list x) 0))))
+         ((mv y-lst y-hash)
+          (case-match y
+            (('and-list ('quote hash) ('list . lst))
+             (mv lst (ifix hash)))
+            (''1
+             (mv '('1) 1))
+            (&
+             (mv (list x) 0)))))
+      (if (= x-hash y-hash)
+          (pp-list-order x-lst y-lst)
+        (mv (> x-hash y-hash) nil)
+        ;;(pp-list-order x-lst y-lst)
+        )))
+  
+  #|(define pp-order (x y)
     :inline t
     :returns (mv (order)
                  (equals booleanp))
@@ -211,7 +218,7 @@
          (y-orig y))
       (b* (((mv x atom-x len-x)
             (case-match x
-              (('and-list ('list . lst))
+              (('and-list & ('list . lst))
                (mv lst nil (len lst)))
               (('binary-and & &)
                (mv (cdr x) nil 2))
@@ -224,7 +231,7 @@
               (& (mv x t -1))))
            ((mv y atom-y len-y)
             (case-match y
-              (('and-list ('list . lst))
+              (('and-list & ('list . lst))
                (mv lst nil (len lst)))
               (('binary-and & &)
                (mv (cdr y) nil 2))
@@ -268,7 +275,7 @@
                 (t (if (equal x y)
                        (mv nil t)
                      (mv (not (lexorder y x)) nil)))))
-         (t (pp-list-order x y))))))
+         (t (pp-list-order x y))))))||#
 
   (define pp-lst-orderedp (lst)
     (if (atom lst)
@@ -311,13 +318,13 @@
          ((mv x-lst len2) (case-match x
                             (('binary-and . lst)
                              (mv lst t))
-                            (('and-list ('list . lst))
+                            (('and-list & ('list . lst))
                              (mv lst nil))
                             (& (mv nil nil))))
          (y-lst (case-match y
                   (('binary-and . lst)
                    lst)
-                  (('and-list ('list . lst))
+                  (('and-list & ('list . lst))
                    lst))))
       (if (and x-lst y-lst)
           (if (and t len2)
@@ -613,7 +620,7 @@
                             :hyp (rp-termp s))
                  (cleaned-s rp-termp
                             :hyp (rp-termp s)))
-    (if nil;(c/d-remove-repeated-s)
+    (if t;(c/d-remove-repeated-s)
         (case-match s
           (('list . s-lst)
            (b* (((mv coughed-lst res-lst) (c-fix-arg-aux s-lst nil (expt 2 30))))
@@ -642,7 +649,7 @@
     (mem  :type (array t (1)) :resizable t :initially nil))
 
   (skip-proofs
-   (define fill-pp-lst-array (lst i pp-lst-array cnt)
+   (define fill-pp-lst-array (lst pp-lst-array cnt)
      ;; :guard (and (array1p name arr)
      ;;             (equal (len lst) cnt)
      ;;             (<= (len lst) (CAR (DIMENSIONS NAME ARR))))
@@ -652,16 +659,16 @@
            #|((not (car lst))
            (fill-pp-lst-array (cdr lst) arr cnt))||#
            (t
-            (b* ((cur (nth i (car lst)))
+            (b* ((cur (car lst))
                  (cur (if (or (equal cur (list ''0))
                               (equal cur ''nil))
                           nil cur))
                  ((unless cur)
-                  (fill-pp-lst-array (cdr lst) i pp-lst-array cnt))
+                  (fill-pp-lst-array (cdr lst) pp-lst-array cnt))
                  (pp-lst-array (update-memi cnt cur pp-lst-array))
                  ;;(aset1 'pp-lst-array pp-lst-array cnt (car lst))
                  )
-              (fill-pp-lst-array (cdr lst) i pp-lst-array (1+ cnt)))))
+              (fill-pp-lst-array (cdr lst) pp-lst-array (1+ cnt)))))
      ///
      #|(defthm fill-array-returns-array1p
      (implies (array1p name arr) ;
@@ -735,10 +742,9 @@
 
   
 
-  (define pp-lst-sum-merge-aux (i pp-lst-lst pp-lst-array array-length for-c
-                                  for-s)
+  (define pp-lst-sum-merge-aux (pp-lst-lst pp-lst-array array-length for-c for-s)
     (declare (ignorable array-length))
-    (b* (((mv pp-lst-array ?cnt) (fill-pp-lst-array pp-lst-lst i pp-lst-array 0))
+    (b* (((mv pp-lst-array ?cnt) (fill-pp-lst-array pp-lst-lst pp-lst-array 0))
          ((mv first rest coughed-lst pp-lst-array)
           (pp-lst-sum-merge-per-pp pp-lst-array cnt for-s for-c))
          (pp-lst (if first (pp-cons first rest) rest)))
@@ -754,28 +760,9 @@
        (mv-let (pp-lst coughed-pp-lst pp-lst-array)
          (b* ((array-length (len pp-lst-lst))
               (pp-lst-array (resize-mem array-length pp-lst-array))
-
-              ((mv pp-lst2 coughed-pp-lst2 pp-lst-array)
-               (pp-lst-sum-merge-aux 0 pp-lst-lst pp-lst-array array-length
-                                     for-c for-s))
-              ((mv pp-lst3 coughed-pp-lst3 pp-lst-array)
-               (pp-lst-sum-merge-aux 1 pp-lst-lst pp-lst-array array-length for-c for-s))
-              ((mv pp-lst4 coughed-pp-lst4 pp-lst-array)
-               (pp-lst-sum-merge-aux 2 pp-lst-lst pp-lst-array array-length for-c for-s))
-              ((mv pp-lst1 coughed-pp-lst1 pp-lst-array)
-               (pp-lst-sum-merge-aux 3 pp-lst-lst pp-lst-array array-length for-c for-s))
-
-              (pp-lst (if (or pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-                          (list pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-                        nil))
-
-              (coughed-pp-lst (if (or coughed-pp-lst2 coughed-pp-lst3
-                                      coughed-pp-lst4 coughed-pp-lst1)
-                                  (list coughed-pp-lst2 coughed-pp-lst3
-                                        coughed-pp-lst4 coughed-pp-lst1)
-                                nil))
-              
-              )
+              ((mv pp-lst coughed-pp-lst pp-lst-array)
+               (pp-lst-sum-merge-aux pp-lst-lst pp-lst-array array-length
+                                     for-c for-s)))
            (mv pp-lst coughed-pp-lst pp-lst-array))
          (mv pp-lst
              ;;(hons-copy pp-lst)
@@ -791,80 +778,52 @@
 
 
 
-(define pp-sum-merge-aux-wrap1 (lst1 lst2)
-  (pp-sum-merge-aux lst1 lst2 0))
+;; (define pp-sum-merge-aux-wrap1 (lst1 lst2)
+;;   (pp-sum-merge-aux lst1 lst2 0))
 
-#|(memoize 'pp-sum-merge-aux-wrap1
-         :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
+;; #|(memoize 'pp-sum-merge-aux-wrap1
+;;          :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
 
-(define pp-sum-merge-aux-wrap2 (lst1 lst2)
-  (pp-sum-merge-aux lst1 lst2 0))
+;; (define pp-sum-merge-aux-wrap2 (lst1 lst2)
+;;   (pp-sum-merge-aux lst1 lst2 0))
 
-#|(memoize 'pp-sum-merge-aux-wrap2
-         :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
+;; #|(memoize 'pp-sum-merge-aux-wrap2
+;;          :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
 
-(define pp-sum-merge-aux-wrap3 (lst1 lst2)
-  (pp-sum-merge-aux lst1 lst2 0))
+;; (define pp-sum-merge-aux-wrap3 (lst1 lst2)
+;;   (pp-sum-merge-aux lst1 lst2 0))
 
-#|(memoize 'pp-sum-merge-aux-wrap3
-         :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
+;; #|(memoize 'pp-sum-merge-aux-wrap3
+;;          :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
 
-(define pp-sum-merge-aux-wrap4 (lst1 lst2)
-  (pp-sum-merge-aux lst1 lst2 0))
+;; (define pp-sum-merge-aux-wrap4 (lst1 lst2)
+;;   (pp-sum-merge-aux lst1 lst2 0))
 
-#|(memoize 'pp-sum-merge-aux-wrap4
-         :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
+;; #|(memoize 'pp-sum-merge-aux-wrap4
+;;          :condition '(and (not (equal lst1 nil)) (not (equal lst2 nil))))||#
 
-(define pp-lst-sum-merge-aux2 (pp-lst-lst)
-  (b* (((when (atom pp-lst-lst))
-        (mv nil nil nil nil))
-       ((mv pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-        (pp-lst-sum-merge-aux2 (cdr pp-lst-lst)))
-       (cur (car pp-lst-lst))
-       ((mv cur2 cur3 cur4 cur1)
-        (mv (nth 0 cur) (nth 1 cur)
-            (nth 2 cur) (nth 3 cur)))
-       ((mv pp-lst2 &) (pp-sum-merge-aux-wrap2 pp-lst2 cur2))
-       ((mv pp-lst3 &) (pp-sum-merge-aux-wrap3 pp-lst3 cur3))
-       ((mv pp-lst4 &) (pp-sum-merge-aux-wrap4 pp-lst4 cur4))
-       ((mv pp-lst1 &) (pp-sum-merge-aux-wrap1 pp-lst1 cur1)))
-    (mv pp-lst2 pp-lst3 pp-lst4 pp-lst1)))
-        
-    
+(progn
+  (define pp-lst-sum-merge-aux2 (pp-lst-lst)
+    (b* (((when (atom pp-lst-lst))
+          nil)
+         (pp-lst
+          (pp-lst-sum-merge-aux2 (cdr pp-lst-lst)))
+         (cur (car pp-lst-lst))
+         ((mv pp-lst &)
+          (pp-sum-merge-aux cur pp-lst 0)))
+      pp-lst))
 
-
-(define pp-lst-sum-merge-new (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
-  (b* (((mv pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-        (pp-lst-sum-merge-aux2 pp-lst-lst))
-       ((mv coughed-pp-lst2 pp-lst2)
-        (cond (for-c (c-fix-arg-aux pp-lst2 t (expt 2 30)))
-              (for-s (mv nil (s-fix-pp-args-aux pp-lst2)))
-              (t (mv nil pp-lst2))))
-       ((mv coughed-pp-lst3 pp-lst3)
-        (cond (for-c (c-fix-arg-aux pp-lst3 t (expt 2 30)))
-              (for-s (mv nil (s-fix-pp-args-aux pp-lst3)))
-              (t (mv nil pp-lst3))))
-       ((mv coughed-pp-lst4 pp-lst4)
-        (cond (for-c (c-fix-arg-aux pp-lst4 t (expt 2 30)))
-              (for-s (mv nil (s-fix-pp-args-aux pp-lst4)))
-              (t (mv nil pp-lst4))))
-       ((mv coughed-pp-lst1 pp-lst1)
-        (cond (for-c (c-fix-arg-aux pp-lst1 t (expt 2 30)))
-              (for-s (mv nil (s-fix-pp-args-aux pp-lst1)))
-              (t (mv nil pp-lst1))))
-       (pp-lst (if (or pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-                   (list pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-                 nil))
-
-       (coughed-pp-lst (if (or coughed-pp-lst2 coughed-pp-lst3
-                               coughed-pp-lst4 coughed-pp-lst1)
-                           (list coughed-pp-lst2 coughed-pp-lst3
-                                 coughed-pp-lst4 coughed-pp-lst1)
-                         nil)))
-    (mv pp-lst
-        ;;(hons-copy pp-lst)
-        coughed-pp-lst
-        ;;(hons-copy coughed-lst)
-        )))
+  (define pp-lst-sum-merge-new (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
+    (b* ((pp-lst
+          (pp-lst-sum-merge-aux2 pp-lst-lst))
+         ((mv coughed-pp-lst pp-lst)
+          (cond (for-c (c-fix-arg-aux pp-lst t (expt 2 30)))
+                (for-s (mv nil (s-fix-pp-args-aux pp-lst)))
+                (t (mv nil pp-lst)))))
+      (mv pp-lst
+          ;;(hons-copy pp-lst)
+          coughed-pp-lst
+          ;;(hons-copy coughed-lst)
+          ))))
               
        
