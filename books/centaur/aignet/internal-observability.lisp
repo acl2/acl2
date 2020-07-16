@@ -319,7 +319,7 @@
 
 ;; Check whether any AND siblings in the path are 0 under the inputs with the
 ;; source both toggled and not toggled.
-(define path-contains-const0-sibling ((sink natp) (source natp) invals regvals (path bit-listp) aignet)
+(define path-contains-const0-sibling ((sink natp) (source natp) (toggles nat-listp) invals regvals (path bit-listp) aignet)
   :guard (and (id-existsp sink aignet)
               (id-existsp source aignet)
               (path-existsp sink path aignet)
@@ -337,20 +337,20 @@
                   :exec (snode->fanin (id->slot sink (car path) aignet))))
        ((unless (mbe :logic (non-exec (eq (stype (car (lookup-id sink aignet))) :and))
                      :exec (eql (id->regp sink aignet) 0)))
-        (path-contains-const0-sibling (lit->var next) source invals regvals (cdr path) aignet))
+        (path-contains-const0-sibling (lit->var next) source toggles invals regvals (cdr path) aignet))
        (sib (mbe :logic (non-exec (fanin (b-not (car path))
                                          (lookup-id sink aignet)))
                  :exec (snode->fanin (id->slot sink (b-not (car path)) aignet)))))
-    (or (and (eql 0 (lit-eval sib invals regvals aignet))
-             (eql 0 (lit-eval-toggle sib source invals regvals aignet)))
-        (path-contains-const0-sibling (lit->var next) source invals regvals (cdr path) aignet)))
+    (or (and (eql 0 (lit-eval-toggle sib toggles invals regvals aignet))
+             (eql 0 (lit-eval-toggle sib (cons source toggles) invals regvals aignet)))
+        (path-contains-const0-sibling (lit->var next) source toggles invals regvals (cdr path) aignet)))
   ///
   (local (in-theory (disable (:d path-contains-const0-sibling))))
 
   (defret path-contains-const0-sibling-when-has-sibling
     (implies (and (path-contains-and-sibling x sink path aignet)
-                  (equal (lit-eval x invals regvals aignet) 0)
-                  (equal (lit-eval-toggle x source invals regvals aignet) 0))
+                  (equal (lit-eval-toggle x toggles invals regvals aignet) 0)
+                  (equal (lit-eval-toggle x (cons source toggles) invals regvals aignet) 0))
              contains)
     :hints (("goal" :induct <call>
              :expand (<call>
@@ -362,7 +362,7 @@
                            satlink::equal-of-lit-negate-backchain
                            satlink::lit-negate-not-equal-when-vars-mismatch)))
 
-(define toggle-witness-path ((sink natp) (source natp) invals regvals aignet)
+(define toggle-witness-path ((sink natp) (source natp) (toggles nat-listp) invals regvals aignet)
   ;; Given that sink is toggled by source, find a path from sink to source
   ;; containing no contradictory AND siblings and no const0 siblings.
   :guard (and (id-existsp sink aignet)
@@ -380,24 +380,24 @@
        (fanin0 (gate-id->fanin0 sink aignet))
        (fanin1 (gate-id->fanin1 sink aignet))
        (xor (eql (id->regp sink aignet) 1))
-       (fanin0-val (lit-eval fanin0 invals regvals aignet))
-       (fanin1-val (lit-eval fanin1 invals regvals aignet))
-       (fanin0-toggles (not (eql (lit-eval-toggle fanin0 source invals regvals aignet)
+       (fanin0-val (lit-eval-toggle fanin0 toggles invals regvals aignet))
+       (fanin1-val (lit-eval-toggle fanin1 toggles  invals regvals aignet))
+       (fanin0-toggles (not (eql (lit-eval-toggle fanin0 (cons source toggles) invals regvals aignet)
                                  fanin0-val)))
-       (fanin1-toggles (not (eql (lit-eval-toggle fanin1 source invals regvals aignet)
+       (fanin1-toggles (not (eql (lit-eval-toggle fanin1 (cons source toggles) invals regvals aignet)
                                  fanin1-val)))
        ((when xor)
         (if fanin0-toggles
-            (cons 0 (toggle-witness-path (lit->var fanin0) source invals regvals aignet))
-          (cons 1 (toggle-witness-path (lit->var fanin1) source invals regvals aignet))))
+            (cons 0 (toggle-witness-path (lit->var fanin0) source toggles invals regvals aignet))
+          (cons 1 (toggle-witness-path (lit->var fanin1) source toggles invals regvals aignet))))
        ((unless fanin0-toggles)
         ;; fanin0 must be const 1.
-        (cons 1 (toggle-witness-path (lit->var fanin1) source invals regvals aignet)))
+        (cons 1 (toggle-witness-path (lit->var fanin1) source toggles invals regvals aignet)))
        ((unless fanin1-toggles)
-        (cons 0 (toggle-witness-path (lit->var fanin0) source invals regvals aignet)))
+        (cons 0 (toggle-witness-path (lit->var fanin0) source toggles invals regvals aignet)))
        ((when (<= (lit->var fanin0) (lit->var fanin1)))
-        (cons 0 (toggle-witness-path (lit->var fanin0) source invals regvals aignet))))
-    (cons 1 (toggle-witness-path (lit->var fanin1) source invals regvals aignet)))
+        (cons 0 (toggle-witness-path (lit->var fanin0) source toggles invals regvals aignet))))
+    (cons 1 (toggle-witness-path (lit->var fanin1) source toggles invals regvals aignet)))
   ///
   (local (in-theory (disable (:d toggle-witness-path))))
   
@@ -429,45 +429,39 @@
            :hints(("Goal" :in-theory (enable b-and bfix)))))
 
   (defret path-endpoint-of-<fn>
-    (implies (not (equal (id-eval sink invals regvals aignet)
-                         (id-eval-toggle sink source invals regvals aignet)))
+    (implies (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                         (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
              (equal (path-endpoint sink path aignet) (nfix source)))
     :hints (("goal" :induct <call>
              :expand (<call>
-                      (id-eval sink invals regvals aignet)
-                      (id-eval-toggle sink source invals regvals aignet)
-                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (a b c) (member-equal a (cons b c)))
+                      (:free (toggles) (id-eval-toggle sink toggles invals regvals aignet))
                       (:free (x y) (lit-eval-toggle x y invals regvals aignet))
-                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
-                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))))))
 
   (defret const0-siblings-of-<fn>
-    (implies (not (equal (id-eval sink invals regvals aignet)
-                         (id-eval-toggle sink source invals regvals aignet)))
+    (implies (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                         (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
              (not (path-contains-const0-sibling
-                   sink source invals regvals path aignet)))
+                   sink source toggles invals regvals path aignet)))
     :hints (("goal" :induct <call>
              :expand (<call>
-                      (id-eval sink invals regvals aignet)
-                      (id-eval-toggle sink source invals regvals aignet)
-                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (a b c) (member-equal a (cons b c)))
+                      (:free (toggles) (id-eval-toggle sink toggles invals regvals aignet))
                       (:free (x y) (lit-eval-toggle x y invals regvals aignet))
-                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
-                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet))
                       (:free (p source)
                        (path-contains-const0-sibling
-                        sink source invals regvals p aignet))))))
+                        sink source toggles invals regvals p aignet))))))
 
   (local (defret path-contains-no-and-sibling-when-no-const0-sibling
-           (implies (and (bind-free '((invals . invals) (regvals . regvals) (source . source))
-                                    (invals regvals source))
+           (implies (and (bind-free '((invals . invals) (regvals . regvals) (source . source) (toggles . toggles))
+                                    (invals regvals source toggles))
                          (not contains)
-                         (equal (lit-eval x invals regvals aignet) 0)
-                         (equal (lit-eval-toggle x source invals regvals aignet) 0))
+                         (equal (lit-eval-toggle x toggles invals regvals aignet) 0)
+                         (equal (lit-eval-toggle x (cons source toggles) invals regvals aignet) 0))
                     (not (path-contains-and-sibling x sink path aignet)))
            :fn path-contains-const0-sibling))
 
@@ -480,19 +474,16 @@
   (local (in-theory (enable path-contains-and-sibling-when-gte-sink)))
   
   (defret contradictions-of-<fn>
-    (implies (not (equal (id-eval sink invals regvals aignet)
-                         (id-eval-toggle sink source invals regvals aignet)))
+    (implies (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                         (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
              (not (path-contains-contradictory-siblings
                    sink path aignet)))
     :hints (("goal" :induct <call>
              :expand (<call>
-                      (id-eval sink invals regvals aignet)
-                      (id-eval-toggle sink source invals regvals aignet)
-                      (:free (x) (lit-eval x invals regvals aignet))
+                      (:free (a b c) (member-equal a (cons b c)))
+                      (:free (toggles) (id-eval-toggle sink toggles invals regvals aignet))
                       (:free (x y) (lit-eval-toggle x y invals regvals aignet))
-                      (:free (x y) (eval-and-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-and-of-lits-toggle x y z invals regvals aignet))
-                      (:free (x y) (eval-xor-of-lits x y invals regvals aignet))
                       (:free (x y z) (eval-xor-of-lits-toggle x y z invals regvals aignet)))))))
 
 
@@ -1372,10 +1363,10 @@
                 (not (obs-dom-info->reached (nth source obs-dom-array)))
                 (obs-dom-info->reached (nth sink obs-dom-array))
                 (equal (obs-dom-info->doms (nth sink obs-dom-array)) nil))
-           (equal (id-eval-toggle sink source invals regvals aignet)
-                  (id-eval sink invals regvals aignet)))
+           (equal (id-eval-toggle sink (cons source toggles) invals regvals aignet)
+                  (id-eval-toggle sink toggles invals regvals aignet)))
   :hints (("goal" :use ((:instance obs-dom-array-implies-path-contains-dominators
-                         (path (toggle-witness-path sink source invals regvals aignet))))
+                         (path (toggle-witness-path sink source toggles invals regvals aignet))))
            :in-theory (disable obs-dom-array-implies-path-contains-dominators))))
 
 
@@ -1384,28 +1375,52 @@
            (implies (and (path-contains-and-siblings lits sink path aignet)
                          (lit-listp lits)
                          (member lit lits)
-                         (equal (lit-eval lit invals regvals aignet) 0)
-                         (equal (lit-eval-toggle lit source invals regvals aignet) 0))
-                    (path-contains-const0-sibling sink source invals regvals path aignet))
+                         (equal (lit-eval-toggle lit toggles invals regvals aignet) 0)
+                         (equal (lit-eval-toggle lit (cons source toggles) invals regvals aignet) 0))
+                    (path-contains-const0-sibling sink source toggles invals regvals path aignet))
            :hints(("Goal" :in-theory (enable path-contains-and-siblings)))))
 
   (defthm toggle-does-not-affect-output-when-dominator-false
     (implies (and (obs-dom-array-correct obs-dom-array aignet)
                   (obs-dom-info->reached (nth source obs-dom-array))
                   (member-equal lit (obs-dom-info->doms (nth source obs-dom-array)))
-                  (equal (lit-eval lit invals regvals aignet) 0)
-                  (equal (lit-eval-toggle lit source invals regvals aignet) 0)
+                  (equal (lit-eval-toggle lit toggles invals regvals aignet) 0)
+                  (equal (lit-eval-toggle lit (cons source toggles) invals regvals aignet) 0)
                   (obs-dom-info->reached (nth sink obs-dom-array))
                   (equal (obs-dom-info->doms (nth sink obs-dom-array)) nil))
-             (equal (id-eval-toggle sink source invals regvals aignet)
-                    (id-eval sink invals regvals aignet)))
+             (equal (id-eval-toggle sink (cons source toggles) invals regvals aignet)
+                    (id-eval-toggle sink toggles invals regvals aignet)))
     :hints (("goal" :use ((:instance obs-dom-array-implies-path-contains-dominators
-                           (path (toggle-witness-path sink source invals regvals aignet)))
+                           (path (toggle-witness-path sink source toggles invals regvals aignet)))
                           (:instance path-contains-const0-sibling-when-member-and-siblings
                            (lits (obs-dom-info->doms (nth source obs-dom-array)))
-                           (path (toggle-witness-path sink source invals regvals aignet))))
+                           (path (toggle-witness-path sink source toggles invals regvals aignet))))
              :in-theory (disable obs-dom-array-implies-path-contains-dominators
                                  path-contains-const0-sibling-when-member-and-siblings)))))
 
 
 
+
+
+(define obs-dom-array-collect ((n natp) obs-dom-array)
+  :guard (<= n (dominfo-length obs-dom-array))
+  :measure (nfix (- (dominfo-length obs-dom-array) (nfix n)))
+  (b* (((when (mbe :logic (zp (- (dominfo-length obs-dom-array) (nfix n)))
+                   :exec (eql (dominfo-length obs-dom-array) n)))
+        nil))
+    (cons (get-dominfo n obs-dom-array)
+          (obs-dom-array-collect (1+ (lnfix n)) obs-dom-array))))
+
+(define map-len (x)
+  (if (atom x)
+      nil
+    (cons (len (car x))
+          (map-len (cdr x)))))
+
+(define frequencies (x acc)
+  (if (atom x)
+      (fast-alist-free (fast-alist-clean acc))
+    (frequencies (cdr x)
+                 (hons-acons (car x)
+                             (+ 1 (nfix (cdr (hons-get (car x) acc))))
+                             acc))))

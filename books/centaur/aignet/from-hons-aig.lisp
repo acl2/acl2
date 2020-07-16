@@ -601,9 +601,9 @@
   (local (defthm id-eval-1
            (implies (not (equal (id-eval n in-vals reg-vals aignet) 0))
                     (equal (id-eval n in-vals reg-vals aignet) 1))
-           :hints (("goal" :use bitp-of-id-eval
+           :hints (("goal" :use ((:instance (:type-prescription id-eval)))
                     :in-theory (e/d (acl2::bitp)
-                                    (bitp-of-id-eval))))))
+                                    ((:t id-eval)))))))
 
   (defthm aig-to-aignet-correct
 

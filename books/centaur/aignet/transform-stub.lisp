@@ -32,37 +32,6 @@
 
 (include-book "semantics")
 
-(encapsulate
-  (((aignet-comb-transform!-stub aignet * state) => (mv aignet state)
-    :guard t :formals (aignet config state)))
-
-  (local (define aignet-comb-transform!-stub (aignet config state)
-           :returns (mv new-aignet new-state)
-           (Declare (ignore config))
-           (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                             :exec aignet)))
-             (mv aignet state))))
-
-  (local (in-theory (enable aignet-comb-transform!-stub)))
-
-  (defret comb-equiv-of-<fn>
-    (comb-equiv new-aignet
-                aignet))
-
-  (defret num-ins-of-<fn>
-    (equal (stype-count :pi new-aignet)
-           (stype-count :pi aignet)))
-
-  (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet)
-           (stype-count :po aignet)))
-
-  (defret num-regs-of-<fn>
-    (equal (stype-count :reg new-aignet)
-           (stype-count :reg aignet)))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state) (w state))))
 
 
 (encapsulate
@@ -95,3 +64,42 @@
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
+
+
+
+
+
+(encapsulate
+  (((aignet-n-output-comb-transform-stub * aignet aignet2 * state) => (mv aignet2 state)
+    :guard (and (natp n) (<= n (num-outs aignet)))
+    :formals (n aignet aignet2 config state)))
+
+  (local (define aignet-n-output-comb-transform-stub ((n natp) aignet aignet2 config state)
+           :guard (<= n (num-outs aignet))
+           :returns (mv new-aignet2 new-state)
+           (Declare (ignore config aignet2 n))
+           (b* ((aignet2 (non-exec (node-list-fix aignet))))
+             (mv aignet2 state))))
+
+  (local (in-theory (enable aignet-n-output-comb-transform-stub)))
+
+  (defret equiv-of-<fn>
+    (implies (< (nfix i) (nfix n))
+             (equal (output-eval i invals regvals new-aignet2)
+                    (output-eval i invals regvals aignet))))
+
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet2)
+           (stype-count :pi aignet)))
+
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet2)
+           (stype-count :po aignet)))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet2)
+           (stype-count :reg aignet)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+

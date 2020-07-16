@@ -39,6 +39,8 @@
 (include-book "eval-toggle")
 (include-book "centaur/fty/baselists" :dir :system)
 (include-book "std/osets/element-list" :dir :system)
+(include-book "std/util/termhints" :dir :system)
+(include-book "prune") ;; for aignet-copy-dfs-outs, aignet-copy-dfs-nxsts
 
 (local (include-book "std/osets/under-set-equiv" :dir :system))
   
@@ -278,18 +280,31 @@
                            satlink::lit-negate-not-equal-when-vars-mismatch)))
 
 
-(define aignet-eval-conjunction-toggle ((lits lit-listp) (toggle natp)
+(define aignet-eval-conjunction-toggle ((lits lit-listp) (toggles nat-listp)
                                         invals regvals aignet)
   :guard (and (aignet-lit-listp lits aignet)
-              (id-existsp toggle aignet)
               (<= (num-ins aignet) (bits-length invals))
               (<= (num-regs aignet) (bits-length regvals)))
   :returns (res bitp)
   (if (atom lits)
       1
-    (acl2::b-and (lit-eval-toggle (car lits) toggle invals regvals aignet)
-                 (aignet-eval-conjunction-toggle (cdr lits) toggle invals regvals aignet)))
-  ///)
+    (acl2::b-and (lit-eval-toggle (car lits) toggles invals regvals aignet)
+                 (aignet-eval-conjunction-toggle (cdr lits) toggles invals regvals aignet)))
+  ///
+  (defcong acl2::set-equiv equal (aignet-eval-conjunction-toggle lits toggles invals regvals aignet) 2))
+
+(define ids-multiply-referenced ((ids nat-listp) refcounts)
+  (if (atom ids)
+      t
+    (and (mbe :logic (non-exec (< 1 (nfix (nth (car ids) refcounts))))
+              :exec (and (< (car ids) (u32-length refcounts))
+                         (< 1 (get-u32 (car ids) refcounts))))
+         (ids-multiply-referenced (cdr ids) refcounts)))
+  ///
+  (defthmd refcounts-greater-when-multiply-referenced
+    (implies (and (ids-multiply-referenced ids refcounts)
+                  (member-equal (nfix id) (acl2::nat-list-fix ids)))
+             (< 1 (nfix (nth id refcounts))))))
 
 (defsection eval-conjunction-toggle-of-lit-collect-supergate
   (local
@@ -306,35 +321,44 @@
      (in-theory (disable acl2::nth-when-too-large-cheap))))
 
   (defret eval-conjunction-toggle-of-lit-collect-supergate
-    (implies (and (< 1 (nfix (nth toggle aignet-refcounts)))
-                  (or (not top)
-                      (not (equal (lit->var lit) (nfix toggle)))))
-             (equal (aignet-eval-conjunction-toggle res toggle invals regvals aignet)
-                    (acl2::b-and (lit-eval-toggle lit toggle invals regvals aignet)
-                                 (aignet-eval-conjunction-toggle supergate toggle invals regvals aignet))))
+    (implies (and (ids-multiply-referenced toggles aignet-refcounts)
+                  (not use-muxes)
+                  ;; (or (not top)
+                  ;;     (not (member-equal (lit->var lit) (acl2::nat-list-fix toggles))))
+                  )
+             (equal (aignet-eval-conjunction-toggle res toggles invals regvals aignet)
+                    (acl2::b-and (b-xor (bool->bit (and top
+                                                        (equal (lit->neg lit) 0)
+                                                        (posp limit)
+                                                        (equal (stype (car (lookup-id (lit->var lit) aignet))) :and)
+                                                        (aignet-litp lit aignet)
+                                                        (member-equal (lit->var lit)
+                                                                      (acl2::nat-list-fix toggles))))
+                                        (lit-eval-toggle lit toggles invals regvals aignet))
+                                 (aignet-eval-conjunction-toggle supergate toggles invals regvals aignet))))
     :hints (("goal" :induct <call>
              :do-not-induct t
              :in-theory (e/d (eval-and-of-lits-toggle
-                              (:i <fn>))
+                              (:i <fn>)
+                              refcounts-greater-when-multiply-referenced)
                              ((:definition lit-collect-supergate)))
              :expand ((:free (top use-muxes) <call>)))
             (and stable-under-simplificationp
-                 '(:expand ((lit-eval-toggle lit toggle invals regvals aignet)
-                            (id-eval-toggle (lit-id lit) toggle invals regvals aignet)
+                 '(:expand ((lit-eval-toggle lit toggles invals regvals aignet)
+                            (id-eval-toggle (lit-id lit) toggles invals regvals aignet)
                             (:free (a b)
-                             (aignet-eval-conjunction-toggle (cons a b) toggle invals regvals aignet))))))
+                             (aignet-eval-conjunction-toggle (cons a b) toggles invals regvals aignet))))))
     :fn lit-collect-supergate))
 
-(define aignet-eval-parity-toggle ((lits lit-listp) (toggle natp) invals regvals aignet)
+(define aignet-eval-parity-toggle ((lits lit-listp) (toggles nat-listp) invals regvals aignet)
   :guard (and (aignet-lit-listp lits aignet)
-              (id-existsp toggle aignet)
               (<= (num-ins aignet) (bits-length invals))
               (<= (num-regs aignet) (bits-length regvals)))
   :returns (res bitp)
   (if (atom lits)
       0
-    (b-xor (lit-eval-toggle (car lits) toggle invals regvals aignet)
-           (aignet-eval-parity-toggle (cdr lits) toggle invals regvals aignet))))
+    (b-xor (lit-eval-toggle (car lits) toggles invals regvals aignet)
+           (aignet-eval-parity-toggle (cdr lits) toggles invals regvals aignet))))
 
 
 (defsection eval-parity-toggle-of-lit-collect-superxor
@@ -349,91 +373,107 @@
        (equal (acl2::b-xor b (acl2::b-xor a c))
               (acl2::b-xor a (acl2::b-xor b c)))
        :hints(("Goal" :in-theory (enable acl2::b-xor))))
+     (defthm b-xor-b-not-2
+       (equal (acl2::b-xor a (b-not b)) (b-not (acl2::b-xor a b)))
+       :hints(("Goal" :in-theory (enable acl2::b-xor))))
+
      (in-theory (disable acl2::nth-when-too-large-cheap))))
 
   (defret eval-parity-toggle-of-lit-collect-superxor
-    (implies (and (< 1 (nfix (nth toggle aignet-refcounts)))
-                  (or (not top)
-                      (not (equal (lit->var lit) (nfix toggle)))))
-             (equal (aignet-eval-parity-toggle res toggle invals regvals aignet)
-                    (acl2::b-xor (lit-eval-toggle lit toggle invals regvals aignet)
-                                 (aignet-eval-parity-toggle superxor toggle invals regvals aignet))))
+    (implies (and (ids-multiply-referenced toggles aignet-refcounts)
+                  ;; (or (not top)
+                  ;;     (not (member-equal (lit->var lit) (acl2::nat-list-fix toggles))))
+                  )
+             (equal (aignet-eval-parity-toggle res toggles invals regvals aignet)
+                    (acl2::b-xor 
+                     (bool->bit (and top
+                                     (equal (lit->neg lit) 0)
+                                     (posp limit)
+                                     (equal (stype (car (lookup-id (lit->var lit) aignet))) :xor)
+                                     (aignet-litp lit aignet)
+                                     (member-equal (lit->var lit)
+                                                   (acl2::nat-list-fix toggles))))
+                     (acl2::b-xor
+                      (lit-eval-toggle lit toggles invals regvals aignet)
+                      (aignet-eval-parity-toggle superxor toggles invals regvals aignet)))))
     :hints (("goal" :induct <call>
              :do-not-induct t
              :in-theory (e/d (eval-xor-of-lits-toggle
-                              (:i <fn>))
+                              (:i <fn>)
+                              refcounts-greater-when-multiply-referenced)
                              ((:definition lit-collect-superxor)))
              :expand ((:free (top use-muxes) <call>)))
             (and stable-under-simplificationp
-                 '(:expand ((lit-eval-toggle lit toggle invals regvals aignet)
-                            (id-eval-toggle (lit-id lit) toggle invals regvals aignet)
+                 '(:expand ((lit-eval-toggle lit toggles invals regvals aignet)
+                            (id-eval-toggle (lit-id lit) toggles invals regvals aignet)
                             (:free (a b)
-                             (aignet-eval-parity-toggle (cons a b) toggle invals regvals aignet))))))
+                             (aignet-eval-parity-toggle (cons a b) toggles invals regvals aignet))))))
     :fn lit-collect-superxor))
 
 
-(define lit-list-has-const0-under-toggle ((x lit-listp) (toggle natp)
+(define lit-list-has-const0-under-toggle ((x lit-listp)
+                                          (toggle natp)
+                                          (toggles nat-listp)
                                           invals regvals aignet)
   :guard (and (aignet-lit-listp x aignet)
-              (id-existsp toggle aignet)
               (<= (num-ins aignet) (bits-length invals))
               (<= (num-regs aignet) (bits-length regvals)))
   (if (atom x)
       nil
-    (or (and (eql (lit-eval (car x) invals regvals aignet) 0)
-             (eql (lit-eval-toggle (car x) toggle invals regvals aignet) 0))
-        (lit-list-has-const0-under-toggle (cdr x) toggle invals regvals aignet)))
+    (or (and (eql (lit-eval-toggle (car x) (cons toggle toggles) invals regvals aignet) 0)
+             (eql (lit-eval-toggle (car x) toggles invals regvals aignet) 0))
+        (lit-list-has-const0-under-toggle (cdr x) toggle toggles invals regvals aignet)))
   ///
   (defthm lit-list-has-const0-under-toggle-of-append
-    (equal (lit-list-has-const0-under-toggle (append x y) toggle invals regvals aignet)
-           (or (lit-list-has-const0-under-toggle x toggle invals regvals aignet)
-               (lit-list-has-const0-under-toggle y toggle invals regvals aignet))))
+    (equal (lit-list-has-const0-under-toggle (append x y) toggle toggles invals regvals aignet)
+           (or (lit-list-has-const0-under-toggle x toggle toggles invals regvals aignet)
+               (lit-list-has-const0-under-toggle y toggle toggles invals regvals aignet))))
 
   (defthm lit-list-has-const0-under-toggle-of-nil
-    (not (lit-list-has-const0-under-toggle nil toggle invals regvals aignet)))
+    (not (lit-list-has-const0-under-toggle nil toggle toggles invals regvals aignet)))
 
   (defthmd aignet-eval-conjunction-when-lit-list-has-const0-under-toggle
-    (implies (lit-list-has-const0-under-toggle x toggle invals regvals aignet)
-             (equal (aignet-eval-conjunction x invals regvals aignet) 0))
-    :hints(("Goal" :in-theory (enable aignet-eval-conjunction))))
+    (implies (lit-list-has-const0-under-toggle x toggle toggles invals regvals aignet)
+             (equal (aignet-eval-conjunction-toggle x toggles invals regvals aignet) 0))
+    :hints(("Goal" :in-theory (enable aignet-eval-conjunction-toggle))))
 
   (defthmd aignet-eval-conjunction-toggle-when-lit-list-has-const0-under-toggle
-    (implies (lit-list-has-const0-under-toggle x toggle invals regvals aignet)
-             (equal (aignet-eval-conjunction-toggle x toggle invals regvals aignet) 0))
+    (implies (lit-list-has-const0-under-toggle x toggle toggles invals regvals aignet)
+             (equal (aignet-eval-conjunction-toggle x (cons toggle toggles) invals regvals aignet) 0))
     :hints(("Goal" :in-theory (enable aignet-eval-conjunction-toggle))))
 
   (defthm lit-list-has-const0-under-toggle-of-and-supergate
     (implies (and (equal (stype (car (lookup-id sink aignet))) :and)
-                  (not (equal (id-eval sink invals regvals aignet)
-                              (id-eval-toggle sink toggle invals regvals aignet)))
+                  (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                              (id-eval-toggle sink (cons toggle toggles) invals regvals aignet)))
                   (< 1 (nfix (nth toggle refcounts)))
+                  (ids-multiply-referenced toggles refcounts)
                   (not (equal (nfix toggle) (nfix sink))))
              (not (lit-list-has-const0-under-toggle
                    (gate-node-supergate sink refcounts aignet)
-                   toggle invals regvals aignet)))
+                   toggle toggles invals regvals aignet)))
     :hints (("goal" :in-theory (enable gate-node-supergate)
              :use ((:instance aignet-eval-conjunction-toggle-when-lit-list-has-const0-under-toggle
                     (x (gate-node-supergate sink refcounts aignet)))
                    (:instance aignet-eval-conjunction-when-lit-list-has-const0-under-toggle
                     (x (gate-node-supergate sink refcounts aignet))))
-            :expand ((aignet-eval-conjunction nil invals regvals aignet)
-                     (aignet-eval-conjunction-toggle nil toggle invals regvals aignet)
-                     (:free (var neg) (lit-eval (make-lit var neg) invals regvals aignet))
-                     (:free (var neg) (lit-eval-toggle (make-lit var neg) toggle invals regvals aignet))))))
+            :expand ((:free (toggles) (aignet-eval-conjunction-toggle nil toggles invals regvals aignet))
+                     (:free (var neg toggles) (lit-eval-toggle (make-lit var neg) toggles invals regvals aignet))
+                     (:free (a b) (ids-multiply-referenced (cons a b) refcounts))))))
 
   (defthmd lit-list-has-const0-under-toggle-when-member
     (implies (and (member-equal lit (lit-list-fix x))
-                  (equal (lit-eval lit invals regvals aignet) 0)
-                  (equal (lit-eval-toggle lit toggle invals regvals aignet) 0))
-             (lit-list-has-const0-under-toggle x toggle invals regvals aignet))
+                  (equal (lit-eval-toggle lit toggles invals regvals aignet) 0)
+                  (equal (lit-eval-toggle lit (cons toggle toggles) invals regvals aignet) 0))
+             (lit-list-has-const0-under-toggle x toggle toggles invals regvals aignet))
     :hints(("Goal" :in-theory (enable member-equal lit-list-fix)))))
 
 
 (defsection cube-contradictionp
   (local (defthm aignet-eval-conjunction-when-member-0
            (implies (and (member-equal k (lit-list-fix x))
-                         (equal (lit-eval-toggle k toggle invals regvals aignet) 0))
-                    (equal (aignet-eval-conjunction-toggle x toggle invals regvals aignet) 0))
+                         (equal (lit-eval-toggle k toggles invals regvals aignet) 0))
+                    (equal (aignet-eval-conjunction-toggle x toggles invals regvals aignet) 0))
            :hints(("Goal" :in-theory (enable aignet-eval-conjunction-toggle member-equal)))))
 
   (local (defthm b-xor-b-not
@@ -442,46 +482,48 @@
            :hints(("Goal" :in-theory (enable b-not)))))
   
   (defthm lit-eval-toggle-of-lit-negate
-    (equal (lit-eval-toggle (lit-negate x) toggle invals regvals aignet)
-           (b-not (lit-eval-toggle x toggle invals regvals aignet)))
-    :hints(("Goal" :expand ((:free (x) (lit-eval-toggle x toggle invals regvals aignet))))))
+    (equal (lit-eval-toggle (lit-negate x) toggles invals regvals aignet)
+           (b-not (lit-eval-toggle x toggles invals regvals aignet)))
+    :hints(("Goal" :expand ((:free (x) (lit-eval-toggle x toggles invals regvals aignet))))))
   
   (defthm aignet-eval-conjunction-toggle-when-cube-contradictionp
     (implies (cube-contradictionp x)
-             (equal (aignet-eval-conjunction-toggle x toggle invals regvals aignet) 0))
+             (equal (aignet-eval-conjunction-toggle x toggles invals regvals aignet) 0))
     :hints(("Goal" :in-theory (enable aignet-eval-conjunction-toggle
                                       cube-contradictionp))))
 
   (defthm cube-contradictionp-of-gate-node-supergate-when-and
     (implies (and (equal (stype (car (lookup-id sink aignet))) :and)
-                  (not (equal (id-eval sink invals regvals aignet)
-                              (id-eval-toggle sink toggle invals regvals aignet)))
+                  (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                              (id-eval-toggle sink (cons toggle toggles) invals regvals aignet)))
                   (< 1 (nfix (nth toggle refcounts)))
-                  (not (equal (nfix toggle) (nfix sink))))
+                  (ids-multiply-referenced toggles refcounts)
+                  (not (equal (nfix toggle) (nfix sink)))
+                  ;; (not (member-equal (nfix sink) (acl2::nat-list-fix toggles)))
+                  )
              (not (cube-contradictionp (gate-node-supergate sink refcounts aignet))))
     :hints (("goal" :in-theory (e/d (gate-node-supergate)
                                     (aignet-eval-conjunction-toggle-when-cube-contradictionp
                                      cube-contradictionp-correct))
              :use ((:instance aignet-eval-conjunction-toggle-when-cube-contradictionp
                     (x (gate-node-supergate sink refcounts aignet)))
-                   (:instance cube-contradictionp-correct
-                    (x (gate-node-supergate sink refcounts aignet))))
-            :expand ((aignet-eval-conjunction nil invals regvals aignet)
-                     (aignet-eval-conjunction-toggle nil toggle invals regvals aignet)
-                     (:free (var neg) (lit-eval (make-lit var neg) invals regvals aignet))
-                     (:free (var neg) (lit-eval-toggle (make-lit var neg) toggle invals regvals aignet)))))))
+                   (:instance aignet-eval-conjunction-toggle-when-cube-contradictionp
+                    (x (gate-node-supergate sink refcounts aignet))
+                    (toggles (cons toggle toggles))))
+            :expand ((:free (a b) (ids-multiply-referenced (cons a b) refcounts))
+                     (:free (toggles) (aignet-eval-conjunction-toggle nil toggles invals regvals aignet))
+                     (:free (var neg toggles) (lit-eval-toggle (make-lit var neg) toggles invals regvals aignet)))))))
                   
 
-(define has-toggling-lit ((x lit-listp) (toggle natp) invals regvals aignet)
+(define has-toggling-lit ((x lit-listp) (toggle natp) (toggles nat-listp) invals regvals aignet)
   :guard (and (aignet-lit-listp x aignet)
-              (id-existsp toggle aignet)
               (<= (num-ins aignet) (bits-length invals))
               (<= (num-regs aignet) (bits-length regvals)))
   (if (atom x)
       nil
-    (or (not (eql (lit-eval (car x) invals regvals aignet)
-                  (lit-eval-toggle (car x) toggle invals regvals aignet)))
-        (has-toggling-lit (cdr x) toggle invals regvals aignet)))
+    (or (not (eql (lit-eval-toggle (car x) (cons toggle toggles) invals regvals aignet)
+                  (lit-eval-toggle (car x) toggles invals regvals aignet)))
+        (has-toggling-lit (cdr x) toggle toggles invals regvals aignet)))
 
   ///
   (fty::deffixequiv has-toggling-lit)
@@ -496,12 +538,51 @@
                   (b-not (b-xor a b)))
            :hints(("Goal" :in-theory (enable b-not)))))
 
+  (local (defthm nat-listp-of-remove
+           (implies (nat-listp x)
+                    (nat-listp (remove-equal k x)))))
+
+  ;; (local (defthm member-of-cons-remove
+  ;;          (iff (member k (cons x (remove x y)))
+  ;;               (or (equal k x) (member k y)))))
+
+  (local (defthm cons-remove-under-set-equiv
+           (acl2::set-equiv (cons x (remove x y))
+                            (if (member x y)
+                                y
+                              (cons x y)))
+           :hints(("Goal" :in-theory (enable acl2::set-equiv)))))
+
+  (local (defthm remove-under-set-equiv-when-not-member
+           (implies (not (member x y))
+                    (acl2::set-equiv (remove x y) y))
+           :hints(("Goal" :in-theory (enable acl2::set-equiv)))))
+
+  (local (defret <fn>-remove-toggle-when-greater
+           (implies (< (nfix id) (nfix toggle))
+                    (equal (let ((toggles (remove toggle toggles))) <call>)
+                           val))
+           :hints (("goal" :use ((:instance <fn>-add-toggle-when-greater
+                                  (toggles (remove toggle toggles))))
+                    :in-theory (disable <fn>-add-toggle-when-greater)))
+           :fn id-eval-toggle))
+
+  (local (defret <fn>-remove-toggle-when-greater
+           (implies (< (lit->var lit) (nfix toggle))
+                    (equal (let ((toggles (remove toggle toggles))) <call>)
+                           val))
+           :hints (("goal" :use ((:instance <fn>-add-toggle-when-greater
+                                  (toggles (remove toggle toggles))))
+                    :in-theory (disable <fn>-add-toggle-when-greater)))
+           :fn lit-eval-toggle))
+
+
   (local (defthm id-eval-toggle-of-toggle
-           (equal (id-eval-toggle toggle toggle invals regvals aignet)
-                  (b-not (id-eval toggle invals regvals aignet)))
+           (equal (id-eval-toggle toggle (cons toggle toggles) invals regvals aignet)
+                  (b-not (id-eval-toggle toggle (remove (nfix toggle)
+                                                 (acl2::nat-list-fix toggles)) invals regvals aignet)))
            :hints (("goal" :expand
-                    ((id-eval-toggle toggle toggle invals regvals aignet)
-                     (id-eval toggle invals regvals aignet))
+                    ((:free (toggles) (id-eval-toggle toggle toggles invals regvals aignet)))
                     :in-theory (enable eval-xor-of-lits-toggle
                                        eval-xor-of-lits
                                        eval-and-of-lits-toggle
@@ -512,118 +593,129 @@
   
   (local (defthmd lit-eval-toggle-when-lit->var-equal-toggle
            (implies (equal (lit->var lit) (nfix toggle))
-                    (equal (lit-eval-toggle lit toggle invals regvals aignet)
-                           (b-not (lit-eval lit invals regvals aignet))))
+                    (equal (lit-eval-toggle lit (cons toggle toggles) invals regvals aignet)
+                           (b-not (lit-eval-toggle lit
+                                                   (remove (nfix toggle)
+                                                           (acl2::nat-list-fix toggles))
+                                                   invals regvals aignet))))
            :hints(("Goal" :in-theory (enable lit-eval-toggle lit-eval)
-                   :expand ((lit-eval-toggle lit toggle invals regvals aignet)
+                   :expand ((lit-eval-toggle lit toggles invals regvals aignet)
                             (lit-eval lit invals regvals aignet))))))
 
-  (local (defthm lit-eval-toggle-of-lit->var
-           (equal (lit-eval-toggle lit (lit->var lit) invals regvals aignet)
-                  (b-not (lit-eval lit invals regvals aignet)))
-           :hints (("goal" :in-theory (enable lit-eval-toggle-when-lit->var-equal-toggle)))))
+  ;; (local (defthm lit-eval-toggle-of-lit->var
+  ;;          (equal (lit-eval-toggle lit (lit->var lit) invals regvals aignet)
+  ;;                 (b-not (lit-eval lit invals regvals aignet)))
+  ;;          :hints (("goal" :in-theory (enable lit-eval-toggle-when-lit->var-equal-toggle)))))
 
   
   (local (defthm has-toggling-lit-when-member
            (implies (and (member-equal lit (lit-list-fix supergate))
-                         (not (equal (lit-eval lit invals regvals aignet)
-                                     (lit-eval-toggle lit toggle invals regvals aignet))))
-                    (has-toggling-lit supergate toggle invals regvals aignet))
+                         (not (equal (lit-eval-toggle lit (cons toggle toggles) invals regvals aignet)
+                                     (lit-eval-toggle lit toggles invals regvals aignet))))
+                    (has-toggling-lit supergate toggle toggles invals regvals aignet))
            :hints(("Goal" :in-theory (enable has-toggling-lit lit-list-fix member-equal)))))
 
   (local (defthmd has-toggling-lit-when-eval-conjunction-differs
-           (implies (not (equal (aignet-eval-conjunction x invals regvals aignet)
-                                (aignet-eval-conjunction-toggle x toggle invals regvals aignet)))
-                    (has-toggling-lit x toggle invals regvals aignet))
+           (implies (not (equal (aignet-eval-conjunction-toggle x (cons toggle toggles) invals regvals aignet)
+                                (aignet-eval-conjunction-toggle x toggles invals regvals aignet)))
+                    (has-toggling-lit x toggle toggles invals regvals aignet))
            :hints(("Goal" :in-theory (enable aignet-eval-conjunction
                                              aignet-eval-conjunction-toggle)))))
 
   (local (defthmd has-toggling-lit-when-eval-parity-differs
-           (implies (not (equal (aignet-eval-parity x invals regvals aignet)
-                                (aignet-eval-parity-toggle x toggle invals regvals aignet)))
-                    (has-toggling-lit x toggle invals regvals aignet))
+           (implies (not (equal (aignet-eval-parity-toggle x (cons toggle toggles) invals regvals aignet)
+                                (aignet-eval-parity-toggle x toggles invals regvals aignet)))
+                    (has-toggling-lit x toggle toggles invals regvals aignet))
            :hints(("Goal" :in-theory (enable aignet-eval-parity
                                              aignet-eval-parity-toggle)))))
 
   ;; (local (defthm lit-collect-supergate-preserves-supergate-toggle
-  ;;          (implies (has-toggling-lit supergate toggle invals regvals aignet)
+  ;;          (implies (has-toggling-lit supergate toggles invals regvals aignet)
   ;;                   (has-toggling-lit
   ;;                    (mv-nth 0 (lit-collect-supergate lit top use-muxes limit supergate refcounts aignet))
-  ;;                    toggle invals regvals aignet))
+  ;;                    toggles invals regvals aignet))
   ;;          :hints (("goal" :induct (lit-collect-supergate lit top use-muxes limit supergate refcounts aignet)
   ;;                   :in-theory (enable (:i lit-collect-supergate))
   ;;                   :expand ((:free (top use-muxes limit)
   ;;                             (lit-collect-supergate lit top use-muxes limit supergate refcounts aignet))
-  ;;                            (lit-eval-toggle 0 toggle invals regvals aignet)
-  ;;                            (id-eval-toggle 0 toggle invals regvals aignet))))))
+  ;;                            (lit-eval-toggle 0 toggles invals regvals aignet)
+  ;;                            (id-eval-toggle 0 toggles invals regvals aignet))))))
   
   ;; (local (defthm id-eval-toggle-in-terms-of-supergate
   ;;          (implies (and (not (equal (lit-eval lit invals regvals aignet)
-  ;;                                    (lit-eval-toggle lit toggle invals regvals aignet)))
-  ;;                        (< 1 (nfix (nth toggle refcounts)))
+  ;;                                    (lit-eval-toggle lit toggles invals regvals aignet)))
+  ;;                        (< 1 (nfix (nth toggles refcounts)))
   ;;                        (or (not top)
   ;;                            (not (equal (lit->var lit) (nfix toggle)))))
   ;;                   (has-toggling-lit
   ;;                    (mv-nth 0 (lit-collect-supergate lit top use-muxes limit supergate refcounts aignet))
-  ;;                                     toggle invals regvals aignet))
+  ;;                                     toggles invals regvals aignet))
   ;;          :hints (("goal" :induct (lit-collect-supergate lit top use-muxes limit supergate refcounts aignet)
   ;;                   :in-theory (enable (:i lit-collect-supergate) b-and)
   ;;                   :expand ((:free (top use-muxes limit)
   ;;                             (lit-collect-supergate lit top use-muxes limit supergate refcounts aignet))
   ;;                            (lit-eval lit invals regvals aignet)
-  ;;                            (lit-eval-toggle lit toggle invals regvals aignet)
+  ;;                            (lit-eval-toggle lit toggles invals regvals aignet)
   ;;                            (id-eval (lit->var lit) invals regvals aignet)
-  ;;                            (:free (toggle) (id-eval-toggle (lit->var lit) toggle invals regvals aignet))
+  ;;                            (:free (toggle) (id-eval-toggle (lit->var lit) toggles invals regvals aignet))
   ;;                            (:free (a b) (eval-and-of-lits a b invals regvals aignet))
   ;;                            (:free (a b) (eval-xor-of-lits a b invals regvals aignet))
-  ;;                            (:free (a b) (eval-and-of-lits-toggle a b toggle invals regvals aignet))
-  ;;                            (:free (a b) (eval-xor-of-lits-toggle a b toggle invals regvals aignet)))
+  ;;                            (:free (a b) (eval-and-of-lits-toggle a b toggles invals regvals aignet))
+  ;;                            (:free (a b) (eval-xor-of-lits-toggle a b toggles invals regvals aignet)))
   ;;                   :do-not-induct t)
   ;;                  (and stable-under-simplificationp
   ;;                       '(:in-theory (enable lit-eval-toggle-when-lit->var-equal-toggle))))))
 
   ;; (local (defthm lit-collect-superxor-preserves-supergate-toggle
-  ;;          (implies (has-toggling-lit supergate toggle invals regvals aignet)
+  ;;          (implies (has-toggling-lit supergate toggles invals regvals aignet)
   ;;                   (has-toggling-lit
   ;;                    (mv-nth 0 (lit-collect-superxor lit top limit supergate refcounts aignet))
-  ;;                    toggle invals regvals aignet))
+  ;;                    toggles invals regvals aignet))
   ;;          :hints (("goal" :induct (lit-collect-superxor lit top limit supergate refcounts aignet)
   ;;                   :in-theory (enable (:i lit-collect-superxor))
   ;;                   :expand ((:free (top limit)
   ;;                             (lit-collect-superxor lit top limit supergate refcounts aignet))
-  ;;                            (lit-eval-toggle 0 toggle invals regvals aignet)
-  ;;                            (id-eval-toggle 0 toggle invals regvals aignet))))))
+  ;;                            (lit-eval-toggle 0 toggles invals regvals aignet)
+  ;;                            (id-eval-toggle 0 toggles invals regvals aignet))))))
   
   ;; (local (defthm id-eval-toggle-in-terms-of-superxor
   ;;          (implies (and (not (equal (lit-eval lit invals regvals aignet)
-  ;;                                    (lit-eval-toggle lit toggle invals regvals aignet)))
-  ;;                        (< 1 (nfix (nth toggle refcounts)))
+  ;;                                    (lit-eval-toggle lit toggles invals regvals aignet)))
+  ;;                        (< 1 (nfix (nth toggles refcounts)))
   ;;                        (or (not top)
   ;;                            (not (equal (lit->var lit) (nfix toggle)))))
   ;;                   (has-toggling-lit
   ;;                    (mv-nth 0 (lit-collect-superxor lit top limit supergate refcounts aignet))
-  ;;                                     toggle invals regvals aignet))
+  ;;                                     toggles invals regvals aignet))
   ;;          :hints (("goal" :induct (lit-collect-superxor lit top limit supergate refcounts aignet)
   ;;                   :in-theory (enable (:i lit-collect-superxor) b-and)
   ;;                   :expand ((:free (top limit)
   ;;                             (lit-collect-superxor lit top limit supergate refcounts aignet))
   ;;                            (lit-eval lit invals regvals aignet)
-  ;;                            (lit-eval-toggle lit toggle invals regvals aignet)
+  ;;                            (lit-eval-toggle lit toggles invals regvals aignet)
   ;;                            (id-eval (lit->var lit) invals regvals aignet)
-  ;;                            (id-eval-toggle (lit->var lit) toggle invals regvals aignet)
+  ;;                            (id-eval-toggle (lit->var lit) toggles invals regvals aignet)
   ;;                            (:free (a b) (eval-and-of-lits a b invals regvals aignet))
   ;;                            (:free (a b) (eval-xor-of-lits a b invals regvals aignet))
-  ;;                            (:free (a b) (eval-and-of-lits-toggle a b toggle invals regvals aignet))
-  ;;                            (:free (a b) (eval-xor-of-lits-toggle a b toggle invals regvals aignet)))
+  ;;                            (:free (a b) (eval-and-of-lits-toggle a b toggles invals regvals aignet))
+  ;;                            (:free (a b) (eval-xor-of-lits-toggle a b toggles invals regvals aignet)))
   ;;                   :do-not-induct t))))
   
+  (local (defthm equal-of-b-xors
+           (equal (equal (b-xor a b) (b-xor a c))
+                  (equal (bfix b) (bfix c)))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
   (defthm supergate-has-toggling-lit-when-toggles
-    (implies (and (not (equal (id-eval sink invals regvals aignet)
-                              (id-eval-toggle sink toggle invals regvals aignet)))
+    (implies (and (not (equal (id-eval-toggle sink (cons toggle toggles) invals regvals aignet)
+                              (id-eval-toggle sink toggles invals regvals aignet)))
                   (< 1 (nfix (nth toggle refcounts)))
-                  (not (equal (nfix toggle) (nfix sink))))
+                  (ids-multiply-referenced toggles refcounts) 
+                  (not (equal (nfix toggle) (nfix sink)))
+                  ;; (not (member (nfix sink) (acl2::nat-list-fix toggles)))
+                  )
              (has-toggling-lit (gate-node-supergate sink refcounts aignet)
-                               toggle invals regvals aignet))
+                               toggle toggles invals regvals aignet))
     :hints(("Goal" :in-theory (e/d (gate-node-supergate)
                                    (has-toggling-lit-when-eval-parity-differs
                                     has-toggling-lit-when-eval-conjunction-differs
@@ -632,27 +724,24 @@
                    (x (gate-node-supergate sink refcounts aignet)))
                   (:instance has-toggling-lit-when-eval-conjunction-differs
                    (x (gate-node-supergate sink refcounts aignet))))
-            :expand ((aignet-eval-parity nil invals regvals aignet)
-                     (aignet-eval-parity-toggle nil toggle invals regvals aignet)
-                     (aignet-eval-conjunction nil invals regvals aignet)
-                     (aignet-eval-conjunction-toggle nil toggle invals regvals aignet)
-                     (:free (var neg) (lit-eval (make-lit var neg) invals regvals aignet))
-                     (:free (var neg) (lit-eval-toggle (make-lit var neg) toggle invals regvals aignet)))))))
+            :expand ((:free (toggles) (aignet-eval-parity-toggle nil toggles invals regvals aignet))
+                     (:free (toggles) (aignet-eval-conjunction-toggle nil toggles invals regvals aignet))
+                     (:free (var neg toggles) (lit-eval-toggle (make-lit var neg) toggles invals regvals aignet))
+                     (:Free (a b) (ids-multiply-referenced (cons a b) refcounts)))))))
 
 
 
-(define min-toggling-lit ((x lit-listp) (toggle natp) invals regvals aignet)
+(define min-toggling-lit ((x lit-listp) (toggle natp) (toggles nat-listp) invals regvals aignet)
   :guard (and (aignet-lit-listp x aignet)
-              (id-existsp toggle aignet)
               (<= (num-ins aignet) (bits-length invals))
               (<= (num-regs aignet) (bits-length regvals)))
   :returns (min-index natp :rule-classes :type-prescription)
   (if (atom x)
       0
-    (b* ((toggles (not (eql (lit-eval (car x) invals regvals aignet)
-                            (lit-eval-toggle (car x) toggle invals regvals aignet))))
-         (rest (min-toggling-lit (cdr x) toggle invals regvals aignet))
-         ((unless toggles) (+ 1 rest))
+    (b* ((togglep (not (eql (lit-eval-toggle (car x) (cons toggle toggles) invals regvals aignet)
+                            (lit-eval-toggle (car x) toggles invals regvals aignet))))
+         (rest (min-toggling-lit (cdr x) toggle toggles invals regvals aignet))
+         ((unless togglep) (+ 1 rest))
          ((unless (< rest (len (cdr x)))) 0)
          (other-min (nth rest (cdr x))))
       (if (<= (lit->var (car x)) (lit->var other-min))
@@ -665,17 +754,17 @@
 
   (defret min-toggling-lit-bound-strong-rw
     (iff (< min-index (len x))
-         (has-toggling-lit x toggle invals regvals aignet))
+         (has-toggling-lit x toggle toggles invals regvals aignet))
     :hints(("Goal" :in-theory (enable has-toggling-lit))))
 
   (defret min-toggling-lit-bound-strong-linear
-    (implies (has-toggling-lit x toggle invals regvals aignet)
+    (implies (has-toggling-lit x toggle toggles invals regvals aignet)
              (< min-index (len x)))
     :rule-classes :linear)
 
   (defret min-toggling-lit-bound-equal-rw
     (iff (equal min-index (len x))
-         (not (has-toggling-lit x toggle invals regvals aignet)))
+         (not (has-toggling-lit x toggle toggles invals regvals aignet)))
     :hints(("Goal" :in-theory (enable has-toggling-lit))))
 
   (local (defthm len-of-lit-list-fix
@@ -690,24 +779,23 @@
            :hints(("Goal" :in-theory (enable nth)))))
 
   (defret min-toggling-lit-toggles
-    (implies (has-toggling-lit x toggle invals regvals aignet)
-             (not (equal (id-eval (lit->var (nth min-index x)) invals regvals aignet)
-                         (id-eval-toggle (lit->var (nth min-index x)) toggle invals regvals aignet))))
-    :hints(("Goal" :in-theory (e/d (lit-eval lit-eval-toggle)
-                                   (min-toggling-lit-bound-strong-linear
-                                    id-eval-toggle-when-less))
-            :expand ((has-toggling-lit x toggle invals regvals aignet)))))
+    (implies (has-toggling-lit x toggle toggles invals regvals aignet)
+             (not (equal (id-eval-toggle (lit->var (nth min-index x)) (cons toggle toggles) invals regvals aignet)
+                         (id-eval-toggle (lit->var (nth min-index x)) toggles invals regvals aignet))))
+    :hints(("Goal" :in-theory (e/d (lit-eval-toggle)
+                                   (min-toggling-lit-bound-strong-linear))
+            :expand ((has-toggling-lit x toggle toggles invals regvals aignet)))))
 
   (local (defthm has-toggling-lit-when-member
            (implies (and (member-equal lit (lit-list-fix supergate))
-                         (not (equal (lit-eval lit invals regvals aignet)
-                                     (lit-eval-toggle lit toggle invals regvals aignet))))
-                    (has-toggling-lit supergate toggle invals regvals aignet))
+                         (not (equal (lit-eval-toggle lit (cons toggle toggles) invals regvals aignet)
+                                     (lit-eval-toggle lit toggles invals regvals aignet))))
+                    (has-toggling-lit supergate toggle toggles invals regvals aignet))
            :hints(("Goal" :in-theory (enable has-toggling-lit lit-list-fix member-equal)))))
   
   (defret min-toggling-lit-is-minimum
-    (implies (and (not (equal (lit-eval k invals regvals aignet)
-                              (lit-eval-toggle k toggle invals regvals aignet)))
+    (implies (and (not (equal (lit-eval-toggle k (cons toggle toggles) invals regvals aignet)
+                              (lit-eval-toggle k toggles invals regvals aignet)))
                   (member-equal k (lit-list-fix x)))
              (<= (lit->var (nth min-index x)) (lit->var k)))
     :hints(("Goal" :in-theory (enable nth lit-list-fix member-equal)))
@@ -744,10 +832,10 @@
    (local (defthm not-two-cubes-contradictionp-when-no-toggling-lit
             (implies (and (two-cubes-contradictionp x y)
                           (not (lit-list-has-const0-under-toggle
-                                x toggle invals regvals aignet))
-                          (not (has-toggling-lit x toggle invals regvals aignet)))
+                                x toggle toggles invals regvals aignet))
+                          (not (has-toggling-lit x toggle toggles invals regvals aignet)))
                      (lit-list-has-const0-under-toggle
-                      y toggle invals regvals aignet))
+                      y toggle toggles invals regvals aignet))
             :hints(("Goal" :in-theory (enable lit-list-has-const0-under-toggle
                                               has-toggling-lit
                                               two-cubes-contradictionp
@@ -755,12 +843,12 @@
    
    (defthmd not-two-cubes-contradictionp-lemma
      (implies (and (not (lit-list-has-const0-under-toggle
-                         x toggle invals regvals aignet))
+                         x toggle toggles invals regvals aignet))
                    (not (lit-list-has-const0-under-toggle
-                         y toggle invals regvals aignet))
-                   (has-toggling-lit x toggle invals regvals aignet)
+                         y toggle toggles invals regvals aignet))
+                   (has-toggling-lit x toggle toggles invals regvals aignet)
                    (< (lits-max-id-val y)
-                      (lit->var (nth (min-toggling-lit x toggle invals regvals aignet)
+                      (lit->var (nth (min-toggling-lit x toggle toggles invals regvals aignet)
                                      x))))
               (not (two-cubes-contradictionp x y)))
      :hints(("Goal" :in-theory (e/d (;; two-cubes-contradictionp
@@ -775,24 +863,27 @@
                                      acl2::nth-when-too-large-cheap))
              :induct (len x)
              :expand ((two-cubes-contradictionp x y)
-                      (min-toggling-lit x toggle invals regvals aignet)
+                      (min-toggling-lit x toggle toggles invals regvals aignet)
                       (:free (n) (nth n x))
-                      (has-toggling-lit x toggle invals regvals aignet)
+                      (has-toggling-lit x toggle toggles invals regvals aignet)
                       (lit-list-has-const0-under-toggle
-                       x toggle invals regvals aignet))
+                       x toggle toggles invals regvals aignet))
              :do-not-induct t)))))
 
-(define toggle-witness-spath ((sink natp) (source natp) invals regvals refcounts aignet)
+(define toggle-witness-spath ((sink natp) (source natp) (toggles nat-listp) invals regvals refcounts aignet)
   ;; Given that sink is toggled by source, find a path from sink to source
   ;; containing no contradictory AND siblings and no const0 siblings.
   :guard (and (id-existsp sink aignet)
               (id-existsp source aignet)
-              (< sink (u32-length refcounts))
+              (<= (num-fanins aignet) (u32-length refcounts))
               (<= (num-ins aignet) (bits-length invals))
               (<= (num-regs aignet) (bits-length regvals))
-              (not (equal (id-eval sink invals regvals aignet)
-                          (id-eval-toggle sink source invals regvals aignet)))
+              (not (equal (id-eval-toggle sink (cons source toggles) invals regvals aignet)
+                          (id-eval-toggle sink toggles invals regvals aignet)))
+              (ids-multiply-referenced toggles refcounts)
               (< 1 (get-u32 source refcounts)))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable aignet-idp))))
   :measure (nfix sink)
   :returns (path nat-listp)
   ;; :verify-guards nil
@@ -800,59 +891,77 @@
                   (not (eql (id->type sink aignet) (gate-type)))))
         nil)
        (supergate (gate-node-supergate sink refcounts aignet))
-       (next-idx (min-toggling-lit supergate source invals regvals aignet)))
+       (next-idx (min-toggling-lit supergate source toggles invals regvals aignet)))
     (cons next-idx (toggle-witness-spath (lit->var (nth next-idx supergate))
-                                        source invals regvals refcounts aignet)))
+                                        source toggles invals regvals refcounts aignet)))
   ///
   (local (in-theory (disable (:d toggle-witness-spath))))
   
   (defret spath-existsp-of-<fn>
-    (implies (and (not (equal (id-eval sink invals regvals aignet)
-                              (id-eval-toggle sink source invals regvals aignet)))
-                  (< 1 (nfix (nth source refcounts))))
+    (implies (and (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                              (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
+                  (< 1 (nfix (nth source refcounts)))
+                  (ids-multiply-referenced toggles refcounts))
              (spath-existsp sink path refcounts aignet))
     :hints (("Goal" :induct <call> :expand (<call>))))
 
+  (local (defthm nat-listp-of-remove
+           (implies (nat-listp x)
+                    (nat-listp (remove-equal k x)))))
+
   (defret id-eval-toggle-when-not-gate
     (implies (not (equal (ctype (stype (car (lookup-id x aignet)))) :gate))
-             (equal (id-eval-toggle x toggle invals regvals aignet)
+             (equal (id-eval-toggle x (cons toggle toggles) invals regvals aignet)
                     (b-xor (bool->bit (equal (nfix x) (nfix toggle)))
-                           (id-eval x invals regvals aignet))))
-    :hints(("Goal" :in-theory (enable id-eval-toggle
-                                      id-eval))))
+                           (id-eval-toggle x (remove-equal (nfix toggle) (acl2::nat-list-fix toggles))
+                                           invals regvals aignet))))
+    :hints(("Goal" :in-theory (enable* id-eval-toggle acl2::arith-equiv-forwarding))))
+
+  (defret id-eval-toggle-of-remove-equal-when-not-gate
+    (implies (And (not (equal (ctype (stype (car (lookup-id x aignet)))) :gate))
+                  (natp toggle) (nat-listp toggles))
+             (equal (id-eval-toggle x (remove-equal toggle toggles)
+                                    invals regvals aignet)
+                    (b-xor (bool->bit (and (equal (nfix x) toggle)
+                                           (member-equal toggle toggles)))
+                           (id-eval-toggle x toggles invals regvals aignet))))
+    :hints(("Goal" :in-theory (enable* id-eval-toggle acl2::arith-equiv-forwarding))))
                         
   
   (defret spath-endpoint-of-<fn>
-    (implies (and (not (equal (id-eval sink invals regvals aignet)
-                              (id-eval-toggle sink source invals regvals aignet)))
-                  (< 1 (nfix (nth source refcounts))))
+    (implies (and (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                              (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
+                  (< 1 (nfix (nth source refcounts)))
+                  (ids-multiply-referenced toggles refcounts))
              (equal (spath-endpoint sink path refcounts aignet)
                     (nfix source)))
     :hints (("Goal" :induct <call> :expand (<call>))))
 
   (defret has-const0-of-<fn>
-    (implies (and (not (equal (id-eval sink invals regvals aignet)
-                              (id-eval-toggle sink source invals regvals aignet)))
-                  (< 1 (nfix (nth source refcounts))))
+    (implies (and (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                              (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
+                  (< 1 (nfix (nth source refcounts)))
+                  (ids-multiply-referenced toggles refcounts))
              (not (lit-list-has-const0-under-toggle
                    (spath-and-literals sink path refcounts aignet)
-                   source invals regvals aignet)))
+                   source toggles invals regvals aignet)))
     :hints (("Goal" :induct <call> :expand (<call>))))
 
 
  (local (defthm not-two-cubes-contradictionp-lemma-rw
            (implies (and (bind-free '((toggle . source)
+                                      (toggles . toggles)
                                       (invals . invals)
                                       (regvals . regvals)
                                       (aignet . aignet))
-                                    (toggle invals regvals aignet))
+                                    (toggle toggles invals regvals aignet))
                          (not (lit-list-has-const0-under-toggle
-                               x toggle invals regvals aignet))
+                               x toggle toggles invals regvals aignet))
                          (not (lit-list-has-const0-under-toggle
-                               y toggle invals regvals aignet))
-                         (has-toggling-lit x toggle invals regvals aignet)
+                               y toggle toggles invals regvals aignet))
+                         (has-toggling-lit x toggle toggles invals regvals aignet)
                          (< (lits-max-id-val y)
-                            (lit->var (nth (min-toggling-lit x toggle invals regvals aignet)
+                            (lit->var (nth (min-toggling-lit x toggle toggles invals regvals aignet)
                                            x))))
                     (not (two-cubes-contradictionp x y)))
            :hints (("goal" :by not-two-cubes-contradictionp-lemma))))
@@ -870,9 +979,10 @@
                    :induct (len path)))))
   
   (defret contradictionp-of-<fn>
-    (implies (and (not (equal (id-eval sink invals regvals aignet)
-                              (id-eval-toggle sink source invals regvals aignet)))
-                  (< 1 (nfix (nth source refcounts))))
+    (implies (and (not (equal (id-eval-toggle sink toggles invals regvals aignet)
+                              (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
+                  (< 1 (nfix (nth source refcounts)))
+                  (ids-multiply-referenced toggles refcounts))
              (not (cube-contradictionp
                    (spath-and-literals sink path refcounts aignet))))
     :hints (("Goal" :induct <call> :expand (<call>)
@@ -881,7 +991,7 @@
                  '(:cases ((zp (lit->var
                                 (nth (min-toggling-lit
                                       (gate-node-supergate sink refcounts aignet)
-                                      source invals regvals aignet)
+                                      source toggles invals regvals aignet)
                                      (gate-node-supergate sink refcounts aignet))))))))))
 
 
@@ -983,7 +1093,31 @@
     (b* (((obs-sdom-info info)))
       (implies wfp
                (aignet-lit-listp info.doms aignet)))
-    :hints (("goal" :in-theory (enable obs-sdom-info->reached obs-sdom-info->doms)))))
+    :hints (("goal" :in-theory (enable obs-sdom-info->reached obs-sdom-info->doms))))
+
+  ;; (local (defthmd lits-max-id-val-when-aignet-lit-listp
+  ;;          (implies (aignet-lit-listp x aignet)
+  ;;                   (< (lits-max-id-val x) (num-fanins aignet)))
+  ;;          :hints(("Goal" :in-theory (enable aignet-lit-listp
+  ;;                                            lits-max-id-val
+  ;;                                            aignet-idp)))))
+
+  ;; (defret lits-max-id-val-when-<fn>
+  ;;   (b* (((obs-sdom-info info)))
+  ;;     (implies wfp
+  ;;              (< (lits-max-id-val info.doms) (num-fanins aignet))))
+  ;;   :hints (("goal" :use ((:instance lits-max-id-val-when-aignet-lit-listp
+  ;;                          (x (obs-sdom-info->doms info))))))
+  ;;   :rule-classes :linear)
+  (defthm obs-sdom-info-well-formedp-of-nil
+    (obs-sdom-info-well-formedp nil aignet))
+  )
+
+(local (defthm lits-max-id-val-of-num-fanins
+         (equal (< (lits-max-id-val x) (+ 1 (fanin-count aignet)))
+                (aignet-lit-listp x aignet))
+         :hints(("Goal" :in-theory (enable lits-max-id-val aignet-lit-listp
+                                           aignet-idp)))))
 
 
 
@@ -1003,6 +1137,38 @@
 (defthm obs-sdom-array$ap-is-obs-sdom-info-list-p
   (equal (obs-sdom-array$ap x)
          (obs-sdom-info-list-p x)))
+
+(defsection obs-sdom-array-well-formedp
+  (defun-sk obs-sdom-array-well-formedp (obs-sdom-array aignet)
+    (forall i
+            (obs-sdom-info-well-formedp (nth i obs-sdom-array) aignet))
+    :rewrite :direct)
+
+  (in-theory (disable obs-sdom-array-well-formedp))
+
+  (defthm obs-sdom-array-well-formedp-of-update
+    (implies (and (obs-sdom-array-well-formedp obs-sdom-array aignet)
+                  (obs-sdom-info-well-formedp val aignet))
+             (obs-sdom-array-well-formedp (update-nth n val obs-sdom-array) aignet))
+    :hints (("goal" :expand ((obs-sdom-array-well-formedp (update-nth n val obs-sdom-array) aignet)))))
+
+  ;; (defthm lits-max-id-val-when-obs-sdom-array-well-formedp
+  ;;   (implies (obs-sdom-array-well-formedp obs-sdom-array aignet)
+  ;;            (< (lits-max-id-val
+  ;;                (obs-sdom-info->doms (nth n obs-sdom-array))) (num-fanins aignet)))
+  ;;   :hints (("goal" :use ((:instance lits-max-id-val-when-obs-sdom-info-well-formedp
+  ;;                          (info (nth n obs-sdom-array))))
+  ;;            :in-theory (enable lits-max-id-val-when-obs-sdom-info-well-formedp)))
+  ;;   :rule-classes :linear)
+  (local (defthm obs-sdom-info-well-formedp-when-boolean
+           (implies (booleanp info)
+                    (obs-sdom-info-well-formedp info aignet))
+           :hints(("Goal" :in-theory (enable obs-sdom-info-well-formedp booleanp)))))
+
+  (defthm obs-sdom-array-well-formedp-of-repeat-t
+    (obs-sdom-array-well-formedp (acl2::repeat n t) aignet)
+    :hints(("Goal" :in-theory (enable obs-sdom-array-well-formedp))))
+  )
 
 
 (local
@@ -1077,9 +1243,37 @@
                   (obs-sdom-info->reached y)
                   (not (cube-contradictionp (obs-sdom-info->doms y)))
                   (not (member-equal lit (obs-sdom-info->doms y))))
-             (not (member lit (obs-sdom-info->doms x))))))
+             (not (member lit (obs-sdom-info->doms x)))))
+  
+  (defthmd obs-sdom-info-subsetp-transitive
+    (implies (and (obs-sdom-info-subsetp a b)
+                  (obs-sdom-info-subsetp b c))
+             (obs-sdom-info-subsetp a c))
+    :hints(("Goal" :in-theory (enable cube-contradictionp-when-subsetp))))
+
+  (defthm obs-sdom-info-subsetp-self
+    (obs-sdom-info-subsetp x x)))
 
 
+(local
+ (defsection aignet-lit-listp-set-equiv
+   (defthmd aignet-lit-listp-when-member
+     (implies (and (member-equal lit x)
+                   (not (aignet-litp lit aignet)))
+              (not (aignet-lit-listp x aignet)))
+     :hints(("Goal" :in-theory (enable aignet-lit-listp))))
+
+   (defthmd aignet-lit-listp-when-subsetp
+     (implies (and (aignet-lit-listp y aignet)
+                   (subsetp x y))
+              (aignet-lit-listp x aignet))
+     :hints(("Goal" :in-theory (enable subsetp
+                                       aignet-lit-listp-when-member))))
+
+   (defcong acl2::set-equiv equal (aignet-lit-listp x aignet) 1
+     :hints(("Goal" :in-theory (enable acl2::set-equiv
+                                       aignet-lit-listp-when-subsetp)
+             :cases ((aignet-lit-listp x aignet)))))))
 
 (define obs-sdom-info-add-lits ((lits lit-listp) (x obs-sdom-info-p))
   :returns (new obs-sdom-info-p)
@@ -1101,7 +1295,13 @@
     (implies (obs-sdom-info->reached x)
              (iff (member-equal dom (obs-sdom-info->doms new))
                   (or (member-equal dom (lit-list-fix lits))
-                      (member-equal dom (obs-sdom-info->doms x)))))))
+                      (member-equal dom (obs-sdom-info->doms x))))))
+
+  (defret obs-sdom-info-well-formedp-of-obs-sdom-info-add-lits
+    (implies (and (aignet-lit-listp lits aignet)
+                  (obs-sdom-info-well-formedp x aignet))
+             (obs-sdom-info-well-formedp new aignet))
+    :hints(("Goal" :in-theory (enable obs-sdom-info-well-formedp)))))
 
 (define obs-sdom-info-for-child ((fanout-info obs-sdom-info-p)
                                 (fanout natp)
@@ -1242,6 +1442,8 @@
          (obs-sdom-info-subsetp y x))
     :hints(("Goal" :in-theory (enable obs-sdom-info-subsetp)))))
 
+
+
 (define obs-sdom-info-intersect ((x obs-sdom-info-p) (y obs-sdom-info-p))
   :returns (int obs-sdom-info-p)
   (b* (((obs-sdom-info x))
@@ -1306,7 +1508,14 @@
   
   (defret obs-sdom-info-intersect-idempotent
     (equal (obs-sdom-info-intersect (obs-sdom-info-intersect x y) y)
-           (obs-sdom-info-intersect x y))))
+           (obs-sdom-info-intersect x y)))
+
+  (defret obs-sdom-info-well-formedp-of-intersect
+    (implies (and (obs-sdom-info-well-formedp x aignet)
+                  (obs-sdom-info-well-formedp y aignet))
+             (obs-sdom-info-well-formedp int aignet))
+    :hints(("Goal" :in-theory (enable obs-sdom-info-well-formedp
+                                      aignet-lit-listp-when-subsetp)))))
 
 (define lit-list-vars ((x lit-listp))
   :returns (vars nat-listp)
@@ -1316,68 +1525,215 @@
           (lit-list-vars (cdr x)))))
 
 
+(defstub set-filter-elem-okp (x) nil)
+(define set-filter (x)
+  :returns (new-x)
+  (if (atom x)
+      nil
+    (if (set-filter-elem-okp (car x))
+        (cons (car x) (set-filter (cdr x)))
+      (set-filter (cdr x))))
+  ///
+  (defret first-elem-bound-of-<fn>
+    (implies (and (set::setp x)
+                  (consp new-x))
+             (not (acl2::<< (car new-x) (car x))))
+    :hints(("Goal" :in-theory (enable set::setp
+                                      acl2::<<-transitive
+                                      acl2::<<-irreflexive))))
+
+  (local
+   (defthm <<-transitive-strong
+     (implies (and (acl2::<< b c)
+                   (not (acl2::<< b a)))
+              (acl2::<< a c))
+     :hints (("goal" :use ((:instance acl2::<<-trichotomy
+                            (x b) (y a)))
+              :in-theory (enable acl2::<<-transitive)))))
+
+  (defret setp-of-set-filter
+    (implies (set::setp x)
+             (set::setp new-x))
+    :hints(("Goal" :in-theory (enable set::setp
+                                      acl2::<<-transitive
+                                      acl2::<<-irreflexive)
+            :induct <call>)
+           (and stable-under-simplificationp
+                '(:use ((:instance first-elem-bound-of-<fn>
+                         (x (cdr x))))
+                  :in-theory (disable first-elem-bound-of-<fn>))))))
+
+
+(define filter-lits-by-level ((bound natp) (x lit-listp) aignet-levels)
+  :guard (< (lits-max-id-val x) (u32-length aignet-levels))
+  :returns (new-x lit-listp)
+  (if (atom x)
+      nil
+    (if (< (get-u32 (lit->var (car x)) aignet-levels) (lnfix bound))
+        (cons (lit-fix (car x))
+              (filter-lits-by-level bound (cdr x) aignet-levels))
+      (filter-lits-by-level bound (cdr x) aignet-levels)))
+  ///
+  (local (defun-nx filter-lits-by-level-no-fix (bound x aignet-levels)
+           (if (atom x)
+               nil
+             (if (< (get-u32 (lit->var (car x)) aignet-levels) (lnfix bound))
+                 (cons (car x)
+                       (filter-lits-by-level-no-fix bound (cdr x) aignet-levels))
+               (filter-lits-by-level-no-fix bound (cdr x) aignet-levels)))))
+  (local (defthmd filter-lits-by-level-in-terms-of-no-fix
+           (implies (lit-listp x)
+                    (equal (filter-lits-by-level bound x aignet-levels)
+                           (filter-lits-by-level-no-fix bound x aignet-levels)))
+           :hints(("Goal" :in-theory (enable lit-listp)))))
+
+  (defret setp-of-filter-lits-by-level
+    (implies (and (set::setp x) (lit-listp x))
+             (set::setp new-x))
+    :hints(("Goal" :use ((:functional-instance setp-of-set-filter
+                          (set-filter-elem-okp (lambda (x) (< (get-u32 (lit->var x) aignet-levels) (nfix bound))))
+                          (set-filter (lambda (x)
+                                        (filter-lits-by-level-no-fix bound x aignet-levels)))))
+            :in-theory (enable filter-lits-by-level-in-terms-of-no-fix))))
+
+  (defret subsetp-equal-of-<fn>
+    (subsetp-equal new-x (lit-list-fix x)))
+
+  (defret aignet-lit-listp-of-<fn>
+    (implies (aignet-lit-listp x aignet)
+             (aignet-lit-listp new-x aignet))))
+                                          
+
 (define obs-sdom-info-store-intersections ((super lit-listp)
-                                          (sdominfo obs-sdom-info-p)
-                                          (obs-sdom-array))
-  :guard (< (lits-max-id-val super) (sdominfo-length obs-sdom-array))
+                                           (sdominfo obs-sdom-info-p)
+                                           (aignet-levels)
+                                           (obs-sdom-array))
+  :guard (and (< (lits-max-id-val super) (sdominfo-length obs-sdom-array))
+              (< (lits-max-id-val super) (u32-length aignet-levels))
+              (< (lits-max-id-val (obs-sdom-info->doms sdominfo)) (u32-length aignet-levels)))
   :returns (new-obs-sdom-array)
   (b* (((when (atom super)) obs-sdom-array)
        (var (lit->var (car super)))
        (var-sdominfo (get-sdominfo var obs-sdom-array))
        (obs-sdom-array
         (set-sdominfo var
-                     (obs-sdom-info-intersect
-                      var-sdominfo
-                      (b* (((obs-sdom-info sdominfo)))
-                        (if (and sdominfo.reached
-                                 (set::in (lit-fix (car super)) sdominfo.doms))
-                            (make-obs-dom-info-reached
-                             (set::delete (lit-fix (car super)) sdominfo.doms))
-                          sdominfo)))
-                     obs-sdom-array)))
-    (obs-sdom-info-store-intersections (cdr super) sdominfo obs-sdom-array))
+                      (obs-sdom-info-intersect
+                       var-sdominfo
+                       (b* (((obs-sdom-info sdominfo))
+                            ((obs-sdom-info var-sdominfo)))
+                         (if (and sdominfo.reached
+                                  (not var-sdominfo.reached)
+                                  ;; (set::in (lit-fix (car super)) sdominfo.doms)
+                                  )
+                             (make-obs-sdom-info-reached
+                              (filter-lits-by-level
+                               (get-u32 (lit->var (car super)) aignet-levels)
+                               sdominfo.doms aignet-levels))
+                              ;; (set::delete (lit-fix (car super)) sdominfo.doms))
+                           sdominfo)))
+                      obs-sdom-array)))
+    (obs-sdom-info-store-intersections (cdr super) sdominfo aignet-levels obs-sdom-array))
   ///
   (defret <fn>-length
     (implies (< (lits-max-id-val super) (len obs-sdom-array))
              (equal (len new-obs-sdom-array)
                     (len obs-sdom-array))))
 
-  (defret <fn>-index
-    (equal (nth i new-obs-sdom-array)
-           (if (member-equal (nfix i) (lit-list-vars super))
-               (obs-sdom-info-intersect (nth i obs-sdom-array) sdominfo)
-             (nth i obs-sdom-array)))
+  (defret <fn>-index-unchanged
+    (implies (not (member-equal (nfix i) (lit-list-vars super)))
+             (equal (nth i new-obs-sdom-array)
+                    (nth i obs-sdom-array)))
     :hints(("Goal" :in-theory (enable lit-list-vars))))
 
-  (defret obs-sdom-fanins-ok-of-obs-sdom-info-store-intersections
-    (implies (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array)
-             (obs-sdom-fanins-ok lits fanout-sdominfo new-obs-sdom-array))
-    :hints (("goal" :in-theory (enable obs-sdom-fanins-ok)
-             :induct (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array))))
+  (local (defthm obs-sdom-info-subsetp-of-filter
+           (implies (obs-sdom-info->reached sdominfo)
+                    (obs-sdom-info-subsetp
+                     (make-obs-sdom-info-reached
+                      (filter-lits-by-level lev
+                                            (obs-sdom-info->doms sdominfo)
+                                            aignet-levels))
+                     sdominfo))
+           :hints(("Goal" :in-theory (e/d (obs-sdom-info-subsetp)
+                                          (subsetp-equal-of-filter-lits-by-level))
+                   :use ((:instance subsetp-equal-of-filter-lits-by-level
+                          (x (obs-sdom-info->doms sdominfo)) (bound lev)))))))
 
-  (defret obs-sdom-fanins-ok-of-obs-sdom-info-store-intersections
-    (implies (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array)
-             (obs-sdom-fanins-ok lits fanout-sdominfo new-obs-sdom-array))
-    :hints (("goal" :in-theory (enable obs-sdom-fanins-ok)
-             :induct (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array))))
+  (defret <fn>-index-new
+    (implies (member-equal (nfix i) (lit-list-vars super))
+             (obs-sdom-info-subsetp (nth i new-obs-sdom-array) sdominfo))
+    :hints(("Goal" :in-theory (enable lit-list-vars)
+            :induct <call>
+            :do-not-induct t)))
+
+  (defret <fn>-index-new-subsetp-of-previous
+    (obs-sdom-info-subsetp (nth i new-obs-sdom-array)
+                           (nth i obs-sdom-array))
+    :hints(("Goal" :in-theory (enable lit-list-vars
+                                      obs-sdom-info-subsetp-transitive)
+            :induct <call>
+            :do-not-induct t)))
+
+
+  (local (defthmd obs-sdom-info-subsetp-transitive2
+           (implies (and (obs-sdom-info-subsetp b c)
+                         (obs-sdom-info-subsetp a b))
+                    (obs-sdom-info-subsetp a c))
+           :hints(("Goal" :in-theory (enable obs-sdom-info-subsetp-transitive)))))
 
   (local (defthm member-lit->var-of-lit-list-vars
            (implies (member k x)
                     (member (lit->var k) (lit-list-vars x)))
            :hints(("Goal" :in-theory (enable member lit-list-vars)))))
+
+  (defret obs-sdom-fanins-ok-of-obs-sdom-info-store-intersections
+    (implies (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array)
+             (obs-sdom-fanins-ok lits fanout-sdominfo new-obs-sdom-array))
+    :hints (("goal" :in-theory (enable obs-sdom-fanins-ok
+                                       obs-sdom-info-subsetp-transitive2)
+             :induct (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array))))
+
+  (defret obs-sdom-fanins-ok-of-obs-sdom-info-store-intersections
+    (implies (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array)
+             (obs-sdom-fanins-ok lits fanout-sdominfo new-obs-sdom-array))
+    :hints (("goal" :in-theory (enable obs-sdom-fanins-ok)
+             :induct (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array))))
   
   (defret obs-sdom-fanins-ok-of-obs-sdom-info-store-intersections-self
     (implies (subsetp-equal lits super)
              (obs-sdom-fanins-ok lits sdominfo new-obs-sdom-array))
     :hints (("goal" :in-theory (enable obs-sdom-fanins-ok subsetp-equal)
-             :induct (subsetp-equal lits super)))))
+             :induct (subsetp-equal lits super))))
+
+  (local (defthm obs-sdom-info-well-formedp-of-make
+           (implies (aignet-lit-listp x aignet)
+                    (obs-sdom-info-well-formedp
+                     (make-obs-sdom-info-reached x) aignet))
+           :hints(("Goal" :in-theory (enable obs-sdom-info-well-formedp)))))
+
+  (defret obs-sdom-array-well-formedp-of-<fn>
+    (implies (and (obs-sdom-array-well-formedp obs-sdom-array aignet)
+                  (obs-sdom-info-well-formedp sdominfo aignet))
+             (obs-sdom-array-well-formedp new-obs-sdom-array aignet)))
+
+  (local (defthm obs-sdom-info-intersect-nil
+           (equal (obs-sdom-info-intersect nil sdominfo) nil)
+           :hints(("Goal" :in-theory (enable obs-sdom-info-intersect
+                                             set::intersect)))))
+
+  (defret <fn>-preserves-empty-dominators
+    (implies (equal (nth i obs-sdom-array)
+                    (make-obs-sdom-info-reached nil))
+             (equal (nth i new-obs-sdom-array)
+                    (make-obs-sdom-info-reached nil)))))
 
 
 
-(define obs-sdom-info-sweep-node ((n natp) obs-sdom-array refcounts aignet)
+(define obs-sdom-info-sweep-node ((n natp) obs-sdom-array refcounts aignet-levels aignet)
   :guard (and (id-existsp n aignet)
+              (ec-call (obs-sdom-array-well-formedp obs-sdom-array aignet))
               (< n (sdominfo-length obs-sdom-array))
-              (< n (u32-length refcounts)))
+              (< n (u32-length refcounts))
+              (<= (num-fanins aignet) (u32-length aignet-levels)))
   :returns new-obs-sdom-array
   (b* ((slot0 (id->slot n 0 aignet))
        (type (snode->type slot0)))
@@ -1390,7 +1746,7 @@
                  (xor (eql (id->regp n aignet) 1))
                  (child-sdominfo (if xor sdominfo (obs-sdom-info-add-lits super sdominfo))))
               (obs-sdom-info-store-intersections
-               super child-sdominfo obs-sdom-array))
+               super child-sdominfo aignet-levels obs-sdom-array))
       :otherwise obs-sdom-array))
   ///
   (defret <fn>-length
@@ -1429,19 +1785,25 @@
                     (make-obs-sdom-info-reached nil))
              (equal (nth i new-obs-sdom-array)
                     (make-obs-sdom-info-reached nil)))
-    :hints(("Goal" :in-theory (enable obs-sdom-info-intersect)))))
+    :hints(("Goal" :in-theory (enable obs-sdom-info-intersect))))
+
+  (defret <fn>-preserves-well-formedp
+    (implies (obs-sdom-array-well-formedp obs-sdom-array aignet)
+             (obs-sdom-array-well-formedp new-obs-sdom-array aignet))))
 
 
-(define obs-sdom-info-sweep-nodes ((n natp) obs-sdom-array refcounts aignet)
+(define obs-sdom-info-sweep-nodes ((n natp) obs-sdom-array refcounts aignet-levels aignet)
   :guard (and (<= n (num-fanins aignet))
               (<= n (sdominfo-length obs-sdom-array))
-              (<= n (u32-length refcounts)))
+              (<= n (u32-length refcounts))
+              (ec-call (obs-sdom-array-well-formedp obs-sdom-array aignet))
+              (<= (num-fanins aignet) (u32-length aignet-levels)))
   :guard-hints (("goal" :in-theory (enable aignet-idp)))
   :returns new-obs-sdom-array
   (b* (((when (zp n))
         obs-sdom-array)
-       (obs-sdom-array (obs-sdom-info-sweep-node (1- n) obs-sdom-array refcounts aignet)))
-    (obs-sdom-info-sweep-nodes (1- n) obs-sdom-array refcounts aignet))
+       (obs-sdom-array (obs-sdom-info-sweep-node (1- n) obs-sdom-array refcounts aignet-levels aignet)))
+    (obs-sdom-info-sweep-nodes (1- n) obs-sdom-array refcounts aignet-levels aignet))
   ///
   (defret <fn>-length
     (implies (<= (nfix n) (len obs-sdom-array))
@@ -1462,20 +1824,23 @@
                     (make-obs-sdom-info-reached nil))
              (equal (nth i new-obs-sdom-array)
                     (make-obs-sdom-info-reached nil)))
-    :hints(("Goal" :in-theory (enable obs-sdom-info-intersect)))))
+    :hints(("Goal" :in-theory (enable obs-sdom-info-intersect))))
+
+  (defret <fn>-preserves-well-formedp
+    (implies (obs-sdom-array-well-formedp obs-sdom-array aignet)
+             (obs-sdom-array-well-formedp new-obs-sdom-array aignet))))
 
 
 (define obs-sdom-info-set-pos ((n natp) obs-sdom-array aignet)
   :guard (and (<= n (num-outs aignet))
               (<= (num-fanins aignet) (sdominfo-length obs-sdom-array)))
-  :measure (nfix (- (num-outs aignet) (nfix n)))
+  :measure (nfix n)
   :returns new-obs-sdom-array
-  (b* (((when (mbe :logic (zp (- (num-outs aignet) (nfix n)))
-                   :exec (eql n (num-outs aignet))))
+  (b* (((when (zp n))
         obs-sdom-array)
-       (fanin-node (lit->var (outnum->fanin n aignet)))
+       (fanin-node (lit->var (outnum->fanin (1- n) aignet)))
        (obs-sdom-array (set-sdominfo fanin-node (make-obs-sdom-info-reached nil) obs-sdom-array)))
-    (obs-sdom-info-set-pos (1+ (lnfix n)) obs-sdom-array aignet))
+    (obs-sdom-info-set-pos (1- n) obs-sdom-array aignet))
   ///
   (defret <fn>-length
     (implies (< (fanin-count aignet) (len obs-sdom-array))
@@ -1489,22 +1854,24 @@
                     (make-obs-sdom-info-reached nil))))
 
   (defret fanin-sdominfo-of-<fn>
-    (implies (and (<= (nfix n) (nfix k))
-                  (< (nfix k) (num-outs aignet)))
+    (implies (< (nfix k) (nfix n))
              (equal (nth (lit->var (fanin 0 (lookup-stype k :po aignet))) new-obs-sdom-array)
-                    (make-obs-sdom-info-reached nil)))))
+                    (make-obs-sdom-info-reached nil))))
+
+  (defret <fn>-preserves-well-formedp
+    (implies (obs-sdom-array-well-formedp obs-sdom-array aignet)
+             (obs-sdom-array-well-formedp new-obs-sdom-array aignet))))
 
 (define obs-sdom-info-set-nxsts ((n natp) obs-sdom-array aignet)
   :guard (and (<= n (num-regs aignet))
               (<= (num-fanins aignet) (sdominfo-length obs-sdom-array)))
-  :measure (nfix (- (num-regs aignet) (nfix n)))
+  :measure (nfix n)
   :returns new-obs-sdom-array
-  (b* (((when (mbe :logic (zp (- (num-regs aignet) (nfix n)))
-                   :exec (eql n (num-regs aignet))))
+  (b* (((when (zp n))
         obs-sdom-array)
-       (fanin-node (lit->var (regnum->nxst n aignet)))
+       (fanin-node (lit->var (regnum->nxst (1- n) aignet)))
        (obs-sdom-array (set-sdominfo fanin-node (make-obs-sdom-info-reached nil) obs-sdom-array)))
-    (obs-sdom-info-set-nxsts (1+ (lnfix n)) obs-sdom-array aignet))
+    (obs-sdom-info-set-nxsts (1- n) obs-sdom-array aignet))
   ///
   (defret <fn>-length
     (implies (< (fanin-count aignet) (len obs-sdom-array))
@@ -1518,20 +1885,24 @@
                     (make-obs-sdom-info-reached nil))))
 
   (defret fanin-sdominfo-of-<fn>
-    (implies (and (<= (nfix n) (nfix k))
-                  (< (nfix k) (num-regs aignet)))
+    (implies (< (nfix k) (nfix n))
              (equal (nth (lit->var (lookup-reg->nxst k aignet)) new-obs-sdom-array)
-                    (make-obs-sdom-info-reached nil)))))
+                    (make-obs-sdom-info-reached nil))))
+
+  (defret <fn>-preserves-well-formedp
+    (implies (obs-sdom-array-well-formedp obs-sdom-array aignet)
+             (obs-sdom-array-well-formedp new-obs-sdom-array aignet))))
 
 
-(define aignet-compute-obs-sdom-info (obs-sdom-array refcounts aignet)
+(define aignet-compute-obs-sdom-info (obs-sdom-array refcounts aignet-levels aignet)
   :returns new-obs-sdom-array
-  :guard (<= (num-fanins aignet) (u32-length refcounts))
+  :guard (and (<= (num-fanins aignet) (u32-length refcounts))
+              (<= (num-fanins aignet) (u32-length aignet-levels)))
   (b* ((obs-sdom-array (resize-sdominfo 0 obs-sdom-array))
        (obs-sdom-array (resize-sdominfo (num-fanins aignet) obs-sdom-array))
-       (obs-sdom-array (obs-sdom-info-set-pos 0 obs-sdom-array aignet))
-       (obs-sdom-array (obs-sdom-info-set-nxsts 0 obs-sdom-array aignet)))
-    (obs-sdom-info-sweep-nodes (num-fanins aignet) obs-sdom-array refcounts aignet))
+       (obs-sdom-array (obs-sdom-info-set-pos (num-outs aignet) obs-sdom-array aignet))
+       (obs-sdom-array (obs-sdom-info-set-nxsts (num-regs aignet) obs-sdom-array aignet)))
+    (obs-sdom-info-sweep-nodes (num-fanins aignet) obs-sdom-array refcounts aignet-levels aignet))
   ///
   (defret <fn>-length
     (equal (len new-obs-sdom-array) (num-fanins aignet)))
@@ -1549,7 +1920,36 @@
   (defret <fn>-fanouts-ok
     (obs-sdom-fanout-ok i new-obs-sdom-array refcounts aignet)
     :hints(("Goal" :in-theory (enable obs-sdom-fanout-ok-out-of-bounds)
-            :cases ((< (nfix i) (+ 1 (fanin-count aignet))))))))
+            :cases ((< (nfix i) (+ 1 (fanin-count aignet)))))))
+
+  (defret well-formedp-of-<fn>
+    (obs-sdom-array-well-formedp new-obs-sdom-array aignet)))
+
+(define aignet-compute-obs-sdom-info-n-outputs ((n natp) obs-sdom-array refcounts aignet-levels aignet)
+  :returns new-obs-sdom-array
+  :guard (and (<= n (num-outs aignet))
+              (<= (num-fanins aignet) (u32-length refcounts))
+              (<= (num-fanins aignet) (u32-length aignet-levels)))
+  (b* ((obs-sdom-array (resize-sdominfo 0 obs-sdom-array))
+       (obs-sdom-array (resize-sdominfo (num-fanins aignet) obs-sdom-array))
+       (obs-sdom-array (obs-sdom-info-set-pos n obs-sdom-array aignet)))
+    (obs-sdom-info-sweep-nodes (num-fanins aignet) obs-sdom-array refcounts aignet-levels aignet))
+  ///
+  (defret <fn>-length
+    (equal (len new-obs-sdom-array) (num-fanins aignet)))
+
+  (defret po-sdominfo-of-<fn>
+    (implies (< (nfix k) (nfix n))
+             (equal (nth (lit->var (fanin 0 (lookup-stype k :po aignet))) new-obs-sdom-array)
+                    (make-obs-sdom-info-reached nil))))
+
+  (defret <fn>-fanouts-ok
+    (obs-sdom-fanout-ok i new-obs-sdom-array refcounts aignet)
+    :hints(("Goal" :in-theory (enable obs-sdom-fanout-ok-out-of-bounds)
+            :cases ((< (nfix i) (+ 1 (fanin-count aignet)))))))
+
+  (defret well-formedp-of-<fn>
+    (obs-sdom-array-well-formedp new-obs-sdom-array aignet)))
 
 
 
@@ -1564,7 +1964,7 @@
 
   (defthm obs-sdom-array-correct-of-obs-sdom-info-sweep-nodes
     (obs-sdom-array-correct
-     (obs-sdom-info-sweep-nodes (+ 1 (fanin-count aignet)) obs-sdom-array refcounts aignet)
+     (obs-sdom-info-sweep-nodes (+ 1 (fanin-count aignet)) obs-sdom-array refcounts aignet-levels aignet)
      refcounts
      aignet)
     :hints(("Goal" :in-theory (enable obs-sdom-array-correct
@@ -1572,13 +1972,18 @@
             :cases ((<= (nfix
                          (obs-sdom-array-correct-witness
                           (obs-sdom-info-sweep-nodes (+ 1 (fanin-count aignet)) 
-                                                    obs-sdom-array refcounts aignet)
+                                                    obs-sdom-array refcounts aignet-levels aignet)
                           refcounts
                           aignet))
                         (fanin-count aignet))))))
 
   (defthm obs-sdom-array-correct-of-aignet-compute-obs-sdom-info
-    (obs-sdom-array-correct (aignet-compute-obs-sdom-info obs-sdom-array refcounts aignet)
+    (obs-sdom-array-correct (aignet-compute-obs-sdom-info obs-sdom-array refcounts aignet-levels aignet)
+                           refcounts aignet)
+    :hints(("Goal" :in-theory (enable obs-sdom-array-correct))))
+
+  (defthm obs-sdom-array-correct-of-aignet-compute-obs-sdom-info-n-outputs
+    (obs-sdom-array-correct (aignet-compute-obs-sdom-info-n-outputs n obs-sdom-array refcounts aignet-levels aignet)
                            refcounts aignet)
     :hints(("Goal" :in-theory (enable obs-sdom-array-correct)))))
 
@@ -1869,11 +2274,12 @@
                 (not (obs-sdom-info->reached (nth source obs-sdom-array)))
                 (obs-sdom-info->reached (nth sink obs-sdom-array))
                 (equal (obs-sdom-info->doms (nth sink obs-sdom-array)) nil)
-                (< 1 (nfix (nth source refcounts))))
-           (equal (id-eval-toggle sink source invals regvals aignet)
-                  (id-eval sink invals regvals aignet)))
+                (< 1 (nfix (nth source refcounts)))
+                (ids-multiply-referenced toggles refcounts))
+           (equal (id-eval-toggle sink (cons source toggles) invals regvals aignet)
+                  (id-eval-toggle sink toggles invals regvals aignet)))
   :hints (("goal" :use ((:instance obs-sdom-array-implies-path-contains-dominators
-                         (path (toggle-witness-spath sink source invals regvals refcounts aignet))))
+                         (path (toggle-witness-spath sink source toggles invals regvals refcounts aignet))))
            :in-theory (disable obs-sdom-array-implies-path-contains-dominators))))
 
 
@@ -1881,19 +2287,20 @@
 (defthm toggle-does-not-affect-output-when-sdom-false
   (implies (and (obs-sdom-array-correct obs-sdom-array refcounts aignet)
                 (member-equal lit (obs-sdom-info->doms (nth source obs-sdom-array)))
-                (equal (lit-eval lit invals regvals aignet) 0)
-                (equal (lit-eval-toggle lit source invals regvals aignet) 0)
+                (equal (lit-eval-toggle lit toggles invals regvals aignet) 0)
+                (equal (lit-eval-toggle lit (cons source toggles) invals regvals aignet) 0)
                 (obs-sdom-info->reached (nth sink obs-sdom-array))
                 (equal (obs-sdom-info->doms (nth sink obs-sdom-array)) nil)
-                (< 1 (nfix (nth source refcounts))))
-           (equal (id-eval-toggle sink source invals regvals aignet)
-                  (id-eval sink invals regvals aignet)))
+                (< 1 (nfix (nth source refcounts)))
+                (ids-multiply-referenced toggles refcounts))
+           (equal (id-eval-toggle sink (cons source toggles) invals regvals aignet)
+                  (id-eval-toggle sink toggles invals regvals aignet)))
   :hints (("goal" :use ((:instance obs-sdom-array-implies-path-contains-dominators
-                         (path (toggle-witness-spath sink source invals regvals refcounts aignet)))
+                         (path (toggle-witness-spath sink source toggles invals regvals refcounts aignet)))
                         (:instance lit-list-has-const0-under-toggle-when-member
                          (x (spath-and-literals
                              sink
-                             (toggle-witness-spath sink source invals regvals refcounts aignet)
+                             (toggle-witness-spath sink source toggles invals regvals refcounts aignet)
                              refcounts aignet))
                          (toggle source)))
            :in-theory (disable obs-sdom-array-implies-path-contains-dominators
@@ -1908,3 +2315,871 @@
         nil))
     (cons (get-sdominfo n obs-sdom-array)
           (obs-sdom-array-collect (1+ (lnfix n)) obs-sdom-array))))
+
+
+(define collect-unreachable-nodes ((n natp) refcounts obs-sdom-array)
+  :measure (nfix (- (sdominfo-length obs-sdom-array) (nfix n)))
+  :guard (<= (sdominfo-length obs-sdom-array) (u32-length refcounts))
+  (if (<= (sdominfo-length obs-sdom-array) (lnfix n))
+      nil
+    (if (and (< 1 (get-u32 n refcounts))
+             (not (obs-sdom-info->reached (get-sdominfo n obs-sdom-array))))
+        (cons (lnfix n)
+              (collect-unreachable-nodes (1+ (lnfix n)) refcounts obs-sdom-array))
+      (collect-unreachable-nodes (1+ (lnfix n)) refcounts obs-sdom-array))))
+
+
+(define mark-unreachable-nodes ((n natp) refcounts obs-sdom-array mark)
+  :returns (new-mark)
+  :measure (nfix (- (sdominfo-length obs-sdom-array) (nfix n)))
+  :guard (and (<= n (sdominfo-length obs-sdom-array))
+              (<= (sdominfo-length obs-sdom-array) (u32-length refcounts))
+              (<= (sdominfo-length obs-sdom-array) (bits-length mark)))
+  (b* (((when (mbe :logic (zp (- (sdominfo-length obs-sdom-array) (nfix n)))
+                   :exec (eql (sdominfo-length obs-sdom-array) n)))
+        mark)
+       ((unless (and (< 1 (get-u32 n refcounts))
+                     (not (obs-sdom-info->reached (get-sdominfo n obs-sdom-array)))))
+        (mark-unreachable-nodes (1+ (lnfix n)) refcounts obs-sdom-array mark))
+       (mark (set-bit n 1 mark)))
+    (mark-unreachable-nodes (1+ (lnfix n)) refcounts obs-sdom-array mark))
+  ///
+  (defret nth-bit-of-<fn>
+    (equal (nth i new-mark)
+           (if (and (<= (nfix n) (nfix i))
+                    (< (nfix i) (len obs-sdom-array))
+                    (< 1 (nfix (nth i refcounts)))
+                    (not (obs-sdom-info->reached (nth i obs-sdom-array))))
+               1
+             (nth i mark))))
+
+  (defret length-of-<fn>
+    (implies (<= (len obs-sdom-array) (len mark))
+             (equal (len new-mark) (len mark)))))
+
+
+(define init-unreachable-node-copies ((n natp) refcounts obs-sdom-array copy)
+  :returns (new-copy)
+  :measure (nfix (- (sdominfo-length obs-sdom-array) (nfix n)))
+  :guard (and (<= n (sdominfo-length obs-sdom-array))
+              (<= (sdominfo-length obs-sdom-array) (u32-length refcounts))
+              (<= (sdominfo-length obs-sdom-array) (lits-length copy)))
+  (b* (((when (mbe :logic (zp (- (sdominfo-length obs-sdom-array) (nfix n)))
+                   :exec (eql (sdominfo-length obs-sdom-array) n)))
+        copy)
+       ((unless (and (< 1 (get-u32 n refcounts))
+                     (not (obs-sdom-info->reached (get-sdominfo n obs-sdom-array)))))
+        (init-unreachable-node-copies (1+ (lnfix n)) refcounts obs-sdom-array copy))
+       (copy (set-lit n 0 copy)))
+    (init-unreachable-node-copies (1+ (lnfix n)) refcounts obs-sdom-array copy))
+  ///
+  (defret nth-lit-of-<fn>
+    (equal (nth-lit i new-copy)
+           (if (and (<= (nfix n) (nfix i))
+                    (< (nfix i) (len obs-sdom-array))
+                    (< 1 (nfix (nth i refcounts)))
+                    (not (obs-sdom-info->reached (nth i obs-sdom-array))))
+               0
+             (nth-lit i copy))))
+
+  (defret length-of-<fn>
+    (implies (<= (len obs-sdom-array) (len copy))
+             (equal (len new-copy) (len copy))))
+
+  (defret aignet-copies-in-bounds-of-<fn>
+    (implies (aignet-copies-in-bounds copy aignet2)
+             (aignet-copies-in-bounds new-copy aignet2))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defret aignet-input-copies-in-bounds-of-<fn>
+    (implies (aignet-input-copies-in-bounds copy aignet aignet2)
+             (aignet-input-copies-in-bounds new-copy aignet aignet2))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defret aignet-marked-copies-in-bounds-of-<fn>
+    (implies (aignet-marked-copies-in-bounds copy mark aignet2)
+             (aignet-marked-copies-in-bounds new-copy 
+                                             (mark-unreachable-nodes n refcounts obs-sdom-array mark)
+                                             aignet2))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause))))))))
+
+
+(define nat-list-max-or-minus1 ((x nat-listp))
+  (if (atom x)
+      -1
+    (max (lnfix (car x))
+         (nat-list-max-or-minus1 (cdr x)))))
+
+(define unreachable-node-toggles ((n natp) refcounts obs-sdom-array invals regvals aignet)
+  :returns (toggles nat-listp)
+  :measure (nfix n)
+  :guard (and (<= n (num-fanins aignet))
+              (<= (num-fanins aignet) (sdominfo-length obs-sdom-array))
+              (<= (num-fanins aignet) (u32-length refcounts))
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals)))
+  :verify-guards nil
+  (b* (((when (zp n)) nil)
+       (n (1- n))
+       ((unless (and (< 1 (get-u32 n refcounts))
+                     (not (obs-sdom-info->reached (get-sdominfo n obs-sdom-array)))))
+        (unreachable-node-toggles n refcounts obs-sdom-array invals regvals aignet))
+       (rest (unreachable-node-toggles n refcounts obs-sdom-array invals regvals aignet))
+       (toggledp (eql (id-eval-toggle n rest invals regvals aignet) 1)))
+    (if toggledp (cons n rest) rest))
+  ///
+  (verify-guards unreachable-node-toggles
+    :hints(("Goal" :in-theory (enable aignet-idp))))
+
+  (defret ids-multiply-referenced-of-<fn>
+    (ids-multiply-referenced toggles refcounts)
+    :hints(("Goal" :in-theory (enable ids-multiply-referenced))))
+
+  (defret nat-list-max-or-minus1-of-<fn>
+    (< (nat-list-max-or-minus1 toggles) (nfix n))
+    :hints(("Goal" :in-theory (enable nat-list-max-or-minus1)))
+    :rule-classes :linear)
+
+  (local (defthm not-member-by-nat-list-max-or-minus1
+           (implies (< (nat-list-max-or-minus1 x) i)
+                    (not (member i (acl2::nat-list-fix x))))
+           :hints(("Goal" :in-theory (enable acl2::nat-list-fix
+                                             nat-list-max-or-minus1)))))
+
+  (local (defthm id-eval-toggle-of-cons-self
+           (implies (< (nat-list-max-or-minus1 toggles) (nfix i))
+                    (equal (id-eval-toggle i (cons i toggles) invals regvals aignet)
+                           (b-not (id-eval-toggle i toggles invals regvals aignet))))
+           :hints(("Goal" :expand ((:free (toggles)
+                                    (id-eval-toggle i toggles invals regvals aignet)))))))
+
+  ;; (defthm id-eval-toggle-of-cons-greater
+  ;;   (implies (< (nfix i) (nfix n))
+  ;;            (equal (id-eval-toggle i (cons n toggles) invals regvals aignet)
+  ;;                   (id-eval-toggle i toggles invals regvals aignet))))
+
+  (defret id-eval-toggle-of-<fn>
+    (implies (and (obs-sdom-array-correct obs-sdom-array refcounts aignet)
+                  (obs-sdom-info->reached (nth sink obs-sdom-array))
+                  (equal (obs-sdom-info->doms (nth sink obs-sdom-array)) nil))
+             (equal (id-eval-toggle sink toggles invals regvals aignet)
+                    (id-eval sink invals regvals aignet))))
+
+  (defret lit-eval-toggle-of-<fn>
+    (implies (and (obs-sdom-array-correct obs-sdom-array refcounts aignet)
+                  (obs-sdom-info->reached (nth (lit->var lit) obs-sdom-array))
+                  (equal (obs-sdom-info->doms (nth (lit->var lit) obs-sdom-array)) nil))
+             (equal (lit-eval-toggle lit toggles invals regvals aignet)
+                    (lit-eval lit invals regvals aignet)))
+    :hints(("Goal" :in-theory (e/d (lit-eval-toggle lit-eval)
+                                   (<fn>)))))
+
+  (defret id-eval-toggle-of-unreachable-node-of-<fn>
+    (implies (and (< (nfix i) (nfix n))
+                  (< 1 (nfix (nth i refcounts)))
+                  (not (obs-sdom-info->reached (nth i obs-sdom-array))))
+             (equal (id-eval-toggle i toggles invals regvals aignet) 0))
+    :hints (("goal" :induct <call>)
+            (and stable-under-simplificationp
+                 '(:cases ((equal (nfix i) (+ -1 n)))))))
+
+  (defret member-of-<fn>-when-not-refcounts
+    (implies (<= (nfix (nth i refcounts)) 1)
+             (not (member-equal i toggles))))
+
+  (defret member-of-<fn>-when-reached
+    (implies (obs-sdom-info->reached (nth i obs-sdom-array))
+             (not (member-equal i toggles))))
+
+  (defret member-of-<fn>-when-greater
+    (implies (<= (nfix n) (nfix i))
+             (not (member-equal i toggles))))
+
+  (defret member-of-<fn>-when-non-gate
+    (implies (not (equal (ctype (stype (car (lookup-id i aignet)))) :gate))
+             (iff (member-equal i toggles)
+                  (and (equal (id-eval i invals regvals aignet) 1)
+                       (< 1 (nfix (nth i refcounts)))
+                       (not (obs-sdom-info->reached (nth i obs-sdom-array)))
+                       (< (nfix i) (nfix n)))))
+    :hints(("Goal" :in-theory (enable id-eval-toggle id-eval)))))
+       
+       
+
+
+
+
+(define ids-marked ((x nat-listp) mark)
+  (if (atom x)
+      t
+    (and (mbe :logic (equal 1 (get-bit (car x) mark))
+              :exec (and (< (car x) (bits-length mark))
+                         (eql 1 (get-bit (car x) mark))))
+         (ids-marked (cdr x) mark)))
+  ///
+  (defthmd member-implies-marked-when-ids-marked
+    (implies (and (ids-marked x mark)
+                  (member-equal n x))
+             (equal (nth n mark) 1)))
+
+  (defthmd member-nat-list-fix-implies-marked-when-ids-marked
+    (implies (and (ids-marked x mark)
+                  (member-equal (nfix n) (acl2::nat-list-fix x)))
+             (equal (nth n mark) 1))
+    :hints(("Goal" :in-theory (enable acl2::nat-list-fix)))))
+
+(define ids-marked-badguy ((x nat-listp) mark)
+  :returns (badguy)
+  (if (atom x)
+      0
+    (if (mbe :logic (equal 1 (get-bit (car x) mark))
+             :exec (and (< (car x) (bits-length mark))
+                        (eql 1 (get-bit (car x) mark))))
+        (ids-marked-badguy (cdr x) mark)
+      (lnfix (car x))))
+  ///
+  (defret ids-not-marked-implies-badguy
+    (implies (not (ids-marked x mark))
+             (and (member-equal badguy (acl2::nat-list-fix x))
+                  (not (equal (nth badguy mark) 1))))
+    :hints(("Goal" :in-theory (enable ids-marked)))))
+
+
+(defsection aignet-copy-dfs-rec-unreachable
+  
+
+  (defun-sk dfs-copy-toggle-invar (aignet mark copy toggles invals regvals aignet2)
+    (forall id
+            (implies (or (equal 1 (get-bit id mark))
+                         (equal (ctype (stype (car (lookup-id id aignet)))) :input))
+                     (equal (lit-eval (nth-lit id copy) invals regvals aignet2)
+                            (id-eval-toggle id toggles
+                                            ;; (input-copy-values 0 invals regvals aignet copy aignet2)
+                                            ;; (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                            invals regvals
+                                            aignet))))
+    :rewrite :direct)
+
+  (in-theory (disable dfs-copy-toggle-invar))
+
+  (local (defthm equal-b-xor
+           (implies (equal (b-xor a b) c)
+                    (equal (b-xor a c) (bfix b)))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
+  (local (defthm b-xor-nest
+           (equal (b-xor a (b-xor a b))
+                  (bfix b))
+           :hints(("Goal" :in-theory (enable b-xor)))))
+
+  (local (defthm dfs-copy-toggle-invar-implies-id-eval
+           (implies (and (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+                         ;; (aignet-idp id aignet)
+                         (equal 1 (get-bit id mark)))
+                    (equal (id-eval (lit->var (nth-lit id copy)) invals regvals aignet2)
+                           (b-xor (lit->neg (nth-lit id copy))
+                                  (id-eval-toggle id toggles
+                                                  invals regvals
+                                                  ;; (input-copy-values 0 invals regvals aignet copy aignet2)
+                                                  ;; (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                                  aignet))))
+           :hints (("goal" :use dfs-copy-toggle-invar-necc
+                    :in-theory (e/d (lit-eval lit-eval-toggle) (dfs-copy-toggle-invar-necc))))))
+
+  (defthm dfs-copy-toggle-invar-implies-eval-lit-copy
+    (implies (and (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+                  ;; (aignet-idp id aignet)
+                  (equal 1 (get-bit (lit->var lit) mark)))
+             (equal (lit-eval (lit-copy lit copy) invals regvals aignet2)
+                    (lit-eval-toggle lit toggles
+                                     invals regvals
+                                     ;; (input-copy-values 0 invals regvals aignet copy aignet2)
+                                     ;; (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                     aignet)))
+    :hints (("goal" :use ((:instance dfs-copy-toggle-invar-necc
+                           (id (lit->var lit))))
+             :in-theory (e/d (lit-eval lit-eval-toggle lit-copy) (dfs-copy-toggle-invar-necc)))))
+
+  (defthm aignet-copy-dfs-rec-preserves-ids-marked
+    (implies (ids-marked x mark)
+             (b* (((mv mark ?copy ?strash ?aignet2)
+                   (aignet-copy-dfs-rec
+                    id aignet mark copy
+                    strash gatesimp aignet2)))
+               (ids-marked x mark)))
+    :hints (("goal" :in-theory (enable ids-marked))))
+
+
+  (local (in-theory (enable (:i aignet-copy-dfs-rec))))
+  
+
+  (defthm dfs-copy-toggle-invar-holds-of-aignet-copy-dfs-rec
+    (implies (and ;; (aignet-idp id aignet)
+              (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+              (ids-marked toggles mark)
+              (aignet-input-copies-in-bounds copy aignet aignet2)
+              (aignet-marked-copies-in-bounds copy mark aignet2))
+             (b* (((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-rec
+                    id aignet mark copy
+                    strash gatesimp aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-copy-dfs-rec
+              id aignet mark copy
+              strash gatesimp aignet2))
+            (and stable-under-simplificationp
+                 (let ((last (car (last clause))))
+                   `(:computed-hint-replacement
+                     ((let ((witness (acl2::find-call-lst
+                                      'dfs-copy-toggle-invar-witness
+                                      clause)))
+                        `(:clause-processor
+                          (acl2::simple-generalize-cp
+                           clause '((,witness . witness-id))))))
+                     :expand (,last)
+                     :do-not '(generalize fertilize eliminate-destructors)
+                     :do-not-induct t)))
+            ;; (and stable-under-simplificationp
+            ;;      '(:expand ((:free (invals regvals)
+            ;;                  (id-eval-toggle id toggles invals regvals aignet)))
+            ;;        :in-theory (enable member-nat-list-fix-implies-marked-when-ids-marked
+            ;;                           eval-xor-of-lits-toggle
+            ;;                           eval-and-of-lits-toggle)))
+            (and stable-under-simplificationp
+                 (acl2::use-termhint
+                  (acl2::termhint-seq
+                   '(:expand ((:free (invals regvals) (id-eval-toggle id toggles invals regvals aignet)))
+                     :in-theory (enable eval-xor-of-lits-toggle
+                                        eval-and-of-lits-toggle
+                                        member-nat-list-fix-implies-marked-when-ids-marked))
+                   (b* ((suff (lookup-id id aignet)))
+                     (case (stype (car suff))
+                       (:and (b* ((f0 (fanin 0 suff))
+                                  ((mv mark1 copy1 & aignet21)
+                                   (aignet-copy-dfs-rec (lit->var f0) aignet mark copy strash gatesimp aignet2)))
+                               (and (equal (lit-copy f0 copy1) 0)
+                                    `(:use ((:instance dfs-copy-toggle-invar-implies-eval-lit-copy
+                                             (lit ,(acl2::hq f0))
+                                             (mark ,(acl2::hq mark1))
+                                             (copy ,(acl2::hq copy1))
+                                             (aignet2 ,(acl2::hq aignet21))))
+                                      :in-theory (disable dfs-copy-toggle-invar-implies-eval-lit-copy)))))
+                       (:pi `(:use ((:instance acl2::mark-clause-is-true (x :pi)))))
+                       (:reg `(:use ((:instance acl2::mark-clause-is-true (x :reg)))))
+                       (:xor `(:use ((:instance acl2::mark-clause-is-true (x :xor)))))
+                       (:const `(:use ((:instance acl2::mark-clause-is-true (x :const))))))))))))
+
+  (defthm aignet-copy-dfs-outs-iter-preserves-ids-marked
+    (implies (ids-marked toggles mark)
+             (b* (((mv mark ?copy ?strash ?aignet2)
+                   (aignet-copy-dfs-outs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (ids-marked toggles mark)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-outs-iter))))
+  
+  (defthm aignet-copy-dfs-outs-iter-preserves-input-copies-in-bounds
+    (implies (aignet-input-copies-in-bounds copy aignet aignet2)
+             (b* (((mv ?mark ?copy ?strash ?aignet2)
+                   (aignet-copy-dfs-outs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (aignet-input-copies-in-bounds copy aignet aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-outs-iter))))
+
+
+  (defthm aignet-copy-dfs-outs-iter-preserves-marked-copies-in-bounds
+    (implies (and (aignet-marked-copies-in-bounds copy mark aignet2)
+                  (aignet-input-copies-in-bounds copy aignet aignet2))
+             (b* (((mv ?mark ?copy ?strash ?aignet2)
+                   (aignet-copy-dfs-outs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (aignet-marked-copies-in-bounds copy mark aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-outs-iter))))
+
+  
+
+  (defthm aignet-copy-dfs-outs-iter-preserves-dfs-copy-toggle-invar
+    (implies (and
+              (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+              (ids-marked toggles mark)
+              (aignet-input-copies-in-bounds copy aignet aignet2)
+              (aignet-marked-copies-in-bounds copy mark aignet2))
+             (b* (((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-outs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-outs-iter))))
+
+  (defthm aignet-copy-dfs-outs-preserves-dfs-copy-toggle-invar
+    (implies (and
+              (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+              (ids-marked toggles mark)
+              (aignet-input-copies-in-bounds copy aignet aignet2)
+              (aignet-marked-copies-in-bounds copy mark aignet2))
+             (b* (((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-outs
+                    aignet mark copy
+                    strash gatesimp aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-outs))))
+
+  (defthm aignet-copy-dfs-regs-iter-preserves-ids-marked
+    (implies (ids-marked toggles mark)
+             (b* (((mv mark ?copy ?strash ?aignet2)
+                   (aignet-copy-dfs-regs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (ids-marked toggles mark)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-regs-iter))))
+
+  (defthm aignet-copy-dfs-regs-iter-preserves-input-copies-in-bounds
+    (implies (aignet-input-copies-in-bounds copy aignet aignet2)
+             (b* (((mv ?mark ?copy ?strash ?aignet2)
+                   (aignet-copy-dfs-regs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (aignet-input-copies-in-bounds copy aignet aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-regs-iter))))
+
+
+  (defthm aignet-copy-dfs-regs-iter-preserves-marked-copies-in-bounds
+    (implies (and (aignet-marked-copies-in-bounds copy mark aignet2)
+                  (aignet-input-copies-in-bounds copy aignet aignet2))
+             (b* (((mv ?mark ?copy ?strash ?aignet2)
+                   (aignet-copy-dfs-regs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (aignet-marked-copies-in-bounds copy mark aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-regs-iter))))
+
+  (defthm aignet-copy-dfs-regs-iter-preserves-dfs-copy-toggle-invar
+    (implies (and
+              (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+              (ids-marked toggles mark)
+              (aignet-input-copies-in-bounds copy aignet aignet2)
+              (aignet-marked-copies-in-bounds copy mark aignet2))
+             (b* (((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-regs-iter
+                    n aignet mark copy
+                    strash gatesimp aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-regs-iter))))
+
+  (defthm aignet-copy-dfs-regs-preserves-dfs-copy-toggle-invar
+    (implies (and
+              (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+              (ids-marked toggles mark)
+              (aignet-input-copies-in-bounds copy aignet aignet2)
+              (aignet-marked-copies-in-bounds copy mark aignet2))
+             (b* (((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-regs
+                    aignet mark copy
+                    strash gatesimp aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-dfs-regs))))
+
+  (defthm aignet-copy-dfs-outs-and-regs-preserves-dfs-copy-toggle-invar
+    (implies (and
+              (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+              (ids-marked toggles mark)
+              (aignet-input-copies-in-bounds copy aignet aignet2)
+              (aignet-marked-copies-in-bounds copy mark aignet2))
+             (b* (((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-outs
+                    aignet mark copy
+                    strash gatesimp aignet2))
+                  ((mv mark copy ?strash aignet2)
+                   (aignet-copy-dfs-regs
+                    aignet mark copy
+                    strash gatesimp aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2))))
+
+
+  (std::defret-mutual <fn>-of-cons-po-node
+    (defret <fn>-of-cons-po-node
+      (equal (let ((aignet (cons (po-node outlit) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn id-eval)
+    (defret <fn>-of-cons-po-node
+      (equal (let ((aignet (cons (po-node outlit) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn lit-eval)
+    (defret <fn>-of-cons-po-node
+      (equal (let ((aignet (cons (po-node outlit) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn eval-xor-of-lits)
+    (defret <fn>-of-cons-po-node
+      (equal (let ((aignet (cons (po-node outlit) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn eval-and-of-lits)
+    :mutual-recursion id-eval)
+
+  (std::defret-mutual <fn>-of-cons-nxst-node
+    (defret <fn>-of-cons-nxst-node
+      (equal (let ((aignet (cons (nxst-node nxst reg) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn id-eval)
+    (defret <fn>-of-cons-nxst-node
+      (equal (let ((aignet (cons (nxst-node nxst reg) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn lit-eval)
+    (defret <fn>-of-cons-nxst-node
+      (equal (let ((aignet (cons (nxst-node nxst reg) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn eval-xor-of-lits)
+    (defret <fn>-of-cons-nxst-node
+      (equal (let ((aignet (cons (nxst-node nxst reg) aignet))) <call>)
+             val)
+      :hints ((and stable-under-simplificationp
+                   '(:expand ((:free (aignet) <call>)))))
+      :fn eval-and-of-lits)
+    :mutual-recursion id-eval)
+
+  (defthm dfs-copy-toggle-invar-preserved-by-cons-po-node
+    (implies (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+             (dfs-copy-toggle-invar aignet mark copy toggles invals regvals
+                                    (cons (po-node lit)
+                                          (node-list-fix aignet2))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defthm dfs-copy-toggle-invar-preserved-by-cons-nxst-node
+    (implies (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+             (dfs-copy-toggle-invar aignet mark copy toggles invals regvals
+                                    (cons (nxst-node lit reg)
+                                          (node-list-fix aignet2))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (defthm aignet-copy-outs-iter-preserves-dfs-toggle-invar
+    (implies (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+             (b* ((aignet2 (aignet-copy-outs-iter n aignet copy aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-outs-iter)
+            :induct (aignet-copy-outs-iter n aignet copy aignet2))))
+
+  (defthm aignet-copy-outs-preserves-dfs-toggle-invar
+    (implies (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+             (b* ((aignet2 (aignet-copy-outs aignet copy aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-outs))))
+
+  (defthm aignet-copy-nxsts-iter-preserves-dfs-toggle-invar
+    (implies (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+             (b* ((aignet2 (aignet-copy-nxsts-iter n aignet copy aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-nxsts-iter))))
+
+  (defthm aignet-copy-nxsts-preserves-dfs-toggle-invar
+    (implies (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)
+             (b* ((aignet2 (aignet-copy-nxsts aignet copy aignet2)))
+               (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+    :hints(("Goal" :in-theory (enable aignet-copy-nxsts))))
+  )
+                             
+
+;; (define aignet-remove-unreachable-setup (aignet refcounts obs-sdom-array copy mark aignet2)
+;;   :returns (mv new-mark new-copy new-aignet2)
+;;   :guard (and (eql (num-fanins aignet) (sdominfo-length obs-sdom-array))
+;;               (<= (sdominfo-length obs-sdom-array) (u32-length refcounts)))
+  
+
+(define aignet-remove-unreachable (aignet refcounts obs-sdom-array aignet2)
+  :guard (and (eql (num-fanins aignet) (sdominfo-length obs-sdom-array))
+              (<= (sdominfo-length obs-sdom-array) (u32-length refcounts)))
+  :returns (new-aignet2)
+  :hooks nil
+  (b* (((acl2::local-stobjs copy mark strash)
+        (mv mark copy strash aignet2))
+       ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
+       (mark (resize-bits (num-fanins aignet) mark))
+       (mark (mark-unreachable-nodes 0 refcounts obs-sdom-array mark))
+       (copy (init-unreachable-node-copies 0 refcounts obs-sdom-array copy))
+       ((acl2::hintcontext-bind ((marki mark)
+                                 (copyi copy)
+                                 (aignet2i aignet2)
+                                 (strashi strash))))
+       ((mv mark copy strash aignet2)
+        (aignet-copy-dfs-outs aignet mark copy strash (make-gatesimp) aignet2))
+       ((mv mark copy strash aignet2)
+        (aignet-copy-dfs-regs aignet mark copy strash (make-gatesimp) aignet2))
+       ((acl2::hintcontext-bind ((markd mark)
+                                 (copyd copy)
+                                 (aignet2d aignet2)
+                                 (strashd strash))))
+       (aignet2 (aignet-copy-outs aignet copy aignet2))
+       ((acl2::hintcontext-bind ((aignet2n aignet2))))
+       (aignet2 (aignet-copy-nxsts aignet copy aignet2))
+       ((acl2::hintcontext-bind ((markf mark)
+                                 (copyf copy)
+                                 (aignet2f aignet2)
+                                 (strashf strash))))
+       ((acl2::hintcontext :final)))
+    (mv mark copy strash aignet2))
+  ///
+  (local (defthm ids-marked-of-unreachable-node-toggles
+           (implies (equal n (+ 1 (fanin-count aignet)))
+                    (ids-marked (unreachable-node-toggles n
+                                                          refcounts obs-sdom-array invals regvals aignet)
+                                (mark-unreachable-nodes 0 refcounts obs-sdom-array mark)))
+           :hints ((acl2::use-termhint
+                    (b* ((n (+ 1 (fanin-count aignet)))
+                         (toggles (unreachable-node-toggles
+                                   n refcounts obs-sdom-array invals regvals aignet))
+                         (new-mark (mark-unreachable-nodes 0 refcounts obs-sdom-array mark))
+                         (badguy (ids-marked-badguy toggles new-mark)))
+                      `(:use ((:instance member-of-unreachable-node-toggles-when-reached
+                               (n ,(acl2::hq n))
+                               (i ,(acl2::hq badguy)))
+                              (:instance member-of-unreachable-node-toggles-when-not-refcounts
+                               (n ,(acl2::hq n))
+                               (i ,(acl2::hq badguy)))
+                              (:instance ids-not-marked-implies-badguy
+                               (x ,(acl2::hq toggles))
+                               (mark ,(acl2::hq new-mark))))
+                        :in-theory (disable member-of-unreachable-node-toggles-when-reached
+                                            member-of-unreachable-node-toggles-when-not-refcounts
+                                            ids-not-marked-implies-badguy)))))))
+
+  (local (defthm lit-eval-of-init-copy-comb
+           (b* (((mv copy aignet2) (init-copy-comb aignet copy aignet2)))
+             (implies (equal (ctype (stype (car (lookup-id id aignet)))) :input)
+                      (equal (lit-eval (nth-lit id copy) invals regvals aignet2)
+                             (id-eval id invals regvals aignet))))
+           :hints(("Goal" :in-theory (enable init-copy-comb lit-eval)
+                   :expand ((id-eval id invals regvals aignet))))))
+
+
+  (local (defthm dfs-copy-toggle-invar-of-init-unreachable
+           (implies (equal (len obs-sdom-array) (+ 1 (fanin-count aignet)))
+                    (b* ((mark (acl2::repeat (len obs-sdom-array) 0))
+                         (mark (mark-unreachable-nodes 0 refcounts obs-sdom-array mark))
+                         ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
+                         (copy (init-unreachable-node-copies 0 refcounts obs-sdom-array copy))
+                         (toggles (unreachable-node-toggles (len obs-sdom-array)
+                                                            refcounts obs-sdom-array invals regvals aignet)))
+                      (dfs-copy-toggle-invar aignet mark copy toggles invals regvals aignet2)))
+           :hints(("Goal" :in-theory (enable dfs-copy-toggle-invar aignet-idp)
+                   :do-not-induct t)
+                  (and stable-under-simplificationp
+                       '(:expand ((:free (mark copy toggles aignet2)
+                                   (id-eval (dfs-copy-toggle-invar-witness
+                                             aignet mark copy toggles invals regvals aignet2)
+                                            invals regvals aignet))
+                                  (:free (mark copy toggles aignet2)
+                                   (id-eval-toggle
+                                    (dfs-copy-toggle-invar-witness
+                                     aignet mark copy toggles invals regvals aignet2)
+                                    toggles invals regvals aignet))))))
+           :otf-flg t))
+  (set-ignore-ok t)
+
+  (defret po-eval-of-<fn>
+    (implies (and (obs-sdom-array-correct obs-sdom-array refcounts aignet)
+                  (equal (len obs-sdom-array) (+ 1 (fanin-count aignet)))
+                  (equal (nth (lit->var (fanin 0 (lookup-stype n :po aignet))) obs-sdom-array)
+                         nil)
+                  (< (nfix n) (stype-count :po aignet)))
+             (equal (output-eval n invals regvals new-aignet2)
+                    (output-eval n invals regvals aignet)))
+    :hints(;; ("Goal" :in-theory (e/d (output-eval)
+           ;;                         (AIGNET-EXTENSION-P-OF-AIGNET-COPY-NXSTS)))
+           (acl2::function-termhint
+            <fn>
+            (:final
+             (b* ((toggles (unreachable-node-toggles (+ 1 (fanin-count aignet))
+                                                     refcounts obs-sdom-array invals regvals aignet)))
+               `(:use ((:instance aignet-copy-dfs-outs-preserves-dfs-copy-toggle-invar
+                        (aignet aignet)
+                        (mark ,(acl2::hq marki))
+                        (copy ,(acl2::hq copyi))
+                        (toggles ,(acl2::hq toggles))
+                        (aignet2 ,(acl2::hq aignet2i))
+                        (strash ,(acl2::hq strashi))
+                        (gatesimp ,(make-gatesimp)))
+                       (:instance aignet-copy-dfs-outs-and-regs-preserves-dfs-copy-toggle-invar
+                        (aignet aignet)
+                        (mark ,(acl2::hq marki))
+                        (copy ,(acl2::hq copyi))
+                        (toggles ,(acl2::hq toggles))
+                        (aignet2 ,(acl2::hq aignet2i))
+                        (strash ,(acl2::hq strashi))
+                        (gatesimp ,(make-gatesimp))))
+                 :in-theory (e/d (output-eval)
+                                 (aignet-copy-dfs-outs-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-outs-and-regs-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-outs-iter-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-regs-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-regs-iter-preserves-dfs-copy-toggle-invar
+                                  lit-eval-preserved-by-extension))))))))
+
+
+  (defret nxst-eval-of-<fn>
+    (implies (and (obs-sdom-array-correct obs-sdom-array refcounts aignet)
+                  (equal (len obs-sdom-array) (+ 1 (fanin-count aignet)))
+                  (equal (nth (lit->var (lookup-reg->nxst n aignet)) obs-sdom-array)
+                         nil)
+                  (< (nfix n) (stype-count :reg aignet)))
+             (equal (nxst-eval n invals regvals new-aignet2)
+                    (nxst-eval n invals regvals aignet)))
+    :hints(;; ("Goal" :in-theory (e/d (output-eval)
+           ;;                         (AIGNET-EXTENSION-P-OF-AIGNET-COPY-NXSTS)))
+           (acl2::function-termhint
+            <fn>
+            (:final
+             (b* ((toggles (unreachable-node-toggles (+ 1 (fanin-count aignet))
+                                                     refcounts obs-sdom-array invals regvals aignet)))
+               `(:use ((:instance aignet-copy-dfs-outs-preserves-dfs-copy-toggle-invar
+                        (aignet aignet)
+                        (mark ,(acl2::hq marki))
+                        (copy ,(acl2::hq copyi))
+                        (toggles ,(acl2::hq toggles))
+                        (aignet2 ,(acl2::hq aignet2i))
+                        (strash ,(acl2::hq strashi))
+                        (gatesimp ,(make-gatesimp)))
+                       (:instance aignet-copy-dfs-outs-and-regs-preserves-dfs-copy-toggle-invar
+                        (aignet aignet)
+                        (mark ,(acl2::hq marki))
+                        (copy ,(acl2::hq copyi))
+                        (toggles ,(acl2::hq toggles))
+                        (aignet2 ,(acl2::hq aignet2i))
+                        (strash ,(acl2::hq strashi))
+                        (gatesimp ,(make-gatesimp))))
+                 :in-theory (e/d (nxst-eval)
+                                 (aignet-copy-dfs-outs-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-outs-and-regs-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-outs-iter-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-regs-preserves-dfs-copy-toggle-invar
+                                  aignet-copy-dfs-regs-iter-preserves-dfs-copy-toggle-invar
+                                  lit-eval-preserved-by-extension))))))))
+
+  (defret stype-counts-of-<fn>
+    (and (equal (stype-count :pi new-aignet2) (stype-count :pi aignet))
+         (equal (stype-count :reg new-aignet2) (stype-count :reg aignet))
+         (equal (stype-count :po new-aignet2) (stype-count :po aignet))))
+
+  (defret normalize-aignet2-of-<fn>
+    (implies (syntaxp (not (equal aignet2 ''nil)))
+             (equal new-aignet2
+                    (let ((aignet2 nil)) <call>)))))
+
+
+(fty::defprod unreachability-config
+  ()
+  :tag :unreachability-config)
+
+(define unreachability (aignet aignet2 (config unreachability-config-p))
+  (declare (ignorable config))
+  :returns (new-aignet2)
+  :hooks nil
+  (b* (((local-stobjs aignet-levels refcounts obs-sdom-array)
+        (mv aignet-levels refcounts obs-sdom-array aignet2))
+       (aignet-levels (resize-u32 (num-fanins aignet) aignet-levels))
+       (refcounts (resize-u32 (num-fanins aignet) refcounts))
+       (obs-sdom-array (resize-sdominfo (num-fanins aignet) obs-sdom-array))
+       (aignet-levels (aignet-record-levels aignet aignet-levels))
+       (refcounts (aignet-count-refs refcounts aignet))
+       (obs-sdom-array (aignet-compute-obs-sdom-info obs-sdom-array refcounts aignet-levels aignet))
+       (aignet2 (aignet-remove-unreachable aignet refcounts obs-sdom-array aignet2)))
+    (mv aignet-levels refcounts obs-sdom-array aignet2))
+  ///
+  (defret stype-counts-of-<fn>
+    (and (equal (stype-count :pi new-aignet2) (stype-count :pi aignet))
+         (equal (stype-count :reg new-aignet2) (stype-count :reg aignet))
+         (equal (stype-count :po new-aignet2) (stype-count :po aignet))))
+
+  (local (defthm output-eval-out-of-bounds-split
+           (implies (case-split (<= (num-outs aignet) (nfix n)))
+                    (equal (output-eval n invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable output-eval)))))
+  (local (defthm nxst-eval-out-of-bounds-split
+           (implies (case-split (<= (num-regs aignet) (nfix n)))
+                    (equal (nxst-eval n invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable nxst-eval lookup-reg->nxst)))))
+
+  (defret comb-equiv-of-<fn>
+    (comb-equiv new-aignet2 aignet)
+    :hints(("Goal" :in-theory (enable comb-equiv outs-comb-equiv nxsts-comb-equiv))))
+
+  (defret normalize-aignet2-of-<fn>
+    (implies (syntaxp (not (equal aignet2 ''nil)))
+             (equal new-aignet2
+                    (let ((aignet2 nil)) <call>)))))
+
+(define unreachability! (aignet (config unreachability-config-p))
+  :enabled t
+  :hooks nil
+  (mbe :logic (non-exec (unreachability aignet (acl2::create-aignet) config))
+       :exec
+       (b* (((acl2::local-stobjs aignet2)
+             (mv aignet aignet2))
+            (aignet2 (unreachability aignet aignet2 config)))
+         (swap-stobjs aignet aignet2))))
+
+
+(fty::defprod n-outputs-unreachability-config
+  ()
+  :tag :n-outputs-unreachability-config)
+
+(define n-outputs-unreachability ((n natp) aignet aignet2 (config n-outputs-unreachability-config-p))
+  (declare (ignorable config))
+  :returns (new-aignet2)
+  :hooks nil
+  :guard (<= n (num-outs aignet))
+  (b* (((local-stobjs aignet-levels refcounts obs-sdom-array)
+        (mv aignet-levels refcounts obs-sdom-array aignet2))
+       (aignet-levels (resize-u32 (num-fanins aignet) aignet-levels))
+       (refcounts (resize-u32 (num-fanins aignet) refcounts))
+       (obs-sdom-array (resize-sdominfo (num-fanins aignet) obs-sdom-array))
+       (aignet-levels (aignet-record-levels aignet aignet-levels))
+       (refcounts (aignet-count-refs refcounts aignet))
+       (obs-sdom-array (aignet-compute-obs-sdom-info-n-outputs n obs-sdom-array refcounts aignet-levels aignet))
+       (aignet2 (aignet-remove-unreachable aignet refcounts obs-sdom-array aignet2)))
+    (mv aignet-levels refcounts obs-sdom-array aignet2))
+  ///
+  (defret stype-counts-of-<fn>
+    (and (equal (stype-count :pi new-aignet2) (stype-count :pi aignet))
+         (equal (stype-count :reg new-aignet2) (stype-count :reg aignet))
+         (equal (stype-count :po new-aignet2) (stype-count :po aignet))))
+
+  (local (defthm output-eval-out-of-bounds-split
+           (implies (case-split (<= (num-outs aignet) (nfix n)))
+                    (equal (output-eval n invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable output-eval)))))
+  (local (defthm nxst-eval-out-of-bounds-split
+           (implies (case-split (<= (num-regs aignet) (nfix n)))
+                    (equal (nxst-eval n invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable nxst-eval lookup-reg->nxst)))))
+
+  (defret n-outputs-comb-equiv-of-<fn>
+    (implies (and (< (nfix k) (nfix n))
+                  ;; (< (nfix k) (stype-count :po aignet))
+                  )
+             (equal (output-eval k invals regvals new-aignet2)
+                    (output-eval k invals regvals aignet))))
+
+  (defret normalize-aignet2-of-<fn>
+    (implies (syntaxp (not (equal aignet2 ''nil)))
+             (equal new-aignet2
+                    (let ((aignet2 nil)) <call>)))))
