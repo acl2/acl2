@@ -16,6 +16,7 @@
 (include-book "test-structures")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
@@ -523,10 +524,10 @@
      So we need to look at the number of results returned by the function
      to recognize the result of the function call from @(tsee trans-eval)
      as either a single list result or a list of multiple results."))
-  (b* (((er &) (ensure-string$ name
-                               (msg "The test name ~x0 in the :TESTS input"
-                                    name)
-                               t nil))
+  (b* (((er &) (ensure-value-is-string$
+                name
+                (msg "The test name ~x0 in the :TESTS input" name)
+                t nil))
        ((when (equal name ""))
         (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
                              cannot be the empty string." name))
@@ -690,7 +691,8 @@
                         of the generated test Java file.")
                state)
   :short "Process the @(':output-dir') input."
-  (b* (((er &) (ensure-string$ output-dir "The :OUTPUT-DIR input" t nil))
+  (b* (((er &)
+        (ensure-value-is-string$ output-dir "The :OUTPUT-DIR input" t nil))
        ((mv err/msg kind state) (oslib::file-kind output-dir))
        ((when (or err/msg
                   (not (eq kind :directory))))
@@ -759,7 +761,7 @@
                                 exists but is not a regular file." file-test)))
                  (value :this-is-irrelevant))))
     (value (list file file-env file-test)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-string))))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
