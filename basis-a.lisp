@@ -5462,6 +5462,19 @@
                        `(nth ,i (@ wormhole-input)))
                  (io?-wormhole-bindings (1+ i) (cdr vars))))))
 
+(defconst *tracked-warning-summaries*
+
+; If you want to prevent duplicate warning messages of another kind (i.e., with
+; another summary string, e.g., "use" or "free-vars"), add it to this constant.
+; Every element of this list should satisfy both stringp and standard-string-p.
+; We use the wormhole data field of the 'COMMENT-WINDOW-IO wormhole to collect
+; the explanations of those warnings whose summaries are listed here.  This
+; prevents duplicate warnings.  See the note regarding the invariant we
+; maintain in the defmacro of io? where we lay down the entry lambda for the
+; wormhole.
+
+  '("rewrite-lambda-object"))
+
 (defmacro io? (token commentp shape vars body
                      &key
                      (clear 'nil clear-argp)

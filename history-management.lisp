@@ -1899,6 +1899,21 @@
              (push-timer 'proof-tree-time 0 state)
              (push-warning-frame state))))))
 
+(defun clear-warning-summaries-alist (alist)
+
+; Delete every entry in alist whose key is string-equal to a member of
+; *tracked-warning-summaries*.
+
+  (cond
+   ((endp alist) nil)
+   ((and (stringp (car (car alist)))
+         (standard-string-p (car (car alist)))
+         (member-string-equal (car (car alist))
+                              *tracked-warning-summaries*))
+    (clear-warning-summaries-alist (cdr alist)))
+   (t (cons (car alist)
+            (clear-warning-summaries-alist (cdr alist))))))
+
 (defun print-warnings-summary (state)
   (mv-let
    (warnings state)
@@ -13063,15 +13078,19 @@
 ; The speci-expr is the term expressing the type spec, not the type spec
 ; itself, e.g., (INTEGERP v1) not INTEGER.
 
-; This is harder than you might think because we have to dig the vars and
-; type-specs out of the LAMBDA objects!
+; Note that the vi and speci we return are phrased in terms of the actual
+; symbols used in the loop$ statement, not the formal(s) of the lambda object
+; in the first argument of the scion-term, i.e., the v in (loop$ for v of-type
+; (satisfies foop) on (tails lst) collect ...)  not the loop$-ivar in '(lambda
+; (loop$-ivar) (let ((v loop$-ivar)) ...)).  So we have to dig into the
+; translated lambda object.
 
-; Note that to recover the targets we have to dig down through UNTIL and WHEN
-; terms.  I.e., the :plain scion-term corresponding to a loop$ might be: (sum$
-; ... (when$ ... (until$ ... target))).  Since every LAMBDA object in the nest
-; of loop$ scions includes the same type specs, we could get these triplets
-; from the innermost term rather than the outermost but it seems slightly
-; simpler to do it this way.
+; In addition, to recover the targets we have to dig down through UNTIL and
+; WHEN terms.  I.e., the :plain scion-term corresponding to a loop$ might be:
+; (sum$ ... (when$ ... (until$ ... target))).  Since every LAMBDA object in the
+; nest of loop$ scions includes the same type specs, we could get these
+; triplets from the innermost term rather than the outermost but it seems
+; slightly simpler to do it this way.
 
 ; Keep this function in sync with both make-plain-loop$-lambda-object and
 ; make-fancy-loop$-lambda-object!
@@ -13127,16 +13146,33 @@
            (fn (unquote (fargn scion-term 1))))
       (mv-let (style vars type-spec-exprs)
         (case-match fn
-          (('LAMBDA (var) ('DECLARE . edcls) &)
-           (let ((type-spec (assoc-eq 'type edcls)))
+          (('LAMBDA ('LOOP$-IVAR)
+                    ('DECLARE . edcls)
+                    ('RETURN-LAST ''PROGN
+                                  ('QUOTE ('LAMBDA$ ('LOOP$-IVAR) . &))
+                                  (('LAMBDA (var) &) 'LOOP$-IVAR)))
+
+; All :plain loop$s translate a scion call on a lambda object matching the
+; pattern above, where the original iteration variable is var.  The edcls
+; either contains a (TYPE spec LOOP$-IVAR) entry or it doesn't.  If it does,
+; the recovered type expression, produced by get-guards2, is expressed in terms
+; of LOOP$-IVAR and we need it to be in terms of var.  Recall that get-guards2
+; returns a list of pseudo-terms which are not necessarily fully translated,
+; but it is legal to perform a subst-var-lst on these pseudo-terms, as per the
+; comment in translate-declaration-to-guard1-gen.
+
+           (let ((type-spec (assoc-eq 'TYPE edcls)))
              (cond (type-spec
                     (mv :plain
                         (list var)
-                        (list (conjoin (get-guards2 `(,type-spec) '(types)
-                                                    t wrld nil nil)))))
+                        (list (conjoin
+                               (subst-var-lst
+                                var
+                                'loop$-ivar
+                                (get-guards2 `(,type-spec)
+                                             '(types)
+                                             t wrld nil nil))))))
                    (t (mv :plain (list var) (list *t*))))))
-          (('LAMBDA (var) . &)
-           (mv :plain (list var) (list *t*)))
           (('LAMBDA '(LOOP$-GVARS LOOP$-IVARS)
                     ('DECLARE ('XARGS ':GUARD & ':SPLIT-TYPES 'T) . &)
                     ('RETURN-LAST
@@ -13145,15 +13181,18 @@
                      (('LAMBDA loop$-gvars-and-loop$-ivars
                                optionally-marked-body)
                       . &)))
-; Note: The type specs in a translated fancy LAMBDA object do not appear in
-; DECLARE forms!  Instead, they are coded as CHECK-DCL-GUARDIAN expressions
-; because they appear in a translated LET.  So we need a different way to
-; collect them.  See recover-type-spec-exprs.
+
+; All :fancy loop$s translate to a scion call on a lambda object matching the
+; pattern above. The type specs in a translated fancy LAMBDA object do not
+; appear in DECLARE forms!  Instead, they are coded as CHECK-DCL-GUARDIAN
+; expressions because they appear in a translated LET.  So we need a different
+; way to collect them.  See recover-type-spec-exprs.
 
 ; Loop$-gvars-and-loop$-ivars is a list of symbols like (G1 G2 G3 L1 L2) where
 ; the Gi are the (three, in this case) global variables involved in this lambda
-; and the Li are the (two) local variables.  We need to recover the names (L1
-; L2) and we don't know how many globals there are, but we can figure it out!
+; and the Li are the (two) local variables.  We need to recover the names local
+; variables, (L1 L2), because they are the original iteration variables.  We
+; don't know how many globals there are, but we can figure it out!
 
            (cond
             ((<= n (length loop$-gvars-and-loop$-ivars))
@@ -13202,11 +13241,15 @@
 ;        (loop$ for x of-type (and integer (satisfies evenp)) in lst collect x)))
 ;      (test4
 ;       (tester
-;        (loop$ for x of-type integer in xlst as y in ylst collect (list x y))))
+;        (loop$ for x of-type (and integer (satisfies evenp)) in lst
+;               collect :guard (< x 45) x)))
 ;      (test5
 ;       (tester
-;        (loop$ for x in xlst as y of-type integer in ylst collect (list x y))))
+;        (loop$ for x of-type integer in xlst as y in ylst collect (list x y))))
 ;      (test6
+;       (tester
+;        (loop$ for x in xlst as y of-type integer in ylst collect (list x y))))
+;      (test7
 ;       (tester
 ;        (loop$ for x of-type symbol in xlst
 ;               as y of-type integer in ylst
@@ -13214,7 +13257,7 @@
 ;               as z of-type rational in zlst
 ;               when (> y z)
 ;               collect :guard (> u (+ y z)) (list x y u z a b c))))
-;      (test7
+;      (test8
 ;       (tester
 ;        (loop$ for x of-type (and symbol (not (satisfies null))) in xlst
 ;               as y of-type (and integer (satisfies evenp)) in ylst
@@ -13222,28 +13265,31 @@
 ;               as z of-type (and rational (satisfies posp)) in zlst
 ;               when (> y z)
 ;               collect :guard (> u (+ y z)) (list x y u z a b c)))))
-;   (value (and (equal test1 '((X 'T LST)))
-;               (equal test2 '((X (INTEGERP X) LST)))
-;               (equal test3
-;                      '((X (IF (INTEGERP X) (EVENP X) 'NIL)
-;                           LST)))
-;               (equal test4
-;                      '((X (INTEGERP X) XLST) (Y 'T YLST)))
-;               (equal test5
-;                      '((X 'T XLST) (Y (INTEGERP Y) YLST)))
-;               (equal test6
-;                      '((X (SYMBOLP X) XLST)
-;                        (Y (INTEGERP Y) YLST)
-;                        (U 'T ULST)
-;                        (Z (RATIONALP Z) ZLST)))
-;               (equal test7
-;                      '((X (IF (SYMBOLP X) (NOT (NULL X)) 'NIL)
-;                           XLST)
-;                        (Y (IF (INTEGERP Y) (EVENP Y) 'NIL)
-;                           YLST)
-;                        (U 'T ULST)
-;                        (Z (IF (RATIONALP Z) (POSP Z) 'NIL)
-;                           ZLST))))))
+;   (value (list (equal test1 '((X 'T LST)))
+;                (equal test2 '((X (INTEGERP X) LST)))
+;                (equal test3
+;                       '((X (IF (INTEGERP X) (EVENP X) 'NIL)
+;                            LST)))
+;                (equal test4
+;                       '((X (IF (INTEGERP X) (EVENP X) 'NIL)
+;                            LST)))
+;                (equal test5
+;                       '((X (INTEGERP X) XLST) (Y 'T YLST)))
+;                (equal test6
+;                       '((X 'T XLST) (Y (INTEGERP Y) YLST)))
+;                (equal test7
+;                       '((X (SYMBOLP X) XLST)
+;                         (Y (INTEGERP Y) YLST)
+;                         (U 'T ULST)
+;                         (Z (RATIONALP Z) ZLST)))
+;                (equal test8
+;                       '((X (IF (SYMBOLP X) (NOT (NULL X)) 'NIL)
+;                            XLST)
+;                         (Y (IF (INTEGERP Y) (EVENP Y) 'NIL)
+;                            YLST)
+;                         (U 'T ULST)
+;                         (Z (IF (RATIONALP Z) (POSP Z) 'NIL)
+;                            ZLST))))))
 
 (defun special-loop$-guard-clauses-c2 (clause var type-expr target)
 ; See special-loop$-guard-clauses-c.

@@ -516,9 +516,6 @@
 
 (definductor pstermp)
 
-(defthm always$-t
-  (equal (always$ '(lambda (e) 't) x) t))
-
 (defthm pstermp-is-pseudo-termp
    (implies (warrant pstermp)
             (and (equal (pstermp x) (pseudo-termp x))

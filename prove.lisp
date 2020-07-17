@@ -4146,6 +4146,12 @@
 ; we avoid the wormhole call in the #-acl2-loop-only case, which is the
 ; actually executed inside the prover.
 
+; Note: Recall the invariant on the wormhole-data of comment-window-io: it is
+; an alist and any key that is string-equal to one of the
+; *tracked-warning-summaries* must be bound to a true-list.  See defmacro io?
+; for details.  But this function doesn't touch the data field, so it maintains
+; the invariant.
+
   #+acl2-loop-only
   `(wormhole 'comment-window-io
              '(lambda (whs)

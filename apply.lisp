@@ -1500,6 +1500,12 @@
     (let ((body (expand-all-lambdas (body fn nil wrld)))
           (formals (formals fn wrld)))
       (cond
+       ((member-eq fn *blacklisted-apply$-fns*)
+        (mv (msg "~x0 cannot be warranted because apply$ is prohibited from ~
+                  calling it.  This is generally because its Common Lisp ~
+                  behavior is different from its logical behavior."
+                 fn)
+            nil))
        ((or (not (all-nils (getpropc fn 'stobjs-in nil wrld)))
             (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
 
