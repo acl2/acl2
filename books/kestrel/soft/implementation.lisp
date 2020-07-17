@@ -551,7 +551,7 @@
      `(progn
         ,table-event
         ,print-event
-        (value-triple :invisible)))))
+        (value-triple ',fn)))))
 
 (defmacro+ defsoft (fn)
   :short "Record a function as a second-order function."
