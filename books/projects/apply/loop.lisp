@@ -1,4 +1,4 @@
-; Copyright (C) 2019, Regents of the University of Texas
+; Copyright (C) 2020, Regents of the University of Texas
 ; Written by Matt Kaufmann and J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
@@ -744,4 +744,511 @@
                 (not (integer-listp newv)))
            (not (member-equal newv (tails lst))))
   :hints (("Goal" :use general-plain-uqi-integer-listp-tails)))
+
+; Historical Note: Through Version 8.3, this book ended here.  However, as
+; loop$ recursion and rewriting of lambda objects were being developed (v8.2
+; and v8.3) many additional loop$-related lemmas were identified.  They've been
+; pasted below.  The reason for this note is to explain that there is no reason
+; (other than continuous evolution) that these lemmas aren't sprinkled into the
+; sequence above in some logical ordering.
+
+(defun from-to-by-down (i j)
+  (declare (xargs :measure (nfix (- (+ 1 (ifix j)) (ifix i)))))
+  (cond
+   ((integerp j)
+    (if (< j (ifix i))
+        nil
+        (append (from-to-by-down i (- j 1)) (list j))))
+   (t nil)))
+
+(defthm from-to-by-down-induction
+  t
+  :rule-classes
+  ((:induction :pattern (from-to-by i j 1)
+               :scheme (from-to-by-down i j))))
+
+(defthm from-to-by-down-opener
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (from-to-by i j 1)
+                  (if (<= i j)
+                      (append (from-to-by i (- j 1) 1) (list j))
+                      nil)))
+  :hints (("Subgoal *1/4'''" :expand ((from-to-by i i 1)
+                                      (from-to-by (+ 1 i) i 1))))
+  :rule-classes ((:definition :install-body nil)))
+
+(defthm len-collect$+-1
+  (equal (len (collect$+ fn gvars (loop$-as (list lst))))
+         (len lst)))
+
+(defthm loop$-as-1-induction
+  t
+  :rule-classes ((:induction :pattern (loop$-as (list lst1))
+                             :scheme (len lst1))))
+
+(defun loop$-as-hint-2 (lst1 lst2)
+  (cond ((endp lst1) nil)
+        ((endp lst2) nil)
+        (t (loop$-as-hint-2 (cdr lst1) (cdr lst2)))))
+
+(defthm loop$-as-2-induction
+  t
+  :rule-classes ((:induction :pattern (loop$-as (list lst1 lst2))
+                             :scheme (loop$-as-hint-2 lst1 lst2))))
+
+(defthm len-collect$+-2
+  (equal (len (collect$+ fn gvars (loop$-as (list lst1 lst2))))
+         (min (len lst1)
+              (len lst2))))
+
+(defthm always$-t
+  (equal (always$ `(lambda (,e) 't) lst)
+         t))
+
+(defthm sum$-append
+  (equal (sum$ fn (append a b))
+         (+ (sum$ fn a) (sum$ fn b))))
+
+(defthm always$-append
+  (equal (always$ fn (append a b))
+         (and (always$ fn a) (always$ fn b))))
+
+(defthm thereis$-append
+  (equal (thereis$ fn (append a b))
+         (or (thereis$ fn a) (thereis$ fn b))))
+
+(defthm collect$-append
+  (equal (collect$ fn (append a b))
+         (append (collect$ fn a) (collect$ fn b))))
+
+(defthm append$-append
+  (equal (append$ fn (append a b))
+         (append (append$ fn a) (append$ fn b))))
+
+(defthm until$-append
+  (equal (until$ fn (append a b))
+         (if (thereis$ fn a)
+             (until$ fn a)
+             (append a (until$ fn b)))))
+
+(defthm when$-append
+  (equal (when$ fn (append a b))
+         (append (when$ fn a) (when$ fn b))))
+
+(defthm sum$+-append-1
+  (equal (sum$+ fn gvars (loop$-as (list (append a b))))
+         (+ (sum$+ fn gvars (loop$-as (list a)))
+            (sum$+ fn gvars (loop$-as (list b))))))
+
+(defthm sum$+-append-2a
+  (equal (sum$+ fn gvars (loop$-as (list (append a b) c)))
+         (cond
+          ((< (len a) (len c))
+           (+ (sum$+ fn gvars (loop$-as (list a c)))
+              (sum$+ fn gvars (loop$-as (list b (nthcdr (len a) c))))))
+          (t (sum$+ fn gvars (loop$-as (list a c)))))))
+
+(defthm sum$+-append-2b
+  (equal (sum$+ fn gvars (loop$-as (list c (append a b))))
+         (cond
+          ((< (len a) (len c))
+           (+ (sum$+ fn gvars (loop$-as (list c a)))
+              (sum$+ fn gvars (loop$-as (list (nthcdr (len a) c) b)))))
+          (t (sum$+ fn gvars (loop$-as (list c a)))))))
+
+(defthm always$+-append-1
+  (equal (always$+ fn gvars (loop$-as (list (append a b))))
+         (and (always$+ fn gvars (loop$-as (list a)))
+              (always$+ fn gvars (loop$-as (list b))))))
+
+(defthm always$+-append-2a
+  (equal (always$+ fn gvars (loop$-as (list (append a b) c)))
+         (cond
+          ((< (len a) (len c))
+           (and (always$+ fn gvars (loop$-as (list a c)))
+                (always$+ fn gvars (loop$-as (list b (nthcdr (len a) c))))))
+          (t (always$+ fn gvars (loop$-as (list a c)))))))
+
+(defthm always$+-append-2b
+  (equal (always$+ fn gvars (loop$-as (list c (append a b))))
+         (cond
+          ((< (len a) (len c))
+           (and (always$+ fn gvars (loop$-as (list c a)))
+                (always$+ fn gvars (loop$-as (list (nthcdr (len a) c) b)))))
+          (t (always$+ fn gvars (loop$-as (list c a)))))))
+
+(defthm thereis$+-append-1
+  (equal (thereis$+ fn gvars (loop$-as (list (append a b))))
+         (or (thereis$+ fn gvars (loop$-as (list a)))
+             (thereis$+ fn gvars (loop$-as (list b))))))
+
+(defthm thereis$+-append-2a
+  (equal (thereis$+ fn gvars (loop$-as (list (append a b) c)))
+         (cond
+          ((< (len a) (len c))
+           (or (thereis$+ fn gvars (loop$-as (list a c)))
+               (thereis$+ fn gvars (loop$-as (list b (nthcdr (len a) c))))))
+          (t (thereis$+ fn gvars (loop$-as (list a c)))))))
+
+(defthm thereis$+-append-2b
+  (equal (thereis$+ fn gvars (loop$-as (list c (append a b))))
+         (cond
+          ((< (len a) (len c))
+           (or (thereis$+ fn gvars (loop$-as (list c a)))
+               (thereis$+ fn gvars (loop$-as (list (nthcdr (len a) c) b)))))
+          (t (thereis$+ fn gvars (loop$-as (list c a)))))))
+
+(defthm collect$+-append-1
+  (equal (collect$+ fn gvars (loop$-as (list (append a b))))
+         (append (collect$+ fn gvars (loop$-as (list a)))
+                 (collect$+ fn gvars (loop$-as (list b))))))
+
+(defthm collect$+-append-2a
+  (equal (collect$+ fn gvars (loop$-as (list (append a b) c)))
+         (cond
+          ((< (len a) (len c))
+           (append (collect$+ fn gvars (loop$-as (list a c)))
+                   (collect$+ fn gvars (loop$-as (list b (nthcdr (len a) c))))))
+          (t (collect$+ fn gvars (loop$-as (list a c)))))))
+
+(defthm collect$+-append-2b
+  (equal (collect$+ fn gvars (loop$-as (list c (append a b))))
+         (cond
+          ((< (len a) (len c))
+           (append (collect$+ fn gvars (loop$-as (list c a)))
+                   (collect$+ fn gvars (loop$-as (list (nthcdr (len a) c) b)))))
+          (t (collect$+ fn gvars (loop$-as (list c a)))))))
+
+(defthm append$+-append-1
+  (equal (append$+ fn gvars (loop$-as (list (append a b))))
+         (append (append$+ fn gvars (loop$-as (list a)))
+                 (append$+ fn gvars (loop$-as (list b))))))
+
+(defthm append$+-append-2a
+  (equal (append$+ fn gvars (loop$-as (list (append a b) c)))
+         (cond
+          ((< (len a) (len c))
+           (append (append$+ fn gvars (loop$-as (list a c)))
+                   (append$+ fn gvars (loop$-as (list b (nthcdr (len a) c))))))
+          (t (append$+ fn gvars (loop$-as (list a c)))))))
+
+(defthm append$+-append-2b
+  (equal (append$+ fn gvars (loop$-as (list c (append a b))))
+         (cond
+          ((< (len a) (len c))
+           (append (append$+ fn gvars (loop$-as (list c a)))
+                   (append$+ fn gvars (loop$-as (list (nthcdr (len a) c) b)))))
+          (t (append$+ fn gvars (loop$-as (list c a)))))))
+
+(defthm until$+-append-1
+  (equal (until$+ fn gvars (loop$-as (list (append a b))))
+         (if (thereis$+ fn gvars (loop$-as (list a)))
+             (until$+ fn gvars (loop$-as (list a)))
+             (append (loop$-as (list a)) (until$+ fn gvars (loop$-as (list b)))))))
+
+(defthm until$+-append-2a
+  (equal (until$+ fn gvars (loop$-as (list (append a b) c)))
+         (cond
+          ((< (len a) (len c))
+           (if (thereis$+ fn gvars (loop$-as (list a c)))
+               (until$+ fn gvars (loop$-as (list a c)))
+               (append (loop$-as (list a c))
+                       (until$+ fn gvars (loop$-as (list b (nthcdr (len a) c)))))))
+          (t (until$+ fn gvars (loop$-as (list a c)))))))
+
+(defthm until$+-append-2b
+  (equal (until$+ fn gvars (loop$-as (list c (append a b))))
+         (cond
+          ((< (len a) (len c))
+           (if (thereis$+ fn gvars (loop$-as (list c a)))
+               (until$+ fn gvars (loop$-as (list c a)))
+               (append (loop$-as (list c a))
+                       (until$+ fn gvars (loop$-as (list (nthcdr (len a) c) b))))))
+          (t (until$+ fn gvars (loop$-as (list c a)))))))
+
+(defthm when$+-append-1
+  (equal (when$+ fn gvars (loop$-as (list (append a b))))
+         (append (when$+ fn gvars (loop$-as (list a)))
+                 (when$+ fn gvars (loop$-as (list b))))))
+
+(defthm when$+-append-2a
+  (equal (when$+ fn gvars (loop$-as (list (append a b) c)))
+         (cond
+          ((< (len a) (len c))
+           (append (when$+ fn gvars (loop$-as (list a c)))
+                   (when$+ fn gvars (loop$-as (list b (nthcdr (len a) c))))))
+          (t (when$+ fn gvars (loop$-as (list a c)))))))
+
+(defthm when$+-append-2b
+  (equal (when$+ fn gvars (loop$-as (list c (append a b))))
+         (cond
+          ((< (len a) (len c))
+           (append (when$+ fn gvars (loop$-as (list c a)))
+                   (when$+ fn gvars (loop$-as (list (nthcdr (len a) c) b)))))
+          (t (when$+ fn gvars (loop$-as (list c a)))))))
+
+(defthm sum$-singleton
+  (equal (sum$ fn (list x))
+         (fix (apply$ fn (list x)))))
+
+(defthm always$-singleton
+  (equal (always$ fn (list x))
+         (if (apply$ fn (list x)) t nil)))
+
+(defthm thereis$-singleton
+  (equal (thereis$ fn (list x))
+         (apply$ fn (list x))))
+
+(defthm collect$-singleton
+  (equal (collect$ fn (list x))
+         (list (apply$ fn (list x)))))
+
+(defthm append$-singleton
+  (equal (append$ fn (list x))
+         (true-list-fix (apply$ fn (list x)))))
+
+(defthm until$-singleton
+  (equal (until$ fn (list x))
+         (if (apply$ fn (list x))
+             nil
+             (list x))))
+
+(defthm when$-singleton
+  (equal (when$ fn (list x))
+         (if (apply$ fn (list x))
+             (list x)
+             nil)))
+
+; Here are the singleton theorems for the fancy loop$ scions.  However, we
+; think that in general (loop$-as (list (list x))) will always expand to (list
+; (list x)) and so phrase them in those terms rather than with a loop$-as.
+
+(defthm sum$+-singleton
+  (equal (sum$+ fn gvars (list ituple))
+         (fix (apply$ fn (list gvars ituple)))))
+
+(defthm always$+-singleton
+  (equal (always$+ fn gvars (list ituple))
+         (if (apply$ fn (list gvars ituple))
+             t
+             nil)))
+
+(defthm thereis$+-singleton
+  (equal (thereis$+ fn gvars (list ituple))
+         (apply$ fn (list gvars ituple))))
+
+(defthm collect$+-singleton
+  (equal (collect$+ fn gvars (list ituple))
+         (list (apply$ fn (list gvars ituple)))))
+
+(defthm append$+-singleton
+  (equal (append$+ fn gvars (list ituple))
+         (true-list-fix (apply$ fn (list gvars ituple)))))
+
+(defthm until$+-singleton
+  (equal (until$+ fn gvars (list ituple))
+         (if (apply$ fn (list gvars ituple))
+             nil
+             (list ituple))))
+
+(defthm when$+-singleton
+  (equal (when$+ fn gvars (list ituple))
+         (if (apply$ fn (list gvars ituple))
+             (list ituple)
+             nil)))
+
+; -----------------------------------------------------------------
+; The Composition Rules: The motivation for these rules are theorems involving
+; compositions like (pstermp (pssubst new old term)) and (psoccur var (pssubst
+; new var term)), where the ``ps'' prefix stands for ``pseudo-term'' and name
+; loop$-recursive versions of the obvious system functions.  Pstermp is defined
+; loop$-recursively with an ALWAYS loop$ while psoccur is defined
+; loop$-recursively with a THEREIS loop$.
+
+; The second conjunct of theorems involving terms like these address the loop$s
+; within these functions.  Consider a theorem about (psoccur var (pssubst new
+; var term)).  The loop$ version might be
+
+; (loop$ for e in term thereis (psoccur var (pssubst new var e)))   ; [1]
+
+; but could alternatively be written 
+
+; (loop$ for e in (loop$ for d in term collect (pssubst new var d)) ; [2]
+;        thereis (psoccur var e))
+
+; These are equivalent but we have no control over which of the two forms the
+; user might choose.  The first theorem below rewrites [2] into [1].  The idea
+; is that [1] is simpler and also gets the ppoccur and pssubst together in a
+; single term where they might be rewritten.
+
+; There are five versions of the rule depending on the free variables occuring
+; in the two bodies.  The rule for handling [2] above is the fourth one below,
+; because the THEREIS loop$ has one free variable, var, but the COLLECT has
+; two, new and var.  Thus the fourth rule below uses two different variables,
+; gvars1 and gvars2, for the values of the free variables being passed into
+; their respective lambda objects.  So the five cases are: (1) the loop$s in
+; both functions -- here psoccur and pssubst -- are plain, the loop$ in one is
+; plain and the loop$ in the other is fancy (two versions, depending whether
+; the inner or outer loop is plain), and both loop$s are fancy (two versions,
+; depending on whether the gvars of the two scions are identical or not).  The
+; last case is discussed in ``the next two rules'' comment below.
+
+; It should be noted that the fourth rule below combines the two separate gvars
+; into (list gvars1 gvars2) and relies on relink-fancy-scions to unpack that
+; and the references to the corresponding free variables.
+
+; We have an analogous composition rule for ALWAYS versus COLLECT.
+
+; Other composition rules might be considered.  The most obviously analogous
+; rules would be about THEREIS composed with APPEND, and ALWAYS composed with
+; APPEND.  But we might want to investigate THEREIS composed with ALWAYS and
+; vice versa.
+
+(defthm compose-thereis-collect
+  (and (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1))
+                (equal (THEREIS$ `(LAMBDA (,u1) ,expr1)
+                                 (COLLECT$ `(LAMBDA (,v1) ,expr2) lst))
+                       (THEREIS$ `(LAMBDA (,v1) ((LAMBDA (,u1) ,expr1) ,expr2))
+                                 lst)))
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1)(symbolp v2))
+                (equal (THEREIS$ `(LAMBDA (,u1) ,expr1)
+                                 (COLLECT$+ `(LAMBDA (,v1 ,v2) ,expr2)
+                                            gvars
+                                            (LOOP$-AS (LIST lst))))
+                       (THEREIS$+ `(LAMBDA (,v1 ,v2)
+                                           ((LAMBDA (,u1) ,expr1) ,expr2))
+                                  gvars
+                                  (LOOP$-AS (LIST lst)))))
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1) (not (eq u1 v1)) (not (eq u1 v2))
+                     (symbolp u2) (symbolp v2) (not (eq u2 v2)))
+                (equal (THEREIS$+ `(LAMBDA (,u1 ,v1) ,expr1)
+                                  gvars
+                                  (LOOP$-AS
+                                   (LIST (COLLECT$ `(LAMBDA (,v2) ,expr2) lst))))
+                       (THEREIS$+ `(LAMBDA (,u1 ,v2)
+                                           ((LAMBDA (,u1 ,v1) ,expr1)
+                                            ,u1
+                                            (CONS ((LAMBDA (,v2) ,expr2) (CAR ,v2)) 'NIL)))
+                                  gvars
+                                  (LOOP$-AS (LIST lst)))))
+
+; The next two rules rewrite thereis$+/collect$+, but with two cases: the
+; general version in which each scion has its own gvars (i.e., gvars1 for the
+; thereis$+ but gvars2 for the collect$+) and the special case when the gvars
+; are identical.  We list the special case last so that it is tried first by
+; the rewriter.
+
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1) (not (eq u1 v1))
+                     (symbolp u2) (symbolp v2) (not (eq u2 v2)))
+                (equal (THEREIS$+ `(LAMBDA (,u1 ,v1) ,expr1)
+                                  gvars1
+                                  (LOOP$-AS
+                                   (LIST (COLLECT$+ `(LAMBDA (,u2 ,v2) ,expr2)
+                                                    gvars2
+                                                    (LOOP$-AS (LIST lst))))))
+                       (THEREIS$+ `(LAMBDA (,u2 ,v2)
+                                           ((LAMBDA (,u1 ,v1) ,expr1)
+                                            (car ,u2)
+                                            ((lambda (,u2 ,v2) (CONS ,expr2 'NIL))
+                                             (car (cdr ,u2))
+                                             ,v2)))
+                                  (list gvars1 gvars2)
+                                  (LOOP$-AS (LIST lst)))))
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1) (not (eq u1 v1))
+                     (symbolp u2) (symbolp v2) (not (eq u2 v2)))
+                (equal (THEREIS$+ `(LAMBDA (,u1 ,v1) ,expr1)
+                                  gvars
+                                  (LOOP$-AS
+                                   (LIST (COLLECT$+ `(LAMBDA (,u2 ,v2) ,expr2)
+                                                    gvars
+                                                    (LOOP$-AS (LIST lst))))))
+                       (THEREIS$+ `(LAMBDA (,u2 ,v2)
+                                           ((LAMBDA (,u1 ,v1) ,expr1)
+                                            ,u2
+                                            (CONS ,expr2 'NIL)))
+                                  gvars
+                                  (LOOP$-AS (LIST lst)))))))
+
+(defthm compose-always-collect
+  (and (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1))
+                (equal (ALWAYS$ `(LAMBDA (,u1) ,expr1)
+                                (COLLECT$ `(LAMBDA (,v1) ,expr2) lst))
+                       (ALWAYS$ `(LAMBDA (,v1) ((LAMBDA (,u1) ,expr1) ,expr2))
+                                lst)))
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1)(symbolp v2))
+                (equal (ALWAYS$ `(LAMBDA (,u1) ,expr1)
+                                (COLLECT$+ `(LAMBDA (,v1 ,v2) ,expr2)
+                                           gvars
+                                           (LOOP$-AS (LIST lst))))
+                       (ALWAYS$+ `(LAMBDA (,v1 ,v2)
+                                          ((LAMBDA (,u1) ,expr1) ,expr2))
+                                 gvars
+                                 (LOOP$-AS (LIST lst)))))
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1)
+                     (not (eq u1 v1)) (not (eq u1 v2))
+                     (symbolp u2) (symbolp v2)
+                     (not (eq u2 v2)))
+                (equal (ALWAYS$+ `(LAMBDA (,u1 ,v1) ,expr1)
+                                 gvars
+                                 (LOOP$-AS
+                                  (LIST (COLLECT$ `(LAMBDA (,v2) ,expr2)
+                                                  lst))))
+                       (ALWAYS$+ `(LAMBDA (,u1 ,v2)
+                                          ((LAMBDA (,u1 ,v1) ,expr1)
+                                           ,u1
+                                           (CONS ((LAMBDA (,v2) ,expr2)
+                                                  (CAR ,v2))
+                                                 'NIL)))
+                                 gvars
+                                 (LOOP$-AS (LIST lst)))))
+
+; The next two rules rewrite always$+/collect$+, but with two cases: the
+; general version in which each scion has its own gvars (i.e., gvars1 for the
+; always$+ but gvars2 for the collect$+) and the special case when the gvars
+; are identical.  We list the special case last so that it is tried first by
+; the rewriter.
+
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1) (not (eq u1 v1))
+                     (symbolp u2) (symbolp v2) (not (eq u2 v2)))
+                (equal (ALWAYS$+ `(LAMBDA (,u1 ,v1) ,expr1)
+                                 gvars1
+                                 (LOOP$-AS
+                                  (LIST (COLLECT$+ `(LAMBDA (,u2 ,v2) ,expr2)
+                                                   gvars2
+                                                   (LOOP$-AS (LIST lst))))))
+                       (ALWAYS$+ `(LAMBDA (,u2 ,v2)
+                                          ((LAMBDA (,u1 ,v1) ,expr1)
+                                           (car ,u2)
+                                           ((lambda (,u2 ,v2)
+                                              (CONS ,expr2 'NIL))
+                                            (car (cdr ,u2))
+                                            ,v2)))
+                                 (list gvars1 gvars2)
+                                 (LOOP$-AS (LIST lst)))))
+       (implies (and (tamep expr1) (tamep expr2)
+                     (symbolp u1) (symbolp v1) (not (eq u1 v1))
+                     (symbolp u2) (symbolp v2) (not (eq u2 v2)))
+                (equal (ALWAYS$+ `(LAMBDA (,u1 ,v1) ,expr1)
+                                 gvars
+                                 (LOOP$-AS
+                                  (LIST (COLLECT$+ `(LAMBDA (,u2 ,v2) ,expr2)
+                                                   gvars
+                                                   (LOOP$-AS (LIST lst))))))
+                       (ALWAYS$+ `(LAMBDA (,u2 ,v2)
+                                          ((LAMBDA (,u1 ,v1) ,expr1)
+                                           ,u2
+                                           (CONS ,expr2 'NIL)))
+                                 gvars
+                                 (LOOP$-AS (LIST lst)))))))
+
 

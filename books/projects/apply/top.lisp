@@ -10,3 +10,4 @@
 (include-book "base")
 (include-book "loop")
 (include-book "definductor")
+(include-book "relink-fancy-scion")

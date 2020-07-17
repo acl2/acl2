@@ -2657,11 +2657,14 @@
 
 ; In the general case below, where there's a DECLARE form with IGNORE and
 ; IGNORABLE, we check conformance with those declarations.  But here there are
-; no such declarations.  This just means that there must be no free vars and
-; every var is used.
+; no such declarations.  This just means that there must be no free vars.  At
+; one time we also checked that every var is used, but that is not actually an
+; invariant of well-formed terms, even though it is enforced at translate-
+; time.  In particular ((lambda (e x) (declare (ignorable e x)) x) a b)
+; translates non-erroneously to ((LAMBDA (E X) X) A B), where E is unusued in
+; the lambda.
 
-                (and (subsetp-eq used-vars formals)
-                     (subsetp-eq formals used-vars))))
+                (subsetp-eq used-vars formals)))
          (let ((ans (syntactically-plausible-lambda-objectsp-within body)))
            (cond
             ((null ans) nil)
@@ -2681,18 +2684,21 @@
                     (subsetp-eq (all-vars guard) formals)
                     (let ((used-vars (all-vars body)))
 
-; We check that (a) there are no free vars, (b) that no var declared IGNOREd is
-; actually used, and (c) that all unused vars that aren't declared IGNOREd are
-; declared IGNORABLE.
+; We check that (a) there are no free vars and (b) that no var declared IGNOREd
+; is actually used, and (c) that all unused vars that aren't declared IGNOREd
+; are declared IGNORABLE.
+
                       (and (subsetp-eq used-vars formals)          ; (a)
                            (not (intersectp-eq used-vars ignores)) ; (b)
                            (subsetp-eq (set-difference-eq          ; (c)
                                         (set-difference-eq formals used-vars)
                                         ignores)
                                        ignorables))))
-               (let* ((ans1 (syntactically-plausible-lambda-objectsp-within guard))
+               (let* ((ans1 (syntactically-plausible-lambda-objectsp-within
+                             guard))
                       (ans2 (if ans1
-                                (syntactically-plausible-lambda-objectsp-within body)
+                                (syntactically-plausible-lambda-objectsp-within
+                                 body)
                                 nil)))
                  (cond
                   ((null ans2) nil)
@@ -2726,7 +2732,8 @@
    ((flambda-applicationp body)
     (let* ((ans1 (syntactically-plausible-lambda-objectp (ffn-symb body)))
            (ans2 (if ans1
-                     (syntactically-plausible-lambda-objectsp-within-lst (fargs body))
+                     (syntactically-plausible-lambda-objectsp-within-lst
+                      (fargs body))
                      nil)))
       (cond
        ((null ans2) nil) ; = (or (null ans1) (null ans2))
@@ -2740,7 +2747,8 @@
    ((null args) t)
    (t (let* ((ans1 (syntactically-plausible-lambda-objectsp-within (car args)))
              (ans2 (if ans1
-                       (syntactically-plausible-lambda-objectsp-within-lst (cdr args))
+                       (syntactically-plausible-lambda-objectsp-within-lst
+                        (cdr args))
                        nil)))
         (cond
          ((null ans2) nil)
@@ -11878,9 +11886,9 @@
 ; We need some terminology.  There are three terms in our supported loop
 ; statements: the UNTIL term, the WHEN term, and the body of the loop term.  In
 ; (loop$ for ... UNTIL t1 WHEN t2 COLLECT t3), the terms in question are t1,
-; t2, and t3.  Each of these three terms will incorporated into lambda$
+; t2, and t3.  Each of these three terms will be incorporated into lambda$
 ; expressions where they'll be the bodies of their respective lambda$s.  So we
-; need a name for t3, ``the body of the loop,'' that is shorter and not
+; need a name for t3, aka ``the body of the loop,'' that is shorter and not
 ; confused with the body of a lambda.  We'll call t3 the ``loop$ body'' or
 ; ``lobody.''
 
@@ -11892,12 +11900,12 @@
 ; (loop$ for ... UNTIL :guard g1 t1 WHEN :guard g2 t2 COLLECT :guard g3 t3)
 
 ; We considered something like ... UNTIL (with-guard g1 t1) ... but didn't want
-; to suggestion a guard can just be dropped anywhere in a term as the
-; ``function'' with-guard does.  The raw Lisp expansion of loop$ will strip out
-; the :guard g elements.
+; to suggest a guard can just be dropped anywhere in a term as the ``function''
+; with-guard does.  The raw Lisp expansion of loop$ will strip out the :guard g
+; elements.
 
-; If a :guard is specified, it is added as additional conjunct to the guard we
-; can compute from from the TYPE specs.
+; If a :guard is specified, it is added as an additional conjunct to the guard
+; we can compute from from the TYPE specs.
 
 ; We'll build lambda$ expressions for each of these pairs of terms, e.g.,
 ; (lambda$ (v) (declare (xargs :guard g1)) t1) might be the lambda$ expression
@@ -11909,7 +11917,8 @@
 ; At first we coded this with twelve variable names, e.g.,
 ; untranslated-until-guard, translated-until-guard, untranslated-until-body,
 ; translated-until-body.  But this just gets confusing.  So now we put all four
-; objects into one thing which we call a ``carton'' and we define a convenient
+; objects, the untranslated guard and body and the translated guard and body,
+; into one thing which we call a ``carton'' and we define a convenient
 ; accessor.  (We could have used a defrec structure but prefer our accessor
 ; idiom.)
 
@@ -11920,7 +11929,8 @@
 
 ; So during the translation of a loop$ statement we'll use three variables,
 ; untilc, whenc, and lobodyc, where the ``c'' can be thought of as standing for
-; ``clause'' as in the loop terminology but actually stands for ``carton.''
+; ``clause'' as in the loop terminology, e.g., ``the WHEN clause,'' but
+; actually stands for ``carton.''
 
 (defun make-carton (uguard tguard ubody tbody)
   (cons (cons uguard tguard) (cons ubody tbody)))
@@ -12110,34 +12120,53 @@
 (defun make-plain-loop$-lambda-object (v spec carton)
 
 ; WARNING: Keep this function in sync with
-; recover-loop$-ivars-and-conjoined-type-spec-exprs.
+; recover-loop$-ivars-and-conjoined-type-spec-exprs and vars-specs-and-targets.
 
-; WARNING: This function must return a lambda$ expression or quoted LAMBDA
-; object.  There may be a temptation to simplify (lambda$ (x) (symbolp x)),
-; say, to 'symbolp.  But we are counting on finding a quoted LAMBDA object in
-; whatever the output produced here translates to.  See, for example,
-; special-loop$-guard-clauses.
+; WARNING: This function must return a lambda$ expression.  There may be a
+; temptation to simplify (lambda$ (x) (symbolp x)), say, to 'symbolp.  But we
+; are counting on finding a quoted LAMBDA object in whatever the output
+; produced here translates to.  See, for example, special-loop$-guard-clauses.
+; We discuss the opportunity to simplify this special case of lambda$ further
+; below.
 
-; V is the single formal of the lambda$ we'll create, and it has a TYPE spec of
-; spec (possibly T).  Carton a finished carton for the guard and body of the
-; lambda$ we're to create.  (Reminder: this carton might be the untilc, the
-; whenc, or the lobodyc, depending on which lambda$ we're making.)
+; We generate a lambda$ for a plain loop with iteration variable v which has
+; TYPE spec spec (possibly T, meaning no OF-TYPE was provided).  Carton is a
+; finished carton for the guard and body of the lambda$ we're to create.
+; (Reminder: this carton might be the untilc, the whenc, or the lobodyc,
+; depending on which lambda$ we're making.)
 
-; (lambda$ (v)
-;         (declare (type spec v)
-;                  (xargs :guard uguard))
-;         ubody)
+; However, the lambda$ we generate always has the formal loop$-ivar even though
+; a more ``natural'' choice of formal would be v.  The reason is that we want
+; we want lambdas that beta-reduce to the identical terms to be syntactically
+; identical after we rewrite (and thus beta reduce) their bodies.  I.e., we
+; want (lambda$ (e) (foo e 23)) and (lambda$ (d) (foo d 23)) to translate to
+; lambda objects that when they are rewritten are identical.  In fact, we'll
+; produce
+; (lambda$ (loop$-ivar) (let ((e loop$-ivar)) (foo e 23))) and
+; (lambda$ (loop$-ivar) (let ((d loop$-ivar)) (foo d 23))).
+; But then rewriting (beta reducing) the bodies will transform both to:
+; (lambda$ (loop$-ivar) (foo loop$-ivar 23))
 
-; We put the untranslated guard and body into the lambda$ -- they'll both be
-; translated by the lambda$ expansion -- because we prefer to see the prettier
-; terms in the tagged version of the lambda$ that is quoted inside the expanded
-; LAMBDA object.  (Even if we used the already-translated versions we wouldn't
-; save work; translate would be called on them again.)
+; We will use the untranslated guard and body in the lambda$ because they're
+; prettier.  Even if we used the already-translated versions we wouldn't
+; save time because they'd be translated (with no change) anyway.  The
+; typical form we produce is
 
-; We have considered simplifying a special case, namely, replacing '(lambda (x)
-; (fn x)) by 'fn provided fn is a tame function symbol of arity 1, x is a legal
-; variable, and there is no TYPE spec and no guard.  We regard the latter
-; function object as esthetically more pleasing than the lambda$.
+; (lambda$ (loop$-ivar)
+;         (declare (type spec loop$-ivar)
+;                  (xargs :guard (let ((e loop$-ivar)) uguard)))
+;         (let ((e loop$-ivar))
+;            ubody))
+
+; But there may be no :guard.  Furthermore, when the lambda$ is translated it
+; will may a :split-types at the end of the xargs and it will add an ignorable
+; as the last of the edcls.
+
+; To return to WARNING above, we have considered simplifying a special case,
+; namely, replacing '(lambda (x) (fn x)) by 'fn provided fn is a tame function
+; symbol of arity 1, x is a legal variable, and there is no TYPE spec and no
+; guard.  We regard the latter function object as esthetically more pleasing
+; than the lambda$.
 
 ; But we have decided against this on two grounds.  First, history generally
 ; teaches that it is a mistake to do ad hoc preprocessing for a theorem prover!
@@ -12168,20 +12197,32 @@
    ((eq spec t)
     (cond
      ((equal (excart :translated :guard carton) *t*)
-      `(lambda$ (,v)
-                ,(excart :untranslated :body carton)))
+      `(lambda$
+        (loop$-ivar)
+        (let ((,v loop$-ivar))
+          ,(excart :untranslated :body carton))))
      (t `(lambda$
-          (,v)
-          (declare (xargs :guard ,(excart :untranslated :guard carton)))
-          ,(excart :untranslated :body carton)))))
+          (loop$-ivar)
+          (declare
+           (xargs
+            :guard (let ((,v loop$-ivar))
+                     ,(excart :untranslated :guard carton))))
+          (let ((,v loop$-ivar))
+            ,(excart :untranslated :body carton))))))
    ((equal (excart :translated :guard carton) *t*)
-    `(lambda$ (,v)
-              (declare (type ,spec ,v))
-              ,(excart :untranslated :body carton)))
-   (t `(lambda$ (,v)
-                (declare (type ,spec ,v)
-                         (xargs :guard ,(excart :untranslated :guard carton)))
-                ,(excart :untranslated :body carton)))))
+    `(lambda$
+      (loop$-ivar)
+      (declare (type ,spec loop$-ivar))
+      (let ((,v loop$-ivar))
+        ,(excart :untranslated :body carton))))
+   (t `(lambda$
+        (loop$-ivar)
+        (declare (type ,spec loop$-ivar)
+                 (xargs
+                  :guard (let ((,v loop$-ivar))
+                           ,(excart :untranslated :guard carton))))
+        (let ((,v loop$-ivar))
+          ,(excart :untranslated :body carton))))))
 
 ; Now we build up to making a fancy loop$ lambda object...
 
@@ -12192,17 +12233,29 @@
 ; iteration variable values and is typically 'LOOP$-IVARS.  We check that each
 ; var is legal, that they're all distinct, and that each spec is legal type
 ; spec.  We return a list of ``translated vsts'' which are 4-tuples, (var spec
-; guard target), where guard is the UNTRANSLATED term expressing the spec for
-; the corresponding component of name.
+; type-guard target), where type-guard is the UNTRANSLATED guard expression
+; (untranslated term) expressing the type spec relative to the corresponding
+; car/cdr-component of name.
 
 ; For example, if the second element of vsts is (I INTEGER (IN LST)) and name
 ; is 'LOOP$-IVARS, the second element of our result is (I INTEGER (INTEGERP
-; (CAR (CDR LOOP$-IVARS))) (IN LST)).  The guard is untranslated and may have
-; macros like AND or unquoted numbers in it.  E.g., if the type spec of the
-; second element of vsts is (INTEGER 0 7), then the guard produced here is (AND
-; (INTEGERP (CAR (CDR LOOP$-IVARS)))) (<= 0 (CAR (CDR LOOP$-IVARS))) (<= (CAR
-; (CDR LOOP$-IVARS)) 7)).  We call this the ``lifted'' vst guard.  Do not treat
-; this as a translated term!
+; (CAR (CDR LOOP$-IVARS))) (IN LST)).  While that example suggests the
+; type-guard produced is fully translated it is NOT and may have macros like
+; AND or unquoted numbers in it.  E.g., if the type spec of the second element
+; of vsts is (INTEGER 0 7), then the guard produced here is (AND (INTEGERP (CAR
+; (CDR LOOP$-IVARS)))) (<= 0 (CAR (CDR LOOP$-IVARS))) (<= (CAR (CDR
+; LOOP$-IVARS)) 7)).  Note the presence of the macros AND and <=.  We call this
+; the ``lifted'' vst guard because instead of being expressed in terms of the
+; iteration variable, e.g., I here, it is expressed in terms of elements of the
+; given name, e.g., (CAR (CDR LOOP$-IVARS)).  This is perhaps doubly confusing
+; because if the loop$ we're translating turns out to be a plain loop the
+; lambda formal is not LOOP$-IVARS and is not a tuple to be car/cdr'd.  We lift
+; the type guard as though for for a fancy loop$ because easier to produce the
+; ``lifted type guard'' for the single-variable plain loop$.  In any case, do
+; not treat this as a translated term, do not confuse it with the entire guard
+; of the lambda (the guard of the lobody, for example, is not included in
+; type-guard here, and do not think it is in terms of the lambda formal for the
+; iteration variable(s)!
 
 ; Target, by the way, is one of three forms (IN x), (ON x), or (FROM-TO-BY i j
 ; k) and x, i, j, and k are untranslated expressions which remain untranslated
@@ -14638,6 +14691,10 @@
 ; passed in only so that the signature of that function is the same as that for
 ; the translate11 calls below.  The calls of trans-value below for tuntil and
 ; twhen use the local value of bindings, which is nil.
+
+; Recall that tvsts is a list of 4-tuples, (vi type-spec
+; type-guard-wrt-LOOP$-IVARS target-thing), and go read the comment in
+; translate-vsts for a precise description!
 
               (translated-until-guard
                (if (and untilc
@@ -17513,6 +17570,13 @@
                                  wrld))))))))))
 
 (defun error-fms-cw (hardp ctx str alist)
+
+; Note: Recall the imagined invariant on the wormhole-data of
+; comment-window-io: it is an alist and any key that is string-equal to one of
+; the *tracked-warning-summaries* must be bound to a true-list.  See defmacro
+; io? for details.  But this function doesn't touch the data field, so it
+; maintains the invariant.
+
   (wormhole 'comment-window-io
             '(lambda (whs)
                (set-wormhole-entry-code whs :ENTER))

@@ -2819,6 +2819,7 @@
                       (guard " the guard")
                       (body " the body")
                       (lambda-body " the lambda body")
+                      (lambda-object-body " the body of the lambda object")
                       (rewritten-body " the rewritten body")
                       (expansion " the expansion")
                       (equal-consp-hack-car " the equality of the cars")
