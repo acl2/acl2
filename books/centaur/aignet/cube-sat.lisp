@@ -903,7 +903,7 @@
         ;; 
         (mv status bitarr state aignet2 vals))
        (aignet2 (aignet-copy-with-conjoined-output cube aignet aignet2))
-       ((mv aignet2 state) (aignet-comb-transform!-stub aignet2 xform-config state))
+       ((mv aignet2 state) (apply-comb-transforms! aignet2 xform-config state))
        (new-cube (list (outnum->fanin 0 aignet2)))
        ((acl2::hintcontext :sat))
        ((mv status vals)

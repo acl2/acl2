@@ -175,12 +175,17 @@ for translating between ABC and aignet does not support xors.</p>"
 
 (local (in-theory (disable w)))
 
-(define apply-comb-transform ((aignet)
-                              (aignet2)
-                              (transform comb-transform-p)
-                              (state))
+(define apply-comb-transform-default ((aignet)
+                                      (aignet2)
+                                      (transform)
+                                      (state))
   :returns (mv new-aignet2 new-state)
-  (b* ((name (comb-transform->name transform)))
+  (b* (((unless (comb-transform-p transform))
+        (raise "Bad transform config object; should satisfy ~x1: ~x0~%"
+               transform 'comb-transform-p)
+        (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
+          (mv aignet2 state)))
+       (name (comb-transform->name transform)))
     (time$
      (b* (((mv aignet2 state)
            (case (tag transform)
@@ -207,132 +212,10 @@ for translating between ABC and aignet does not support xors.</p>"
      :msg "~s0 transform: ~st seconds, ~sa bytes.~%"
      :args (list name)))
   ///
-  (defthm normalize-inputs-of-apply-comb-transform
-    (implies (syntaxp (not (equal aignet2 ''nil)))
-             (equal (apply-comb-transform aignet aignet2 transform state)
-                    (apply-comb-transform aignet nil transform state))))
-
-  (defret num-ins-of-apply-comb-transform
-    (equal (stype-count :pi new-aignet2)
-           (stype-count :pi aignet)))
-
-  (defret num-regs-of-apply-comb-transform
-    (equal (stype-count :reg new-aignet2)
-           (stype-count :reg aignet)))
-
-  (defret num-outs-of-apply-comb-transform
-    (equal (stype-count :po new-aignet2)
-           (stype-count :po aignet)))
-
-  (defret apply-comb-transform-comb-equivalent
-    (comb-equiv new-aignet2 aignet))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state)
-           (w state)))
-
-  (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet2 new-state) <call>)))
-
-(define apply-comb-transform! ((aignet)
-                               (transform comb-transform-p)
-                               (state))
-  :returns (mv new-aignet new-state)
-  :enabled t
-  (mbe :logic (non-exec (apply-comb-transform aignet nil transform state))
-       :exec (b* (((acl2::local-stobjs aignet2)
-                   (mv aignet aignet2 state))
-                  ((mv aignet2 state) (apply-comb-transform aignet aignet2 transform state))
-                  ((mv aignet aignet2) (swap-stobjs aignet aignet2)))
-               (mv aignet aignet2 state))))
-
-(fty::deflist comb-transformlist :elt-type comb-transform :true-listp t)
-
-
-(define apply-comb-transforms! (aignet
-                                (transforms comb-transformlist-p)
-                                state)
-  :returns (mv new-aignet new-state)
-  (b* (((when (atom transforms))
-        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet)))
-          (mv aignet state)))
-       ((mv aignet state) (apply-comb-transform! aignet (car transforms) state)))
-    (apply-comb-transforms! aignet (cdr transforms) state))
-  ///
-  (defret num-ins-of-<fn>
-    (equal (stype-count :pi new-aignet)
-           (stype-count :pi aignet)))
-
-  (defret num-regs-of-<fn>
-    (equal (stype-count :reg new-aignet)
-           (stype-count :reg aignet)))
-
-  (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet)
-           (stype-count :po aignet)))
-
-  (defret <fn>-comb-equivalent
-    (comb-equiv new-aignet aignet))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state)
-           (w state)))
-
-  (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet new-state) <call>)))
-
-(define apply-comb-transforms-in-place (aignet aignet2 
-                                               (transforms comb-transformlist-p)
-                                               state)
-  :returns (mv new-aignet new-aignet2 new-state)
-  (b* (((when (atom transforms))
-        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet))
-             (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
-                           :exec aignet2)))
-          (mv aignet aignet2 state)))
-       ((mv aignet aignet2 state)
-        (mbe :logic (non-exec
-                     (mv (mv-nth 0 (apply-comb-transform aignet nil (car transforms) state))
-                         aignet
-                         (mv-nth 1 (apply-comb-transform aignet nil (car transforms) state))))
-             :exec (b* (((mv aignet2 state) (apply-comb-transform aignet aignet2 (car transforms) state))
-                        ((mv aignet aignet2) (swap-stobjs aignet aignet2)))
-                     (mv aignet aignet2 state)))))
-    (apply-comb-transforms-in-place aignet aignet2 (cdr transforms) state))
-  ///
-  (defret <fn>-equals-apply-comb-transforms!
-    (b* (((mv new-aignet-spec new-state-spec) (apply-comb-transforms! aignet transforms state)))
-      (and (equal new-aignet new-aignet-spec)
-           (equal new-state new-state-spec)))
-    :hints(("Goal" :in-theory (enable apply-comb-transforms!))))
-
-  (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet new-aignet2 new-state) <call>)
-    :hints(("Goal" :in-theory (disable <fn>-equals-apply-comb-transforms!)))))
-
-(defstobj-clone aignet3 aignet :suffix "3")
-
-(define apply-comb-transforms (aignet
-                               aignet2
-                               (transforms comb-transformlist-p)
-                               state)
-  :returns (mv new-aignet2 new-state)
-  :guard-hints (("goal" :expand ((apply-comb-transforms! aignet transforms state))))
-  (b* (((unless (consp transforms))
-        (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-          (mv aignet2 state))))
-    (mbe :logic (non-exec (apply-comb-transforms! aignet transforms state))
-         :exec (b* (((mv aignet2 state) (apply-comb-transform aignet aignet2 (car transforms) state))
-                    ((acl2::local-stobjs aignet3)
-                     (mv aignet2 aignet3 state)))
-                 (apply-comb-transforms-in-place aignet2 aignet3 (cdr transforms) state))))
-  ///
   (defret normalize-inputs-of-<fn>
     (implies (syntaxp (not (equal aignet2 ''nil)))
-             (equal <call>
-                    (let ((aignet2 nil)) <call>))))
+             (equal (<fn> aignet aignet2 transform state)
+                    (<fn> aignet nil transform state))))
 
   (defret num-ins-of-<fn>
     (equal (stype-count :pi new-aignet2)
@@ -356,38 +239,8 @@ for translating between ABC and aignet does not support xors.</p>"
   (defret list-of-outputs-of-<fn>
     (equal (list new-aignet2 new-state) <call>)))
 
+(defattach apply-comb-transform apply-comb-transform-default)
 
-(define aignet-comb-transform-default (aignet aignet2 config state)
-  :returns (mv new-aignet2 new-state)
-  (if (comb-transformlist-p config)
-      (time$ (apply-comb-transforms aignet aignet2 config state)
-             :msg "All transforms: ~st seconds, ~sa bytes.~%")
-    (prog2$ (er hard? 'aignet-comb-transform-default
-                "Config must satisfy ~x0, but did not: ~x1"
-                'comb-transformlist-p config)
-            (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-              (mv aignet2 state))))
-  ///
-  (defret num-ins-of-<fn>
-    (equal (stype-count :pi new-aignet2)
-           (stype-count :pi aignet)))
-
-  (defret num-regs-of-<fn>
-    (equal (stype-count :reg new-aignet2)
-           (stype-count :reg aignet)))
-
-  (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet2)
-           (stype-count :po aignet)))
-
-  (defret <fn>-comb-equivalent
-    (comb-equiv new-aignet2 aignet))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state)
-           (w state))))
-
-(defattach aignet-comb-transform-stub aignet-comb-transform-default)
 
 
 
@@ -417,14 +270,19 @@ transforms.  The currently supported transforms include the @(see aignet-comb-tr
     (otherwise (comb-transform->name x))))
 
 
-(define apply-n-output-comb-transform ((n natp)
-                                       (aignet)
-                                       (aignet2)
-                                       (transform n-output-comb-transform-p)
-                                       (state))
+(define apply-n-output-comb-transform-default ((n natp)
+                                               (aignet)
+                                               (aignet2)
+                                               (transform)
+                                               (state))
   :guard (<= n (num-outs aignet))
   :returns (mv new-aignet2 new-state)
-  (b* ((name (n-output-comb-transform->name transform)))
+  (b* (((unless (n-output-comb-transform-p transform))
+        (raise "Bad transform config object; should satisfy ~x1: ~x0~%"
+               transform 'n-output-comb-transform-p)
+        (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
+          (mv aignet2 state)))
+       (name (n-output-comb-transform->name transform)))
     (time$
      (b* (((mv aignet2 state)
            (case (tag transform)
@@ -483,171 +341,6 @@ transforms.  The currently supported transforms include the @(see aignet-comb-tr
   (defret list-of-outputs-of-<fn>
     (equal (list new-aignet2 new-state) <call>)))
 
-(define apply-n-output-comb-transform! ((n natp)
-                                        (aignet)
-                                        (transform n-output-comb-transform-p)
-                                        (state))
-  :guard (<= n (num-outs aignet))
-  :returns (mv new-aignet new-state)
-  :enabled t
-  (mbe :logic (non-exec (apply-n-output-comb-transform n aignet nil transform state))
-       :exec (b* (((acl2::local-stobjs aignet2)
-                   (mv aignet aignet2 state))
-                  ((mv aignet2 state) (apply-n-output-comb-transform n aignet aignet2 transform state))
-                  ((mv aignet aignet2) (swap-stobjs aignet aignet2)))
-               (mv aignet aignet2 state))))
 
 
-(fty::deflist n-output-comb-transformlist :elt-type n-output-comb-transform :true-listp t)
-
-(define apply-n-output-comb-transforms! ((n natp)
-                                         aignet
-                                         (transforms n-output-comb-transformlist-p)
-                                         state)
-  :guard (<= n (num-outs aignet))
-  :returns (mv new-aignet new-state)
-  (b* (((when (atom transforms))
-        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet)))
-          (mv aignet state)))
-       ((mv aignet state) (apply-n-output-comb-transform! n aignet (car transforms) state)))
-    (apply-n-output-comb-transforms! n aignet (cdr transforms) state))
-  ///
-  (defret num-ins-of-<fn>
-    (equal (stype-count :pi new-aignet)
-           (stype-count :pi aignet)))
-
-  (defret num-regs-of-<fn>
-    (equal (stype-count :reg new-aignet)
-           (stype-count :reg aignet)))
-
-  (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet)
-           (stype-count :po aignet)))
-
-  (defret <fn>-outputs-equivalent
-    (implies (< (nfix i) (nfix n))
-             (equal (output-eval i invals regvals new-aignet)
-                    (output-eval i invals regvals aignet))))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state)
-           (w state)))
-
-  (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet new-state) <call>)))
-
-(define apply-n-output-comb-transforms-in-place ((n natp)
-                                                 aignet aignet2 
-                                                 (transforms n-output-comb-transformlist-p)
-                                                 state)
-  :guard (<= n (num-outs aignet))
-  :returns (mv new-aignet new-aignet2 new-state)
-  (b* (((when (atom transforms))
-        (b* ((aignet (mbe :logic (non-exec (node-list-fix aignet))
-                          :exec aignet))
-             (aignet2 (mbe :logic (non-exec (node-list-fix aignet2))
-                           :exec aignet2)))
-          (mv aignet aignet2 state)))
-       ((mv aignet aignet2 state)
-        (mbe :logic (non-exec
-                     (mv (mv-nth 0 (apply-n-output-comb-transform n aignet nil (car transforms) state))
-                         aignet
-                         (mv-nth 1 (apply-n-output-comb-transform n aignet nil (car transforms) state))))
-             :exec (b* (((mv aignet2 state) (apply-n-output-comb-transform n aignet aignet2 (car transforms) state))
-                        ((mv aignet aignet2) (swap-stobjs aignet aignet2)))
-                     (mv aignet aignet2 state)))))
-    (apply-n-output-comb-transforms-in-place n aignet aignet2 (cdr transforms) state))
-  ///
-  (defret <fn>-equals-apply-n-output-comb-transforms!
-    (b* (((mv new-aignet-spec new-state-spec) (apply-n-output-comb-transforms! n aignet transforms state)))
-      (and (equal new-aignet new-aignet-spec)
-           (equal new-state new-state-spec)))
-    :hints(("Goal" :in-theory (enable apply-n-output-comb-transforms!))))
-
-  (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet new-aignet2 new-state) <call>)
-    :hints(("Goal" :in-theory (disable <fn>-equals-apply-n-output-comb-transforms!)))))
-
-(define apply-n-output-comb-transforms ((n natp)
-                               aignet
-                               aignet2
-                               (transforms n-output-comb-transformlist-p)
-                               state)
-  :guard (<= n (num-outs aignet))
-  :returns (mv new-aignet2 new-state)
-  :guard-hints (("goal" :expand ((apply-n-output-comb-transforms! n aignet transforms state))))
-  (b* (((unless (consp transforms))
-        (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-          (mv aignet2 state))))
-    (mbe :logic (non-exec (apply-n-output-comb-transforms! n aignet transforms state))
-         :exec (b* (((mv aignet2 state) (apply-n-output-comb-transform n aignet aignet2 (car transforms) state))
-                    ((acl2::local-stobjs aignet3)
-                     (mv aignet2 aignet3 state)))
-                 (apply-n-output-comb-transforms-in-place n aignet2 aignet3 (cdr transforms) state))))
-  ///
-  (defret normalize-inputs-of-<fn>
-    (implies (syntaxp (not (equal aignet2 ''nil)))
-             (equal <call>
-                    (let ((aignet2 nil)) <call>))))
-
-  (defret num-ins-of-<fn>
-    (equal (stype-count :pi new-aignet2)
-           (stype-count :pi aignet)))
-
-  (defret num-regs-of-<fn>
-    (equal (stype-count :reg new-aignet2)
-           (stype-count :reg aignet)))
-
-  (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet2)
-           (stype-count :po aignet)))
-
-  (defret <fn>-outputs-equivalent
-    (implies (< (nfix i) (nfix n))
-             (equal (output-eval i invals regvals new-aignet2)
-                    (output-eval i invals regvals aignet))))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state)
-           (w state)))
-
-  (defret list-of-outputs-of-<fn>
-    (equal (list new-aignet2 new-state) <call>)))
-
-
-
-(define aignet-n-output-comb-transform-default ((n natp) aignet aignet2 config state)
-  :guard (<= n (num-outs aignet))
-  :returns (mv new-aignet2 new-state)
-  (if (n-output-comb-transformlist-p config)
-      (time$ (apply-n-output-comb-transforms n aignet aignet2 config state)
-             :msg "All transforms: ~st seconds, ~sa bytes.~%")
-    (prog2$ (er hard? 'aignet-n-output-comb-transform-default
-                "Config must satisfy ~x0, but did not: ~x1"
-                'n-output-comb-transformlist-p config)
-            (b* ((aignet2 (aignet-raw-copy aignet aignet2)))
-              (mv aignet2 state))))
-  ///
-  (defret num-ins-of-<fn>
-    (equal (stype-count :pi new-aignet2)
-           (stype-count :pi aignet)))
-
-  (defret num-regs-of-<fn>
-    (equal (stype-count :reg new-aignet2)
-           (stype-count :reg aignet)))
-
-  (defret num-outs-of-<fn>
-    (equal (stype-count :po new-aignet2)
-           (stype-count :po aignet)))
-
-  (defret <fn>-outputs-equivalent
-    (implies (< (nfix i) (nfix n))
-             (equal (output-eval i invals regvals new-aignet2)
-                    (output-eval i invals regvals aignet))))
-
-  (defret w-state-of-<fn>
-    (equal (w new-state)
-           (w state))))
-
-(defattach aignet-n-output-comb-transform-stub aignet-n-output-comb-transform-default)
+(defattach apply-n-output-comb-transform apply-n-output-comb-transform-default)

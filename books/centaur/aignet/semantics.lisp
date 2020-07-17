@@ -2091,7 +2091,7 @@ same input/register assignment.</li></ul>
     (implies (comb-equiv aignet aignet2)
              (and (equal (equal (output-eval n invals regvals aignet)
                                 (output-eval n invals regvals aignet2))
-                   t)
+                         t)
                   (equal (equal (nxst-eval n invals regvals aignet)
                                 (nxst-eval n invals regvals aignet2))
                          t)))
@@ -2104,11 +2104,11 @@ same input/register assignment.</li></ul>
                                           invals regvals aignet)
                                 (lit-eval (fanin 0 (lookup-stype n (po-stype) aignet2))
                                           invals regvals aignet2))
-                   t)
+                         t)
                   (equal (equal (lit-eval (lookup-reg->nxst n aignet)
-                                         invals regvals aignet)
+                                          invals regvals aignet)
                                 (lit-eval (lookup-reg->nxst n aignet2)
-                                         invals regvals aignet2))
+                                          invals regvals aignet2))
                          t)))
     :hints(("Goal" :in-theory (e/d (output-eval nxst-eval)
                                    (comb-equiv-necc))
@@ -2116,7 +2116,41 @@ same input/register assignment.</li></ul>
 
   (defequiv comb-equiv)
   (defrefinement comb-equiv outs-comb-equiv)
-  (defrefinement comb-equiv nxsts-comb-equiv))
+  (defrefinement comb-equiv nxsts-comb-equiv)
+
+
+
+  
+
+  (fty::deffixcong aignet-equiv equal (id-eval id invals regvals aignet) aignet
+    :hints (("goal" :induct (id-eval-ind id aignet)
+             :expand ((:free (aignet) (id-eval id invals regvals aignet)))
+             :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits
+                                aignet-idp))))
+
+  (fty::deffixcong aignet-equiv equal (lit-eval lit invals regvals aignet) aignet
+    :hints (("goal" :expand ((:free (aignet) (lit-eval lit invals regvals aignet))))))
+
+  (fty::deffixcong aignet-equiv equal (eval-and-of-lits lit1 lit2 invals regvals aignet) aignet
+    :hints(("Goal" :in-theory (enable eval-and-of-lits))))
+
+  (fty::deffixcong aignet-equiv equal (eval-xor-of-lits lit1 lit2 invals regvals aignet) aignet
+    :hints(("Goal" :in-theory (enable eval-xor-of-lits))))
+
+  (fty::deffixcong aignet-equiv equal (output-eval n invals regvals aignet) aignet
+    :hints(("Goal" :in-theory (enable output-eval))))
+
+  (fty::deffixcong aignet-equiv equal (nxst-eval n invals regvals aignet) aignet
+    :hints(("Goal" :in-theory (enable nxst-eval))))
+
+  (fty::defrefinement aignet-equiv outs-comb-equiv
+    :hints(("Goal" :in-theory (enable outs-comb-equiv))))
+
+  (fty::defrefinement aignet-equiv nxsts-comb-equiv
+    :hints(("Goal" :in-theory (enable nxsts-comb-equiv))))
+
+  (fty::defrefinement aignet-equiv comb-equiv
+    :hints(("Goal" :in-theory (enable comb-equiv)))))
 
 
 ;; (define co-eval ((n natp) invals regvals aignet)

@@ -133,7 +133,11 @@
             :expand ((count-1s (nthcdr n bitarr))
                      (:free (x) (index-of-nth-set-bit x (nthcdr n bitarr)))
                      <call>)
-            :do-not-induct t))))
+            :do-not-induct t)))
+
+  (defret fanin-count-of-<fn>
+    (equal (fanin-count new-aignet)
+           (fanin-count aignet))))
 
 
 (define aignet-map-outputs-by-bitarr ((n natp "index in bitarr")
@@ -235,18 +239,19 @@
                  :expand ((:free (a b) (index-of-nth-set-bit (+ a b) bitarr)))
                  :induct (take n bitarr)))))
 
-(define aignet-simplify-marked (aignet
-                                bitarr
-                                litarr
-                                config
+(define aignet-simplify-marked ((aignet "AIG to be transformed")
+                                (bitarr "Marks AIG nodes to be preserved: if bit N is set, node N will be copied")
+                                (litarr "Overwritten with the map from nodes in the old AIG to literals of the new AIG")
+                                (config "Combinational transformation config")
                                 state)
+  :parents (aignet)
   :guard (<= (bits-length bitarr) (num-fanins aignet))
   :returns (mv new-aignet new-litarr new-state)
   (b* (((acl2::local-stobjs aignet2)
         (mv aignet2 aignet litarr state))
        (aignet2 (aignet-raw-copy-fanins-top aignet aignet2))
        (aignet2 (aignet-add-outs-for-marked-ids 0 bitarr aignet2))
-       ((mv aignet2 state) (aignet-comb-transform!-stub aignet2 config state))
+       ((mv aignet2 state) (apply-comb-transforms! aignet2 config state))
        (litarr (resize-lits (bits-length bitarr) litarr))
        (litarr (aignet-map-outputs-by-bitarr 0 0 aignet2 bitarr litarr))
        (aignet (aignet-raw-copy-fanins-top aignet2 aignet)))
@@ -282,12 +287,77 @@
     (equal (len new-litarr)
            (len bitarr)))
 
-  (defret aignet-litp-of-litarr-entries
+  (defret aignet-litp-of-<fn>-litarr-entries
     (implies (equal 1 (nth n bitarr))
              (aignet-litp (nth-lit n new-litarr) new-aignet)))
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
+
+
+
+(define aignet-simplify-marked-with-tracked
+  ((aignet "AIG to be transformed")
+   (bitarr "Marks AIG nodes to be preserved: if bit N is set, node N will be copied")
+   (mark "Marks AIG nodes that are to be tracked: they are not necessarily preserved, but we want to know their mappings if they are.")
+   (litarr "Overwritten with the map from nodes in the old AIG to literals of the new AIG")
+   (config "Combinational transformation config")
+   state)
+  :parents (aignet)
+  :guard (and (<= (bits-length bitarr) (num-fanins aignet))
+              (<= (bits-length mark) (num-fanins aignet)))
+  :returns (mv new-aignet new-litarr new-state)
+  (b* (((acl2::local-stobjs aignet2)
+        (mv aignet2 aignet litarr state))
+       (aignet2 (aignet-raw-copy-fanins-top aignet aignet2))
+       (aignet2 (aignet-add-outs-for-marked-ids 0 bitarr aignet2))
+       (preserved-outs (num-outs aignet2))
+       (aignet2 (aignet-add-outs-for-marked-ids 0 mark aignet2))
+       ((mv aignet2 state) (apply-n-output-comb-transforms! preserved-outs aignet2 config state))
+       (litarr (resize-lits (bits-length bitarr) litarr))
+       (litarr (aignet-map-outputs-by-bitarr 0 0 aignet2 bitarr litarr))
+       (litarr (aignet-map-outputs-by-bitarr 0 0 aignet2 bitarr litarr))
+       (aignet (aignet-raw-copy-fanins-top aignet2 aignet)))
+    (mv aignet2 aignet litarr state))
+  ///
+  (defret stype-count-of-<fn>
+    (and (equal (stype-count :pi new-aignet)
+                (stype-count :pi aignet))
+         (equal (stype-count :reg new-aignet)
+                (stype-count :reg aignet))
+         (equal (stype-count :po new-aignet) 0)
+         (equal (stype-count :nxst new-aignet) 0)))
+
+  (local (defthm nth-implies-less-than-len
+           (implies (nth n x)
+                    (< (nfix n) (len x)))
+           :rule-classes :forward-chaining))
+
+  (local (in-theory (enable aignet-idp)))
+
+  (defret eval-of-<fn>
+    (implies (and (equal 1 (nth n bitarr))
+                  (<= (bits-length bitarr) (num-fanins aignet)))
+             (equal (lit-eval (nth-lit n new-litarr) invals regvals new-aignet)
+                    (id-eval n invals regvals aignet)))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (output-eval lit-eval)
+                                   (lit-eval-of-fanin-equals-output-eval))
+                   :do-not-induct t)))
+    :otf-flg t)
+
+  (defret litarr-length-of-<fn>
+    (equal (len new-litarr)
+           (len bitarr)))
+
+  (defret aignet-litp-of-<fn>-litarr-entries
+    (implies (equal 1 (nth n bitarr))
+             (aignet-litp (nth-lit n new-litarr) new-aignet)))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+
+
 
 
 
