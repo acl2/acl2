@@ -256,6 +256,11 @@
      (xdoc::seetopic "apt::defaults-table" "APT defaults table")
      ".")
     (xdoc::li
+     "Now the @(':old-to-new-enable') input, if absent,
+      takes its value from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
      "The generated names for the new and wrapper functions,
       when @(':new-name') is @(':auto')
       and/or @(':wrapper-name') is @(':auto'),

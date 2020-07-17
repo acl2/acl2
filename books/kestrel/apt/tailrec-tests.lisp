@@ -883,7 +883,7 @@
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable:
  (must-succeed*
@@ -895,9 +895,9 @@
   (tailrec f :old-to-new-enable nil)
   (assert! (rune-disabledp '(:rewrite f-to-f{1}) state)))
 
- ;; enabled when also the old-to-wrapper theorem is:
+ ;; enabled when also the new-to-old theorem is:
  (must-fail
-  (tailrec f :wrapper t :old-to-new-enable t :old-to-wrapper-enable t)))
+  (tailrec f :wrapper t :old-to-new-enable t :new-to-old-enable t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -926,7 +926,7 @@
 
  ;; enable:
  (must-succeed*
-  (tailrec f :new-to-old-enable t :old-to-new-enable nil)
+  (tailrec f :new-to-old-enable t)
   (assert! (rune-enabledp '(:rewrite f{1}-to-f) state)))
 
  ;; disable:
@@ -936,11 +936,7 @@
 
  ;; enabled when also the old-to-new theorem is:
  (must-fail
-  (tailrec f :new-to-old-enable t :old-to-new-enable t))
-
- ;; enabled when also the old-to-wrapper theorem is:
- (must-fail
-  (tailrec f :wrapper t :new-to-old-enable t :old-to-wrapper-enable t)))
+  (tailrec f :new-to-old-enable t :old-to-new-enable t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -72,6 +72,7 @@
    @('old-to-new-name-present'),
    @('old-to-new-enable-present'),
    @('new-to-old-name-present'),
+   @('new-to-old-enable-present'),
    @('old-to-wrapper-name-present'),
    @('old-to-wrapper-enable-present')
    @('wrapper-to-old-name-present'), and
@@ -92,9 +93,10 @@
    @('wrapper-enable$'),
    @('old-to-new-name$'),
    @('old-to-new-enable$'),
+   @('new-to-old-name$'),
+   @('new-to-old-enable$'),
    @('old-to-wrapper-name$'),
-   @('old-to-wrapper-enable$'),
-   @('wrapper-to-old-enable$'),
+   @('wrapper-to-old-name$'),
    @('verify-guards$'),
    @('hints$'),
    @('print$'), and
@@ -892,15 +894,10 @@
 
 (define tailrec-process-old-to-new-enable (old-to-new-enable
                                            (old-to-new-enable-present booleanp)
-                                           (wrapper$ booleanp)
                                            ctx
                                            state)
   :returns (mv erp
-               (old-to-new-enable$ booleanp
-                                   :hints (("Goal"
-                                            :in-theory
-                                            (enable
-                                             acl2::ensure-value-is-boolean))))
+               (old-to-new-enable$ booleanp)
                state)
   :short "Process the @(':old-to-new-enable') input."
   (if old-to-new-enable-present
@@ -908,7 +905,8 @@
                                              "The :OLD-TO-NEW-ENABLE input"
                                              t nil)))
         (value old-to-new-enable))
-    (value (not wrapper$))))
+    (value (get-default-input-old-to-new-enable (w state))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -963,6 +961,24 @@
                 t
                 nil)))
     (value (list name (cons name names-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tailrec-process-new-to-old-enable (new-to-old-enable
+                                           (new-to-old-enable-present booleanp)
+                                           ctx
+                                           state)
+  :returns (mv erp
+               (new-to-old-enable$ booleanp)
+               state)
+  :short "Process the @(':new-to-old-enable') input."
+  (if new-to-old-enable-present
+      (b* (((er &) (ensure-value-is-boolean$ new-to-old-enable
+                                             "The :NEW-TO-OLD-ENABLE input"
+                                             t nil)))
+        (value new-to-old-enable))
+    (value (get-default-input-new-to-old-enable (w state))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1152,6 +1168,7 @@
                                 new-to-old-name
                                 (new-to-old-name-present booleanp)
                                 new-to-old-enable
+                                (new-to-old-enable-present booleanp)
                                 old-to-wrapper-name
                                 (old-to-wrapper-name-present booleanp)
                                 old-to-wrapper-enable
@@ -1183,6 +1200,7 @@
                                     old-to-new-name$
                                     old-to-new-enable$
                                     new-to-old-name$
+                                    new-to-old-enable$
                                     old-to-wrapper-name$
                                     wrapper-to-old-name$
                                     verify-guards$
@@ -1202,9 +1220,10 @@
                                          booleanp
                                          symbolp
                                          symbolp
+                                         symbolp
                                          booleanp
                                          symbolp
-                                         symbolp
+                                         booleanp
                                          symbolp
                                          symbolp
                                          booleanp
@@ -1266,7 +1285,6 @@
        ((er old-to-new-enable$)
         (tailrec-process-old-to-new-enable old-to-new-enable
                                            old-to-new-enable-present
-                                           wrapper
                                            ctx
                                            state))
        ((er (list new-to-old-name$ names-to-avoid))
@@ -1277,9 +1295,11 @@
                                          names-to-avoid
                                          ctx
                                          state))
-       ((er &) (ensure-value-is-boolean$ new-to-old-enable
-                                         "The :NEW-TO-OLD-ENABLE input"
-                                         t nil))
+       ((er new-to-old-enable$)
+        (tailrec-process-new-to-old-enable new-to-old-enable
+                                           new-to-old-enable-present
+                                           ctx
+                                           state))
        ((er (list old-to-wrapper-name$ names-to-avoid))
         (tailrec-process-old-to-wrapper-name old-to-wrapper-name
                                              old-to-wrapper-name-present
@@ -1311,7 +1331,7 @@
                                                ctx
                                                state))
        ((when (and old-to-new-enable$
-                   new-to-old-enable))
+                   new-to-old-enable$))
         (er-soft+ ctx t nil
                   "The :OLD-TO-NEW-ENABLE and :NEW-TO-OLD-ENABLE inputs ~
                    are (perhaps by default, for one of them) both T. ~
@@ -1322,41 +1342,6 @@
         (er-soft+ ctx t nil
                   "The :OLD-TO-WRAPPER-ENABLE
                    and :WRAPPER-TO-OLD-ENABLE inputs ~
-                   are (perhaps by default, for one of them) both T. ~
-                   This is disallowed."))
-       ((when (and old-to-new-enable$
-                   wrapper
-                   old-to-wrapper-enable))
-        (er-soft+ ctx t nil
-                  "The :OLD-TO-NEW-ENABLE and :OLD-TO-WRAPPER-ENABLE inputs ~
-                   are (perhaps by default, for one of them) both T. ~
-                   This is disallowed."))
-       ((when (and old-to-new-enable$
-                   wrapper
-                   wrapper-to-old-enable))
-        (er-soft+ ctx t nil
-                  "The :OLD-TO-NEW-ENABLE and :WRAPPER-TO-OLD-ENABLE inputs ~
-                   are (perhaps by default, for one of them) both T. ~
-                   This is disallowed."))
-       ((when (and new-to-old-enable
-                   wrapper
-                   old-to-wrapper-enable))
-        (er-soft+ ctx t nil
-                  "The :NEW-TO-OLD-ENABLE and :OLD-TO-WRAPPER-ENABLE inputs ~
-                   are (perhaps by default, for one of them) both T. ~
-                   This is disallowed."))
-       ((when (and new-to-old-enable
-                   wrapper
-                   wrapper-to-old-enable))
-        (er-soft+ ctx t nil
-                  "The :NEW-TO-OLD-ENABLE and :WRAPPER-TO-OLD-ENABLE inputs ~
-                   are (perhaps by default, for one of them) both T. ~
-                   This is disallowed."))
-       ((when (and wrapper
-                   wrapper-enable
-                   wrapper-to-old-enable))
-        (er-soft+ ctx t nil
-                  "The :WRAPPER-ENABLE and :WRAPPER-TO-OLD-ENABLE inputs ~
                    are (perhaps by default, for one of them) both T. ~
                    This is disallowed."))
        ((er hints$) (evmac-process-input-hints hints ctx state))
@@ -1377,6 +1362,7 @@
                  old-to-new-name$
                  old-to-new-enable$
                  new-to-old-name$
+                 new-to-old-enable$
                  old-to-wrapper-name$
                  wrapper-to-old-name$
                  verify-guards$
@@ -2936,22 +2922,6 @@
                                 `((theory-invariant
                                    (incompatible
                                     (:rewrite ,old-to-wrapper-name$)
-                                    (:rewrite ,wrapper-to-old-name$)))
-                                  (theory-invariant
-                                   (incompatible
-                                    (:rewrite ,old-to-new-name$)
-                                    (:rewrite ,old-to-wrapper-name$)))
-                                  (theory-invariant
-                                   (incompatible
-                                    (:rewrite ,old-to-new-name$)
-                                    (:rewrite ,wrapper-to-old-name$)))
-                                  (theory-invariant
-                                   (incompatible
-                                    (:rewrite ,new-to-old-name$)
-                                    (:rewrite ,old-to-wrapper-name$)))
-                                  (theory-invariant
-                                   (incompatible
-                                    (:rewrite ,new-to-old-name$)
                                     (:rewrite ,wrapper-to-old-name$)))))))
        (new-fn-numbered-name-event `(add-numbered-name-in-use
                                      ,new-name$))
@@ -3053,6 +3023,7 @@
                     new-to-old-name
                     (new-to-old-name-present booleanp)
                     new-to-old-enable
+                    (new-to-old-enable-present booleanp)
                     old-to-wrapper-name
                     (old-to-wrapper-name-present booleanp)
                     old-to-wrapper-enable
@@ -3103,6 +3074,7 @@
                   old-to-new-name$
                   old-to-new-enable$
                   new-to-old-name$
+                  new-to-old-enable$
                   old-to-wrapper-name$
                   wrapper-to-old-name$
                   verify-guards$
@@ -3126,6 +3098,7 @@
                                 new-to-old-name
                                 new-to-old-name-present
                                 new-to-old-enable
+                                new-to-old-enable-present
                                 old-to-wrapper-name
                                 old-to-wrapper-name-present
                                 old-to-wrapper-enable
@@ -3159,7 +3132,7 @@
                                            old-to-new-name$
                                            old-to-new-enable$
                                            new-to-old-name$
-                                           new-to-old-enable
+                                           new-to-old-enable$
                                            old-to-wrapper-name$
                                            old-to-wrapper-enable
                                            wrapper-to-old-name$
@@ -3201,7 +3174,7 @@
                      (old-to-new-name ':irrelevant old-to-new-name-present)
                      (old-to-new-enable ':irrelevant old-to-new-enable-present)
                      (new-to-old-name ':irrelevant new-to-old-name-present)
-                     (new-to-old-enable 'nil)
+                     (new-to-old-enable ':irrelevant new-to-old-enable-present)
                      (old-to-wrapper-name ':auto old-to-wrapper-name-present)
                      (old-to-wrapper-enable 't old-to-wrapper-enable-present)
                      (wrapper-to-old-name ':auto wrapper-to-old-name-present)
@@ -3228,6 +3201,7 @@
                                    ',new-to-old-name
                                    ',new-to-old-name-present
                                    ',new-to-old-enable
+                                   ',new-to-old-enable-present
                                    ',old-to-wrapper-name
                                    ',old-to-wrapper-name-present
                                    ',old-to-wrapper-enable

@@ -78,9 +78,9 @@
      "         :wrapper-name           ; default :auto"
      "         :wrapper-enable         ; default t"
      "         :old-to-new-name        ; default from table"
-     "         :old-to-new-enable      ; default (not :wrapper)"
+     "         :old-to-new-enable      ; default from table"
      "         :new-to-old-name        ; default from table"
-     "         :new-to-old-enable      ; default nil"
+     "         :new-to-old-enable      ; default from table"
      "         :old-to-wrapper-name    ; default :auto"
      "         :old-to-wrapper-enable  ; default t"
      "         :wrapper-to-old-name    ; default :auto"
@@ -385,7 +385,8 @@
        let @('old-to-new') be the name of this theorem."))
 
     (xdoc::desc
-     "@(':old-to-new-enable') &mdash; negation of @(':wrapper')"
+     "@(':old-to-new-enable') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
      (xdoc::p
       "Determines whether @('old-to-new') is enabled.")
      (xdoc::p
@@ -394,17 +395,14 @@
       (xdoc::li
        "@('t'), to enable the theorem.")
       (xdoc::li
-       "@('nil'), to disable it."))
+       "@('nil'), to disable it.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-old-to-new-enable)."))
      (xdoc::p
-      "If this input is absent,
-       @('old-to-new') is enabled if the @(':wrapper') input is @('nil'),
-       it is disabled if the @(':wrapper') input is @('t').")
-     (xdoc::p
-      "This input must be @('nil') if the @(':new-to-old') input is @('t').
-       This input must be @('nil') if
-       the @(':wrapper') input is @('t')
-       and either the @(':old-to-wrapper-enable') input is @('t')
-       or the @(':wrapper-to-old-enable') input is @('t')."))
+      "If this input is @('t'),
+       the @(':new-to-old-enable') input must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc
      "@(':new-to-old-name') &mdash;
@@ -431,7 +429,8 @@
        let @('new-to-old') be the name of this theorem."))
 
     (xdoc::desc
-     "@(':new-to-old-enable') &mdash; @('nil')"
+     "@(':new-to-old-enable') &mdash;
+      default from <see topic='@(url defaults-table)'>table</see>"
      (xdoc::p
       "Determines whether @('new-to-old') is enabled.")
      (xdoc::p
@@ -440,13 +439,14 @@
       (xdoc::li
        "@('t'), to enable the theorem.")
       (xdoc::li
-       "@('nil'), to disable it."))
+       "@('nil'), to disable it.")
+      (xdoc::li
+       "Absent, to use the value from the APT defaults table,
+        which is set via @(tsee set-default-input-new-to-old-enable)."))
      (xdoc::p
-      "This input must be @('nil') if @('old-to-new') is enabled
-       (which is determined by the @(':old-to-new-enable') input).
-       This input must be @('nil') if
-       the @(':wrapper') input is @('t')
-       and the @(':old-to-wrapper-enable') input is @('t')."))
+      "If this input is @('t'),
+       the @(':old-to-new-enable') input must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc
      "@(':old-to-wrapper-name') &mdash; default @(':auto')"
@@ -494,9 +494,9 @@
       "This input may be present only if
        the @(':wrapper') input is @('t').")
      (xdoc::p
-      "This input must be @('nil') if
-       the @(':wrapper-to-old-enable') input is @('t')
-       or the @(':old-to-new-enable') input is @('t')."))
+      "If this input is @('t'),
+       the @(':wrapper-to-old-enable') input must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc
      "@(':wrapper-to-old-name') &mdash; default @(':auto')"
@@ -544,11 +544,9 @@
       "This input may be present only if
        the @(':wrapper') input is @('t').")
      (xdoc::p
-      "This input must be @('nil') if
-       the @(':old-to-wrapper-enable') input is @('t'),
-       or the @(':wrapper-enable') input is @('t'),
-       or @('old-to-new') is enabled
-       (which is determined by the @(':old-to-new-enable') input)."))
+      "If this input is @('t'),
+       the @(':old-to-wrapper-enable') input must be @('nil').
+       At most one of these two inputs may be @('t') at any time."))
 
     (xdoc::desc-apt-input-verify-guards :optional)
 
@@ -966,8 +964,14 @@
        @('old-to-wrapper') is denoted by @($\\tilde{f}\\!f$)."))
 
     (xdoc::p
-     "Theory invariants are also generated to prevent
-      certain pairs of generated theorems from being enabled at the same time."))
+     "A theory invariant is also generated to prevent
+      @('old-to-new') and @('new-to-old')
+      from being enabled at the same time.")
+
+    (xdoc::p
+     "A theory invariant is also generated to prevent
+      @('old-to-wrapper') and @('wrapper-to-old')
+      from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
