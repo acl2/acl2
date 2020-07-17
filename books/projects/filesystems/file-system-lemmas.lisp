@@ -865,35 +865,36 @@
            (iff (member-equal x1 (remove1-equal x2 l))
                 (member-equal x1 l))))
 
+;; Contributed to books/std/lists/intersection.lisp
 (defthm
   member-of-intersection$
-  (implies (or (not (member-equal x l1)) (not (member-equal x l2)))
-           (not (member-equal x (intersection-equal l1 l2))))
+  (iff (member a (intersection$ x y))
+       (and (member a x) (member a y)))
   :rule-classes
   (:rewrite
    (:type-prescription
     :corollary
-    (implies (not (member-equal x l1))
-             (not (member-equal x (intersection-equal l1 l2)))))
+    (implies (not (member a x))
+             (not (member a (intersection$ x y)))))
    (:type-prescription
     :corollary
-    (implies (not (member-equal x l2))
-             (not (member-equal x (intersection-equal l1 l2)))))))
+    (implies (not (member a y))
+             (not (member a (intersection$ x y)))))))
 
 (defthm
   nth-of-intersection$
   (implies (< (nfix n)
-              (len (intersection-equal l1 l2)))
+              (len (intersection-equal x y)))
            (and
-            (member-equal (nth n (intersection-equal l1 l2))
-                          l1)
-            (member-equal (nth n (intersection-equal l1 l2))
-                          l2)))
+            (member-equal (nth n (intersection-equal x y))
+                          x)
+            (member-equal (nth n (intersection-equal x y))
+                          y)))
   :hints
   (("goal"
     :in-theory (disable member-of-intersection$)
     :use (:instance member-of-intersection$
-                    (x (nth n (intersection-equal l1 l2)))))))
+                    (a (nth n (intersection-equal x y)))))))
 
 (defthm
   member-of-strip-cars-of-remove-assoc
@@ -1637,8 +1638,43 @@
 
 (defthmd last-alt (equal (last x) (nthcdr (- (len x) 1) x)))
 
-;; Move later.
 (defthm nat-listp-when-subsetp
   (implies (and (subsetp-equal x y) (nat-listp y))
            (nat-listp (true-list-fix x)))
   :hints (("goal" :in-theory (enable subsetp-equal))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/remove.lisp, from where it was taken with thanks.
+(defthm remove-of-set-difference-equal
+  (equal (remove a (set-difference-equal x y))
+         (set-difference-equal (remove a x) y)))
+
+(defthm set-difference$-of-remove-when-member-1
+  (implies (member-equal a y)
+           (equal (set-difference-equal (remove a x) y)
+                  (set-difference-equal x y))))
+
+(defthm
+  set-difference$-of-intersection$-1
+  (equal (set-difference-equal l1 (intersection-equal l1 l2))
+         (set-difference-equal l1 l2))
+  :hints
+  (("goal"
+    :induct (mv (intersection-equal l1 l2)
+                (set-difference-equal l1 l2))
+    :expand
+    (:with set-difference$-redefinition
+           (set-difference-equal l1
+                                 (cons (car l1)
+                                       (intersection-equal (cdr l1) l2)))))))
+
+(defthm len-of-put-assoc-equal-2
+  (implies (consp (assoc-equal name alist))
+           (equal (len (put-assoc-equal name val alist))
+                  (len alist))))
+
+(defthm intersection$-of-remove-1
+  (equal (intersection-equal y (remove-equal x l))
+         (if (not (member-equal x y))
+             (intersection-equal y l)
+             (remove-equal x (intersection-equal y l)))))

@@ -21,26 +21,13 @@
 (local
  (in-theory
   (disable
-   (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
-   (:rewrite collapse-congruence-lemma-4)
    (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
-   (:rewrite collapse-congruence-lemma-2)
-   (:rewrite absfat-equiv-of-ctx-app-lemma-8)
    (:rewrite abs-separate-correctness-1-lemma-19)
-   (:rewrite
-    partial-collapse-correctness-lemma-20)
    (:rewrite m1-file-alist-p-when-subsetp-equal)
-   (:rewrite
-    m1-file-alist-p-of-final-val-seq-lemma-3)
-   (:rewrite final-val-of-collapse-this-lemma-2)
-   (:rewrite collapse-congruence-lemma-5)
    (:rewrite
     abs-find-file-helper-of-collapse-lemma-3)
    (:rewrite
-    partial-collapse-correctness-lemma-106)
-   (:rewrite
     abs-fs-fix-of-put-assoc-equal-lemma-2)
-   final-val-of-collapse-this-lemma-3
    abs-fs-fix-of-put-assoc-equal-lemma-3
    (:type-prescription
     abs-directory-file-p-when-m1-file-p-lemma-1))))
@@ -2075,7 +2062,6 @@
     :do-not-induct t
     :in-theory (e/d (take-of-nthcdr abs-find-file-helper len-of-fat32-filename-list-fix)
                     (nthcdr-of-fat32-filename-list-fix
-                     abs-separate-correctness-1-lemma-14
                      (:rewrite abs-find-file-correctness-1-lemma-18)
                      (:rewrite abs-find-file-correctness-1-lemma-57)))
     :use
@@ -2531,10 +2517,7 @@
       (mv (abs-file-fix nil) *enoent*)))
     :hints (("goal" :induct (induction-scheme frame path x)
              :in-theory
-             (e/d (collapse len-of-fat32-filename-list-fix)
-                  ((:rewrite partial-collapse-correctness-lemma-1)
-                   (:rewrite partial-collapse-correctness-lemma-24)
-                   (:rewrite partial-collapse-correctness-lemma-33)))))))
+             (enable collapse len-of-fat32-filename-list-fix)))))
 
 ;; Kinda general
 (defthm
@@ -3027,9 +3010,7 @@
       (mv (abs-file-fix nil) *enoent*)))
     :hints (("goal" :induct (induction-scheme frame x y)
              :in-theory (e/d (collapse len-of-fat32-filename-list-fix)
-                             ((:rewrite
-                               partial-collapse-correctness-lemma-24)
-                              (:rewrite abs-addrs-when-m1-file-alist-p)
+                             ((:rewrite abs-addrs-when-m1-file-alist-p)
                               (:rewrite
                                abs-find-file-of-put-assoc-lemma-7 . 1)
                               (:rewrite prefixp-when-equal-lengths)
@@ -3039,10 +3020,7 @@
                               (:definition remove-equal)
                               (:rewrite abs-file-alist-p-correctness-1)
                               (:rewrite remove-when-absent)
-                              (:definition member-equal)
-                              (:rewrite
-                               final-val-seq-of-collapse-this-lemma-2)
-                              (:rewrite valid-seqp-when-prefixp)))))))
+                              (:definition member-equal)))))))
 
 (local
  (defthmd
@@ -3252,8 +3230,7 @@
                      (:rewrite strip-cars-of-put-assoc)
                      (:rewrite strip-cars-of-remove-assoc)
                      (:rewrite remove-when-absent)
-                     (:definition remove-equal)
-                     (:rewrite partial-collapse-correctness-lemma-24)))
+                     (:definition remove-equal)))
     :use
     ((:instance (:rewrite abs-find-file-of-put-assoc-lemma-4)
                 (path path)
@@ -3746,8 +3723,7 @@
     (mv (abs-file-fix nil) *enoent*)))
   :hints
   (("goal" :in-theory (e/d (collapse collapse-this)
-                           ((:rewrite partial-collapse-correctness-lemma-24)
-                            (:definition remove-equal)
+                           ((:definition remove-equal)
                             (:rewrite remove-when-absent)
                             (:rewrite strip-cars-of-remove-assoc)
                             (:rewrite strip-cars-of-put-assoc)
@@ -3971,7 +3947,6 @@
     :in-theory (e/d (len-of-fat32-filename-list-fix)
                     ((:rewrite remove-when-absent)
                      (:definition remove-equal)
-                     (:rewrite partial-collapse-correctness-lemma-24)
                      (:definition member-equal)
                      (:definition assoc-equal)
                      (:rewrite abs-addrs-when-m1-file-alist-p)
@@ -4238,17 +4213,16 @@
   (implies (equal (mv-nth 1
                           (abs-find-file-helper (frame->root frame)
                                                 path))
-                  2)
+                  *enoent*)
            (equal (abs-find-file-helper (frame->root frame)
                                         path)
                   (mv (abs-file-fix nil) *enoent*)))
-  :instructions
-  ((:bash
-    ("goal"
-     :in-theory (disable (:rewrite abs-find-file-helper-of-ctx-app-lemma-4))
-     :use ((:instance (:rewrite abs-find-file-helper-of-ctx-app-lemma-4)
-                      (path path)
-                      (fs (frame->root frame))))))))
+  :hints
+  (("goal"
+    :in-theory (disable (:rewrite abs-find-file-helper-of-ctx-app-lemma-4))
+    :use ((:instance (:rewrite abs-find-file-helper-of-ctx-app-lemma-4)
+                     (path path)
+                     (fs (frame->root frame)))))))
 
 (defthm
   abs-find-file-correctness-lemma-10
@@ -4277,7 +4251,7 @@
   :hints
   (("goal" :in-theory
     (e/d
-     ((:rewrite collapse-congruence-lemma-2))
+     ((:rewrite equal-of-frame->frame-of-collapse-this))
      ((:rewrite abs-separate-correctness-1-lemma-37)))
     :use (:instance (:rewrite abs-separate-correctness-1-lemma-37)
                     (x (1st-complete (frame->frame frame2)))
@@ -5172,7 +5146,6 @@
                     ((:rewrite remove-when-absent)
                      (:definition remove-equal)
                      (:rewrite abs-find-file-correctness-lemma-18)
-                     (:rewrite partial-collapse-correctness-lemma-24)
                      (:definition member-equal)
                      (:rewrite abs-find-file-correctness-1-lemma-3)
                      (:definition assoc-equal)
@@ -5268,8 +5241,7 @@
        :in-theory
        (e/d ((:definition abs-find-file)
              collapse (:definition collapse-this))
-            ((:rewrite partial-collapse-correctness-lemma-24)
-             (:definition remove-equal)
+            ((:definition remove-equal)
              (:definition assoc-equal)
              (:definition member-equal)
              (:definition remove-assoc-equal)

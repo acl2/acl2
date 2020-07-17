@@ -19,26 +19,13 @@
 (local
  (in-theory
   (disable
-   (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
-   (:rewrite collapse-congruence-lemma-4)
    (:rewrite abs-addrs-of-ctx-app-1-lemma-2)
-   (:rewrite collapse-congruence-lemma-2)
-   (:rewrite absfat-equiv-of-ctx-app-lemma-8)
    (:rewrite abs-separate-correctness-1-lemma-19)
-   (:rewrite
-    partial-collapse-correctness-lemma-20)
    (:rewrite m1-file-alist-p-when-subsetp-equal)
-   (:rewrite
-    m1-file-alist-p-of-final-val-seq-lemma-3)
-   (:rewrite final-val-of-collapse-this-lemma-2)
-   (:rewrite collapse-congruence-lemma-5)
    (:rewrite
     abs-find-file-helper-of-collapse-lemma-3)
    (:rewrite
-    partial-collapse-correctness-lemma-106)
-   (:rewrite
     abs-fs-fix-of-put-assoc-equal-lemma-2)
-   final-val-of-collapse-this-lemma-3
    abs-fs-fix-of-put-assoc-equal-lemma-3
    (:type-prescription
     abs-directory-file-p-when-m1-file-p-lemma-1))))
@@ -862,18 +849,14 @@
                       abs-find-file-helper-of-collapse-lemma-2)
                      (:definition remove-equal)
                      abs-find-file-of-put-assoc-lemma-7
-                     collapse-of-frame-with-root-of-frame->root-and-frame->frame
                      (:definition assoc-equal)
-                     (:rewrite
-                      partial-collapse-correctness-lemma-24)
                      (:rewrite assoc-of-car-when-member)
                      (:rewrite subsetp-car-member)
                      (:rewrite consp-of-assoc-of-frame->frame)
                      (:rewrite abs-find-file-correctness-lemma-21)
                      (:definition remove-assoc-equal)
                      (:definition len)
-                     (:rewrite put-assoc-equal-without-change . 2)
-                     (:linear len-of-seq-this-1)))
+                     (:rewrite put-assoc-equal-without-change . 2)))
     :induct (collapse frame))))
 
 (defthm
@@ -901,123 +884,6 @@
                                   abs-file->contents abs-addrs)
                       ((:rewrite abs-file-p-of-abs-find-file-helper)))
       :use (:rewrite abs-file-p-of-abs-find-file-helper))))))
-
-(defthm
-  abs-find-file-correctness-lemma-26
-  (implies
-   (and
-    (equal (mv-nth 1
-                   (abs-find-file-helper (frame->root frame)
-                                         path))
-           2)
-    (consp
-     (abs-addrs
-      (abs-file->contents
-       (mv-nth
-        0
-        (abs-find-file (remove-assoc-equal (1st-complete (frame->frame frame))
-                                           (frame->frame frame))
-                       path)))))
-    (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-    (< 0 (1st-complete (frame->frame frame)))
-    (consp
-     (assoc-equal
-      (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                        (frame->frame frame))))
-      (frame->frame frame)))
-    (prefixp
-     (frame-val->path
-      (cdr
-       (assoc-equal
-        (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                          (frame->frame frame))))
-        (frame->frame frame))))
-     (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                        (frame->frame frame)))))
-    (ctx-app-ok
-     (frame-val->dir
-      (cdr
-       (assoc-equal
-        (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                          (frame->frame frame))))
-        (frame->frame frame))))
-     (1st-complete (frame->frame frame))
-     (nthcdr
-      (len
-       (frame-val->path
-        (cdr (assoc-equal
-              (frame-val->src
-               (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                 (frame->frame frame))))
-              (frame->frame frame)))))
-      (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                         (frame->frame frame))))))
-    (mv-nth
-     1
-     (collapse
-      (frame-with-root
-       (frame->root frame)
-       (put-assoc-equal
-        (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                          (frame->frame frame))))
-        (frame-val
-         (frame-val->path
-          (cdr (assoc-equal
-                (frame-val->src
-                 (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                   (frame->frame frame))))
-                (frame->frame frame))))
-         (ctx-app
-          (frame-val->dir
-           (cdr
-            (assoc-equal
-             (frame-val->src
-              (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                (frame->frame frame))))
-             (frame->frame frame))))
-          (frame-val->dir
-           (cdr (assoc-equal (1st-complete (frame->frame frame))
-                             (frame->frame frame))))
-          (1st-complete (frame->frame frame))
-          (nthcdr
-           (len
-            (frame-val->path
-             (cdr
-              (assoc-equal
-               (frame-val->src
-                (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                  (frame->frame frame))))
-               (frame->frame frame)))))
-           (frame-val->path
-            (cdr (assoc-equal (1st-complete (frame->frame frame))
-                              (frame->frame frame))))))
-         (frame-val->src
-          (cdr (assoc-equal
-                (frame-val->src
-                 (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                   (frame->frame frame))))
-                (frame->frame frame)))))
-        (remove-assoc-equal (1st-complete (frame->frame frame))
-                            (frame->frame frame))))))
-    (frame-p frame)
-    (no-duplicatesp-equal (strip-cars frame))
-    (abs-separate frame))
-   (consp
-    (abs-addrs
-     (abs-file->contents (mv-nth 0 (abs-find-file frame path))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (disable (:rewrite abs-find-file-of-remove-assoc-1))
-    :use
-    ((:instance (:rewrite abs-find-file-of-put-assoc-lemma-4)
-                (path path)
-                (frame (remove-assoc-equal (1st-complete (frame->frame frame))
-                                           (frame->frame frame))))
-     (:instance (:rewrite abs-find-file-of-remove-assoc-1)
-                (path path)
-                (frame (frame->frame frame))
-                (x (1st-complete (frame->frame frame))))))))
 
 (defthm
   abs-find-file-correctness-lemma-28
