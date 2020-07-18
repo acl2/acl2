@@ -12,6 +12,7 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -370,7 +371,7 @@
                ((er j) (expdata-process-res arg/res-list m
                                             err-msg-preamble ctx state)))
             (value (list nil (list j)))))
-      (b* (((er &) (ensure-symbol-list$
+      (b* (((er &) (ensure-value-is-symbol-list$
                     arg/res-list
                     (msg "Since the ~n0 ARG/RES component of the second input ~
                           is not an atom, it"

@@ -12,6 +12,7 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -184,7 +185,7 @@
        ((when (null y1...ym))
         (er-soft+ ctx t nil "~@0 must not be empty." description))
        ((er &) (ensure-list-no-duplicates$ y1...ym description t nil))
-       ((er &) (ensure-symbol-list$ y1...ym description t nil))
+       ((er &) (ensure-value-is-symbol-list$ y1...ym description t nil))
        ((er &) (ensure-list-subset$ y1...ym (formals old$ (w state))
                                     description t nil))
        (c1...cm (strip-cdrs alist))
