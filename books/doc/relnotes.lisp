@@ -393,6 +393,10 @@
                     "@('fty::defbyte') standard instances")
     " have been added.")
 
+   (xdoc::p
+    "The macro @(tsee fty::defomap) has been improved
+     to generate additional theorems.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
