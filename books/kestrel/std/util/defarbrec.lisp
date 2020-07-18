@@ -12,6 +12,7 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
@@ -236,7 +237,7 @@
   :verify-guards nil
   :short "Process the @('(x1 ... xn)') input."
   (b* ((description "The second input")
-       ((er &) (ensure-symbol-list$ x1...xn description t nil))
+       ((er &) (ensure-value-is-symbol-list$ x1...xn description t nil))
        ((er &) (ensure-list-no-duplicates$ x1...xn description t nil)))
     (value nil)))
 
@@ -338,9 +339,9 @@
   (xdoc::topstring-p
    "Return the names to use for the iterated argument update functions,
     in the same order as the function's formal arguments.")
-  (b* (((er &) (ensure-symbol-list$ update-names
-                                    "The :UPDATE-NAMES input"
-                                    t nil))
+  (b* (((er &) (ensure-value-is-symbol-list$ update-names
+                                             "The :UPDATE-NAMES input"
+                                             t nil))
        (symbols (or update-names (defarbrec-default-update-names x1...xn$ fn$)))
        ((er &) (ensure-list-no-duplicates$
                 symbols

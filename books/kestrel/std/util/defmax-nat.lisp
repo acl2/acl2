@@ -12,7 +12,8 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
-(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "std/lists/rcons" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,7 +69,7 @@
   (declare (ignore body guard))
   (b* (((er &) (ensure-value-is-symbol$ f "The first input" t nil))
        ((er &) (ensure-value-is-symbol$ y "The second input" t nil))
-       ((er &) (ensure-symbol-list$ x1...xn "The third input" t nil))
+       ((er &) (ensure-value-is-symbol-list$ x1...xn "The third input" t nil))
        ((er &) (ensure-value-is-boolean$ verify-guards
                                          "The :VERIFY-GUARDS input" t nil)))
     (value nil)))
