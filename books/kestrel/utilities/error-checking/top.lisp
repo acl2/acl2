@@ -40,14 +40,6 @@
   :body
   (((maybe-stringp x) "~@0 must be a string or NIL." description)))
 
-(def-error-checker ensure-symbol-list
-  ((x "Value to check."))
-  :short
-  "Cause an error if a value is not a true list of symbols."
-  :body
-  (((symbol-listp x)
-    "~@0 must be a true list of symbols." description)))
-
 (def-error-checker ensure-symbol-alist
   ((x "Value to check."))
   :short

@@ -15,6 +15,7 @@
 (include-book "ensure-value-is-boolean")
 (include-book "ensure-value-is-string")
 (include-book "ensure-value-is-symbol")
+(include-book "ensure-value-is-symbol-list")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

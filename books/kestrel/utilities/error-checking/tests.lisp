@@ -49,24 +49,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-symbol-list nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol-list '(a b c) "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-symbol-list #\Space "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-symbol-list '(a 1 b) "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-symbol-alist nil "This" t nil 'test state)))
    (value (equal x nil))))
 
