@@ -447,6 +447,21 @@
                        (if (consp (assoc-equal x alist))
                            (list (assoc-equal x alist)) nil))))
 
+(defthm
+  set-equiv-cons-remove-1
+  (implies (member-equal x l)
+           (set-equiv (cons x (remove-equal x l))
+                      l))
+  :hints
+  (("goal"
+    :induct (remove-equal x l)
+    :in-theory (disable (:rewrite commutativity-2-of-append-under-set-equiv)))
+   ("subgoal *1/3"
+    :use (:instance (:rewrite commutativity-2-of-append-under-set-equiv)
+                    (z (remove-equal x (cdr l)))
+                    (y (list (car l)))
+                    (x (list x))))))
+
 (defund dir-ent-p (x)
   (declare (xargs :guard t))
   (and (unsigned-byte-listp 8 x)
