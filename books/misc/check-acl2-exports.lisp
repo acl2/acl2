@@ -205,6 +205,10 @@
     FMT-HARD-RIGHT-MARGIN
     FMT-SOFT-RIGHT-MARGIN
     TOGGLE-INHIBIT-WARNING
+    COLLECT$
+    COLLECT$+
+    SUM$
+    SUM$+
   ))
 
 (defconst *special-ops*
