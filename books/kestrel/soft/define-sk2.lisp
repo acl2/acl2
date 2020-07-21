@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection define-sk2-implementation
-  :short "Implementation of @(tsee define-sk2)."
+  :short "Implementation of @('define-sk2')."
   :long
   "@(def define-sk2)
    @(def acl2::define-sk2)"

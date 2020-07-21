@@ -689,7 +689,7 @@
     `(defun-sk2 ,@args)))
 
 (defsection define2-implementation
-  :short "Implementation of @(tsee define2)."
+  :short "Implementation of @('define2')."
   :long
   "@(def define2)
    @(def acl2::define2)"
