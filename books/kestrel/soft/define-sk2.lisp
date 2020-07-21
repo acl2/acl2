@@ -32,7 +32,7 @@
 
   (defmacro define-sk2 (sofun &rest rest)
     `(progn
-       (define ,sofun ,@rest)
+       (define-sk ,sofun ,@rest)
        (defsoft ,sofun)))
 
   (defmacro acl2::define-sk2 (&rest args)
