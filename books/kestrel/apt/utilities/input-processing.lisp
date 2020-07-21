@@ -83,7 +83,7 @@
      (in which case the symbol must not be a keyword),
      or a keyword used as a separator
      between the names of the old and new functions
-     as expained in @(tsee set-default-old-to-new-name).
+     as expained in @(tsee set-default-input-old-to-new-name).
      If also explained there, if this input is absent,
      it is taken from the APT defaults table.")
    (xdoc::p
