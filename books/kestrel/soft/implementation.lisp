@@ -688,6 +688,20 @@
   (defmacro acl2::defun-sk2 (&rest args)
     `(defun-sk2 ,@args)))
 
+(defsection define2-implementation
+  :short "Implementation of @(tsee define2)."
+  :long
+  "@(def define2)
+   @(def acl2::define2)"
+
+  (defmacro define2 (sofun &rest rest)
+    `(progn
+       (define ,sofun ,@rest)
+       (defsoft ,sofun)))
+
+  (defmacro acl2::define2 (&rest args)
+    `(define2 ,@args)))
+
 (define sothmp ((sothm symbolp) (wrld plist-worldp))
   :returns (yes/no "A @(tsee booleanp).")
   :mode :program
