@@ -486,6 +486,33 @@
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               svl::convert-4vec-concat-to-4vec-concat$
                               svl::4vec-concat$-of-size=1-term2=0
+                              svl::4vec-zero-ext-is-4vec-concat)))))
+
+  (def-rp-rule bits-of-binary-fns-start=0=size-posp
+    (implies (posp size)
+             (and 
+                  (equal (svl::bits (and-list hash-code x) 0 size)
+                         (and-list hash-code x))))
+    :hints (("goal"
+             :do-not '(preprocess)
+             :in-theory (e/d (or$
+                              adder-and
+                              svl::bits
+                              svl::4vec-part-select
+                              sv::4vec->lower
+                              sv::4vec->upper
+                              svl::4vec-zero-ext
+                              svl::4vec-rsh
+                              loghead
+                              not$
+                              mod floor
+                              svl::4vec-shift-core)
+                             (svl::4vec-part-select-is-bits
+                              BITS-IS-BIT-OF
+                              +-IS-SUM
+                              SVL::4VEC-ZERO-EXT-IS-BITS
+                              svl::convert-4vec-concat-to-4vec-concat$
+                              svl::4vec-concat$-of-size=1-term2=0
                               svl::4vec-zero-ext-is-4vec-concat))))))
 
 (encapsulate

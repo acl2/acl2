@@ -1614,7 +1614,26 @@
                              (
                               4vec-part-select-of-negated-bit
                               convert-4vec-concat-to-4vec-concat$
-                              ))))))
+                              )))))
+  (defthm bits-of-bitp-size=posp-start=0
+   (implies (and (bitp val)
+                 (posp size))
+            (equal (bits val 0 size)
+                   val))
+   :hints (("Goal"
+            :in-theory (e/d (bits
+                             4VEC-PART-SELECT
+                             SV::4VEC->UPPER
+                             sv::4vec->lower
+                             4VEC-CONCAT
+                             4VEC-CONCAT$)
+                            (
+                             ))))))
+
+
+
+
+
 
 (encapsulate
   nil

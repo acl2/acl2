@@ -137,10 +137,10 @@
   (list (c-spec lst)
         (s-spec lst)))
 
-(define c-res (s-lst pp-lst c)
+(define c-res (s-lst pp-lst c-lst)
   (sum (sum-list pp-lst)
        (sum-list s-lst)
-       c)
+       (sum-list c-lst))
   :returns (res integerp)
   ///
   (add-rp-rule integerp-of-c-res))
@@ -467,7 +467,7 @@
 
 (acl2::defines
  m-eval
- (define m-eval (term a)
+ (define m-eval (term a) 
    (cond ((atom term)
           (cdr (hons-assoc-equal term a)))
          ((and (quotep term)
@@ -491,6 +491,23 @@
                   ((equal (car term) 'binary-and)
                    (and$ (safe-i-nth 0 args)
                          (safe-i-nth 1 args)))
+                  ((equal (car term) 'binary-xor)
+                   (binary-xor (safe-i-nth 0 args)
+                               (safe-i-nth 1 args)))
+                  ((equal (car term) 'binary-or)
+                   (binary-or (safe-i-nth 0 args)
+                         (safe-i-nth 1 args)))
+                  ((equal (car term) 'binary-sum)
+                   (sum (safe-i-nth 0 args)
+                        (safe-i-nth 1 args)))
+                  ((equal (car term) 'equal)
+                   (equal (safe-i-nth 0 args)
+                          (safe-i-nth 1 args)))
+                  ((equal (car term) 'cons)
+                   (cons (safe-i-nth 0 args)
+                         (safe-i-nth 1 args)))
+                  ((equal (car term) 's-c-spec)
+                   (s-c-spec (safe-i-nth 0 args)))
                   ((equal (car term) 'binary-not)
                    (not$ (safe-i-nth 0 args)))
                   ((equal (car term) 'and-list)
@@ -498,6 +515,8 @@
                              (safe-i-nth 1 args)))
                   ((equal (car term) 'sum-list)
                    (sum-list (safe-i-nth 0 args)))
+                  ((equal (car term) 'sum-list-list)
+                   (sum-list-list (safe-i-nth 0 args)))
                   ((equal (car term) 'rp)
                    (safe-i-nth 1 args))
                   ((equal (car term) 'bit-of)
@@ -515,6 +534,8 @@
                     (safe-i-nth 0 args)))
                   ((equal (car term) 'list)
                    args)
+                  ((equal (car term) 'sum)
+                   (sum-list args))
                   (t
                    (hard-error 'm-eval
                                "unexpected function symbol: ~p0 ~%"
@@ -526,6 +547,28 @@
            (m-eval-lst (cdr lst) a)))))
 
 
+(define m-eval-lst-lst (lst-lst a)
+  (if (atom lst-lst)
+      nil
+    (cons (m-eval-lst (car lst-lst) a)
+          (m-eval-lst-lst (cdr lst-lst) a))))
+
+(define m-eval-compare (exp1 exp2 &key
+                             (a '*a*)
+                             (id '0)
+                             (print-exps 'nil))
+  (and nil
+       (b* ((eval1 (m-eval exp1 a))
+            (eval2 (m-eval exp2 a)))
+         (and (not (equal eval1 eval2))
+              (not (cw "ID: ~p0, eval1: ~p1, eval2: ~p2 ~%" id eval1 eval2))
+              (or (not print-exps)
+                  (not (cw "exp1: ~p0, exp2: ~p1 ~%"
+                           exp1 exp2)))
+              (hard-error 'm-eval-compare
+                          "Read above.."
+                          nil)))))
+                     
 
 (acl2::defines
  m-readable

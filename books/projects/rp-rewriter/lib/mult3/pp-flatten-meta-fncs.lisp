@@ -272,6 +272,7 @@
        (and (pp-term-p x)))
       (('bit-of & &) t)
       (''1 t)
+      (''0 t)
       (& (pp-has-bitp-rp orig)))))
 
 (define cut-list-by-half ((lst true-listp)

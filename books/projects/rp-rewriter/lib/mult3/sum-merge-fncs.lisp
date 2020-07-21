@@ -186,7 +186,9 @@
     :inline t
     :returns (mv (order)
                  (equals booleanp))
-    (b* (((mv x-lst x-hash)
+    (b* ((x (ex-from-rp-loose x))
+         (y (ex-from-rp-loose y))
+         ((mv x-lst x-hash)
           (case-match x
             (('and-list ('quote hash) ('list . lst))
              (mv lst (ifix hash)))
@@ -201,7 +203,7 @@
             (''1
              (mv '('1) 1))
             (&
-             (mv (list x) 0)))))
+             (mv (list y) 0)))))
       (if (= x-hash y-hash)
           (pp-list-order x-lst y-lst)
         (mv (> x-hash y-hash) nil)
@@ -532,6 +534,39 @@
                  pp)))))
 
 (progn
+
+  (define c-fix-c-arg-lst (lst)
+    (if (atom lst)
+        (mv nil nil nil)
+      (b* ((cur (car lst))
+           (cur-orig cur)
+           (cur (ex-from-rp-loose cur))
+           ((mv next next-present)
+            (if (atom (cdr lst)) (mv ''0 nil) (mv (cadr lst) t))))
+        (cond ((and next-present
+                    (rp-equal-cnt cur next 0))
+               (b* (((mv selected reduced coughed)
+                     (c-fix-c-arg-lst (cddr lst))))
+                 (mv selected
+                     reduced
+                     (cons cur-orig coughed)
+                     )))
+              ((case-match cur (('-- &) t))
+               (b* (((mv selected reduced coughed)
+                     (c-fix-c-arg-lst (cdr lst))))
+                 (mv (cons (cadr cur) selected)
+                     reduced
+                     (cons cur-orig coughed))))
+              (t
+               (b* (((mv selected reduced coughed)
+                     (c-fix-c-arg-lst (cdr lst))))
+                 (mv selected
+                     (cons-with-hint cur-orig reduced lst)
+                     coughed)))))))
+        
+           
+           
+  
   (define c-fix-arg-aux ((arg-lst)
                          (neg-flag booleanp)
                          (limit natp))
@@ -623,7 +658,7 @@
     (if t;(c/d-remove-repeated-s)
         (case-match s
           (('list . s-lst)
-           (b* (((mv coughed-lst res-lst) (c-fix-arg-aux s-lst nil (expt 2 30))))
+           (b* (((mv coughed-lst res-lst) (c-fix-arg-aux s-lst t (expt 2 30))))
              (mv (create-list-instance coughed-lst)
                  (if res-lst (cons-with-hint 'list res-lst s) ''nil))))
           (''nil (mv ''nil ''nil))
