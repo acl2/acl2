@@ -38,7 +38,8 @@
 (include-book "constprop")
 (include-book "abc-wrappers")
 (include-book "transform-stub")
-(include-book "internal-observability-super")
+(include-book "unreachability")
+(include-book "dom-supergate-sweep")
 
 (defxdoc aignet-comb-transforms
   :parents (aignet)
@@ -155,7 +156,8 @@ for translating between ABC and aignet does not support xors.</p>"
    constprop-config
    snapshot-config
    prune-config
-   unreachability-config))
+   unreachability-config
+   dom-supergates-sweep-config))
 
 (define comb-transform->name ((x comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)
@@ -169,6 +171,7 @@ for translating between ABC and aignet does not support xors.</p>"
     (:snapshot-config "Snapshot")
     (:prune-config "Prune")
     (:unreachability-config "Unreachability")
+    (:dom-supergates-sweep-config "Observability supergate sweep")
     (t "Abc simplify")))
 
 
@@ -206,6 +209,9 @@ for translating between ABC and aignet does not support xors.</p>"
                               (mv aignet2 state)))
              (:unreachability-config (b* ((aignet2 (unreachability aignet aignet2 transform)))
                                       (mv aignet2 state)))
+             (:dom-supergates-sweep-config
+              (b* ((aignet2 (dom-supergates-sweep aignet aignet2 transform)))
+                (mv aignet2 state)))
              (otherwise (abc-comb-simplify aignet aignet2 transform state))))
           (- (print-aignet-stats name aignet2)))
        (mv aignet2 state))
@@ -260,13 +266,15 @@ transforms.  The currently supported transforms include the @(see aignet-comb-tr
 (fty::deftranssum n-output-comb-transform
   :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
   (comb-transform
-   n-outputs-unreachability-config))
+   n-outputs-unreachability-config
+   n-outputs-dom-supergates-sweep-config))
 
 (define n-output-comb-transform->name ((x n-output-comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)
   :guard-hints (("goal" :in-theory (enable n-output-comb-transform-p)))
   (case (tag (n-output-comb-transform-fix x))
     (:n-outputs-unreachability-config "N-output Unreachability")
+    (:n-outputs-dom-supergates-sweep-config "N-output observability supergate sweep")
     (otherwise (comb-transform->name x))))
 
 
@@ -302,9 +310,15 @@ transforms.  The currently supported transforms include the @(see aignet-comb-tr
              (:prune-config (b* ((aignet2 (prune aignet aignet2 transform)))
                               (mv aignet2 state)))
              (:unreachability-config (b* ((aignet2 (unreachability aignet aignet2 transform)))
-                                      (mv aignet2 state)))
+                                       (mv aignet2 state)))
+             (:dom-supergates-sweep-config
+              (b* ((aignet2 (dom-supergates-sweep aignet aignet2 transform)))
+                (mv aignet2 state)))
              (:n-outputs-unreachability-config
               (b* ((aignet2 (n-outputs-unreachability n aignet aignet2 transform)))
+                (mv aignet2 state)))
+             (:n-outputs-dom-supergates-sweep-config
+              (b* ((aignet2 (n-outputs-dom-supergates-sweep n aignet aignet2 transform)))
                 (mv aignet2 state)))
              (otherwise (abc-comb-simplify aignet aignet2 transform state))))
           (- (print-aignet-stats name aignet2)))

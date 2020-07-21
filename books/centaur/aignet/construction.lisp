@@ -3354,6 +3354,138 @@ of the @('b*').</li>
                      (:free (aignet) (lit-eval (mk-lit id neg) in-vals reg-vals aignet)))))))
 
 
+(define aignet-add-outs ((lits lit-listp) aignet)
+  :guard (aignet-lit-listp lits aignet)
+  :returns (new-aignet)
+  (if (atom lits)
+      (mbe :logic (non-exec (node-list-fix aignet))
+           :exec aignet)
+    (b* ((aignet (aignet-add-out (car lits) aignet)))
+      (aignet-add-outs (cdr lits) aignet)))
+  ///
+
+  (def-aignet-preservation-thms aignet-add-outs)
+
+  ;; (defthm good-varmap-p-of-aignet-add-outs
+  ;;   (implies (good-varmap-p varmap aignet)
+  ;;            (good-varmap-p varmap (aignet-add-outs lits aignet)))
+  ;;   :hints (("goal" :induct (aignet-add-outs lits aignet))))
+
+  (local (defthm lit-listp-true-listp
+           (implies (lit-listp x)
+                    (true-listp x))))
+
+  (defret num-outs-of-aignet-add-outs
+    (equal (stype-count :po new-aignet)
+           (+ (len lits) (stype-count :po aignet)))
+    :hints (("goal" :induct t :do-not-induct t)))
+
+  (defret other-stype-count-of-aignet-add-outs
+    (implies (not (equal (stype-fix stype) :po))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  (defret lookup-output-fanin-of-aignet-add-outs
+    (implies (aignet-lit-listp lits aignet)
+             (equal (fanin 0 (lookup-stype n :po new-aignet))
+                    ;;
+                    (cond ((< (nfix n) (stype-count :po aignet))
+                           (fanin 0 (lookup-stype n :po aignet)))
+                          ((< (nfix n) (+ (stype-count :po aignet) (len lits)))
+                           (lit-fix (nth (- (nfix n) (stype-count :po aignet)) lits)))
+                          (t 0))))
+    :hints(("Goal" :in-theory (enable nth lookup-stype)
+            :induct t :do-not-induct t)))
+
+  (defret lookup-of-aignet-add-outs-is-extension
+    (implies (and (<= (stype-count :po aignet) (nfix n))
+                  (< (nfix n) (+ (stype-count :po aignet) (len lits)))
+                  (aignet-extension-p aignet orig))
+             (and (aignet-extension-p (cdr (lookup-stype n :po new-aignet)) orig)
+                  (aignet-extension-p (lookup-stype n :po new-aignet) orig)))
+    :hints(("Goal" :in-theory (enable lookup-stype))))
+
+  (defret lookup-non-output-of-aignet-add-outs
+    (implies (not (equal (stype-fix stype) :po))
+             (equal (lookup-stype n stype new-aignet)
+                    (lookup-stype n stype aignet)))
+    :hints(("Goal" :in-theory (enable lookup-stype)))))
+
+
+(define aignet-set-nxsts ((regnum natp)
+                          (lits lit-listp)
+                          aignet)
+  :guard (and (aignet-lit-listp lits aignet)
+              (<= (+ regnum (len lits))
+                  (num-regs aignet)))
+  :returns (new-aignet)
+  (b* (((when (atom lits))
+        (mbe :logic (non-exec (node-list-fix aignet))
+             :exec aignet))
+       (aignet (aignet-set-nxst (car lits) regnum aignet)))
+    (aignet-set-nxsts (1+ (lnfix regnum)) (cdr lits) aignet))
+  ///
+  (def-aignet-preservation-thms aignet-set-nxsts)
+
+
+  (defret other-stype-count-of-aignet-set-nxsts
+    (implies (not (equal (stype-fix stype) :nxst))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  ;; (local (defun-nx aignet-set-nxsts-nth-ind (n regnum lits aignet)
+  ;;          (b* (((when (atom lits)) (list n aignet))
+  ;;               (reg-id (regnum->id regnum aignet))
+  ;;               (aignet (aignet-set-nxst (car lits) reg-id aignet)))
+  ;;            (aignet-set-nxsts-nth-ind (1- (nfix n)) (1+ (lnfix regnum)) (cdr lits) aignet))))
+
+  (defret lookup-nxst-fanin-of-aignet-set-nxsts
+    (implies (And (aignet-lit-listp lits aignet)
+                  (< (nfix n) (+ (nfix regnum) (len lits)))
+                  (< (nfix n) (stype-count :reg aignet)))
+             (equal (lookup-reg->nxst n new-aignet)
+                    (if (< (nfix n) (nfix regnum))
+                        (lookup-reg->nxst n aignet)
+                      (lit-fix (nth (- (nfix n) (nfix regnum)) lits)))))
+    :hints(("Goal" :in-theory (e/d (nth lookup-reg->nxst))
+            :induct <call> :do-not-induct t)))
+
+  (defret lookup-non-nxst-of-aignet-set-nxsts
+    (implies (not (equal (stype-fix stype) :nxst))
+             (equal (lookup-stype n stype new-aignet)
+                    (lookup-stype n stype aignet))))
+
+  (defret lookup-of-aignet-set-nxsts-is-extension
+    (implies (and (<= (stype-count :nxst aignet) (nfix n))
+                  (< (nfix n) (+ (stype-count :nxst aignet) (len lits)))
+                  (aignet-extension-p aignet orig))
+             (and (aignet-extension-p (cdr (lookup-stype n :nxst new-aignet)) orig)
+                  (aignet-extension-p (lookup-stype n :nxst new-aignet) orig)))
+    :hints(("Goal" :in-theory (enable lookup-stype))))
+
+  (defret nxst-count-of-aignet-set-nxsts
+    (equal (stype-count :nxst new-aignet)
+           (+ (len lits)
+              (stype-count :nxst aignet))))
+
+  ;; (defret lookup-regnum->nxst-of-aignet-set-nxsts
+  ;;   ;; (b* ((n (stype-count :reg (cdr (lookup-id reg-id aignet)))))
+  ;;     (implies (and (< (nfix n) (+ (nfix regnum) (len lits)))
+  ;;                   (<= (+ (nfix regnum) (len lits)) (num-regs aignet)))
+  ;;              (equal (lookup-reg->nxst n new-aignet)
+  ;;                     (if (<= (nfix regnum) (nfix n))
+  ;;                         (lookup-stype (+ (stype-count :nxst aignet)
+  ;;                                          (- (nfix n) (nfix regnum)))
+  ;;                                       :nxst new-aignet)
+  ;;                       (lookup-regnum->nxst n aignet))))
+  ;;   :hints(("Goal" :in-theory (enable* lookup-regnum->nxst
+  ;;                                      lookup-stype
+  ;;                                      acl2::arith-equiv-forwarding)
+  ;;           :induct t
+  ;;           :do-not-induct t)))
+  )
+
+
 
 #||
 

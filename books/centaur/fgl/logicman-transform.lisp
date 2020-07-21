@@ -440,8 +440,9 @@
 
 
   (defret litarr-length-of-<fn>
-    (equal (len new-litarr)
-           (len bitarr)))
+    (implies (<= (len bitarr) (+ 1 (aignet::fanin-count (logicman->aignet logicman))))
+             (equal (len new-litarr)
+                    (+ 1 (aignet::fanin-count (logicman->aignet logicman))))))
 
 
 

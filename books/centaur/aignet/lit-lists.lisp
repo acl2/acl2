@@ -93,3 +93,9 @@
     (and (eql (get-bit (lit->var (car lits)) mark) 1)
          (lit-list-marked (cdr lits) mark))))
 
+(define lit-list-vars ((x lit-listp))
+  :returns (vars nat-listp)
+  (if (atom x)
+      nil
+    (cons (lit->var (car x))
+          (lit-list-vars (cdr x)))))
