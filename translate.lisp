@@ -10552,30 +10552,76 @@
   (eq (congruent-stobj-rep st1 wrld)
       (congruent-stobj-rep st2 wrld)))
 
-(defun stobjs-in-out1 (stobjs-in args known-stobjs wrld alist new-stobjs-in)
+(defun stobjs-in-out1 (stobjs-in args wrld alist new-stobjs-in-rev)
 
-; We are translating an application of a function to args. where args satisfies
-; the stobjs discipline of passing a stobj name to a stobjs-in position; see
-; the comment about this in translate11-call.
+; See stobjs-in-out for additional background.
+
+; We are translating the application of a function to args.  We assume that
+; stobjs-in is a true-list consisting of nil and/or stobjs and that args is a
+; true-list of the same length as stobjs-in.  (Moreover, at the top level,
+; alist and new-stobjs-in-rev are nil.)  We return (mv failp alist
+; new-stobjs-in).  Ideally, new-stobjs-in is a list of known stobjs without
+; duplicates, of the same length as stobjs-in, such that for each natp i <
+; (length stobjs-in), (nth i stobjs-in) and (nth i new-stobjs-in) are either
+; both nil or are congruent stobjs (possibly equal).  In that case, alist is a
+; list, in any order, consisting of pairs (s1 . s2) in (pairlis$ stobjs-in
+; new-stobjs-in) such that s1 and s2 are not equal.
+
+; The goal is thus to return a new stobjs-in, together with a corresponding
+; mapping from old stobjs-in to new stobjs-in, such that we can legally view
+; the (implicit) function as having the new stobjs-in.  We adjust the
+; stobjs-out correspondingly in stobjs-in-out.
+
+; Otherwise, we are in a failure case (mv failp nil nil) where failp is
+; non-nil.  (It is fine if failp is t, but we are free to return any non-nil
+; value, which might provide information that is helpful for debugging.)  That
+; case happens, in particular, when there are duplicate stobjs: for example
+; consider the case that stobjs-in is (st1 st2) where st1 and st2 are congruent
+; stobjs and args is (st1 st1).  There is no reasonable way to return a
+; suitable new-stobjs-in.
+
+; The failure case can also happen when we get "stuck".  For example, again
+; suppose that st1 and st2 are congruent stobjs; now consider the case that
+; stobjs-in is (st1 st2) and args is (st2 nil).  We could return new-stobjs-in
+; as (st2 st1), but then the error message from translate11-call will complain
+; that nil was returned where st1 was expected.  But do we really expect st1 in
+; the second argument?  Suppose that st3 is also congruent to st1 and there is
+; a typo, so that args is (st2 st3a).  Surely what was "expected" was st3, not
+; st1.  In this case, and in any situation where we aren't confident that the
+; error message involving new-stobjs-in is clear, we return the faiure case.
+
+; That said, we prefer to avoid the failure case when that won't make error
+; messages more confusing.  See for example (5) in the comments in
+; translate11-call.
 
   (cond ((endp stobjs-in)
-         (if (null args)
-             (mv alist (reverse new-stobjs-in))
-           (mv :failed nil)))
-        ((endp args) (mv :failed nil))
+         (mv nil alist (reverse new-stobjs-in-rev)))
         ((null (car stobjs-in))
-         (stobjs-in-out1 (cdr stobjs-in) (cdr args) known-stobjs wrld alist
-                         (cons nil new-stobjs-in)))
-        ((and (car stobjs-in)
-              (stobjp (car args) known-stobjs wrld)
-              (not (rassoc-eq (car args)
-                              alist)) ; equiv. to not member of new-stobjs-in
-              (or (eq (car stobjs-in) (car args))
-                  (congruent-stobjsp (car stobjs-in) (car args) wrld)))
-         (stobjs-in-out1 (cdr stobjs-in) (cdr args) known-stobjs wrld
-                         (acons (car stobjs-in) (car args) alist)
-                         (cons (car args) new-stobjs-in)))
-        (t (mv :failed nil))))
+         (stobjs-in-out1 (cdr stobjs-in) (cdr args) wrld alist
+                         (cons nil new-stobjs-in-rev)))
+        (t
+         (let ((s ; Since (car stobjs-in) is a stobj, s is also a stobj.
+                (if (or (eq (car stobjs-in) (car args)) ; optimization
+
+; The following implies that (car args) is a stobj in wrld, because (car
+; stobjs-in) is a stobj in wrld.
+
+                        (and (car args) ; perhaps not necessary
+                             (symbolp (car args))
+                             (congruent-stobjsp (car stobjs-in)
+                                                (car args)
+                                                wrld)))
+                    (car args)
+                  (car stobjs-in))))
+           (cond
+            ((member-eq s new-stobjs-in-rev)
+             (mv s nil nil))
+            (t
+             (stobjs-in-out1 (cdr stobjs-in) (cdr args) wrld
+                             (if (eq (car stobjs-in) s)
+                                 alist
+                               (acons (car stobjs-in) s alist))
+                             (cons s new-stobjs-in-rev))))))))
 
 (defun stobjs-in-matchp (stobjs-in args)
   (cond ((endp stobjs-in) (null args))
@@ -10588,40 +10634,47 @@
 (defun stobjs-in-out (fn args stobjs-out known-stobjs wrld)
 
 ; We are translating an application of fn to args, where fn has the indicated
-; stobjs-out and args satisfies the stobjs discipline of passing a stobj name
-; to a stobjs-in position.  See the comment about this discipline in
-; translate11-call.
+; stobjs-out and args has the same length as fn, ideally satisfying the stobjs
+; discipline of passing a stobj name to a stobjs-in position (though we don't
+; assume that here); see the comment about this discipline in translate11-call.
 
-; In general we return (mv flg new-stobjs-in new-stobjs-out), according to one
-; of the following cases.
+; Our goal is to create modified stobjs-in and stobjs-out that correspond to
+; the call of fn on args.  If we cannot compute "improved" such stobjs-in and
+; stobjs-out using congruence of stobjs, then we return the stobjs-in and
+; stobjs-out unmodified.
 
-; - If flg is :failed, then we return (mv :failed stobjs-in stobjs-out), where
-;   stobjs-in is the stobjs-in of fn and stobjs-out is returned unchanged.
-
-; - Otherwise flg is an alist, and either stobjs-out is a symbol (representing
-;   a function symbol or :stobjs-out bound in an implicit bindings in
-;   translate11), or else fn can be viewed as mapping new-stobjs-in to
-;   new-stobjs-out.  Alist maps the original stobjs-in to new-stobjs-in; in
-;   particular, if alist is nil then new-stobjs-in is equal to the original
-;   stobjs-in.
+; We return an alist that represents a one-to-one map from the stobjs-in of fn,
+; which is computed from fn if fn is a lambda.  This alist associates each
+; stobj st in its domain with a corresponding congruent stobj, possibly equal
+; to st (as equal stobjs are congruent).  We return (mv alist new-stobjs-in
+; new-stobjs-out), where new-stobjs-in and new-stobjs-out result from stobjs-in
+; and stobjs-out (respectively) by applying alist to each of them, except that
+; stobjs-out is not modified if it is a symbol rather than a list. (In the case
+; of a symbol, translate11 is trying to determine a stobjs-out for that
+; symbol.)  Note that we do not put equal pairs (s . s) into alist; hence,
+; alist represents the identity function if and only if it is nil.
 
   (let ((stobjs-in (cond ((consp fn)
                           (compute-stobj-flags (lambda-formals fn)
                                                known-stobjs
                                                wrld))
                          (t (stobjs-in fn wrld)))))
-    (cond ((stobjs-in-matchp stobjs-in args)
-           (mv nil stobjs-in stobjs-out))
-          (t (mv-let
-              (alist new-stobjs-in)
-              (stobjs-in-out1 stobjs-in args known-stobjs wrld nil nil)
-              (cond ((eq alist :failed)
-                     (mv :failed stobjs-in stobjs-out))
-                    ((symbolp stobjs-out)
-                     (mv alist new-stobjs-in stobjs-out))
-                    (t (mv alist
-                           new-stobjs-in
-                           (apply-symbol-alist alist stobjs-out nil)))))))))
+    (cond
+     ((stobjs-in-matchp stobjs-in args)
+      (mv nil stobjs-in stobjs-out))
+     (t
+      (mv-let
+        (failp alist new-stobjs-in)
+        (stobjs-in-out1 stobjs-in args wrld nil nil)
+        (cond
+         (failp (mv nil stobjs-in stobjs-out))
+         (t (mv alist
+                new-stobjs-in
+                (cond ((symbolp stobjs-out)
+                       stobjs-out)
+                      ((null alist) ; optimization
+                       stobjs-out)
+                      (t (apply-symbol-alist alist stobjs-out nil)))))))))))
 
 (defun non-trivial-stobj-binding (stobj-flags bindings)
   (declare (xargs :guard (and (symbol-listp stobj-flags)
@@ -11579,29 +11632,33 @@
     (defined-symbols (symbol-name sym) (symbol-package-name sym) kpa wrld
       nil)))
 
-(defun match-stobjs (lst1 lst2 acc)
+(defun match-stobjs (lst1 lst2 wrld acc)
 
 ; Lst1 and lst2 are proposed stobjs-out values.  So they are lists of symbols,
-; presumably each with nil as the only possible duplicate.
+; presumably each with nil as the only possible duplicate.  We return t when
+; the following conditions are all met: lst1 and lst2 have the same length; and
+; for each i < (length lst1), (nth i lst1) and (nth i lst2) are both nil or
+; else they are congruent stobjs.
 
-  (cond ((endp lst1) (mv (null lst2) acc))
-        ((endp lst2) (mv nil nil))
+  (cond ((endp lst1) (null lst2))
+        ((endp lst2) nil)
         ((not (eq (null (car lst1))
                   (null (car lst2))))
-         (mv nil nil))
-        ((null (car lst1))
-         (match-stobjs (cdr lst1) (cdr lst2) acc))
+         nil)
+        ((or (null (car lst1))
+             (eq (car lst1) (car lst2)))
+         (match-stobjs (cdr lst1) (cdr lst2) wrld acc))
+        ((not (congruent-stobjsp (car lst1) (car lst2) wrld))
+         nil)
         (t (let ((pair (assoc-eq (car lst1) acc)))
              (cond ((null pair)
                     (match-stobjs (cdr lst1)
                                   (cdr lst2)
-                                  (if (eq (car lst1) (car lst2))
-                                      acc
-                                    (acons (car lst1) (car lst2) acc))))
-                   (t (mv (er hard! 'match-stobjs
-                              "Implementation error: expected no duplicates ~
-                               in stobjs-out list!")
-                          nil)))))))
+                                  wrld
+                                  (acons (car lst1) (car lst2) acc)))
+                   (t (er hard! 'match-stobjs
+                          "Implementation error: expected no duplicate stobjs ~
+                           in stobjs-out list!")))))))
 
 (defun make-lambda-term (formals actuals body)
 
@@ -13830,11 +13887,11 @@
 
 (defun translate11-call-1 (form fn args bindings
                                 known-stobjs msg flet-alist ctx wrld state-vars
-                                stobjs-in-call flg)
+                                stobjs-in-call)
 
-; Here we carve out some code from translate11-call (for the case that both
-; stobjs-out and stobjs-out2 are conses), so that we can invoke it twice
-; without writing the code twice.  Msg is as described in translate11-lst.
+; Here we carve out some code from translate11-call for case where both
+; stobjs-out and stobjs-out2 are conses, so that we can invoke it twice without
+; writing the code twice.  Msg is as described in translate11-lst.
 
   (trans-er-let*
 
@@ -13881,8 +13938,7 @@
 ; By allowing sub1p to be applied to an ordinary object, we allow the
 ; definition to be accepted without any (other) special treatment.
 
-            (and (eq flg :failed)
-                 (stobj-recognizer-p fn wrld))
+            (stobj-recognizer-p fn wrld)
             (translate11-lst args
                              nil ; ilks = '(nil)
                              '(nil)
@@ -13902,30 +13958,29 @@
                                      state-vars))
          (t (trans-value (fcons-term fn targs))))))
 
-(defun translate11-call (form fn args stobjs-out stobjs-out2 bindings
+(defun translate11-call (form fn args stobjs-out-x stobjs-out-fn bindings
                               known-stobjs msg flet-alist ctx wrld state-vars)
 
-; We are translating (for execution, not merely theorems) a call of fn on args.
-; Stobjs-out and stobjs-out2 are respectively the expected stobjs-out from the
-; present context and the stobjs-out from fn, already dereferenced.  Note that
-; each of these is either a legitimate (true-list) stobjs-out or else a symbol
+; We are translating (for execution, not merely theorems) a call of fn on args,
+; where the length of args is the arity of fn in wrld.  Stobjs-out-x and
+; stobjs-out-fn are respectively the expected stobjs-out from the present
+; context and the stobjs-out from fn, already dereferenced.  Note that each of
+; these is either a legitimate (true-list) stobjs-out or else a symbol
 ; representing an unknown stobjs-out.
 
 ; Msg is as described in translate11-lst.
 
 ; Note that for this call to be suitable, args has to satisfy the stobjs
 ; discipline of passing a stobj name to a stobjs-in position.  We take
-; advantage of this requirement: stobjs-in-out (called below) invokes
-; stobjs-in-out1, which checks stobjp of each arg in args.  For that reason, it
-; is important that we do not call translate11-call on arbitrary lambdas, where
-; an arg might not be a stobj name, e.g., ((LAMBDA (ST) ST) (UPDATE-FLD '2
-; ST)).
+; advantage of this requirement in stobjs-in-out1, for example.  So it is
+; important that we do not call translate11-call on arbitrary lambdas, where an
+; arg might not be a stobj name, e.g., ((LAMBDA (ST) ST) (UPDATE-FLD '2 ST)).
 
 ; We are tempted to enforce the call-arguments-limit imposed by Common Lisp.
 ; According to the HyperSpec, this constant has an implementation-dependent
 ; value that is "An integer not smaller than 50", and is "The upper exclusive
-; bound on the number of arguments that may be passed to a function."
-; The limits vary considerably, and are as follows in increasing order.
+; bound on the number of arguments that may be passed to a function."  The
+; limits vary considerably, and are as follows in increasing order.
 
 ;   GCL Version 2.6.12
 ;                    64
@@ -13948,163 +14003,112 @@
 ; platform but not another.
 
   (mv-let
-    (flg stobjs-in-call stobjs-out-call)
-    (stobjs-in-out fn args stobjs-out2 known-stobjs wrld)
+    (alist-in-out stobjs-in-call stobjs-out-call)
+    (stobjs-in-out fn args stobjs-out-fn known-stobjs wrld)
 
 ; Fn can be viewed as mapping stobjs-in-call to stobjs-out-call; see
 ; stobjs-in-out.
 
-; If flg is :failed, then stobjs-in-call and stobjs-out-call are just the
-; stobjs-in and (dereferenced) stobjs-out of fn.  In that case we proceed
-; happily without any mapping of input stobjs, expecting the usual
-; input-mismatch error from a failed call of translate11-lst.
+; In the absence of congruent stobjs, stobjs-in-call and stobjs-out-call are
+; just the stobjs-in and (dereferenced) stobjs-out of fn.  But in general,
+; alist-in-out associates each element of its domain, which is a stobj, with a
+; congruent stobj, and stobjs-in-call and stobjs-out-call are the result of
+; applying the mapping represented by alist-in-out to the stobjs-in and
+; (dereferenced) stobjs-out of fn.
 
     (cond
-     ((consp stobjs-out)
+     ((consp stobjs-out-x)
       (cond
-       ((consp stobjs-out-call) ; equivalently: (consp stobjs-out2)
+       ((consp stobjs-out-call) ; equivalently: (consp stobjs-out-fn)
         (cond
-         ((equal stobjs-out stobjs-out-call)
+         ((equal stobjs-out-x stobjs-out-call)
 
-; Then we translate where we view fn as mapping stobjs-in-call to
-; stobjs-out-call; see stobjs-in-out.
+; Then we translate the arguments, where we view fn as mapping stobjs-in-call
+; to stobjs-out-call; see stobjs-in-out.
 
           (translate11-call-1 form fn args bindings
                               known-stobjs msg flet-alist ctx wrld state-vars
-                              stobjs-in-call flg))
+                              stobjs-in-call))
          (t
 
-; We are definitely in an error case: stobjs-in-out adjusted the stobjs-in of
-; fn to match args, and then adjusted stobjs-out accordingly to yield
-; stobjs-out-call, which disagrees with the expected stobjs-out.  But in order
-; to produce a helpful error message, we want to determine whether the problem
-; is with input stobjs or output stobjs.  Consider the following example.
+; We are definitely in an error case.  That is because stobjs-in-out has
+; adjusted the stobjs-in of fn to match args (producing stobjs-in-call), and
+; then adjusted stobjs-out-fn accordingly to yield stobjs-out-call, which
+; disagrees with the expected stobjs-out-x.  Our job now is to produce a
+; helpful error message, blaming the problem either on the inputs or on the
+; output.
 
-;   (defstobj st1 fld1)
-;   (defstobj st2 fld2 :congruent-to st1)
-;   (defun f (st2)
-;     (declare (xargs :stobjs st2))
-;     (let ((st2 (update-fld1 st2 3)))
-;       st2))
+; Our plan is for the error message to blame an output mismatch if that can be
+; determined, and otherwise to blame an input mismatch.  There are many
+; examples in community books file books/demos/congruent-stobjs-input.lsp, in
+; the section labeled: "Tests referenced in ACL2 source function
+; translate11-call".
 
-; The definition of f is ill-formed because the arguments to update-fld1 are in
-; the wrong order.  We can catch this and other input problems simply by
-; attempting to translate the arguments, using the modified stobjs-in,
-; stobjs-in-call.  But consider the normal case, where no congruent stobjs are
-; involved, and suppose that there are errors both in the arguments and in the
-; stobjs-out.  Traditionally we prefer to blame the stobjs-out in that case.
-; Our solution is to check the stobjs-out and only report a stobjs-in problem
-; when the stobjs-out match up when viewed through the lens of congruent
-; stobjs.
+          (trans-er-let*
+           ((tform (if (match-stobjs stobjs-out-x stobjs-out-fn wrld nil)
 
-          (mv-let (flg2 alist2)
-            (match-stobjs stobjs-out stobjs-out2 nil)
-            (cond
-             ((and flg2 alist2)
+; Then we cannot in good conscience blame an output mismatch, so we attempt to
+; blame an input mismatch.  If there is no error translating inputs, then we
+; will blame an output mismatch after all, as in the following example, labeled
+; (4) in community books file books/demos/congruent-stobjs-input.lsp.
 
-; Note that if congruent stobjs aren't involved, alist2 will be nil.  So this
-; case only applies when congruent stobjs are involved.  Otherwise we report
-; (in the error further below) that the function call returns a result of the
-; wrong shape (as we probably always did before congruent stobjs were
-; introduced).
+;   (defun foo (s$1 s$2)
+;     (declare (xargs :stobjs (s$1 s$2)))
+;     (let ((s$1 (update-fld1 0 s$2)))
+;       (mv s$1 s$2)))
 
-; To see why we insist on alist2 being non-nil in the test just above even when
-; congruent stobjs are involved, consider another example (thanks to Sol
-; Swords), which assumes the same two defstobj events as above:
+; This is a rather interesting case since stobjs-out-call, which is (s$2),
+; doesn't match the expected stobjs-out, (s$1), even though that that expected
+; stobjs-out does equal (and therefore match) the stobjs-out of update-fld1.
+; So what is truly the error?  Is it that the argument s$2 should be s$1, or is
+; it that the output s$1 should be s$2?  It seems perhaps most intuitive to
+; blame the output over the input; anyhow, that's what we do here!
 
-;   (defun foo (st1 st2)
-;     (declare (xargs :stobjs (st1 st2)))
-;     (let ((st1 (update-fld1 0 st2)))
-;       (mv st1 st2)))
-
-; In this case alist2 is nil, so the call below of translate11-call-1 completes
-; without error.  Rather than come up with a custom error message for that
-; case, we prefer simply to report (in the error further below): "This function
-; call returns a result of shape ST2 (after accounting for the replacement of
-; some input stobjs by congruent stobjs) where a result of shape ST1 is
-; required."
-
-              (trans-er-let*
-               ((tform (translate11-call-1 form fn args bindings
+                       (translate11-call-1 form fn args bindings
                                            known-stobjs msg flet-alist
                                            ctx wrld state-vars
-                                           (apply-symbol-alist
-                                            alist2
-                                            stobjs-in-call
-                                            nil)
-                                           flg)))
+                                           stobjs-in-call)
 
-; We fully expect an error from the call above of translate11-call-1, since the
-; application of alist2 to the expected stobjs-in-call should cause a stobj
-; mismatch.  Perhaps the following error should suggest contacting the
-; implementors.  But since the only issue here is how to report an error -- we
-; definitely are in an error case -- we don't bother with that suggestion.
+; Otherwise the output signatures are definitely a mismatched pair, so don't
+; even try to get an error by translating the arguments with translate11-call,
+; as we prefer reporting the output signature error.  In this case we don't
+; care about the second and third values (normally a term and bindings),
+; because we are about to cause an error.
 
-               (trans-er+ form ctx
-                          "It is illegal to invoke ~@0 here because of a ~
-                           signature mismatch involving congruent stobjs.  ~
-                           ACL2 was unable to determine the exact nature of ~
-                           the mismatch."
-                          (if (consp fn) msg (msg "~x0" fn)))))
-             (t
-              (trans-er+ form ctx
-                         "It is illegal to invoke ~@0 here because of a ~
-                          signature mismatch.  This function call returns a ~
-                          result of shape ~x1~@2 where a result of shape ~x3 ~
-                          is required.~@4"
-                         (if (consp fn) msg (msg "~x0" fn))
-                         (prettyify-stobjs-out stobjs-out-call)
-                         (if (and flg (not (eq flg :failed)))
-                             " (after accounting for the replacement of some ~
-                              input stobjs by congruent stobjs)"
-                           "")
-                         (prettyify-stobjs-out stobjs-out)
-                         (let* ((missing (missing-known-stobjs stobjs-out
-                                                               stobjs-out2
-                                                               known-stobjs
-                                                               nil))
-                                (missing-user-stobjs (set-difference-eq missing
-                                                                        '(nil state)))
-                                (state-string
-                                 "  This error may occur when the ACL2 state ~
-                                  is not available in the current context, ~
-                                  for example as a formal parameter of a ~
-                                  defun.")
-                                (user-stobj-string
-                                 "  This error may~@0 occur when ~&1 ~
-                                  ~#1~[is~/are~] not declared to be ~#1~[a ~
-                                  stobj~/stobjs~] in the current context."))
-                           (cond
-                            ((and missing-user-stobjs
-                                  (member-eq 'state missing))
-                             (msg "~@0~@1"
-                                  state-string
-                                  (msg user-stobj-string
-                                       " also"
-                                       missing-user-stobjs)))
-                            (missing-user-stobjs
-                             (msg user-stobj-string
-                                  ""
-                                  missing-user-stobjs))
-                            (missing state-string)
-                            (t ""))))))))))
-       (t ; (symbolp stobjs-out2); equivalently, (symbolp stobjs-out-call)
+                     (mv nil nil nil))))
+           (trans-er+ form ctx
+                      "It is illegal to invoke ~@0 here because of a ~
+                         signature mismatch.  This function call returns a ~
+                         result of shape ~x1~@2 where a result of shape ~x3 ~
+                         is required."
+                      (if (consp fn) msg (msg "~x0" fn))
+                      (prettyify-stobjs-out stobjs-out-call)
+                      (if alist-in-out ; always true here?
+                          " (after accounting for the replacement of some ~
+                             input stobjs by congruent stobjs)"
+                        "")
+                      (prettyify-stobjs-out stobjs-out-x))))))
+       (t
 
-; If flg is a non-empty alist, then the expected stobjs-out is not the
-; stobjs-out to be returned by fn on arguments satisfying its declared
-; signature.  For example, suppose that st1 and st2 are congruent stobjs;
-; stobjs-out is (st2); fn is f; f has input signature (st1); and args is (st2),
-; i.e., we are considering the call (f st2).  Then flg is ((st1 . st2)).  We
-; apply the mapping, flg, in reverse to stobjs-out = (st2), to deduce that the
-; stobjs-out of fn is (st1) -- the point is that if we apply flg to (st1), then
-; we get the expected stobjs-out of (st2).
+; In this case, stobjs-out-call and (equivalently) stobjs-out-call are symbols,
+; while stobjs-out-x is a cons.
+
+; The following example illustrates the call of translate-bind below.  Suppose
+; that st1 and st2 are congruent stobjs; stobjs-out-x is (st2); fn is f; f has
+; input signature (st1); and args is (st2), i.e., we are considering the call
+; (f st2).  Then alist-in-out is ((st1 . st2)).  We apply the mapping,
+; alist-in-out, in reverse to stobjs-out-x = (st2), to deduce that the
+; stobjs-out of fn should be (st1).  Note that if we we then apply alist-in-out
+; to this computed stobjs-out of fn, (st1), then we get (st2), which is the
+; expected stobjs-out-x.
 
         (let ((bindings
-               (translate-bind stobjs-out2
-                               (if (consp flg)
-                                   (apply-inverse-symbol-alist flg stobjs-out
+               (translate-bind stobjs-out-fn
+                               (if (consp alist-in-out) ; optimizationa
+                                   (apply-inverse-symbol-alist alist-in-out
+                                                               stobjs-out-x
                                                                nil)
-                                 stobjs-out)
+                                 stobjs-out-x)
                                bindings)))
           (trans-er-let*
            ((args (translate11-lst args
@@ -14113,9 +14117,14 @@
                                    bindings known-stobjs
                                    msg flet-alist form ctx wrld state-vars)))
            (trans-value (fcons-term fn args)))))))
-     ((consp stobjs-out-call) ; equivalently: (consp stobjs-out2)
+     ((consp stobjs-out-call) ; equivalently: (consp stobjs-out-fn)
+
+; In this case we know that stobjs-out-x is a symbol representing the expected
+; stobjs-out.  So we bind that symbol to the computed stobjs-out, which is
+; stobjs-out-call.
+
       (let ((bindings
-             (translate-bind stobjs-out stobjs-out-call bindings)))
+             (translate-bind stobjs-out-x stobjs-out-call bindings)))
         (trans-er-let*
          ((targs (trans-or
                   (translate11-lst (if (eq fn 'wormhole-eval)
@@ -14129,8 +14138,7 @@
 ; See the comment above about applying a stobj recognizer to be applied to an
 ; ordinary object.
 
-                  (and (eq flg :failed)
-                       (stobj-recognizer-p fn wrld))
+                  (stobj-recognizer-p fn wrld)
                   (translate11-lst args
                                    (ilks-per-argument-slot fn wrld)
                                    '(nil)
@@ -14147,29 +14155,31 @@
                                            bindings flet-alist ctx wrld
                                            state-vars))
                (t (trans-value (fcons-term fn targs)))))))
-     (t (let ((bindings
+     (t ; both stobjs-out-x and stobjs-out-call are symbols
+      (let ((bindings
 
-; If the stobjs-in of fn are compatible with args, but only when mapping at
-; least one input stobj to a congruent stobj (i.e., flg is a non-empty alist),
-; then we cannot simply bind stobjs-out2 to stobjs-out.  For example, suppose
-; st1 and st2 are congruent stobjs and we are defining a function (f st1 st2)
-; in a context where we do not know the expected result signature, i.e.,
-; stobjs-out is a symbol, nor do we know the stobjs-out of f, which could for
-; example be (st1 st2) or (st2 st1).  (Is this example even possible?  Not
-; sure, so let's continue....)  If we are looking at a call (f st2 st1), then
-; we can actually be certain that the call does _not_ return the output
-; signature of f!
+; If the stobjs-in of fn is compatible with args, but only when mapping at
+; least one input stobj to a congruent stobj, then we cannot simply bind
+; stobjs-out-fn to the symbol, stobjs-out-x.  For example, suppose st1 and st2
+; are congruent stobjs and we are defining a function (f st1 st2) in a context
+; where we do not know the expected result signature, say, stobjs-out-x is a
+; symbol, g.  Consider the call (f st2 st1).  Then if ultimately the stobjs-out
+; of f is (mv st1 st2), then the stobjs-out of g will be that of the call (f
+; st2 st1), which is (mv st2 st1).  There is no way currently to extend
+; bindings to indicate that f and g have reversed stobjs-out; the only way to
+; extend here is to bind f to g to indicate that f and g have the same
+; stobjs-out, and that would be incorrect in this case.
 
-               (if (consp flg)
-                   bindings
-                 (translate-bind stobjs-out2 stobjs-out bindings))))
-          (trans-er-let*
-           ((args (translate11-lst args
-                                   (ilks-per-argument-slot fn wrld)
-                                   stobjs-in-call
-                                   bindings known-stobjs
-                                   msg flet-alist form ctx wrld state-vars)))
-           (trans-value (fcons-term fn args))))))))
+             (if (consp alist-in-out)
+                 bindings
+               (translate-bind stobjs-out-fn stobjs-out-x bindings))))
+        (trans-er-let*
+         ((args (translate11-lst args
+                                 (ilks-per-argument-slot fn wrld)
+                                 stobjs-in-call
+                                 bindings known-stobjs
+                                 msg flet-alist form ctx wrld state-vars)))
+         (trans-value (fcons-term fn args))))))))
 
 (defun translate11-lambda-object
   (x stobjs-out bindings known-stobjs flet-alist cform ctx wrld state-vars

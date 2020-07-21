@@ -193,6 +193,114 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ xdoc::desc-apt-input-old-to-new-name ()
+  :short "Build a description of the @(':old-to-new-name') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':old-to-new-name') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines the name of the theorem that
+      rewrites the old function in terms of the new function.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A keyword, to use as separator between
+       the names of @('old') and @('new').
+       A keyword @(':kwd') specifies the theorem name @('oldkwdnew'),
+       in the same package as @('new').")
+     (xdoc::li
+      "A non-keyword symbol,
+       to use as the name of the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-old-to-new-name)."))
+    (xdoc::p
+     "In the rest of this documentation page,
+      let @('old-to-new') be the name of this theorem.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::desc-apt-input-new-to-old-name ()
+  :short "Build a description of the @(':new-to-old-name') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':new-to-old-name') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines the name of the theorem that
+      rewrites the new function in terms of the old function.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A keyword, to use as separator between
+       the names of @('new') and @('old').
+       A keyword @(':kwd') specifies the theorem name @('newkwdold'),
+       in the same package as @('new').")
+     (xdoc::li
+      "A non-keyword symbol,
+       to use as the name of the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-new-to-old-name)."))
+    (xdoc::p
+     "In the rest of this documentation page,
+      let @('new-to-old') be the name of this theorem.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::desc-apt-input-old-to-new-enable ()
+  :short "Build a description of the @(':old-to-new-enable') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':old-to-new-enable') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines whether the @('old-to-new') theorem is enabled.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to enable the theorem.")
+     (xdoc::li
+      "@('nil'), to disable the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-old-to-new-enable)."))
+    (xdoc::p
+     "If this input is @('t'),
+      the @(':new-to-old-enable') input must be @('nil').
+      At most one of these two inputs may be @('t') at any time.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::desc-apt-input-new-to-old-enable ()
+  :short "Build a description of the @(':new-to-old-enable') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':new-to-old-enable') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines whether the @('new-to-old') theorem is enabled.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to enable the theorem.")
+     (xdoc::li
+      "@('nil'), to disable the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-new-to-old-enable)."))
+    (xdoc::p
+     "If this input is @('t'),
+      the @(':old-to-new-enable') input must be @('nil').
+      At most one of these two inputs may be @('t') at any time.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ xdoc::desc-apt-input-thm-name (wrapper? &rest additional)
   (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
   :short "Build a description of the @(':thm-name') input
