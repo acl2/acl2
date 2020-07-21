@@ -8,7 +8,7 @@
 (in-package "ACL2")
 
 (include-book "projects/apply/top" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; The book projects/apply/definductor-tests.lisp contains many (pathological)
 ; loop$-recursive functions -- most of which return 0 -- and inductive proofs

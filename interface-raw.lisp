@@ -8044,6 +8044,28 @@
                       bad-logic
                       '*initial-logic-fns-with-raw-code*))
             (error "Check failed!")))))
+    (let* ((wrld (w state))
+           (fns (loop for fn in (append (strip-cars *ttag-fns*)
+                                        *initial-untouchable-fns*)
+                      when
+
+; It is tempting to conjoin (logicp fn wrld) below.  But we awnt to include
+; relevant program mode functions too, if any, in case the user converts them
+; to logic mode.
+
+                      (and (getpropc fn 'unnormalized-body nil wrld)
+                           (all-nils (stobjs-in fn wrld))
+                           (all-nils (stobjs-out fn wrld)))
+                      collect fn))
+           (bad (set-difference-eq fns
+; Avoid undefined constant warning during boot-strap by using symbol-value:
+                                   (symbol-value '*blacklisted-apply$-fns*))))
+      (when bad
+        (interface-er
+         "The value of *blacklisted-apply$-fns* fails to include ~&0.  This ~
+          is an error because all functions from *ttag-fns* and ~
+          *initial-untouchable-fns* must be in *blacklisted-apply$-fns*."
+         bad)))
 
 ; The following is a start on checking that we don't have superfluous symbols
 ; in the list values of certain constants.  But in fact there can be such
