@@ -106,7 +106,6 @@
 ; the ttag and untouchable restrictions already prevent warrants.
 
    '(SYNP                                      ; bad
-     HIDE                                      ; stupid
      WORMHOLE1                                 ; restricts arguments
      WORMHOLE-EVAL                             ; restricts arguments
      SYS-CALL                                  ; bad -- requires trust tag
@@ -516,6 +515,11 @@
 ;                                           acl2::apply$-prim
 ;                                           (:executable-counterpart break$))))
 ;       :rule-classes ((:meta :trigger-fns (apply$-prim)))))
+
+    (local
+     (defthm hide-is-identity
+       (equal (hide x) x)
+       :hints (("Goal" :expand ((hide x))))))
 
     (defthm apply$-prim-meta-fn-correct
       (equal (apply$-prim-meta-fn-ev term alist)
