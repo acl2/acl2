@@ -762,7 +762,7 @@
       (mv pp-lst coughed-lst pp-lst-array)))
 
   (skip-proofs
-   (define pp-lst-sum-merge (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
+   (define pp-lst-sum-merge-old (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
      (declare (ignorable pp-lst-lst for-c))
 
      (with-local-stobj
@@ -840,7 +840,7 @@
           (pp-sum-merge-aux cur pp-lst 0)))
       pp-lst))
 
-  (define pp-lst-sum-merge-new (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
+  (define pp-lst-sum-merge (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
     (b* ((pp-lst
           (pp-lst-sum-merge-aux2 pp-lst-lst))
          ((mv coughed-pp-lst pp-lst)

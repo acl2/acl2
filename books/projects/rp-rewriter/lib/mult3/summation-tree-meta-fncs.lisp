@@ -70,6 +70,13 @@
 (defconst *a*
   '((in1 . 1231231) (in2 . 131321)))
 
+(define clean-pp-args-cond (s c-lst)
+  (or nil
+      (and (equal s ''nil)
+           (or (atom c-lst)
+               (atom (cdr c-lst))))))
+
+
 (skip-proofs
  (define get-c-args ((c))
    :inline t
@@ -1099,7 +1106,7 @@
       (mv single-c2 single-c1)
     (mv single-c1 single-c2)))
 
-(define clean-c-args (s-arg pp-arg (pp-arg-cnt natp) clean-flg)
+#|(define clean-c-args (s-arg pp-arg (pp-arg-cnt natp) clean-flg)
   ;; similar to what c-cough does.
   :returns (mv (s-coughed rp-termp
                           :hyp (rp-termp s-arg))
@@ -1114,7 +1121,7 @@
        ((mv pp-coughed pp-arg)
         (if clean-flg (c-fix-pp-args pp-arg pp-arg-cnt)
           (mv ''nil pp-arg))))
-    (mv s-coughed s-arg pp-coughed pp-arg)))
+    (mv s-coughed s-arg pp-coughed pp-arg)))||#
 
 #|(define remove-s-from-for-fast-merge (s-arg2 pp-arg1 c-arg1)
   (declare (ignorable pp-arg1 c-arg1 pp-arg1))
@@ -1521,11 +1528,9 @@
   (define s-of-s-fix-lst (s-lst c-lst)
     :returns (mv (pp-res-lst-lst rp-term-list-listp
                                  :hyp (and (rp-term-listp s-lst)
-                                           ;;(rp-termp pp)
                                            (rp-term-listp c-lst)))
                  (c-res rp-termp
                         :hyp (and (rp-term-listp s-lst)
-                                  ;;(rp-termp pp)
                                   (rp-term-listp c-lst))))
     (if (atom s-lst)
         (mv nil c-lst)
@@ -1576,7 +1581,7 @@
          (b* (((mv pp-lst-lst c-lst)
                (s-of-s-fix-lst s-lst c-lst))
               (pp-lst-lst (cons-pp-to-pp-lst-lst pp pp-lst-lst))
-              ((mv pp-lst &) (pp-lst-sum-merge pp-lst-lst :for-s t))
+              ((mv pp-lst &) (pp-lst-sum-merge pp-lst-lst :for-s clean-pp))
               (pp (pp-lst-to-pp pp-lst)))
            (mv pp c-lst)))
         (''nil
@@ -1687,9 +1692,10 @@
          ;; pp-args from the original single-c1 and single-c2
          (pp-lst-lst (cons-pp-to-pp-lst-lst pp-arg2 arg-coughed-pp-lst-lst))
          (pp-lst-lst (cons-pp-to-pp-lst-lst pp-arg1 pp-lst-lst))
-         ((mv pp-lst coughed-pp-lst)
-          (pp-lst-sum-merge pp-lst-lst :for-c t))
-         (new-pp-arg (pp-lst-to-pp pp-lst))
+         ((mv pp-lst &)
+          (pp-lst-sum-merge pp-lst-lst))
+         
+         
 
          ;; also merge the updated s-lst of single-c2 and coughed s-lst.
          ;; and s-arg1 if any (it will be ''nil most of the time)
@@ -1700,6 +1706,12 @@
          ((mv coughed-s new-s-arg)
           (c-fix-s-args new-s-arg))
 
+         ((mv coughed-pp-lst pp-lst)
+          (if (clean-pp-args-cond new-s-arg arg-merged-c-lst)
+              (c-fix-arg-aux pp-lst t (expt 2 30))
+            (mv nil pp-lst)))
+         (new-pp-arg (pp-lst-to-pp pp-lst))
+
          ;; To-be-coughed c-lst from the args is the coughed-c-lst of the
          ;; new c instance.
 
@@ -1708,13 +1720,13 @@
                                              (create-list-instance
                                               arg-merged-c-lst)))
 
-         (single-c-from-c-pattern1 (c-pattern1-search new-s-arg arg-merged-c-lst))
+         #|(single-c-from-c-pattern1 (c-pattern1-search new-s-arg arg-merged-c-lst))||#
 
          (produced-c-lst (cons merged-single-c arg-to-be-coughed-c-lst))
-         (produced-c-lst (if single-c-from-c-pattern1
+         #|(produced-c-lst (if single-c-from-c-pattern1
                              (append produced-c-lst
                                      (list `(-- ,single-c-from-c-pattern1) single-c-from-c-pattern1))
-                           produced-c-lst)))
+                           produced-c-lst))||#)
       (mv coughed-s
           coughed-pp-lst
           produced-c-lst
@@ -2191,14 +2203,15 @@
                             c-lst
                             to-be-coughed-c-lst))))))))
 
-(define new-sum-merge (term &key cough-pp)
+(define new-sum-merge (term)
   (b* ((sum-lst (extract-new-sum-consed term))
        ;;(sum-lst (hons-copy sum-lst))
 
        ((mv s pp-lst-lst c-lst to-be-coughed-c-lst)
         (new-sum-merge-aux sum-lst))
-       ((mv pp-lst to-be-coughed-pp-lst)
-        (pp-lst-sum-merge pp-lst-lst :for-s t :for-c cough-pp))
+       ((mv pp-lst &)
+        (pp-lst-sum-merge pp-lst-lst ;;:for-s t :for-c cough-pp
+                          ))
 
        (- (m-eval-compare `(sum-list ,term)
                           `(sum (sum-list ,s)
@@ -2211,7 +2224,7 @@
                           :id 'new-sum-merge2))
 
        )
-    (mv s pp-lst to-be-coughed-pp-lst c-lst to-be-coughed-c-lst)))
+    (mv s pp-lst c-lst to-be-coughed-c-lst)))
 
 ;; (progn
 (define well-formed-new-sum (term)
@@ -2349,37 +2362,29 @@
       (and valid
            (quarternaryp res)))))
 
-(define c-spec-meta-aux (arg-s arg-pp-lst coughed-pp-lst arg-c-lst to-be-coughed-c-lst quarternaryp)
+(define c-spec-meta-aux (arg-s arg-pp-lst arg-c-lst to-be-coughed-c-lst quarternaryp)
   :returns (res rp-termp
                 :hyp (and (rp-termp arg-s)
                           (rp-term-listp arg-pp-lst)
                           (rp-term-listp arg-c-lst)))
   :prepwork ((local
               (in-theory (disable natp))))
-  (b* (#|(a '((in1 . 1231231) (in2 . 131321)))||#
-       #|(eval1 (m-eval `(sum (c '0 ,arg-s ,(create-list-instance arg-pp-lst)
-                               ,(create-list-instance arg-c-lst))
-                            (sum-list ,(create-list-instance coughed-pp-lst))
+  (b* (((mv s-coughed arg-s) (c-fix-s-args arg-s))
 
-                            (sum-list ,(create-list-instance to-be-coughed-c-lst)))
-                      a))||#
+       #|(single-c-from-c-pattern1 (c-pattern1-search arg-s arg-c-lst))||#
 
+       ((mv pp-coughed arg-pp)
+        (if (clean-pp-args-cond arg-s arg-c-lst)
+            (c-fix-pp-args (create-list-instance arg-pp-lst) (expt 2 30))
+          (mv ''nil (create-list-instance arg-pp-lst))))
        
-       ((mv s-coughed arg-s) (c-fix-s-args arg-s))
-
-       (single-c-from-c-pattern1 (c-pattern1-search arg-s arg-c-lst))
-
        (single-c-term (create-c-instance arg-s
-                                         (pp-lst-to-pp arg-pp-lst)
+                                         arg-pp
                                          (create-list-instance arg-c-lst)))
-
-       (pp-coughed (pp-lst-to-pp coughed-pp-lst))
-
-       
 
        ((when (not to-be-coughed-c-lst))
         (cond ((and (equal s-coughed ''nil)
-                    (not single-c-from-c-pattern1)
+                    #|(not single-c-from-c-pattern1)||#
                     (equal pp-coughed ''nil))
                (if (quotep single-c-term)
                    single-c-term
@@ -2387,54 +2392,25 @@
                      `(rp 'bitp ,single-c-term)
                    single-c-term)))
               (t
-               (b* ((c-merged-lst (if single-c-from-c-pattern1
+               (b* ((c-merged-lst  (list single-c-term))
+                    #|(c-merged-lst (if single-c-from-c-pattern1
                                       (list single-c-term
                                             single-c-from-c-pattern1
                                             `(-- ,single-c-from-c-pattern1))
-                                    (list single-c-term)))
-
+                                    (list single-c-term)))||#
                     (res `(c-res ,s-coughed ,pp-coughed ,(create-list-instance c-merged-lst))))
                  (if quarternaryp
                      `(rp 'bitp ,res)
                    res)))))
 
-
-       #|(mid-eval (m-eval `(sum (sum-list ,(create-list-instance
-                                           to-be-coughed-c-lst))
-                               ;;(sum-list ,s-coughed) (sum-list ,pp-coughed) ,single-c-term
-                               (c-res ,s-coughed ,pp-coughed (list
-                                                              ,single-c-term))
-                               )
-                         a))||#
-
        ((mv s-coughed2 coughed-pp-lst-lst c-merged-lst)
         (c-sum-merge-lst single-c-term to-be-coughed-c-lst))
-
-       #|(eval3 (m-eval `(sum ,single-c-term
-                            (sum-list ,(create-list-instance
-                                        to-be-coughed-c-lst)))
-                      a))||#
-       #|(eval4 (m-eval `(sum (sum-list ,s-coughed2)
-                            (sum-list-list ',(m-eval-lst-lst coughed-pp-lst-lst
-                                                             a))
-                            (sum-list ,(create-list-instance
-                                        c-merged-lst)))
-                      a))||#
-       #|(- (and (not (equal eval3 eval4))
-               (not (cw "c-sum-merge-lst! eval3:~p0, eval4:~p1"
-                        eval1 eval2 ))
-               (hard-error 'c-sum-merge-lst-bad-eval
-                           "Mismatching results. ~%"
-                           nil)))||#
-
        
-
-       
-       (c-merged-lst (if single-c-from-c-pattern1
+       #|(c-merged-lst (if single-c-from-c-pattern1
                          (append c-merged-lst
                                  (list single-c-from-c-pattern1
                                        `(-- ,single-c-from-c-pattern1)))
-                       c-merged-lst))
+                       c-merged-lst))||#
 
        (s-coughed (s-sum-merge s-coughed s-coughed2))
 
@@ -2442,29 +2418,9 @@
        ((mv pp-coughed-lst &) (pp-lst-sum-merge coughed-pp-lst-lst))
        (pp-coughed (pp-lst-to-pp pp-coughed-lst))
 
-       ;; (eval5 (sum-list-list (m-eval-lst-lst coughed-pp-lst-lst a )))
-       ;; (eval6 (m-eval `(sum-list pp-coughed) a))
-       ;; (- (and (not (equal eval5 eval6))
-       ;;         (not (cw "eval5-eval6: eval5:~p0, eval6:~p1"
-       ;;                  eval5 eval6 ))
-       ;;         (hard-error 'bad-eval
-       ;;                     "Mismatching results. ~%"
-       ;;                     nil)))
-
+  
        (res `(c-res ,s-coughed ,pp-coughed (list . ,c-merged-lst)))
-       (res (if quarternaryp
-                `(rp 'bitp ,res)
-              res))
-
-#|       (eval2 (m-eval res a))||#
-#|       (- (and (not (equal eval1 eval2))
-               (not (cw "MERGE-AUX... eval1:~p0, mid-eval:~p2, eval2:~p1, term:, res:~p3"
-                        eval1 eval2 mid-eval res))
-               (hard-error 'bad-eval
-                           "Mismatching results. ~%"
-                           nil)))||#
-
-       )
+       (res (if quarternaryp `(rp 'bitp ,res) res)))
     res))
 
 (define c-spec-meta (term)
@@ -2483,13 +2439,13 @@
           (('c-spec sum)
            (if (well-formed-new-sum sum)
                (b* ((;;(mv s pp c)
-                     (mv s pp-lst coughed-pp-lst c-lst to-be-coughed-c-lst)
-                     (new-sum-merge sum :cough-pp t))
+                     (mv s pp-lst  c-lst to-be-coughed-c-lst)
+                     (new-sum-merge sum))
                     (quarternaryp (quarternaryp-sum sum))
 
                     #|(- (and (not quarternarp)
                     (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#)
-                 (c-spec-meta-aux s pp-lst coughed-pp-lst c-lst to-be-coughed-c-lst quarternaryp))
+                 (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
           (& term))))
@@ -2505,31 +2461,26 @@
                 :hyp (and (rp-termp s)
                           (rp-term-listp pp-lst)
                           (rp-term-listp c-lst)))
-  (b* (#|(a '((in1 . 255) (in2 . 255)))||#
-       #|(val1 (m-eval `(s-spec (list (sum-list ,s) (sum-list ,pp) (sum-list ,c))) a))||#
-
-       (exp1 `(sum (sum-list ,s)
+  (b* ((exp1 `(sum (sum-list ,s)
                    (sum . ,pp-lst)
                    (sum . ,c-lst)))
 
        (?limit (expt 2 40))
        (pp (pp-lst-to-pp pp-lst))
        ((mv pp c-lst)
-        (s-of-s-fix s pp c-lst))
-       ;;(pp (s-fix-args pp))
-       #|(- (and (not (pp-orderedp pp))
-       (cw "This pp in s-spec-meta-aux is not ordered! ~p0 ~%" ; ;
-       pp)))||#
+        (s-of-s-fix s pp c-lst :clean-pp nil))
+
+       
+       (pp (if (clean-pp-args-cond ''nil c-lst)
+               (s-fix-args pp)
+             pp)) ;; clean-with-cond-here
+
+       
+       
        (c (create-list-instance c-lst))
        (res (create-s-instance pp c))
        (- (m-eval-compare `(s '0 ,pp ,c) res :id 's-spec-meta-aux1 :print-exps t))
-       (- (m-eval-compare res `(s '0 (list ,exp1) 'nil) :id 's-spec-meta-aux2))
-
-       #|(val2 (m-eval res a))||#
-       #|(- (or (equal val1 val2)
-       (hard-error 's-spec-meta-aux
-       "Input and output vals are not the same! ~p0 ~%"
-       (list (cons #\0 (list val1 val2))))))||#)
+       (- (m-eval-compare res `(s '0 (list ,exp1) 'nil) :id 's-spec-meta-aux2)))
     res))
 
 (define s-spec-meta (term)
@@ -2547,8 +2498,8 @@
   (b* ((result (case-match term
                  (('s-spec sum)
                   (cond ((well-formed-new-sum sum)
-                         (b* (((mv s pp-lst & c-lst &);;(mv s pp c)
-                               (new-sum-merge sum :cough-pp nil)))
+                         (b* (((mv s pp-lst c-lst &);;(mv s pp c)
+                               (new-sum-merge sum)))
                            (s-spec-meta-aux s pp-lst c-lst)))
                         (t
                          (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
@@ -2569,8 +2520,8 @@
         (case-match term
           (('s-c-spec sum)
            (if (well-formed-new-sum sum)
-               (b* (((mv s pp-lst to-be-coughed-pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
-                     (new-sum-merge sum :cough-pp t))
+               (b* (((mv s pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
+                     (new-sum-merge sum))
 
                     #|(a *a*)||#
 
@@ -2592,7 +2543,8 @@
                     #|(- (and (not quarternarp)
                     (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#
                     (s-res (s-spec-meta-aux s pp-lst c-lst))
-                    (c-res (c-spec-meta-aux s pp-lst to-be-coughed-pp-lst c-lst to-be-coughed-c-lst quarternaryp))
+                    (c-res (c-spec-meta-aux s pp-lst c-lst
+                                            to-be-coughed-c-lst quarternaryp))
                     (res `(cons ,s-res (cons ,c-res 'nil)))
                     #|(- (if (search-pattern res)
                     (cw "pattern found s-c-spec-meta ~%")
@@ -2612,32 +2564,28 @@
                      term)))
           (('c-s-spec sum)
            (if (well-formed-new-sum sum)
-               (b* (((mv s pp-lst to-be-coughed-pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
-                     (new-sum-merge sum :cough-pp t))
+               (b* (((mv s pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
+                     (new-sum-merge sum))
                     (quarternaryp (quarternaryp-sum sum))
                     (s-res (s-spec-meta-aux s pp-lst c-lst))
-                    (c-res (c-spec-meta-aux s pp-lst to-be-coughed-pp-lst c-lst to-be-coughed-c-lst quarternaryp)))
+                    (c-res (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp)))
                  `(cons ,c-res (cons ,s-res 'nil)))
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
           (('s-spec sum)
            (cond ((well-formed-new-sum sum)
-                  (b* (((mv s pp-lst & c-lst &);;(mv s pp c)
-                        (new-sum-merge sum :cough-pp nil)))
+                  (b* (((mv s pp-lst c-lst &);;(mv s pp c)
+                        (new-sum-merge sum)))
                     (s-spec-meta-aux s pp-lst c-lst)))
                  (t
                   (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                           term))))
           (('c-spec sum)
            (if (well-formed-new-sum sum)
-               (b* ((;;(mv s pp c)
-                     (mv s pp-lst to-be-coughed-pp-lst c-lst to-be-coughed-c-lst)
-                     (new-sum-merge sum :cough-pp t))
-                    (quarternaryp (quarternaryp-sum sum))
-
-                    #|(- (and (not quarternarp)
-                    (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#)
-                 (c-spec-meta-aux s pp-lst to-be-coughed-pp-lst c-lst to-be-coughed-c-lst quarternaryp))
+               (b* (((mv s pp-lst c-lst to-be-coughed-c-lst)
+                     (new-sum-merge sum))
+                    (quarternaryp (quarternaryp-sum sum)))
+                 (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
           (& term))))
