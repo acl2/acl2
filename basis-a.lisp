@@ -5655,10 +5655,12 @@
                               (equal vars '(summary ctx alist str))
                               '(lambda (whs)
                                  (cond
-                                  ((and (member-string-equal
+                                  ((and summary
+                                        (member-string-equal
                                          summary
                                          *tracked-warning-summaries*)
-                                        (alistp (wormhole-data whs)))
+                                        (standard-string-alistp
+                                         (wormhole-data whs)))
                                    (let ((expln (list ctx alist str))
                                          (entry (or (assoc-string-equal
                                                      summary

@@ -258,7 +258,6 @@
 ; the ttag and untouchable restrictions already prevent warrants.
 
    '(SYNP                                      ; bad
-     HIDE                                      ; stupid
      WORMHOLE1                                 ; restricts arguments
      WORMHOLE-EVAL                             ; restricts arguments
      SYS-CALL                                  ; bad -- requires trust tag
