@@ -268,3 +268,40 @@
  (defthmd list-reverse-to-list-reverse{1}
    (equal (list-reverse l)
           (list-reverse{1} l nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following example finds the minimum number in a list of rationals.
+
+; Here we must use the :ASSOC-ALT variant;
+; none of the other variants would work.
+; We must also explicitly supply the domain:
+; currently TAILREC only attempts to infer the (right) domain
+; in the :MONOID and :MONOID-ALT variants.
+; The binary operation is MIN here,
+; which is associative but has no identity elements.
+
+(defun list-min (l)
+  (declare (xargs :guard (and (rational-listp l)
+                              (consp l))))
+  (if (endp (cdr l))
+      (car l)
+    (min (car l) (list-min (cdr l)))))
+
+(apt::tailrec list-min :variant :assoc-alt :domain rationalp)
+
+(must-be-redundant
+ (defun list-min{1} (l r)
+   (declare (xargs :guard (and (and (rational-listp l) (consp l))
+                               (rationalp r))
+                   :measure (acl2-count l)))
+   (if (endp (cdr l))
+       (min r (car l))
+     (list-min{1} (cdr l) (min r (car l))))))
+
+(must-be-redundant
+ (defthmd list-min-to-list-min{1}
+   (equal (list-min l)
+          (if (endp (cdr l))
+              (car l)
+            (list-min{1} (cdr l) (car l))))))

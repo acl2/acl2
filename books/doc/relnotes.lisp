@@ -241,6 +241,9 @@
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
+     "The transformation has been extended with a new variant,
+      @(':assoc-alt'), which is an alternative associative variant.")
+    (xdoc::li
      "The transformation has been simplified
       by removing the @(':non-executable') option,
       which does not seem necessary or useful.

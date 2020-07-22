@@ -469,7 +469,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defenum tailrec-variantp (:assoc :monoid :monoid-alt)
+(std::defenum tailrec-variantp (:assoc :assoc-alt :monoid :monoid-alt)
   :short "Variants of the tail recursion transformation.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -478,7 +478,7 @@
   :short "Process the @('variant') input."
   :body
   (((tailrec-variantp variant)
-    "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description)))
+    "~@0 must be :MONOID, :MONOID-ALT, :ASSOC or :ASSOC-ALT." description)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1324,7 +1324,8 @@
      (make-evmac-appcond?
       :domain-of-base
       (implicate test
-                 (apply-term* domain$ base)))
+                 (apply-term* domain$ base))
+      :when (member-eq variant$ '(:monoid :monoid-alt :assoc)))
      (make-evmac-appcond?
       :domain-of-nonrec
       (implicate (dumb-negate-lit test)
@@ -1336,7 +1337,7 @@
                            (apply-term* domain$ v))
                  (apply-term* domain$
                               (apply-term* combine-op u v)))
-      :when (member-eq variant$ '(:monoid :assoc)))
+      :when (member-eq variant$ '(:monoid :assoc :assoc-alt)))
      (make-evmac-appcond?
       :domain-of-combine-uncond
       (apply-term* domain$
@@ -1363,7 +1364,7 @@
               ,(apply-term* combine-op
                             (apply-term* combine-op u v)
                             w))
-      :when (eq variant$ :monoid-alt))
+      :when (member-eq variant$ '(:monoid-alt :assoc-alt)))
      (make-evmac-appcond?
       :combine-left-identity
       (implicate (conjoin2 test
@@ -1391,11 +1392,18 @@
                  (term-guard-obligation combine state))
       :when verify-guards$)
      (make-evmac-appcond?
+      :domain-of-base-when-guard
+      (implicate (conjoin2 (guard old$ nil wrld)
+                           test)
+                 (apply-term* domain$ base))
+      :when (and (eq variant$ :assoc-alt)
+                 verify-guards$))
+     (make-evmac-appcond?
       :domain-of-nonrec-when-guard
       (implicate (conjoin2 (guard old$ nil wrld)
                            (dumb-negate-lit test))
                  (apply-term* domain$ nonrec))
-      :when (and (eq variant$ :monoid-alt)
+      :when (and (member-eq variant$ '(:monoid-alt :assoc-alt))
                  verify-guards$)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1417,17 +1425,19 @@
           the old function always yields values in the domain
           (@($D{}f$) in the design notes)."
   :long
-  "<p>
-   The theorem's formula is @('(domain (old x1 ... xn))').
-   This is just @('t') if @('domain') is @('(lambda (x) t)') (e.g. as default).
-   </p>
-   <p>
-   The hints follow the proofs in the design notes.
-   </p>
-   <p>
-   This theorem event is local,
-   because it is a lemma used to prove the exported main theorem.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "This is generated only if the variant is
+     @(':monoid'), @(':monoid-alt'), or @(':assoc').")
+   (xdoc::p
+    "The theorem's formula is @('(domain (old x1 ... xn))').
+     This is just @('t') if @('domain') is @('(lambda (x) t)')
+     (e.g. as default).")
+   (xdoc::p
+    "The hints follow the proofs in the design notes.")
+   (xdoc::p
+    "This theorem event is local,
+    because it is a lemma used to prove the exported main theorem."))
   (b* ((name (fresh-logical-name-with-$s-suffix 'domain-of-old
                                                 nil
                                                 names-to-avoid
@@ -1477,6 +1487,8 @@
                 :cases (,test))
                '(:use (,domain-of-base-thm
                        ,domain-of-combine-uncond-instance)))))
+          (:assoc-alt
+           (raise "Internal error: called when variant is :ASSOC-ALT."))
           (t (impossible))))
        (event `(local (defthm ,name
                         ,formula
@@ -1556,7 +1568,8 @@
         (b* ((combine-op (tailrec-gen-combine-op combine q r))
              (nonrec-branch (case variant$
                               ((:monoid :monoid-alt) a)
-                              (:assoc (apply-term* combine-op a base))
+                              ((:assoc :assoc-alt)
+                               (apply-term* combine-op a base))
                               (t (impossible))))
              (rec-branch (subcor-var (cons a (formals old$ wrld))
                                      (cons (apply-term* combine-op a nonrec)
@@ -1660,6 +1673,50 @@
                       ,combine-guard-instance-base
                       ,combine-guard-instance-nonrec
                       ,domain-of-combine-uncond-instance)))))
+          (:assoc-alt
+           (b* ((z (car (if (symbolp domain$)
+                            (formals domain$ wrld)
+                          (lambda-formals domain$))))
+                (domain-of-combine-thm
+                 (cdr (assoc-eq :domain-of-combine appcond-thm-names)))
+                (domain-guard-thm
+                 (cdr (assoc-eq :domain-guard appcond-thm-names)))
+                (combine-guard-thm
+                 (cdr (assoc-eq :combine-guard appcond-thm-names)))
+                (domain-of-base-when-guard-thm
+                 (cdr (assoc-eq :domain-of-base-when-guard
+                        appcond-thm-names)))
+                (domain-of-nonrec-when-guard-thm
+                 (cdr (assoc-eq :domain-of-nonrec-when-guard
+                        appcond-thm-names)))
+                (domain-of-combine-instance
+                 `(:instance ,domain-of-combine-thm
+                   :extra-bindings-ok
+                   (,(tailrec-gen-var-u old$) ,a)
+                   (,(tailrec-gen-var-v old$) ,nonrec)))
+                (domain-guard-instance
+                 `(:instance ,domain-guard-thm
+                   :extra-bindings-ok
+                   (,z ,a)))
+                (combine-guard-instance-base
+                 `(:instance ,combine-guard-thm
+                   :extra-bindings-ok
+                   (,q ,a)
+                   (,r ,base)))
+                (combine-guard-instance-nonrec
+                 `(:instance ,combine-guard-thm
+                   :extra-bindings-ok
+                   (,q ,a)
+                   (,r ,nonrec))))
+             `(("Goal"
+                :in-theory nil
+                :use ((:guard-theorem ,old$)
+                      ,domain-guard-instance
+                      ,domain-of-base-when-guard-thm
+                      ,domain-of-nonrec-when-guard-thm
+                      ,combine-guard-instance-base
+                      ,combine-guard-instance-nonrec
+                      ,domain-of-combine-instance)))))
           (t (impossible))))
        (local-event
         `(local
@@ -1708,40 +1765,41 @@
           to a combination of the old function with @('a')
           (@($f'{}f$) in the design notes)."
   :long
-  "<p>
-   The theorem's formula is
-   </p>
-   @({
-     (equal (new x1 ... xn a)
-            combine<a,(old x1 ... xn)>)
-   })
-   <p>
-   The equality is unconditional
-   if @('domain') is @('(lambda (x) t)') (e.g. as default).
-   </p>
-   <p>
-   The hints follow the proofs in the design notes.
-   Note that @('combine-right-identity-thm?') is @('nil') iff
-   the @(':combine-right-identity') applicability condition is absent,
-   which happens exactly when
-   the @(':variant') input to the transformation is @(':assoc').
-   In this case, no instance of that applicability condition
-   is used in the proof.
-   </p>
-   <p>
-   This theorem event is local,
-   because it is a lemma used to prove the exported main theorem.
-   </p>"
-  (b* ((formula
-        (untranslate (implicate
-                      (apply-term* domain$ a)
-                      `(equal ,(apply-term new-name$ new-formals)
-                              ,(apply-term* (tailrec-gen-combine-op combine q r)
-                                            a
-                                            (apply-term old$
-                                                        (formals old$
-                                                                 wrld)))))
-                     t wrld))
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem's formula is")
+   (xdoc::codeblock
+    "(implies (domain a)"
+    "         (equal (new x1 ... xn a)"
+    "                combine<a,(old x1 ... xn)>))")
+   (xdoc::p
+    "if the variant is @(':monoid'), @(':monoid-alt'), or @(':assoc'),
+     while it is")
+   (xdoc::codeblock
+    "(equal (new x1 ... xn a)"
+    "       combine<a,(old x1 ... xn)>)")
+   (xdoc::p
+    "if the variant is @(':assoc-alt').")
+   (xdoc::p
+    "The hints follow the proofs in the design notes.
+     Note that @('combine-right-identity-thm?') is @('nil') iff
+     the @(':combine-right-identity') applicability condition is absent,
+     which happens exactly when
+     the @(':variant') input to the transformation
+     is @(':assoc') or @(':assoc-alt').
+     In this case, no instance of that applicability condition
+     is used in the proof."))
+  (b* ((formula `(equal ,(apply-term new-name$ new-formals)
+                        ,(apply-term* (tailrec-gen-combine-op combine q r)
+                                      a
+                                      (apply-term old$
+                                                  (formals old$
+                                                           wrld)))))
+       (formula (if (eq variant$ :assoc-alt)
+                    formula
+                  (implicate (apply-term* domain$ a)
+                             formula)))
+       (formula (untranslate formula t wrld))
        (hints
         (case variant$
           ((:monoid :assoc)
@@ -1818,6 +1876,23 @@
                '(:use (,combine-right-identity-instance
                        ,domain-of-combine-uncond-instance
                        ,combine-associativity-uncond-instance)))))
+          (:assoc-alt
+           (b* ((combine-associativity-uncond-thm
+                 (cdr (assoc-eq :combine-associativity-uncond
+                        appcond-thm-names)))
+                (combine-associativity-uncond-instance
+                 `(:instance ,combine-associativity-uncond-thm
+                   :extra-bindings-ok
+                   (,(tailrec-gen-var-u old$) ,a)
+                   (,(tailrec-gen-var-v old$) ,nonrec)
+                   (,(tailrec-gen-var-w old$)
+                    ,(apply-term old$ updates)))))
+             `(("Goal"
+                :in-theory '(,old-unnorm-name
+                             ,new-unnorm-name
+                             (:induction ,new-name$))
+                :induct (,new-name$ ,@new-formals))
+               '(:use (,combine-associativity-uncond-instance)))))
           (t (impossible))))
        (local-event `(local (defthmd ,new-to-old-name$
                               ,formula
@@ -2195,7 +2270,7 @@
    for now it uses @('base<x1,...,xn>') instead of the @($\\beta$) function.
    </p>"
   (untranslate (case variant$
-                 (:assoc
+                 ((:assoc :assoc-alt)
                   `(if ,test
                        ,base
                      ,(subcor-var (cons a (formals old$ wrld))
@@ -2232,27 +2307,27 @@
           the old function to the new function
           (@($f{}f'$) and @($f{}f'_0$) in the design notes)."
   :long
-  "<p>
-   The theorem is @($f{}f'$) when the variant is @(':assoc')
-   (in this case, left identity does not hold),
-   and @($f{}f'_0$) when the variant is @(':monoid') or @(':monoid-alt')
-   (in this case, left identity holds,
-   and we are in the special case of a ground base term).
-   </p>
-   <p>
-   The hints follow the proof in the design notes,
-   for the case in which left identity holds
-   when the variant is @(':monoid') or @(':monoid-alt'),
-   and for the case in which left identity does not hold
-   when the variant is @(':assoc').
-   In the first case, the proof is for the special case of a ground base term.
-   </p>
-   <p>
-   For the @(':assoc') variant,
-   since the old function is recursive,
-   we use an explicit @(':expand') hint
-   instead of just enabling the definition of old function.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem is
+     @($f{}f'$) when the variant is @(':assoc') or @(':assoc-alt'),
+     (in this case, left identity does not hold),
+     and @($f{}f'_0$) when the variant is @(':monoid') or @(':monoid-alt')
+     (in this case, left identity holds,
+     and we are in the special case of a ground base term).")
+   (xdoc::p
+    "The hints follow the proof in the design notes,
+     for the case in which left identity holds
+     when the variant is @(':monoid') or @(':monoid-alt'),
+     and for the case in which left identity does not hold
+     when the variant is @(':assoc') and @(':assoc-alt').
+     In the first case,
+     the proof is for the special case of a ground base term.")
+   (xdoc::p
+    "For the @(':assoc') and @(':assoc-alt') variants,
+     since the old function is recursive,
+     we use an explicit @(':expand') hint
+     instead of just enabling the definition of old function."))
   (b* ((formula `(equal ,(apply-term old$ (formals old$ wrld))
                         ,(tailrec-gen-old-as-new-term
                           old$ test base nonrec updates a variant$
@@ -2289,6 +2364,17 @@
                 :expand ((,old$ ,@formals))
                 :use (,domain-of-nonrec-thm
                       ,new-to-old-instance)))))
+          (:assoc-alt
+           (b* ((formals (formals old$ wrld))
+                (new-to-old-instance
+                 `(:instance ,new-to-old-name$
+                   :extra-bindings-ok
+                   (,a ,nonrec)
+                   ,@(alist-to-doublets (pairlis$ formals updates)))))
+             `(("Goal"
+                :in-theory nil
+                :expand ((,old$ ,@formals))
+                :use (,new-to-old-instance)))))
           (t (impossible))))
        (local-event `(local (defthm ,old-to-new-name$
                               ,formula
@@ -2367,6 +2453,14 @@
                 :in-theory nil
                 :use ((:guard-theorem ,old$)
                       ,domain-of-nonrec-thm)))))
+          (:assoc-alt
+           (b* ((domain-of-nonrec-when-guard-thm
+                 (cdr (assoc-eq :domain-of-nonrec-when-guard
+                        appcond-thm-names))))
+             `(("Goal"
+                :in-theory nil
+                :use ((:guard-theorem ,old$)
+                      ,domain-of-nonrec-when-guard-thm)))))
           (t (impossible))))
        (local-event
         `(local
@@ -2601,15 +2695,19 @@
                                       names-to-avoid
                                       wrld))
        (names-to-avoid (cons old-unnorm-name names-to-avoid))
-       ((mv domain-of-old-event
-            domain-of-old-name)
-        (tailrec-gen-domain-of-old-thm old$ test nonrec updates
-                                       variant$ domain$
-                                       names-to-avoid
-                                       appcond-thm-names
-                                       old-unnorm-name
-                                       wrld))
-       (names-to-avoid (cons domain-of-old-name names-to-avoid))
+       ((mv domain-of-old-event?
+            domain-of-old-name?)
+        (if (member-eq variant$ '(:monoid :monoid-alt :assoc))
+            (tailrec-gen-domain-of-old-thm old$ test nonrec updates
+                                           variant$ domain$
+                                           names-to-avoid
+                                           appcond-thm-names
+                                           old-unnorm-name
+                                           wrld)
+          (mv nil nil)))
+       (names-to-avoid (if domain-of-old-name?
+                           (cons domain-of-old-name? names-to-avoid)
+                         names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event
             new-formals)
@@ -2637,7 +2735,7 @@
                                     new-to-old-enable$
                                     appcond-thm-names
                                     old-unnorm-name
-                                    domain-of-old-name
+                                    domain-of-old-name?
                                     new-formals
                                     new-unnorm-name
                                     wrld))
@@ -2716,7 +2814,7 @@
                                     old-to-new-name$
                                     old-to-new-enable$
                                     appcond-thm-names
-                                    domain-of-old-name
+                                    domain-of-old-name?
                                     domain-of-ground-base-name?
                                     combine-left-identity-ground-name?
                                     new-formals
@@ -2793,7 +2891,8 @@
           (set-default-hints nil)
           (set-override-hints nil)
           ,old-unnorm-event
-          ,domain-of-old-event
+          ,@(and domain-of-old-name?
+                 (list domain-of-old-event?))
           ,new-fn-local-event
           ,new-unnorm-event
           ,new-to-old-thm-local-event

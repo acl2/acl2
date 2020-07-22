@@ -164,7 +164,7 @@
         The section `Special case: Ground Base Value' of the design notes
         shows that this restriction (which may be lifted eventually)
         avoids the need to generate and use the function @($\\beta$).
-        (When the @(':variant') input is @(':assoc'),
+        (When the @(':variant') input is @(':assoc') or @(':assoc-alt'),
         no @($\\beta$) needs to be generated anyway,
         and thus the restriction does not apply.)")
       (xdoc::li
@@ -238,21 +238,34 @@
         In the " *tailrec-design-notes* ",
         this variant is described in the sections
         `Associative Binary Operator' and
-        `Restriction of Operator Properties to a Domain'."))
+        `Restriction of Operator Properties to a Domain'.")
+      (xdoc::li
+       "@(':assoc-alt'), for the alternative associative variant,
+        where the applicability conditions below also imply
+        the algebraic structure of a semigroup (i.e. associativity only)
+        for the combination operator.
+        In the " *tailrec-design-notes* ",
+        this variant is described in the section
+        `Associative-Only Variant,Extended outside the Domain'."))
      (xdoc::p
-      "The associative variant of the transformation is more widely applicable,
-       but the monoidal and alternative monoidal variants
-       yield simpler new functions.
+      "The associative variants of the transformation is more widely applicable,
+       but the monoidal variants yield simpler new functions.
        The applicability conditions for the alternative monoidal variant
        are neither stronger nor weaker than the ones for the monoidal variant,
+       so these two variants apply to different cases.
+       Similarly,
+       the applicability conditions for the alternative associative variant
+       are neither stronger nor weaker than the ones for the associative variant,
        so these two variants apply to different cases.")
      (xdoc::p
       "While the " *tailrec-design-notes*
       "show how to handle variants in which, besides associativity,
        only either left or right identity holds,
        the current implementation does not handle them independently.
-       They are either both absent (in the @(':assoc') variant)
-       or both present (in the @(':monoid') and @(':monoid-alt') variants).
+       They are either both absent
+       (in the @(':assoc') and @(':assoc-alt') variants)
+       or both present
+       (in the @(':monoid') and @(':monoid-alt') variants).
        Support for their independent handling may be added eventually."))
 
     (xdoc::desc
@@ -564,8 +577,8 @@
       Given that using a tighter domain than all values
       involves additional applicability conditions below,
       it seems most useful to attempt to infer a tighter domain
-      only for the monoidal and alternative monoidal variants,
-      and use the domain of all values for the associative variant."))
+      only for the monoidal variants,
+      and use the domain of all values for the associative variants."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -582,7 +595,9 @@
        "(implies test<x1,...,xn>"
        "         (domain base<x1,...,xn>))"))
      :design-notes *tailrec-design-notes*
-     :design-notes-appcond "@($\\mathit{Db}$)")
+     :design-notes-appcond "@($\\mathit{Db}$)"
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid') or @(':monoid-alt') or @(':assoc')")
 
     (xdoc::evmac-appcond
      ":domain-of-nonrec"
@@ -611,7 +626,7 @@
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($D*$)"
      :presence "the @(':variant') input of @('tailrec')
-                is @(':monoid') or @(':assoc')")
+                is @(':monoid') or @(':assoc') or @(':assoc-alt')")
 
     (xdoc::evmac-appcond
      ":domain-of-combine-uncond"
@@ -622,7 +637,8 @@
        "(domain combine<u,v>)"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($D*'$)"
-     :presence "the @(':variant') input of @('tailrec') is @(':monoid-alt')")
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid-alt')")
 
     (xdoc::evmac-appcond
      ":combine-associativity"
@@ -650,7 +666,8 @@
        "       combine<combine<u,v>,w>)"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($\\mathit{ASC}'$)"
-     :presence "the @(':variant') input of @('tailrec') is @(':monoid-alt')")
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid-alt') or @(':assoc-alt')")
 
     (xdoc::evmac-appcond
      ":combine-left-identity"
@@ -722,6 +739,27 @@
                 the @(':verify-guards') input of @('tailrec')).")
 
     (xdoc::evmac-appcond
+     ":domain-of-base-when-guard"
+     (xdoc::&&
+      (xdoc::p
+       "The base computation returns values in the domain,
+        when the exit test of the recursion succeeds,
+        and under the guard of @('old'):")
+      (xdoc::codeblock
+       "(implies (and old-guard<x1,...,xn>"
+       "              test<x1,...,xn>)"
+       "         (domain base<x1,...,xn>))")
+      (xdoc::p
+       "where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{GDb}$)"
+     :presence "the function(s) generated by @('tailrec') is/are guard-verified
+                (which is determined by
+                the @(':verify-guards') input of @('tailrec'))
+                and the @(':variant') input of @('tailrec')
+                is @(':assoc-alt')")
+
+    (xdoc::evmac-appcond
      ":domain-of-nonrec-when-guard"
      (xdoc::&&
       (xdoc::p
@@ -741,7 +779,7 @@
                 (which is determined by
                 the @(':verify-guards') input of @('tailrec'))
                 and the @(':variant') input of @('tailrec')
-                is @(':monoid-alt')")
+                is @(':monoid-alt') or @(':assoc-alt')")
 
     (xdoc::p
      "When present,
@@ -777,7 +815,7 @@
       "         update-xn<x1,...,xn>"
       "         combine<a,nonrec<x1,...,xn>>)))"
       ""
-      ";; when the :variant input of tailrec is :assoc:"
+      ";; when the :variant input of tailrec is :assoc or :assoc-alt:"
       "(defun new (x1 ... xn a)"
       "  (if test<x1,...,xn>"
       "      combine<a,base<x1,...,xn>>"
@@ -804,7 +842,7 @@
       "(defun wrapper (x1 ... xn)"
       "  (new x1 ... xn base<x1,...,xn>))"
       ""
-      ";; when the :variant input tailrec is :assoc:"
+      ";; when the :variant input tailrec is :assoc or :assoc-alt:"
       "(defun wrapper (x1 ... xn)"
       "  (if test<x1,...,xn>"
       "      base<x1,...,xn>"
@@ -830,7 +868,7 @@
       "  (equal (old x1 ... xn)"
       "         (new x1 ... xn base<x1,...,xn>)))"
       ""
-      ";; when the :variant input of tailrec is :assoc:"
+      ";; when the :variant input of tailrec is :assoc or :assoc-alt:"
       "(defthm old-to-new"
       "  (equal (old x1 ... xn)"
       "         (if test<x1,...,xn>"
@@ -848,6 +886,14 @@
      (xdoc::p
       "Theorem that rewrites @('new') in terms of @('old'):")
      (xdoc::codeblock
+      ";; when the :variant input of tailrec is"
+      ";; :monoid or :monoid-alt or :assoc:"
+      "(defthm new-to-old"
+      "  (implies (domain a)"
+      "           (equal (new x1 ... xn a)"
+      "                  combine<a,(old x1 ... xn)>)))"
+      ""
+      ";; when the :variant input of tailrec is :assoc-alt:"
       "(defthm new-to-old"
       "  (equal (new x1 ... xn a)"
       "         combine<a,(old x1 ... xn)>))")
