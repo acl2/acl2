@@ -13605,6 +13605,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     defstobj-fn ; might be avoidable; see comment in that definition
     apply-user-stobj-alist-or-kwote ; no raw code but ill-guarded; see comments
     accp-info
+    read-file-iterate-safe
     ))
 
 (defconst *initial-logic-fns-with-raw-code*

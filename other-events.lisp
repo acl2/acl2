@@ -16035,6 +16035,61 @@
                               (true-list-listp alist))))
   (read-useless-runes2 r (reverse alist) nil filename ctx state))
 
+(defun read-file-iterate-safe (channel acc state
+                                       #-acl2-loop-only &aux
+                                       #-acl2-loop-only error-start-pos)
+
+
+; In #-cltl2, this is just read-file-iterate, with nil elements removed
+; from the result.
+
+; But in #+cltl2, this variant of read-file-iterate avoids read errors, e.g.,
+; due to symbols with nonexistent packages.  Logically, it skips over a form
+; when directed to do so by the oracle.  Under the hood, it skips over a form
+; when the attempt to read it causes an error, by backing up to the beginning
+; of the form and then skipping over it.
+
+  #-cltl2 ; handler-case can be undefined, e.g., in non-ANSI GCL
+  (mv-let (eof obj state)
+    (read-file-iterate channel acc state)
+    (mv eof (remove-eq nil obj) state))
+  #+cltl2
+  (mv-let (eof obj state)
+    #+acl2-loop-only
+    (mv-let (erp val state)
+      (read-acl2-oracle state)
+      (declare (ignore erp))
+      (cond (val (mv-let (eof state)
+                   (read-object-suppress channel state)
+                   (mv eof nil state)))
+            (t
+             (read-object channel state))))
+    #-acl2-loop-only
+    (let ((pos (file-position (get-input-stream-from-channel channel))))
+      (handler-case (read-object channel state)
+        (error (condition)
+               (declare (ignore condition))
+               (progn (setq error-start-pos pos)
+                      (mv nil nil state)))))
+    (cond (eof (mv (reverse acc) state))
+          (t
+           #-acl2-loop-only
+           (when error-start-pos
+
+; When read breaks in the middle of an expression it seems to leave the
+; file-pointer there rather than to proceed to the end of the original
+; expression.  So we go back to where we were, and then read the entire object,
+; throwing it away.
+
+             (file-position (get-input-stream-from-channel channel)
+                            error-start-pos)
+             (read-object-suppress channel state))
+           (read-file-iterate-safe channel
+                                   (if (eq obj nil)
+                                       acc
+                                     (cons obj acc))
+                                   state)))))
+
 (defun read-useless-runes (full-book-name envp useless-runes-r/w val ctx state)
 
 ; Envp and val come from function useless-runes-value: val is a rational number
@@ -16079,7 +16134,7 @@
         (open-input-channel useless-runes-filename :object state)
         (cond (channel
                (mv-let (alist state)
-                 (read-file-iterate channel nil state)
+                 (read-file-iterate-safe channel nil state)
                  (pprogn (close-input-channel channel state)
                          (read-useless-runes1 (abs val)
                                               alist useless-runes-filename
