@@ -144,8 +144,12 @@
     (case-match e
       (('and-list ('quote hash) &)
        (ifix hash))
+      (('-- ('and-list ('quote hash) &))
+       (- (ifix hash)))
       (''1
        1)
+      (''-1
+       -1)
       (& 0)))
 
   (defwarrant pp-instance-hash$inline)
@@ -975,10 +979,10 @@
   :returns (res rp-termp
                 :hyp (and (rp-termp pp)
                           (rp-termp c)))
-  (b* (((mv pp c changed1) (s-pattern1-reduce pp c))
-       ((mv pp c changed2) (s-pattern2-reduce pp c))
-       ((when (or changed1 changed2))
-        (create-s-instance pp c))
+  (b* (#|((mv pp c changed1) (s-pattern1-reduce pp c))||#
+       #|((mv pp c changed2) (s-pattern2-reduce pp c))||#
+       #|((when (or changed1 changed2))
+        (create-s-instance pp c))||#
        ((mv pp c reduced reducedp)
         (s-pattern3-reduce pp c))
        ((when reducedp)
@@ -1490,7 +1494,8 @@
                                   nth
                                   rp-term-listp
                                   rp-termp))))
-  (b* (((unless (case-match s-arg (('list . &) t))) nil)
+  (b* (((when t) nil)
+       ((unless (case-match s-arg (('list . &) t))) nil)
        (s-arg-lst (cdr s-arg))
        (s-index-lst (c-pattern1-search-aux s-arg-lst c-arg-lst))
        ((unless (consp s-index-lst)) nil)
@@ -1792,7 +1797,9 @@
             coughed-pp-lst-lst
             c2-lst))))
 
-  (define c-sum-merge (c1-lst c2-lst &key (auto-swap 't) (clean-c1-lst 'nil))
+  (define c-sum-merge (c1-lst c2-lst &key
+                              (auto-swap 't)
+                              (clean-c1-lst 'nil))
     :returns (mv (coughed-s rp-termp
                             :hyp (and (rp-term-listp c1-lst)
                                       (rp-term-listp c2-lst)))
@@ -1824,7 +1831,7 @@
                                     (nfix second-id))
                                (> len1 len2))))))
          ((mv coughed-s coughed-pp-lst-lst merged-c-lst to-be-coughed-c-lst)
-          (c-sum-merge-aux c1-lst c2-lst :clean-c1-lst clean-c1-lst))
+          (c-sum-merge-aux c1-lst c2-lst :clean-c1-lst clean-c1-lst ))
 
          (- (m-eval-compare `(sum (sum . ,c1-lst)
                                   (sum . ,c2-lst))
@@ -1878,6 +1885,7 @@
 
 (memoize 'c-sum-merge-aux
          :memo-table-init-size 100000
+         ;:condition 'mem
          ;;:recursive nil
          ;;:condition '(and (not (equal c1-lst nil)) (not (equal c2-lst nil)))
          :aokp t)

@@ -63,6 +63,8 @@
 
 
 (define and-list-hash-aux (lst)
+  :returns (mv (hash integerp)
+               (rest-size natp))
   (if (atom lst)
       (mv 0 0)
     (b* (((mv rest rest-size) (and-list-hash-aux (cdr lst)))
@@ -79,6 +81,7 @@
       ;;   (logapp 14 cur rest)))))
 
 (define and-list-hash (lst)
+  :returns (hash integerp)
   (b* (((mv hash &)
         (and-list-hash-aux lst)))
     hash))
@@ -95,6 +98,8 @@
         (logapp 14 cur rest))))||#
 
 (define create-and-list-instance (lst)
+  :returns (and-list-instance rp-termp
+                              :hyp (rp-term-listp lst))
   `(and-list ',(and-list-hash lst) (list . ,lst)))
 
 (defmacro pp-cons (a b)
@@ -1166,9 +1171,9 @@
    :hints (("Goal"
             :in-theory (e/d (pp-lists-to-term-pp-lst) ())))))
 
-(defthm rp-termp-of-pp-flatten
+(defthm rp-term-listp-of-pp-flatten
   (implies (rp-termp term)
-           (rp-termp (pp-flatten term sign)))
+           (rp-term-listp (pp-flatten term sign)))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten) ()))))
 
@@ -1319,20 +1324,23 @@
    :hints (("Goal"
             :in-theory (e/d (pp-term-to-pp-lists) ())))))
 
+
 (local
  (defthm valid-sc-pp-lists-to-term-p+
    (implies (valid-sc-subterms-lst (strip-cdrs lst) a)
             (valid-sc-subterms (pp-lists-to-term-pp-lst lst) a))
    :hints (("Goal"
             :in-theory (e/d (pp-lists-to-term-pp-lst
+                             CREATE-AND-LIST-INSTANCE
                              is-if
                              is-rp) ())))))
 
 (defthm pp-flatten-returns-valid-sc
   (implies (valid-sc term a)
-           (valid-sc (pp-flatten term sign) a))
+           (VALID-SC-SUBTERMS (pp-flatten term sign) a))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten
+                            CREATE-AND-LIST-INSTANCE
                             is-if is-rp) ()))))
 
 (local
@@ -1358,5 +1366,6 @@
            (valid-sc (mv-nth 0 (sort-sum-meta term)) a))
   :hints (("Goal"
            :in-theory (e/d (sort-sum-meta
+                            CREATE-LIST-INSTANCE
                             is-rp
                             is-if) ()))))

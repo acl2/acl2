@@ -257,17 +257,17 @@
 
 (defthmd and-list-is-and$
   (implies (consp lst)
-           (equal (and-list lst)
+           (equal (and-list hash lst)
                   (if (atom (cdr lst))
-                      (car lst)
-                    (and$ (car lst) (and-list (cdr lst))))))
+                      (bit-fix (car lst))
+                    (and$ (car lst) (and-list hash (cdr lst))))))
   :hints (("Goal"
            :in-theory (e/d (and$ and-list) ()))))
 
 (defthmd and$-is-and-list
   (implies t
            (equal (and$ a b)
-                  (and-list (list a b))))
+                  (and-list 0 (list a b))))
   :hints (("Goal"
            :in-theory (e/d (and$ and-list) ()))))
 

@@ -467,7 +467,7 @@
 
 (acl2::defines
  m-eval
- (define m-eval (term a) 
+ (define m-eval (term a)
    (cond ((atom term)
           (cdr (hons-assoc-equal term a)))
          ((and (quotep term)
@@ -521,8 +521,8 @@
                    (safe-i-nth 1 args))
                   ((equal (car term) 'bit-of)
                    (bit-of
-                    (safe-i-nth 0 args)
-                    (safe-i-nth 1 args)))
+                    (ifix (safe-i-nth 0 args))
+                    (nfix (safe-i-nth 1 args))))
                   ((equal (car term) '--)
                    (--
                     (safe-i-nth 0 args)))
@@ -548,10 +548,11 @@
 
 
 (define m-eval-lst-lst (lst-lst a)
-  (if (atom lst-lst)
-      nil
-    (cons (m-eval-lst (car lst-lst) a)
-          (m-eval-lst-lst (cdr lst-lst) a))))
+  (and nil
+       (if (atom lst-lst)
+           nil
+         (cons (m-eval-lst (car lst-lst) a)
+               (m-eval-lst-lst (cdr lst-lst) a)))))
 
 (define m-eval-compare (exp1 exp2 &key
                              (a '*a*)
