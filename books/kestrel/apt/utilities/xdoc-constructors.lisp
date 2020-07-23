@@ -174,8 +174,7 @@
        A keyword @(':kwd') specifies the theorem name @('oldkwdnew'),
        in the same package as @('new').")
      (xdoc::li
-      "A non-keyword symbol,
-       to use as the name of the theorem.")
+      "Any other symbol, to use as the name of the theorem.")
      (xdoc::li
       "Absent, to use the value from the APT defaults table,
        which is set via @(tsee set-default-input-old-to-new-name)."))
@@ -203,8 +202,7 @@
        A keyword @(':kwd') specifies the theorem name @('newkwdold'),
        in the same package as @('new').")
      (xdoc::li
-      "A non-keyword symbol,
-       to use as the name of the theorem.")
+      "Any other symbol, to use as the name of the theorem.")
      (xdoc::li
       "Absent, to use the value from the APT defaults table,
        which is set via @(tsee set-default-input-new-to-old-name)."))
