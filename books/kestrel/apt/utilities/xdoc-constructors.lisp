@@ -112,43 +112,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::desc-apt-input-wrapper-name (wrapper? &rest additional)
-  (declare (xargs :guard (member-eq wrapper? '(:optional :always))))
+(defmacro+ xdoc::desc-apt-input-wrapper-name (&rest additional)
   :short "Build a description of the @(':wrapper-name') input
           for the user documentation of an APT transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('wrapper?') parameter of this macro
-     has the value @(':optional') when the transformation includes
-     a @(':wrapper') input that determines whether
-     the wrapper is generated or not (i.e. the wrapper is optional);
-     it has the value @(':always') when the transformation
-     always generates the wrapper.
-     If the transformation never generates a wrapper,
-     this macro should not be called.")
-   (xdoc::p
-    "If the wrapper is optional, we generate some documentation text
-     asserting that the @(':wrapper-name') input may be provided
-     only if the wrapper is generated.
-     If the wrapper is always generated, no such text is generated."))
   `(xdoc::desc
     "@(':wrapper-name') &mdash; default @(':auto')"
     (xdoc::p
-     "Determines the name of the generated wrapper function:")
+     "Determines the name of the generated wrapper function.")
+    (xdoc::p
+     "It must be one of the following:")
     (xdoc::ul
      (xdoc::li
-      "@(':auto'),
-       to use the concatenation of the name of @('new') with @('-wrapper').")
+      "@(':auto'), to generate the name automatically
+       as described in @(see function-name-generation).")
      (xdoc::li
-      "Any other symbol
-       (that is not in the main Lisp package and that is not a keyword),
-       to use as the name of the function."))
-    ,@(and (eq wrapper? :optional)
-           (list
-            '(xdoc::p
-              "This input may be present
-               only if the @(':wrapper') input is @('t').")))
+      "Any other symbol, to use as the name of the function."))
+    (xdoc::p
+     "This input may be present only if the @(':wrapper') input is @('t').")
     (xdoc::p
      "In the rest of this documentation page,
       let @('wrapper') be this function.")
