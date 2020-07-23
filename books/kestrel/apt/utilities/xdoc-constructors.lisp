@@ -80,7 +80,9 @@
   `(xdoc::desc
     "@(':new-enable') &mdash; default @(':auto')"
     (xdoc::p
-     "Determines whether @('new') is enabled:")
+     "Determines whether @('new') is enabled.")
+    (xdoc::p
+     "It must be one of the following:")
     (xdoc::ul
      (xdoc::li
       "@('t'), to enable it.")
