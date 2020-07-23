@@ -158,6 +158,119 @@
            :in-theory (enable collapse-this)))
   :rule-classes :type-prescription)
 
+(defthm abs-separate-of-partial-collapse-lemma-5
+  (implies
+   (and
+    (< 0
+       (1st-complete-under-path (frame->frame frame)
+                                path))
+    (not
+     (equal
+      (frame-val->src
+       (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                  path)
+                         (frame->frame frame))))
+      (1st-complete-under-path (frame->frame frame)
+                               path)))
+    (prefixp
+     (frame-val->path
+      (cdr
+       (assoc-equal
+        (frame-val->src
+         (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                    path)
+                           (frame->frame frame))))
+        (frame->frame frame))))
+     (frame-val->path
+      (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                 path)
+                        (frame->frame frame)))))
+    (ctx-app-ok
+     (frame-val->dir
+      (cdr
+       (assoc-equal
+        (frame-val->src
+         (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                    path)
+                           (frame->frame frame))))
+        (frame->frame frame))))
+     (1st-complete-under-path (frame->frame frame)
+                              path)
+     (nthcdr
+      (len
+       (frame-val->path
+        (cdr
+         (assoc-equal
+          (frame-val->src
+           (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                      path)
+                             (frame->frame frame))))
+          (frame->frame frame)))))
+      (frame-val->path
+       (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                  path)
+                         (frame->frame frame))))))
+    (frame-p (frame->frame frame))
+    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+    (abs-separate frame))
+   (abs-separate
+    (put-assoc-equal
+     (frame-val->src
+      (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                 path)
+                        (frame->frame frame))))
+     (frame-val
+      (frame-val->path
+       (cdr
+        (assoc-equal
+         (frame-val->src
+          (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                     path)
+                            (frame->frame frame))))
+         (frame->frame frame))))
+      (ctx-app
+       (frame-val->dir
+        (cdr
+         (assoc-equal
+          (frame-val->src
+           (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                      path)
+                             (frame->frame frame))))
+          (frame->frame frame))))
+       (frame-val->dir
+        (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                   path)
+                          (frame->frame frame))))
+       (1st-complete-under-path (frame->frame frame)
+                                path)
+       (nthcdr
+        (len
+         (frame-val->path
+          (cdr
+           (assoc-equal
+            (frame-val->src
+             (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                        path)
+                               (frame->frame frame))))
+            (frame->frame frame)))))
+        (frame-val->path
+         (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                    path)
+                           (frame->frame frame))))))
+      (frame-val->src
+       (cdr
+        (assoc-equal
+         (frame-val->src
+          (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                     path)
+                            (frame->frame frame))))
+         (frame->frame frame)))))
+     (remove-assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                  path)
+                         (frame->frame frame)))))
+  :hints (("goal" :in-theory (enable collapse-this abs-complete)
+           :do-not-induct t)))
+
 (defthm
   abs-separate-of-partial-collapse-lemma-4
   (implies
@@ -229,6 +342,19 @@
                                                 path))))
   :hints (("goal" :in-theory (enable collapse-this)
            :do-not-induct t)))
+
+(defthm abs-separate-of-partial-collapse-lemma-6
+ (implies
+  (and (< 0
+          (1st-complete-under-path frame path))
+       (no-duplicatesp-equal (strip-cars frame)))
+  (and
+   (m1-file-alist-p
+    (frame-val->dir$inline
+     (cdr (assoc-equal (1st-complete-under-path frame path)
+                       frame))))))
+ :hints (("goal" :in-theory (enable collapse-this abs-complete)
+          :do-not-induct t)))
 
 (defthm
   abs-separate-of-partial-collapse
@@ -984,18 +1110,33 @@
 (defthm
   collapse-congruence-lemma-4
   (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
-                (m1-file-alist-p (abs-fs-fix abs-file-alist1))
-                (abs-fs-p abs-file-alist2))
-           (equal (abs-addrs abs-file-alist2) nil))
+                (m1-file-alist-p (abs-fs-fix abs-file-alist1)))
+           (and
+            (equal (abs-addrs
+                    (abs-fs-fix abs-file-alist2))
+                   nil)
+            (abs-complete (abs-fs-fix abs-file-alist2))))
   :hints
   (("goal"
-    :in-theory (e/d (absfat-equiv)
+    :in-theory (e/d (absfat-equiv
+                     abs-separate-of-frame->frame-of-collapse-this-lemma-10)
                     (abs-addrs-when-absfat-equiv-lemma-1))
     :use ((:instance abs-addrs-when-absfat-equiv-lemma-1
-                     (abs-file-alist1 (abs-fs-fix abs-file-alist1)))
+                     (abs-file-alist1 (abs-fs-fix abs-file-alist1))
+                     (abs-file-alist2 (abs-fs-fix abs-file-alist2)))
           (:instance abs-addrs-when-absfat-equiv-lemma-1
-                     (abs-file-alist1 abs-file-alist2)
-                     (abs-file-alist2 (abs-fs-fix abs-file-alist1)))))))
+                     (abs-file-alist1 (abs-fs-fix abs-file-alist2))
+                     (abs-file-alist2 (abs-fs-fix abs-file-alist1))))))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (and (absfat-equiv abs-file-alist1 abs-file-alist2)
+                  (m1-file-alist-p (abs-fs-fix abs-file-alist1))
+                  (abs-fs-p abs-file-alist2))
+             (and
+              (equal (abs-addrs abs-file-alist2) nil)
+              (abs-complete abs-file-alist2))))))
 
 (defthm
   collapse-congruence-lemma-5
@@ -2217,10 +2358,8 @@
   (implies
    (and (frame-p (frame->frame frame))
         (valid-seqp frame seq))
-   (equal
-    (abs-addrs (frame-val->dir (cdr (assoc-equal (car seq)
-                                                 (frame->frame frame)))))
-    nil))
+   (abs-complete
+    (frame-val->dir (cdr (assoc-equal (car seq) (frame->frame frame))))))
   :hints (("goal" :in-theory (enable valid-seqp collapse-seq)
            :do-not-induct t)))
 
@@ -3392,43 +3531,49 @@
   :hints (("goal" :in-theory (enable seq-this)))
   :rule-classes :linear)
 
-(defun
-    chain-to-complete (frame x acc seq)
-  (declare
-   (xargs
-    :measure
-    (len (set-difference-equal (strip-cars (frame->frame frame))
-                               acc))
-    :hints
-    (("goal" :in-theory (e/d (set-difference$-redefinition)
-                             (set-difference-equal
-                              remove-of-set-difference-equal))))
-    :guard (natp x)
-    :verify-guards nil))
-  (b*
-      ((x (mbe :exec x :logic (nfix x)))
-       ((when (or (atom (assoc-equal x (frame->frame frame)))
-                  (member-equal x acc)))
-        acc)
-       (nexts (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq))
-       ((when (atom nexts)) (cons x acc)))
-    (chain-to-complete frame (nth 0 nexts)
-                       (cons x acc) seq)))
+;; Theorems involving chain-to-complete waste a lot of time in other books,
+;; which they don't need to.
+(local
+ (defun
+     chain-to-complete (frame x acc seq)
+   (declare
+    (xargs
+     :measure
+     (len (set-difference-equal (strip-cars (frame->frame frame))
+                                acc))
+     :hints
+     (("goal" :in-theory (e/d (set-difference$-redefinition)
+                              (set-difference-equal
+                               remove-of-set-difference-equal))))
+     :guard (natp x)
+     :verify-guards nil))
+   (b*
+       ((x (mbe :exec x :logic (nfix x)))
+        ((when (or (atom (assoc-equal x (frame->frame frame)))
+                   (member-equal x acc)))
+         acc)
+        (nexts (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
+        ((when (atom nexts)) (cons x acc)))
+     (chain-to-complete frame (nth 0 nexts)
+                        (cons x acc) seq))))
 
-(defthm subsetp-of-chain-to-complete-1
-  (implies (subsetp-equal acc (strip-cars (frame->frame frame)))
-           (subsetp-equal (chain-to-complete frame x acc seq)
-                          (strip-cars (frame->frame frame)))))
+(local
+ (defthm subsetp-of-chain-to-complete-1
+   (implies (subsetp-equal acc (strip-cars (frame->frame frame)))
+            (subsetp-equal (chain-to-complete frame x acc seq)
+                           (strip-cars (frame->frame frame))))))
 
-(defthm no-duplicatesp-of-chain-to-complete-1
-  (implies (no-duplicatesp-equal acc)
-           (no-duplicatesp-equal (chain-to-complete frame x acc seq))))
+(local
+ (defthm no-duplicatesp-of-chain-to-complete-1
+   (implies (no-duplicatesp-equal acc)
+            (no-duplicatesp-equal (chain-to-complete frame x acc seq)))))
 
-(defthm nat-listp-of-chain-to-complete
-  (implies (nat-listp acc)
-           (nat-listp (chain-to-complete frame x acc seq))))
+(local
+ (defthm nat-listp-of-chain-to-complete
+   (implies (nat-listp acc)
+            (nat-listp (chain-to-complete frame x acc seq)))))
 
 (defthm
   chain-to-complete-correctness-lemma-1
@@ -3553,67 +3698,90 @@
   :hints (("goal" :in-theory (enable collapse-1st-index collapse)))
   :rule-classes :linear)
 
-(defthm
-  chain-to-complete-correctness-1
-  (implies (and (mv-nth 1 (collapse frame))
-                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-                (member-equal y (chain-to-complete frame x acc seq))
-                (not (nat-equiv y x))
-                (not (member-equal y acc)))
-           (< (collapse-1st-index frame y)
-              (collapse-1st-index frame x)))
-  :hints
-  (("goal" :induct (chain-to-complete frame x acc seq)
-    :in-theory (e/d (chain-to-complete-correctness-lemma-3)
-                    ((:linear chain-to-complete-correctness-lemma-6)
-                     (:rewrite member-of-frame-addrs-before))))
-   ("subgoal *1/3"
-    :use
-    ((:instance
-      (:linear chain-to-complete-correctness-lemma-6)
-      (x (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq)))
-      (frame frame))
-     (:instance
-      (:rewrite member-of-frame-addrs-before)
-      (n (collapse-1st-index frame x))
-      (x x)
-      (frame frame)
-      (y (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq)))))))
-  :rule-classes :linear)
+(local
+ (defthm
+   chain-to-complete-correctness-1
+   (implies (and (mv-nth 1 (collapse frame))
+                 (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                 (member-equal y (chain-to-complete frame x acc seq))
+                 (not (nat-equiv y x))
+                 (not (member-equal y acc)))
+            (< (collapse-1st-index frame y)
+               (collapse-1st-index frame x)))
+   :hints
+   (("goal" :induct (chain-to-complete frame x acc seq)
+     :in-theory (e/d (chain-to-complete-correctness-lemma-3)
+                     ((:linear chain-to-complete-correctness-lemma-6)
+                      (:rewrite member-of-frame-addrs-before))))
+    ("subgoal *1/3"
+     :use
+     ((:instance
+       (:linear chain-to-complete-correctness-lemma-6)
+       (x (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq)))
+       (frame frame))
+      (:instance
+       (:rewrite member-of-frame-addrs-before)
+       (n (collapse-1st-index frame x))
+       (x x)
+       (frame frame)
+       (y (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq)))))))
+   :rule-classes :linear))
 
-(defthmd
-  chain-to-complete-of-true-list-fix
-  (equal (chain-to-complete frame x (true-list-fix acc) seq)
-         (true-list-fix (chain-to-complete frame x acc seq)))
-  :hints (("goal" :in-theory (enable true-list-fix)
-           :induct (chain-to-complete frame x acc seq)
-           :expand (chain-to-complete frame x (true-list-fix acc) seq))))
+(local
+ (defthmd
+   chain-to-complete-of-true-list-fix
+   (equal (chain-to-complete frame x (true-list-fix acc) seq)
+          (true-list-fix (chain-to-complete frame x acc seq)))
+   :hints (("goal" :in-theory (enable true-list-fix)
+            :induct (chain-to-complete frame x acc seq)
+            :expand (chain-to-complete frame x (true-list-fix acc) seq)))))
 
-(defcong
-  list-equiv list-equiv
-  (chain-to-complete frame x acc seq)
-  3
-  :hints
-  (("goal" :use ((:instance chain-to-complete-of-true-list-fix
-                            (acc acc-equiv))
-                 chain-to-complete-of-true-list-fix))))
+(local
+ (defcong
+   list-equiv list-equiv
+   (chain-to-complete frame x acc seq)
+   3
+   :hints
+   (("goal" :use ((:instance chain-to-complete-of-true-list-fix
+                             (acc acc-equiv))
+                  chain-to-complete-of-true-list-fix)))))
 
-(defthm natp-of-car-of-chain-to-complete
-  (implies (and (nat-listp (true-list-fix acc))
-                (consp (chain-to-complete frame x acc seq)))
-           (natp (car (chain-to-complete frame x acc seq))))
-  :rule-classes :type-prescription)
+(local
+ (defthm natp-of-car-of-chain-to-complete
+   (implies (and (nat-listp (true-list-fix acc))
+                 (consp (chain-to-complete frame x acc seq)))
+            (natp (car (chain-to-complete frame x acc seq))))
+   :rule-classes :type-prescription))
 
-(encapsulate
-  ()
+(local
+ (encapsulate
+   ()
 
-  (local
+   (local
+    (defthmd
+      lemma
+      (implies (and (mv-nth 1 (collapse frame))
+                    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                    (consp (assoc-equal x (frame->frame frame)))
+                    (frame-p frame)
+                    (not (member-equal x acc))
+                    (not (nat-equiv (car (chain-to-complete frame x acc seq))
+                                    x))
+                    (nat-listp acc))
+               (not (member-equal (car (chain-to-complete frame x acc seq))
+                                  acc)))
+      :hints
+      (("goal" :in-theory (e/d ()
+                               ((:linear chain-to-complete-correctness-lemma-6)))
+        :induct (chain-to-complete frame x acc seq)
+        :do-not-induct t))))
+
    (defthmd
-     lemma
+     chain-ends-in-abs-complete-lemma-3
      (implies (and (mv-nth 1 (collapse frame))
                    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
                    (consp (assoc-equal x (frame->frame frame)))
@@ -3621,30 +3789,12 @@
                    (not (member-equal x acc))
                    (not (nat-equiv (car (chain-to-complete frame x acc seq))
                                    x))
-                   (nat-listp acc))
+                   (nat-listp (true-list-fix acc)))
               (not (member-equal (car (chain-to-complete frame x acc seq))
                                  acc)))
-     :hints
-     (("goal" :in-theory (e/d ()
-                              ((:linear chain-to-complete-correctness-lemma-6)))
-       :induct (chain-to-complete frame x acc seq)
-       :do-not-induct t))))
-
-  (defthmd
-    chain-ends-in-abs-complete-lemma-3
-    (implies (and (mv-nth 1 (collapse frame))
-                  (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-                  (consp (assoc-equal x (frame->frame frame)))
-                  (frame-p frame)
-                  (not (member-equal x acc))
-                  (not (nat-equiv (car (chain-to-complete frame x acc seq))
-                                  x))
-                  (nat-listp (true-list-fix acc)))
-             (not (member-equal (car (chain-to-complete frame x acc seq))
-                                acc)))
-    :hints (("goal" :do-not-induct t
-             :in-theory (disable lemma)
-             :use (:instance lemma (acc (true-list-fix acc)))))))
+     :hints (("goal" :do-not-induct t
+              :in-theory (disable lemma)
+              :use (:instance lemma (acc (true-list-fix acc))))))))
 
 (defthm
   chain-ends-in-abs-complete-lemma-1
@@ -3668,12 +3818,100 @@
                                      (x x)))
                           :top :bash))
 
-(defthm
-  chain-ends-in-abs-complete-lemma-11
-  (implies
-   (and
+(local
+ (defthm
+   chain-ends-in-abs-complete-lemma-11
+   (implies
+    (and
+     (equal
+      (car
+       (set-difference-equal
+        (frame-addrs-before
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car (set-difference-equal
+                 (frame-addrs-before frame x (collapse-1st-index frame x))
+                 seq))
+           (cons x acc)
+           seq))
+         (collapse-1st-index
+          frame
+          (car
+           (chain-to-complete
+            frame
+            (car (set-difference-equal
+                  (frame-addrs-before frame x (collapse-1st-index frame x))
+                  seq))
+            (cons x acc)
+            seq))))
+        seq))
+      x)
+     (integerp x))
     (equal
+     (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
      (car
+      (chain-to-complete
+       frame
+       (car (set-difference-equal
+             (frame-addrs-before frame x (collapse-1st-index frame x))
+             seq))
+       (cons x acc)
+       seq))))
+   :instructions
+   (:promote
+    (:dive 1 1 1 1)
+    := :top (:dive 1)
+    (:rewrite
+     chain-to-complete-correctness-lemma-3
+     ((x
+       (car
+        (chain-to-complete
+         frame
+         (car (set-difference-equal
+               (frame-addrs-before frame x (collapse-1st-index frame x))
+               seq))
+         (cons x acc)
+         seq)))
+      (n
+       (collapse-1st-index
+        frame
+        (car
+         (chain-to-complete
+          frame
+          (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
+          (cons x acc)
+          seq))))))
+    (:change-goal nil t)
+    :demote
+    (:casesplit
+     (member-equal
+      (car
+       (set-difference-equal
+        (frame-addrs-before
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car (set-difference-equal
+                 (frame-addrs-before frame x (collapse-1st-index frame x))
+                 seq))
+           (cons x acc)
+           seq))
+         (collapse-1st-index
+          frame
+          (car
+           (chain-to-complete
+            frame
+            (car (set-difference-equal
+                  (frame-addrs-before frame x (collapse-1st-index frame x))
+                  seq))
+            (cons x acc)
+            seq))))
+        seq))
       (set-difference-equal
        (frame-addrs-before
         frame
@@ -3695,26 +3933,175 @@
                  seq))
            (cons x acc)
            seq))))
-       seq))
-     x)
-    (integerp x))
-   (equal
-    (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-    (car
+       seq)))
+    :bash :contrapose
+    :x :bash
+    :top :bash)))
+
+(local
+ (defthm
+   chain-ends-in-abs-complete-lemma-12
+   (implies
+    (and
+     (<=
+      (collapse-1st-index
+       frame
+       (car
+        (chain-to-complete
+         frame
+         (car (set-difference-equal
+               (frame-addrs-before frame x (collapse-1st-index frame x))
+               seq))
+         (cons x acc)
+         seq)))
+      (collapse-1st-index frame x))
+     (integerp x)
+     (mv-nth 1 (collapse frame))
+     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+     (consp (assoc-equal x (frame->frame frame)))
+     (frame-p frame))
+    (not
+     (equal
+      (car
+       (set-difference-equal
+        (frame-addrs-before
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car (set-difference-equal
+                 (frame-addrs-before frame x (collapse-1st-index frame x))
+                 seq))
+           (cons x acc)
+           seq))
+         (collapse-1st-index
+          frame
+          (car
+           (chain-to-complete
+            frame
+            (car (set-difference-equal
+                  (frame-addrs-before frame x (collapse-1st-index frame x))
+                  seq))
+            (cons x acc)
+            seq))))
+        seq))
+      x)))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory (disable (:linear chain-to-complete-correctness-lemma-6))
+     :use
+     ((:instance
+       (:linear chain-to-complete-correctness-lemma-6)
+       (x
+        (car
+         (set-difference-equal
+          (frame-addrs-before
+           frame
+           (car
+            (chain-to-complete
+             frame
+             (car
+              (set-difference-equal
+               (frame-addrs-before frame x (collapse-1st-index frame x))
+               seq))
+             (cons x acc)
+             seq))
+           (collapse-1st-index
+            frame
+            (car
+             (chain-to-complete
+              frame
+              (car
+               (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
+              (cons x acc)
+              seq))))
+          seq)))
+       (frame frame)))))))
+
+(local
+ (defthm
+   chain-ends-in-abs-complete-lemma-13
+   (implies
+    (and
+     (member-equal
+      (car
+       (chain-to-complete
+        frame
+        (car (set-difference-equal
+              (frame-addrs-before frame x (collapse-1st-index frame x))
+              seq))
+        (cons x acc)
+        seq))
+      acc)
+     (<
+      (collapse-1st-index
+       frame
+       (car (set-difference-equal
+             (frame-addrs-before frame x (collapse-1st-index frame x))
+             seq)))
+      (collapse-1st-index frame x))
+     (mv-nth 1 (collapse frame))
+     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+     (consp (assoc-equal x (frame->frame frame)))
+     (frame-p frame)
+     (subsetp-equal acc (strip-cars (frame->frame frame))))
+    (not
+     (equal
+      (car
+       (set-difference-equal
+        (frame-addrs-before
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car (set-difference-equal
+                 (frame-addrs-before frame x (collapse-1st-index frame x))
+                 seq))
+           (cons x acc)
+           seq))
+         (collapse-1st-index
+          frame
+          (car
+           (chain-to-complete
+            frame
+            (car (set-difference-equal
+                  (frame-addrs-before frame x (collapse-1st-index frame x))
+                  seq))
+            (cons x acc)
+            seq))))
+        seq))
+      x)))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory (e/d (member-equal))
+     :use
+     (:instance
+      (:rewrite chain-ends-in-abs-complete-lemma-3)
+      (seq seq)
+      (acc (cons x acc))
+      (x (car (set-difference-equal
+               (frame-addrs-before frame x (collapse-1st-index frame x))
+               seq)))
+      (frame frame))
+     :expand
      (chain-to-complete
       frame
       (car (set-difference-equal
             (frame-addrs-before frame x (collapse-1st-index frame x))
             seq))
       (cons x acc)
-      seq))))
-  :instructions
-  (:promote
-   (:dive 1 1 1 1)
-   := :top (:dive 1)
-   (:rewrite
-    chain-to-complete-correctness-lemma-3
-    ((x
+      seq)))))
+
+(local
+ (defthm
+   chain-ends-in-abs-complete-lemma-14
+   (implies
+    (and
+     (member-equal
       (car
        (chain-to-complete
         frame
@@ -3722,301 +4109,124 @@
               (frame-addrs-before frame x (collapse-1st-index frame x))
               seq))
         (cons x acc)
-        seq)))
-     (n
-      (collapse-1st-index
-       frame
-       (car
-        (chain-to-complete
-         frame
-         (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq))
-         (cons x acc)
-         seq))))))
-   (:change-goal nil t)
-   :demote
-   (:casesplit
-    (member-equal
-     (car
-      (set-difference-equal
-       (frame-addrs-before
-        frame
-        (car
-         (chain-to-complete
-          frame
-          (car (set-difference-equal
-                (frame-addrs-before frame x (collapse-1st-index frame x))
-                seq))
-          (cons x acc)
-          seq))
-        (collapse-1st-index
-         frame
-         (car
-          (chain-to-complete
-           frame
-           (car (set-difference-equal
-                 (frame-addrs-before frame x (collapse-1st-index frame x))
-                 seq))
-           (cons x acc)
-           seq))))
-       seq))
-     (set-difference-equal
-      (frame-addrs-before
-       frame
-       (car
-        (chain-to-complete
-         frame
-         (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq))
-         (cons x acc)
-         seq))
-       (collapse-1st-index
-        frame
-        (car
-         (chain-to-complete
-          frame
-          (car (set-difference-equal
-                (frame-addrs-before frame x (collapse-1st-index frame x))
-                seq))
-          (cons x acc)
-          seq))))
-      seq)))
-   :bash :contrapose
-   :x :bash
-   :top :bash))
-
-(defthm
-  chain-ends-in-abs-complete-lemma-12
-  (implies
-   (and
-    (<=
-     (collapse-1st-index
-      frame
-      (car
-       (chain-to-complete
-        frame
-        (car (set-difference-equal
-              (frame-addrs-before frame x (collapse-1st-index frame x))
-              seq))
-        (cons x acc)
-        seq)))
-     (collapse-1st-index frame x))
-    (integerp x)
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame)))
-    (frame-p frame))
-   (not
-    (equal
-     (car
-      (set-difference-equal
-       (frame-addrs-before
-        frame
-        (car
-         (chain-to-complete
-          frame
-          (car (set-difference-equal
-                (frame-addrs-before frame x (collapse-1st-index frame x))
-                seq))
-          (cons x acc)
-          seq))
-        (collapse-1st-index
-         frame
-         (car
-          (chain-to-complete
-           frame
-           (car (set-difference-equal
-                 (frame-addrs-before frame x (collapse-1st-index frame x))
-                 seq))
-           (cons x acc)
-           seq))))
-       seq))
-     x)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (disable (:linear chain-to-complete-correctness-lemma-6))
-    :use
-    ((:instance
-      (:linear chain-to-complete-correctness-lemma-6)
-      (x
-       (car
-        (set-difference-equal
-         (frame-addrs-before
-          frame
-          (car
-           (chain-to-complete
-            frame
-            (car
-             (set-difference-equal
-              (frame-addrs-before frame x (collapse-1st-index frame x))
-              seq))
-            (cons x acc)
-            seq))
-          (collapse-1st-index
-           frame
-           (car
-            (chain-to-complete
-             frame
-             (car
-              (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq))
-             (cons x acc)
-             seq))))
-         seq)))
-      (frame frame))))))
-
-(defthm
-  chain-ends-in-abs-complete-lemma-13
-  (implies
-   (and
-    (member-equal
-     (car
-      (chain-to-complete
-       frame
-       (car (set-difference-equal
-             (frame-addrs-before frame x (collapse-1st-index frame x))
-             seq))
-       (cons x acc)
-       seq))
-     acc)
-    (<
-     (collapse-1st-index
-      frame
-      (car (set-difference-equal
-            (frame-addrs-before frame x (collapse-1st-index frame x))
-            seq)))
-     (collapse-1st-index frame x))
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame)))
-    (frame-p frame)
-    (subsetp-equal acc (strip-cars (frame->frame frame))))
-   (not
-    (equal
-     (car
-      (set-difference-equal
-       (frame-addrs-before
-        frame
-        (car
-         (chain-to-complete
-          frame
-          (car (set-difference-equal
-                (frame-addrs-before frame x (collapse-1st-index frame x))
-                seq))
-          (cons x acc)
-          seq))
-        (collapse-1st-index
-         frame
-         (car
-          (chain-to-complete
-           frame
-           (car (set-difference-equal
-                 (frame-addrs-before frame x (collapse-1st-index frame x))
-                 seq))
-           (cons x acc)
-           seq))))
-       seq))
-     x)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (member-equal))
-    :use
-    (:instance
-     (:rewrite chain-ends-in-abs-complete-lemma-3)
-     (seq seq)
-     (acc (cons x acc))
-     (x (car (set-difference-equal
-              (frame-addrs-before frame x (collapse-1st-index frame x))
-              seq)))
-     (frame frame))
-    :expand
-    (chain-to-complete
-     frame
-     (car (set-difference-equal
-           (frame-addrs-before frame x (collapse-1st-index frame x))
-           seq))
-     (cons x acc)
-     seq))))
-
-(defthm
-  chain-ends-in-abs-complete-lemma-14
-  (implies
-   (and
-    (member-equal
-     (car
-      (chain-to-complete
-       frame
-       (car (set-difference-equal
-             (frame-addrs-before frame x (collapse-1st-index frame x))
-             seq))
-       (cons x acc)
-       seq))
-     acc)
-    (<
-     (collapse-1st-index
-      frame
-      (car (set-difference-equal
-            (frame-addrs-before frame x (collapse-1st-index frame x))
-            seq)))
-     (collapse-1st-index frame x))
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame)))
-    (frame-p frame)
-    (subsetp-equal acc (strip-cars (frame->frame frame))))
-   (not
-    (equal
-     (car
-      (set-difference-equal
-       (frame-addrs-before
-        frame
-        (car
-         (chain-to-complete
-          frame
-          (car (set-difference-equal
-                (frame-addrs-before frame x (collapse-1st-index frame x))
-                seq))
-          (cons x acc)
-          seq))
-        (collapse-1st-index
-         frame
-         (car
-          (chain-to-complete
-           frame
-           (car (set-difference-equal
-                 (frame-addrs-before frame x (collapse-1st-index frame x))
-                 seq))
-           (cons x acc)
-           seq))))
-       seq))
-     x)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (member-equal))
-    :use
-    (:instance
-     (:rewrite chain-ends-in-abs-complete-lemma-3)
-     (seq seq)
-     (acc (cons x acc))
-     (x (car (set-difference-equal
-              (frame-addrs-before frame x (collapse-1st-index frame x))
-              seq)))
-     (frame frame)))))
-
-(defthm
-  chain-ends-in-abs-complete-lemma-15
-  (implies
-   (and
-    (not
+        seq))
+      acc)
      (<
       (collapse-1st-index
        frame
+       (car (set-difference-equal
+             (frame-addrs-before frame x (collapse-1st-index frame x))
+             seq)))
+      (collapse-1st-index frame x))
+     (mv-nth 1 (collapse frame))
+     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+     (consp (assoc-equal x (frame->frame frame)))
+     (frame-p frame)
+     (subsetp-equal acc (strip-cars (frame->frame frame))))
+    (not
+     (equal
+      (car
+       (set-difference-equal
+        (frame-addrs-before
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car (set-difference-equal
+                 (frame-addrs-before frame x (collapse-1st-index frame x))
+                 seq))
+           (cons x acc)
+           seq))
+         (collapse-1st-index
+          frame
+          (car
+           (chain-to-complete
+            frame
+            (car (set-difference-equal
+                  (frame-addrs-before frame x (collapse-1st-index frame x))
+                  seq))
+            (cons x acc)
+            seq))))
+        seq))
+      x)))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory (e/d (member-equal))
+     :use
+     (:instance
+      (:rewrite chain-ends-in-abs-complete-lemma-3)
+      (seq seq)
+      (acc (cons x acc))
+      (x (car (set-difference-equal
+               (frame-addrs-before frame x (collapse-1st-index frame x))
+               seq)))
+      (frame frame))))))
+
+(local
+ (defthm
+   chain-ends-in-abs-complete-lemma-15
+   (implies
+    (and
+     (not
+      (<
+       (collapse-1st-index
+        frame
+        (car
+         (chain-to-complete
+          frame
+          (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
+          (cons x acc)
+          seq)))
+       (collapse-1st-index frame x)))
+     (<
+      (collapse-1st-index
+       frame
+       (car (set-difference-equal
+             (frame-addrs-before frame x (collapse-1st-index frame x))
+             seq)))
+      (collapse-1st-index frame x))
+     (mv-nth 1 (collapse frame))
+     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+     (consp (assoc-equal x (frame->frame frame)))
+     (frame-p frame)
+     (subsetp-equal acc (strip-cars (frame->frame frame))))
+    (not
+     (equal
+      (car
+       (set-difference-equal
+        (frame-addrs-before
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car (set-difference-equal
+                 (frame-addrs-before frame x (collapse-1st-index frame x))
+                 seq))
+           (cons x acc)
+           seq))
+         (collapse-1st-index
+          frame
+          (car
+           (chain-to-complete
+            frame
+            (car (set-difference-equal
+                  (frame-addrs-before frame x (collapse-1st-index frame x))
+                  seq))
+            (cons x acc)
+            seq))))
+        seq))
+      x)))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory (disable (:linear chain-to-complete-correctness-1))
+     :use
+     (:instance
+      (:linear chain-to-complete-correctness-1)
+      (y
        (car
         (chain-to-complete
          frame
@@ -4025,131 +4235,66 @@
                seq))
          (cons x acc)
          seq)))
-      (collapse-1st-index frame x)))
-    (<
-     (collapse-1st-index
-      frame
-      (car (set-difference-equal
-            (frame-addrs-before frame x (collapse-1st-index frame x))
-            seq)))
-     (collapse-1st-index frame x))
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame)))
-    (frame-p frame)
-    (subsetp-equal acc (strip-cars (frame->frame frame))))
-   (not
-    (equal
-     (car
-      (set-difference-equal
-       (frame-addrs-before
-        frame
-        (car
-         (chain-to-complete
-          frame
-          (car (set-difference-equal
-                (frame-addrs-before frame x (collapse-1st-index frame x))
-                seq))
-          (cons x acc)
-          seq))
-        (collapse-1st-index
-         frame
-         (car
-          (chain-to-complete
-           frame
-           (car (set-difference-equal
-                 (frame-addrs-before frame x (collapse-1st-index frame x))
-                 seq))
-           (cons x acc)
-           seq))))
-       seq))
-     x)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (disable (:linear chain-to-complete-correctness-1))
-    :use
-    (:instance
-     (:linear chain-to-complete-correctness-1)
-     (y
-      (car
-       (chain-to-complete
-        frame
-        (car (set-difference-equal
-              (frame-addrs-before frame x (collapse-1st-index frame x))
-              seq))
-        (cons x acc)
-        seq)))
-     (frame frame)
-     (x (car (set-difference-equal
-              (frame-addrs-before frame x (collapse-1st-index frame x))
-              seq)))
-     (acc (cons x acc))))))
+      (frame frame)
+      (x (car (set-difference-equal
+               (frame-addrs-before frame x (collapse-1st-index frame x))
+               seq)))
+      (acc (cons x acc)))))))
 
-(defthm
-  chain-ends-in-abs-complete-lemma-16
-  (implies
-   (and
-    (<
-     (collapse-1st-index
-      frame
-      (car (set-difference-equal
-            (frame-addrs-before frame x (collapse-1st-index frame x))
-            seq)))
-     (collapse-1st-index frame x))
-    (integerp x)
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame)))
-    (frame-p frame)
-    (subsetp-equal acc (strip-cars (frame->frame frame))))
-   (not
-    (equal
-     (car
-      (set-difference-equal
-       (frame-addrs-before
-        frame
-        (car
-         (chain-to-complete
-          frame
-          (car (set-difference-equal
-                (frame-addrs-before frame x (collapse-1st-index frame x))
-                seq))
-          (cons x acc)
-          seq))
-        (collapse-1st-index
-         frame
-         (car
-          (chain-to-complete
-           frame
-           (car (set-difference-equal
-                 (frame-addrs-before frame x (collapse-1st-index frame x))
-                 seq))
-           (cons x acc)
-           seq))))
-       seq))
-     x)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :cases
-    ((>=
+(local
+ (defthm
+   chain-ends-in-abs-complete-lemma-16
+   (implies
+    (and
+     (<
       (collapse-1st-index
        frame
-       (car
-        (set-difference-equal
-         (frame-addrs-before
+       (car (set-difference-equal
+             (frame-addrs-before frame x (collapse-1st-index frame x))
+             seq)))
+      (collapse-1st-index frame x))
+     (integerp x)
+     (mv-nth 1 (collapse frame))
+     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+     (consp (assoc-equal x (frame->frame frame)))
+     (frame-p frame)
+     (subsetp-equal acc (strip-cars (frame->frame frame))))
+    (not
+     (equal
+      (car
+       (set-difference-equal
+        (frame-addrs-before
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car (set-difference-equal
+                 (frame-addrs-before frame x (collapse-1st-index frame x))
+                 seq))
+           (cons x acc)
+           seq))
+         (collapse-1st-index
           frame
           (car
            (chain-to-complete
             frame
-            (car
-             (set-difference-equal
-              (frame-addrs-before frame x (collapse-1st-index frame x))
-              seq))
+            (car (set-difference-equal
+                  (frame-addrs-before frame x (collapse-1st-index frame x))
+                  seq))
             (cons x acc)
-            seq))
-          (collapse-1st-index
+            seq))))
+        seq))
+      x)))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :cases
+     ((>=
+       (collapse-1st-index
+        frame
+        (car
+         (set-difference-equal
+          (frame-addrs-before
            frame
            (car
             (chain-to-complete
@@ -4159,76 +4304,88 @@
                (frame-addrs-before frame x (collapse-1st-index frame x))
                seq))
              (cons x acc)
-             seq))))
-         seq)))
-      (collapse-1st-index
-       frame
-       (car
-        (chain-to-complete
-         frame
-         (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq))
-         (cons x acc)
-         seq))))
-     (>=
-      (collapse-1st-index
-       frame
-       (car
-        (chain-to-complete
-         frame
-         (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq))
-         (cons x acc)
-         seq)))
-      (collapse-1st-index frame x))))))
-
-(defthm
-  chain-ends-in-abs-complete-lemma-17
-  (implies
-   (member-equal
-    (car (set-difference-equal
-          (frame-addrs-before frame x (collapse-1st-index frame x))
-          seq))
-    acc)
-   (member-equal
-    (car
-     (set-difference-equal
-      (frame-addrs-before
-       frame
-       (car
-        (chain-to-complete
-         frame
-         (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq))
-         (cons x acc)
-         seq))
+             seq))
+           (collapse-1st-index
+            frame
+            (car
+             (chain-to-complete
+              frame
+              (car
+               (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
+              (cons x acc)
+              seq))))
+          seq)))
        (collapse-1st-index
         frame
         (car
          (chain-to-complete
           frame
-          (car
-           (set-difference-equal
-            (frame-addrs-before frame x (collapse-1st-index frame x))
-            seq))
+          (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
           (cons x acc)
           seq))))
-      seq))
-    acc))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :expand
-    (chain-to-complete
-     frame
+      (>=
+       (collapse-1st-index
+        frame
+        (car
+         (chain-to-complete
+          frame
+          (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
+          (cons x acc)
+          seq)))
+       (collapse-1st-index frame x)))))))
+
+(local
+ (defthm
+   chain-ends-in-abs-complete-lemma-17
+   (implies
+    (member-equal
      (car (set-difference-equal
            (frame-addrs-before frame x (collapse-1st-index frame x))
            seq))
-     (cons x acc)
-     seq))))
+     acc)
+    (member-equal
+     (car
+      (set-difference-equal
+       (frame-addrs-before
+        frame
+        (car
+         (chain-to-complete
+          frame
+          (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq))
+          (cons x acc)
+          seq))
+        (collapse-1st-index
+         frame
+         (car
+          (chain-to-complete
+           frame
+           (car
+            (set-difference-equal
+             (frame-addrs-before frame x (collapse-1st-index frame x))
+             seq))
+           (cons x acc)
+           seq))))
+       seq))
+     acc))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :expand
+     (chain-to-complete
+      frame
+      (car (set-difference-equal
+            (frame-addrs-before frame x (collapse-1st-index frame x))
+            seq))
+      (cons x acc)
+      seq)))))
 
 (defthm
   chain-ends-in-abs-complete-lemma-4
@@ -4416,7 +4573,7 @@
     :use
     (chain-ends-in-abs-complete-lemma-8
      (:instance
-      (:rewrite subsetp-when-atom-set-difference$)
+      (:rewrite not-subsetp-when-atom-set-difference$)
       (l2 (frame-addrs-before frame x (collapse-1st-index frame x)))
       (l1 (abs-addrs
            (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
@@ -4428,71 +4585,73 @@
       (l (frame-addrs-before frame
                              x (collapse-1st-index frame x))))))))
 
-(defthm
-  chain-ends-in-abs-complete
-  (implies
-   (and
-    (mv-nth 1 (collapse frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (consp (assoc-equal x (frame->frame frame)))
-    (frame-p frame)
-    (abs-separate frame)
-    (not (member-equal x acc))
-    (subsetp-equal acc (strip-cars (frame->frame frame)))
+(local
+ (defthm
+   chain-ends-in-abs-complete
+   (implies
+    (and
+     (mv-nth 1 (collapse frame))
+     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+     (consp (assoc-equal x (frame->frame frame)))
+     (frame-p frame)
+     (abs-separate frame)
+     (not (member-equal x acc))
+     (subsetp-equal acc (strip-cars (frame->frame frame)))
+     (not
+      (member-equal
+       (car
+        (set-difference-equal
+         (frame-addrs-before
+          frame
+          (car (chain-to-complete frame x acc seq))
+          (collapse-1st-index frame
+                              (car (chain-to-complete frame x acc seq))))
+         seq))
+       acc)))
     (not
-     (member-equal
-      (car
-       (set-difference-equal
-        (frame-addrs-before
-         frame
-         (car (chain-to-complete frame x acc seq))
-         (collapse-1st-index frame
-                             (car (chain-to-complete frame x acc seq))))
-        seq))
-      acc)))
-   (not
-    (consp
-     (set-difference-equal
-      (abs-addrs
-       (frame-val->dir
-        (cdr (assoc-equal (car (chain-to-complete frame x acc seq))
-                          (frame->frame frame)))))
-      seq))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (chain-ends-in-abs-complete-lemma-9 chain-to-complete-correctness-lemma-3)
-     ((:linear chain-to-complete-correctness-lemma-6)))
-    :do-not-induct t
-    :induct (chain-to-complete frame x acc seq))
-   ("subgoal *1/3"
-    :use
-    ((:instance
-      (:linear chain-to-complete-correctness-lemma-6)
-      (x (car (set-difference-equal
-               (frame-addrs-before frame x (collapse-1st-index frame x))
-               seq)))
-      (frame frame))))))
+     (consp
+      (set-difference-equal
+       (abs-addrs
+        (frame-val->dir
+         (cdr (assoc-equal (car (chain-to-complete frame x acc seq))
+                           (frame->frame frame)))))
+       seq))))
+   :hints
+   (("goal"
+     :in-theory
+     (e/d
+      (chain-ends-in-abs-complete-lemma-9 chain-to-complete-correctness-lemma-3)
+      ((:linear chain-to-complete-correctness-lemma-6)))
+     :do-not-induct t
+     :induct (chain-to-complete frame x acc seq))
+    ("subgoal *1/3"
+     :use
+     ((:instance
+       (:linear chain-to-complete-correctness-lemma-6)
+       (x (car (set-difference-equal
+                (frame-addrs-before frame x (collapse-1st-index frame x))
+                seq)))
+       (frame frame)))))))
 
-(defthm
-  chain-to-complete-correctness-2
-  (implies
-   (and (mv-nth 1 (collapse frame))
-        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-        (consp (assoc-equal x (frame->frame frame)))
-        (frame-p frame)
-        (abs-separate frame))
-   (not
-    (consp
-     (set-difference-equal
-      (abs-addrs
-       (frame-val->dir
-        (cdr (assoc-equal (car (chain-to-complete frame x nil seq))
-                          (frame->frame frame)))))
-      seq))))
-  :hints (("goal" :in-theory (disable chain-ends-in-abs-complete)
-           :use (:instance chain-ends-in-abs-complete (acc nil)))))
+(local
+ (defthm
+   chain-to-complete-correctness-2
+   (implies
+    (and (mv-nth 1 (collapse frame))
+         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+         (consp (assoc-equal x (frame->frame frame)))
+         (frame-p frame)
+         (abs-separate frame))
+    (not
+     (consp
+      (set-difference-equal
+       (abs-addrs
+        (frame-val->dir
+         (cdr (assoc-equal (car (chain-to-complete frame x nil seq))
+                           (frame->frame frame)))))
+       seq))))
+   :hints (("goal" :in-theory (disable chain-ends-in-abs-complete)
+            :use (:instance chain-ends-in-abs-complete (acc nil))))))
 
 (encapsulate
   ()
@@ -4640,27 +4799,28 @@
                 (dir (abs-fs-fix root2))))))
   :rule-classes :congruence)
 
-(defthm
-  collapse-seq-congruence-lemma-5
-  (implies
-   (and
-    (not
-     (consp
-      (abs-addrs (frame-val->dir (cdr (assoc-equal (car seq)
-                                                   (frame->frame frame)))))))
-    (absfat-equiv (frame-val->dir (cdr (assoc-equal (car seq)
-                                                    (frame->frame frame))))
-                  dir))
-   (not (consp (abs-addrs (abs-fs-fix dir)))))
-  :instructions
-  (:promote
-   (:=
-    (abs-addrs (abs-fs-fix dir))
-    (abs-addrs
-     (abs-fs-fix (frame-val->dir (cdr (assoc-equal (car seq)
-                                                   (frame->frame frame))))))
-    :equiv set-equiv)
-   :bash))
+(local
+ (defthm
+   collapse-seq-congruence-lemma-5
+   (implies
+    (and
+     (not
+      (consp
+       (abs-addrs (frame-val->dir (cdr (assoc-equal (car seq)
+                                                    (frame->frame frame)))))))
+     (absfat-equiv (frame-val->dir (cdr (assoc-equal (car seq)
+                                                     (frame->frame frame))))
+                   dir))
+    (not (consp (abs-addrs (abs-fs-fix dir)))))
+   :instructions
+   (:promote
+    (:=
+     (abs-addrs (abs-fs-fix dir))
+     (abs-addrs
+      (abs-fs-fix (frame-val->dir (cdr (assoc-equal (car seq)
+                                                    (frame->frame frame))))))
+     :equiv set-equiv)
+    :bash)))
 
 (encapsulate
   ()
@@ -5357,119 +5517,6 @@
    (not (equal (1st-complete frame) x)))
   :hints (("goal" :in-theory (enable 1st-complete))))
 
-;; This theorem is used in an :expand hint later...
-(defthmd
-  partial-collapse-correctness-lemma-22
-  (implies
-   (and
-    (not (equal x (1st-complete (frame->frame frame))))
-    (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
-    (< 0 (1st-complete (frame->frame frame)))
-    (frame-p (frame->frame frame))
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (dist-names (frame->root frame)
-                nil (frame->frame frame))
-    (abs-separate (frame->frame frame))
-    (abs-fs-p
-     (ctx-app
-      (ctx-app
-       (frame->root frame)
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-       x
-       (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-      (frame-val->dir (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                        (frame->frame frame))))
-      (1st-complete (frame->frame frame))
-      (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                         (frame->frame frame)))))))
-   (equal
-    (mv-nth
-     1
-     (collapse
-      (frame-with-root
-       (ctx-app
-        (ctx-app
-         (frame->root frame)
-         (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-         x
-         (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-        (frame-val->dir (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                          (frame->frame frame))))
-        (1st-complete (frame->frame frame))
-        (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                           (frame->frame frame)))))
-       (remove-assoc-equal
-        x
-        (remove-assoc-equal (1st-complete (frame->frame frame))
-                            (frame->frame frame))))))
-    (mv-nth
-     1
-     (collapse
-      (frame-with-root
-       (ctx-app
-        (ctx-app
-         (frame->root frame)
-         (frame-val->dir (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                           (frame->frame frame))))
-         (1st-complete (frame->frame frame))
-         (frame-val->path
-          (cdr (assoc-equal (1st-complete (frame->frame frame))
-                            (frame->frame frame)))))
-        (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-        x
-        (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-       (remove-assoc-equal
-        x
-        (remove-assoc-equal (1st-complete (frame->frame frame))
-                            (frame->frame frame))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :use
-    ((:instance
-      (:rewrite collapse-congruence-lemma-3)
-      (frame2
-       (frame-with-root
-        (ctx-app
-         (ctx-app
-          (frame->root frame)
-          (frame-val->dir
-           (cdr (assoc-equal (1st-complete (frame->frame frame))
-                             (frame->frame frame))))
-          (1st-complete (frame->frame frame))
-          (frame-val->path
-           (cdr (assoc-equal (1st-complete (frame->frame frame))
-                             (frame->frame frame)))))
-         (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-         x
-         (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-        (remove-assoc-equal
-         x
-         (remove-assoc-equal (1st-complete (frame->frame frame))
-                             (frame->frame frame)))))
-      (frame1
-       (frame-with-root
-        (ctx-app
-         (ctx-app
-          (frame->root frame)
-          (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
-          x
-          (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
-         (frame-val->dir (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                           (frame->frame frame))))
-         (1st-complete (frame->frame frame))
-         (frame-val->path
-          (cdr (assoc-equal (1st-complete (frame->frame frame))
-                            (frame->frame frame)))))
-        (remove-assoc-equal
-         x
-         (remove-assoc-equal (1st-complete (frame->frame frame))
-                             (frame->frame frame))))))))))
-
 ;; The one hypothesis needs to cause a case-split some of the time - but does
 ;; it, all of the time?
 (defthmd
@@ -5599,8 +5646,8 @@
         (frame-p frame)
         (zp (1st-complete frame))
         (consp (assoc-equal x frame)))
-   (consp
-    (abs-addrs (frame-val->dir (cdr (assoc-equal x frame))))))
+   (not
+    (abs-complete (frame-val->dir (cdr (assoc-equal x frame))))))
   :hints (("goal" :in-theory (enable 1st-complete))))
 
 ;; This is important.
@@ -5670,10 +5717,8 @@
    (and
     (syntaxp (variablep x))
     (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (< 0 (1st-complete (frame->frame frame)))
     (frame-p (frame->frame frame))
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
@@ -5735,7 +5780,46 @@
                      (:rewrite strip-cars-of-put-assoc)
                      (:rewrite partial-collapse-correctness-lemma-2)
                      intersect-with-subset))
-    :use partial-collapse-correctness-lemma-22)))
+    :use
+    ((:instance
+      (:rewrite collapse-congruence-lemma-3)
+      (frame2
+       (frame-with-root
+        (ctx-app
+         (ctx-app
+          (frame->root frame)
+          (frame-val->dir
+           (cdr (assoc-equal (1st-complete (frame->frame frame))
+                             (frame->frame frame))))
+          (1st-complete (frame->frame frame))
+          (frame-val->path
+           (cdr (assoc-equal (1st-complete (frame->frame frame))
+                             (frame->frame frame)))))
+         (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
+         x
+         (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
+        (remove-assoc-equal
+         x
+         (remove-assoc-equal (1st-complete (frame->frame frame))
+                             (frame->frame frame)))))
+      (frame1
+       (frame-with-root
+        (ctx-app
+         (ctx-app
+          (frame->root frame)
+          (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))
+          x
+          (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))
+         (frame-val->dir (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                           (frame->frame frame))))
+         (1st-complete (frame->frame frame))
+         (frame-val->path
+          (cdr (assoc-equal (1st-complete (frame->frame frame))
+                            (frame->frame frame)))))
+        (remove-assoc-equal
+         x
+         (remove-assoc-equal (1st-complete (frame->frame frame))
+                             (frame->frame frame))))))))))
 
 (defthm
   partial-collapse-correctness-lemma-29
@@ -5759,10 +5843,8 @@
              (collapse (collapse-this frame
                                       (1st-complete (frame->frame frame))))))
     (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (< 0 (1st-complete (frame->frame frame)))
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
     (dist-names (frame->root frame)
@@ -5913,7 +5995,9 @@
                            (frame->frame frame))))
         (frame->frame frame)))))
     (1st-complete (remove-assoc-equal (1st-complete (frame->frame frame))
-                                      (frame->frame frame))))))
+                                      (frame->frame frame)))))
+  :hints
+  (("goal" :in-theory (enable abs-complete))))
 
 (defthmd
   partial-collapse-correctness-lemma-36
@@ -5922,10 +6006,8 @@
     (mv-nth 1 (collapse (collapse-this frame x)))
     (consp (frame->frame frame))
     (< 0 x)
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (frame-p (frame->frame frame)))
    (> (1st-complete (frame->frame frame))
       0))
@@ -6499,8 +6581,8 @@
     (valid-seqp frame seq)
     (member-equal x seq)
     (not (zp (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))))
-   (consp
-    (abs-addrs
+   (not
+    (abs-complete
      (frame-val->dir
       (cdr (assoc-equal
             (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
@@ -6520,10 +6602,8 @@
               0)
        (consp (assoc-equal (car seq)
                            (frame->frame frame)))
-       (not
-        (consp
-         (abs-addrs (frame-val->dir (cdr (assoc-equal (car seq)
-                                                      (frame->frame frame)))))))
+       (abs-complete (frame-val->dir (cdr (assoc-equal (car seq)
+                                                       (frame->frame frame)))))
        (ctx-app-ok (frame->root frame)
                    (car seq)
                    (frame-val->path (cdr (assoc-equal (car seq)
@@ -6547,10 +6627,8 @@
      (implies
       (and
        (consp seq)
-       (not
-        (consp
-         (abs-addrs (frame-val->dir (cdr (assoc-equal (car seq)
-                                                      (frame->frame frame)))))))
+       (abs-complete (frame-val->dir (cdr (assoc-equal (car seq)
+                                                       (frame->frame frame)))))
        (prefixp
         (frame-val->path
          (cdr
@@ -6631,26 +6709,27 @@
     :induct (collapse frame))))
 
 ;; Ton of free variables here - at any rate, frame is free.
-(defthm
-  partial-collapse-correctness-lemma-106
-  (implies
-   (and
-    (valid-seqp frame seq)
-    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-    (member-equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-                  seq)
-    (member-equal
-     x
-     (abs-addrs
-      (frame-val->dir
-       (cdr (assoc-equal
-             (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-             (frame->frame frame))))))
-    (abs-separate (frame->frame frame))
-    (frame-p (frame->frame frame)))
-   (member-equal x seq))
-  :hints (("goal" :induct (collapse-seq frame seq)
-           :in-theory (enable valid-seqp collapse-seq))))
+(local
+ (defthm
+   partial-collapse-correctness-lemma-106
+   (implies
+    (and
+     (valid-seqp frame seq)
+     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+     (member-equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+                   seq)
+     (member-equal
+      x
+      (abs-addrs
+       (frame-val->dir
+        (cdr (assoc-equal
+              (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+              (frame->frame frame))))))
+     (abs-separate (frame->frame frame))
+     (frame-p (frame->frame frame)))
+    (member-equal x seq))
+   :hints (("goal" :induct (collapse-seq frame seq)
+            :in-theory (enable valid-seqp collapse-seq)))))
 
 (defthm
   partial-collapse-correctness-lemma-107
@@ -7961,14 +8040,21 @@
   (implies
    (and (no-duplicatesp-equal (strip-cars (frame->frame frame)))
         (< (nfix n) (len (seq-this frame))))
-   (equal
-    (abs-addrs
+   (and
+    (equal
+     (abs-addrs
+      (frame-val->dir
+       (cdr
+        (assoc-equal
+         (nth n (seq-this frame))
+         (frame->frame (collapse-seq frame (take n (seq-this frame))))))))
+     nil)
+    (abs-complete
      (frame-val->dir
       (cdr
        (assoc-equal
         (nth n (seq-this frame))
-        (frame->frame (collapse-seq frame (take n (seq-this frame))))))))
-    nil))
+        (frame->frame (collapse-seq frame (take n (seq-this frame))))))))))
   :hints
   (("goal"
     :do-not-induct t
@@ -8329,7 +8415,7 @@
                           (seq-this (collapse-this frame x))))))))
   :hints
   (("goal" :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                       subsetp-when-atom-set-difference$
+                                       not-subsetp-when-atom-set-difference$
                                        partial-collapse-correctness-lemma-152)
                            ((:rewrite partial-collapse-correctness-lemma-66)
                             collapse-seq-of-collapse-seq
@@ -8360,10 +8446,8 @@
     (frame-p (frame->frame frame))
     (mv-nth 1 (collapse frame))
     (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
     (<= n
         (len (seq-this (collapse-this frame x))))
@@ -8401,7 +8485,7 @@
   :hints
   (("goal"
     :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                subsetp-when-atom-set-difference$
+                                not-subsetp-when-atom-set-difference$
                                 partial-collapse-correctness-lemma-152)
                     ((:rewrite partial-collapse-correctness-lemma-65)
                      collapse-seq-of-collapse-seq
@@ -8465,10 +8549,8 @@
                 nil (frame->frame frame))
     (mv-nth 1 (collapse frame))
     (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
     (<= n
         (len (seq-this (collapse-this frame x)))))
@@ -8485,7 +8567,7 @@
   :hints
   (("goal"
     :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                subsetp-when-atom-set-difference$
+                                not-subsetp-when-atom-set-difference$
                                 partial-collapse-correctness-lemma-152)
                     (collapse-seq-of-collapse-seq
                      take set-difference-equal
@@ -8579,10 +8661,8 @@
                                         (seq-this (collapse-this frame x))))))
      (+ (- n) (len (frame->frame frame))))
     (mv-nth 1 (collapse frame))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
     (< 0
        (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
@@ -8676,10 +8756,8 @@
                 nil (frame->frame frame))
     (mv-nth 1 (collapse frame))
     (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
     (<= n
         (len (seq-this (collapse-this frame x)))))
@@ -8696,7 +8774,7 @@
   :hints
   (("goal"
     :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                subsetp-when-atom-set-difference$
+                                not-subsetp-when-atom-set-difference$
                                 partial-collapse-correctness-lemma-152)
                     (collapse-seq-of-collapse-seq
                      take set-difference-equal
@@ -9094,10 +9172,8 @@
            (frame-val->src (cdr (assoc-equal (car seq)
                                              (frame->frame frame)))))
     (not (equal x (car seq)))
-    (not
-     (consp
-      (abs-addrs (frame-val->dir (cdr (assoc-equal (car seq)
-                                                   (frame->frame frame)))))))
+    (abs-complete (frame-val->dir (cdr (assoc-equal (car seq)
+                                                    (frame->frame frame)))))
     (not (equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
                 (car seq)))
     (consp
@@ -9126,10 +9202,8 @@
                                          (frame->frame frame))))))
     (consp (assoc-equal x (frame->frame frame)))
     (abs-separate frame)
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
     (frame-p (frame->frame frame))
     (prefixp
      (frame-val->path
@@ -9780,52 +9854,6 @@
     :use (:instance partial-collapse-correctness-lemma-89
                     (seq (list x))))))
 
-;; This theorem needs to be set aside because there's no obvious path towards
-;; proving
-;; (valid-seqp (collapse-this frame x) (seq-this (collapse-this frame x)))
-;; which is one of the subgoals.
-
-;; (verify
-;;  (implies (and (frame-p (frame->frame frame))
-;;                (abs-separate (frame->frame frame))
-;;                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-;;                (not (zp n))
-;;                (<= n (len (seq-this frame)))
-;;                (subsetp-equal (take (+ -1 n) (seq-this frame))
-;;                               (cons x (seq-this (collapse-this frame x))))
-;;                (mv-nth 1 (collapse frame))
-;;                (<= 0 (len (seq-this frame)))
-;;                (not (equal (nth (+ -1 n) (seq-this frame))
-;;                            x))
-;;                (abs-complete
-;;                 (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
-;;           (member-equal (nth (+ -1 n) (seq-this frame))
-;;                         (seq-this (collapse-this frame x))))
-;;  :instructions
-;;  ((:use (:instance partial-collapse-correctness-lemma-69
-;;                    (x (nth (+ -1 n) (seq-this frame)))
-;;                    (n (len (seq-this (collapse-this frame x))))
-;;                    (frame (collapse-this frame x))))
-;;   :promote (:demote 1)
-;;   (:dive 1 1)
-;;   (:= t)
-;;   :up
-;;   (:= (take (len (seq-this (collapse-this frame x)))
-;;             (seq-this (collapse-this frame x)))
-;;       (seq-this (collapse-this frame x)))
-;;   :top
-;;   :split
-;;   (:bash ("goal" :in-theory (disable member-of-a-nat-list
-;;                                      member-of-strip-cars
-;;                                      no-duplicatesp-of-seq-this-lemma-1)
-;;           :use ((:instance member-of-a-nat-list
-;;                            (x (nth (+ -1 n) (seq-this frame)))
-;;                            (lst (seq-this frame)))
-;;                 (:instance member-of-strip-cars
-;;                            (x (nth (+ -1 n) (seq-this frame)))
-;;                            (alist (frame->frame frame)))
-;;                 no-duplicatesp-of-seq-this-lemma-1)))))
-
 (defthm
   partial-collapse-correctness-lemma-74
   (implies (and (mv-nth 1 (collapse frame))
@@ -9859,32 +9887,22 @@
     :induct (collapse-iter frame n))
    ("subgoal *1/1.2" :expand (seq-this frame))))
 
-(defthm partial-collapse-correctness-lemma-92
- (implies (and (not (zp n))
-               (< (+ -1 n) (len (seq-this frame))))
-          (natp
-           (nth (+ -1 n) (seq-this frame))))
- :hints (("goal" :in-theory (disable (:type-prescription nth-of-seq-this-1))
-          :use (:instance (:type-prescription nth-of-seq-this-1)
-                          (frame frame)
-                          (n (+ -1 n)))))
- :rule-classes :type-prescription)
-
-(defthm
-  partial-collapse-correctness-lemma-21
-  (implies (or (consp acc)
-               (consp (assoc-equal (nfix x)
-                                   (frame->frame frame))))
-           (consp (chain-to-complete frame x acc seq)))
-  :rule-classes
-  (:rewrite
-   (:type-prescription
-    :corollary (implies (consp acc)
-                        (consp (chain-to-complete frame x acc seq))))
-   (:type-prescription
-    :corollary (implies (and (natp x)
-                             (consp (assoc-equal x (frame->frame frame))))
-                        (consp (chain-to-complete frame x acc seq))))))
+(local
+ (defthm
+   partial-collapse-correctness-lemma-21
+   (implies (or (consp acc)
+                (consp (assoc-equal (nfix x)
+                                    (frame->frame frame))))
+            (consp (chain-to-complete frame x acc seq)))
+   :rule-classes
+   (:rewrite
+    (:type-prescription
+     :corollary (implies (consp acc)
+                         (consp (chain-to-complete frame x acc seq))))
+    (:type-prescription
+     :corollary (implies (and (natp x)
+                              (consp (assoc-equal x (frame->frame frame))))
+                         (consp (chain-to-complete frame x acc seq)))))))
 
 (defthm
   partial-collapse-correctness-lemma-28
@@ -9981,124 +9999,111 @@
        (abs-addrs
         (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))))))
 
+(local
+ (defthm
+   partial-collapse-correctness-lemma-102
+   (implies
+    (and (valid-seqp frame seq)
+         (nat-listp seq)
+         (mv-nth 1 (collapse frame))
+         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+         (consp (assoc-equal x (frame->frame frame)))
+         (frame-p frame)
+         (abs-separate frame))
+    (not
+     (consp
+      (abs-addrs
+       (frame-val->dir
+        (cdr (assoc-equal (car (chain-to-complete frame x nil seq))
+                          (frame->frame (collapse-seq frame seq)))))))))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :in-theory (disable chain-to-complete-correctness-2
+                         partial-collapse-correctness-lemma-101)
+     :use (chain-to-complete-correctness-2
+           (:instance partial-collapse-correctness-lemma-101
+                      (x (car (chain-to-complete frame x nil seq)))))))))
+
+(local
+ (defthm
+   partial-collapse-correctness-lemma-112
+   (implies (and (not (intersectp-equal acc seq))
+                 (not (member-equal x seq)))
+            (not (intersectp-equal (chain-to-complete frame x acc seq)
+                                   seq)))
+   :hints (("goal" :in-theory (e/d (intersectp-equal)
+                                   (intersectp-is-commutative))
+            :induct (chain-to-complete frame x acc seq)))
+   :rule-classes
+   (:rewrite
+    (:rewrite
+     :corollary
+     (implies (and (not (intersectp-equal acc seq))
+                   (not (member-equal x seq))
+                   (consp (chain-to-complete frame x acc seq)))
+              (not (member-equal (car (chain-to-complete frame x acc seq))
+                                 seq)))
+     :hints (("goal" :in-theory (e/d (intersectp-equal)
+                                     (intersectp-is-commutative))))))))
+
+(local
+ (defthm
+   partial-collapse-correctness-lemma-116
+   (implies (and (not (intersectp-equal acc seq))
+                 (not (member-equal x seq))
+                 (consp (chain-to-complete frame x acc seq))
+                 (consp (assoc-equal (car (chain-to-complete frame x acc seq))
+                                     (frame->frame frame))))
+            (consp (assoc-equal (car (chain-to-complete frame x acc seq))
+                                (frame->frame (collapse-seq frame seq)))))
+   :hints
+   (("goal"
+     :in-theory (disable (:rewrite partial-collapse-correctness-lemma-112
+                                   . 2)
+                         (:rewrite member-of-set-difference-equal))
+     :use ((:instance (:rewrite member-of-set-difference-equal)
+                      (y seq)
+                      (x (strip-cars (frame->frame frame)))
+                      (a (car (chain-to-complete frame x acc seq))))
+           (:rewrite partial-collapse-correctness-lemma-112
+                     . 2))))))
+
+(defthm partial-collapse-correctness-lemma-22
+  (implies (and (consp (assoc-equal x (frame->frame frame)))
+                (frame-p frame))
+           (natp x))
+  :rule-classes :forward-chaining)
+
 (defthm
-  partial-collapse-correctness-lemma-102
-  (implies
-   (and (valid-seqp frame seq)
-        (nat-listp seq)
-        (mv-nth 1 (collapse frame))
-        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-        (consp (assoc-equal x (frame->frame frame)))
-        (frame-p frame)
-        (abs-separate frame))
-   (not
-    (consp
-     (abs-addrs
-      (frame-val->dir
-       (cdr (assoc-equal (car (chain-to-complete frame x nil seq))
-                         (frame->frame (collapse-seq frame seq)))))))))
+  partial-collapse-correctness-lemma-117
+  (implies (and (valid-seqp frame seq)
+                (nat-listp seq)
+                (mv-nth 1 (collapse frame))
+                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                (consp (assoc-equal x (frame->frame frame)))
+                (frame-p frame)
+                (abs-separate frame)
+                (not (member-equal x seq)))
+           (< 0
+              (1st-complete (frame->frame (collapse-seq frame seq)))))
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (disable chain-to-complete-correctness-2
-                        partial-collapse-correctness-lemma-101)
-    :use (chain-to-complete-correctness-2
-          (:instance partial-collapse-correctness-lemma-101
-                     (x (car (chain-to-complete frame x nil seq))))))))
-
-(defthm
-  partial-collapse-correctness-lemma-112
-  (implies (and (not (intersectp-equal acc seq))
-                (not (member-equal x seq)))
-           (not (intersectp-equal (chain-to-complete frame x acc seq)
-                                  seq)))
-  :hints (("goal" :in-theory (e/d (intersectp-equal)
-                                  (intersectp-is-commutative))
-           :induct (chain-to-complete frame x acc seq)))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (implies (and (not (intersectp-equal acc seq))
-                  (not (member-equal x seq))
-                  (consp (chain-to-complete frame x acc seq)))
-             (not (member-equal (car (chain-to-complete frame x acc seq))
-                                seq)))
-    :hints (("goal" :in-theory (e/d (intersectp-equal)
-                                    (intersectp-is-commutative)))))))
-
-(defthm
-  partial-collapse-correctness-lemma-116
-  (implies (and (not (intersectp-equal acc seq))
-                (not (member-equal x seq))
-                (consp (chain-to-complete frame x acc seq))
-                (consp (assoc-equal (car (chain-to-complete frame x acc seq))
-                                    (frame->frame frame))))
-           (consp (assoc-equal (car (chain-to-complete frame x acc seq))
-                               (frame->frame (collapse-seq frame seq)))))
-  :hints
-  (("goal"
-    :in-theory (disable (:rewrite partial-collapse-correctness-lemma-112
-                                  . 2)
-                        (:rewrite member-of-set-difference-equal))
-    :use ((:instance (:rewrite member-of-set-difference-equal)
-                     (y seq)
-                     (x (strip-cars (frame->frame frame)))
-                     (a (car (chain-to-complete frame x acc seq))))
-          (:rewrite partial-collapse-correctness-lemma-112
-                    . 2)))))
-
-(encapsulate
-  ()
-
-  (local
-   (defthmd lemma
-     (implies (and (valid-seqp frame seq)
-                   (nat-listp seq)
-                   (mv-nth 1 (collapse frame))
-                   (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-                   (consp (assoc-equal x (frame->frame frame)))
-                   (frame-p frame)
-                   (abs-separate frame)
-                   (not (member-equal x seq))
-                   ;; This hypothesis is unnecessary, but I'll be darned if I can
-                   ;; figure out how to remove it.
-                   (natp x))
-              (< 0
-                 (1st-complete (frame->frame (collapse-seq frame seq)))))
-     :hints
-     (("goal"
-       :do-not-induct t
-       :in-theory
-       (e/d (intersectp-equal)
-            (partial-collapse-correctness-lemma-102 1st-complete-correctness-2
-                                                    subsetp-member))
-       :use (partial-collapse-correctness-lemma-102
-             (:instance 1st-complete-correctness-2
-                        (frame (frame->frame (collapse-seq frame seq)))
-                        (x (car (chain-to-complete frame x nil seq))))
-             (:instance subsetp-member
-                        (y (strip-cars (frame->frame frame)))
-                        (a (car (chain-to-complete frame x nil seq)))
-                        (x (chain-to-complete frame x nil seq))))))
-     :rule-classes :linear))
-
-  (defthm
-    partial-collapse-correctness-lemma-117
-    (implies (and (valid-seqp frame seq)
-                  (nat-listp seq)
-                  (mv-nth 1 (collapse frame))
-                  (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-                  (consp (assoc-equal x (frame->frame frame)))
-                  (frame-p frame)
-                  (abs-separate frame)
-                  (not (member-equal x seq)))
-             (< 0
-                (1st-complete (frame->frame (collapse-seq frame seq)))))
-    :hints
-    (("goal" :use lemma
-      :do-not-induct t))
-    :rule-classes :linear))
+    :in-theory
+    (e/d (intersectp-equal
+          abs-separate-of-frame->frame-of-collapse-this-lemma-10)
+         (partial-collapse-correctness-lemma-102 1st-complete-correctness-2
+                                                 subsetp-member))
+    :use (partial-collapse-correctness-lemma-102
+          (:instance 1st-complete-correctness-2
+                     (frame (frame->frame (collapse-seq frame seq)))
+                     (x (car (chain-to-complete frame x nil seq))))
+          (:instance subsetp-member
+                     (y (strip-cars (frame->frame frame)))
+                     (a (car (chain-to-complete frame x nil seq)))
+                     (x (chain-to-complete frame x nil seq))))))
+  :rule-classes :linear)
 
 (defthm
   partial-collapse-correctness-lemma-118
@@ -10124,58 +10129,31 @@
                      (seq (append seq
                                   (seq-this (collapse-seq frame seq)))))))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthmd lemma
-     (implies
-      (and
-       (integerp y)
-       (<= 0 y)
-       (consp (assoc-equal y (frame->frame frame)))
-       (not
-        (consp
-         (abs-addrs
-          (frame-val->dir (cdr (assoc-equal y (frame->frame frame)))))))
-       (mv-nth 1 (collapse frame))
-       (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-       (consp (assoc-equal x (frame->frame frame)))
-       (frame-p frame)
-       (abs-separate frame)
-       (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-       (not (equal x y)))
-      (member-equal x (seq-this (collapse-this frame y))))
-     :hints
-     (("goal"
-       :do-not-induct t
-       :in-theory
-       (e/d
-        (collapse-seq)
-        (partial-collapse-correctness-lemma-118 valid-seqp-after-collapse-this))
-       :use ((:instance partial-collapse-correctness-lemma-118
-                        (seq (list y)))
-             (:instance valid-seqp-after-collapse-this
-                        (x y)))))))
-
-  (defthm
-    partial-collapse-correctness-lemma-119
-    (implies
-     (and
-      (consp (assoc-equal y (frame->frame frame)))
-      (abs-complete
-       (frame-val->dir (cdr (assoc-equal y (frame->frame frame)))))
-      (mv-nth 1 (collapse frame))
-      (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-      (consp (assoc-equal x (frame->frame frame)))
-      (frame-p frame)
-      (abs-separate frame)
-      (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-      (not (equal x y)))
-     (member-equal x (seq-this (collapse-this frame y))))
-    :hints
-    (("goal"
-      :do-not-induct t :use lemma))))
+(defthm
+ partial-collapse-correctness-lemma-119
+ (implies
+  (and
+   (consp (assoc-equal y (frame->frame frame)))
+   (abs-complete (frame-val->dir (cdr (assoc-equal y (frame->frame frame)))))
+   (mv-nth 1 (collapse frame))
+   (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+   (consp (assoc-equal x (frame->frame frame)))
+   (frame-p frame)
+   (abs-separate frame)
+   (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
+   (not (equal x y)))
+  (member-equal x (seq-this (collapse-this frame y))))
+ :hints
+ (("goal"
+   :do-not-induct t
+   :in-theory
+   (e/d
+     (collapse-seq)
+     (partial-collapse-correctness-lemma-118 valid-seqp-after-collapse-this))
+   :use ((:instance partial-collapse-correctness-lemma-118
+                    (seq (list y)))
+         (:instance valid-seqp-after-collapse-this
+                    (x y))))))
 
 (defthm
   partial-collapse-correctness-lemma-120
@@ -10209,12 +10187,13 @@
 (encapsulate
   ()
 
+  (local (include-book "std/basic/inductions" :dir :system))
+
   (local
-   (defthmd
+   (defthm
      lemma
      (implies
       (and
-       (natp x)
        (consp (assoc-equal x (frame->frame frame)))
        (abs-complete
         (frame-val->dir$inline (cdr (assoc-equal x (frame->frame frame)))))
@@ -10242,33 +10221,6 @@
                         (l (seq-this frame))
                         (n2 (+ -1 n))
                         (n1 1)))))))
-
-  (defthm
-    partial-collapse-correctness-lemma-122
-    (implies
-     (and
-      (consp (assoc-equal x (frame->frame frame)))
-      (abs-complete
-       (frame-val->dir$inline (cdr (assoc-equal x (frame->frame frame)))))
-      (not (zp n))
-      (<= n (len (seq-this frame)))
-      (subsetp-equal (take (+ -1 n) (seq-this frame))
-                     (cons x (seq-this (collapse-this frame x))))
-      (mv-nth 1 (collapse frame))
-      (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-      (abs-separate frame)
-      (frame-p frame)
-      (not (consp (frame-val->path$inline (cdr (assoc-equal 0 frame))))))
-     (subsetp-equal (take n (seq-this frame))
-                    (cons x (seq-this (collapse-this frame x)))))
-    :hints
-    (("goal" :do-not-induct t
-      :use lemma))))
-
-(encapsulate
-  ()
-
-  (local (include-book "std/basic/inductions" :dir :system))
 
   (defthm
     partial-collapse-correctness-lemma-123
@@ -10424,7 +10376,6 @@
       (:rewrite len-when-prefixp)
       (:rewrite nthcdr-when->=-n-len-l)
       (:rewrite abs-addrs-when-m1-file-alist-p)
-      (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-10)
       (:definition remove-equal))))))
 
 (defthm
@@ -10437,10 +10388,8 @@
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
     (mv-nth 1 (collapse frame))
     (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
    (set-equiv (cons x (seq-this (collapse-this frame x)))
               (strip-cars (frame->frame frame))))
   :hints (("goal" :do-not-induct t
@@ -10535,57 +10484,60 @@
                     (assoc-equal remove-assoc-equal put-assoc-equal
                                  member-equal strip-cars)))))
 
-(defthm
-  partial-collapse-correctness-lemma-138
-  (implies
-   (and
-    (set-equiv
-     (remove-equal (1st-complete (frame->frame frame))
-                   (frame-addrs-root (frame->frame frame)))
-     (remove-equal (1st-complete (frame->frame frame))
-                   (intersection-equal (abs-addrs (frame->root frame))
-                                       (strip-cars (frame->frame frame)))))
-    (subsetp-equal (abs-addrs (frame->root frame))
-                   (frame-addrs-root (frame->frame frame)))
-    (ctx-app-ok
-     (frame->root frame)
-     (1st-complete (frame->frame frame))
-     (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
-                                        (frame->frame frame))))))
-   (set-equiv (frame-addrs-root (frame->frame frame))
-              (intersection-equal (abs-addrs (frame->root frame))
-                                  (strip-cars (frame->frame frame)))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d (ctx-app-ok)
-                    (set-equiv-cons-remove-1))
-    :use ((:instance set-equiv-cons-remove-1
-                     (x (1st-complete (frame->frame frame)))
-                     (l (frame-addrs-root (frame->frame frame))))
-          (:instance
-           set-equiv-cons-remove-1
-           (x (1st-complete (frame->frame frame)))
-           (l (intersection-equal (abs-addrs (frame->root frame))
-                                  (strip-cars (frame->frame frame)))))))))
+(encapsulate
+  ()
 
-;; This needs to be disabled.
-(defthm
-  partial-collapse-correctness-lemma-139
-  (implies (and (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-                (abs-separate frame)
-                (subsetp-equal (abs-addrs (frame->root frame))
-                               (frame-addrs-root (frame->frame frame)))
-                (frame-p frame)
-                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-                (mv-nth 1 (collapse frame)))
-           (set-equiv (frame-addrs-root (frame->frame frame))
+  (local
+   (defthm
+     partial-collapse-correctness-lemma-138
+     (implies
+      (and
+       (set-equiv
+        (remove-equal (1st-complete (frame->frame frame))
+                      (frame-addrs-root (frame->frame frame)))
+        (remove-equal (1st-complete (frame->frame frame))
                       (intersection-equal (abs-addrs (frame->root frame))
                                           (strip-cars (frame->frame frame)))))
-  :hints
-  (("goal" :in-theory (e/d (collapse)
-                           (member-equal assoc-equal remove-assoc-equal
-                                         put-assoc-equal strip-cars)))))
+       (subsetp-equal (abs-addrs (frame->root frame))
+                      (frame-addrs-root (frame->frame frame)))
+       (ctx-app-ok
+        (frame->root frame)
+        (1st-complete (frame->frame frame))
+        (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                           (frame->frame frame))))))
+      (set-equiv (frame-addrs-root (frame->frame frame))
+                 (intersection-equal (abs-addrs (frame->root frame))
+                                     (strip-cars (frame->frame frame)))))
+     :hints
+     (("goal"
+       :do-not-induct t
+       :in-theory (e/d (ctx-app-ok)
+                       (set-equiv-cons-remove-1))
+       :use ((:instance set-equiv-cons-remove-1
+                        (x (1st-complete (frame->frame frame)))
+                        (l (frame-addrs-root (frame->frame frame))))
+             (:instance
+              set-equiv-cons-remove-1
+              (x (1st-complete (frame->frame frame)))
+              (l (intersection-equal (abs-addrs (frame->root frame))
+                                     (strip-cars (frame->frame frame))))))))))
+
+  (defthmd
+    partial-collapse-correctness-lemma-139
+    (implies (and (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
+                  (abs-separate frame)
+                  (subsetp-equal (abs-addrs (frame->root frame))
+                                 (frame-addrs-root (frame->frame frame)))
+                  (frame-p frame)
+                  (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                  (mv-nth 1 (collapse frame)))
+             (set-equiv (frame-addrs-root (frame->frame frame))
+                        (intersection-equal (abs-addrs (frame->root frame))
+                                            (strip-cars (frame->frame frame)))))
+    :hints
+    (("goal" :in-theory (e/d (collapse)
+                             (member-equal assoc-equal remove-assoc-equal
+                                           put-assoc-equal strip-cars))))))
 
 (defthm
   partial-collapse-correctness-lemma-108
@@ -10599,139 +10551,111 @@
     (no-duplicatesp-equal (strip-cars (frame->frame frame)))
     (mv-nth 1 (collapse frame))
     (consp (assoc-equal x (frame->frame frame)))
-    (not
-     (consp
-      (abs-addrs
-       (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))))
+    (abs-complete
+     (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
    (set-equiv
     (frame-addrs-before-seq frame 0
                             (cons x (seq-this (collapse-this frame x))))
     (frame-addrs-before frame 0 (len (frame->frame frame)))))
   :hints
   (("goal" :do-not-induct t
-    :in-theory (enable partial-collapse-correctness-lemma-31)
+    :in-theory (enable partial-collapse-correctness-lemma-31
+                       partial-collapse-correctness-lemma-139)
     :use (:instance partial-collapse-correctness-lemma-136
                     (seq (cons x
                                (seq-this (collapse-this frame x))))))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthmd
-    lemma
-    (implies
-     (and (abs-separate frame)
-          (frame-p frame)
-          (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-          (mv-nth 1 (collapse frame))
-          (not (zp x))
-          (consp (assoc-equal x (frame->frame frame)))
-          (abs-complete
-           (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
-          (atom (frame-val->path$inline (cdr (assoc-equal 0 frame))))
-          (subsetp-equal (abs-addrs (frame->root frame))
-                         (frame-addrs-root (frame->frame frame))))
-     (and (absfat-equiv (mv-nth 0 (collapse (collapse-this frame x)))
-                        (mv-nth 0 (collapse frame)))
-          (iff (mv-nth 1 (collapse (collapse-this frame x)))
-               (mv-nth 1 (collapse frame)))))
-    :hints
-    (("goal" :do-not-induct t
-      :use
-      (partial-collapse-correctness-lemma-174
-       (:instance partial-collapse-correctness-lemma-60
-                  (n (len (frame->frame frame))))
-       (:instance
-        (:rewrite ctx-app-list-when-set-equiv)
-        (l1 (frame-addrs-before frame 0 (len (frame->frame frame))))
-        (l2
-         (frame-addrs-before-seq frame 0
-                                 (cons x (seq-this (collapse-this frame x)))))
-        (frame frame)
-        (relpath nil)
-        (fs (frame->root frame)))
-       collapse-iter-correctness-1
-       (:instance (:rewrite collapse-seq-of-seq-this-is-collapse)
-                  (frame (collapse-this frame x)))
-       (:instance set-equiv-implies-equal-len-1-when-no-duplicatesp
-                  (x (cons x (seq-this (collapse-this frame x))))
-                  (y (strip-cars (frame->frame frame)))))
-      :in-theory (e/d (collapse-seq)
-                      (partial-collapse-correctness-lemma-60
-                       (:rewrite collapse-seq-of-seq-this-is-collapse)
-                       (:rewrite nthcdr-when->=-n-len-l)
-                       (:rewrite
-                        different-from-own-src-1)
-                       (:type-prescription frame-val->path$inline)
-                       (:definition nthcdr)
-                       (:type-prescription
-                        abs-fs-fix-of-put-assoc-equal-lemma-3)
-                       (:type-prescription assoc-when-zp-len)
-                       (:rewrite
-                        ctx-app-ok-when-absfat-equiv-lemma-4)
-                       (:rewrite
-                        partial-collapse-correctness-lemma-24)
-                       (:rewrite final-val-of-collapse-this-lemma-3)))))))
-
-  ;; This rule is trouble, because it can rewrite
-  ;; (mv-nth 0 (collapse (collapse-this frame (1st-complete (frame->frame frame)))))
-  ;; and
-  ;; (mv-nth 1 (collapse (collapse-this frame (1st-complete (frame->frame frame)))))
-  ;; terms, which arise naturally from opening up the definition of collapse...
-  (defthmd
-    partial-collapse-correctness-lemma-176
-    (implies
-     (and
-      (abs-separate frame)
-      (frame-p frame)
-      (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-      (mv-nth 1 (collapse frame))
-      (consp (assoc-equal x (frame->frame frame)))
-      (abs-complete (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
-      (atom (frame-val->path$inline (cdr (assoc-equal 0 frame))))
-      (subsetp-equal (abs-addrs (frame->root frame))
-                     (frame-addrs-root (frame->frame frame))))
-     (and (absfat-equiv (mv-nth 0 (collapse (collapse-this frame x)))
-                        (mv-nth 0 (collapse frame)))
-          (iff (mv-nth 1 (collapse (collapse-this frame x)))
-               (mv-nth 1 (collapse frame)))))
-    :hints (("goal" :do-not-induct t
-             :use lemma
-             :in-theory (enable assoc-equal-of-frame->frame)))))
-
-(defthm
-  partial-collapse-correctness-lemma-67
+;; This rule is trouble, because it can rewrite
+;; (mv-nth 0 (collapse (collapse-this frame (1st-complete (frame->frame frame)))))
+;; and
+;; (mv-nth 1 (collapse (collapse-this frame (1st-complete (frame->frame frame)))))
+;; terms, which arise naturally from opening up the definition of collapse...
+(defthmd
+  partial-collapse-correctness-lemma-122
   (implies
-   (and (abs-separate frame)
-        (frame-p frame)
-        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-        (mv-nth 1 (collapse frame))
-        (consp (assoc-equal (1st-complete-under-path (frame->frame frame)
-                                                     path)
-                            (frame->frame frame)))
-        (atom (frame-val->path (cdr (assoc-equal 0 frame))))
-        (subsetp-equal (abs-addrs (frame->root frame))
-                       (frame-addrs-root (frame->frame frame))))
    (and
-    (absfat-equiv
-     (mv-nth
-      0
-      (collapse (collapse-this frame
-                               (1st-complete-under-path (frame->frame frame)
-                                                        path))))
-     (mv-nth 0 (collapse frame)))
-    (iff
-     (mv-nth
-      1
-      (collapse (collapse-this frame
-                               (1st-complete-under-path (frame->frame frame)
-                                                        path))))
-     (mv-nth 1 (collapse frame)))))
+    (abs-separate frame)
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+    (mv-nth 1 (collapse frame))
+    (consp (assoc-equal x (frame->frame frame)))
+    (abs-complete (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
+    (atom (frame-val->path$inline (cdr (assoc-equal 0 frame))))
+    (subsetp-equal (abs-addrs (frame->root frame))
+                   (frame-addrs-root (frame->frame frame))))
+   (and (absfat-equiv (mv-nth 0 (collapse (collapse-this frame x)))
+                      (mv-nth 0 (collapse frame)))
+        (iff (mv-nth 1 (collapse (collapse-this frame x)))
+             (mv-nth 1 (collapse frame)))))
   :hints
-  (("goal" :use (:instance partial-collapse-correctness-lemma-176
-                           (x (1st-complete-under-path (frame->frame frame)
-                                                       path))))))
+  (("goal"
+    :do-not-induct t
+    :use
+    (partial-collapse-correctness-lemma-174
+     (:instance partial-collapse-correctness-lemma-60
+                (n (len (frame->frame frame))))
+     (:instance
+      (:rewrite ctx-app-list-when-set-equiv)
+      (l1 (frame-addrs-before frame 0 (len (frame->frame frame))))
+      (l2
+       (frame-addrs-before-seq frame 0
+                               (cons x (seq-this (collapse-this frame x)))))
+      (frame frame)
+      (relpath nil)
+      (fs (frame->root frame)))
+     collapse-iter-correctness-1
+     (:instance (:rewrite collapse-seq-of-seq-this-is-collapse)
+                (frame (collapse-this frame x)))
+     (:instance set-equiv-implies-equal-len-1-when-no-duplicatesp
+                (x (cons x (seq-this (collapse-this frame x))))
+                (y (strip-cars (frame->frame frame)))))
+    :in-theory
+    (e/d (collapse-seq)
+         (partial-collapse-correctness-lemma-60
+          (:rewrite collapse-seq-of-seq-this-is-collapse)
+          (:rewrite nthcdr-when->=-n-len-l)
+          (:rewrite different-from-own-src-1)
+          (:type-prescription frame-val->path$inline)
+          (:definition nthcdr)
+          (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
+          (:type-prescription assoc-when-zp-len)
+          (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
+          (:rewrite partial-collapse-correctness-lemma-24)
+          (:rewrite final-val-of-collapse-this-lemma-3))))))
+
+(local
+ (defthm
+   partial-collapse-correctness-lemma-67
+   (implies
+    (and (abs-separate frame)
+         (frame-p frame)
+         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+         (mv-nth 1 (collapse frame))
+         (consp (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                      path)
+                             (frame->frame frame)))
+         (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+         (subsetp-equal (abs-addrs (frame->root frame))
+                        (frame-addrs-root (frame->frame frame))))
+    (and
+     (absfat-equiv
+      (mv-nth
+       0
+       (collapse (collapse-this frame
+                                (1st-complete-under-path (frame->frame frame)
+                                                         path))))
+      (mv-nth 0 (collapse frame)))
+     (iff
+      (mv-nth
+       1
+       (collapse (collapse-this frame
+                                (1st-complete-under-path (frame->frame frame)
+                                                         path))))
+      (mv-nth 1 (collapse frame)))))
+   :hints
+   (("goal" :use (:instance partial-collapse-correctness-lemma-122
+                            (x (1st-complete-under-path (frame->frame frame)
+                                                        path)))))))
 
 (defund collapse-equiv (frame1 frame2)
   (b* (((mv root1 result1) (collapse frame1))
@@ -10823,6 +10747,19 @@
   :hints (("goal" :in-theory (enable partial-collapse))))
 
 (defthm
+  partial-collapse-correctness-lemma-140
+  (implies
+   (and (frame-p frame)
+        (no-duplicatesp-equal (strip-cars frame))
+        (abs-separate frame)
+        (atom (frame-val->path$inline (cdr (assoc-equal 0 frame)))))
+   (not
+    (consp
+     (frame-val->path (cdr (assoc-equal '0
+                                        (partial-collapse frame path)))))))
+  :hints (("goal" :in-theory (enable partial-collapse))))
+
+(defthm
   partial-collapse-correctness-1
   (implies
    (and (frame-p frame)
@@ -10844,17 +10781,16 @@
   (:rewrite
    (:rewrite
     :corollary
-    (implies
-     (and (frame-p frame)
-          (no-duplicatesp-equal (strip-cars frame))
-          (abs-separate frame)
-          (mv-nth 1 (collapse frame))
-          (atom (frame-val->path$inline (cdr (assoc-equal 0 frame))))
-          (subsetp-equal (abs-addrs (frame->root frame))
-                         (frame-addrs-root (frame->frame frame))))
-     (hifat-equiv (mv-nth 0
-                          (collapse (partial-collapse frame path)))
-                  (mv-nth 0 (collapse frame)))))
+    (implies (and (frame-p frame)
+                  (no-duplicatesp-equal (strip-cars frame))
+                  (abs-separate frame)
+                  (mv-nth 1 (collapse frame))
+                  (atom (frame-val->path$inline (cdr (assoc-equal 0 frame))))
+                  (subsetp-equal (abs-addrs (frame->root frame))
+                                 (frame-addrs-root (frame->frame frame))))
+             (hifat-equiv (mv-nth 0
+                                  (collapse (partial-collapse frame path)))
+                          (mv-nth 0 (collapse frame)))))
    (:rewrite
     :corollary
     (implies (and (frame-p frame)

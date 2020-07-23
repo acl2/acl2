@@ -380,7 +380,7 @@
        (dir-ent (dir-ent-set-filename (dir-ent-fix nil)
                                       basename))
        (file (make-m1-file :dir-ent dir-ent
-                           :contents nil))
+                           :contents ""))
        ((mv fs error-code)
         (hifat-place-file fs path file))
        ((unless (equal error-code 0))

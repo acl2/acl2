@@ -23,17 +23,33 @@
    (:rewrite abs-separate-correctness-1-lemma-19)
    (:rewrite m1-file-alist-p-when-subsetp-equal)
    (:rewrite
-    abs-find-file-helper-of-collapse-lemma-3)
-   (:rewrite
     abs-fs-fix-of-put-assoc-equal-lemma-2)
    abs-fs-fix-of-put-assoc-equal-lemma-3
    (:type-prescription
     abs-directory-file-p-when-m1-file-p-lemma-1))))
 
 (defthm
+  abs-separate-correctness-1
+  (implies (and (frame-p (frame->frame frame))
+                (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                (subsetp (abs-addrs (frame->root frame))
+                         (frame-addrs-root (frame->frame frame)))
+                (abs-separate (frame-with-root (frame->root frame)
+                                               (frame->frame frame))))
+           (mv-let (fs result)
+             (collapse frame)
+             (implies (equal result t)
+                      (and (m1-file-alist-p fs)
+                           (hifat-no-dups-p fs)))))
+  :hints
+  (("goal" :in-theory (enable collapse intersectp-equal
+                              abs-separate-of-frame->frame-of-collapse-this-lemma-10)
+    :induct (collapse frame))))
+
+(defthm
   abs-find-file-correctness-1-lemma-1
   (implies
-   (and (not (consp (abs-addrs (abs-fs-fix root))))
+   (and (abs-complete (abs-fs-fix root))
         (m1-regular-file-p (mv-nth 0
                                    (abs-find-file (frame-with-root root nil)
                                                   path))))
@@ -803,7 +819,6 @@
                      (:rewrite prefixp-one-way-or-another . 1)
                      (:rewrite abs-find-file-correctness-1-lemma-21)
                      (:definition member-equal)
-                     (:rewrite abs-find-file-correctness-1-lemma-45)
                      (:rewrite abs-find-file-helper-of-collapse-lemma-2)
                      (:definition remove-equal))))))
 
@@ -835,7 +850,9 @@
               0)))
   :hints
   (("goal"
-    :in-theory (e/d (abs-find-file collapse abs-separate intersectp-equal collapse-this)
+    :in-theory (e/d (abs-find-file collapse abs-separate intersectp-equal
+                                   collapse-this
+                                   abs-separate-of-frame->frame-of-collapse-this-lemma-10)
                     ((:rewrite nthcdr-when->=-n-len-l)
                      (:rewrite len-when-prefixp)
                      (:rewrite abs-file-alist-p-when-m1-file-alist-p)
@@ -844,8 +861,6 @@
                       abs-find-file-correctness-1-lemma-21)
                      (:definition member-equal)
                      (:rewrite
-                      abs-find-file-correctness-1-lemma-45)
-                     (:rewrite
                       abs-find-file-helper-of-collapse-lemma-2)
                      (:definition remove-equal)
                      abs-find-file-of-put-assoc-lemma-7
@@ -853,7 +868,6 @@
                      (:rewrite assoc-of-car-when-member)
                      (:rewrite subsetp-car-member)
                      (:rewrite consp-of-assoc-of-frame->frame)
-                     (:rewrite abs-find-file-correctness-lemma-21)
                      (:definition remove-assoc-equal)
                      (:definition len)
                      (:rewrite put-assoc-equal-without-change . 2)))
@@ -1281,10 +1295,8 @@
     (frame-p frame)
     (no-duplicatesp-equal (strip-cars frame))
     (abs-separate frame)
-    (not
-     (consp
-      (abs-addrs
-       (abs-file->contents (mv-nth 0 (abs-find-file frame path))))))
+    (abs-complete
+     (abs-file->contents (mv-nth 0 (abs-find-file frame path))))
     (equal (mv-nth 1 (abs-find-file frame path))
            0))
    (equal
@@ -1508,8 +1520,9 @@
    (defrefinement bar-equiv foo-equiv
      :hints
      (("goal"
-       :in-theory (e/d (absfat-subsetp-correctness-1 abs-fs-p
-                                                     absfat-equiv)
+       :in-theory (e/d (absfat-subsetp-correctness-1
+                        abs-fs-p absfat-equiv
+                        abs-separate-of-frame->frame-of-collapse-this-lemma-10)
                        (abs-addrs-when-m1-file-alist-p abs-addrs-when-absfat-equiv))
        :use
        (abs-addrs-when-m1-file-alist-p

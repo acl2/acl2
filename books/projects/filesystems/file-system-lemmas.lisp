@@ -1523,7 +1523,7 @@
                 (no-duplicatesp-equal l))
            (not (member-equal x (take n l)))))
 
-(defthmd subsetp-when-atom-set-difference$
+(defthmd not-subsetp-when-atom-set-difference$
   (iff (consp (set-difference-equal l1 l2))
        (not (subsetp-equal l1 l2))))
 
@@ -1534,7 +1534,7 @@
        (and (member a x) (not (member a y))))
   :hints (("goal" :induct (len x))))
 
-(defthm no-duplicatesp-of-set-difference
+(defthm no-duplicatesp-of-set-difference$
   (implies
    (no-duplicatesp-equal l1)
    (no-duplicatesp-equal (set-difference-equal l1 l2))))
