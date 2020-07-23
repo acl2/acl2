@@ -61,13 +61,27 @@
                     "Unexpected list term ~p0 ~%"
                     (list (cons #\0 term))))))
 
-(define extract-from-list ((term valid-list-termp))
+#|(define extract-from-list ((term valid-list-termp))
   (case-match term
     (('list . lst)
      lst)
     (''nil
      nil)
-    (& term)))
+    (& term)))||#
+
+(define list-to-lst (term)
+  :returns (lst rp-term-listp
+                :hyp (rp-termp term))
+  :prepwork ((local
+              (in-theory (enable rp-termp
+                                 rp-term-listp))))
+  (case-match term
+    (('list . lst) lst)
+    (''nil nil)
+    (& (or (hard-error 'list-instance-to-lst
+                       "Unexpected list instance: ~p0 ~%"
+                       (list (cons #\0 term)))
+           (list `(sum-list ,term))))))
 
 (define cons-pp-to-pp-lst-lst ((pp valid-pp-p)
                                pp-lst-lst)
@@ -289,6 +303,9 @@
        t)
       (& nil))))
 
+
+    
+
 (progn
   (define pp-order-and-negated-termsp ((term1)
                                        (term2))
@@ -308,63 +325,53 @@
            equals)))
 
   (define pp-sum-merge-aux ((pp1-lst)
-                            (pp2-lst)
-                            (cnt natp))
+                            (pp2-lst))
     :measure (+ (cons-count pp1-lst)
                 (cons-count pp2-lst))
     :hints (("Goal"
              :in-theory (e/d (measure-lemmas) ())))
-    :returns (mv (merged-pp-lst rp-term-listp
-                                :hyp (and (rp-term-listp pp1-lst)
-                                          (rp-term-listp pp2-lst)))
-                 (res-cnt natp
-                          "A hint for other functions to know how many elements have changed."
-                          :hyp (natp cnt)))
+    :returns (merged-pp-lst rp-term-listp
+                            :hyp (and (rp-term-listp pp1-lst)
+                                      (rp-term-listp pp2-lst)))
 
-    (cond ((atom pp1-lst)
-           (mv pp2-lst cnt))
-          ((atom pp2-lst)
-           (mv pp1-lst cnt))
+    (cond ((atom pp1-lst) pp2-lst)
+          ((atom pp2-lst) pp1-lst)
           (t (b* ((cur1 (car pp1-lst))
                   (cur2 (car pp2-lst))
                   ((when (equal cur1 ''0))
-                   (pp-sum-merge-aux (cdr pp1-lst) pp2-lst cnt))
+                   (pp-sum-merge-aux (cdr pp1-lst) pp2-lst ))
                   ((when (equal cur2 ''0))
-                   (pp-sum-merge-aux pp1-lst (cdr pp2-lst) cnt))
+                   (pp-sum-merge-aux pp1-lst (cdr pp2-lst) ))
                   ((mv order negated-termsp &)
                    (pp-order-and-negated-termsp cur1 cur2)))
                (cond (negated-termsp
-                      (pp-sum-merge-aux (cdr pp1-lst) (cdr pp2-lst) cnt))
+                      (pp-sum-merge-aux (cdr pp1-lst) (cdr pp2-lst) ))
                      (order
-                      (b* (((mv rest cnt) (pp-sum-merge-aux (cdr pp1-lst) pp2-lst (1+ cnt))))
-                        (mv (pp-cons cur1 rest) cnt)))
+                      (b* ((rest (pp-sum-merge-aux (cdr pp1-lst) pp2-lst )))
+                        (pp-cons cur1 rest)))
                      (t
-                      (b* (((mv rest cnt) (pp-sum-merge-aux pp1-lst (cdr pp2-lst) (1+ cnt))))
-                        (mv (pp-cons cur2 rest) cnt))))))))
+                      (b* ((rest (pp-sum-merge-aux pp1-lst (cdr pp2-lst) )))
+                        (pp-cons cur2 rest))))))))
 
   (define pp-sum-merge ((pp1)
                         (pp2))
-    :returns (mv (merged-pp rp-termp
-                            :hyp (and (rp-termp pp1)
-                                      (rp-termp pp2)))
-                 (res-cnt natp
-                          "A hint for other functions to know how many elements
-                        have changed."
-                          :rule-classes :type-prescription))
+    :returns (merged-pp rp-termp
+                        :hyp (and (rp-termp pp1)
+                                  (rp-termp pp2)))
     (b* (((when (equal pp1 ''nil))
-          (mv pp2 0))
+          pp2)
          ((when (equal pp2 ''nil))
-          (mv pp1 0))
+          pp1)
          ((when (or (not (case-match pp1 (('list . &) t)))
                     (not (case-match pp2 (('list . &) t)))))
           (progn$ (cw "pp-sum-merge-fail pp1=~p0~%pp2=~p1 ~%" pp1 pp2)
                   (hard-error 'pp-sum-merge "" nil)
-                  (mv `(binary-append ,pp1 ,pp2) 0))))
-      (b* (((mv res cnt) (pp-sum-merge-aux (cdr pp1) (cdr pp2) 0)))
+                  `(binary-append ,pp1 ,pp2))))
+      (b* ((res (pp-sum-merge-aux (cdr pp1) (cdr pp2))))
         (if (and res
                  (not (equal res (list ''0))))
-            (mv (create-list-instance res) cnt)
-          (mv ''nil 0)))))
+            (create-list-instance res)
+          ''nil))))
 
   ;;(memoize 'pp-sum-merge :condition '(and (not (equal pp1 'nil)) (not (equal
   ;;pp2 'nil))))
@@ -619,14 +626,14 @@
           (mv ''nil ''nil)
         (mv ''nil s)))))
 
-(progn
+#|(progn
 
   (define safe-cons-to-coughed-lst (e coughed-lst)
     ;; (b* (((unless e) coughed-lst)
     ;;      ((when (atom coughed-lst)) (list e))
     ;;      (e2 (car coughed-lst))
-    (b* (((mv res &)
-          (pp-sum-merge-aux (list e) coughed-lst 0)))
+    (b* ((res
+          (pp-sum-merge-aux (list e) coughed-lst)))
       res))
 
 
@@ -784,7 +791,7 @@
 
   ;; (define pp-lst-sum-merge (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
   ;;   (pp-lst-sum-merge- (hons-copy pp-lst-lst) :for-c for-c :for-s for-s))
-  )
+  )||#
 
 #|(define pp-lst-sum-merge (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
   (b* (((mv pp-lst coughed-pp-lst)
@@ -836,8 +843,7 @@
          (pp-lst
           (pp-lst-sum-merge-aux2 (cdr pp-lst-lst)))
          (cur (car pp-lst-lst))
-         ((mv pp-lst &)
-          (pp-sum-merge-aux cur pp-lst 0)))
+         (pp-lst (pp-sum-merge-aux cur pp-lst)))
       pp-lst))
 
   (define pp-lst-sum-merge (pp-lst-lst &key (for-c 'nil) (for-s 'nil))
