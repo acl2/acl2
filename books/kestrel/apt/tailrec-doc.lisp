@@ -313,7 +313,7 @@
 
     (xdoc::desc-apt-input-wrapper-name)
 
-    (xdoc::desc-apt-input-wrapper-enable :optional)
+    (xdoc::desc-apt-input-wrapper-enable)
 
     (xdoc::desc-apt-input-old-to-new-name)
 
