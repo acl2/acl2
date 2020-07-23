@@ -12,6 +12,7 @@
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "kestrel/std/util/defmacro-plus" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -56,7 +57,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection set-default-input-old-to-new-name
+(defmacro+ set-default-input-old-to-new-name (kwd)
+  (declare (xargs :guard (keywordp kwd)))
   :short "Set the default @(':old-to-new-name') input of APT transformations."
   :long
   (xdoc::topstring
@@ -83,12 +85,8 @@
      It must be a keyword, which is used as a separator as described above.
      It would not make sense to have a complete theorem name as default.")
    (xdoc::p
-    "The initial value of this default is @(':-to-').")
-   (xdoc::@def "set-default-input-old-to-new-name"))
-
-  (defmacro set-default-input-old-to-new-name (kwd)
-    (declare (xargs :guard (keywordp kwd)))
-    `(table ,*defaults-table-name* :old-to-new-name ,kwd)))
+    "The initial value of this default is @(':-to-')."))
+  `(table ,*defaults-table-name* :old-to-new-name ,kwd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +114,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection set-default-input-new-to-old-name
+(defmacro+ set-default-input-new-to-old-name (kwd)
+  (declare (xargs :guard (keywordp kwd)))
   :short "Set the default @(':new-to-old-name') input of APT transformations."
   :long
   (xdoc::topstring
@@ -143,12 +142,8 @@
      It must be a keyword, which is used as a separator as described above.
      It would not make sense to have a complete theorem name as default.")
    (xdoc::p
-    "The initial value of this default is @(':-to-').")
-   (xdoc::@def "set-default-input-new-to-old-name"))
-
-  (defmacro set-default-input-new-to-old-name (kwd)
-    (declare (xargs :guard (keywordp kwd)))
-    `(table ,*defaults-table-name* :new-to-old-name ,kwd)))
+    "The initial value of this default is @(':-to-')."))
+  `(table ,*defaults-table-name* :new-to-old-name ,kwd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +297,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection set-default-input-old-to-wrapper-name
+(defmacro+ set-default-input-old-to-wrapper-name (kwd)
+  (declare (xargs :guard (keywordp kwd)))
   :short "Set the default @(':old-to-wrapper-name') input
           of APT transformations."
   :long
@@ -333,12 +329,8 @@
      It must be a keyword, which is used as a separator as described above.
      It would not make sense to have a complete theorem name as default.")
    (xdoc::p
-    "The initial value of this default is @(':-to-').")
-   (xdoc::@def "set-default-input-old-to-wrapper-name"))
-
-  (defmacro set-default-input-old-to-wrapper-name (kwd)
-    (declare (xargs :guard (keywordp kwd)))
-    `(table ,*defaults-table-name* :old-to-wrapper-name ,kwd)))
+    "The initial value of this default is @(':-to-')."))
+  `(table ,*defaults-table-name* :old-to-wrapper-name ,kwd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -368,7 +360,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection set-default-input-wrapper-to-old-name
+(defmacro+ set-default-input-wrapper-to-old-name (kwd)
+  (declare (xargs :guard (keywordp kwd)))
   :short "Set the default @(':wrapper-to-old-name') input
           of APT transformations."
   :long
@@ -399,12 +392,8 @@
      It must be a keyword, which is used as a separator as described above.
      It would not make sense to have a complete theorem name as default.")
    (xdoc::p
-    "The initial value of this default is @(':-to-').")
-   (xdoc::@def "set-default-input-wrapper-to-old-name"))
-
-  (defmacro set-default-input-wrapper-to-old-name (kwd)
-    (declare (xargs :guard (keywordp kwd)))
-    `(table ,*defaults-table-name* :wrapper-to-old-name ,kwd)))
+    "The initial value of this default is @(':-to-')."))
+  `(table ,*defaults-table-name* :wrapper-to-old-name ,kwd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
