@@ -9892,7 +9892,12 @@
                                 frame-reps-fs abs-complete
                                 abs-separate-of-frame->frame-of-collapse-this-lemma-10)
                                ((:rewrite abs-mkdir-correctness-lemma-128)
-                                collapse collapse-this)))))
+                                (:rewrite abs-mkdir-correctness-lemma-177)
+                                (:rewrite abs-no-dups-p-of-remove1-assoc)
+                                (:rewrite frame-addrs-root-of-frame->frame-of-collapse-this-lemma-1)
+                                (:rewrite different-from-own-src-1)
+                                (:rewrite abs-mkdir-correctness-lemma-192)
+                                (:rewrite hifat-equiv-when-absfat-equiv-lemma-1))))))
 
     (defthm abs-mkdir-correctness-lemma-3
       (abs-fs-p
