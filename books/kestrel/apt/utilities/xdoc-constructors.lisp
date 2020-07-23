@@ -58,18 +58,15 @@
   `(xdoc::desc
     "@(':new-name') &mdash; default @(':auto')"
     (xdoc::p
-     "Determines the name of the generated new function:")
+     "Determines the name of the generated new function.")
+    (xdoc::p
+     "It must be one of the following:")
     (xdoc::ul
      (xdoc::li
-      "@(':auto'),
-       to use the <see topic='@(url acl2::numbered-names)'>numbered name</see>
-       obtained by
-       <see topic='@(url acl2::next-numbered-name)'>incrementing</see>
-       the index of @('old').")
+      "@(':auto'), to generate the name automatically
+       as described in @(see function-name-generation).")
      (xdoc::li
-      "Any other symbol
-       (that is not in the main Lisp package and that is not a keyword),
-       to use as the name of the function."))
+      "Any other symbol, to use as the name of the function."))
     (xdoc::p
      "In the rest of this documentation page,
       let @('new') be this function.")
