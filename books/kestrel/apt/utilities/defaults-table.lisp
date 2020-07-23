@@ -299,3 +299,269 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (set-default-input-new-to-old-enable nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection set-default-input-old-to-wrapper-name
+  :short "Set the default @(':old-to-wrapper-name') input
+          of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':old-to-wrapper-name') input
+     that specifies the name of the generated theorem
+     that rewrites (a term involving) a call of the old function
+     to (a term involving) a call of the wrapper function;
+     this theorem is generated, and this input is allowed,
+     only when the wrapper is generated.
+     When this input is a symbol that is a valid theorem name,
+     it is used as the theorem name.
+     When this input is a keyword (which is never a valid theorem name),
+     the theorem name is the concatenation of
+     the old function name, the keyword, and the wrapper function name,
+     e.g. @('f-to-g') if
+     @('f') is the old function name,
+     @('g') is the wrapper function name, and
+     @(':-to-') is the keyword passed as the @(':old-to-wrapper-name') input.
+     Thus, the keyword specifies a separator
+     between old and wrapper function names.
+     The concatenated symbol is in the same package as
+     the wrapper function name.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':old-to-wrapper-name') input.
+     It must be a keyword, which is used as a separator as described above.
+     It would not make sense to have a complete theorem name as default.")
+   (xdoc::p
+    "The initial value of this default is @(':-to-').")
+   (xdoc::@def "set-default-input-old-to-wrapper-name"))
+
+  (defmacro set-default-input-old-to-wrapper-name (kwd)
+    (declare (xargs :guard (keywordp kwd)))
+    `(table ,*defaults-table-name* :old-to-wrapper-name ,kwd)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-old-to-wrapper-name ((wrld plist-worldp))
+  :returns (kwd keywordp)
+  :short "Get the default @(':old-to-wrapper-name') input
+          of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-old-to-wrapper-name).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :old-to-wrapper-name table))
+       ((unless (consp pair))
+        (prog2$ (raise "No :OLD-TO-WRAPPER-NAME found in APT defaults table.")
+                :irrelevant-keyword-for-unconditional-returns-theorem))
+       (kwd (cdr pair))
+       ((unless (keywordp kwd))
+        (prog2$ (raise
+                 "The default :OLD-TO-WRAPPER-NAME is ~x0, ~
+                  which is not a keyword.")
+                :irrelevant-keyword-for-unconditional-returns-theorem)))
+    kwd))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-old-to-wrapper-name :-to-)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection set-default-input-wrapper-to-old-name
+  :short "Set the default @(':wrapper-to-old-name') input
+          of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':wrapper-to-old-name') input
+     that specifies the name of the generated theorem
+     that rewrites (a term involving) a call of the wrapper function
+     to (a term involving) a call of the old function;
+     this theorem is generated, and this input is allowed,
+     only when the wrapper is generated.
+     When this input is a symbol that is a valid theorem name,
+     it is used as the theorem name.
+     When this input is a keyword (which is never a valid theorem name),
+     the theorem name is the concatenation of
+     the old function name, the keyword, and the wrapper function name,
+     e.g. @('f-to-g') if
+     @('f') is the wrapper function name,
+     @('g') is the old function name, and
+     @(':-to-') is the keyword passed as the @(':wrapper-to-old-name') input.
+     Thus, the keyword specifies a separator
+     between wrapper and old function names.
+     The concatenated symbol is in the same package as
+     the wrapper function name.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':wrapper-to-old-name') input.
+     It must be a keyword, which is used as a separator as described above.
+     It would not make sense to have a complete theorem name as default.")
+   (xdoc::p
+    "The initial value of this default is @(':-to-').")
+   (xdoc::@def "set-default-input-wrapper-to-old-name"))
+
+  (defmacro set-default-input-wrapper-to-old-name (kwd)
+    (declare (xargs :guard (keywordp kwd)))
+    `(table ,*defaults-table-name* :wrapper-to-old-name ,kwd)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-wrapper-to-old-name ((wrld plist-worldp))
+  :returns (kwd keywordp)
+  :short "Get the default @(':wrapper-to-old-name') input
+          of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-wrapper-to-old-name).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :wrapper-to-old-name table))
+       ((unless (consp pair))
+        (prog2$ (raise "No :WRAPPER-TO-OLD-NAME found in APT defaults table.")
+                :irrelevant-keyword-for-unconditional-returns-theorem))
+       (kwd (cdr pair))
+       ((unless (keywordp kwd))
+        (prog2$ (raise
+                 "The default :WRAPPER-TO-OLD-NAME is ~x0, ~
+                  which is not a keyword.")
+                :irrelevant-keyword-for-unconditional-returns-theorem)))
+    kwd))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-wrapper-to-old-name :-to-)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection set-default-input-old-to-wrapper-enable
+  :short "Set the default @(':old-to-wrapper-enable') input
+          of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':old-to-wrapper-enable') input
+     that specifies whether to enable the generated theorem
+     that rewrites (a term involving) a call of the old function
+     to (a term involving) a call of the wrapper function.
+     This theorem is generated, and this input is allowed,
+     only when the wrapper is generated.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':old-to-wrapper-enable') input.
+     It must be a boolean.
+     It cannot be @('t')
+     if the default @(':wrapper-to-old-enable') is currently @('t').")
+   (xdoc::p
+    "The initial value of this default is @('nil').")
+   (xdoc::@def "set-default-input-old-to-wrapper-enable"))
+
+  (define set-default-input-old-to-wrapper-enable-fn ((bool booleanp) ctx state)
+    :returns (mv erp val state)
+    :parents nil
+    (b* ((table (table-alist+ *defaults-table-name* (w state)))
+         (pair (assoc-eq :wrapper-to-old-enable table)))
+      (if (and (consp pair)
+               (cdr pair)
+               bool)
+          (er-soft+ ctx t nil
+                    "Since the :WRAPPER-TO-OLD-ENABLE default is T, ~
+                     the :OLD-TO-WRAPPER-ENABLE default cannot be set to T. ~
+                     At most one of these two defaults may be T at any time.")
+        (value `(table ,*defaults-table-name* :old-to-wrapper-enable ,bool)))))
+
+  (defmacro set-default-input-old-to-wrapper-enable (bool)
+    (declare (xargs :guard (booleanp bool)))
+    (b* ((ctx (cons 'set-default-input-old-to-wrapper-enable bool)))
+      `(make-event-terse
+        (set-default-input-old-to-wrapper-enable-fn ,bool ',ctx state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-old-to-wrapper-enable ((wrld plist-worldp))
+  :returns (bool booleanp)
+  :short "Get the default @(':old-to-wrapper-enable') input
+          of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-old-to-wrapper-enable).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :old-to-wrapper-enable table))
+       ((unless (consp pair))
+        (raise "No :OLD-TO-WRAPPER-ENABLE found in APT defaults table."))
+       (bool (cdr pair))
+       ((unless (booleanp bool))
+        (raise
+         "The default :OLD-TO-WRAPPER-ENABLE is ~x0, which is not a boolean.")))
+    bool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-old-to-wrapper-enable nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection set-default-input-wrapper-to-old-enable
+  :short "Set the default @(':wrapper-to-old-enable') input
+          of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include a @(':wrapper-to-old-enable') input
+     that specifies whether to enable the generated theorem
+     that rewrites (a term involving) a call of the old function
+     to (a term involving) a call of the wrapper function.
+     This theorem is generated, and this input is allowed,
+     only when the wrapper is generated.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':wrapper-to-old-enable') input.
+     It must be a boolean.
+     It cannot be @('t')
+     if the default @(':old-to-wrapper-enable') is currently @('t').")
+   (xdoc::p
+    "The initial value of this default is @('nil').")
+   (xdoc::@def "set-default-input-wrapper-to-old-enable"))
+
+  (define set-default-input-wrapper-to-old-enable-fn ((bool booleanp) ctx state)
+    :returns (mv erp val state)
+    :parents nil
+    (b* ((table (table-alist+ *defaults-table-name* (w state)))
+         (pair (assoc-eq :old-to-wrapper-enable table)))
+      (if (and (consp pair)
+               (cdr pair)
+               bool)
+          (er-soft+ ctx t nil
+                    "Since the :OLD-TO-WRAPPER-ENABLE default is T, ~
+                     the :WRAPPER-TO-OLD-ENABLE default cannot be set to T. ~
+                     At most one of these two defaults may be T at any time.")
+        (value `(table ,*defaults-table-name* :wrapper-to-old-enable ,bool)))))
+
+  (defmacro set-default-input-wrapper-to-old-enable (bool)
+    (declare (xargs :guard (booleanp bool)))
+    (b* ((ctx (cons 'set-default-input-wrapper-to-old-enable bool)))
+      `(make-event-terse
+        (set-default-input-wrapper-to-old-enable-fn ,bool ',ctx state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-wrapper-to-old-enable ((wrld plist-worldp))
+  :returns (bool booleanp)
+  :short "Get the default @(':wrapper-to-old-enable') input
+          of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-wrapper-to-old-enable).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :wrapper-to-old-enable table))
+       ((unless (consp pair))
+        (raise "No :WRAPPER-TO-OLD-ENABLE found in APT defaults table."))
+       (bool (cdr pair))
+       ((unless (booleanp bool))
+        (raise
+         "The default :WRAPPER-TO-OLD-ENABLE is ~x0, which is not a boolean.")))
+    bool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-wrapper-to-old-enable nil)
