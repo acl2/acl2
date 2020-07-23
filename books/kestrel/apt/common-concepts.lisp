@@ -100,8 +100,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "APT transformations normally generate
-     transformed functions from existing functions.
+    "APT transformations generate transformed functions from existing functions.
      The names of the generated functions may be specified explicitly,
      or may be automatically generated from the names of the existing functions,
      according to some rules.
@@ -121,7 +120,11 @@
      Such an index is often one plus the index of the target function,
      but in general it may be larger if that name already happens to exist
      (which would not be a recommended way to organize an APT derivation,
-     but cannot be prevented in general).")
+     but cannot be prevented in general).
+     If the target function name is not actually a numbered name,
+     for the purpose of generating a function with the next numbered name,
+     the non-existent index of the target function name is regarded to be 0;
+     thus, the next numbered name has often index 1 in this case.")
    (xdoc::p
     "Certain APT transformations, when applied to a target function,
      generate a single new function.
@@ -135,12 +138,13 @@
     "Certain APT transformations may generate, besides the new function,
      also an additional wrapper function,
      This happens when the new function has different arguments
-     (i.e. different in number and/or in types)
+     (different in number and/or in types)
      from the target function:
      the wrapper function has
      the same number and types of arguments as the target function,
      and calls the new function with suitable arguments,
-     i.e. it ``wraps'' the new function to match the old function.
+     i.e. it ``wraps'' the new function to match the old function,
+     ``bridging'' between the two sets of arguments.
      The wrapper function is optional:
      these transformations have a @(':wrapper') boolean input
      that specifies whether the wrapper function is generated (@('t'))
@@ -153,12 +157,13 @@
     "If instead the @(':wrapper') input is @('t'),
      then another input of the transformation, @(':wrapper-name'),
      becomes relevant
-     (this input may be present only if @(':wrapper') is @('nil')).
+     (this input may be present only if @(':wrapper') is @('t')).
      Similarly to @(':new-name'), also @(':wrapper-name') may be
-     either @(':auto') to specify automatic name generation
+     either @(':auto') to specify automatic name generation,
      or a symbol to use as the wrapper function name.
-     Note that one of @(':new-name') and @(':wrapper-name') may be @(':auto'),
-     but not the other.
+     Note that it is possible for
+     just one of @(':new-name') and @(':wrapper-name') to be @(':auto'),
+     not necessarily both.
      The rules for automatic name generation are as follows:")
    (xdoc::ul
     (xdoc::li
