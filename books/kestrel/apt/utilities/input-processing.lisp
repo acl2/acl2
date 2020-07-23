@@ -66,7 +66,7 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A list @('(old-to-new new-names-to-avoid)')
+               (result "A list @('(old-to-new updated-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
@@ -152,7 +152,7 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A list @('(new-to-old new-names-to-avoid)')
+               (result "A list @('(new-to-old updated-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
@@ -267,7 +267,7 @@
                                      ctx
                                      state)
   :returns (mv erp
-               (result "A list @('(old-to-wrapper new-names-to-avoid)')
+               (result "A list @('(old-to-wrapper updated-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
@@ -340,7 +340,7 @@
                                      ctx
                                      state)
   :returns (mv erp
-               (result "A list @('(wrapper-to-old new-names-to-avoid)')
+               (result "A list @('(wrapper-to-old updated-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
