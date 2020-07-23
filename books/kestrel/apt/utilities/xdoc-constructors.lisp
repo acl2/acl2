@@ -262,6 +262,122 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ xdoc::desc-apt-input-old-to-wrapper-name ()
+  :short "Build a description of the @(':old-to-wrapper-name') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':old-to-wrapper-name') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines the name of the theorem that
+      rewrites the old function in terms of the wrapper function.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A keyword, to use as separator between
+       the names of @('old') and @('wrapper').
+       A keyword @(':kwd') specifies the theorem name @('oldkwdwrapper'),
+       in the same package as @('wrapper').")
+     (xdoc::li
+      "Any other symbol, to use as the name of the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-old-to-wrapper-name)."))
+    (xdoc::p
+     "This input may be present only if the @(':wrapper') input is @('t').")
+    (xdoc::p
+     "In the rest of this documentation page,
+      let @('old-to-wrapper') be the name of this theorem
+      (if it is generated).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::desc-apt-input-wrapper-to-old-name ()
+  :short "Build a description of the @(':wrapper-to-old-name') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':wrapper-to-old-name') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines the name of the theorem that
+      rewrites the wrapper function in terms of the old function.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A keyword, to use as separator between
+       the names of @('wrapper') and @('old').
+       A keyword @(':kwd') specifies the theorem name @('wrapperkwdold'),
+       in the same package as @('wrapper').")
+     (xdoc::li
+      "Any other symbol, to use as the name of the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-wrapper-to-old-name)."))
+    (xdoc::p
+     "This input may be present only if the @(':wrapper') input is @('t').")
+    (xdoc::p
+     "In the rest of this documentation page,
+      let @('wrapper-to-old') be the name of this theorem
+      (if it is generated).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::desc-apt-input-old-to-wrapper-enable ()
+  :short "Build a description of the @(':old-to-wrapper-enable') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':old-to-wrapper-enable') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines whether the @('old-to-wrapper') theorem is enabled.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to enable the theorem.")
+     (xdoc::li
+      "@('nil'), to disable the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-old-to-wrapper-enable)."))
+    (xdoc::p
+     "This input may be present only if the @(':wrapper') input is @('t').")
+    (xdoc::p
+     "If this input is @('t'),
+      the @(':wrapper-to-old-enable') input must be @('nil').
+      At most one of these two inputs may be @('t') at any time.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::desc-apt-input-wrapper-to-old-enable ()
+  :short "Build a description of the @(':wrapper-to-old-enable') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':wrapper-to-old-enable') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines whether the @('wrapper-to-old') theorem is enabled.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to enable the theorem.")
+     (xdoc::li
+      "@('nil'), to disable the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-wrapper-to-old-enable)."))
+    (xdoc::p
+     "This input may be present only if the @(':wrapper') input is @('t').")
+    (xdoc::p
+     "If this input is @('t'),
+      the @(':old-to-wrapper-enable') input must be @('nil').
+      At most one of these two inputs may be @('t') at any time.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ xdoc::desc-apt-input-thm-name (wrapper? &rest additional)
   (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
   :short "Build a description of the @(':thm-name') input
