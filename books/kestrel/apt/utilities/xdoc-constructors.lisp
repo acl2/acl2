@@ -100,7 +100,9 @@
   `(xdoc::desc
     "@(':wrapper') &mdash; default @('nil')"
     (xdoc::p
-     "Determines whether the wrapper function is generated:")
+     "Determines whether the wrapper function is generated.")
+    (xdoc::p
+     "It must be one of the following:")
     (xdoc::ul
      (xdoc::li
       "@('t'), to generate it.")
