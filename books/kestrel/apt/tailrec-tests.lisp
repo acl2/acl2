@@ -778,18 +778,13 @@
 
  ;; determining, by default, a name that already exists:
  (must-succeed*
-  (defun f-~>-f{1} () nil)
+  (defun f-to-f{1} () nil)
   (must-fail (tailrec f :wrapper t)))
 
  ;; default:
  (must-succeed*
   (tailrec f :wrapper t)
-  (assert! (theorem-namep 'f-~>-f{1} (w state))))
-
- ;; automatic:
- (must-succeed*
-  (tailrec f :wrapper t :old-to-wrapper-name :auto)
-  (assert! (theorem-namep 'f-~>-f{1} (w state))))
+  (assert! (theorem-namep 'f-to-f{1} (w state))))
 
  ;; specified separator:
  (must-succeed*
@@ -837,18 +832,13 @@
 
  ;; determining, by default, a name that already exists:
  (must-succeed*
-  (defun f{1}-~>-f () nil)
+  (defun f{1}-to-f () nil)
   (must-fail (tailrec f :wrapper t)))
 
  ;; default:
  (must-succeed*
   (tailrec f :wrapper t)
-  (assert! (theorem-namep 'f{1}-~>-f (w state))))
-
- ;; automatic:
- (must-succeed*
-  (tailrec f :wrapper t :wrapper-to-old-name :auto)
-  (assert! (theorem-namep 'f{1}-~>-f (w state))))
+  (assert! (theorem-namep 'f{1}-to-f (w state))))
 
  ;; specified separator:
  (must-succeed*
@@ -965,17 +955,17 @@
  ;; default:
  (must-succeed*
   (tailrec f :wrapper t)
-  (assert! (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable:
  (must-succeed*
   (tailrec f :wrapper t :old-to-wrapper-enable t)
-  (assert! (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; disable:
  (must-succeed*
   (tailrec f :wrapper t :old-to-wrapper-enable nil)
-  (assert! (rune-disabledp '(:rewrite f-~>-f{1}) state))))
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1004,7 +994,7 @@
  ;; default:
  (must-succeed*
   (tailrec f :wrapper t :wrapper-enable nil)
-  (assert! (rune-disabledp '(:rewrite f{1}-~>-f) state)))
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state)))
 
  ;; enable:
  (must-succeed*
@@ -1013,12 +1003,12 @@
            :wrapper-enable nil
            :old-to-wrapper-enable nil
            :wrapper-to-old-enable t)
-  (assert! (rune-enabledp '(:rewrite f{1}-~>-f) state)))
+  (assert! (rune-enabledp '(:rewrite f{1}-to-f) state)))
 
  ;; disable:
  (must-succeed*
   (tailrec f :wrapper t :wrapper-to-old-enable nil)
-  (assert! (rune-disabledp '(:rewrite f{1}-~>-f) state))))
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

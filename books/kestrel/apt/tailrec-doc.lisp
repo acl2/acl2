@@ -81,10 +81,10 @@
      "         :old-to-new-enable      ; default from table"
      "         :new-to-old-name        ; default from table"
      "         :new-to-old-enable      ; default from table"
-     "         :old-to-wrapper-name    ; default :auto"
-     "         :old-to-wrapper-enable  ; default t"
-     "         :wrapper-to-old-name    ; default :auto"
-     "         :wrapper-to-old-enable  ; default nil"
+     "         :old-to-wrapper-name    ; default from table"
+     "         :old-to-wrapper-enable  ; default from table"
+     "         :wrapper-to-old-name    ; default from table"
+     "         :wrapper-to-old-enable  ; default from table"
      "         :verify-guards          ; default :auto"
      "         :hints                  ; default nil"
      "         :print                  ; default :result"
@@ -323,105 +323,13 @@
 
     (xdoc::desc-apt-input-new-to-old-enable)
 
-    (xdoc::desc
-     "@(':old-to-wrapper-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the theorem that
-       rewrites the old function in terms of the wrapper function.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the "
-       (xdoc::seetopic "acl2::paired-names" "paired name")
-       " obtained by "
-       (xdoc::seetopic "acl2::make-paired-name" "pairing")
-       " the name of @('old') and the name of @('wrapper'),
-        putting the result into the same package as @('wrapper').")
-      (xdoc::li
-       "Any other keyword, to use as separator between
-        the names of @('old') and @('wrapper').
-        A keyword @(':kwd') specifies the theorem name @('oldkwdwrapper'),
-        in the same package as @('wrapper').")
-      (xdoc::li
-       "A non-keyword symbol,
-        to use as the name of the theorem."))
-     (xdoc::p
-      "This input may be present only if
-       the @(':wrapper') input is @('t').")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('old-to-wrapper') be the name of this theorem,
-       if it is generated."))
+    (xdoc::desc-apt-input-old-to-wrapper-name)
 
-    (xdoc::desc
-     "@(':old-to-wrapper-enable') &mdash; default @('t')"
-     (xdoc::p
-      "Determines whether @('old-to-wrapper') is enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable the theorem.")
-      (xdoc::li
-       "@('nil'), to disable it."))
-     (xdoc::p
-      "This input may be present only if
-       the @(':wrapper') input is @('t').")
-     (xdoc::p
-      "If this input is @('t'),
-       the @(':wrapper-to-old-enable') input must be @('nil').
-       At most one of these two inputs may be @('t') at any time."))
+    (xdoc::desc-apt-input-old-to-wrapper-enable)
 
-    (xdoc::desc
-     "@(':wrapper-to-old-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the theorem that
-       rewrites the wrapper function in terms of the old function.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the "
-       (xdoc::seetopic "acl2::paired-names" "paired name")
-       " obtained by "
-       (xdoc::seetopic "acl2::make-paired-name" "pairing")
-       " the name of @('wrapper') and the name of @('old'),
-        putting the result into the same package as @('wrapper').")
-      (xdoc::li
-       "Any other keyword, to use as separator between
-        the names of @('wrapper') and @('old').
-        A keyword @(':kwd') specifies the theorem name @('wrapperkwdold'),
-        in the same package as @('wrapper').")
-      (xdoc::li
-       "A non-keyword symbol,
-        to use as the name of the theorem."))
-     (xdoc::p
-      "This input may be present only if
-       the @(':wrapper') input is @('t').")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('wrapper-to-old') be the name of this theorem,
-       if it is generated."))
+    (xdoc::desc-apt-input-wrapper-to-old-name)
 
-    (xdoc::desc
-     "@(':wrapper-to-old-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('wrapper-to-old') is enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable the theorem.")
-      (xdoc::li
-       "@('nil'), to disable it."))
-     (xdoc::p
-      "This input may be present only if
-       the @(':wrapper') input is @('t').")
-     (xdoc::p
-      "If this input is @('t'),
-       the @(':old-to-wrapper-enable') input must be @('nil').
-       At most one of these two inputs may be @('t') at any time."))
+    (xdoc::desc-apt-input-wrapper-to-old-enable)
 
     (xdoc::desc-apt-input-verify-guards :optional)
 
