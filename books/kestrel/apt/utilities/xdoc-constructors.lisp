@@ -484,67 +484,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::desc-apt-input-non-executable (wrapper? &rest additional)
-  (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
-  :short "Build a description of the @(':non-executable') input
-          for the user documentation of an APT transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('wrapper?') parameter of this macro
-     has the value @(':never') when the transformation
-     never generates a wrapper;
-     it has the value @(':optional') when the transformation includes
-     a @(':wrapper') input that determines whether
-     the wrapper is generated or not (i.e. the wrapper is optional);
-     it has the value @(':always') when the transformation
-     always generates the wrapper.")
-   (xdoc::p
-    "This involves the new function,
-     and also the wrapper function when present.
-     This is determined by the @('wrapper?') parameter of this macro."))
-  (b* ((new/wrapper-ref
-        (case wrapper?
-          (:never "@('new')")
-          (:optional "@('new') and (if generated) @('wrapper')")
-          (:always "@('new') and @('wrapper')")))
-       (is/are
-        (case wrapper?
-          (:never "is")
-          (:optional "is/are")
-          (:always "are")))
-       (it/them
-        (case wrapper?
-          (:never "it")
-          (:optional "it/them")
-          (:always "them"))))
-    `(xdoc::desc
-      "@(':non-executable') &mdash; default @(':auto')"
-      (xdoc::p
-       "Determines whether "
-       ,new/wrapper-ref
-       " "
-       ,is/are
-       " "
-       (xdoc::seetopic "acl2::non-executable" "non-executable")
-       ":")
-      (xdoc::ul
-       (xdoc::li
-        "@('t'), to make "
-        ,it/them
-        " non-executable.")
-       (xdoc::li
-        "@('nil'), to not make "
-        ,it/them
-        " non-executable.")
-       (xdoc::li
-        "@(':auto'), to make "
-        ,it/them
-        " non-executable iff @('old') is non-executable."))
-      ,@additional)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defmacro+ xdoc::desc-apt-input-verify-guards (wrapper? &rest additional)
   (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
   :short "Build a description of the @(':verify-guards') input
