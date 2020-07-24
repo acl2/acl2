@@ -49,7 +49,6 @@
    @('new-enable'),
    @('thm-name'),
    @('thm-enable'),
-   @('non-executable'),
    @('verify-guards'),
    @('hints'),
    @('print'), and
@@ -67,7 +66,6 @@
    @('new-enable$'),
    @('thm-name$'),
    @('thm-enable$'),
-   @('non-executable$'),
    @('verify-guards$'),
    @('hints$'),
    @('print$'), and
@@ -252,7 +250,6 @@
                                  new-enable
                                  thm-name
                                  thm-enable
-                                 non-executable
                                  verify-guards
                                  hints
                                  print
@@ -266,7 +263,6 @@
                                     new-name$
                                     new-enable$
                                     thm-name$
-                                    non-executable$
                                     verify-guards$
                                     hints$)')
                         satisfying
@@ -276,7 +272,6 @@
                                          symbolp
                                          booleanp
                                          symbolp
-                                         booleanp
                                          booleanp
                                          evmac-input-hints-p
                                          result)'),
@@ -292,9 +287,6 @@
                         the new function should be enabled or not,
                         @('thm-name$') is
                         the result of @(tsee restrict-process-thm-name),
-                        @('non-executable$') indicates whether
-                        the new function should be
-                        non-executable or not,
                         @('verify-guards$') indicates whether the guards of
                         the new function should be verified or not, and
                         @('hints$') is
@@ -335,10 +327,6 @@
                         thm-name old$ new-name$ ctx state))
        ((er &) (ensure-value-is-boolean$ thm-enable
                                          "The :THM-ENABLE input" t nil))
-       ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
-                              non-executable
-                              (non-executablep old wrld)
-                              "The :NON-EXECUTABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
@@ -348,7 +336,6 @@
                  new-name$
                  new-enable$
                  thm-name$
-                 non-executable$
                  verify-guards$
                  hints$))))
 
@@ -470,7 +457,6 @@
                              (undefined$ pseudo-termp)
                              (new-name$ symbolp)
                              (new-enable$ booleanp)
-                             (non-executable$ booleanp)
                              (verify-guards$ booleanp)
                              (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -482,6 +468,7 @@
    The macro used to introduce the new function is determined by
    whether the new function must be
    enabled or not, and non-executable or not.
+   We make it non-executable if and only if @('old') is non-executable.
    </p>
    <p>
    The new function has the same formal arguments as the old function.
@@ -523,7 +510,7 @@
    Guard verification is deferred;
    see @(tsee restrict-gen-new-fn-verify-guards).
    </p>"
-  (b* ((macro (function-intro-macro new-enable$ non-executable$))
+  (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
        (formals (formals old$ wrld))
        (old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
@@ -731,7 +718,6 @@
    (new-enable$ booleanp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
-   (non-executable$ booleanp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
    (print$ evmac-input-print-p)
@@ -847,7 +833,6 @@
             undefined$
             new-name$
             new-enable$
-            non-executable$
             verify-guards$
             wrld))
        ((mv new-unnorm-event
@@ -923,7 +908,6 @@
                      new-enable
                      thm-name
                      thm-enable
-                     non-executable
                      verify-guards
                      hints
                      print
@@ -957,7 +941,6 @@
                   new-name$
                   new-enable$
                   thm-name$
-                  non-executable$
                   verify-guards$
                   hints$))
         (restrict-process-inputs old
@@ -967,7 +950,6 @@
                                  new-enable
                                  thm-name
                                  thm-enable
-                                 non-executable
                                  verify-guards
                                  hints
                                  print
@@ -980,7 +962,6 @@
                                             new-enable$
                                             thm-name$
                                             thm-enable
-                                            non-executable$
                                             verify-guards$
                                             hints$
                                             print
@@ -1012,7 +993,6 @@
                       (new-enable ':auto)
                       (thm-name ':auto)
                       (thm-enable 't)
-                      (non-executable ':auto)
                       (verify-guards ':auto)
                       (hints 'nil)
                       (print ':result)
@@ -1024,7 +1004,6 @@
                                     ',new-enable
                                     ',thm-name
                                     ',thm-enable
-                                    ',non-executable
                                     ',verify-guards
                                     ',hints
                                     ',print

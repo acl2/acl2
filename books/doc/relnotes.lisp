@@ -238,6 +238,16 @@
       because otherwise no @('newp-of-new') theorems is generated."))
 
    (xdoc::p
+    "The @(tsee apt::restrict) transformation has been improved as folows:")
+   (xdoc::ul
+    (xdoc::li
+     "The transformation has been simplified
+      by removing the @(':non-executable') option,
+      which does not seem necessary or useful.
+      The new function is marked non-executable
+      if and only if the target function is."))
+
+   (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
