@@ -26,13 +26,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-error-checker ensure-nil
-  ((x "Value to check."))
-  :short
-  "Cause an error if a value is not @('nil')."
-  :body
-  (((eq x nil) "~@0 must be NIL." description)))
-
 (def-error-checker ensure-string-or-nil
   ((x "Value to check."))
   :short
