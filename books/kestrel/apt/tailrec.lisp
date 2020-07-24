@@ -1740,7 +1740,7 @@
                               (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-lisp)."))
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the definition of
           the @($\\alpha$) function of the design notes."
