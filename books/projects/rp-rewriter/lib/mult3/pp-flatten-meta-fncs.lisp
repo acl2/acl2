@@ -152,7 +152,8 @@
       (and (valid-pp-lst-p (car pp-lst-lst))
            (valid-pp-lst-lst-p (cdr pp-lst-lst)))))
 
-  (define pp-lst-to-pp ((pp-lst valid-pp-lst-p))
+  (define pp-lst-to-pp (pp-lst)
+    :inline t
     :prepwork
     ((local
       (in-theory (enable valid-pp-lst-p))))

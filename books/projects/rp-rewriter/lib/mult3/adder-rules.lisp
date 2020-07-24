@@ -75,10 +75,10 @@
 
 (def-rp-rule$ t t
   c-res-to-adder-sum
-  (equal (c-res s-lst pp-lst C)
+  (equal (c-res s-lst pp-lst c-lst)
          (merge-adder-sum (SUM-LIST PP-LST)
                           (SUM-LIST S-LST)
-                          C))
+                          (SUM-LIST c-LST)))
   :hints (("Goal"
            :in-theory (e/d (c-res
                             sum-is-adder-b+

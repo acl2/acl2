@@ -78,8 +78,18 @@
 (local
  (defthmd cons-count-cadddr-lemma
    (IMPLIES (AND (ARE-C-INSTANCES x y))
-            (O< (+ (CONS-COUNT (CADDDR x))
-                   (CONS-COUNT (CADDDR y)))
+            (O< (+ (CONS-COUNT (CAdDDR (cdr x)))
+                   (CONS-COUNT (CADdDR (cdr y))))
+                (+ (CONS-COUNT X) (CONS-COUNT Y))))
+   :hints (("Goal"
+            :in-theory (e/d (cons-count
+                             is-rp-loose) ())))))
+
+(local
+ (defthmd cons-count-cadddr-lemma-2
+   (IMPLIES (AND (ARE-s-INSTANCES x y))
+            (O< (+ (CONS-COUNT (CAdDR (cdr x)))
+                   (CONS-COUNT (CADDR (cdr y))))
                 (+ (CONS-COUNT X) (CONS-COUNT Y))))
    :hints (("Goal"
             :in-theory (e/d (cons-count
@@ -95,8 +105,8 @@
  (defthmd cons-count-cadddr-lemma2
    (IMPLIES (AND (ARE-C-INSTANCES (EX-FROM-RP-LOOSE X)
                                   (EX-FROM-RP-LOOSE Y)))
-            (O< (+ (CONS-COUNT (CADDDR (EX-FROM-RP-LOOSE X)))
-                   (CONS-COUNT (CADDDR (EX-FROM-RP-LOOSE Y))))
+            (O< (+ (CONS-COUNT (CADDdR (cdr (EX-FROM-RP-LOOSE X))))
+                   (CONS-COUNT (CADDdR (cdr (EX-FROM-RP-LOOSE Y)))))
                 (+ (CONS-COUNT X) (CONS-COUNT Y))))
    :hints (("Goal"
             :use ((:instance cons-count-cadddr-lemma
@@ -109,13 +119,38 @@
                              (b (cons-count x))))
             :in-theory (e/d (MEASURE-LEMMA4-V2) ())))))
 
+(local
+ (defthmd cons-count-cadddr-lemma2-2
+   (IMPLIES (AND (ARE-s-INSTANCES (EX-FROM-RP-LOOSE X)
+                                  (EX-FROM-RP-LOOSE Y)))
+            (O< (+ (CONS-COUNT (CADDR (cdr (EX-FROM-RP-LOOSE X))))
+                   (CONS-COUNT (CADdR (cdr (EX-FROM-RP-LOOSE Y)))))
+                (+ (CONS-COUNT X) (CONS-COUNT Y))))
+   :hints (("Goal"
+            :use ((:instance cons-count-cadddr-lemma-2
+                             (x (ex-from-rp-loose x))
+                             (y (ex-from-rp-loose y)))
+                  (:instance local-EQUALITY-MEASURE-LEMMA9
+                             (a (cons-count (ex-from-rp-loose x)))
+                             (x (cons-count (ex-from-rp-loose y)))
+                             (y (cons-count y))
+                             (b (cons-count x))))
+            :in-theory (e/d (MEASURE-LEMMA4-V2) ())))))
+
+
+
 (defun rp-equal-iter-pp (x y lst-flg)
   ;; returns (mv order equal-x-y)
   (declare (xargs :guard t
                   :measure (+ (cons-count x) (cons-count y))
                   :otf-flg t
                   :hints (("Goal"
+                           :expand ((:free (x) (nth 3 x))
+                                    (:free (x) (nth 2 x))
+                                    (:free (x) (nth 1 x))
+                                    (:free (x) (nth 0 x)))
                            :in-theory (e/d (measure-lemmas
+                                            cons-count-cadddr-lemma2-2
                                             cons-count-cadddr-lemma
                                             cons-count-cadddr-lemma2) ())))))
   (cond
@@ -173,6 +208,33 @@
             :do-not-induct t
             :in-theory (e/d (EX-FROM-RP-LOOSE
                              IS-RP-LOOSE) ())))))
+
+(local
+ (defthmd rp-evlt-of-ex-from-rp-reverse
+   (implies (syntaxp (atom term))
+            (equal (rp-evlt term a)
+                   (rp-evlt (EX-FROM-RP term) a)))
+   :hints (("Goal"
+            :induct (EX-FROM-RP term)
+            :do-not-induct t
+            :in-theory (e/d (EX-FROM-Rp
+                             IS-RP-LOOSE) ())))))
+
+(local
+ (defthm rp-termp-of-CAR-CDDDDR
+   (implies (and (rp-termp X)
+                 (consp x)
+                 ;(not (quotep x))
+                 (consp (cdr x))
+                 (consp (cddr x))
+                 (consp (cdddr x))
+                 (consp (cddddr x)))
+            (rp-termp (car (cddddr x))))
+   :hints (("Goal"
+            :in-theory (e/d (RP-TERMP IS-RP
+                                      EX-FROM-RP-LOOSE
+                                      IS-RP-LOOSE)
+                            ())))))
 
 (local
  (encapsulate
@@ -253,14 +315,21 @@
                                (rp-evlt-lst y a))
                         t)))
       :hints (("Goal"
-               :use ((:instance rp-evl-of-rp-equal
-                                (term1 (EX-FROM-RP-LOOSE X))
-                                (term2 (EX-FROM-RP-LOOSE y))))
+               :expand ((:free (x) (nth 3 x))
+                                    (:free (x) (nth 2 x))
+                                    (:free (x) (nth 1 x))
+                                    (:free (x) (nth 0 x)))
+               :do-not-induct t
+               :induct (rp-equal-iter-pp x y lst-flg)
+               
                :in-theory (e/d (rp-equal-iter-pp
+                                ex-from-rp-loose-is-ex-from-rp
                                 ;;rp-evl-of-fncall-args
-                                rp-evlt-of-ex-from-rp-loose-reverse
+                                rp-evlt-of-ex-from-rp-reverse
                                 rp-equal-cnt-memoized)
                                (EVL-OF-EXTRACT-FROM-RP-LOOSE
+                                RP-EVLT-OF-EX-FROM-RP-LOOSE-REVERSE
+                                rp-evlt-of-ex-from-rp
                                 rp-termp))))))
 
    (defthm rp-evl-of-rp-equal-iter-pp+

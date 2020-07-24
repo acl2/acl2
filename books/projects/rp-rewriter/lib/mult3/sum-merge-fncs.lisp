@@ -115,7 +115,6 @@
     (pp-cons (car l1)
              (append-pp-lst-lsts (cdr l1) l2))))
 
-
 (acl2::defines
  s-order
  :flag-local nil
@@ -155,7 +154,6 @@
                  ((mv cdr-order cdr-equal)
                   (s-order-lst (cdr lst1) (cdr lst2))))
               (mv cdr-order cdr-equal))))))
-
 
 
 (encapsulate
@@ -269,7 +267,7 @@
   (if (equal (car x) y)
   (mv nil
   (equal x-orig y-orig)
-;(atom (cdr x)) ;
+;(atom (cdr x)) ; ;
   )
   (mv (not (lexorder y (car x))) nil))
   (mv t nil)))
@@ -278,7 +276,7 @@
   (if (equal (car y) x)
   (mv (not (atom y))
   (equal x-orig y-orig)
-;(atom y) ;
+;(atom y) ; ;
   )
   (mv (not (lexorder (car y) x)) nil))
   (mv nil nil)))
@@ -304,7 +302,6 @@
       (& nil))))
 
 
-    
 
 (progn
   (define pp-order-and-negated-termsp ((term1)
@@ -376,7 +373,6 @@
   ;;(memoize 'pp-sum-merge :condition '(and (not (equal pp1 'nil)) (not (equal
   ;;pp2 'nil))))
   )
-
 
 
 
@@ -491,11 +487,39 @@
                  (hard-error 's-fix-args "" nil)
                  pp)))))
 
+(define cough-duplicates (lst)
+  :returns (mv (coughed-lst rp-term-listp
+                            :hyp (rp-term-listp lst))
+               (res-lst rp-term-listp
+                        :hyp (rp-term-listp lst)))
+  (b* (((when (atom lst))
+        (mv nil nil))
+       (cur (car lst))
+       (cur-orig cur)
+       (cur (ex-from-rp-loose cur))
+       ((mv next next-present)
+        (if (atom (cdr lst)) (mv ''0 nil) (mv (cadr lst) t))))
+    (cond ((and next-present (rp-equal-cnt cur next 0))
+           (b* (((mv coughed-lst new-lst)
+                 (cough-duplicates (cddr lst))))
+             (mv (cons cur-orig coughed-lst) new-lst)))
+          (t (b* (((mv coughed-lst new-lst)
+                   (cough-duplicates (cdr lst))))
+               (mv coughed-lst
+                   (cons-with-hint cur-orig new-lst lst)))))))
+
 (progn
 
-  (define c-fix-c-arg-lst (lst)
+  (define cough-lst (lst)
+    :returns (mv (coughed-lst rp-term-listp
+                              :hyp (rp-term-listp lst))
+                 (res-lst rp-term-listp
+                          :hyp (rp-term-listp lst)))
+    :prepwork
+    ((local
+      (in-theory (enable ex-from-rp-loose-is-ex-from-rp))))
     (if (atom lst)
-        (mv nil nil nil)
+        (mv nil nil)
       (b* ((cur (car lst))
            (cur-orig cur)
            (cur (ex-from-rp-loose cur))
@@ -503,25 +527,18 @@
             (if (atom (cdr lst)) (mv ''0 nil) (mv (cadr lst) t))))
         (cond ((and next-present
                     (rp-equal-cnt cur next 0))
-               (b* (((mv selected reduced coughed)
-                     (c-fix-c-arg-lst (cddr lst))))
-                 (mv selected
-                     reduced
-                     (cons cur-orig coughed)
-                     )))
+               (b* (((mv coughed-lst new-lst)
+                     (cough-lst (cddr lst))))
+                 (mv (cons cur-orig coughed-lst) new-lst)))
               ((case-match cur (('-- &) t))
-               (b* (((mv selected reduced coughed)
-                     (c-fix-c-arg-lst (cdr lst))))
-                 (mv (cons (cadr cur) selected)
-                     reduced
-                     (cons cur-orig coughed))))
+               (b* (((mv coughed-lst new-lst)
+                     (cough-lst (cdr lst))))
+                 (mv (cons cur-orig coughed-lst)
+                     (cons (cadr cur) new-lst))))
               (t
-               (b* (((mv selected reduced coughed)
-                     (c-fix-c-arg-lst (cdr lst))))
-                 (mv selected
-                     (cons-with-hint cur-orig reduced lst)
-                     coughed)))))))
-
+               (b* (((mv coughed-lst new-lst)
+                     (cough-lst (cdr lst))))
+                 (mv coughed-lst (cons-with-hint cur-orig new-lst lst))))))))
 
 
   (define c-fix-arg-aux ((arg-lst)
@@ -612,7 +629,7 @@
                             :hyp (rp-termp s))
                  (cleaned-s rp-termp
                             :hyp (rp-termp s)))
-    (if t;(c/d-remove-repeated-s)
+    (if t ;(c/d-remove-repeated-s)
         (case-match s
           (('list . s-lst)
            (b* (((mv coughed-lst res-lst) (c-fix-arg-aux s-lst t (expt 2 30))))
@@ -635,7 +652,6 @@
     (b* ((res
           (pp-sum-merge-aux (list e) coughed-lst)))
       res))
-
 
 
   (defstobj pp-lst-array

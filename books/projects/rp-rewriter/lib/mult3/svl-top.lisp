@@ -777,7 +777,10 @@
                             (:REWRITE BITP-OF-BIT-OF))))))
 
 
+
 (def-rp-rule
   4vec-concat$-1-of-binary-and
   (equal (svl::4vec-concat$ 1 (and$ x y) z)
-         (svl::4vec-concat$ 1 (s-spec (list (and$ x y))) z)))
+         (svl::4vec-concat$ 1 (s-spec (list (and$ x y))) z))
+  :hints (("Goal"
+           :in-theory (e/d (and$) ()))))

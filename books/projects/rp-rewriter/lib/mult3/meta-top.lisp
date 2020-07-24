@@ -47,6 +47,8 @@
 
 (include-book "adder-rules-meta")
 
+(include-book "verify-guards")
+
 ;; (defthm sort-sum-meta-valid-rp-meta-rulep
 ;;     (implies (and (rp-evl-meta-extract-global-facts :state state)
 ;;                   (mult-formula-checks state))
