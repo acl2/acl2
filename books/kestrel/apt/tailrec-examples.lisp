@@ -108,26 +108,40 @@
 ; so again the default variant, :MONOID, works.
 ; TAILREC again infers ACL2-NUMBERP as the domain of the monoid.
 
+; Here we specify the generation of a wrapper function.
+; The names of the new (tail-recursive) and wrapper functions
+; are in accordance with :DOC APT::FUNCTION-NAME-GENERATION.
+
 (defun pyramidal (n)
   (declare (xargs :guard (natp n)))
   (if (zp n)
       0
     (+ (* n n) (pyramidal (1- n)))))
 
-(apt::tailrec pyramidal)
+(apt::tailrec pyramidal :wrapper t)
 
 (must-be-redundant
- (defun pyramidal{1} (n r)
+ (defun pyramidal-aux{1} (n r)
    (declare (xargs :guard (and (natp n) (acl2-numberp r))
                    :measure (acl2-count n)))
    (if (zp n)
        r
-     (pyramidal{1} (+ -1 n) (+ r (* n n))))))
+     (pyramidal-aux{1} (+ -1 n) (+ r (* n n))))))
+
+(must-be-redundant
+ (defun pyramidal{1} (n)
+   (declare (xargs :guard (natp n)))
+   (pyramidal-aux{1} n 0)))
+
+(must-be-redundant
+ (defthmd pyramidal-to-pyramidal-aux{1}
+   (equal (pyramidal n)
+          (pyramidal-aux{1} n 0))))
 
 (must-be-redundant
  (defthmd pyramidal-to-pyramidal{1}
    (equal (pyramidal n)
-          (pyramidal{1} n 0))))
+          (pyramidal{1} n))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
