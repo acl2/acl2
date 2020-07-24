@@ -652,7 +652,7 @@
                                            state)
   :returns (mv erp
                (result "A tuple
-                        @('(new-name$ wrapper-name$ new-names-to-avoid)')
+                        @('(new-name$ wrapper-name$ updated-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          symbolp
@@ -941,7 +941,7 @@
                                              ctx
                                              state))
        ((er &) (ensure-value-is-boolean$ wrapper "The :WRAPPER input" t nil))
-       ((er (list new-name$ wrapper-name$ &))
+       ((er (list new-name$ wrapper-name$ names-to-avoid))
         (tailrec-process-new/wrapper-names new-name
                                            wrapper-name
                                            wrapper-name-present
@@ -960,7 +960,6 @@
                                                wrapper
                                                ctx
                                                state))
-       (names-to-avoid nil)
        ((er (list old-to-new-name$ names-to-avoid))
         (process-old-to-new-name old-to-new-name
                                  old-to-new-name-present
