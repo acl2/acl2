@@ -1247,7 +1247,8 @@
                                        (old-unnorm-name symbolp)
                                        (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+               (name "A @(tsee symbolp) that names the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting that
           the old function always yields values in the domain
@@ -1322,7 +1323,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1738,7 +1739,8 @@
                               (names-to-avoid symbol-listp)
                               (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp)."))
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-lisp)."))
   :mode :program
   :short "Generate the definition of
           the @($\\alpha$) function of the design notes."
@@ -1775,7 +1777,7 @@
                                   :verify-guards nil
                                   :normalize nil))
                   ,body))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1822,7 +1824,8 @@
                                        (names-to-avoid symbol-listp)
                                        (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+               (name "A @(tsee symbolp) that names the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting that
           the recursion exit test succeeds on the result of @($\\alpha$)
@@ -1859,7 +1862,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1868,7 +1871,8 @@
                                             (names-to-avoid symbol-listp)
                                             (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+               (name "A @(tsee symbolp) that names the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting that
           the guard of the old function is preserved by @($\\alpha$)
@@ -1910,7 +1914,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1924,7 +1928,8 @@
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+               (name "A @(tsee symbolp) that names the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting that
           the base value of the recursion is in the domain
@@ -1959,7 +1964,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1976,7 +1981,8 @@
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+               (name "A @(tsee symbolp) that names the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting that
           the base value of the recursion
@@ -2016,7 +2022,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2028,7 +2034,8 @@
                                     (names-to-avoid symbol-listp)
                                     state)
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp) that names the theorem."))
+               (name "A @(tsee symbolp) that names the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate the theorem asserting that
           the guard of the base term is satisfied
@@ -2065,7 +2072,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2494,12 +2501,6 @@
    for visual separation.
    </p>"
   (b* ((wrld (w state))
-       (names-to-avoid (if wrapper$
-                           (list* new-name$
-                                  wrapper-name$
-                                  names-to-avoid)
-                         (list* new-name$
-                                names-to-avoid)))
        (appconds (tailrec-gen-appconds old$
                                        test
                                        base
@@ -2524,7 +2525,8 @@
                                       wrld))
        (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv domain-of-old-event?
-            domain-of-old-name?)
+            domain-of-old-name?
+            names-to-avoid)
         (if (member-eq variant$ '(:monoid :monoid-alt :assoc))
             (tailrec-gen-domain-of-old-thm old$ test nonrec updates
                                            variant$ domain$
@@ -2532,10 +2534,7 @@
                                            appcond-thm-names
                                            old-unnorm-name
                                            wrld)
-          (mv nil nil)))
-       (names-to-avoid (if domain-of-old-name?
-                           (cons domain-of-old-name? names-to-avoid)
-                         names-to-avoid))
+          (mv nil nil names-to-avoid)))
        ((mv new-fn-local-event
             new-fn-exported-event
             new-formals)
@@ -2569,71 +2568,68 @@
                                     wrld))
        (gen-alpha (member-eq variant$ '(:monoid :monoid-alt)))
        ((mv alpha-event?
-            alpha-name?)
+            alpha-name?
+            names-to-avoid)
         (if gen-alpha
             (tailrec-gen-alpha-fn old$ test updates names-to-avoid wrld)
-          (mv nil nil)))
-       (names-to-avoid (if gen-alpha
-                           (cons alpha-name? names-to-avoid)
-                         names-to-avoid))
+          (mv nil nil names-to-avoid)))
        ((mv test-of-alpha-event?
-            test-of-alpha-name?)
+            test-of-alpha-name?
+            names-to-avoid)
         (if gen-alpha
             (tailrec-gen-test-of-alpha-thm old$ test
                                            alpha-name?
                                            names-to-avoid wrld)
-          (mv nil nil)))
-       (names-to-avoid (if gen-alpha
-                           (cons test-of-alpha-name? names-to-avoid)
-                         names-to-avoid))
+          (mv nil nil names-to-avoid)))
        ((mv old-guard-of-alpha-event?
-            old-guard-of-alpha-name?)
+            old-guard-of-alpha-name?
+            names-to-avoid)
         (if (and gen-alpha
                  verify-guards$)
-            (tailrec-gen-old-guard-of-alpha-thm
-             old$ alpha-name? names-to-avoid wrld)
-          (mv nil nil)))
-       (names-to-avoid (if (and gen-alpha
-                                verify-guards$)
-                           (cons old-guard-of-alpha-name? names-to-avoid)
-                         names-to-avoid))
+            (tailrec-gen-old-guard-of-alpha-thm old$
+                                                alpha-name?
+                                                names-to-avoid
+                                                wrld)
+          (mv nil nil names-to-avoid)))
        ((mv domain-of-ground-base-event?
-            domain-of-ground-base-name?)
+            domain-of-ground-base-name?
+            names-to-avoid)
         (if gen-alpha
-            (tailrec-gen-domain-of-ground-base-thm
-             old$ base domain$ appcond-thm-names
-             alpha-name? test-of-alpha-name?
-             names-to-avoid wrld)
-          (mv nil nil)))
-       (names-to-avoid (if gen-alpha
-                           (cons domain-of-ground-base-name?
-                                 names-to-avoid)
-                         names-to-avoid))
+            (tailrec-gen-domain-of-ground-base-thm old$
+                                                   base
+                                                   domain$
+                                                   appcond-thm-names
+                                                   alpha-name?
+                                                   test-of-alpha-name?
+                                                   names-to-avoid
+                                                   wrld)
+          (mv nil nil names-to-avoid)))
        ((mv combine-left-identity-ground-event?
-            combine-left-identity-ground-name?)
+            combine-left-identity-ground-name?
+            names-to-avoid)
         (if gen-alpha
-            (tailrec-gen-combine-left-identity-ground-thm
-             old$ base combine q r domain$ appcond-thm-names
-             alpha-name? test-of-alpha-name?
-             names-to-avoid wrld)
-          (mv nil nil)))
-       (names-to-avoid (if gen-alpha
-                           (cons combine-left-identity-ground-name?
-                                 names-to-avoid)
-                         names-to-avoid))
+            (tailrec-gen-combine-left-identity-ground-thm old$
+                                                          base
+                                                          combine
+                                                          q
+                                                          r
+                                                          domain$
+                                                          appcond-thm-names
+                                                          alpha-name?
+                                                          test-of-alpha-name?
+                                                          names-to-avoid
+                                                          wrld)
+          (mv nil nil names-to-avoid)))
        ((mv base-guard-event?
-            base-guard-name?)
+            base-guard-name?
+            names-to-avoid)
         (if (and gen-alpha
                  verify-guards$)
             (tailrec-gen-base-guard-thm old$ base
                                         alpha-name? test-of-alpha-name?
                                         old-guard-of-alpha-name?
                                         names-to-avoid state)
-          (mv nil nil)))
-       (names-to-avoid (if (and gen-alpha
-                                verify-guards$)
-                           (cons base-guard-name? names-to-avoid)
-                         names-to-avoid))
+          (mv nil nil names-to-avoid)))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event)
         (tailrec-gen-old-to-new-thm old$ test base nonrec updates a
