@@ -140,16 +140,20 @@
   :short "Build a description of the @(':wrapper-enable') input
           for the user documentation of an APT transformation."
   `(xdoc::desc
-    "@(':wrapper-enable') &mdash; default @('t')"
+    "@(':wrapper-enable') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
     (xdoc::p
-     "Determines whether @('wrapper') is enabled.")
+     "Determines whether the wrapper function is enabled.")
     (xdoc::p
      "It must be one of the following:")
     (xdoc::ul
      (xdoc::li
       "@('t'), to enable it.")
      (xdoc::li
-      "@('nil'), to disable it."))
+      "@('nil'), to disable it.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-wrapper-enable)."))
     (xdoc::p
      "This input may be present only if the @(':wrapper') input is @('t').")
     ,@additional))
