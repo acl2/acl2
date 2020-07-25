@@ -465,3 +465,49 @@
                   wrapper-to-old-enable)
       (value nil)))
   :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-wrapper-enable (wrapper-enable
+                                (wrapper-enable-present booleanp)
+                                (gen-wrapper booleanp)
+                                ctx
+                                state)
+  :returns (mv erp (processed-wrapper-enable booleanp) state)
+  :short "Process the @(':wrapper-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have a @(':wrapper-enable') input
+     that specifies whether to enable or not the wrapper function,
+     assuming it is generated.
+     This must be a boolean.
+     If absent, it is taken from the APT defaults table;
+     see @(tsee set-default-input-wrapper-enable).")
+   (xdoc::p
+    "The @('gen-wrapper') parameter is @('t') iff the wrapper is generated,
+     i.e. if the @(':wrapper') input of the transformation is @('t').
+     If this is @('nil'), we ensure that @(':wrapper-enable') is absent.")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('wrapper-enable-present') to @('t')
+     iff the @(':wrapper-enable') input is present.
+     If this is @('nil'), the parameter @('wrapper-enable') is ignored."))
+  (if gen-wrapper
+      (if wrapper-enable-present
+          (b* (((er &)
+                (ensure-value-is-boolean$ wrapper-enable
+                                          "The :WRAPPER-ENABLE input"
+                                          t
+                                          nil)))
+            (value wrapper-enable))
+        (value (get-default-input-wrapper-enable (w state))))
+    (if wrapper-enable-present
+        (er-soft+ ctx t nil
+                  "Since the :WRAPPER input is (perhaps by default) NIL, ~
+                   no :WRAPPER-ENABLE input may be supplied,
+                   but ~x0 was supplied instead."
+                  wrapper-enable)
+      (value nil)))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
