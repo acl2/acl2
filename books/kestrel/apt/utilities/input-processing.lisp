@@ -28,7 +28,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define process-input-new-name (new-name (old symbolp) ctx state)
-  :returns (mv erp (new-name$ "A @(tsee symbolp).") state)
+  :returns (mv erp (new "A @(tsee symbolp).") state)
   :mode :program
   :short "Process the @(':new-name') input of an APT transformation."
   :long
@@ -209,7 +209,7 @@
                                    (old-to-new-enable-present booleanp)
                                    ctx
                                    state)
-  :returns (mv erp (old-to-new booleanp) state)
+  :returns (mv erp (processed-old-to-new-enable booleanp) state)
   :short "Process the @(':old-to-new-enable') input of an APT transformation."
   :long
   (xdoc::topstring
@@ -241,7 +241,7 @@
                                    (new-to-old-enable-present booleanp)
                                    ctx
                                    state)
-  :returns (mv erp (new-to-old booleanp) state)
+  :returns (mv erp (processed-new-to-old-enable booleanp) state)
   :short "Process the @(':new-to-old-enable') input of an APT transformation."
   :long
   (xdoc::topstring-p
@@ -406,7 +406,7 @@
                                        (gen-wrapper booleanp)
                                        ctx
                                        state)
-  :returns (mv erp (old-to-wrapper booleanp) state)
+  :returns (mv erp (processed-old-to-wrapper-enable booleanp) state)
   :short "Process the @(':old-to-wrapper-enable') input of
           an APT transformation."
   :long
@@ -441,7 +441,7 @@
                                        (gen-wrapper booleanp)
                                        ctx
                                        state)
-  :returns (mv erp (wrapper-to-old booleanp) state)
+  :returns (mv erp (processed-wrapper-to-old-enable booleanp) state)
   :short "Process the @(':wrapper-to-old-enable') input of
           an APT transformation."
   :long
