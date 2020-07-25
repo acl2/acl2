@@ -76,7 +76,7 @@
      "         :accumulator            ; default :auto"
      "         :wrapper                ; default nil"
      "         :wrapper-name           ; default :auto"
-     "         :wrapper-enable         ; default t"
+     "         :wrapper-enable         ; default from table"
      "         :old-to-new-name        ; default from table"
      "         :old-to-new-enable      ; default from table"
      "         :new-to-old-name        ; default from table"

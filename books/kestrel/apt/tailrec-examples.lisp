@@ -129,7 +129,7 @@
      (pyramidal-aux{1} (+ -1 n) (+ r (* n n))))))
 
 (must-be-redundant
- (defun pyramidal{1} (n)
+ (defund pyramidal{1} (n)
    (declare (xargs :guard (natp n)))
    (pyramidal-aux{1} n 0)))
 

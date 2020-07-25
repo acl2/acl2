@@ -817,26 +817,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tailrec-process-wrapper-enable (wrapper-enable
-                                        (wrapper-enable-present booleanp)
-                                        (wrapper$ booleanp)
-                                        ctx
-                                        state)
-  :returns (mv erp
-               (nothing "Always @('nil').")
-               state)
-  :short "Process the @(':wrapper-enable') input."
-  (if wrapper$
-      (ensure-value-is-boolean$ wrapper-enable
-                                "The :WRAPPER-ENABLE input" t nil)
-    (if wrapper-enable-present
-        (er-soft+ ctx t nil
-                  "Since the :WRAPPER input is (perhaps by default) NIL, ~
-                   no :WRAPPER-ENABLE input may be supplied.")
-      (value nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define tailrec-process-inputs (old
                                 variant
                                 domain
@@ -884,12 +864,15 @@
                                     new-enable$
                                     a
                                     wrapper-name$
+                                    wrapper-enable$
                                     old-to-new-name$
                                     old-to-new-enable$
                                     new-to-old-name$
                                     new-to-old-enable$
                                     old-to-wrapper-name$
+                                    old-to-wrapper-enable$
                                     wrapper-to-old-name$
+                                    wrapper-to-old-enable$
                                     verify-guards$
                                     hints$
                                     names-to-avoid)')
@@ -907,12 +890,15 @@
                                          booleanp
                                          symbolp
                                          symbolp
+                                         booleanp
+                                         symbolp
+                                         booleanp
                                          symbolp
                                          booleanp
                                          symbolp
                                          booleanp
                                          symbolp
-                                         symbolp
+                                         booleanp
                                          booleanp
                                          symbol-alistp
                                          symbol-listp
@@ -955,11 +941,12 @@
                           (fundef-enabledp old state)
                           "The :NEW-ENABLE input" t nil))
        ((er a) (tailrec-process-accumulator accumulator old$ r ctx state))
-       ((er &) (tailrec-process-wrapper-enable wrapper-enable
-                                               wrapper-enable-present
-                                               wrapper
-                                               ctx
-                                               state))
+       ((er wrapper-enable$)
+        (process-wrapper-enable wrapper-enable
+                                wrapper-enable-present
+                                wrapper
+                                ctx
+                                state))
        ((er (list old-to-new-name$ names-to-avoid))
         (process-old-to-new-name old-to-new-name
                                  old-to-new-name-present
@@ -995,11 +982,12 @@
                                      names-to-avoid
                                      ctx
                                      state))
-       ((er &) (process-old-to-wrapper-enable old-to-wrapper-enable
-                                              old-to-wrapper-enable-present
-                                              wrapper
-                                              ctx
-                                              state))
+       ((er old-to-wrapper-enable$)
+        (process-old-to-wrapper-enable old-to-wrapper-enable
+                                       old-to-wrapper-enable-present
+                                       wrapper
+                                       ctx
+                                       state))
        ((er (list wrapper-to-old-name$ names-to-avoid))
         (process-wrapper-to-old-name wrapper-to-old-name
                                      wrapper-to-old-name-present
@@ -1009,11 +997,12 @@
                                      names-to-avoid
                                      ctx
                                      state))
-       ((er &) (process-wrapper-to-old-enable wrapper-to-old-enable
-                                              wrapper-to-old-enable-present
-                                              wrapper
-                                              ctx
-                                              state))
+       ((er wrapper-to-old-enable$)
+        (process-wrapper-to-old-enable wrapper-to-old-enable
+                                       wrapper-to-old-enable-present
+                                       wrapper
+                                       ctx
+                                       state))
        ((when (and old-to-new-enable$
                    new-to-old-enable$))
         (er-soft+ ctx t nil
@@ -1021,10 +1010,10 @@
                    are (perhaps by default, for one of them) both T. ~
                    This is disallowed."))
        ((when (and wrapper
-                   old-to-wrapper-enable
-                   wrapper-to-old-enable))
+                   old-to-wrapper-enable$
+                   wrapper-to-old-enable$))
         (er-soft+ ctx t nil
-                  "The :OLD-TO-WRAPPER-ENABLE
+                  "The :OLD-TO-WRAPPER-ENABLE ~
                    and :WRAPPER-TO-OLD-ENABLE inputs ~
                    are (perhaps by default, for one of them) both T. ~
                    This is disallowed."))
@@ -1043,12 +1032,15 @@
                  new-enable$
                  a
                  wrapper-name$
+                 wrapper-enable$
                  old-to-new-name$
                  old-to-new-enable$
                  new-to-old-name$
                  new-to-old-enable$
                  old-to-wrapper-name$
+                 old-to-wrapper-enable$
                  wrapper-to-old-name$
+                 wrapper-to-old-enable$
                  verify-guards$
                  hints$
                  names-to-avoid))))
@@ -2850,12 +2842,15 @@
                   new-enable$
                   a
                   wrapper-name$
+                  wrapper-enable$
                   old-to-new-name$
                   old-to-new-enable$
                   new-to-old-name$
                   new-to-old-enable$
                   old-to-wrapper-name$
+                  old-to-wrapper-enable$
                   wrapper-to-old-name$
+                  wrapper-to-old-enable$
                   verify-guards$
                   hints$
                   names-to-avoid))
@@ -2907,15 +2902,15 @@
                                            a
                                            wrapper
                                            wrapper-name$
-                                           wrapper-enable
+                                           wrapper-enable$
                                            old-to-new-name$
                                            old-to-new-enable$
                                            new-to-old-name$
                                            new-to-old-enable$
                                            old-to-wrapper-name$
-                                           old-to-wrapper-enable
+                                           old-to-wrapper-enable$
                                            wrapper-to-old-name$
-                                           wrapper-to-old-enable
+                                           wrapper-to-old-enable$
                                            verify-guards$
                                            hints$
                                            print
@@ -2949,15 +2944,24 @@
                      (accumulator ':auto)
                      (wrapper 'nil)
                      (wrapper-name ':auto wrapper-name-present)
-                     (wrapper-enable 't wrapper-enable-present)
-                     (old-to-new-name ':irrelevant old-to-new-name-present)
-                     (old-to-new-enable ':irrelevant old-to-new-enable-present)
-                     (new-to-old-name ':irrelevant new-to-old-name-present)
-                     (new-to-old-enable ':irrelevant new-to-old-enable-present)
-                     (old-to-wrapper-name ':auto old-to-wrapper-name-present)
-                     (old-to-wrapper-enable 't old-to-wrapper-enable-present)
-                     (wrapper-to-old-name ':auto wrapper-to-old-name-present)
-                     (wrapper-to-old-enable 'nil wrapper-to-old-enable-present)
+                     (wrapper-enable ':irrelevant
+                                     wrapper-enable-present)
+                     (old-to-new-name ':irrelevant
+                                      old-to-new-name-present)
+                     (old-to-new-enable ':irrelevant
+                                        old-to-new-enable-present)
+                     (new-to-old-name ':irrelevant
+                                      new-to-old-name-present)
+                     (new-to-old-enable ':irrelevant
+                                        new-to-old-enable-present)
+                     (old-to-wrapper-name ':irrelevant
+                                          old-to-wrapper-name-present)
+                     (old-to-wrapper-enable ':irrelevant
+                                            old-to-wrapper-enable-present)
+                     (wrapper-to-old-name ':irrelevant
+                                          wrapper-to-old-name-present)
+                     (wrapper-to-old-enable ':irrelevant
+                                            wrapper-to-old-enable-present)
                      (verify-guards ':auto)
                      (hints 'nil)
                      (print ':result)

@@ -628,7 +628,7 @@
  ;; default:
  (must-succeed*
   (tailrec f :wrapper t)
-  (assert! (fundef-enabledp 'f{1} state)))
+  (assert! (fundef-disabledp 'f{1} state)))
 
  ;; enable:
  (must-succeed*
@@ -955,7 +955,7 @@
  ;; default:
  (must-succeed*
   (tailrec f :wrapper t)
-  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable:
  (must-succeed*
