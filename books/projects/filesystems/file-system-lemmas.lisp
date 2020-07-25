@@ -1678,3 +1678,22 @@
          (if (not (member-equal x y))
              (intersection-equal y l)
              (remove-equal x (intersection-equal y l)))))
+
+(defthm set-difference$-when-not-intersectp
+  (implies (not (intersectp-equal x y))
+           (equal (set-difference-equal x y)
+                  (true-list-fix x))))
+
+(defthm set-difference$-of-append-2
+  (equal (set-difference-equal x (append x y))
+         nil))
+
+(defthm
+  set-difference$-of-self-lemma-1
+  (equal (set-difference-equal x (append y nil)) (set-difference-equal x y)))
+
+(defthm
+  set-difference$-of-self
+  (equal (set-difference-equal x x) nil)
+  :hints (("goal" :in-theory (disable set-difference$-of-append-2)
+           :use (:instance set-difference$-of-append-2 (y nil)))))

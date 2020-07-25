@@ -462,6 +462,19 @@
                     (y (list (car l)))
                     (x (list x))))))
 
+(defthm
+  set-equiv-of-append-of-cons-1
+  (set-equiv (append x (cons y z))
+             (cons y (append x z)))
+  :hints
+  (("goal" :in-theory (disable commutativity-2-of-append-under-set-equiv)
+    :use (:instance commutativity-2-of-append-under-set-equiv
+                    (y (list y))))))
+
+(defthm set-difference-of-append-1
+  (set-equiv (set-difference-equal (append x y) z)
+             (append (set-difference-equal x z)
+                     (set-difference-equal y z))))
 (defund dir-ent-p (x)
   (declare (xargs :guard t))
   (and (unsigned-byte-listp 8 x)

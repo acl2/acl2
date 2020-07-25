@@ -5143,7 +5143,14 @@
      (abs-find-file frame path)))
    :hints
    (("goal"
-     :in-theory (e/d (len-of-fat32-filename-list-fix)
+     :in-theory (e/d (len-of-fat32-filename-list-fix
+                      (:congruence fat32-filename-list-equiv-implies-equal-ctx-app-4)
+                      (:congruence fat32-filename-list-equiv-implies-equal-ctx-app-ok-3)
+                      (:rewrite list-equiv-when-true-listp)
+                      (:rewrite nthcdr-of-fat32-filename-list-fix)
+                      (:rewrite prefixp-transitive . 1)
+                      (:rewrite prefixp-when-equal-lengths)
+                      (:type-prescription fat32-filename-list-fix$inline))
                      ((:rewrite remove-when-absent)
                       (:definition remove-equal)
                       (:rewrite abs-find-file-correctness-lemma-18)
@@ -5151,7 +5158,12 @@
                       (:rewrite abs-find-file-correctness-1-lemma-3)
                       (:definition assoc-equal)
                       (:rewrite abs-addrs-when-m1-file-alist-p)
-                      (:rewrite abs-separate-of-put-assoc)))
+                      (:rewrite abs-separate-of-put-assoc)
+                      (:rewrite abs-addrs-when-m1-file-contents-p)
+                      (:rewrite abs-file->contents-when-m1-file-p)
+                      (:rewrite abs-find-file-helper-of-abs-fs-fix)
+                      (:rewrite hifat-find-file-correctness-1)
+                      (:rewrite m1-file-contents-p-of-m1-file->contents)))
      :expand
      ((:with
        abs-find-file-of-remove-assoc-1
@@ -5204,7 +5216,9 @@
          (remove-assoc-equal (1st-complete (frame->frame frame))
                              (frame->frame frame)))
         path)))
-     :do-not-induct t))))
+     :do-not-induct t)
+    ("Subgoal 39''"
+     :expand ((:free (x) (hide x)))))))
 
 ;; So here's the idea: abs-complete is kind of a nonsensical predicate to be
 ;; applying to the contents of a regular file - but it is provably true! So we

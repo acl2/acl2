@@ -366,7 +366,6 @@
            (abs-separate (partial-collapse frame path)))
   :hints (("goal" :in-theory (enable partial-collapse))))
 
-;; Rename later.
 (defthm
   abs-separate-of-frame->frame-of-partial-collapse
   (implies (and (abs-separate (frame->frame frame))
@@ -10210,7 +10209,8 @@
                      (cons x (seq-this (collapse-this frame x)))))
      :hints
      (("goal" :do-not-induct t
-       :in-theory (disable (:rewrite subsetp-append1))
+       :in-theory (disable (:rewrite subsetp-append1)
+                           SET-EQUIV-OF-APPEND-OF-CONS-1)
        :use ((:instance (:rewrite subsetp-append1)
                         (c (cons x (seq-this (collapse-this frame x))))
                         (b (nthcdr (+ -1 n)
@@ -10706,21 +10706,6 @@
 
 (defthm
   partial-collapse-correctness-lemma-25
-  (not
-   (consp
-    (frame-val->path
-     (cdr
-      (assoc-equal
-       0
-       (collapse-this frame
-                      (1st-complete-under-path (frame->frame frame)
-                                                   path)))))))
-  :hints (("goal" :in-theory (enable collapse-this
-                                     frame->root frame-with-root)
-           :do-not-induct t)))
-
-(defthm
-  partial-collapse-correctness-lemma-34
   (implies
    (and (frame-p (frame->frame frame))
         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
