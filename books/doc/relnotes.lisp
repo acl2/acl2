@@ -280,6 +280,10 @@
       The rationale is that not generating the wrapper is expected to be
       more frequent than generating it.")
     (xdoc::li
+     "Now the @(':wrapper-enable') input, if absent, is taken from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
      "An @(':accumulator') input has been added to optinally specify
       the name of the accumulator argument of the new function.")
     (xdoc::li
