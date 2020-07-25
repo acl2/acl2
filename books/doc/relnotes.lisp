@@ -183,7 +183,7 @@
     " has been added, analogous to the "
     (xdoc::seetopic "acl2-defaults-table" "ACL2 defaults table")
     " but specific to APT.
-     Utilities to set and retrieve certain defaults have also been added.")
+     Utilities to set and retrieve a number of defaults have also been added.")
 
    (xdoc::p
     "A new transformation has been added:
