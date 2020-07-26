@@ -1574,7 +1574,7 @@
   :rule-classes :linear)
 
 (defthm
-  len-of-set-difference-when-subsetp
+  len-of-set-difference$-when-subsetp
   (implies (and (subsetp-equal x y)
                 (no-duplicatesp-equal x))
            (<= (+ (len x)
@@ -1697,3 +1697,8 @@
   (equal (set-difference-equal x x) nil)
   :hints (("goal" :in-theory (disable set-difference$-of-append-2)
            :use (:instance set-difference$-of-append-2 (y nil)))))
+
+(defthm set-difference$-of-append-1
+  (equal (set-difference-equal (append x y) z)
+         (append (set-difference-equal x z)
+                 (set-difference-equal y z))))

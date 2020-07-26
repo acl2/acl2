@@ -458,10 +458,44 @@
     :use (:instance commutativity-2-of-append-under-set-equiv
                     (y (list y))))))
 
-(defthm set-difference-of-append-1
-  (set-equiv (set-difference-equal (append x y) z)
-             (append (set-difference-equal x z)
-                     (set-difference-equal y z))))
+(defthmd set-equiv-of-cons-of-remove-1
+  (set-equiv (cons x (remove-equal x y))
+             (cons x y))
+  :hints (("goal" :in-theory (disable set-equiv-of-append-of-cons-1)
+           :induct (remove-equal x y))
+          ("subgoal *1/3" :use ((:instance set-equiv-of-append-of-cons-1
+                                           (x (list x))
+                                           (y (car y))
+                                           (z (remove-equal x (cdr y))))
+                                (:instance set-equiv-of-append-of-cons-1
+                                           (x (list x))
+                                           (y (car y))
+                                           (z (cdr y)))))))
+
+(defthmd cons-equal-under-set-equiv-1
+  (iff (set-equiv (cons x y1) (cons x y2))
+       (set-equiv (remove-equal x y1)
+                  (remove-equal x y2)))
+  :instructions ((in-theory (enable set-equiv-of-cons-of-remove-1))
+                 (:= (cons x y2)
+                     (cons x (remove-equal x y2))
+                     :equiv set-equiv)
+                 (:= (cons x y1)
+                     (cons x (remove-equal x y1))
+                     :equiv set-equiv)
+                 (:dive 1)
+                 :x (:dive 1)
+                 (:= (subsetp-equal (remove-equal x y1)
+                                    (remove-equal x y2)))
+                 :top
+                 (:= (subsetp-equal (remove-equal x y2)
+                                    (cons x (remove-equal x y1)))
+                     (subsetp-equal (remove-equal x y2)
+                                    (remove-equal x y1)))
+                 (:dive 2)
+                 :x
+                 :top :bash))
+
 (defund dir-ent-p (x)
   (declare (xargs :guard t))
   (and (unsigned-byte-listp 8 x)
