@@ -73,79 +73,13 @@
 #|(defconst *a*
   '((in1 . 1231231) (in2 . 131321)))||#
 
-(progn
-  (define single-c-p (term)
-    :inline t
-    (case-match term (('c & & & &) t))
-    ///
-    (defthm single-c-p-implies-fc
-      (implies (single-c-p term)
-               (case-match term (('c & & & &) t)))
-      :rule-classes :forward-chaining))
-
-  (define single-s-p (term)
-    :inline t
-    (case-match term (('s & & &) t))
-    ///
-    (defthm single-s-p-implies-fc
-      (implies (single-s-p term)
-               (case-match term (('s & & &) t)))
-      :rule-classes :forward-chaining))
-
-  (define single-c-res-p (term)
-    :inline t
-    (case-match term (('c-res & & &) t))
-    ///
-    (defthm single-c-res-p-implies-fc
-      (implies (single-c-res-p term)
-               (case-match term (('c-res & & &) t)))
-      :rule-classes :forward-chaining))
-
-  (define sum-list-p (term)
-    :inline t
-    (case-match term (('sum-list &) t))
-    ///
-    (defthm sum-list-p-implies-fc
-      (implies (sum-list-p term)
-               (case-match term (('sum-list &) t)))
-      :rule-classes :forward-chaining))
-
-  (define and-list-p (term)
-    :inline t
-    (case-match term (('and-list & &) t))
-    ///
-    (defthm and-list-p-implies-fc
-      (implies (and-list-p term)
-               (case-match term (('and-list & &) t)))
-      :rule-classes :forward-chaining))
-
-  (define quote-p (term)
-    :inline t
-    (case-match term (('quote &) t))
-    ///
-    (defthm quote-p-implies-fc
-      (implies (quote-p term)
-               (case-match term (('quote &) t)))
-      :rule-classes :forward-chaining))
-
-  (define binary-sum-p (term)
-    :inline t
-    (case-match term (('binary-sum & &) t))
-    ///
-    (defthm binary-sum-p-implies-fc
-      (implies (binary-sum-p term)
-               (case-match term (('binary-sum & &) t)))
-      :rule-classes :forward-chaining))
-
-  )
-
 (define clean-pp-args-cond (s c-lst)
   (or nil
       (and (equal s ''nil)
            (or (atom c-lst)
                (atom (cdr c-lst))))))
 
-(local
+#|(local
  (defthm ex-from-rp-loose-is-rp-termp
    (implies (rp-termp term)
             (equal (ex-from-rp-loose term)
@@ -156,7 +90,7 @@
             :in-theory (e/d (is-rp
                              EX-FROM-RP-LOOSE
                              EX-FROM-RP
-                             is-rp-loose) ())))))
+                             is-rp-loose) ())))))||#
 
 (define get-c-args ((c))
   :inline t
@@ -168,14 +102,12 @@
                (c-arg-lst rp-term-listp
                           :hyp (rp-termp c))
                (valid symbolp))
-  (b* ((c (ex-from-rp-loose c)))
+  (b* ((c (ex-from-rp c)))
     (case-match c
       (('c ('quote hash-code) s pp ('list . c-lst))
        (mv (ifix hash-code) s pp c-lst 'c))
       (('c ('quote hash-code) s pp ''nil)
        (mv (ifix hash-code) s pp nil 'c))
-      (''0
-       (mv 0 ''nil ''nil nil 'c))
       (& (mv 0 ''nil ''nil nil nil)))))
 
 (progn
@@ -317,15 +249,15 @@
 (local
  (defthm measure-lemma-loose1
    (IMPLIES (AND
-             (CONSP (EX-FROM-RP-LOOSE MAX-TERM))
-             (CONSP (CDR (EX-FROM-RP-LOOSE MAX-TERM)))
-             (NOT (CDDR (EX-FROM-RP-LOOSE MAX-TERM))))
-            (O< (CONS-COUNT (CADR (EX-FROM-RP-LOOSE MAX-TERM)))
+             (CONSP (ex-from-rp MAX-TERM))
+             (CONSP (CDR (ex-from-rp MAX-TERM)))
+             (NOT (CDDR (ex-from-rp MAX-TERM))))
+            (O< (CONS-COUNT (CADR (ex-from-rp MAX-TERM)))
                 (CONS-COUNT MAX-TERM)))
    :hints (("Goal"
-            :induct (EX-FROM-RP-LOOSE MAX-TERM)
+            :induct (ex-from-rp MAX-TERM)
             :do-not-induct t
-            :in-theory (e/d (EX-FROM-RP-LOOSE
+            :in-theory (e/d (ex-from-rp
                              measure-lemmas)
                             ((:REWRITE MEASURE-LEMMA1)
                              (:REWRITE CONS-COUNT-ATOM)
@@ -336,73 +268,165 @@
                              (:REWRITE MEASURE-LEMMA1-2)))))))
 (local
  (defthm measure-lemma-loose2
-   (IMPLIES (AND  (CONSP (EX-FROM-RP-LOOSE MAX-TERM))
-                  (CONSP (CDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (NOT (CDR (CDDDDR (EX-FROM-RP-LOOSE MAX-TERM)))))
-            (O< (CONS-COUNT (CDR (CAR (CDDDDR (EX-FROM-RP-LOOSE MAX-TERM)))))
+   (IMPLIES (AND  (CONSP (ex-from-rp MAX-TERM))
+                  (CONSP (CDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDDDR (ex-from-rp MAX-TERM)))
+                  (NOT (CDR (CDDDDR (ex-from-rp MAX-TERM)))))
+            (O< (CONS-COUNT (CDR (CAR (CDDDDR (ex-from-rp MAX-TERM)))))
                 (CONS-COUNT MAX-TERM)))
    :hints (("Goal"
-            :induct (EX-FROM-RP-LOOSE MAX-TERM)
+            :induct (ex-from-rp MAX-TERM)
             :do-not-induct t
-            :in-theory (e/d (EX-FROM-RP-LOOSE
+            :in-theory (e/d (ex-from-rp
                              measure-lemmas)
                             ((:REWRITE DEFAULT-CDR)
-                             (:REWRITE EX-FROM-RP-LOOSE-IS-RP-TERMP)
+;(:REWRITE EX-FROM-RP-LOOSE-IS-RP-TERMP)
                              (:DEFINITION RP-TERMP)
                              (:REWRITE MEASURE-LEMMA1-2)
-                             (:DEFINITION EX-FROM-RP)
                              (:REWRITE MEASURE-LEMMA1)))))))
 
 (local
  (defthm measure-lemma-loose3
-   (IMPLIES (AND  (CONSP (EX-FROM-RP-LOOSE MAX-TERM))
-                  (CONSP (CDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (NOT (CDR (CDDDDR (EX-FROM-RP-LOOSE MAX-TERM)))))
-            (O< (CONS-COUNT (CDR (CADDDR (EX-FROM-RP-LOOSE MAX-TERM))))
+   (IMPLIES (AND  (CONSP (ex-from-rp MAX-TERM))
+                  (CONSP (CDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDDDR (ex-from-rp MAX-TERM)))
+                  (NOT (CDR (CDDDDR (ex-from-rp MAX-TERM)))))
+            (O< (CONS-COUNT (CDR (CADDDR (ex-from-rp MAX-TERM))))
                 (CONS-COUNT MAX-TERM)))
    :hints (("Goal"
-            :induct (EX-FROM-RP-LOOSE MAX-TERM)
+            :induct (ex-from-rp MAX-TERM)
             :do-not-induct t
-            :in-theory (e/d (EX-FROM-RP-LOOSE
+            :in-theory (e/d (ex-from-rp
                              measure-lemmas)
                             ((:REWRITE DEFAULT-CDR)
                              (:REWRITE MEASURE-LEMMA1)
                              (:REWRITE MEASURE-LEMMA1-2)
-                             (:DEFINITION EX-FROM-RP)
                              (:REWRITE DEFAULT-CAR)
                              (:REWRITE ACL2::O<=-O-FINP-DEF)
                              ))))))
 
 (local
  (defthm measure-lemma-loose4
-   (IMPLIES (AND  (CONSP (EX-FROM-RP-LOOSE MAX-TERM))
-                  (CONSP (CDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (CONSP (CDDDDR (EX-FROM-RP-LOOSE MAX-TERM)))
-                  (NOT (CDR (CDDDDR (EX-FROM-RP-LOOSE MAX-TERM)))))
-            (O< (CONS-COUNT (CDR (CADDR (EX-FROM-RP-LOOSE MAX-TERM))))
+   (IMPLIES (AND  (CONSP (ex-from-rp MAX-TERM))
+                  (CONSP (CDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDDR (ex-from-rp MAX-TERM)))
+                  (CONSP (CDDDDR (ex-from-rp MAX-TERM)))
+                  (NOT (CDR (CDDDDR (ex-from-rp MAX-TERM)))))
+            (O< (CONS-COUNT (CDR (CADDR (ex-from-rp MAX-TERM))))
                 (CONS-COUNT MAX-TERM)))
    :hints (("Goal"
-            :induct (EX-FROM-RP-LOOSE MAX-TERM)
+            :induct (ex-from-rp MAX-TERM)
             :do-not-induct t
-            :in-theory (e/d (EX-FROM-RP-LOOSE
+            :in-theory (e/d (ex-from-rp
                              measure-lemmas)
                             ((:REWRITE DEFAULT-CDR)
                              (:REWRITE MEASURE-LEMMA1)
                              (:REWRITE MEASURE-LEMMA1-2)
-                             (:DEFINITION EX-FROM-RP)
 
                              (:REWRITE DEFAULT-CAR)
                              (:REWRITE ACL2::O<=-O-FINP-DEF)
 
                              ))))))
+(local
+   (defthm local-measure-lemma4
+     (implies (and
+               (integerp term1)
+               (integerp term2)
+               (integerp term3)
+               (o<= term2 term3)
+               (o< term1 term2))
+              (o< term1 term3))
+     :hints (("Goal"
+              :in-theory (e/d (o<) ())))))
+
+
+(local
+ (defthm local-measure-lemma5
+   (implies (and (consp term)
+                 (consp (cdr term))
+                 (consp (cddr term))
+                 (consp (cdddr term))
+                 (consp (cddddr term))
+                 (consp (car (cddddr term)))
+                 (not (cdr (cddddr term))))
+            (o< (cons-count (cdr (car (cddddr term))))
+                (cons-count term)))
+   :hints (("Goal"
+            :in-theory (e/d (cons-count) ())))))
+
+(local
+ (defthm local-measure-lemma6
+   (implies (and (consp term)
+                 (consp (cdr term))
+                 (consp (cddr term))
+                 (consp (cdddr term))
+                 (consp (car (cdddr term)))
+                 (not (cdr (cdddr term))))
+            (o< (cons-count (cdr (car (cdddr term))))
+                (cons-count term)))
+   :hints (("Goal"
+            :in-theory (e/d (cons-count) ())))))
+
+(local
+ (defthm local-measure-lemma7
+   (implies (and (consp (ex-from-rp term))
+                 (consp (cdr (ex-from-rp term)))
+                 (consp (cddr (ex-from-rp term)))
+                 (consp (cdddr (ex-from-rp term)))
+                 (consp (cddddr (ex-from-rp term)))
+                 (consp (car (cddddr (ex-from-rp term))))
+                 (not (cdr (cddddr (ex-from-rp term)))))
+            (o< (cons-count (cdr (car (cddddr (ex-from-rp term)))))
+                (cons-count term)))
+   :hints (("goal"
+            :use ((:instance local-measure-lemma5 (term (ex-from-rp term)))
+                  (:instance local-measure-lemma4
+                             (term1 (CONS-COUNT (CDR (CAR (CDDDDR (ex-from-rp TERM))))))
+                             (term2 (CONS-COUNT (ex-from-rp TERM)))
+                             (term3 (CONS-COUNT TERM))))
+            :in-theory (e/d (measure-lemmas)
+                            (local-measure-lemma5 local-measure-lemma4))))))
+
+(local
+ (defthm local-measure-lemma8
+   (implies (and (consp (ex-from-rp term))
+                 (consp (cdr (ex-from-rp term)))
+                 (consp (cddr (ex-from-rp term)))
+                 (consp (cdddr (ex-from-rp term)))
+                 (consp (car (cdddr (ex-from-rp term))))
+                 (not (cdr (cdddr (ex-from-rp term)))))
+            (o< (cons-count (cdr (car (cdddr (ex-from-rp term)))))
+                (cons-count term)))
+   :hints (("goal"
+            :use ((:instance local-measure-lemma6 (term (ex-from-rp term)))
+                  (:instance local-measure-lemma4
+                             (term1 (CONS-COUNT (CDR (CAR (CDDDR (ex-from-rp TERM))))))
+                             (term2 (CONS-COUNT (ex-from-rp TERM)))
+                             (term3 (CONS-COUNT TERM))))
+            :in-theory (e/d (measure-lemmas) (local-measure-lemma4 local-measure-lemma6))))))
+
+
+
+(local
+ (defthm local-measure-lemma10
+   (IMPLIES (AND (consp (ex-from-rp TERM)))
+            (O< (CONS-COUNT (CDR (ex-from-rp TERM)))
+                (CONS-COUNT TERM)))
+   :hints (("Goal"
+            :in-theory (e/d (measure-lemmas) ())))))
+
+(local
+ (defthm local-measure-lemma11
+   (IMPLIES (AND
+             (CONSP (ex-from-rp TERM)))
+            (O< 1 (CONS-COUNT TERM)))
+   :hints (("Goal"
+            :in-theory (e/d (ex-from-rp CONS-COUNT) ())))))
 
 (local
  (in-theory (disable EX-FROM-RP
@@ -420,10 +444,11 @@
  :flag-defthm-macro defthm-get-min-max-val
  :flag-local nil
  :prepwork ((local
-             (in-theory (e/d (measure-lemmas)
+             (in-theory (e/d (measure-lemmas
+                              LIST-TO-LST)
                              (MEASURE-LEMMA1
                               MEASURE-LEMMA1-2
-                              EX-FROM-RP-LOOSE-IS-RP-TERMP
+;EX-FROM-RP-LOOSE-IS-RP-TERMP
                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:REWRITE DEFAULT-CAR)
                               NOT-INCLUDE-RP)))))
@@ -435,38 +460,44 @@
                  (min-val integerp)
                  (valid booleanp))
    (b* (((when (is-rp-bitp term)) (mv 1 0 t))
-        (term (ex-from-rp-loose term)))
-     (case-match term
-       (('c & s pp c)
-        (b* (((mv s-max-val s-min-val s-valid)
-              (case-match s
-                (('list . lst) (get-max-min-val-lst lst))
-                (''nil (mv 0 0 t))
-                (& (mv 0 0 nil))))
-             ((mv pp-max-val pp-min-val pp-valid)
-              (case-match pp
-                (('list . lst) (get-max-min-val-lst lst))
-                (''nil (mv 0 0 t))
-                (& (mv 0 0 nil))))
-             ((mv c-max-val c-min-val c-valid)
-              (case-match c
-                (('list . lst) (get-max-min-val-lst lst))
-                (''nil (mv 0 0 t))
-                (& (mv 0 0 nil))))
-             ((unless (and s-valid
-                           pp-valid
-                           c-valid))
-              (mv 0 0 nil)))
-          (mv (floor (+ s-max-val pp-max-val c-max-val) 2)
-              (floor (+ s-min-val pp-min-val c-min-val) 2)t)))
-       (('s & & &) (mv 1 0 t))
-       (''1 (mv 1 1 t))
-       (('and-list & &) (mv 1 0 t))
-       (('-- n)
-        (b* (((mv max-val min-val valid)
-              (get-max-min-val n)))
-          (mv (- min-val) (- max-val) valid)))
-       (& (mv 0 0 nil)))))
+        (term (ex-from-rp term)))
+     (cond
+      ((single-c-p term)
+       (b* (((mv s pp c)
+             (case-match term (('c & s pp c) (mv s pp c)) (& (mv nil nil nil))))
+            ((mv s-max-val s-min-val s-valid)
+             #|(get-max-min-val-lst (list-to-lst s))||#
+            (case-match s
+              (('list . lst) (get-max-min-val-lst lst))
+              (''nil (mv 0 0 t))
+              (& (mv 0 0 nil))))
+            ((mv pp-max-val pp-min-val pp-valid)
+             ;;(get-max-min-val-lst (list-to-lst pp)))
+             (case-match pp
+               (('list . lst) (get-max-min-val-lst lst))
+               (''nil (mv 0 0 t))
+               (& (mv 0 0 nil))))
+            ((mv c-max-val c-min-val c-valid)
+             ;;(get-max-min-val-lst (list-to-lst c)))
+             (case-match c
+               (('list . lst) (get-max-min-val-lst lst))
+               (''nil (mv 0 0 t))
+               (& (mv 0 0 nil))))
+            ((unless (and s-valid
+                          pp-valid
+                          c-valid))
+             (mv 0 0 nil)))
+         (mv (floor (+ s-max-val pp-max-val c-max-val) 2)
+             (floor (+ s-min-val pp-min-val c-min-val) 2)t)))
+      ((single-s-p term) (mv 1 0 t))
+      ((equal term ''1) (mv 1 1 t))
+      ((and-list-p term) (mv 1 0 t))
+      ((--.p term)
+       (b* ((n (cadr term))
+            ((mv max-val min-val valid)
+             (get-max-min-val n)))
+         (mv (- min-val) (- max-val) valid)))
+      (t (mv 0 0 nil)))))
  (define get-max-min-val-lst (lst)
    :measure (cons-count lst)
    :returns (mv (max-val integerp)
@@ -751,7 +782,7 @@
                                  (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                                  (:TYPE-PRESCRIPTION RP-TERMP)
                                  (:TYPE-PRESCRIPTION RP-EQUAL)
-                                 (:REWRITE EX-FROM-RP-LOOSE-IS-RP-TERMP)
+;(:REWRITE EX-FROM-RP-LOOSE-IS-RP-TERMP)
                                  (:REWRITE MEASURE-LEMMA1-2)
                                  (:DEFINITION RP-EQUAL))))))
     :returns (mv (res-pp1-lst rp-term-listp
@@ -814,10 +845,10 @@
     :returns (res-term rp-termp :hyp (rp-termp term))
     (b* (((when (zp limit)) term)
          (term-orig term)
-         (term (ex-from-rp-loose term)))
+         (term (ex-from-rp term)))
       (case-match term
         (('s hash-code pp ('list single-c))
-         (b* ((single-c (ex-from-rp-loose single-c)))
+         (b* ((single-c (ex-from-rp single-c)))
            (case-match single-c
              (('c c-hash ''nil c-pp c-arg)
               (b* (((mv pp c-pp changed)
@@ -828,7 +859,7 @@
                 `(s ,hash-code  ,pp (list ,new-single-c))))
              (& term-orig))))
         (('c hash-code ''nil pp1 ('list single-c))
-         (b* ((single-c (ex-from-rp-loose single-c)))
+         (b* ((single-c (ex-from-rp single-c)))
            (case-match single-c
              (('c c-hash ''nil c-pp c2)
               (b* (((mv pp1 c-pp changed)
@@ -847,7 +878,7 @@
                  (coughed-term))
     (b* (((when (zp limit)) (mv term ''nil))
          (term-orig term)
-         (term (ex-from-rp-loose term)))
+         (term (ex-from-rp term)))
       (case-match term
         (('s & pp ('list single-c))
          (b* (((mv single-c coughed-pp)
@@ -976,7 +1007,7 @@
     (b* (((when (atom lst)) lst)
          (rest (negate-lst-aux (cdr lst)))
          (cur-orig (car lst))
-         (cur (ex-from-rp-loose cur-orig)))
+         (cur (ex-from-rp cur-orig)))
       (case-match cur
         (('-- term)
          (cons term rest))
@@ -1043,17 +1074,19 @@
                  ((unless (equal coughed-pp ''nil))
                   (mv s pp c)))
               (case-match decompressed
-                (('c & s pp c)
-                 (mv s pp c))
+                (('c & s pp ('list . c-lst))
+                 (mv s pp `(list . ,c-lst)))
+                (('c & s pp ''nol)
+                 (mv s pp ''nil))
                 (& (mv s pp c)))))
            (& (mv s pp c)))))
       (& (mv s pp c))))))
 
 (define create-c-instance (s pp c)
 ;:inline t
-  :returns (c/d-res rp-termp :hyp (and (rp-termp pp)
-                                       (rp-termp s)
-                                       (rp-termp c)))
+  :returns (c-res rp-termp :hyp (and (rp-termp pp)
+                                     (rp-termp s)
+                                     (rp-termp c)))
   (b* (((mv s pp c)
         (c-pattern2-reduce s pp c)))
     (cond ((or (and (equal c ''nil)
@@ -1470,7 +1503,7 @@
     :measure (acl2-count s-lst)
     (if (atom s-lst)
         (mv s-lst nil)
-      (b* ((cur-s (ex-from-rp-loose (car s-lst))))
+      (b* ((cur-s (ex-from-rp (car s-lst))))
         (case-match cur-s
           (('s ('quote s-hash-code) cur-pp-arg cur-c-arg)
            (if (and (equal c-hash-code s-hash-code)
@@ -1535,87 +1568,30 @@
 
 (acl2::defines
  count-c
+ :flag-defthm-macro defthm-count-c
+ :flag-local nil
  :hints (("Goal"
-          :in-theory (e/d (measure-lemmas)
+          :in-theory (e/d (measure-lemmas
+                           single-c-p
+                           single-s-p)
                           ())))
- :prepwork
- ((local
-   (defthm lemma0
-     (implies (and
-               (integerp term1)
-               (integerp term2)
-               (integerp term3)
-               (o<= term2 term3)
-               (o< term1 term2))
-              (o< term1 term3))
-     :hints (("Goal"
-              :in-theory (e/d (o<) ())))))
-
-  (local
-   (defthm lemma1
-     (implies (and (consp term)
-                   (consp (cdr term))
-                   (consp (cddr term))
-                   (consp (cdddr term))
-                   (consp (cddddr term))
-                   (consp (car (cddddr term)))
-                   (not (cdr (cddddr term))))
-              (o< (cons-count (cdr (car (cddddr term))))
-                  (cons-count term)))
-     :hints (("Goal"
-              :in-theory (e/d (cons-count) ())))))
-
-  (local
-   (defthm lemma3
-     (implies (and (consp (ex-from-rp-loose term))
-                   (consp (cdr (ex-from-rp-loose term)))
-                   (consp (cddr (ex-from-rp-loose term)))
-                   (consp (cdddr (ex-from-rp-loose term)))
-                   (consp (cddddr (ex-from-rp-loose term)))
-                   (consp (car (cddddr (ex-from-rp-loose term))))
-                   (not (cdr (cddddr (ex-from-rp-loose term)))))
-              (o< (cons-count (cdr (car (cddddr (ex-from-rp-loose term)))))
-                  (cons-count term)))
-     :hints (("goal"
-              :use ((:instance lemma1 (term (ex-from-rp-loose term)))
-                    (:instance lemma0
-                               (term1 (CONS-COUNT (CDR (CAR (CDDDDR (ex-from-rp-loose TERM))))))
-                               (term2 (CONS-COUNT (ex-from-rp-loose TERM)))
-                               (term3 (CONS-COUNT TERM))))
-              :in-theory (e/d (measure-lemmas) (lemma1 lemma0))))))
-  (local
-   (defthm lemma4
-     (IMPLIES (AND (consp (EX-FROM-RP-LOOSE TERM)))
-              (O< (CONS-COUNT (CDR (EX-FROM-RP-LOOSE TERM)))
-                  (CONS-COUNT TERM)))
-     :hints (("Goal"
-              :in-theory (e/d (measure-lemmas) ())))))
-
-  (local
-   (defthm lemma5
-     (IMPLIES (AND
-               (CONSP (EX-FROM-RP-LOOSE TERM)))
-              (O< 1 (CONS-COUNT TERM)))
-     :hints (("Goal"
-              :in-theory (e/d (EX-FROM-RP-LOOSE CONS-COUNT) ())))))
-  #|(local
-  (defthm lemma5
-  (implies (cddr term)
-  (consp term))))||#)
-
  (define count-c (term)
    :measure (cons-count term)
-   (b* ((term (ex-from-rp-loose term)))
-     (case-match term
-       (('-- term)
-        (count-c term))
-       (('c & & & ('list . c-lst))
-        (1+ (count-c-lst c-lst)))
-       (('c & & & ''nil)
-        1)
-       (&
-        (cond ((atom term) 1)
-              (t (1+ (count-c-lst (cdr term)))))))))
+   
+   (b* ((term (ex-from-rp term)))
+     (cond
+      ((single-c-p term)
+       (let ((arg-c (car (cddddr term))))
+         (case-match arg-c
+           (('list . c-lst) (1+ (count-c-lst c-lst)))
+           (& 1))))
+      ((single-s-p term)
+       (let ((arg-c (car (cdddr term))))
+         (case-match arg-c
+           (('list . c-lst) (count-c-lst c-lst))
+           (& 0))))
+      ((or (atom term) (quotep term)) 0)
+      (t (count-c-lst (cdr term))))))
  (define count-c-lst (lst)
    :measure (cons-count lst)
    (if (atom lst)
@@ -1647,12 +1623,17 @@
               :do-not-induct t
               :expand ((COUNT-C SINGLE-C1)
                        (COUNT-C SINGLE-C2))
-              :in-theory (e/d (GET-C-ARGS) ()))))
+              :in-theory (e/d (GET-C-ARGS
+                               SINGLE-C-P
+                               SINGLE-s-P)
+                              ()))))
 
    (defthm c-sum-merge-m-lemma3
      (IMPLIES (AND (CONSP C2-LST))
-              (< (COUNT-C-LST (CDR C2-LST))
-                 (COUNT-C-LST C2-LST)))
+              (and (<= (COUNT-C-LST (CDR C2-LST))
+                       (COUNT-C-LST C2-LST))
+                   (>= (COUNT-C-LST C2-LST)
+                       (COUNT-C-LST (CDR C2-LST)))))
      :hints (("Goal"
               :expand (COUNT-C-LST C2-LST)
               :in-theory (e/d () ()))))
@@ -1700,6 +1681,16 @@
               :use ((:instance c-sum-merge-m-lemma6))
               :in-theory (e/d () (c-sum-merge-m-lemma6)))))
 
+   (defthm c-sum-merge-m-lemma8
+     (IMPLIES (AND (CONSP C2-LST)
+                   (<= (COUNT-C-LST C2-LST)
+                       (COUNT-C-LST (CDR C2-LST))))
+              (equal (COUNT-C-LST C2-LST)
+                     (COUNT-C-LST (CDR C2-LST))))
+     :hints (("Goal"
+              :expand (COUNT-C-LST C2-LST)
+              :in-theory (e/d () ()))))
+
    ))
 
 (define negated-termp (term)
@@ -1723,7 +1714,7 @@
    :measure (acl2::nat-list-measure
              (list
               (+ (count-c single-c1) (count-c single-c2))
-              0))
+              0 0))
    :returns (mv (coughed-s rp-termp :hyp (and (rp-termp single-c1)
                                               (rp-termp single-c2)))
                 (coughed-pp-lst rp-term-listp :hyp (and (rp-termp single-c1)
@@ -1736,6 +1727,12 @@
         ((when (or (negated-termp single-c1)
                    (negated-termp single-c2)))
          (mv ''nil nil nil nil))
+        #|((when (or (equal single-c1 ''0)
+                   (equal single-c2 ''0)))
+         (mv ''nil nil (append
+                        (and (not (equal single-c1 ''0)) (list single-c1) nil)
+                        (and (not (equal single-c2 ''0)) (list single-c2) nil))
+             t))||#
         ((mv c1-hash-code s-arg1 pp-arg1 c-arg1-lst type1) (get-c-args single-c1))
         ((mv &            s-arg2 pp-arg2 c-arg2-lst type2) (get-c-args single-c2))
         ((when (or (not type1) (not type2)))
@@ -1807,7 +1804,8 @@
    :measure (acl2::nat-list-measure
              (list
               (+ (count-c single-c1) (count-c-lst c2-lst))
-              1))
+              1
+              (acl2-count c2-lst)))
    :returns (mv (coughed-s rp-termp :hyp (and (rp-termp single-c1)
                                               (rp-term-listp c2-lst)))
                 (coughed-pp-lst rp-term-listp :hyp (and (rp-termp single-c1)
@@ -1818,7 +1816,7 @@
                                                         (rp-term-listp c2-lst)))
                 (merge-success booleanp))
    (if (atom c2-lst)
-       (mv ''nil nil nil nil nil)
+       (mv ''nil nil nil c2-lst nil)
      (b* (((mv coughed-s coughed-pp-lst  produced-c-lst merge-success)
            (single-c-try-merge single-c1 (car c2-lst)))
           ((when merge-success)
@@ -1847,7 +1845,7 @@
    :measure (acl2::nat-list-measure
              (list
               (+ (count-c single-c1) (count-c-lst c2-lst))
-              2))
+              2 0))
    :returns (mv (coughed-s rp-termp :hyp (and (rp-termp single-c1)
                                               (rp-term-listp c2-lst)))
                 (coughed-pp-lst rp-term-listp :hyp (and (rp-termp single-c1)
@@ -1882,7 +1880,8 @@
    :measure (acl2::nat-list-measure
              (list
               (+ (count-c-lst c1-lst) (count-c-lst c2-lst))
-              3))
+              3
+              (acl2-count c1-lst)))
    :returns (mv (coughed-s rp-termp :hyp (and (rp-term-listp c1-lst)
                                               (rp-term-listp c2-lst)))
                 (coughed-pp-lst rp-term-listp :hyp (and (rp-term-listp c1-lst)
@@ -1896,8 +1895,8 @@
         ((mv coughed-s coughed-pp-lst1 updated-c2-lst)
          (c-sum-merge-lst (car c1-lst) c2-lst))
 
-        ((unless (mbt (< (+ (count-c-lst (cdr c1-lst)) (count-c-lst updated-c2-lst))
-                         (+ (count-c-lst c1-lst) (count-c-lst c2-lst)))))
+        ((unless (mbt (<= (+ (count-c-lst (cdr c1-lst)) (count-c-lst updated-c2-lst))
+                          (+ (count-c-lst c1-lst) (count-c-lst c2-lst)))))
          (mv coughed-s coughed-pp-lst1 (s-sum-merge-aux (cdr c1-lst) updated-c2-lst)))
 
         ((mv coughed-s2 coughed-pp-lst2  updated2-c2-lst)
@@ -1928,7 +1927,7 @@
    :measure (acl2::nat-list-measure
              (list
               (+ (count-c-lst c1-lst) (count-c-lst c2-lst))
-              5))
+              5 0))
    (b* (((mv c1-lst c2-lst)
          (swap-c-lsts c1-lst c2-lst auto-swap)))
      (c-sum-merge-aux c1-lst c2-lst :clean-c1-lst clean-c1-lst)))
@@ -1939,7 +1938,7 @@
    :measure (acl2::nat-list-measure
              (list
               (+ (count-c-lst c1-lst) (count-c-lst c2-lst))
-              4))
+              4 0))
    :returns (mv (coughed-s rp-termp
                            :hyp (and (rp-term-listp c1-lst)
                                      (rp-term-listp c2-lst)))
@@ -1963,7 +1962,6 @@
                  ((mv to-be-coughed-c-lst merged-c-lst)
                   (cough-duplicates merged-c-lst)))
               (mv coughed-s coughed-pp-lst merged-c-lst to-be-coughed-c-lst))))))
-
 
 (local
  (defthm rp-termp-lemma1
@@ -2180,18 +2178,16 @@
             :induct (REPEAT NUM X)
             :in-theory (e/d (rp-term-listp repeat) ())))))
 
-
-
 (define extract-new-sum-element (term acc)
   :returns (acc-res rp-term-listp
                     :hyp (and (rp-termp term)
                               (rp-term-listp acc)))
-  :measure (cons-count term) 
+  :measure (cons-count term)
   :hints (("Goal"
            :in-theory (e/d (measure-lemmas) ())))
   (b* ((term-orig term)
-       (term (ex-from-rp-loose term)))
-    (cond 
+       (term (ex-from-rp term)))
+    (cond
      ((single-c-p term)
       (cons term-orig acc))
      ((single-s-p term)
@@ -2226,11 +2222,11 @@
            :in-theory (e/d (measure-lemmas) ())))
   :prepwork
   ((local
-    (in-theory (enable ex-from-rp-loose))))
+    (in-theory (enable ex-from-rp))))
   :returns (acc-res rp-term-listp
                     :hyp (and (rp-termp term)))
   (b* ((term-orig term)
-       (term (ex-from-rp-loose term)))
+       (term (ex-from-rp term)))
     (case-match term
       (('cons x rest)
        (b* ((acc (extract-new-sum-consed rest)))
@@ -2252,7 +2248,7 @@
   (b* ((term-orig term)
        ((mv abs-term-w/-sc negated)
         (case-match term-orig (('-- e) (mv e t)) (& (mv term-orig nil))))
-       (abs-term (ex-from-rp-loose abs-term-w/-sc)))
+       (abs-term (ex-from-rp abs-term-w/-sc)))
     (mv term-orig abs-term-w/-sc abs-term negated)))
 
 (define new-sum-merge-aux-add-negated-coughed (to-be-coughed-c-lst
@@ -2265,8 +2261,6 @@
       (s-sum-merge-aux to-be-coughed-c-lst
                        (list `(-- ,abs-term-w/-sc)))
     to-be-coughed-c-lst))
-
-
 
 (define new-sum-merge-aux (sum-lst)
   :verify-guards nil
@@ -2387,7 +2381,7 @@
   (or nil
       (case-match term
         (('cons x rest)
-         (b* ((x (ex-from-rp-loose x))
+         (b* ((x (ex-from-rp x))
               (rest-res (well-formed-new-sum rest)))
            (cond ((good-4vec-term-p x)
                   rest-res)
@@ -2410,7 +2404,6 @@
         (('quote x)
          (integer-listp x))
         (& nil))))
-
 
 (progn
   (define light-pp-term-p (term)
@@ -2465,7 +2458,7 @@
             ((unless valid)
              (mv 0 nil))
             (x-orig x)
-            (x (ex-from-rp-loose x)))
+            (x (ex-from-rp x)))
          (cond ((light-pp-term-p x)
                 (mv (1+ rest-sum) t))
                ((single-s-p x)
@@ -2479,7 +2472,7 @@
                ((equal x ''1)
                 (mv (1+ rest-sum) t))
                #|((case-match x (('sum-list ''nil) t))
-                (mv rest-sum t))||#
+               (mv rest-sum t))||#
                ((sum-list-p x)
                 (if (light-pp-term-list-p (list-to-lst (cadr x)))
                     (mv (+ rest-sum (len (list-to-lst (cadr x)))) t)
@@ -2614,7 +2607,7 @@
   (b* ((pp (pp-lst-to-pp pp-lst))
        ((mv pp c-lst) (s-of-s-fix s pp c-lst))
 
-       (pp (if (clean-pp-args-cond ''nil c-lst) (s-fix-args pp) pp)) 
+       (pp (if (clean-pp-args-cond ''nil c-lst) (s-fix-args pp) pp))
 
        (c (create-list-instance c-lst))
        (res (create-s-instance pp c)))
@@ -2716,7 +2709,7 @@
 
 (encapsulate
   nil
-  
+
   (local
    (in-theory (disable
                +-is-SUM
@@ -2772,70 +2765,3 @@
        binary-sum
        sv::3vec-fix
        sv::4vec-fix))))
-
-(defmacro ss (&rest args)
-  `(s-spec (list . ,args)))
-
-(defmacro dd (&rest args)
-  `(d-spec (list . ,args)))
-
-(defmacro cc (&rest args)
-  `(c-spec (list . ,args)))
-
-(defmacro sc (&rest args)
-  `(s-c-spec (list . ,args)))
-
-(defmacro cs (&rest args)
-  `(c-s-spec (list . ,args)))
-
-(define str-cat-lst ((lst string-listp))
-  (if (atom lst)
-      ""
-    (str::cat (car lst)
-              (if (atom (cdr lst)) "" "-")
-              (str-cat-lst (cdr lst)))))
-
-(acl2::defines
- make-readable
- :verify-guards nil
- (define make-readable (term)
-   (declare (xargs :mode :program))
-   (b* ((term (ex-from-rp-loose term)))
-     (case-match term
-       (('equal a b)
-        `(equal ,(make-readable a)
-                ,(make-readable b)))
-       (('s hash pp c)
-        (b* ((pp-lst (make-readable-lst (list-to-lst pp)))
-             (c-lst (make-readable-lst (list-to-lst c))))
-          `(s (,hash). ,(append pp-lst c-lst))))
-       (('c hash s pp c)
-        (b* ((s-lst (make-readable-lst (list-to-lst s)))
-             (pp-lst (make-readable-lst (list-to-lst pp)))
-             (c-lst (make-readable-lst (list-to-lst c))))
-          `(c (,hash) . ,(append s-lst pp-lst c-lst))))
-       (('-- n)
-        `(-- ,(make-readable n)))
-       (''1
-        1)
-       (('and-list & bits)
-        (b* ((lst (make-readable-lst (list-to-lst bits)))
-             (str (str-cat-lst lst))
-             (sym (intern$ str "RP")))
-          sym))
-       (('bit-of name ('quote index))
-        (b* ((sym (sa  (ex-from-rp-loose name) index)))
-          (symbol-name sym)))
-       (('bit-of name index)
-        (b* ((sym (sa  (ex-from-rp-loose name) index)))
-          (symbol-name sym)))
-       (& (progn$
-           (hard-error 'make-readable
-                       "Unexpected term instance~p0~%"
-                       (list (cons #\0 term)))
-           nil)))))
- (define make-readable-lst (lst)
-   (if (atom lst)
-       nil
-     (cons (make-readable (car lst))
-           (make-readable-lst (cdr lst))))))

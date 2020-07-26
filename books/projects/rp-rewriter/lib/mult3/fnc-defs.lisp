@@ -465,6 +465,32 @@
         (car lst)
       (safe-i-nth (1- i) (cdr lst)))))
 
+
+(progn
+  (define list-to-lst (term)
+    :returns (lst rp-term-listp
+                  :hyp (rp-termp term))
+    :prepwork ((local
+                (in-theory (enable rp-termp
+                                   rp-term-listp))))
+    (case-match term
+      (('list . lst) lst)
+      (''nil nil)
+      (& (or (hard-error 'list-instance-to-lst
+                         "Unexpected list instance: ~p0 ~%"
+                         (list (cons #\0 term)))
+             (list `(sum-list ,term))))))
+
+
+  (define create-list-instance (lst)
+    :returns (res rp-termp :hyp (rp-term-listp lst))
+    (cond ((or (Not lst)
+               (equal lst (list ''0)))
+           ''nil)
+          (t
+           `(list . ,lst)))))
+
+
 (acl2::defines
  m-eval
  (define m-eval (term a)
@@ -572,33 +598,33 @@
                      
 
 (acl2::defines
- m-readable
+ make-readable1
  :mode :program
- (define m-readable (term)
+ (define make-readable1 (term)
    (case-match term
      (('rp & term)
-      (m-readable term))
+      (make-readable1 term))
      (('equal x y)
-      `(equal ,(m-readable x) ,(m-readable y)))
+      `(equal ,(make-readable1 x) ,(make-readable1 y)))
      (('s & pp c)
-      `(ss . ,(append (m-readable pp) (m-readable c))))
+      `(ss . ,(append (make-readable1 pp) (make-readable1 c))))
      (('s pp c)
-      `(ss . ,(append (m-readable pp) (list (m-readable c)))))
+      `(ss . ,(append (make-readable1 pp) (list (make-readable1 c)))))
      (('c & s pp c)
-      `(cc . ,(append (m-readable s) (m-readable pp) (m-readable c))))
+      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (make-readable1 c))))
      (('c s pp c)
-      `(cc . ,(append (m-readable s) (m-readable pp) (list (m-readable c)))))
+      `(cc . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
      (('-- term)
-      `(-- ,(m-readable term)))
+      `(-- ,(make-readable1 term)))
      (('list . lst)
-      (m-readable-lst lst))
+      (make-readable1-lst lst))
      (('quote a)
       a)
      (('d ('rp ''evenpi ('d-sum s pp c)))
-      `(dd . ,(append (m-readable s) (m-readable pp) (list (m-readable c)))))
+      `(dd . ,(append (make-readable1 s) (make-readable1 pp) (list (make-readable1 c)))))
      (('cons a b)
-      (cons (m-readable a)
-            (m-readable b)))
+      (cons (make-readable1 a)
+            (make-readable1 b)))
      #|(('binary-and & &)
       term)||#
      (('binary-and ('bit-of a ('quote i)) ('bit-of b ('quote j)))
@@ -614,11 +640,156 @@
          )))
      
      (&
-      (hard-error 'm-readable
+      (hard-error 'make-readable1
                   "unexpected function symbol: ~p0 ~%"
                   (list (cons #\0 (car term)))))))
- (define m-readable-lst (lst)
+ (define make-readable1-lst (lst)
    (if (atom lst)
        nil
-     (cons (m-readable (car lst))
-           (m-readable-lst (cdr lst))))))
+     (cons (make-readable1 (car lst))
+           (make-readable1-lst (cdr lst))))))
+
+
+(define str-cat-lst ((lst string-listp))
+  (if (atom lst)
+      ""
+    (str::cat (car lst)
+              (if (atom (cdr lst)) "" "-")
+              (str-cat-lst (cdr lst)))))
+
+(acl2::defines
+ make-readable
+ :verify-guards nil
+ (define make-readable (term)
+   (declare (xargs :mode :program))
+   (b* ((term (ex-from-rp-loose term)))
+     (case-match term
+       (('equal a b)
+        `(equal ,(make-readable a)
+                ,(make-readable b)))
+       (('s hash pp c)
+        (b* ((pp-lst (make-readable-lst (list-to-lst pp)))
+             (c-lst (make-readable-lst (list-to-lst c))))
+          `(s (,hash). ,(append pp-lst c-lst))))
+       (('c hash s pp c)
+        (b* ((s-lst (make-readable-lst (list-to-lst s)))
+             (pp-lst (make-readable-lst (list-to-lst pp)))
+             (c-lst (make-readable-lst (list-to-lst c))))
+          `(c (,hash) . ,(append s-lst pp-lst c-lst))))
+       (('-- n)
+        `(-- ,(make-readable n)))
+       (''1
+        1)
+       (('and-list & bits)
+        (b* ((lst (make-readable-lst (list-to-lst bits)))
+             (str (str-cat-lst lst))
+             (sym (intern$ str "RP")))
+          sym))
+       (('bit-of name ('quote index))
+        (b* ((sym (sa  (ex-from-rp-loose name) index)))
+          (symbol-name sym)))
+       (('bit-of name index)
+        (b* ((sym (sa  (ex-from-rp-loose name) index)))
+          (symbol-name sym)))
+       (& (progn$
+           (hard-error 'make-readable
+                       "Unexpected term instance~p0~%"
+                       (list (cons #\0 term)))
+           nil)))))
+ (define make-readable-lst (lst)
+   (if (atom lst)
+       nil
+     (cons (make-readable (car lst))
+           (make-readable-lst (cdr lst))))))
+
+
+
+
+(progn
+  (define single-c-p (term)
+    :inline t
+    (case-match term (('c & & & &) t))
+    ///
+    (defthm single-c-p-implies-fc
+      (implies (single-c-p term)
+               (case-match term (('c & & & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define --.p (term)
+    :inline t
+    (case-match term (('-- &) t))
+    ///
+    (defthm --.p-implies-fc
+      (implies (--.p term)
+               (case-match term (('-- &) t)))
+      :rule-classes :forward-chaining))
+
+  (define single-s-p (term)
+    :inline t
+    (case-match term (('s & & &) t))
+    ///
+    (defthm single-s-p-implies-fc
+      (implies (single-s-p term)
+               (case-match term (('s & & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define single-c-res-p (term)
+    :inline t
+    (case-match term (('c-res & & &) t))
+    ///
+    (defthm single-c-res-p-implies-fc
+      (implies (single-c-res-p term)
+               (case-match term (('c-res & & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define sum-list-p (term)
+    :inline t
+    (case-match term (('sum-list &) t))
+    ///
+    (defthm sum-list-p-implies-fc
+      (implies (sum-list-p term)
+               (case-match term (('sum-list &) t)))
+      :rule-classes :forward-chaining))
+
+  (define and-list-p (term)
+    :inline t
+    (case-match term (('and-list & &) t))
+    ///
+    (defthm and-list-p-implies-fc
+      (implies (and-list-p term)
+               (case-match term (('and-list & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define quote-p (term)
+    :inline t
+    (case-match term (('quote &) t))
+    ///
+    (defthm quote-p-implies-fc
+      (implies (quote-p term)
+               (case-match term (('quote &) t)))
+      :rule-classes :forward-chaining))
+
+  (define binary-sum-p (term)
+    :inline t
+    (case-match term (('binary-sum & &) t))
+    ///
+    (defthm binary-sum-p-implies-fc
+      (implies (binary-sum-p term)
+               (case-match term (('binary-sum & &) t)))
+      :rule-classes :forward-chaining))
+
+  )
+(defmacro ss (&rest args)
+  `(s-spec (list . ,args)))
+
+(defmacro dd (&rest args)
+  `(d-spec (list . ,args)))
+
+(defmacro cc (&rest args)
+  `(c-spec (list . ,args)))
+
+(defmacro sc (&rest args)
+  `(s-c-spec (list . ,args)))
+
+(defmacro cs (&rest args)
+  `(c-s-spec (list . ,args)))

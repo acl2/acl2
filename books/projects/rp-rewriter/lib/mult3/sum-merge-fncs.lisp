@@ -69,19 +69,6 @@
      nil)
     (& term)))||#
 
-(define list-to-lst (term)
-  :returns (lst rp-term-listp
-                :hyp (rp-termp term))
-  :prepwork ((local
-              (in-theory (enable rp-termp
-                                 rp-term-listp))))
-  (case-match term
-    (('list . lst) lst)
-    (''nil nil)
-    (& (or (hard-error 'list-instance-to-lst
-                       "Unexpected list instance: ~p0 ~%"
-                       (list (cons #\0 term)))
-           (list `(sum-list ,term))))))
 
 (define cons-pp-to-pp-lst-lst ((pp valid-pp-p)
                                pp-lst-lst)

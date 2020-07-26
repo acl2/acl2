@@ -53,13 +53,6 @@
   use-arith-5
   :disabled t))
 
-(define create-list-instance (lst)
-  :returns (res rp-termp :hyp (rp-term-listp lst))
-  (cond ((or (Not lst)
-             (equal lst (list ''0)))
-         ''nil)
-        (t
-         `(list . ,lst))))
 
 
 (define and-list-hash-aux (lst)
