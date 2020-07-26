@@ -5113,19 +5113,6 @@
   ()
 
   (local
-   (defthm
-     lemma-2
-     (implies (and
-               (absfat-equiv fs1 fs2)
-               (abs-fs-p fs1)
-               (abs-fs-p fs2)
-               (consp (assoc-equal (fat32-filename-fix (car path))
-                                   fs1)))
-              (consp (assoc-equal (fat32-filename-fix (car path))
-                                  fs2)))
-     :hints (("goal" :in-theory (enable abs-find-file-helper)))))
-
-  (local
    (defthmd
      lemma
      (implies
@@ -10706,77 +10693,6 @@
 
 (encapsulate
   ()
-
-  (local
-   (defthm
-     lemma-2
-     (implies
-      (and
-       (mv-nth 1 (collapse frame))
-       (consp (assoc-equal 0 frame))
-       (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-       (frame-p frame)
-       (no-duplicatesp-equal (strip-cars frame))
-       (subsetp-equal (abs-addrs (frame->root frame))
-                      (frame-addrs-root (frame->frame frame)))
-       (abs-separate frame)
-       (abs-complete (abs-file->contents (mv-nth 0 (abs-find-file frame
-                                                                  path))))
-       (not
-        (equal (mv-nth 1 (abs-find-file frame path))
-               (mv-nth 1 (hifat-find-file fs path)))))
-      (not
-       (hifat-equiv (mv-nth 0 (collapse frame))
-                    fs)))))
-
-  (local
-   (defthm
-     lemma-3
-     (implies
-      (and
-       (mv-nth 1 (collapse frame))
-       (abs-fs-p fs)
-       (m1-file-alist-p fs)
-       (consp (assoc-equal 0 frame))
-       (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-       (frame-p frame)
-       (no-duplicatesp-equal (strip-cars frame))
-       (subsetp-equal (abs-addrs (frame->root frame))
-                      (frame-addrs-root (frame->frame frame)))
-       (abs-separate frame)
-       (abs-complete (abs-file->contents (mv-nth 0 (abs-find-file frame path))))
-       (stringp (m1-file->contents (mv-nth 0 (hifat-find-file fs path))))
-       (not
-        (equal
-         (len (explode (m1-file->contents (mv-nth 0 (hifat-find-file fs path)))))
-         (len
-          (explode (abs-file->contents (mv-nth 0 (abs-find-file frame path))))))))
-      (not
-       (hifat-equiv (mv-nth 0 (collapse frame))
-                    fs)))))
-
-  (local
-   (defthm
-     lemma-4
-     (implies
-      (and
-       (mv-nth 1 (collapse frame))
-       (abs-fs-p fs)
-       (m1-file-alist-p fs)
-       (consp (assoc-equal 0 frame))
-       (not (consp (frame-val->path (cdr (assoc-equal 0 frame)))))
-       (frame-p frame)
-       (no-duplicatesp-equal (strip-cars frame))
-       (subsetp-equal (abs-addrs (frame->root frame))
-                      (frame-addrs-root (frame->frame frame)))
-       (abs-separate frame)
-       (abs-complete (abs-file->contents (mv-nth 0 (abs-find-file frame path))))
-       (stringp (m1-file->contents (mv-nth 0 (hifat-find-file fs path))))
-       (not
-        (stringp (abs-file->contents (mv-nth 0 (abs-find-file frame path))))))
-      (not
-       (hifat-equiv (mv-nth 0 (collapse frame))
-                    fs)))))
 
   (local
    (defthmd

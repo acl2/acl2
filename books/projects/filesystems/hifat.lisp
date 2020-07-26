@@ -188,19 +188,6 @@
 
 (defcong nat-equiv equal (nthcdr n l) 1)
 
-(defcong
-  str::charlisteqv equal (chars=>nats x)
-  1
-  :hints
-  (("goal" :in-theory (enable chars=>nats fast-list-equiv)
-    :induct (fast-list-equiv x x-equiv))))
-
-(defthm nats=>chars-of-take
-  (implies (<= (nfix n) (len nats))
-           (equal (nats=>chars (take n nats))
-                  (take n (nats=>chars nats))))
-  :hints (("goal" :in-theory (enable nats=>chars take))))
-
 (defthm list-equiv-when-true-listp
   (implies (and (true-listp x) (true-listp y))
            (iff (list-equiv x y) (equal x y)))

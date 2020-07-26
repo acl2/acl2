@@ -99,7 +99,13 @@
 
   (defrule nats=>chars-of-nthcdr
     (equal (nats=>chars (nthcdr n nats))
-           (nthcdr n (nats=>chars nats)))))
+           (nthcdr n (nats=>chars nats))))
+
+  (defrule nats=>chars-of-take
+    (implies (<= (nfix n) (len nats))
+             (equal (nats=>chars (take n nats))
+                    (take n (nats=>chars nats))))
+    :enable take))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
