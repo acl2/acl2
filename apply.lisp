@@ -1500,6 +1500,19 @@
     (let ((body (expand-all-lambdas (body fn nil wrld)))
           (formals (formals fn wrld)))
       (cond
+       ((member-eq fn *blacklisted-apply$-fns*)
+
+; We could relax this check to allow ttag functions to be warranted when there
+; is an active trust tag.  But as of this writing, that relaxation would only
+; apply to SYS-CALL, HONS-CLEAR!, and HONS-WASH!.  It doesn't seem worth the
+; bother to make such exceptions; after all, with a trust tag one can redefine
+; *blacklisted-apply$-fns*!
+
+        (mv (msg "~x0 cannot be warranted because apply$ is prohibited from ~
+                  calling it.  This is generally because its Common Lisp ~
+                  behavior is different from its logical behavior."
+                 fn)
+            nil))
        ((or (not (all-nils (getpropc fn 'stobjs-in nil wrld)))
             (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
 

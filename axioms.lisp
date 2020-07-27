@@ -10816,6 +10816,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; OR and unquoted Ts and NILs and numbers.  See get-guards2 for a discussion of
 ; tflg.
 
+; Implicit in this whole design is the presumption that when tflg = nil all of
+; the macros introduced in our results are ``hygenic'' in the sense used by
+; Felleisen et. al, and the result of this function is at least a pseudo-termp
+; so that we can find all the variables that occur in the macroexpansion by
+; looking for variables in the result produced here.  That way, if we produce
+; an untranslated result like (<= var '23) and want to rename var to var1, we
+; can do so in the unexpanded result, producing (<= var1 '23), knowing that the
+; macroexpansion of that would be the same as renaming var to var in the
+; macroexpansion of (<= var '23).
+
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
                   :mode :program))
@@ -13595,6 +13605,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     defstobj-fn ; might be avoidable; see comment in that definition
     apply-user-stobj-alist-or-kwote ; no raw code but ill-guarded; see comments
     accp-info
+    read-file-iterate-safe
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -22421,6 +22432,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro set-inhibit-warnings (&rest lst)
   `(local (set-inhibit-warnings! ,@lst)))
+
+(defun remove1-assoc-string-equal (key alist)
+  (declare (xargs :guard (and (stringp key)
+                              (standard-string-p key)
+                              (standard-string-alistp alist))))
+  (cond ((endp alist) nil)
+        ((string-equal key (caar alist)) (cdr alist))
+        (t (cons (car alist)
+                 (remove1-assoc-string-equal key (cdr alist))))))
+
+(defmacro toggle-inhibit-warning (str)
+  `(table inhibit-warnings-table
+          nil
+          (let ((inhibited-warnings
+                 (table-alist 'inhibit-warnings-table world)))
+            (cond ((assoc-string-equal ',str inhibited-warnings)
+                   (remove1-assoc-string-equal ',str inhibited-warnings))
+                  (t (acons ',str nil inhibited-warnings))))
+          :clear))
 
 (defmacro set-inhibit-output-lst (lst)
 

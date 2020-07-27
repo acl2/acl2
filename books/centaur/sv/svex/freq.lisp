@@ -35,7 +35,7 @@
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/osets/top" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "std/alists/alist-vals" :dir :system))
 
@@ -402,7 +402,7 @@ turn them into a nice, readable report."
     :measure (svex-count x)
     (b* ((fncounts (counter-alist-fix fncounts))
          (seen (svex-key-alist-fix seen))
-         (x (svex-fix x))) 
+         (x (svex-fix x)))
       (svex-case x
         :call (if (hons-get x seen)
                   (mv seen fncounts)

@@ -165,19 +165,29 @@
      does not necessarily also includes the proofs,
      and so that book certification can be faster.")
 
+   (xdoc::p
+    "A new file and XDOC topic has been started
+     to collect parsing primitives,
+     i.e. parsing functions from the ABNF grammar parser
+     that are more generally useful than that parser.
+     These parsing primitives may be useful to write parsers
+     for other languages specified by ABNF grammars
+     (besides ABNF itself, which is what the grammar parser does).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
 
    (xdoc::p
     "An " (xdoc::seetopic "apt::defaults-table" "APT defaults table")
     " has been added, analogous to the "
     (xdoc::seetopic "acl2-defaults-table" "ACL2 defaults table")
     " but specific to APT.
-     Utilities to set and retrieve certain defaults have also been added.")
+     Utilities to set and retrieve a number of defaults have also been added.")
 
    (xdoc::p
-    "A new expanded data transformation, @(tsee apt::expdata), has been added.
+    "A new transformation has been added:
+     @(tsee apt::expdata), the `expanded data transformation'.
      This can realize data type refinements where
      each instance of the old data may be represented by
      multiple instances of the new data,
@@ -228,12 +238,123 @@
       because otherwise no @('newp-of-new') theorems is generated."))
 
    (xdoc::p
-    "The @(tsee apt::tailrec) transformation has been simplified
-     by removing the @(':non-executable') option,
-     which does not seem necessary or useful.
-     The new function is marked non-executable
-     if and only if the target function is;
-     the wrapper is never marked non-executable.")
+    "The @(tsee apt::restrict) transformation has been improved as folows:")
+   (xdoc::ul
+    (xdoc::li
+     "The transformation has been simplified
+      by removing the @(':non-executable') option,
+      which does not seem necessary or useful.
+      The new function is marked non-executable
+      if and only if the target function is."))
+
+   (xdoc::p
+    "The @(tsee apt::tailrec) transformation has been improved as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "The transformation has been extended with a new variant,
+      @(':assoc-alt'), which is an alternative associative variant.")
+    (xdoc::li
+     "The transformation has been simplified
+      by removing the @(':non-executable') option,
+      which does not seem necessary or useful.
+      The new function is marked non-executable
+      if and only if the target function is;
+      the wrapper is never marked non-executable.")
+    (xdoc::li
+     "The generated names for the new and wrapper functions,
+      when @(':new-name') is @(':auto')
+      and/or @(':wrapper-name') is @(':auto'),
+      have been improved.
+      If the target function is @('f{i}') (where we view @('f') as @('f{0}')),
+      now the new function is @('f{j}') if no wrapper is generated;
+      otherwise, the new function is @('f-aux{j}')
+      and the wrapper is @('f{j}').
+      Here @('j') is the smallest integer above @('i')
+      that results in fresh function names.
+      Note that, in this way, these automatically generated names
+      are always numbered names,
+      which facilitates the application of further transformations.")
+    (xdoc::li
+     "The default of the @(':wrapper') input
+      has been changed from @('t') to @('nil').
+      The rationale is that not generating the wrapper is expected to be
+      more frequent than generating it.")
+    (xdoc::li
+     "Now the @(':wrapper-enable') input, if absent, is taken from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "An @(':accumulator') input has been added to optinally specify
+      the name of the accumulator argument of the new function.")
+    (xdoc::li
+     "The theorem that rewrites the target function
+      in terms of the new function
+      is now always generated, regardless of the @(':wrapper') input.
+      If @(':wrapper') is @('t'),
+      the theorem that rewrites the target function
+      in terms of the wrapper function
+      is also generated.")
+    (xdoc::li
+     "The @(':thm-name') input has been replaced with
+      two new inputs @(':old-to-new-name') and @(':old-to-wrapper-name'),
+      which individually control the names of the theorems that rewrite
+      the target function in terms of the new or wrapper function.
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "The @(':thm-enable') input has been replaced with
+      two new inputs @(':old-to-new-enable') and @(':old-to-wrapper-enable'),
+      which individually control the enablement of the theorems that rewrites
+      the target function in terms of the new or wrapper function.
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "Now the transformation also generates a theorem
+      that rewrites the new function in terms of the old function.
+      The name and enablement of this theorem are controlled
+      by two new inputs @(':new-to-old-name') and @(':new-to-old-enable').
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "Now the transformation also generates a theorem
+      that rewrites the wrapper function in terms of the old function
+      (when the @(':wrapper') input is @('t').
+      The name and enablement of this theorem are controlled
+      by two new inputs
+      @(':wrapper-to-old-name') and @(':wrapper-to-old-enable').
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "The heuristics for inferring the domain of the binary operator
+      (when the @(':domain') input is, generally by default, @(':auto'),
+      have been extended to infer more cases automatically.")
+    (xdoc::li
+     "The target function's @(tsee if) body,
+      after translation and @(tsee let) expansion,
+      can now have a recursive `then' branch and a non-recursive `else' branch.
+      Before, the `then' branch had to be the non-recursive one
+      and the `else' branch had to be the recursive one.
+      This makes the transformation more widely applicable."))
+
+   (xdoc::p
+    "A file @('[books]/kestrel/apt/tailrec-examples.lisp') has been added.
+     It contains examples of uses of @(tsee apt::tailrec),
+     with explanatory comments.
+     This could serve as a preliminary tutorial.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
+
+   (xdoc::p
+    "This library is being moved
+     from @('[books]/kestrel/utilities/error-checking/')
+     to @('[books]/kestrel/error-checking/').
+     It is also being refactored and improved in the process.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,6 +376,19 @@
      have been moved here
      from @('[books]/kestrel/utilities/user-interface.lisp').")
 
+   (xdoc::p
+    "The XDOC constructor @('xdoc::evmac-section-form-auto') has been removed.
+     Not being able to use this XDOC constructor avoids
+     additional inter-dependencies among books
+     that do not seem worth the small savings in writing user documentation,
+     whose general form section should be normally a small fraction.")
+
+   (xdoc::p
+    "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
+     has been simplified by removing its
+     @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
+     Instead, named constants have been provided for these common items.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
@@ -274,6 +408,10 @@
     (xdoc::seetopic "fty::defbyte-standard-instances"
                     "@('fty::defbyte') standard instances")
     " have been added.")
+
+   (xdoc::p
+    "The macro @(tsee fty::defomap) has been improved
+     to generate additional theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,6 +544,19 @@
      have been extended with an option to provide hints
      for the theorems they prove internally.")
 
+   (xdoc::p
+    "An option @(':ignore-whitelist') has been added
+     to ignore the whitelist of ACL2 functions with raw Lisp code,
+     i.e. to translate them to Java (so long as they have an unnormalized body).
+     This must be used by caution: side effects in the raw Lisp code
+     will not be replicated in Java,
+     e.g. @(tsee hard-error) will just return @('nil').
+     This could be useful when the functions in question
+     are unreachable under guard verification, for instance.
+     The default is @('nil'), i.e. do not ignore the whitelist,
+     so the user must explicitly write @(':ignore-whitelist t')
+     to ignore the whitelist.")
+
    ;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h5 (xdoc::seetopic "java::language" "Java Language Formalization"))
@@ -433,6 +584,22 @@
    (xdoc::p
     "Added an operation to create an omap
      from a list of keys and a corresponding list of values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "soft::soft" "SOFT Library"))
+
+   (xdoc::p
+    "A new macro @(tsee soft::defsoft) has been added,
+     to record a function as second-order
+     after the function has been introduced via a non-SOFT event.
+     The SOFT macros
+     @(tsee soft::defun2),
+     @(tsee soft::defchoose2), and
+     @(tsee soft::defun-sk2)
+     have been simplified to be abbreviations of
+     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
+     followed by @(tsee soft::defsoft).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -468,6 +635,10 @@
     "A new utility @(tsee check-if-call) has been added,
      to check if a term is a all of @(tsee if)
      and to return its three arguments if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
+     which lifts @(tsee fresh-namep-msg-weak) to lists.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -531,6 +702,10 @@
    (xdoc::p
     "Support for @(':prepwork') has been added to @(tsee std::deflist).")
 
+   (xdoc::p
+    "Support for @(tsee defun-sk)'s option @(':constrain')
+     has been added to @(tsee std::define-sk).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
@@ -539,6 +714,10 @@
 
    (xdoc::h3 "Build System Updates")
 
+   (xdoc::p
+    "By default, @('make') commands for certifying ACL2 books take advantage of
+     files @('*@useless-runes.lsp').  See @(see useless-runes).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
@@ -546,6 +725,11 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
+
+   (xdoc::p
+    "The line containing @('#!/bin/bash') at the top of various shell scripts
+     has been replaced by a line containing @('#!/usr/bin/env bash'), for
+     increased portability.")
 
    ))
 

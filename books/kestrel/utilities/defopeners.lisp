@@ -565,18 +565,17 @@
    (if (member-eq verbose '(t 't)) t nil) ;verbose
    `(make-event (defopeners-fn ',fn ',hyps ',disable ',suffix ',verbose state))))
 
-(defun defopeners-mut-rec-fn (fn other-fns-in-nest hyps disable suffix verbose state)
+(defun defopeners-mut-rec-fn (fn hyps disable suffix verbose state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
-  (make-unroll-and-base-theorems fn (cons fn other-fns-in-nest) hyps disable suffix verbose state))
+  (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose state))
 
 ;TODO: Call control-screen-output here, as above?
 ;TODO: Combine this with the non-mut-rec version (query the world to check whether it's a mut rec and what the other functions are)
-(defmacro defopeners-mut-rec (fn other-fns-in-nest
-                                 &key
+(defmacro defopeners-mut-rec (fn &key
                                  (hyps 'nil)
                                  (disable 'nil)
                                  (verbose 'nil)
                                  (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names)
                                  )
-  `(make-event (defopeners-mut-rec-fn ',fn ',other-fns-in-nest ',hyps ',disable ',suffix ',verbose state)))
+  `(make-event (defopeners-mut-rec-fn ',fn ',hyps ',disable ',suffix ',verbose state)))

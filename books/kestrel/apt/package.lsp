@@ -43,6 +43,7 @@
                          assume-true-false-aggressive-p
                          attachment-pair
                          body
+                         check-numbered-name
                          check-user-lambda
                          clausify
                          clean-up-0ary-lambdas-in-untranslated-term
@@ -77,6 +78,7 @@
                          definj
                          defiso
                          defiso-lookup
+                         defmacro+
                          defmap
                          defmapping-info
                          defmapping-infop
@@ -111,7 +113,6 @@
                          enabled-xfnp
                          encapsulate-report-errors
                          ens
-                         ensure-boolean$
                          ensure-boolean-or-auto-and-return-boolean$
                          ensure-doublet-list$
                          ensure-function-defined$
@@ -137,9 +138,7 @@
                          ensure-list-subset$
                          ensure-named-formulas
                          ensure-not-member-of-list$
-                         ensure-symbol$
                          ensure-symbol-different$
-                         ensure-symbol-list$
                          ensure-symbol-new-event-name
                          ensure-symbol-new-event-name$
                          ensure-term$
@@ -152,6 +151,9 @@
                          ensure-term-no-stobjs$
                          ensure-term-not-call-of$
                          ensure-tuple$
+                         ensure-value-is-boolean$
+                         ensure-value-is-symbol$
+                         ensure-value-is-symbol-list$
                          equivalence-relationp
                          er-soft+
                          evmac-appcond-listp
@@ -249,6 +251,8 @@
                          mvify
                          named-formulas-to-thm-events
                          negate-term
+                         next-fresh-numbered-name
+                         next-fresh-numbered-names
                          next-numbered-name
                          non-executablep
                          number-of-results

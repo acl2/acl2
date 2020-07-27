@@ -5604,16 +5604,16 @@
         (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
      (2 2
         (:REWRITE SV::4VEC-BITNOT-OF-3VEC-FIX-X-NORMALIZE-CONST)))
-(RP::RP-TERMP-CADDDDR (7113 123 (:REWRITE RP::RP-TERMP-CADDR))
-                      (5889 93 (:DEFINITION APPLY$-BADGEP))
-                      (4956 108
+(RP::RP-TERMP-CADDDDR (7118 123 (:REWRITE RP::RP-TERMP-CADDR))
+                      (5894 94 (:DEFINITION APPLY$-BADGEP))
+                      (4961 108
                             (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
                       (4686 96 (:REWRITE RP::RP-TERMP-CADDDR))
-                      (4416 4416 (:REWRITE DEFAULT-CDR))
+                      (4419 4419 (:REWRITE DEFAULT-CDR))
                       (3339 21
                             (:DEFINITION RP::FALIST-CONSISTENT-AUX))
                       (2349 15 (:DEFINITION SUBSETP-EQUAL))
-                      (2304 2304 (:REWRITE DEFAULT-CAR))
+                      (2306 2306 (:REWRITE DEFAULT-CAR))
                       (2154 210 (:DEFINITION MEMBER-EQUAL))
                       (1237 128 (:REWRITE RP::RP-TERMP-CADR))
                       (1236 54
@@ -5628,15 +5628,15 @@
                       (468 184
                            (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
                       (465 465 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                      (426 48 (:DEFINITION NATP))
+                      (431 48 (:DEFINITION NATP))
                       (393 77
                            (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
-                      (339 339 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                      (337 337 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
                       (315 315
                            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
                       (309 27 (:DEFINITION LEN))
                       (291 291 (:REWRITE O-P-DEF-O-FINP-1))
-                      (252 93 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                      (256 94 (:DEFINITION WEAK-APPLY$-BADGE-P))
                       (246 27 (:DEFINITION ALL-NILS))
                       (216 108
                            (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
@@ -5656,10 +5656,10 @@
                       (77 77
                           (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
                       (60 60 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+                      (56 24
+                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
                       (54 54
                           (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
-                      (51 24
-                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
                       (39 39 (:REWRITE DEFAULT-+-1))
                       (36 36 (:LINEAR LEN-WHEN-PREFIXP))
                       (27 27 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
@@ -5792,37 +5792,37 @@
      (4 4 (:REWRITE DEFAULT-<-2))
      (4 4 (:REWRITE DEFAULT-<-1)))
 (RP::VALID-SC-CADDDDR
-     (20145 54 (:DEFINITION APPLY$-BADGEP))
+     (20196 65 (:DEFINITION APPLY$-BADGEP))
      (12462 78
             (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
      (11853 39 (:DEFINITION TRUE-LISTP))
-     (11481 213
+     (11502 213
             (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
      (10326 219
             (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
      (9831 78 (:DEFINITION RP::RP-TERMP))
-     (9006 75
+     (9036 75
            (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
-     (8904 18 (:REWRITE RP::VALID-SC-CADDR))
-     (6718 6682 (:REWRITE DEFAULT-CDR))
+     (8914 18 (:REWRITE RP::VALID-SC-CADDR))
+     (6748 6712 (:REWRITE DEFAULT-CDR))
      (5940 12 (:REWRITE RP::VALID-SC-CADDDR))
-     (5739 6 (:REWRITE RP::VALID-SC-OF-EX-FROM-RP))
+     (5764 6 (:REWRITE RP::VALID-SC-OF-EX-FROM-RP))
      (5721 39 (:DEFINITION RP::FALIST-CONSISTENT))
-     (5511 27 (:REWRITE RP::VALID-SC-CADR))
+     (5552 27 (:REWRITE RP::VALID-SC-CADR))
      (4377 27 (:DEFINITION SUBSETP-EQUAL))
      (4347 27
            (:DEFINITION RP::FALIST-CONSISTENT-AUX))
      (4050 378 (:DEFINITION MEMBER-EQUAL))
-     (3481 3409 (:REWRITE DEFAULT-CAR))
+     (3502 3430 (:REWRITE DEFAULT-CAR))
      (2514 90 (:DEFINITION RP::RP-TERM-LISTP))
      (2358 189
            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
      (1602 441 (:REWRITE O-P-O-INFP-CAR))
      (837 837 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (786 69 (:DEFINITION NATP))
+     (827 69 (:DEFINITION NATP))
      (774 774 (:TYPE-PRESCRIPTION O-P))
-     (690 690 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
      (684 6 (:DEFINITION RP::EVAL-AND-ALL))
+     (668 668 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
      (576 144 (:REWRITE RP::RP-TERMP-CADDDR))
      (567 567
           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
@@ -5844,15 +5844,15 @@
      (247 247 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
      (243 243
           (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
+     (235 87
+          (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+     (222 65 (:DEFINITION WEAK-APPLY$-BADGE-P))
      (216 12 (:DEFINITION RP::TRANS-LIST))
      (213 213 (:TYPE-PRESCRIPTION LEN))
      (210 105
           (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (204 87
-          (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
      (192 12
           (:REWRITE RP::RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT))
-     (180 54 (:DEFINITION WEAK-APPLY$-BADGE-P))
      (168 6 (:DEFINITION RP::EX-FROM-RP))
      (156 12 (:DEFINITION RP::INCLUDE-FNC))
      (132 132 (:TYPE-PRESCRIPTION TRUE-LISTP))

@@ -12,6 +12,13 @@
 
 (include-book "def-error-checker")
 
+(include-book "ensure-function-is-pure-if-raw")
+(include-book "ensure-value-is-boolean")
+(include-book "ensure-value-is-nil")
+(include-book "ensure-value-is-string")
+(include-book "ensure-value-is-symbol")
+(include-book "ensure-value-is-symbol-list")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc error-checking

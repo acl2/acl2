@@ -10,21 +10,21 @@
                           (2 1 (:DEFINITION TRUE-LISTP))
                           (1 1 (:REWRITE DEFAULT-+-1)))
 (CHECK-IT!)
-(CHECK-IT!-WORKS (1890 1890 (:REWRITE DEFAULT-CDR))
-                 (1071 1071 (:REWRITE DEFAULT-CAR))
-                 (854 76
-                      (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-                 (836 74
-                      (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
-                 (558 100
-                      (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
-                 (174 24 (:DEFINITION TRUE-LISTP))
-                 (60 60 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                 (52 52 (:REWRITE DEFAULT-<-2))
-                 (52 52 (:REWRITE DEFAULT-<-1))
-                 (52 26 (:REWRITE DEFAULT-+-2))
-                 (36 36 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                 (26 26 (:REWRITE DEFAULT-+-1))
+(CHECK-IT!-WORKS (2325 2325 (:REWRITE DEFAULT-CDR))
+                 (1251 1251 (:REWRITE DEFAULT-CAR))
+                 (1175 82
+                       (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                 (1123 80
+                       (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+                 (1062 128
+                       (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+                 (218 30 (:DEFINITION TRUE-LISTP))
+                 (108 108 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                 (68 34 (:REWRITE DEFAULT-+-2))
+                 (60 60 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                 (58 58 (:REWRITE DEFAULT-<-2))
+                 (58 58 (:REWRITE DEFAULT-<-1))
+                 (34 34 (:REWRITE DEFAULT-+-1))
                  (1 1
                     (:TYPE-PRESCRIPTION WEAK-APPLY$-BADGE-P)))
 (BADGE-PRIM-TYPE)

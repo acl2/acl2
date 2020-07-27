@@ -17,6 +17,8 @@
         (14 10
             (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
         (14 4 (:REWRITE DEFAULT-+-2))
+        (10 10
+            (:REWRITE MOD-WHEN-EQUAL-OF-MOD-AND-0-FREE-CHEAP))
         (4 4
            (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
         (4 4 (:REWRITE DEFAULT-+-1))

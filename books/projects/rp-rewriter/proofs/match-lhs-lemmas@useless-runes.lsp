@@ -629,188 +629,188 @@
      (17 17 (:DEFINITION ASSOC-EQUAL))
      (17 17 (:DEFINITION ACONS)))
 (RP::LEMMA1)
-(RP::LEMMA2 (29869 8
+(RP::LEMMA2 (34259 8
                    (:REWRITE RP::VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP))
-            (29838 9 (:DEFINITION RP::VALID-RULESP))
-            (26886 11 (:DEFINITION RP::VALID-RULEP))
-            (26855 11 (:DEFINITION RP::VALID-RULEP-SK))
-            (26844 11
+            (34228 9 (:DEFINITION RP::VALID-RULESP))
+            (31276 15 (:DEFINITION RP::VALID-RULEP))
+            (31245 15 (:DEFINITION RP::VALID-RULEP-SK))
+            (31234 15
                    (:DEFINITION RP::VALID-RULEP-SK-BODY))
-            (16500 22 (:DEFINITION RP::VALID-SC-NT))
-            (10206 10206
+            (19500 26 (:DEFINITION RP::VALID-SC-NT))
+            (11726 11726
                    (:REWRITE RP::SHOULD-TERM-BE-IN-CONS-LEMMA1))
-            (5848 264 (:DEFINITION RP::INCLUDE-FNC))
-            (5642 42 (:DEFINITION RP::RP-TERMP))
-            (5108 2836 (:REWRITE O-P-O-INFP-CAR))
-            (4422 110
-                  (:REWRITE RP::NOT-INCLUDE-RP-MEANS-VALID-SC-NT))
-            (4136 22 (:DEFINITION RP::EVAL-AND-ALL-NT))
-            (3402 42 (:DEFINITION RP::FALIST-CONSISTENT))
-            (2948 22
-                  (:REWRITE RP::CAR-OF-EX-FROM-RP-IS-NOT-RP))
-            (2898 42
-                  (:DEFINITION RP::FALIST-CONSISTENT-AUX))
-            (2275 22
+            (6884 308 (:DEFINITION RP::INCLUDE-FNC))
+            (6665 26
                   (:REWRITE RP::VALID-RULEP-IMPLIES-VALID-SC))
-            (1830 110
+            (6166 46 (:DEFINITION RP::RP-TERMP))
+            (5884 3308 (:REWRITE O-P-O-INFP-CAR))
+            (5226 130
+                  (:REWRITE RP::NOT-INCLUDE-RP-MEANS-VALID-SC-NT))
+            (4888 26 (:DEFINITION RP::EVAL-AND-ALL-NT))
+            (3726 46 (:DEFINITION RP::FALIST-CONSISTENT))
+            (3484 26
+                  (:REWRITE RP::CAR-OF-EX-FROM-RP-IS-NOT-RP))
+            (3174 46
+                  (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+            (2130 130
                   (:REWRITE RP::VALID-SC-NT-IS-VALID-SC))
+            (1440 1440 (:TYPE-PRESCRIPTION O-P))
             (1410 10 (:REWRITE RP::RP-EVL-OF-RP-EQUAL2))
             (1410 10
                   (:REWRITE RP::RP-EVL-OF-RP-EQUAL-LOOSE))
-            (1280 1280 (:TYPE-PRESCRIPTION O-P))
-            (1159 131 (:REWRITE RP::EX-FROM-SYNP-LEMMA1))
-            (992 640 (:REWRITE O-P-DEF-O-FINP-1))
-            (986 986
-                 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-            (897 131 (:DEFINITION RP::IS-SYNP$INLINE))
-            (818 818 (:TYPE-PRESCRIPTION RP::RP-TERMP))
-            (770 88
+            (1343 151 (:REWRITE RP::EX-FROM-SYNP-LEMMA1))
+            (1158 1158
+                  (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+            (1136 720 (:REWRITE O-P-DEF-O-FINP-1))
+            (1041 151 (:DEFINITION RP::IS-SYNP$INLINE))
+            (910 104
                  (:DEFINITION RP::INCLUDE-FNC-SUBTERMS))
-            (654 109
+            (894 894 (:TYPE-PRESCRIPTION RP::RP-TERMP))
+            (750 125
                  (:REWRITE RP::EVL-OF-EXTRACT-FROM-RP-2))
-            (620 193
+            (696 217
                  (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
-            (590 131 (:REWRITE RP::RP-EVL-OF-VARIABLE))
-            (550 44
+            (682 151 (:REWRITE RP::RP-EVL-OF-VARIABLE))
+            (650 52
                  (:REWRITE RP::EVAL-AND-ALL-NT-IS-EVAL-AND-ALL))
-            (504 131
+            (588 151
                  (:REWRITE RP::RP-EVL-OF-RP-EQUAL-CNT-SUBTERMS-CALL))
-            (411 411
+            (467 467
                  (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
-            (378 378
+            (416 416 (:TYPE-PRESCRIPTION O-FINP))
+            (414 414
                  (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
-            (352 352 (:TYPE-PRESCRIPTION O-FINP))
-            (352 350 (:DEFINITION QUOTEP))
-            (336 168 (:REWRITE RP::IS-IF-RP-TERMP))
-            (328 131 (:REWRITE RP::RP-EVL-OF-ZP-CALL))
-            (328 131
+            (408 406 (:DEFINITION QUOTEP))
+            (380 151 (:REWRITE RP::RP-EVL-OF-ZP-CALL))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-UNARY-/-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-UNARY---CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-TYPESPEC-CHECK-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-SYNP-CALL))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-SYNP-CALL))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-SYMBOLP-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-SYMBOL-PACKAGE-NAME-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-SYMBOL-NAME-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-STRINGP-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-RP-EQUAL-SUBTERMS-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-RP-EQUAL-CNT-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-RP-EQUAL-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-RP-CALL))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-RP-CALL))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-RETURN-LAST-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-REALPART-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-RATIONALP-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-QUOTE))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-QUOTE))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-NUMERATOR-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-NOT-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-NATP-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-LAMBDA))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-NOT-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-NATP-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-LAMBDA))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-INTERN-IN-PACKAGE-OF-SYMBOL-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-INTEGERP-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-IMPLIES-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-IMAGPART-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-IFF-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-IF-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-HIDE-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-FORCE-CALL))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-IFF-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-IF-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-HIDE-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-FORCE-CALL))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-FALIST-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-EQUAL-CALL))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-EQUAL-CALL))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-DENOMINATOR-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-CONSP-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-CONS-CALL))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-CONSP-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-CONS-CALL))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-COMPLEX-RATIONALP-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-COERCE-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-CODE-CHAR-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-CHARACTERP-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-CHAR-CODE-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-CDR-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-CAR-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-BITP-CALL))
-            (328 131
+            (380 151 (:REWRITE RP::RP-EVL-OF-CDR-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-CAR-CALL))
+            (380 151 (:REWRITE RP::RP-EVL-OF-BITP-CALL))
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-BINARY-+-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-BINARY-*-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-BAD-ATOM<=-CALL))
-            (328 131
+            (380 151
                  (:REWRITE RP::RP-EVL-OF-ACL2-NUMBERP-CALL))
-            (328 131 (:REWRITE RP::RP-EVL-OF-<-CALL))
-            (262 262
+            (380 151 (:REWRITE RP::RP-EVL-OF-<-CALL))
+            (368 184 (:REWRITE RP::IS-IF-RP-TERMP))
+            (306 306
                  (:TYPE-PRESCRIPTION RP::VALID-SC-NT))
-            (252 252
-                 (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
-            (242 22
+            (286 26
                  (:REWRITE RP::VALID-SC-NT-SUBTERMS-VALID-SC-SUBTERMS))
-            (242 22
+            (286 26
                  (:REWRITE RP::NOT-INCLUDE-RP-MEANS-VALID-SC-NT-SUBTERMS))
-            (220 44
+            (276 276
+                 (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+            (260 52
                  (:REWRITE RP::NOT-INCLUDE-EX-FROM-RP))
-            (220 22
+            (260 26
                  (:REWRITE RP::EVAL-AND-ALL-NT-OF-CONTEXT-FROM-RP))
-            (218 218
+            (250 250
                  (:TYPE-PRESCRIPTION RP::IS-RP-LOOSE$INLINE))
-            (210 210 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
-            (210 42
+            (230 46
                  (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-            (193 193
+            (226 226 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+            (217 217
                  (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
-            (176 44
+            (208 52
                  (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
-            (168 84 (:REWRITE RP::RP-TERMP-CADR))
-            (168 84 (:REWRITE RP::RP-TERMP-CADDR))
-            (168 84 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
-            (132 132
+            (184 92 (:REWRITE RP::RP-TERMP-CADR))
+            (184 92 (:REWRITE RP::RP-TERMP-CADDR))
+            (184 92 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+            (156 156
                  (:TYPE-PRESCRIPTION RP::CONTEXT-FROM-RP))
-            (131 131
+            (151 151
                  (:TYPE-PRESCRIPTION RP::IS-SYNP$INLINE))
-            (130 10 (:REWRITE RP::RP-EVL-OF-RP-EQUAL))
-            (110 110
+            (130 130
                  (:TYPE-PRESCRIPTION RP::EVAL-AND-ALL-NT))
-            (90 10 (:DEFINITION RP::RP-EQUAL))
-            (86 86 (:TYPE-PRESCRIPTION QUOTEP))
-            (84 84
+            (130 10 (:REWRITE RP::RP-EVL-OF-RP-EQUAL))
+            (98 98 (:TYPE-PRESCRIPTION QUOTEP))
+            (92 92
                 (:TYPE-PRESCRIPTION RP::RP-TERM-LISTP))
-            (84 42
+            (92 46
                 (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
-            (58 58 (:TYPE-PRESCRIPTION RP::VALID-RULEP))
-            (44 44
+            (90 10 (:DEFINITION RP::RP-EQUAL))
+            (54 54 (:TYPE-PRESCRIPTION RP::VALID-RULEP))
+            (52 52
                 (:TYPE-PRESCRIPTION RP::VALID-SC-NT-SUBTERMS))
             (42 42
                 (:TYPE-PRESCRIPTION RP::VALID-RULESP))
             (30 30 (:TYPE-PRESCRIPTION RP::RP-EQUAL))
-            (22 22
+            (26 26
                 (:TYPE-PRESCRIPTION RP::IS-IF$INLINE))
-            (22 22 (:REWRITE RP::NOT-INCLUDE-RP))
+            (26 26 (:REWRITE RP::NOT-INCLUDE-RP))
             (20 20
                 (:TYPE-PRESCRIPTION RP::RP-EQUAL-SUBTERMS))
             (18 18 (:REWRITE RP::VALID-RULES-SUBSETP))
+            (12 12 (:DEFINITION IFF))
             (10 10
                 (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE))
-            (10 10 (:REWRITE RP::RP-EQUAL-REFLEXIVE))
-            (10 10 (:DEFINITION IFF)))
+            (10 10 (:REWRITE RP::RP-EQUAL-REFLEXIVE)))
 (RP::VALID-SC-BINDINGS-RP-RW-RULE-AUX
      (572 52 (:DEFINITION RP::RP-MATCH-LHS))
      (170 170
@@ -1402,7 +1402,7 @@
             (606 606 (:REWRITE O-P-DEF-O-FINP-1))
             (606 17
                  (:REWRITE RP::EVL-OF-EXTRACT-FROM-RP-2))
-            (504 192 (:DEFINITION APPLY$-BADGEP))
+            (504 194 (:DEFINITION APPLY$-BADGEP))
             (488 235 (:REWRITE RP::RP-TERMP-CADR))
             (419 419
                  (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
@@ -1411,12 +1411,12 @@
                  (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
             (257 257
                  (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-            (237 237 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+            (233 233 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
             (219 14
                  (:REWRITE RP::RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT))
             (196 15
                  (:DEFINITION RP::INCLUDE-FNC-SUBTERMS))
-            (192 192 (:DEFINITION WEAK-APPLY$-BADGE-P))
+            (194 194 (:DEFINITION WEAK-APPLY$-BADGE-P))
             (173 173
                  (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
             (145 29

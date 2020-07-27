@@ -38,7 +38,7 @@
 (include-book "centaur/esim/vltoe/emodwire" :dir :system)
 (include-book "centaur/esim/vltoe/verilogify" :dir :system)
 (include-book "centaur/vl2014/util/prefix-hash" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 (local (include-book "centaur/vl2014/util/osets" :dir :system))
 (set-state-ok t)

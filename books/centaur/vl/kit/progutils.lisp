@@ -34,7 +34,7 @@
 (include-book "../util/defs")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (in-theory (disable (:executable-counterpart acl2::good-bye-fn)))
 

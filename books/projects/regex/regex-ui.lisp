@@ -34,7 +34,7 @@
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "std/util/define" :dir :system)
 (local (include-book "tools/mv-nth" :dir :system))
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 
 (defxdoc regex
   :parents (projects)

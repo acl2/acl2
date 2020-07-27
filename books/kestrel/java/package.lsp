@@ -57,17 +57,17 @@
                          doublets-to-alist
                          dumb-occur-var-open
                          dumb-occur-var-open-lst
-                         ensure-boolean$
                          ensure-doublet-list$
                          ensure-function-name$
                          ensure-function-name-list$
                          ensure-list-functions$
                          ensure-list-no-duplicates$
                          ensure-member-of-list$
-                         ensure-string$
                          ensure-string-or-nil$
                          ensure-term$
                          ensure-term-ground$
+                         ensure-value-is-boolean$
+                         ensure-value-is-string$
                          er-soft+
                          explode
                          fargn

@@ -458,6 +458,11 @@
                   (apply$-lambda fn args)))
   :hints (("Goal" :use apply$-lambda-takes-arity-args)))
 
+(local
+ (defthm hide-is-identity
+   (equal (hide x) x)
+   :hints (("Goal" :expand ((hide x))))))
+
 (defthm apply$-prim-takes-arity-args
   (implies (apply$-primp fn)
            (equal (apply$-prim fn args)
@@ -472,6 +477,7 @@
                                cdr-cons
                                hons-get
                                (:executable-counterpart hons-assoc-equal)
+                               hide-is-identity
                                )))
   :rule-classes nil)
 

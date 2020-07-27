@@ -1388,13 +1388,13 @@
          (:TYPE-PRESCRIPTION FUMON::COEFICIENTEP-COEFICIENTE))
      (14 12 (:REWRITE DEFAULT-UNARY-MINUS)))
 (FUNPOL::|m FUPOL::*-monomio p2 != 0|
-     (4057 4057 (:REWRITE DEFAULT-CDR))
-     (3941 3941 (:REWRITE DEFAULT-CAR))
+     (4061 4061 (:REWRITE DEFAULT-CDR))
+     (3949 3949 (:REWRITE DEFAULT-CAR))
      (3240 16 (:REWRITE FUMON::|a * b = b * a|))
      (2814 494
            (:REWRITE FUTER::|a < b or b < a or a = b|))
-     (2130 2126 (:REWRITE DEFAULT-<-2))
-     (2130 2126 (:REWRITE DEFAULT-<-1))
+     (2134 2130 (:REWRITE DEFAULT-<-2))
+     (2134 2130 (:REWRITE DEFAULT-<-1))
      (1675 171
            (:REWRITE FUTER::|a < b => ~(b < a)|))
      (812 303
@@ -1422,14 +1422,14 @@
      (36 24 (:DEFINITION FIX)))
 (FUNPOL::|polinomiop (m FUPOL::*-monomio p2)|)
 (FUNPOL::|primero(m FUPOL::*-monomio p2) FUMON::= primero(p1)|
-     (6689 6124 (:REWRITE DEFAULT-CAR))
-     (6353 6191 (:REWRITE DEFAULT-CDR))
+     (6705 6140 (:REWRITE DEFAULT-CAR))
+     (6361 6199 (:REWRITE DEFAULT-CDR))
      (5359 957
            (:REWRITE FUTER::|a < b or b < a or a = b|))
-     (3578 3462 (:REWRITE DEFAULT-<-1))
+     (3586 3470 (:REWRITE DEFAULT-<-1))
      (3571 361
            (:REWRITE FUTER::|a < b => ~(b < a)|))
-     (3463 3462 (:REWRITE DEFAULT-<-2))
+     (3471 3470 (:REWRITE DEFAULT-<-2))
      (1304 8 (:REWRITE FUMON::|a * b = b * a|))
      (1224 957
            (:REWRITE FUTER::|a < b & b < c => a < c|))

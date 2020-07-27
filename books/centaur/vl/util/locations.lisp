@@ -35,7 +35,7 @@
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/util/defval" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 
 (defsection vl-linecol

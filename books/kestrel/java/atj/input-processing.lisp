@@ -15,6 +15,8 @@
 (include-book "java-primitive-arrays")
 (include-book "test-structures")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
@@ -522,10 +524,10 @@
      So we need to look at the number of results returned by the function
      to recognize the result of the function call from @(tsee trans-eval)
      as either a single list result or a list of multiple results."))
-  (b* (((er &) (ensure-string$ name
-                               (msg "The test name ~x0 in the :TESTS input"
-                                    name)
-                               t nil))
+  (b* (((er &) (ensure-value-is-string$
+                name
+                (msg "The test name ~x0 in the :TESTS input" name)
+                t nil))
        ((when (equal name ""))
         (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
                              cannot be the empty string." name))
@@ -689,7 +691,8 @@
                         of the generated test Java file.")
                state)
   :short "Process the @(':output-dir') input."
-  (b* (((er &) (ensure-string$ output-dir "The :OUTPUT-DIR input" t nil))
+  (b* (((er &)
+        (ensure-value-is-string$ output-dir "The :OUTPUT-DIR input" t nil))
        ((mv err/msg kind state) (oslib::file-kind output-dir))
        ((when (or err/msg
                   (not (eq kind :directory))))
@@ -758,7 +761,7 @@
                                 exists but is not a regular file." file-test)))
                  (value :this-is-irrelevant))))
     (value (list file file-env file-test)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-string))))
+  :guard-hints (("Goal" :in-theory (enable acl2::ensure-value-is-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1063,6 +1066,7 @@
                               (call-graph symbol-symbollist-alistp)
                               (deep$ booleanp)
                               (guards$ booleanp)
+                              (ignore-whitelist$ booleanp)
                               (verbose$ booleanp)
                               ctx
                               state)
@@ -1171,9 +1175,11 @@
                                 call-graph
                                 deep$
                                 guards$
+                                ignore-whitelist$
                                 verbose$
                                 ctx state)))
        ((when (and (rawp fn state)
+                   (not ignore-whitelist$)
                    (not (pure-raw-p fn))))
         (er-soft+ ctx t nil
                   "The function ~x0 has raw Lisp code ~
@@ -1218,6 +1224,7 @@
                           call-graph
                           deep$
                           guards$
+                          ignore-whitelist$
                           verbose$
                           ctx state)))
 
@@ -1226,6 +1233,7 @@
 (define atj-fns-to-translate ((targets$ symbol-listp)
                               (deep$ booleanp)
                               (guards$ booleanp)
+                              (ignore-whitelist$ booleanp)
                               (verbose$ booleanp)
                               ctx
                               state)
@@ -1263,6 +1271,7 @@
                               nil
                               deep$
                               guards$
+                              ignore-whitelist$
                               verbose$
                               ctx
                               state))
@@ -1311,6 +1320,7 @@
         :java-class
         :output-dir
         :tests
+        :ignore-whitelist
         :verbose)
   ///
   (assert-event (symbol-listp *atj-allowed-options*))
@@ -1380,10 +1390,11 @@
        (java-class (cdr (assoc-eq :java-class options)))
        (output-dir (or (cdr (assoc-eq :output-dir options)) "."))
        (tests (cdr (assoc-eq :tests options)))
+       (ignore-whitelist (cdr (assoc-eq :ignore-whitelist options)))
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atj-process-targets targets deep guards ctx state))
-       ((er &) (ensure-boolean$ deep "The :DEEP intput" t nil))
-       ((er &) (ensure-boolean$ guards "The :GUARDS intput" t nil))
+       ((er &) (ensure-value-is-boolean$ deep "The :DEEP intput" t nil))
+       ((er &) (ensure-value-is-boolean$ guards "The :GUARDS intput" t nil))
        ((er &) (atj-process-java-package java-package ctx state))
        ((er java-class$) (atj-process-java-class java-class ctx state))
        ((er tests$) (atj-process-tests tests targets deep guards ctx state))
@@ -1391,9 +1402,12 @@
                   output-file-env$
                   output-file-test$))
         (atj-process-output-dir output-dir java-class$ tests$ ctx state))
-       ((er &) (ensure-boolean$ verbose "The :VERBOSE input" t nil))
+       ((er &) (ensure-value-is-boolean$ ignore-whitelist
+                                         "The :IGNORE-WHITELIST input" t nil))
+       ((er &) (ensure-value-is-boolean$ verbose "The :VERBOSE input" t nil))
        ((er (list fns-to-translate call-graph))
-        (atj-fns-to-translate targets deep guards verbose ctx state))
+        (atj-fns-to-translate
+         targets deep guards ignore-whitelist verbose ctx state))
        (pkgs (atj-pkgs-to-translate verbose state)))
     (value (list fns-to-translate
                  call-graph

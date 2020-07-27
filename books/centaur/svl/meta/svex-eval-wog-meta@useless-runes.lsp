@@ -15616,12 +15616,12 @@
      (172 172
           (:TYPE-PRESCRIPTION RP::EVAL-AND-ALL)))
 (SVL::LEMMA1 (17477 16808 (:REWRITE DEFAULT-CDR))
-             (14562 446 (:REWRITE RP::VALID-SC-CADR))
-             (12823 11551 (:REWRITE DEFAULT-CAR))
+             (14579 446 (:REWRITE RP::VALID-SC-CADR))
+             (12850 11578 (:REWRITE DEFAULT-CAR))
              (12342 107 (:DEFINITION RP::EVAL-AND-ALL))
              (8692 212 (:DEFINITION RP::RP-TRANS))
-             (7116 524 (:DEFINITION APPLY$-BADGEP))
-             (6585 420
+             (7133 551 (:DEFINITION APPLY$-BADGEP))
+             (6602 420
                    (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
              (5996 1538 (:REWRITE O-P-O-INFP-CAR))
              (3816 212 (:DEFINITION RP::TRANS-LIST))
@@ -15629,19 +15629,19 @@
                    (:REWRITE RP::RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT))
              (2940 105 (:DEFINITION RP::EX-FROM-RP))
              (2800 212 (:DEFINITION RP::INCLUDE-FNC))
-             (2709 210 (:DEFINITION NATP))
+             (2726 210 (:DEFINITION NATP))
              (1943 314
                    (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
              (1908 1908
                    (:TYPE-PRESCRIPTION RP::RP-TRANS-LST))
+             (1712 551 (:DEFINITION WEAK-APPLY$-BADGE-P))
              (1696 212 (:DEFINITION RP::IS-FALIST))
-             (1658 524 (:DEFINITION WEAK-APPLY$-BADGE-P))
              (1486 1486 (:REWRITE O-P-DEF-O-FINP-1))
-             (1469 1469 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+             (1415 1415 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
              (1188 424 (:DEFINITION QUOTEP))
              (974 974 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
              (848 848 (:REWRITE RP::CONSP-RP-TRANS-LST))
-             (813 315
+             (830 315
                   (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
              (737 317
                   (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))

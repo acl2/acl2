@@ -501,7 +501,7 @@ are more than one).  The test of the IF is simply the test of the loop.
      (append
       '((in-package "RTL")
         "(INCLUDE-BOOK \"rtl/rel11/lib/rac\" :DIR :SYSTEM)"
-        "(INCLUDE-BOOK \"projects/rac/lisp/internal-fns-gen\" :DIR :SYSTEM)"
+        ;; "(INCLUDE-BOOK \"projects/rac/lisp/internal-fns-gen\" :DIR :SYSTEM)"
         (set-ignore-ok t)
         (set-irrelevant-formals-ok t))
       (translate-program-list lst) )

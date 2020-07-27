@@ -6480,7 +6480,7 @@
      by preventing @(tsee nat-list-fix) from being eliminated
      via the rewrite rule that shows that the parsing function fixes the input
      (e.g. the theorem "
-    (xdoc::seetopic "parse-*bit" "@('parse-*bit-of-nat-list-fix')")
+    (xdoc::seetopic "parse-*bit" "@('parse-*bit-of-nat-list-fix-input')")
     ").")
 
    (xdoc::p
@@ -9461,7 +9461,7 @@
   :use ((:instance parse-alternation-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-alternation-of-nat-list-fix
+        (:instance parse-alternation-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-concatenation-when-tree-match
@@ -9483,7 +9483,7 @@
   :use ((:instance parse-concatenation-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-concatenation-of-nat-list-fix
+        (:instance parse-concatenation-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-repetition-when-tree-match
@@ -9504,7 +9504,7 @@
   :use ((:instance parse-repetition-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-repetition-of-nat-list-fix
+        (:instance parse-repetition-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-element-when-tree-match
@@ -9525,7 +9525,7 @@
   :use ((:instance parse-element-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-element-of-nat-list-fix
+        (:instance parse-element-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-group-when-tree-match
@@ -9540,7 +9540,7 @@
   :use ((:instance parse-group-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-group-of-nat-list-fix
+        (:instance parse-group-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-option-when-tree-match
@@ -9555,7 +9555,7 @@
   :use ((:instance parse-option-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-option-of-nat-list-fix
+        (:instance parse-option-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-alt-rest-when-tree-list-match
@@ -9582,7 +9582,7 @@
   :use ((:instance parse-alt-rest-when-tree-list-match-lemma
                    (input (nat-list-fix
                            (append (tree-list->string trees) rest-input))))
-        (:instance parse-alt-rest-of-nat-list-fix
+        (:instance parse-alt-rest-of-nat-list-fix-input
                    (input (append (tree-list->string trees) rest-input)))))
 
 (defrule parse-alt-rest-comp-when-tree-match
@@ -9608,7 +9608,7 @@
   :use ((:instance parse-alt-rest-comp-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-alt-rest-comp-of-nat-list-fix
+        (:instance parse-alt-rest-comp-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-conc-rest-when-tree-list-match
@@ -9632,7 +9632,7 @@
   :use ((:instance parse-conc-rest-when-tree-list-match-lemma
                    (input (nat-list-fix
                            (append (tree-list->string trees) rest-input))))
-        (:instance parse-conc-rest-of-nat-list-fix
+        (:instance parse-conc-rest-of-nat-list-fix-input
                    (input (append (tree-list->string trees) rest-input)))))
 
 (defrule parse-conc-rest-comp-when-tree-match
@@ -9655,7 +9655,7 @@
   :use ((:instance parse-conc-rest-comp-when-tree-match-lemma
                    (input (nat-list-fix
                            (append (tree->string tree) rest-input))))
-        (:instance parse-conc-rest-comp-of-nat-list-fix
+        (:instance parse-conc-rest-comp-of-nat-list-fix-input
                    (input (append (tree->string tree) rest-input)))))
 
 (defrule parse-elements-when-tree-match

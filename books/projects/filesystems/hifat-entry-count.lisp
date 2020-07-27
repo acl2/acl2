@@ -277,9 +277,9 @@
 
 (defthm
   hifat-entry-count-of-hifat-remove-file
-  (implies (equal (mv-nth 1 (hifat-remove-file fs pathname))
+  (implies (equal (mv-nth 1 (hifat-remove-file fs path))
                   0)
-           (< (hifat-entry-count (mv-nth 0 (hifat-remove-file fs pathname)))
+           (< (hifat-entry-count (mv-nth 0 (hifat-remove-file fs path)))
               (hifat-entry-count fs)))
   :hints (("goal" :in-theory (enable hifat-remove-file)))
   :rule-classes :linear)

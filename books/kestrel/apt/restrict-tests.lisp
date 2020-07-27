@@ -394,54 +394,20 @@
 
 (must-succeed*
 
- (test-title "Test the :NON-EXECUTABLE option.")
+ (test-title "Test non-executability.")
 
- ;; not T, NIL, or :AUTO:
- (must-fail (restrict nfix (natp x) :non-executable "t"))
-
- ;; default, with target function not non-executable:
+ ;; executable target function:
  (must-succeed*
   (restrict nfix (natp x))
+  (assert! (not (non-executablep 'nfix (w state))))
   (assert! (not (non-executablep 'nfix{1} (w state)))))
 
- ;; default, with target function non-executable:
+ ;; non-executable target function:
  (must-succeed*
   (defun-nx f (x) x)
   (restrict f (natp x))
-  (assert! (non-executablep 'f{1} (w state))))
-
- ;; automatic, with target function not non-executable:
- (must-succeed*
-  (restrict nfix (natp x) :non-executable :auto)
-  (assert! (not (non-executablep 'nfix{1} (w state)))))
-
- ;; automatic, with target function non-executable:
- (must-succeed*
-  (defun-nx f (x) x)
-  (restrict f (natp x) :non-executable :auto)
-  (assert! (non-executablep 'f{1} (w state))))
-
- ;; make non-executable, with target function not non-executable:
- (must-succeed*
-  (restrict nfix (natp x) :non-executable t)
-  (assert! (non-executablep 'nfix{1} (w state))))
-
- ;; make non-executable, with target function non-executable:
- (must-succeed*
-  (defun-nx f (x) x)
-  (restrict f (natp x) :non-executable t)
-  (assert! (non-executablep 'f{1} (w state))))
-
- ;; do not make non-executable, with target function not non-executable:
- (must-succeed*
-  (restrict nfix (natp x) :non-executable nil)
-  (assert! (not (non-executablep 'nfix{1} (w state)))))
-
- ;; do not make non-executable, with target function non-executable:
- (must-succeed*
-  (defun-nx f (x) x)
-  (restrict f (natp x) :non-executable nil)
-  (assert! (not (non-executablep 'f{1} (w state))))))
+  (assert! (non-executablep 'f (w state)))
+  (assert! (non-executablep 'f{1} (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

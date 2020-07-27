@@ -77,6 +77,25 @@
                 (not-new-namep-msg (the-live-var name) wrld)))
           (t nil))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fresh-name-listp-msg-weak ((names symbol-listp)
+                                   type
+                                   (wrld plist-worldp))
+  :guard (member-eq type
+                    '(function macro const stobj constrained-function nil))
+  :returns (msg/nil "A message (see @(tsee msg)) or @('nil').")
+  :mode :program
+  :parents (fresh-namep fresh-namep-msg-weak)
+  :short "Lift @(tsee fresh-namep-msg-weak) to lists."
+  :long
+  (xdoc::topstring-p
+   "As soon as one name in the list fails the test, stop and return the message.
+    If all the names are fresh, return @('nil').")
+  (cond ((endp names) nil)
+        (t (or (fresh-namep-msg-weak (car names) type wrld)
+               (fresh-name-listp-msg-weak (cdr names) type wrld)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fresh-namep-msg ((name symbolp) type (wrld plist-worldp) state)

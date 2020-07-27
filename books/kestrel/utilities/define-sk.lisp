@@ -1,10 +1,11 @@
 ; DEFINE-SK
 ;
-; Copyright (C) 2017 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Jared Davis
+; Main Author: Jared Davis
+; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,6 +396,7 @@ so execution differences don't matter.</p>")
     :thm-name
     :classicalp
     :non-executable
+    :constrain
     ))
 
 (def-primitive-aggregate define-sk-guts
@@ -410,6 +412,7 @@ so execution differences don't matter.</p>")
    raw-body       ;; original body term, not macroexpanded or anything
    exec-body      ;; body modified with implies->if (for the function definition)
    main-def       ;; the full defun-sk event for the function
+   constrain      ;; t if the function is constrained, nil (the default) otherwise
    macro          ;; macro wrapper (if necessary): nil or a defmacro event
    returnspecs    ;; returns specifiers, already parsed; default: (bool booleanp :rule-classes :type-prescription)
    kwd-alist      ;; keyword options passed to define-sk; see *define-sk-keywords*
@@ -821,6 +824,8 @@ so execution differences don't matter.</p>")
 
        (strengthen  (getarg :strengthen nil kwd-alist))
 
+       (constrain (getarg :constrain nil kwd-alist))
+
        (witness-dcls ;; trying to remove this (getarg :witness-dcls nil kwd-alist))
         nil)
        (guard          (getarg :guard t kwd-alist))
@@ -879,6 +884,7 @@ so execution differences don't matter.</p>")
            ,@(and quant-ok     `(:quant-ok ,quant-ok))
            ,@(and skolem-name  `(:skolem-name ,skolem-name))
            ,@(and thm-name     `(:thm-name ,thm-name))
+           ,@(and constrain    `(:constrain ,constrain))
            #+non-standard-analysis
            ,@(and (assoc :classicalp kwd-alist)
                   `(:classicalp ,(cdr (assoc :classicalp kwd-alist))))))
@@ -891,6 +897,7 @@ so execution differences don't matter.</p>")
                                   :raw-body raw-body
                                   :exec-body exec-body
                                   :main-def main-def
+                                  :constrain constrain
                                   :macro macro
                                   :returnspecs returnspecs
                                   :kwd-alist kwd-alist
@@ -972,7 +979,11 @@ so execution differences don't matter.</p>")
        ;; we just defined them, we need to do this explicitly to ensure that
        ;; the /// section will be processed in a consistent way even in the
        ;; face of redundancy; see the comments in DEFINE for more info.
-       (in-theory (enable ,guts.name ,thm-name)))
+       (in-theory (enable ,(if guts.constrain
+                               (add-suffix guts.name
+                                           "-DEFINITION")
+                             guts.name)
+                          ,thm-name)))
 
       (make-event
        (let* ((world (w state))
@@ -999,8 +1010,15 @@ so execution differences don't matter.</p>")
           ;; think hard about how :enable works with redundancy.
           (:all      nil)
           (:fn       `((in-theory (disable ,thm-name))))
-          (:thm      `((in-theory (disable ,guts.name))))
-          (otherwise `((in-theory (disable ,guts.name ,thm-name)))))
+          (:thm      `((in-theory (disable ,(if guts.constrain
+                                                (add-suffix guts.name
+                                                            "-DEFINITION")
+                                              guts.name)))))
+          (otherwise `((in-theory (disable ,(if guts.constrain
+                                                (add-suffix guts.name
+                                                            "-DEFINITION")
+                                              guts.name)
+                                           ,thm-name)))))
 
       ,(add-define-sk-signature-from-guts guts)
 

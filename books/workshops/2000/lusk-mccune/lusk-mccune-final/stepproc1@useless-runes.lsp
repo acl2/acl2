@@ -544,16 +544,17 @@
                (2 2 (:TYPE-PRESCRIPTION CONSTP))
                (2 2
                   (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
-(SENDER-CSTATE-CSTATEP (13964 60 (:DEFINITION EVALUATED-EXPRESSIONP))
-                       (12224 1140 (:DEFINITION MEMBER-EQUAL))
-                       (8728 8728 (:REWRITE DEFAULT-CAR))
-                       (4208 4208 (:REWRITE DEFAULT-CDR))
-                       (408 120 (:REWRITE CSTATE-PROPERTIES))
-                       (400 200 (:REWRITE DEFAULT-+-2))
-                       (200 200 (:REWRITE DEFAULT-+-1))
-                       (60 60 (:TYPE-PRESCRIPTION VARP))
-                       (60 60 (:TYPE-PRESCRIPTION CONSTP))
-                       (60 60
+(SENDER-CSTATE-CSTATEP (19780 80 (:DEFINITION EVALUATED-EXPRESSIONP))
+                       (17160 1520 (:DEFINITION MEMBER-EQUAL))
+                       (11668 11668 (:REWRITE DEFAULT-CAR))
+                       (7010 162 (:REWRITE CSTATE-PROPERTIES))
+                       (5658 5658 (:REWRITE DEFAULT-CDR))
+                       (680 680 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                       (516 258 (:REWRITE DEFAULT-+-2))
+                       (258 258 (:REWRITE DEFAULT-+-1))
+                       (100 100 (:TYPE-PRESCRIPTION VARP))
+                       (100 100 (:TYPE-PRESCRIPTION CONSTP))
+                       (80 80
                            (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
 (RECEIVER-CSTATE (478 2
                       (:DEFINITION EVALUATED-EXPRESSION-LISTP))
@@ -570,16 +571,17 @@
                  (2 2 (:TYPE-PRESCRIPTION CONSTP))
                  (2 2
                     (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
-(RECEIVER-CSTATE-CSTATEP (13432 56 (:DEFINITION EVALUATED-EXPRESSIONP))
-                         (11808 1064 (:DEFINITION MEMBER-EQUAL))
-                         (8492 8492 (:REWRITE DEFAULT-CAR))
-                         (4623 4623 (:REWRITE DEFAULT-CDR))
-                         (480 240 (:REWRITE DEFAULT-+-2))
-                         (394 112 (:REWRITE CSTATE-PROPERTIES))
-                         (240 240 (:REWRITE DEFAULT-+-1))
-                         (56 56 (:TYPE-PRESCRIPTION VARP))
-                         (56 56 (:TYPE-PRESCRIPTION CONSTP))
-                         (56 56
+(RECEIVER-CSTATE-CSTATEP (19248 76 (:DEFINITION EVALUATED-EXPRESSIONP))
+                         (16744 1444 (:DEFINITION MEMBER-EQUAL))
+                         (11432 11432 (:REWRITE DEFAULT-CAR))
+                         (6996 154 (:REWRITE CSTATE-PROPERTIES))
+                         (6073 6073 (:REWRITE DEFAULT-CDR))
+                         (680 680 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                         (596 298 (:REWRITE DEFAULT-+-2))
+                         (298 298 (:REWRITE DEFAULT-+-1))
+                         (96 96 (:TYPE-PRESCRIPTION VARP))
+                         (96 96 (:TYPE-PRESCRIPTION CONSTP))
+                         (76 76
                              (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
 (EXEC-SEND)
 (SECOND-OF-CSTATE-IS-TRUE-LISTP
@@ -595,21 +597,24 @@
      (104 104 (:TYPE-PRESCRIPTION CONSTP))
      (74 74
          (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
-(CSTATE-LISTP-SENDER-FORWARD (6214 26
-                                   (:DEFINITION EVALUATED-EXPRESSION-LISTP))
-                             (6110 26 (:DEFINITION EVALUATED-EXPRESSIONP))
-                             (5356 494 (:DEFINITION MEMBER-EQUAL))
-                             (4178 4178 (:REWRITE DEFAULT-CAR))
-                             (1884 1884 (:REWRITE DEFAULT-CDR))
-                             (208 52 (:REWRITE CSTATE-PROPERTIES))
-                             (192 96 (:REWRITE DEFAULT-+-2))
-                             (156 156 (:TYPE-PRESCRIPTION CSTATEP))
-                             (104 104
+(CSTATE-LISTP-SENDER-FORWARD (13358 50
+                                    (:DEFINITION EVALUATED-EXPRESSION-LISTP))
+                             (13062 50 (:DEFINITION EVALUATED-EXPRESSIONP))
+                             (11252 950 (:DEFINITION MEMBER-EQUAL))
+                             (8084 102 (:REWRITE CSTATE-PROPERTIES))
+                             (7706 7706 (:REWRITE DEFAULT-CAR))
+                             (3596 3596 (:REWRITE DEFAULT-CDR))
+                             (1274 2
+                                   (:REWRITE SECOND-OF-CSTATE-IS-TRUE-LISTP))
+                             (816 816 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                             (536 536
                                   (:TYPE-PRESCRIPTION EVALUATED-EXPRESSIONP))
-                             (96 96 (:REWRITE DEFAULT-+-1))
-                             (26 26 (:TYPE-PRESCRIPTION VARP))
-                             (26 26 (:TYPE-PRESCRIPTION CONSTP))
-                             (26 26
+                             (328 164 (:REWRITE DEFAULT-+-2))
+                             (192 192 (:TYPE-PRESCRIPTION CSTATEP))
+                             (164 164 (:REWRITE DEFAULT-+-1))
+                             (74 74 (:TYPE-PRESCRIPTION VARP))
+                             (74 74 (:TYPE-PRESCRIPTION CONSTP))
+                             (50 50
                                  (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
 (EXEC-SEND (77452 29 (:DEFINITION EVALUATED-EXPRESSIONP))
            (76610 799 (:DEFINITION MEMBER-EQUAL))
@@ -709,24 +714,27 @@
                   (8 2
                      (:REWRITE SECOND-OF-CSTATE-IS-TRUE-LISTP)))
 (CSTATE-LISTP-RECEIVER-FORWARD
-     (6318 26
-           (:DEFINITION EVALUATED-EXPRESSION-LISTP))
-     (6110 26 (:DEFINITION EVALUATED-EXPRESSIONP))
-     (5356 494 (:DEFINITION MEMBER-EQUAL))
-     (4330 4330 (:REWRITE DEFAULT-CAR))
-     (2209 2209 (:REWRITE DEFAULT-CDR))
-     (256 128 (:REWRITE DEFAULT-+-2))
-     (234 234 (:TYPE-PRESCRIPTION CSTATEP))
-     (208 52 (:REWRITE CSTATE-PROPERTIES))
-     (128 128 (:REWRITE DEFAULT-+-1))
-     (104 104
+     (13946 50
+            (:DEFINITION EVALUATED-EXPRESSION-LISTP))
+     (13062 50 (:DEFINITION EVALUATED-EXPRESSIONP))
+     (11252 950 (:DEFINITION MEMBER-EQUAL))
+     (8384 134 (:REWRITE CSTATE-PROPERTIES))
+     (7938 7938 (:REWRITE DEFAULT-CAR))
+     (4057 4057 (:REWRITE DEFAULT-CDR))
+     (1282 2
+           (:REWRITE SECOND-OF-CSTATE-IS-TRUE-LISTP))
+     (816 816 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (536 536
           (:TYPE-PRESCRIPTION EVALUATED-EXPRESSIONP))
-     (52 13
-         (:REWRITE EVALUATED-EXPRESSIONP-CAR-INBOX))
-     (52 13 (:REWRITE CSTATE-CDR-INBOX))
-     (26 26 (:TYPE-PRESCRIPTION VARP))
-     (26 26 (:TYPE-PRESCRIPTION CONSTP))
-     (26 26
+     (416 208 (:REWRITE DEFAULT-+-2))
+     (322 322 (:TYPE-PRESCRIPTION CSTATEP))
+     (294 27
+          (:REWRITE EVALUATED-EXPRESSIONP-CAR-INBOX))
+     (294 27 (:REWRITE CSTATE-CDR-INBOX))
+     (208 208 (:REWRITE DEFAULT-+-1))
+     (74 74 (:TYPE-PRESCRIPTION VARP))
+     (74 74 (:TYPE-PRESCRIPTION CONSTP))
+     (50 50
          (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
 (EXEC-RECEIVE (207746 32 (:DEFINITION EVALUATED-EXPRESSIONP))
               (206898 1316 (:DEFINITION MEMBER-EQUAL))
@@ -818,23 +826,27 @@
                       (13 13 (:REWRITE DEFAULT-+-1)))
 (SELECT)
 (SELECT-ORDINARY-FDS-GIVES-FD-LISTP
-     (3256 14 (:DEFINITION EVALUATED-EXPRESSIONP))
-     (2850 266 (:DEFINITION MEMBER-EQUAL))
-     (2376 2374 (:REWRITE DEFAULT-CAR))
-     (1196 1194 (:REWRITE DEFAULT-CDR))
-     (184 92 (:REWRITE DEFAULT-+-2))
-     (132 132 (:TYPE-PRESCRIPTION CSTATEP))
-     (128 32 (:REWRITE CSTATE-PROPERTIES))
-     (92 92 (:REWRITE DEFAULT-+-1))
-     (56 56
-         (:TYPE-PRESCRIPTION EVALUATED-EXPRESSIONP))
-     (24 6
-         (:REWRITE EVALUATED-EXPRESSIONP-CAR-INBOX))
-     (24 6 (:REWRITE CSTATE-CDR-INBOX))
-     (14 14 (:TYPE-PRESCRIPTION VARP))
-     (14 14 (:TYPE-PRESCRIPTION CONSTP))
-     (14 14
-         (:REWRITE INTEGER-OR-CONSTP-NOT-VARP)))
+     (6732 26 (:DEFINITION EVALUATED-EXPRESSIONP))
+     (5798 494 (:DEFINITION MEMBER-EQUAL))
+     (4216 73 (:REWRITE CSTATE-PROPERTIES))
+     (4180 4178 (:REWRITE DEFAULT-CAR))
+     (2120 2118 (:REWRITE DEFAULT-CDR))
+     (641 1
+          (:REWRITE SECOND-OF-CSTATE-IS-TRUE-LISTP))
+     (408 408 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (272 272
+          (:TYPE-PRESCRIPTION EVALUATED-EXPRESSIONP))
+     (264 132 (:REWRITE DEFAULT-+-2))
+     (176 176 (:TYPE-PRESCRIPTION CSTATEP))
+     (145 13
+          (:REWRITE EVALUATED-EXPRESSIONP-CAR-INBOX))
+     (145 13 (:REWRITE CSTATE-CDR-INBOX))
+     (132 132 (:REWRITE DEFAULT-+-1))
+     (38 38 (:TYPE-PRESCRIPTION VARP))
+     (38 38 (:TYPE-PRESCRIPTION CONSTP))
+     (26 26
+         (:REWRITE INTEGER-OR-CONSTP-NOT-VARP))
+     (8 8 (:TYPE-PRESCRIPTION TRUE-LISTP)))
 (SELECT-LISTENING-FDS-GIVES-FD-LISTP (218 217 (:REWRITE DEFAULT-CDR))
                                      (209 208 (:REWRITE DEFAULT-CAR))
                                      (92 46 (:REWRITE DEFAULT-+-2))

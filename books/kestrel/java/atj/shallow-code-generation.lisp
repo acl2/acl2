@@ -2383,18 +2383,41 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Terms of the form @('(if a a b)') are treated as @('(or a b)'),
-     via a separate function, non-strictly.
-     Other @(tsee if) calls are handled via a separate function,
-     also non-strictly.
-     We only pass one of @('src-type') or @('dst-type')
+    "Calls of @(tsee if) are handled via a separate function, non-strictly.
+     We only pass one of @('src-types') or @('dst-types')
      to this separate function,
-     because those two types are always equal for @(tsee if):
-     see @(tsee atj-type-annotate-term).")
+     because those two types are always equal for @(tsee if)
+     (see @(tsee atj-type-annotate-term)).")
+   (xdoc::p
+    "Calls of @(tsee and) are also handled via a separate function.
+     Recall that @(tsee and) calls are
+     @(tsee if) calls of the form @('(if a b nil)').
+     As in any @(tsee if) call, @('src-types') and @('dst-types') are equal,
+     and in addition they are equal to the destination types of @('b')
+     (see @(tsee atj-type-annotate-term));
+     so, it suffices to pass the destination types of @('b')
+     to the separate code generation function.
+     But we also need to pass the type of the first operand,
+     in order to check whether it is boolean or not
+     (see @(tsee atj-gen-shallow-and-call)).")
+   (xdoc::p
+    "Calls of @(tsee or) are also handled via a separate function.
+     Recall that @(tsee or) calls are
+     @(tsee if) calls of the form @('(if a a b)').
+     As in any @(tsee if) call, @('src-types') and @('dst-types') are equal,
+     and in addition they are equal to
+     the destination types of both @('a') and @('b')
+     (see @(tsee atj-type-annotate-term));
+     so, it suffices to pass the destination types of @('b')
+     to the separate code generation function.
+     Unlike the case of @(tsee and), there is no need to pass
+     the destination type of the first operand,
+     because it is the same as the second operand's.")
    (xdoc::p
     "If @(':guards') is @('t'),
-     calls of ACL2 functions that model
-     Java primitive and primitive array operations
+     calls of @(tsee not),
+     and calls of ACL2 functions that model
+     Java primitive and primitive array operations,
      are handled via separate functions.")
    (xdoc::p
     "In all other cases, in which the call is always strict,
@@ -2699,11 +2722,17 @@
        We wrap the resulting expression with a Java conversion, if needed.")
      (xdoc::p
       "If the ACL2 term is a named function call,
-       we use a separate code generation function.
+       we first generate code to computer the actual arguments
+       and then we use a separate code generation function
+       to handle the different kinds of named function calls.
        If instead the ACL2 term is a call of a lambda expression,
        we first generate code to compute the actual arguments,
        and then we use a separate code generation function
-       for the lambda expression."))
+       for the lambda expression.")
+     (xdoc::p
+      "Calls of @(tsee mv-let) are handled by
+       a separate code generation function,
+       which is tried before anything else."))
     (b* (((mv mv-let-p
               block
               expr
@@ -2732,11 +2761,10 @@
           (b* (((mv var &) (atj-unmark-var (pseudo-term-var->name term)))
                ((mv var &) (atj-type-unannotate-var var))
                (expr (jexpr-name (symbol-name var)))
-               (expr
-                (atj-adapt-expr-to-type expr
-                                        (atj-type-list-to-type src-types)
-                                        (atj-type-list-to-type dst-types)
-                                        guards$)))
+               (expr (atj-adapt-expr-to-type expr
+                                             (atj-type-list-to-type src-types)
+                                             (atj-type-list-to-type dst-types)
+                                             guards$)))
             (mv nil expr jvar-tmp-index)))
          ((when (pseudo-term-case term :quote))
           (b* ((value (pseudo-term-quote->val term))
@@ -2745,11 +2773,10 @@
                                             pkg-class-names
                                             curr-pkg
                                             guards$))
-               (expr
-                (atj-adapt-expr-to-type expr
-                                        (atj-type-list-to-type src-types)
-                                        (atj-type-list-to-type dst-types)
-                                        guards$)))
+               (expr (atj-adapt-expr-to-type expr
+                                             (atj-type-list-to-type src-types)
+                                             (atj-type-list-to-type dst-types)
+                                             guards$)))
             (mv nil expr jvar-tmp-index)))
          ((when (pseudo-term-case term :fncall))
           (b* ((fn (pseudo-term-fncall->fn term))

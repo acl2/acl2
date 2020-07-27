@@ -13,12 +13,12 @@
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/basic/defs" :dir :system)
-(include-book "std/lists/rev" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-error-checker
+(defxdoc def-error-checker
 
   :parents (error-checking)
 
@@ -45,9 +45,9 @@
     "               state)"
     "  :mode <mode>"
     "  :verify-guards <verify-guards> ; may be absent"
-    "  :parents <parents>  ; may be absent"
-    "  :short <short>"
-    "  :long <long>  ; may be absent"
+    "  :parents <parents> ; may be absent"
+    "  :short <short> ; may be absent"
+    "  :long <long> ; may be absent"
     "  (b* (((unless <condition1>) (er-soft+"
     "                               ctx error-erp error-val . <message1>))"
     "       ..."
@@ -115,6 +115,7 @@
       If @('<parents>') is not supplied as argument, @(':parents') is absent.")
     (xdoc::li
      "@('<short>') and @('<long>') are strings that document the function.
+      If @('<short>') is not supplied as argument, @(':short') is absent.
       If @('<long>') is not supplied as argument, @(':long') is absent.")
     (xdoc::li
      "Each @('<conditionj>') is a term
@@ -149,213 +150,216 @@
    (xdoc::codeblock
     "(def-error-checker <name>"
     "  (<x1> ... <xn>)"
-    "  <short>"
-    "  ((<condition1> . <message1>) ... (<conditionm> . <messagem>))"
-    "  :returns <val> ; default not used"
+    "  :body ((<condition1> . <message1>) ... (<conditionm> . <messagem>))"
+    "  :returns <returns> ; default not used"
     "  :result <result> ; default is nil"
     "  :mode <mode> ; default is :logic"
     "  :verify-guards <verify-guards> ; default not used"
     "  :parents <parents> ; default not used"
+    "  :short <short> ; default not used"
     "  :long <long> ; default not used"
     "  )")
 
    (xdoc::p
     "A table keeps track of all the successful calls to this macro,
-     for " (xdoc::seetopic "redundant-events" "redundancy") " checking.")
+     for " (xdoc::seetopic "redundant-events" "redundancy") " checking.")))
 
-   (xdoc::@def "def-error-checker"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; records successful calls to DEF-ERROR-CHECKER, for redundancy checking:
+(defxdoc+ def-error-checker-implementation
+  :parents (def-error-checker)
+  :short "Implementation of @(tsee def-error-checker)."
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-error-checker-table
+  :short "Table of successful @(tsee def-error-checker) calls."
+  :long
+  (xdoc::topstring-p
+   "This table records these calls as keys, with associated @('nil') values.
+    This is used of redundancy checking.")
+
   (table def-error-checker-calls nil nil
     :guard (and (pseudo-event-formp key)
                 (eq (car key) 'def-error-checker)
-                (null val)))
+                (null val))))
 
-  (define def-error-checker-bindings
-    ((conditions-messages true-list-listp)
-     (error-erp symbolp "The @('error-erp') formal.")
-     (error-val symbolp "The @('error-val') formal."))
-    :returns (bindings true-list-listp)
-    :parents (def-error-checker)
-    :short "Generate the @(tsee b*) bindings of the error checking function."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "These are the")
-     (xdoc::codeblock
-      "((unless <conditionj>) (er-soft+ ctx error-erp error-val . <messagej>))")
-     (xdoc::p
-      "bindings,
-       but a binder of the form @('(unless (not <condition>))')
-       is turned into @('(when <condition>)') to improve readability."))
-    (def-error-checker-bindings-aux conditions-messages error-erp error-val nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    :prepwork
-    ((define def-error-checker-bindings-aux
-       ((conditions-messages true-list-listp)
-        (error-erp symbolp)
-        (error-val symbolp)
-        (rev-current-bindings true-list-listp))
-       :returns (final-bindings true-list-listp
-                                :hyp (true-list-listp rev-current-bindings))
-       :parents (def-error-checker-bindings)
-       (b* (((when (endp conditions-messages)) (rev rev-current-bindings))
-            (condition-message (car conditions-messages))
-            (condition (car condition-message))
-            (message (cdr condition-message))
-            ((mv unless/when condition)
-             (case-match condition
-               (('not negated-condition) (mv 'when negated-condition))
-               (& (mv 'unless condition))))
-            (binding `((,unless/when ,condition)
-                       (er-soft+ ctx ,error-erp ,error-val ,@message))))
-         (def-error-checker-bindings-aux
-           (cdr conditions-messages)
-           error-erp
-           error-val
-           (cons binding rev-current-bindings))))))
+(define def-error-checker-bindings
+  ((conditions-messages true-list-listp)
+   (error-erp symbolp "The @('error-erp') formal.")
+   (error-val symbolp "The @('error-val') formal."))
+  :returns (bindings true-list-listp)
+  :short "Generate the @(tsee b*) bindings of the error checking function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the")
+   (xdoc::codeblock
+    "((unless <conditionj>) (er-soft+ ctx error-erp error-val . <messagej>))")
+   (xdoc::p
+    "bindings,
+     but a binder of the form @('(unless (not <condition>))')
+     is turned into @('(when <condition>)') to improve readability."))
+  (b* (((when (endp conditions-messages)) nil)
+       (condition-message (car conditions-messages))
+       (condition (car condition-message))
+       (message (cdr condition-message))
+       ((mv unless/when condition)
+        (case-match condition
+          (('not negated-condition) (mv 'when negated-condition))
+          (& (mv 'unless condition))))
+       (binding `((,unless/when ,condition)
+                  (er-soft+ ctx ,error-erp ,error-val ,@message)))
+       (bindings (def-error-checker-bindings
+                   (cdr conditions-messages)
+                   error-erp
+                   error-val)))
+    (cons binding bindings)))
 
-  (define def-error-checker-x-symbols ((xs true-listp))
-    :returns (x-symbols true-listp)
-    :parents (def-error-checker)
-    :short "Turn each @('xi') symbol into itself
-            and each @('xi') extended formal into its underlying symbol."
-    (def-error-checker-x-symbols-aux xs nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    :prepwork
-    ((define def-error-checker-x-symbols-aux
-       ((xs true-listp)
-        (rev-current-x-symbols true-listp))
-       :returns (final-x-symbols true-listp
-                                 :hyp (true-listp rev-current-x-symbols)
-                                 :rule-classes :type-prescription)
-       :parents (def-error-checker-x-symbols)
-       (cond ((endp xs) (rev rev-current-x-symbols))
-             (t (let* ((x (car xs))
-                       (x-symbol (if (atom x) x (car x))))
-                  (def-error-checker-x-symbols-aux
-                    (cdr xs)
-                    (cons x-symbol rev-current-x-symbols))))))))
+(define def-error-checker-x-symbols ((xs true-listp))
+  :returns (x-symbols true-listp)
+  :short "Turn each @('xi') symbol into itself
+          and each @('xi') extended formal into its underlying symbol."
+  (b* (((when (endp xs)) nil)
+       (x (car xs))
+       (x-symbol (if (atom x) x (car x)))
+       (x-symbols (def-error-checker-x-symbols (cdr xs))))
+    (cons x-symbol x-symbols)))
 
-  (define def-error-checker-fn ((name symbolp)
-                                (xs true-listp)
-                                returns
-                                (returns-supplied-p booleanp)
-                                (conditions-messages true-list-listp)
-                                result
-                                (mode (member-eq mode '(:logic :program)))
-                                (verify-guards booleanp)
-                                (verify-guards-supplied-p booleanp)
-                                (parents (symbol-listp parents))
-                                (parents-supplied-p booleanp)
-                                (short stringp)
-                                (long (stringp long))
-                                (long-supplied-p booleanp)
-                                (def-error-checker-call pseudo-event-formp)
-                                state)
-    :returns (function+macro pseudo-event-formp)
-    :verify-guards nil
-    :parents (def-error-checker)
-    :short "Generate the function and the macro."
-    (b* (((when (assoc-equal def-error-checker-call
-                             (table-alist 'def-error-checker-calls (w state))))
-          '(value-triple :redundant))
-         (function-name name)
-         (macro-name (add-suffix name "$"))
-         (description (intern-in-package-of-symbol "DESCRIPTION" name))
-         (error-erp (intern-in-package-of-symbol "ERROR-ERP" name))
-         (error-val (intern-in-package-of-symbol "ERROR-VAL" name))
-         (erp (intern-in-package-of-symbol "ERP" name))
-         (val (intern-in-package-of-symbol "VAL" name))
-         (function
-          `(define ,function-name
-             (,@xs
-              (,description msgp)
-              (,error-erp "Flag to return in case of error.")
-              (,error-val "Value to return in case of error.")
-              (ctx "Context for errors.")
-              state)
-             :returns (mv ,(case mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define def-error-checker-fn ((name symbolp)
+                              (xs true-listp)
+                              returns
+                              (returns-supplied-p booleanp)
+                              (conditions-messages true-list-listp)
+                              result
+                              (mode (member-eq mode '(:logic :program)))
+                              (verify-guards booleanp)
+                              (verify-guards-supplied-p booleanp)
+                              (parents (symbol-listp parents))
+                              (parents-supplied-p booleanp)
+                              short ; could be a form with XDOC constructors
+                              (short-supplied-p booleanp)
+                              long ; could be a form with XDOC constructors
+                              (long-supplied-p booleanp)
+                              (def-error-checker-call pseudo-event-formp)
+                              state)
+  :returns (function+macro pseudo-event-formp)
+  :verify-guards nil
+  :short "Generate the function and the macro."
+  (b* (((when (assoc-equal def-error-checker-call
+                           (table-alist 'def-error-checker-calls (w state))))
+        '(value-triple :redundant))
+       (function-name name)
+       (macro-name (add-suffix name "$"))
+       (description (intern-in-package-of-symbol "DESCRIPTION" name))
+       (error-erp (intern-in-package-of-symbol "ERROR-ERP" name))
+       (error-val (intern-in-package-of-symbol "ERROR-VAL" name))
+       (erp (intern-in-package-of-symbol "ERP" name))
+       (val (intern-in-package-of-symbol "VAL" name))
+       (function
+        `(define ,function-name
+           (,@xs
+            (,description msgp)
+            (,error-erp "Flag to return in case of error.")
+            (,error-val "Value to return in case of error.")
+            (ctx "Context for errors.")
+            state)
+           :returns (mv ,(case mode
+                           (:logic
+                            `(,erp (implies ,erp (equal ,erp ,error-erp))))
+                           (:program
+                            `(,erp "@('nil') or @('error-erp')."))
+                           (t (impossible)))
+                        ,(if returns-supplied-p
+                             returns
+                           (case mode
                              (:logic
-                              `(,erp (implies ,erp (equal ,erp ,error-erp))))
+                              `(,val (and (implies ,erp
+                                                   (equal ,val ,error-val))
+                                          (implies (and (not ,erp) ,error-erp)
+                                                   (not ,val)))))
                              (:program
-                              `(,erp "@('nil') or @('error-erp')."))
-                             (t (impossible)))
-                          ,(if returns-supplied-p
-                               returns
-                             (case mode
-                               (:logic
-                                `(,val (and (implies ,erp
-                                                     (equal ,val ,error-val))
-                                            (implies (and (not ,erp) ,error-erp)
-                                                     (not ,val)))))
-                               (:program
-                                `(,val
-                                  "@('nil') if @('erp') is @('nil'),
+                              `(,val
+                                "@('nil') if @('erp') is @('nil'),
                                    otherwise @('error-val')."))
-                               (t (impossible))))
-                          state)
-             :mode ,mode
-             ,@(and verify-guards-supplied-p
-                    (list :verify-guards verify-guards))
-             ,@(and parents-supplied-p
-                    (list :parents parents))
-             :short ,short
-             ,@(and long-supplied-p
-                    (list :long long))
-             (b* ,(def-error-checker-bindings
-                    conditions-messages error-erp error-val)
-               (value ,result))
-             :no-function t))
-         (x-symbols (def-error-checker-x-symbols xs))
-         (macro
-          `(defmacro ,macro-name
-               (,@x-symbols ,description ,error-erp ,error-val)
-             (list ',function-name
-                   ,@x-symbols
-                   ,description
-                   ,error-erp
-                   ,error-val
-                   'ctx
-                   'state)))
-         (section-short (concatenate 'string
-                                     "Calls @(tsee "
-                                     (string-downcase
-                                      (symbol-name function-name))
-                                     ") with @('ctx') and @('state')"
-                                     " as the last two arguments."))
-         (section-long (concatenate 'string
-                                    "@(def "
-                                    (string-downcase
-                                     (symbol-name macro-name))
-                                    ")"))
-         (section
-          `(defsection ,macro-name
-             :parents (,function-name)
-             :short ,section-short
-             :long ,section-long
-             ,macro)))
-      `(progn ,function ,section)))
+                             (t (impossible))))
+                        state)
+           :mode ,mode
+           ,@(and verify-guards-supplied-p
+                  (list :verify-guards verify-guards))
+           ,@(and parents-supplied-p
+                  (list :parents parents))
+           ,@(and short-supplied-p
+                  (list :short short))
+           ,@(and long-supplied-p
+                  (list :long long))
+           (b* ,(def-error-checker-bindings
+                  conditions-messages error-erp error-val)
+             (value ,result))
+           :no-function t))
+       (x-symbols (def-error-checker-x-symbols xs))
+       (macro
+        `(defmacro ,macro-name
+             (,@x-symbols ,description ,error-erp ,error-val)
+           (list ',function-name
+                 ,@x-symbols
+                 ,description
+                 ,error-erp
+                 ,error-val
+                 'ctx
+                 'state)))
+       (section-short (concatenate 'string
+                                   "Calls @(tsee "
+                                   (string-downcase
+                                    (symbol-name function-name))
+                                   ") with @('ctx') and @('state')"
+                                   " as the last two arguments."))
+       (section-long (concatenate 'string
+                                  "@(def "
+                                  (string-downcase
+                                   (symbol-name macro-name))
+                                  ")"))
+       (section
+        `(defsection ,macro-name
+           :parents (,function-name)
+           :short ,section-short
+           :long ,section-long
+           ,macro)))
+    `(progn ,function ,section)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-error-checker-macro-definition
+  :short "Definition of the @(tsee def-error-checker) macro."
+  :long (xdoc::topstring-@def "def-error-checker")
 
   (defmacro def-error-checker (&whole
                                def-error-checker-call
                                name
                                xs
-                               short
-                               conditions-messages
                                &key
+                               body
                                (returns 'nil returns-supplied-p)
                                (result 'nil)
                                (mode ':logic)
                                (verify-guards 'nil verify-guards-supplied-p)
                                (parents 'nil parents-supplied-p)
+                               (short '"" short-supplied-p)
                                (long '"" long-supplied-p))
     `(make-event (def-error-checker-fn
                    ',name
                    ',xs
                    ',returns
                    ',returns-supplied-p
-                   ',conditions-messages
+                   ',body
                    ',result
                    ',mode
                    ',verify-guards
@@ -363,6 +367,7 @@
                    ',parents
                    ',parents-supplied-p
                    ',short
+                   ',short-supplied-p
                    ',long
                    ',long-supplied-p
                    ',def-error-checker-call

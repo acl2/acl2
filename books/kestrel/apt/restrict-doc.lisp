@@ -69,7 +69,6 @@
      "          :new-enable      ; default :auto"
      "          :thm-name        ; default :auto"
      "          :thm-enable      ; default t"
-     "          :non-executable  ; default :auto"
      "          :verify-guards   ; default :auto"
      "          :hints           ; default nil"
      "          :print           ; default :result"
@@ -201,8 +200,6 @@
     (xdoc::desc-apt-input-thm-name :never)
 
     (xdoc::desc-apt-input-thm-enable :never)
-
-    (xdoc::desc-apt-input-non-executable :never)
 
     (xdoc::desc-apt-input-verify-guards :never)
 

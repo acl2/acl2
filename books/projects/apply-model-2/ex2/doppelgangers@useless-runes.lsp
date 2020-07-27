@@ -43,37 +43,37 @@
                         (2 1 (:REWRITE DEFAULT-+-2))
                         (1 1 (:REWRITE DEFAULT-+-1)))
 (MODAPP::UNTAME-EV$)
-(MODAPP::TAMEP! (1215 15 (:DEFINITION MODAPP::APPLY$-BADGEP))
+(MODAPP::TAMEP! (1230 18 (:DEFINITION MODAPP::APPLY$-BADGEP))
                 (900 399 (:REWRITE DEFAULT-+-2))
-                (855 27
+                (870 27
                      (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 1))
                 (555 399 (:REWRITE DEFAULT-+-1))
                 (432 9 (:DEFINITION SUBSETP-EQUAL))
-                (426 18
+                (431 18
                      (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
                 (378 36 (:DEFINITION MEMBER-EQUAL))
                 (280 70 (:DEFINITION INTEGER-ABS))
                 (280 35 (:DEFINITION LENGTH))
                 (238 44 (:DEFINITION LEN))
-                (186 18 (:DEFINITION NATP))
-                (141 141
-                     (:TYPE-PRESCRIPTION MODAPP::APPLY$-BADGEP))
+                (196 18 (:DEFINITION NATP))
                 (140 104 (:REWRITE DEFAULT-<-2))
+                (135 135
+                     (:TYPE-PRESCRIPTION MODAPP::APPLY$-BADGEP))
                 (116 104 (:REWRITE DEFAULT-<-1))
                 (98 98 (:TYPE-PRESCRIPTION LEN))
                 (72 36
                     (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 3))
                 (70 70 (:REWRITE DEFAULT-UNARY-MINUS))
                 (63 9 (:DEFINITION TRUE-LISTP))
+                (60 18
+                    (:DEFINITION MODAPP::WEAK-APPLY$-BADGE-P))
                 (54 54 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                 (54 27
                     (:LINEAR MODAPP::APPLY$-BADGEP-PROPERTIES . 1))
                 (54 9 (:DEFINITION ALL-NILS))
-                (48 15
-                    (:DEFINITION MODAPP::WEAK-APPLY$-BADGE-P))
-                (45 45 (:TYPE-PRESCRIPTION ALL-NILS))
-                (42 15
+                (52 15
                     (:LINEAR MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
+                (45 45 (:TYPE-PRESCRIPTION ALL-NILS))
                 (36 36 (:TYPE-PRESCRIPTION TRUE-LISTP))
                 (36 36 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                 (35 35 (:REWRITE DEFAULT-REALPART))
@@ -93,9 +93,9 @@
 (MODAPP::EV$!-MEASURE)
 (MODAPP::EV$!-LIST-MEASURE)
 (MODAPP::APPLY$-USERFN1!-MEASURE)
-(MODAPP::APPLY$! (4841732 24109
+(MODAPP::APPLY$! (4842366 24395
                           (:DEFINITION MODAPP::APPLY$-BADGEP))
-                 (4387027 52298
+                 (4387553 52298
                           (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 1))
                  (2737542 31466
                           (:REWRITE MODAPP::TAMEP-IMPLICANT-1))
@@ -107,14 +107,14 @@
                  (649948 62932 (:DEFINITION MEMBER-EQUAL))
                  (632069 494971 (:REWRITE DEFAULT-+-1))
                  (604800 479710 (:REWRITE O-P-DEF-O-FINP-1))
-                 (544938 21388
+                 (545176 21388
                          (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
                  (334946 34364 (:DEFINITION SYMBOL-LISTP))
-                 (300365 31468 (:DEFINITION NATP))
+                 (300765 31468 (:DEFINITION NATP))
                  (240141 182559 (:REWRITE DEFAULT-<-1))
                  (220262 220262
                          (:TYPE-PRESCRIPTION MODAPP::TAMEP))
-                 (216645 216645
+                 (216073 216073
                          (:TYPE-PRESCRIPTION MODAPP::APPLY$-BADGEP))
                  (206421 182559 (:REWRITE DEFAULT-<-2))
                  (188796 188796
@@ -123,7 +123,7 @@
                          (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 3))
                  (125090 125090 (:TYPE-PRESCRIPTION O-FINP))
                  (122661 17523 (:DEFINITION MODAPP::NATS))
-                 (113630 24109
+                 (114376 24395
                          (:DEFINITION MODAPP::WEAK-APPLY$-BADGE-P))
                  (94398 94398 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                  (94398 47199
@@ -139,7 +139,7 @@
                  (62932 62932 (:TYPE-PRESCRIPTION TRUE-LISTP))
                  (62932 62932
                         (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-                 (49930 20349
+                 (50398 20349
                         (:LINEAR MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
                  (41432 41377 (:REWRITE DEFAULT-REALPART))
                  (41432 41377 (:REWRITE DEFAULT-IMAGPART))

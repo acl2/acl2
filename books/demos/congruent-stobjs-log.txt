@@ -1,0 +1,1184 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Rules: NIL
+ "[books]/std/testing/must-fail.lisp"
+ACL2 !>>(INCLUDE-BOOK "std/testing/must-succeed"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/testing/must-succeed" ...)
+Rules: NIL
+ "[books]/std/testing/must-succeed.lisp"
+ACL2 !>>(DEFMACRO MUST-FAIL^ (X)
+                  (CONS 'MUST-FAIL
+                        (CONS X
+                              (CONS ':WITH-OUTPUT-OFF
+                                    (CONS 'NIL 'NIL)))))
+
+Summary
+Form:  ( DEFMACRO MUST-FAIL^ ...)
+Rules: NIL
+ MUST-FAIL^
+ACL2 !>>(DEFCONST *MEM-SIZE* 10)
+
+Summary
+Form:  ( DEFCONST *MEM-SIZE* ...)
+Rules: NIL
+ *MEM-SIZE*
+ACL2 !>>(DEFSTOBJ ST1
+                  (REG1 :TYPE (ARRAY (UNSIGNED-BYTE 31) (8))
+                        :INITIALLY 0)
+                  (PC1 :TYPE (UNSIGNED-BYTE 31)
+                       :INITIALLY 555)
+                  HALT1
+                  (MEM1 :TYPE (ARRAY (UNSIGNED-BYTE 31) (*MEM-SIZE*))
+                        :INITIALLY 0
+                        :RESIZABLE T))
+
+Summary
+Form:  ( DEFSTOBJ ST1 ...)
+Rules: NIL
+ ST1
+ACL2 !>>(DEFSTOBJ ST2
+                  (REG2 :TYPE (ARRAY (UNSIGNED-BYTE 31) (8))
+                        :INITIALLY 0)
+                  (PC2 :TYPE (UNSIGNED-BYTE 31)
+                       :INITIALLY 555)
+                  HALT2
+                  (MEM2 :TYPE (ARRAY (UNSIGNED-BYTE 31) (*MEM-SIZE*))
+                        :INITIALLY 0
+                        :RESIZABLE T)
+                  :CONGRUENT-TO ST1)
+
+Summary
+Form:  ( DEFSTOBJ ST2 ...)
+Rules: NIL
+ ST2
+ACL2 !>>(DEFSTOBJ ST3
+                  (REG3 :TYPE (ARRAY (UNSIGNED-BYTE 31) (8))
+                        :INITIALLY 0)
+                  (PC3 :TYPE (UNSIGNED-BYTE 31)
+                       :INITIALLY 555)
+                  HALT3
+                  (MEM3 :TYPE (ARRAY (UNSIGNED-BYTE 31) (*MEM-SIZE*))
+                        :INITIALLY 0
+                        :RESIZABLE T)
+                  :CONGRUENT-TO ST2)
+
+Summary
+Form:  ( DEFSTOBJ ST3 ...)
+Rules: NIL
+ ST3
+ACL2 !>>(DEFUN FOO1 (ST1)
+               (DECLARE (XARGS :STOBJS ST1))
+               (REG1I 3 ST1))
+
+Since FOO1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of FOO1.
+
+(FOO1 ST1) => *.
+
+Computing the guard conjecture for FOO1....
+
+The non-trivial part of the guard conjecture for FOO1 is
+
+Goal
+(IMPLIES (ST1P ST1)
+         (< 3 (REG1-LENGTH ST1))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for FOO1.  FOO1 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO1 ...)
+Rules: ((:DEFINITION REG1-LENGTH)
+        (:EXECUTABLE-COUNTERPART <))
+ FOO1
+ACL2 !>>(DEFUN BAR1 (ST1)
+               (DECLARE (XARGS :STOBJS ST1))
+               (FOO1 ST1))
+
+Since BAR1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of BAR1.
+
+(BAR1 ST1) => *.
+
+Computing the guard conjecture for BAR1....
+
+The guard conjecture for BAR1 is trivial to prove.  BAR1 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN BAR1 ...)
+Rules: NIL
+ BAR1
+ACL2 !>>(DEFUN BAR2-TOUGH (ST2)
+               (DECLARE (XARGS :STOBJS ST2))
+               (FOO1 ST2))
+
+Since BAR2-TOUGH is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of BAR2-TOUGH.
+
+(BAR2-TOUGH ST2) => *.
+
+Computing the guard conjecture for BAR2-TOUGH....
+
+The guard conjecture for BAR2-TOUGH is trivial to prove.  BAR2-TOUGH
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN BAR2-TOUGH ...)
+Rules: NIL
+ BAR2-TOUGH
+ACL2 !>>(DEFUN BAR2 (ST2)
+               (DECLARE (XARGS :STOBJS ST2))
+               (IF (HALT2 ST2) 0 (FOO1 ST2)))
+
+Since BAR2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of BAR2.
+
+(BAR2 ST2) => *.
+
+Computing the guard conjecture for BAR2....
+
+The guard conjecture for BAR2 is trivial to prove.  BAR2 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN BAR2 ...)
+Rules: NIL
+ BAR2
+ACL2 !>>(DEFUN UPDATE1 (X ST1)
+               (DECLARE (XARGS :STOBJS ST1))
+               (UPDATE-HALT1 X ST1))
+
+Since UPDATE1 is non-recursive, its admission is trivial.  We observe
+that the type of UPDATE1 is described by the theorem (CONSP (UPDATE1 X ST1)).
+We used the :type-prescription rule UPDATE-HALT1.
+
+(UPDATE1 * ST1) => ST1.
+
+Computing the guard conjecture for UPDATE1....
+
+The guard conjecture for UPDATE1 is trivial to prove.  UPDATE1 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE1 ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE-HALT1))
+ UPDATE1
+ACL2 !>>(DEFUN UPDATE2 (X ST2)
+               (DECLARE (XARGS :STOBJS ST2))
+               (UPDATE1 X ST2))
+
+Since UPDATE2 is non-recursive, its admission is trivial.  We observe
+that the type of UPDATE2 is described by the theorem (CONSP (UPDATE2 X ST2)).
+We used the :type-prescription rule UPDATE1.
+
+(UPDATE2 * ST2) => ST2.
+
+Computing the guard conjecture for UPDATE2....
+
+The guard conjecture for UPDATE2 is trivial to prove.  UPDATE2 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE2 ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE1))
+ UPDATE2
+ACL2 !>>(DEFMACRO
+         EVAL-FORM (FORM)
+         (CONS
+          'MAKE-EVENT
+          (CONS
+           (CONS
+            'ER-PROGN
+            (CONS
+             (CONS 'TRANS-EVAL
+                   (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                         (CONS (CONS 'QUOTE (CONS 'TOP 'NIL))
+                               (CONS 'STATE (CONS 'T 'NIL)))))
+             (CONS
+               (CONS 'VALUE
+                     (CONS (CONS 'QUOTE
+                                 (CONS (CONS 'VALUE-TRIPLE (CONS ':NIL 'NIL))
+                                       'NIL))
+                           'NIL))
+               'NIL)))
+           'NIL)))
+
+Summary
+Form:  ( DEFMACRO EVAL-FORM ...)
+Rules: NIL
+ EVAL-FORM
+ACL2 !>>(EVAL-FORM (UPDATE2 3 ST2))
+
+ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
+on the term (UPDATE2 '3 ST2) has modified the user stobj ST2.  See
+:DOC user-stobjs-modified-warnings.
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...))
+Rules: NIL
+Warnings:  User-stobjs-modified
+ :NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (LIST (HALT1 ST1)
+                                   (HALT2 ST1)
+                                   (HALT2 ST2)
+                                   (HALT1 ST2))
+                             '(NIL NIL 3 3)))
+ :PASSED
+ACL2 !>>(EVAL-FORM (UPDATE2 7 ST1))
+
+ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
+on the term (UPDATE2 '7 ST1) has modified the user stobj ST1.  See
+:DOC user-stobjs-modified-warnings.
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...))
+Rules: NIL
+Warnings:  User-stobjs-modified
+ :NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (LIST (HALT1 ST1)
+                                   (HALT2 ST1)
+                                   (HALT2 ST2)
+                                   (HALT1 ST2))
+                             '(7 7 3 3)))
+ :PASSED
+ACL2 !>>(DEFUN SWAP-ST1-ST2 (ST1 ST2)
+               (DECLARE (XARGS :STOBJS (ST1 ST2)))
+               (MV ST2 ST1))
+
+Since SWAP-ST1-ST2 is non-recursive, its admission is trivial.  We
+observe that the type of SWAP-ST1-ST2 is described by the theorem 
+(AND (CONSP (SWAP-ST1-ST2 ST1 ST2)) (TRUE-LISTP (SWAP-ST1-ST2 ST1 ST2))).
+We used primitive type reasoning.
+
+(SWAP-ST1-ST2 ST1 ST2) => (MV ST2 ST1).
+
+Computing the guard conjecture for SWAP-ST1-ST2....
+
+The guard conjecture for SWAP-ST1-ST2 is trivial to prove.  SWAP-ST1-ST2
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN SWAP-ST1-ST2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SWAP-ST1-ST2
+ACL2 !>>(EVAL-FORM (SWAP-ST1-ST2 ST1 ST2))
+
+ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
+on the term (SWAP-ST1-ST2 ST1 ST2) has modified the user stobjs ST2
+and ST1.  See :DOC user-stobjs-modified-warnings.
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...))
+Rules: NIL
+Warnings:  User-stobjs-modified
+ :NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (LIST (HALT1 ST1)
+                                   (HALT2 ST1)
+                                   (HALT2 ST2)
+                                   (HALT1 ST2))
+                             '(7 7 3 3)))
+ :PASSED
+ACL2 !>>(EVAL-FORM (SWAP-ST1-ST2 ST2 ST1))
+
+ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
+on the term (SWAP-ST1-ST2 ST2 ST1) has modified the user stobjs ST1
+and ST2.  See :DOC user-stobjs-modified-warnings.
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...))
+Rules: NIL
+Warnings:  User-stobjs-modified
+ :NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (LIST (HALT1 ST1)
+                                   (HALT2 ST1)
+                                   (HALT2 ST2)
+                                   (HALT1 ST2))
+                             '(7 7 3 3)))
+ :PASSED
+ACL2 !>>(MUST-FAIL^ (DEFSTOBJ ST4
+                              (REG3 :TYPE (ARRAY (UNSIGNED-BYTE 31) (8))
+                                    :INITIALLY 0)
+                              (PC3 :TYPE (UNSIGNED-BYTE 31)
+                                   :INITIALLY 555)
+                              HALT3
+                              :CONGRUENT-TO ST2))
+
+
+ACL2 Error in ( DEFSTOBJ ST4 ...):  A non-nil :CONGRUENT-TO field of
+a DEFSTOBJ must be the name of a stobj that has the same shape as the
+proposed new stobj.  However, the proposed stobj named ST4 does not
+have the same shape as the existing stobj named ST2.  See :DOC defstobj.
+
+
+Summary
+Form:  ( DEFSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^
+             (DEFSTOBJ ST4
+                       (REG4 :TYPE (ARRAY (UNSIGNED-BYTE 31) (8))
+                             :INITIALLY 0)
+                       (PC4 :TYPE (UNSIGNED-BYTE 30)
+                            :INITIALLY 555)
+                       HALT4
+                       (MEM4 :TYPE (ARRAY (UNSIGNED-BYTE 31) (*MEM-SIZE*))
+                             :INITIALLY 0
+                             :RESIZABLE T)
+                       :CONGRUENT-TO ST1))
+
+
+ACL2 Error in ( DEFSTOBJ ST4 ...):  A non-nil :CONGRUENT-TO field of
+a DEFSTOBJ must be the name of a stobj that has the same shape as the
+proposed new stobj.  However, the proposed stobj named ST4 does not
+have the same shape as the existing stobj named ST1.  See :DOC defstobj.
+
+
+Summary
+Form:  ( DEFSTOBJ ST4 ...)
+Rules: NIL
+
+ACL2 Error in ( DEFSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFMACRO
+         MUST-NOT-TRANSLATE (FORM)
+         (CONS
+          'MUST-EVAL-TO-T
+          (CONS
+           (CONS
+            'MV-LET
+            (CONS
+             (CONS 'ERP
+                   (CONS 'TRANS
+                         (CONS 'BINDINGS (CONS 'STATE 'NIL))))
+             (CONS
+              (CONS
+               'TRANSLATE1
+               (CONS
+                (CONS 'QUOTE (CONS FORM 'NIL))
+                (CONS
+                     ':STOBJS-OUT
+                     (CONS (CONS 'QUOTE
+                                 (CONS (CONS (CONS ':STOBJS-OUT ':STOBJS-OUT)
+                                             'NIL)
+                                       'NIL))
+                           (CONS 'T
+                                 (CONS (CONS 'QUOTE
+                                             (CONS 'MUST-NOT-TRANSLATE 'NIL))
+                                       (CONS (CONS 'W (CONS 'STATE 'NIL))
+                                             (CONS 'STATE 'NIL))))))))
+              (CONS
+                   (CONS 'DECLARE
+                         (CONS (CONS 'IGNORE
+                                     (CONS 'TRANS (CONS 'BINDINGS 'NIL)))
+                               'NIL))
+                   (CONS (CONS 'VALUE
+                               (CONS (CONS 'NOT
+                                           (CONS (CONS 'NOT (CONS 'ERP 'NIL))
+                                                 'NIL))
+                                     'NIL))
+                         'NIL)))))
+           (CONS ':WITH-OUTPUT-OFF
+                 (CONS 'NIL 'NIL)))))
+
+Summary
+Form:  ( DEFMACRO MUST-NOT-TRANSLATE ...)
+Rules: NIL
+ MUST-NOT-TRANSLATE
+ACL2 !>>(DEFMACRO
+         MUST-FAIL+ (FORM)
+         (CONS
+          'MAKE-EVENT
+          (CONS
+           (CONS
+            'MV-LET
+            (CONS
+             (CONS 'ERP
+                   (CONS 'VAL (CONS 'STATE 'NIL)))
+             (CONS
+              (CONS 'TRANS-EVAL
+                    (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                          (CONS (CONS 'QUOTE (CONS 'MUST-FAIL+ 'NIL))
+                                (CONS 'STATE (CONS 'T 'NIL)))))
+              (CONS
+               (CONS 'DECLARE
+                     (CONS (CONS 'IGNORE (CONS 'VAL 'NIL))
+                           'NIL))
+               (CONS
+                (CONS
+                 'COND
+                 (CONS
+                  (CONS
+                   'ERP
+                   (CONS
+                    (CONS
+                     'VALUE
+                     (CONS
+                          (CONS 'QUOTE
+                                (CONS (CONS 'VALUE-TRIPLE
+                                            (CONS ':FAILED-AS-EXPECTED 'NIL))
+                                      'NIL))
+                          'NIL))
+                    'NIL))
+                  (CONS (CONS 'T
+                              (CONS (CONS 'SILENT-ERROR (CONS 'STATE 'NIL))
+                                    'NIL))
+                        'NIL)))
+                'NIL)))))
+           'NIL)))
+
+Summary
+Form:  ( DEFMACRO MUST-FAIL+ ...)
+Rules: NIL
+ MUST-FAIL+
+ACL2 !>>(DEFMACRO
+         MUST-SUCCEED+ (FORM)
+         (CONS 'MUST-SUCCEED
+               (CONS (CONS 'TRANS-EVAL
+                           (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                 (CONS (CONS 'QUOTE
+                                             (CONS 'MUST-NOT-TRANSLATE 'NIL))
+                                       (CONS 'STATE (CONS 'T 'NIL)))))
+                     'NIL)))
+
+Summary
+Form:  ( DEFMACRO MUST-SUCCEED+ ...)
+Rules: NIL
+ MUST-SUCCEED+
+ACL2 !>>(MUST-NOT-TRANSLATE (SWAP-ST1-ST2 ST1 ST1))
+
+
+ACL2 Error in MUST-NOT-TRANSLATE:  The form ST1 is being used, as an
+argument to a call of SWAP-ST1-ST2, where the single-threaded object
+ST2 was expected, even though these are congruent stobjs.  See :DOC
+defstobj, in particular the discussion of congruent stobjs.  Note:
+this error occurred in the context (SWAP-ST1-ST2 ST1 ST1).
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-LET* ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-SUCCEED+ (MV-LET (ST1 ST2)
+                               (SWAP-ST1-ST2 ST2 ST1)
+                               (MV ST1 ST2)))
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-SUCCEED+ (MV-LET (ST2 ST1)
+                               (SWAP-ST1-ST2 ST1 ST2)
+                               (MV ST1 ST2)))
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST1 ST2)
+                                    (SWAP-ST1-ST2 ST1 ST2)
+                                    (MV ST1 ST2)))
+
+
+ACL2 Error in MUST-NOT-TRANSLATE:  It is illegal to invoke SWAP-ST1-ST2
+here because of a signature mismatch.  This function call returns a
+result of shape (MV ST2 ST1) where a result of shape (MV ST1 ST2) is
+required.  Note:  this error occurred in the context (SWAP-ST1-ST2 ST1 ST2).
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-LET* ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST2 ST1)
+                                    (SWAP-ST1-ST2 ST2 ST1)
+                                    (MV ST1 ST2)))
+
+
+ACL2 Error in MUST-NOT-TRANSLATE:  It is illegal to invoke SWAP-ST1-ST2
+here because of a signature mismatch.  This function call returns a
+result of shape (MV ST1 ST2) (after accounting for the replacement
+of some input stobjs by congruent stobjs) where a result of shape 
+(MV ST2 ST1) is required.  Note:  this error occurred in the context
+(SWAP-ST1-ST2 ST2 ST1).
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-LET* ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFUN
+         TEST1 NIL
+         (WITH-LOCAL-STOBJ
+          ST1
+          (MV-LET
+            (RESULT ST1)
+            (WITH-LOCAL-STOBJ ST2
+                              (MV-LET (ST2 ST1 VAL0 VAL)
+                                      (LET* ((ST1 (UPDATE2 4 ST1))
+                                             (ST2 (UPDATE2 5 ST2))
+                                             (VAL0 (LIST (HALT1 ST1)
+                                                         (HALT2 ST1)
+                                                         (HALT2 ST2)
+                                                         (HALT1 ST2))))
+                                            (MV-LET (ST2 ST1)
+                                                    (SWAP-ST1-ST2 ST1 ST2)
+                                                    (MV ST2 ST1 VAL0
+                                                        (LIST (HALT1 ST1)
+                                                              (HALT2 ST1)
+                                                              (HALT2 ST2)
+                                                              (HALT1 ST2)))))
+                                      (MV (AND (EQUAL VAL0 '(4 4 5 5))
+                                               (EQUAL VAL '(4 4 5 5)))
+                                          ST1)))
+            RESULT)))
+
+Since TEST1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of TEST1.
+
+Summary
+Form:  ( DEFUN TEST1 ...)
+Rules: NIL
+ TEST1
+ACL2 !>>(DEFUN
+         TEST2 NIL
+         (WITH-LOCAL-STOBJ
+          ST1
+          (MV-LET
+            (RESULT ST1)
+            (WITH-LOCAL-STOBJ ST2
+                              (MV-LET (ST2 ST1 VAL0 VAL)
+                                      (LET* ((ST1 (UPDATE2 4 ST1))
+                                             (ST2 (UPDATE2 5 ST2))
+                                             (VAL0 (LIST (HALT1 ST1)
+                                                         (HALT2 ST1)
+                                                         (HALT2 ST2)
+                                                         (HALT1 ST2))))
+                                            (MV-LET (ST1 ST2)
+                                                    (SWAP-ST1-ST2 ST2 ST1)
+                                                    (MV ST2 ST1 VAL0
+                                                        (LIST (HALT1 ST1)
+                                                              (HALT2 ST1)
+                                                              (HALT2 ST2)
+                                                              (HALT1 ST2)))))
+                                      (MV (AND (EQUAL VAL0 '(4 4 5 5))
+                                               (EQUAL VAL '(4 4 5 5)))
+                                          ST1)))
+            RESULT)))
+
+Since TEST2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of TEST2.
+
+Summary
+Form:  ( DEFUN TEST2 ...)
+Rules: NIL
+ TEST2
+ACL2 !>>(ASSERT-EVENT (TEST1))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (TEST2))
+ :PASSED
+ACL2 !>>(DEFUN UPDATE3 (X ST2)
+               (DECLARE (XARGS :STOBJS ST2
+                               :GUARD (ACL2-NUMBERP X)))
+               (UPDATE1 X ST2))
+
+Since UPDATE3 is non-recursive, its admission is trivial.  We observe
+that the type of UPDATE3 is described by the theorem (CONSP (UPDATE3 X ST2)).
+We used the :type-prescription rule UPDATE1.
+
+(UPDATE3 * ST2) => ST2.
+
+Computing the guard conjecture for UPDATE3....
+
+The guard conjecture for UPDATE3 is trivial to prove.  UPDATE3 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE3 ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE1))
+ UPDATE3
+ACL2 !>>(MUST-FAIL+ (WITH-GUARD-CHECKING T (UPDATE3 'A ST2)))
+
+ACL2 Warning [User-stobjs-modified] in MUST-FAIL+:  A call of the ACL2
+evaluator on the term 
+(RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
+             (CHK-WITH-GUARD-CHECKING-ARG 'T)
+             (UPDATE3 'A ST2))
+has modified the user stobj ST2.  See :DOC user-stobjs-modified-warnings.
+
+
+
+ACL2 Error in MUST-FAIL+:  The guard for the function call (UPDATE3 X ST2),
+which is (AND (ST2P ST2) (ACL2-NUMBERP X)), is violated by the arguments
+in the call (UPDATE3 'A ST2).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( MAKE-EVENT (MV-LET ...))
+Rules: NIL
+Warnings:  User-stobjs-modified
+ :FAILED-AS-EXPECTED
+ACL2 !>>(MUST-FAIL+ (WITH-GUARD-CHECKING T (UPDATE3 'A ST1)))
+
+ACL2 Warning [User-stobjs-modified] in MUST-FAIL+:  A call of the ACL2
+evaluator on the term 
+(RETURN-LAST 'WITH-GUARD-CHECKING1-RAW
+             (CHK-WITH-GUARD-CHECKING-ARG 'T)
+             (UPDATE3 'A ST1))
+has modified the user stobj ST1.  See :DOC user-stobjs-modified-warnings.
+
+
+
+ACL2 Error in MUST-FAIL+:  The guard for the function call (UPDATE3 X ST2),
+which is (AND (ST2P ST2) (ACL2-NUMBERP X)), is violated by the arguments
+in the call (UPDATE3 'A ST1).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( MAKE-EVENT (MV-LET ...))
+Rules: NIL
+Warnings:  User-stobjs-modified
+ :FAILED-AS-EXPECTED
+ACL2 !>>(MUST-NOT-TRANSLATE (UPDATE3 3 'B))
+
+
+ACL2 Error in MUST-NOT-TRANSLATE:  The form 'B is being used, as an
+argument to a call of UPDATE3, where the single-threaded object ST2
+is required.  Note that the variable ST2 is required, not merely a
+term that returns such a single-threaded object, so you may need to
+bind ST2 with LET; see :DOC stobj.  Note:  this error occurred in the
+context (UPDATE3 3 'B).
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-LET* ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFUN UPDATE4 (X ST1 ST2)
+               (DECLARE (XARGS :STOBJS (ST1 ST2)
+                               :GUARD (ACL2-NUMBERP X)))
+               (DECLARE (IGNORE ST1))
+               (UPDATE1 X ST2))
+
+Since UPDATE4 is non-recursive, its admission is trivial.  We observe
+that the type of UPDATE4 is described by the theorem 
+(CONSP (UPDATE4 X ST1 ST2)).  We used the :type-prescription rule UPDATE1.
+
+(UPDATE4 * ST1 ST2) => ST2.
+
+Computing the guard conjecture for UPDATE4....
+
+The guard conjecture for UPDATE4 is trivial to prove.  UPDATE4 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN UPDATE4 ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE1))
+ UPDATE4
+ACL2 !>>(MUST-NOT-TRANSLATE (UPDATE4 3 ST1 ST1))
+
+
+ACL2 Error in MUST-NOT-TRANSLATE:  The form ST1 is being used, as an
+argument to a call of UPDATE4, where the single-threaded object ST2
+was expected, even though these are congruent stobjs.  See :DOC defstobj,
+in particular the discussion of congruent stobjs.  Note:  this error
+occurred in the context (UPDATE4 3 ST1 ST1).
+
+
+Summary
+Form:  ( MAKE-EVENT (ER-LET* ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFSTOBJ ST FLD)
+
+Summary
+Form:  ( DEFSTOBJ ST ...)
+Rules: NIL
+ ST
+ACL2 !>>(DEFUN G (X ST)
+               (DECLARE (XARGS :GUARD (CONSP X) :STOBJS ST)
+                        (IGNORE X))
+               (FLD ST))
+
+Since G is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of G.
+
+(G * ST) => *.
+
+Computing the guard conjecture for G....
+
+The guard conjecture for G is trivial to prove.  G is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+ G
+ACL2 !>>(DEFUN TEST NIL
+               (WITH-LOCAL-STOBJ ST
+                                 (MV-LET (RESULT ST)
+                                         (MV (G 3 ST) ST)
+                                         RESULT)))
+
+Since TEST is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of TEST.
+
+Summary
+Form:  ( DEFUN TEST ...)
+Rules: NIL
+ TEST
+ACL2 !>>(MUST-FAIL+ (WITH-GUARD-CHECKING T (TEST)))
+
+
+ACL2 Error in MUST-FAIL+:  The guard for the function call (G X ST),
+which is (AND (STP ST) (CONSP X)), is violated by the arguments in
+the call (G 3 |<some-stobj>|).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( MAKE-EVENT (MV-LET ...))
+Rules: NIL
+ :FAILED-AS-EXPECTED
+ACL2 !>>(MAKE-EVENT (ER-PROGN (PRINT-GV)
+                              (VALUE '(VALUE-TRIPLE :OK))))
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...))
+Rules: NIL
+ :OK
+ACL2 !>>(DEFSTOBJ ST0 FLD0 :CONGRUENT-TO ST)
+
+Summary
+Form:  ( DEFSTOBJ ST0 ...)
+Rules: NIL
+ ST0
+ACL2 !>>(DEFUN H (ST)
+               (DECLARE (XARGS :STOBJS ST))
+               (FLD ST))
+
+Since H is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of H.
+
+(H ST) => *.
+
+Computing the guard conjecture for H....
+
+The guard conjecture for H is trivial to prove.  H is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+ H
+ACL2 !>>(MUST-SUCCEED+ (IF (HONS-ENABLEDP STATE)
+                           (MEMOIZE 'H)
+                           (VALUE NIL)))
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-SUCCEED+ (UPDATE-FLD 0 ST0))
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-SUCCEED+ (UPDATE-FLD 1 ST))
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(ASSERT-EVENT (EQUAL (H ST0) 0))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (H ST) 1))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (H ST0) 0))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (H ST) 1))
+ :PASSED
+ACL2 !>>(DEFSTOBJ S$1 FLD1)
+
+Summary
+Form:  ( DEFSTOBJ S$1 ...)
+Rules: NIL
+ S$1
+ACL2 !>>(DEFSTOBJ S$2 FLD2 :CONGRUENT-TO S$1)
+
+Summary
+Form:  ( DEFSTOBJ S$2 ...)
+Rules: NIL
+ S$2
+ACL2 !>>(DEFSTOBJ S$3 FLD3)
+
+Summary
+Form:  ( DEFSTOBJ S$3 ...)
+Rules: NIL
+ S$3
+ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1)
+                           (DECLARE (XARGS :STOBJS S$1))
+                           (LET ((S$1 (UPDATE-FLD1 S$1 3))) S$1)))
+
+
+ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$1,
+is being used where an ordinary object is expected.  Note:  this error
+occurred in the context (UPDATE-FLD1 S$1 3).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN F (X S$1)
+                           (DECLARE (XARGS :STOBJS S$1))
+                           (LIST (UPDATE-FLD1 S$1 X))))
+
+
+ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
+here because of a signature mismatch.  This function call returns a
+result of shape S$1 where a result of shape * is required.  Note: 
+this error occurred in the context (UPDATE-FLD1 S$1 X).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN F (S$2)
+                           (DECLARE (XARGS :STOBJS S$2))
+                           (LET ((S$2 (UPDATE-FLD1 S$2 3))) S2)))
+
+
+ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$2,
+is being used where an ordinary object is expected.  Note:  this error
+occurred in the context (UPDATE-FLD1 S$2 3).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1 S$2)
+                           (DECLARE (XARGS :STOBJS (S$1 S$2)))
+                           (LET ((S$1 (UPDATE-FLD1 S$2 3)))
+                                (MV S$1 S$2))))
+
+
+ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$2,
+is being used where an ordinary object is expected.  Note:  this error
+occurred in the context (UPDATE-FLD1 S$2 3).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1 S$2)
+                           (DECLARE (XARGS :STOBJS (S$1 S$2)))
+                           (LET ((S$2 (UPDATE-FLD1 S$1 3)))
+                                (MV S$1 S$2))))
+
+
+ACL2 Error in ( DEFUN F ...):  A single-threaded object, namely S$1,
+is being used where an ordinary object is expected.  Note:  this error
+occurred in the context (UPDATE-FLD1 S$1 3).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN F (X S$2)
+                           (DECLARE (XARGS :STOBJS S$2))
+                           (LIST (UPDATE-FLD1 S$2 X))))
+
+
+ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
+here because of a signature mismatch.  This function call returns a
+result of shape S$1 where a result of shape * is required.  Note: 
+this error occurred in the context (UPDATE-FLD1 S$2 X).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN F (X S$2)
+                           (DECLARE (XARGS :STOBJS S$2))
+                           (LIST (UPDATE-FLD1 X S$2))))
+
+
+ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
+here because of a signature mismatch.  This function call returns a
+result of shape S$2 (after accounting for the replacement of some input
+stobjs by congruent stobjs) where a result of shape * is required.
+Note:  this error occurred in the context (UPDATE-FLD1 X S$2).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN F (S$1 S$3)
+                           (DECLARE (XARGS :STOBJS (S$1 S$3)))
+                           (LET ((S$3 (UPDATE-FLD1 S$1 3)))
+                                (MV S$1 S$3))))
+
+
+ACL2 Error in ( DEFUN F ...):  It is illegal to invoke UPDATE-FLD1
+here because of a signature mismatch.  This function call returns a
+result of shape S$1 where a result of shape S$3 is required.  Note:
+this error occurred in the context (UPDATE-FLD1 S$1 3).
+
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN F ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(MUST-FAIL^ (DEFUN FOO (S$1 S$2)
+                           (DECLARE (XARGS :STOBJS (S$1 S$2)))
+                           (LET ((S$1 (UPDATE-FLD1 0 S$2)))
+                                (MV S$1 S$2))))
+
+
+ACL2 Error in ( DEFUN FOO ...):  It is illegal to invoke UPDATE-FLD1
+here because of a signature mismatch.  This function call returns a
+result of shape S$2 (after accounting for the replacement of some input
+stobjs by congruent stobjs) where a result of shape S$1 is required.
+Note:  this error occurred in the context (UPDATE-FLD1 0 S$2).
+
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN FOO ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFUN FOO (S$1 S$3)
+               (DECLARE (XARGS :STOBJS (S$1 S$3))
+                        (IGNORE S$1))
+               S$3)
+
+Since FOO is non-recursive, its admission is trivial.  We observe that
+the type of FOO is described by the theorem (EQUAL (FOO S$1 S$3) S$3).
+
+(FOO S$1 S$3) => S$3.
+
+Computing the guard conjecture for FOO....
+
+The guard conjecture for FOO is trivial to prove.  FOO is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+ FOO
+ACL2 !>>(MUST-FAIL^ (DEFUN BAR (S$2 S$3)
+                           (DECLARE (XARGS :STOBJS (S$2 S$3)))
+                           (LET ((S$3 (FOO S$2 S$3X))) S$3)))
+
+
+ACL2 Error in ( DEFUN BAR ...):  The form S$3X is being used, as an
+argument to a call of FOO, where the single-threaded object S$3 is
+required.  Note that the variable S$3 is required, not merely a term
+that returns such a single-threaded object, so you may need to bind
+S$3 with LET; see :DOC stobj.  Note:  this error occurred in the context
+(FOO S$2 S$3X).
+
+
+Summary
+Form:  ( DEFUN BAR ...)
+Rules: NIL
+
+ACL2 Error in ( DEFUN BAR ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( MAKE-EVENT (STATE-GLOBAL-LET* ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFUN BAR (S$2 S$3)
+               (DECLARE (XARGS :STOBJS (S$2 S$3)))
+               (LET ((S$3 (FOO S$2 S$3))) S$3))
+
+Since BAR is non-recursive, its admission is trivial.  We observe that
+the type of BAR is described by the theorem (EQUAL (BAR S$2 S$3) S$3).
+
+(BAR S$2 S$3) => S$3.
+
+Computing the guard conjecture for BAR....
+
+The guard conjecture for BAR is trivial to prove.  BAR is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN BAR ...)
+Rules: NIL
+ BAR
+ACL2 !>>Bye.

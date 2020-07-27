@@ -140,7 +140,7 @@
           (5 5
              (:LINEAR LIST::LEN-OF-CDR-BOUND-TIGHT-LINEAR))
           (1 1 (:REWRITE EQUAL-CONSTANT-+)))
-(CONSP-REV3 (5585 5585 (:REWRITE DEFAULT-CDR))
+(CONSP-REV3 (5827 5827 (:REWRITE DEFAULT-CDR))
             (1298 1298 (:REWRITE DEFAULT-CAR)))
 (REV3-DOMAIN-IS-TOTAL-INDUCTION
      (1172 3 (:REWRITE O<=-O-FINP-DEF))
@@ -193,8 +193,8 @@
                       (2706 217 (:DEFINITION |REV3-base|))
                       (1035 786 (:REWRITE DEFAULT-CAR))
                       (217 217 (:REWRITE OPEN-REV3-INDUCTION)))
-(T-IMPLIES-TRUE-LISTP-REV3 (182 2 (:DEFINITION REV3-DEFINITION))
-                           (58 51 (:REWRITE DEFAULT-CDR))
+(T-IMPLIES-TRUE-LISTP-REV3 (194 2 (:DEFINITION REV3-DEFINITION))
+                           (61 54 (:REWRITE DEFAULT-CDR))
                            (17 14
                                (:REWRITE LIST::TRUE-LISTP-OF-NON-CONSP))
                            (16 13 (:REWRITE DEFAULT-CAR))

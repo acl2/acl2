@@ -1,8 +1,17 @@
+ifndef ACL2
+ $(error Variable ACL2 is undefined.)
+endif
 
-all: translate.cert
+BUILD_DIR := $(dir $(ACL2))books/build
+JOBS ?= 4
 
-translate.cert: translate.lisp
-	echo '(certify-book "translate")' | ${ACL2}
+all:
+	$(BUILD_DIR)/cert.pl -j $(JOBS) -a $(ACL2) *.lisp
+
+# all: translate.cert
+
+# translate.cert: translate.lisp
+# 	echo '(certify-book "translate")' | ${ACL2}
 
 clean:
 

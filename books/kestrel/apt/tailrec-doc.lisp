@@ -58,26 +58,37 @@
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
       These notes should be read alongside this reference documentation,
-      which refers to them in some places."))
+      which refers to them in some places.")
+
+    (xdoc::p
+     "The file @('[books]/kestrel/apt/tailrec-examples.lisp')
+      contains some commented examples of use of @('tailrec')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-form
     (xdoc::codeblock
      "(tailrec old"
-     "         :variant         ; default :monoid"
-     "         :domain          ; default :auto"
-     "         :new-name        ; default :auto"
-     "         :new-enable      ; default :auto"
-     "         :wrapper         ; default t"
-     "         :wrapper-name    ; default :auto"
-     "         :wrapper-enable  ; default t"
-     "         :thm-name        ; default :auto"
-     "         :thm-enable      ; default t"
-     "         :verify-guards   ; default :auto"
-     "         :hints           ; default nil"
-     "         :print           ; default :result"
-     "         :show-only       ; default nil"
+     "         :variant                ; default :monoid"
+     "         :domain                 ; default :auto"
+     "         :new-name               ; default :auto"
+     "         :new-enable             ; default :auto"
+     "         :accumulator            ; default :auto"
+     "         :wrapper                ; default nil"
+     "         :wrapper-name           ; default :auto"
+     "         :wrapper-enable         ; default from table"
+     "         :old-to-new-name        ; default from table"
+     "         :old-to-new-enable      ; default from table"
+     "         :new-to-old-name        ; default from table"
+     "         :new-to-old-enable      ; default from table"
+     "         :old-to-wrapper-name    ; default from table"
+     "         :old-to-wrapper-enable  ; default from table"
+     "         :wrapper-to-old-name    ; default from table"
+     "         :wrapper-to-old-enable  ; default from table"
+     "         :verify-guards          ; default :auto"
+     "         :hints                  ; default nil"
+     "         :print                  ; default :result"
+     "         :show-only              ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -101,21 +112,44 @@
      (xdoc::p
       "With the body in <see topic='@(url acl2::term)'>translated</see> form,
        and after expanding all lambda expressions (i.e. @(tsee let)s),
-       the function must have the form")
+       the function must have one of the forms")
      (xdoc::codeblock
+      ";; form 1:"
       "(defun old (x1 ... xn)"
       "  (if test<x1,...,xn>"
       "      base<x1,...,xn>"
       "    combine<nonrec<x1,...,xn>,"
       "            (old update-x1<x1,...,xn>"
       "                 ..."
-      "                 update-xn<x1,...,xn>)>))")
+      "                 update-xn<x1,...,xn>)>))"
+      ""
+      ";; form 2:"
+      "(defun old (x1 ... xn)"
+      "  (if ntest<x1,...,xn>"
+      "      combine<nonrec<x1,...,xn>,"
+      "              (old update-x1<x1,...,xn>"
+      "                   ..."
+      "                   update-xn<x1,...,xn>)>"
+      "    base<x1,...,xn>))")
      (xdoc::p
       "where:")
      (xdoc::ul
       (xdoc::li
-       "The term @('test<x1,...,xn>') does not call @('old').
-        This term computes the exit test of the recursion.
+       "The term @('test<x1,...,xn>') (in form 1)
+        or @('ntest<x1,...,xn>') (in form 2)
+        does not call @('old').
+        This term computes the exit test of the recursion (in form 1)
+        or its negation (in form 2).
+        If @('old') has form 2,
+        let @('test<x1,...,xn>') be:
+        either (i) the negation of @('ntest<x1,...,xn>'),
+        i.e. @('(not ntest<x1,...,xn>)')
+        if @('ntest<x1,...,xn>') is not a call of @(tsee not);
+        or (ii) the argument of @('ntest<x1,...,xn>')
+        if @('ntest<x1,...,xn>') is a call of @(tsee not),
+        i.e. @('ntest<x1,...,xn>') is @('(not test<x1,...,xn>)').
+        Thus, in the rest of this documentation,
+        we can assume that @('old') has form 1 without loss of generality.
         In the " *tailrec-design-notes* ",
         @('test<x1,...,xn>') is denoted by @($a(\\overline{x})$).")
       (xdoc::li
@@ -130,7 +164,7 @@
         The section `Special case: Ground Base Value' of the design notes
         shows that this restriction (which may be lifted eventually)
         avoids the need to generate and use the function @($\\beta$).
-        (When the @(':variant') input is @(':assoc'),
+        (When the @(':variant') input is @(':assoc') or @(':assoc-alt'),
         no @($\\beta$) needs to be generated anyway,
         and thus the restriction does not apply.)")
       (xdoc::li
@@ -204,21 +238,34 @@
         In the " *tailrec-design-notes* ",
         this variant is described in the sections
         `Associative Binary Operator' and
-        `Restriction of Operator Properties to a Domain'."))
+        `Restriction of Operator Properties to a Domain'.")
+      (xdoc::li
+       "@(':assoc-alt'), for the alternative associative variant,
+        where the applicability conditions below also imply
+        the algebraic structure of a semigroup (i.e. associativity only)
+        for the combination operator.
+        In the " *tailrec-design-notes* ",
+        this variant is described in the section
+        `Associative-Only Variant,Extended outside the Domain'."))
      (xdoc::p
-      "The associative variant of the transformation is more widely applicable,
-       but the monoidal and alternative monoidal variants
-       yield simpler new functions.
+      "The associative variants of the transformation is more widely applicable,
+       but the monoidal variants yield simpler new functions.
        The applicability conditions for the alternative monoidal variant
        are neither stronger nor weaker than the ones for the monoidal variant,
+       so these two variants apply to different cases.
+       Similarly,
+       the applicability conditions for the alternative associative variant
+       are neither stronger nor weaker than the ones for the associative variant,
        so these two variants apply to different cases.")
      (xdoc::p
       "While the " *tailrec-design-notes*
       "show how to handle variants in which, besides associativity,
        only either left or right identity holds,
        the current implementation does not handle them independently.
-       They are either both absent (in the @(':assoc') variant)
-       or both present (in the @(':monoid') and @(':monoid-alt') variants).
+       They are either both absent
+       (in the @(':assoc') and @(':assoc-alt') variants)
+       or both present
+       (in the @(':monoid') and @(':monoid-alt') variants).
        Support for their independent handling may be added eventually."))
 
     (xdoc::desc
@@ -248,15 +295,41 @@
 
     (xdoc::desc-apt-input-new-enable)
 
+    (xdoc::desc
+     "@(':accumulator') &mdash; default @(':auto')"
+     (xdoc::p
+      "Determines the name of the accumulator argument of @('new'):")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the fresh variable @('r') described above.")
+      (xdoc::li
+       "Any other symbol that is a valid formal parameter name
+        and that is distinct from @('x1'), ..., @('xn')."))
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('a') be this variable."))
+
     (xdoc::desc-apt-input-wrapper)
 
-    (xdoc::desc-apt-input-wrapper-name :optional)
+    (xdoc::desc-apt-input-wrapper-name)
 
-    (xdoc::desc-apt-input-wrapper-enable :optional)
+    (xdoc::desc-apt-input-wrapper-enable)
 
-    (xdoc::desc-apt-input-thm-name :optional)
+    (xdoc::desc-apt-input-old-to-new-name)
 
-    (xdoc::desc-apt-input-thm-enable :optional)
+    (xdoc::desc-apt-input-old-to-new-enable)
+
+    (xdoc::desc-apt-input-new-to-old-name)
+
+    (xdoc::desc-apt-input-new-to-old-enable)
+
+    (xdoc::desc-apt-input-old-to-wrapper-name)
+
+    (xdoc::desc-apt-input-old-to-wrapper-enable)
+
+    (xdoc::desc-apt-input-wrapper-to-old-name)
+
+    (xdoc::desc-apt-input-wrapper-to-old-enable)
 
     (xdoc::desc-apt-input-verify-guards :optional)
 
@@ -328,7 +401,11 @@
        has the form @('(op q r)') or @('(op r q)'),
        where @('op') is a named function, with formals @('y1') and @('y2').")
      (xdoc::li
-      "The guard term of @('op') has the form @('(and (dom y1) (dom y2))'),
+      "The guard term of @('op') has one of the forms
+       (i) @('(and (dom y1) (dom y2))'),
+       (ii) @('(and (dom y2) (dom y1))'),
+       (iii) @('(dom y1)'), and
+       (iv) @('(dom y2)'),
        where @('dom') is a named function."))
 
     (xdoc::p
@@ -350,8 +427,8 @@
       Given that using a tighter domain than all values
       involves additional applicability conditions below,
       it seems most useful to attempt to infer a tighter domain
-      only for the monoidal and alternative monoidal variants,
-      and use the domain of all values for the associative variant."))
+      only for the monoidal variants,
+      and use the domain of all values for the associative variants."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -368,7 +445,9 @@
        "(implies test<x1,...,xn>"
        "         (domain base<x1,...,xn>))"))
      :design-notes *tailrec-design-notes*
-     :design-notes-appcond "@($\\mathit{Db}$)")
+     :design-notes-appcond "@($\\mathit{Db}$)"
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid') or @(':monoid-alt') or @(':assoc')")
 
     (xdoc::evmac-appcond
      ":domain-of-nonrec"
@@ -397,7 +476,7 @@
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($D*$)"
      :presence "the @(':variant') input of @('tailrec')
-                is @(':monoid') or @(':assoc')")
+                is @(':monoid') or @(':assoc') or @(':assoc-alt')")
 
     (xdoc::evmac-appcond
      ":domain-of-combine-uncond"
@@ -408,7 +487,8 @@
        "(domain combine<u,v>)"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($D*'$)"
-     :presence "the @(':variant') input of @('tailrec') is @(':monoid-alt')")
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid-alt')")
 
     (xdoc::evmac-appcond
      ":combine-associativity"
@@ -433,10 +513,11 @@
        "The combination operator is unconditionally associative:")
       (xdoc::codeblock
        "(equal combine<u,combine<v,w>>"
-       "      combine<combine<u,v>,w>)"))
+       "       combine<combine<u,v>,w>)"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($\\mathit{ASC}'$)"
-     :presence "the @(':variant') input of @('tailrec') is @(':monoid-alt')")
+     :presence "the @(':variant') input of @('tailrec')
+                is @(':monoid-alt') or @(':assoc-alt')")
 
     (xdoc::evmac-appcond
      ":combine-left-identity"
@@ -446,9 +527,9 @@
       is left identity of the combination operator:")
       (xdoc::codeblock
        "(implies (and test<x1,...,xn>"
-       "             (domain u))"
-       "        (equal combine<base<x1...,xn>,u>"
-       "               u))"))
+       "              (domain u))"
+       "         (equal combine<base<x1...,xn>,u>"
+       "                u))"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($\\mathit{LI}$)"
      :presence "the @(':variant') input of @('tailrec')
@@ -462,9 +543,9 @@
        is right identity of the combination operator:")
       (xdoc::codeblock
        "(implies (and test<x1,...,xn>"
-       "             (domain u))"
-       "        (equal combine<u,base<x1...,xn>>"
-       "               u))"))
+       "              (domain u))"
+       "         (equal combine<u,base<x1...,xn>>"
+       "                u))"))
      :design-notes *tailrec-design-notes*
      :design-notes-appcond "@($\\mathit{RI}$)"
      :presence "the @(':variant') input of @('tailrec')
@@ -496,8 +577,8 @@
         on every value in the domain:")
       (xdoc::codeblock
        "(implies (and (domain q)"
-       "             (domain r))"
-       "        combine-guard<q,r>)")
+       "              (domain r))"
+       "         combine-guard<q,r>)")
       (xdoc::p
        "where @('combine-guard<q,r>') is
         the guard obligation of @('combine<q,r>')."))
@@ -506,6 +587,27 @@
      :presence "the function(s) generated by @('tailrec') is/are guard-verified
                 (which is determined by
                 the @(':verify-guards') input of @('tailrec')).")
+
+    (xdoc::evmac-appcond
+     ":domain-of-base-when-guard"
+     (xdoc::&&
+      (xdoc::p
+       "The base computation returns values in the domain,
+        when the exit test of the recursion succeeds,
+        and under the guard of @('old'):")
+      (xdoc::codeblock
+       "(implies (and old-guard<x1,...,xn>"
+       "              test<x1,...,xn>)"
+       "         (domain base<x1,...,xn>))")
+      (xdoc::p
+       "where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
+     :design-notes *tailrec-design-notes*
+     :design-notes-appcond "@($\\mathit{GDb}$)"
+     :presence "the function(s) generated by @('tailrec') is/are guard-verified
+                (which is determined by
+                the @(':verify-guards') input of @('tailrec'))
+                and the @(':variant') input of @('tailrec')
+                is @(':assoc-alt')")
 
     (xdoc::evmac-appcond
      ":domain-of-nonrec-when-guard"
@@ -517,8 +619,8 @@
         and under the guard of @('old'):")
       (xdoc::codeblock
        "(implies (and old-guard<x1,...,xn>"
-       "             (not test<x1,...,xn>))"
-       "        (domain nonrec<x1,...,xn>))")
+       "              (not test<x1,...,xn>))"
+       "         (domain nonrec<x1,...,xn>))")
       (xdoc::p
        "where @('old-guard<x1,...,xn>') is the guard term of @('old')."))
      :design-notes *tailrec-design-notes*
@@ -527,7 +629,7 @@
                 (which is determined by
                 the @(':verify-guards') input of @('tailrec'))
                 and the @(':variant') input of @('tailrec')
-                is @(':monoid-alt')")
+                is @(':monoid-alt') or @(':assoc-alt')")
 
     (xdoc::p
      "When present,
@@ -555,27 +657,27 @@
       "Tail-recursive equivalent of @('old'):")
      (xdoc::codeblock
       ";; when the :variant input of tailrec is :monoid or :monoid-alt:"
-      "(defun new (x1 ... xn r)"
+      "(defun new (x1 ... xn a)"
       "  (if test<x1,...,xn>"
-      "      r"
+      "      a"
       "    (new update-x1<x1,...,xn>"
       "         ..."
       "         update-xn<x1,...,xn>"
-      "         combine<r,nonrec<x1,...,xn>>)))"
+      "         combine<a,nonrec<x1,...,xn>>)))"
       ""
-      ";; when the :variant input of tailrec is :assoc:"
-      "(defun new (x1 ... xn r)"
+      ";; when the :variant input of tailrec is :assoc or :assoc-alt:"
+      "(defun new (x1 ... xn a)"
       "  (if test<x1,...,xn>"
-      "      combine<r,base<x1,...,xn>>"
+      "      combine<a,base<x1,...,xn>>"
       "    (new update-x1<x1,...,xn>"
       "         ..."
       "         update-xn<x1,...,xn>"
-      "         combine<r,nonrec<x1,...,xn>>)))")
+      "         combine<a,nonrec<x1,...,xn>>)))")
      (xdoc::p
       "The measure term and well-founded relation of @('new')
        are the same as @('old').")
      (xdoc::p
-      "The guard is @('(and old-guard<x1,...,xn> (domain r))'),
+      "The guard is @('(and old-guard<x1,...,xn> (domain a))'),
        where @('old-guard<x1,...,xn>') is the guard term of @('old').")
      (xdoc::p
       "In the " *tailrec-design-notes* ",
@@ -590,7 +692,7 @@
       "(defun wrapper (x1 ... xn)"
       "  (new x1 ... xn base<x1,...,xn>))"
       ""
-      ";; when the :variant input tailrec is :assoc:"
+      ";; when the :variant input tailrec is :assoc or :assoc-alt:"
       "(defun wrapper (x1 ... xn)"
       "  (if test<x1,...,xn>"
       "      base<x1,...,xn>"
@@ -609,14 +711,14 @@
     (xdoc::desc
      "@('old-to-new')"
      (xdoc::p
-      "Theorem that relates @('old') to @('new'):")
+      "Theorem that rewrites @('old') in terms of @('new'):")
      (xdoc::codeblock
       ";; when the :variant input of tailrec is :monoir od :monoid-alt:"
       "(defthm old-to-new"
       "  (equal (old x1 ... xn)"
       "         (new x1 ... xn base<x1,...,xn>)))"
       ""
-      ";; when the :variant input of tailrec is :assoc:"
+      ";; when the :variant input of tailrec is :assoc or :assoc-alt:"
       "(defthm old-to-new"
       "  (equal (old x1 ... xn)"
       "         (if test<x1,...,xn>"
@@ -626,15 +728,33 @@
       "                update-xn<x1,...,xn>"
       "                nonrec<x1,...,xn>))))")
      (xdoc::p
-      "This is generated only if the @(':wrapper') input is @('nil').")
-     (xdoc::p
       "In the " *tailrec-design-notes* ",
        @('old-to-new') is denoted by @($f\\!f'$)."))
 
     (xdoc::desc
+     "@('new-to-old')"
+     (xdoc::p
+      "Theorem that rewrites @('new') in terms of @('old'):")
+     (xdoc::codeblock
+      ";; when the :variant input of tailrec is"
+      ";; :monoid or :monoid-alt or :assoc:"
+      "(defthm new-to-old"
+      "  (implies (domain a)"
+      "           (equal (new x1 ... xn a)"
+      "                  combine<a,(old x1 ... xn)>)))"
+      ""
+      ";; when the :variant input of tailrec is :assoc-alt:"
+      "(defthm new-to-old"
+      "  (equal (new x1 ... xn a)"
+      "         combine<a,(old x1 ... xn)>))")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('new-to-old') is denoted by @($f'\\!f$)."))
+
+    (xdoc::desc
      "@('old-to-wrapper')"
      (xdoc::p
-      "Theorem that relates @('old') to @('wrapper'):")
+      "Theorem that rewrites @('old') in terms of @('wrapper'):")
      (xdoc::codeblock
       "(defthm old-to-wrapper"
       "  (equal (old x1 ... xn)"
@@ -643,7 +763,31 @@
       "This is generated only if the @(':wrapper') input is @('t').")
      (xdoc::p
       "In the " *tailrec-design-notes* ",
-       @('old-to-wrapper') is denoted by @($f\\!\\tilde{f}$).")))
+       @('old-to-wrapper') is denoted by @($f\\!\\tilde{f}$)."))
+
+    (xdoc::desc
+     "@('wrapper-to-old')"
+     (xdoc::p
+      "Theorem that rewrites @('wrapper') in terms of @('old'):")
+     (xdoc::codeblock
+      "(defthm wrapper-to-old"
+      "  (equal (wrapper x1 ... xn)"
+      "         (old x1 ... xn)))")
+     (xdoc::p
+      "This is generated only if the @(':wrapper') input is @('t').")
+     (xdoc::p
+      "In the " *tailrec-design-notes* ",
+       @('old-to-wrapper') is denoted by @($\\tilde{f}\\!f$)."))
+
+    (xdoc::p
+     "A theory invariant is also generated to prevent
+      @('old-to-new') and @('new-to-old')
+      from being enabled at the same time.")
+
+    (xdoc::p
+     "A theory invariant is also generated to prevent
+      @('old-to-wrapper') and @('wrapper-to-old')
+      from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

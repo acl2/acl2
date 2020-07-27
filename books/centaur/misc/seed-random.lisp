@@ -149,7 +149,7 @@ session by just calling @('(seed-random 'seed)').</p>")
 
    (include-book "std/util/defconsts" :dir :system)
    (include-book "std/util/bstar" :dir :system)
-   (include-book "std/testing/assert" :dir :system)
+   (include-book "std/testing/assert-bang" :dir :system)
 
 ; Matt K. mod: Replace random-list with the tail-recursive version from
 ; system/random.lisp, to avoid a stack overflow in LispWorks.
@@ -185,4 +185,3 @@ session by just calling @('(seed-random 'seed)').</p>")
    (defconsts (*test2-b* state) (random-list 1000 100000 state))
 
    (assert! (equal *test1-b* *test2-b*))))
-

@@ -34,7 +34,6 @@
 (include-book "../rmtree")
 (include-book "std/util/defconsts" :dir :system)
 (include-book "std/osets/top" :dir :system)
-(include-book "std/testing/assert" :dir :system)
 
 (local (defthm true-listp-when-string-listp
          (implies (string-listp x)
@@ -90,5 +89,3 @@
 (defconsts state (basic-mkdir-test "tmpdir1"))
 (defconsts state (basic-mkdir-test "tmpdir2"))
 (defconsts state (basic-mkdir-test "tmpdir3"))
-
-

@@ -491,8 +491,7 @@
     "(defun2 sofun (var1 ... varM)"
     "  doc-string"
     "  declaration ... declaration"
-    "  body"
-    "  :print ...)")
+    "  body)")
 
    (xdoc::h3 "Inputs")
 
@@ -524,17 +523,6 @@
      "A defining body, as in @(tsee defun).
       If @('sofun') is recursive,
       its well-founded relation must be @(tsee o<)."))
-
-   (xdoc::desc
-    "@(':print ...')"
-    (xdoc::p
-     "An option to customize the screen output:
-      @(':all') to print all the output;
-      @('nil') to print only any error output;
-      @(':fn-output') (the default) to print only
-      the (possibly error) output from the generated @(tsee defun).
-      In all cases, the function variables that the function depends on
-      are printed."))
 
    (xdoc::h3 "Generated Events")
 
@@ -615,8 +603,7 @@
    (xdoc::codeblock
     "(defchoose2 sofun (bvar1 ... bvarP) (var1 ... varM)"
     "  body"
-    "  :strengthen ..."
-    "  :print ...)")
+    "  :strengthen ...)")
 
    (xdoc::h3 "Inputs")
 
@@ -647,17 +634,6 @@
     "@(':strengthen ...')"
     (xdoc::p
      "An option to strengthen the axiom, as in @(tsee defchoose)."))
-
-   (xdoc::desc
-    "@(':print ...')"
-    (xdoc::p
-     "An option to customize the screen output:
-      @(':all') to print all the output;
-      @('nil') to print only any error output;
-      @(':fn-output') (the default) to print only
-      the (possibly error) output from the generated @(tsee defchoose).
-      In all cases, the function variables that the function depends on
-      are printed."))
 
    (xdoc::h3 "Generated Events")
 
@@ -709,8 +685,7 @@
     "  :thm-name ..."
     "  :witness-dcls ..."
     "  :strengthen ..."
-    "  :constrain ..."
-    "  :print ...)")
+    "  :constrain ...)")
 
    (xdoc::h3 "Inputs")
 
@@ -778,17 +753,6 @@
     (xdoc::p
      "An option for constraining, instead of defining, the function,
       as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@(':print ...')"
-    (xdoc::p
-     "An option to customize the screen output:
-      @(':all') to print all the output;
-      @('nil') to print only any error output;
-      @(':fn-output') (the default) to print only
-      the (possibly error) output from the generated @(tsee defun-sk).
-      In all cases, the function variables that the function depends on
-      are printed."))
 
    (xdoc::h3 "Generated Events")
 

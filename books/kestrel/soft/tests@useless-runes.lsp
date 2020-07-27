@@ -300,3 +300,5 @@
 (I)
 (I)
 (I)
+(THRICE[?F])
+(THRICE[WRAP])

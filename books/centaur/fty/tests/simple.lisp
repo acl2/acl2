@@ -31,7 +31,6 @@
 (in-package "FTY")
 (include-book "../deftypes")
 (include-book "../basetypes")
-(include-book "std/testing/assert" :dir :system)
 
 (defprod student
   :tag :student
@@ -63,4 +62,3 @@
   :layout :tree
   ((foo stringp)
    (bar acl2::maybe-natp)))
-
