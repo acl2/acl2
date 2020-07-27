@@ -28,8 +28,7 @@
 ; -----------------------------------------------------------
 ;
 ; This book specifies
-; elliptic curves over prime fields in short Weierstrass form
-; with a non-zero constant coefficient.
+; elliptic curves over prime fields in short Weierstrass form.
 ; The short Weierstrass form is y^2 = x^3 + ax + b,
 ; with a, b, x, y in Fp and p > 3, where Fp is a prime field,
 ; and where + and ^ (which is just iterated *) are field operations,
@@ -38,13 +37,6 @@
 ; When p = 2 or p = 3, the elliptic curve equation has different forms.
 ; We may generalize this library at some point to cover those forms,
 ; and possibly also to cover non-prime finite fields.
-
-; When the constant coefficient b is not 0,
-; the point (0, 0) does not satisfy the equation,
-; and can be therefore used to represent the point at infinity, as we do here.
-; We may generalize this library to allow b to be 0,
-; changing the representation of points accordingly.
-; Also see the file points.lisp.
 
 ; See Neal Koblitz's book "A Course in Number Theory and Cryptography" (2nd Ed.)
 ; for background on elliptic curves.
@@ -115,7 +107,7 @@
 
 ;; A point on the curve is (x,y) where y^2 = x^3 + ax + b (mod p).
 ;; x and y are nats less than p, i.e. they are field elements.
-;; The special infinity point is represented as (0,0).
+;; Or it is the point at infinity.
 
 ;; Tests if a point is on an elliptic curve of the form explained above.
 
@@ -126,26 +118,21 @@
           @('point') is on the Short Weierstrass elliptic curve
           defined by @('p'), @('a'), and @('b').
          <p/>
-         @('point') is an ordered pair (a cons) of two integers
-         in @('\{0,..,p-1\}').  The infinity point is represented
-         by the cons pair @('(0 . 0)').  We require @('b') to be nonzero."
+         @('point') is either the infinity point @(':infinity'),
+         or an ordered pair (a cons) of two integers in @('\{0,..,p-1\}')."
   (defund point-on-elliptic-curve-p (point p a b)
     (declare (xargs :guard (and (rtl::primep p)
                                 (< 3 p)
                                 (fep a p)
                                 (fep b p)
-                                (not (= b 0))
                                 (pointp point)
                                 (point-in-pxp-p point p))
                     :guard-hints (("Goal"
                                    :in-theory
                                    (enable fep pointp point-in-pxp-p)))))
-    (let ((x (car point))
-          (y (cdr point)))
-      ;; We represent the infinity point as (0,0).  This is safe as long as b
-      ;; is nonzero: if b is nonzero, then (0,0) cannot be a solution to
-      ;; y^2 = x^3 + ax + b.
-      (or (and (= x 0) (= y 0))
+    (or (eq point :infinity)
+        (let ((x (car point))
+              (y (cdr point)))
           (let ((y^2 (mul y y p))
                 (x^3 (mul x (mul x x p) p)))
             (let ((x^3+ax+b (add x^3
@@ -153,14 +140,13 @@
                                       b
                                       p)
                                  p)))
-              (equal y^2 x^3+ax+b))))))
-)
+              (equal y^2 x^3+ax+b)))))))
 
 ;; The infinity point is on the curve.
 
 (defthm point-on-elliptic-curve-p-of-inf
   (implies (< 0 p)
-           (point-on-elliptic-curve-p '(0 . 0) p a b))
+           (point-on-elliptic-curve-p :infinity p a b))
   :hints (("Goal" :in-theory (enable point-on-elliptic-curve-p))))
 
 ;; Since the y^2 is symmetric over the x axis,
@@ -181,9 +167,6 @@
 ;; point1 and point2 are points on the curve.
 ;; a and b are from the curve equation:
 ;;   y^2 = x^3 + ax + b
-;; * Also requiring that b be nonzero
-;;   so we do not support the form y^2 = x^3 + ax.
-;;   This is so we can represent the infinity point as (0,0).
 ;; In this definition, slope is lambda in SEC 1.
 
 (defsection curve-group-+
@@ -201,7 +184,6 @@
                                 (< 3 p)
                                 (fep a p)
                                 (fep b p)
-                                (not (= b 0))
                                 (pointp point1)
                                 (pointp point2)
                                 (point-in-pxp-p point1 p)
@@ -215,17 +197,17 @@
                                            point-in-pxp-p
                                            point-on-elliptic-curve-p)))))
     (declare (ignore b))
-    (if (equal point1 '(0 . 0))
-        point2 ; handles rule 1 (0+0=0) and half of rule 2 (0+Q=Q)
-      (if (equal point2 '(0 . 0))
-          point1 ; handles the other half of rule 2 (P+0=P)
+    (if (equal point1 :infinity)
+        point2 ; handles rule 1 (O+O=O) and half of rule 2 (O+Q=Q)
+      (if (equal point2 :infinity)
+          point1 ; handles the other half of rule 2 (P+O=P)
         (let ((x1 (car point1))
               (y1 (cdr point1))
               (x2 (car point2))
               (y2 (cdr point2)))
           (if (= x1 x2)
               (if (= (add y1 y2 p) 0)
-                  '(0 . 0) ; rule 3, y1 = -y2 (mod p)
+                  :infinity ; rule 3, y1 = -y2 (mod p)
                 ;; rule 5, doubling the point
                 (let* ((slope (div (add (mul 3
                                              (mul x1 x1 p)
@@ -273,13 +255,6 @@
            (pointp (curve-group-+ point1 point2 p a b)))
   :hints (("Goal" :in-theory (enable curve-group-+ pointp))))
 
-(defthm consp-of-curve-group-+
-  (implies (and (consp point1)
-                (consp point2))
-           (consp (curve-group-+ point1 point2 p a b)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable curve-group-+ pointp))))
-
 (encapsulate
   ()
   (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
@@ -296,12 +271,12 @@
     :hints (("Goal" :in-theory (enable curve-group-+ point-in-pxp-p pointp)))))
 
 (defthm curve-group-+-left-identity
-  (equal (curve-group-+ '(0 . 0) point p a b)
+  (equal (curve-group-+ :infinity point p a b)
          point)
   :hints (("Goal" :in-theory (enable curve-group-+))))
 
 (defthm curve-group-+-right-identity
-  (equal (curve-group-+ point '(0 . 0) p a b)
+  (equal (curve-group-+ point :infinity p a b)
          point)
   :hints (("Goal" :in-theory (enable curve-group-+))))
 
@@ -316,7 +291,7 @@
 ;; included here.
 ;; Here we take the closure theorem from those files,
 ;; which is expressed in terms of "simplified" versions of
-;; point-on-elliptic-curve-p and cure-group-+,
+;; point-on-elliptic-curve-p and curve-group-+,
 ;; and "transfer" it to the versions of these two functions
 ;; as defined here in this file.
 
@@ -459,7 +434,9 @@
                                     (if (not (and (rtl::primep p)
                                                   (> p 3)))
                                         5
-                                      p)))))))))
+                                      p))))))))
+
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -499,14 +476,13 @@
                                 (< 3 p)
                                 (fep a p)
                                 (fep b p)
-                                (not (= b 0))
                                 (pointp point)
                                 (point-in-pxp-p point p)
                                 (point-on-elliptic-curve-p point p a b))
                     :verify-guards nil)) ; done below
     (declare (xargs :measure (nfix s)))
     (if (zp s)
-        '(0 . 0)
+        :infinity
       (if (= s 1)
           point
         (if (evenp s)
@@ -554,12 +530,6 @@
            (pointp (curve-scalar-* s point p a b)))
   :hints (("Goal" :in-theory (enable curve-scalar-*))))
 
-(defthm consp-of-curve-scalar-*
-  (implies (consp point)
-           (consp (curve-scalar-* s point p a b)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable curve-scalar-* pointp))))
-
 (defthm point-in-pxp-p-of-curve-scalar-*
   (implies (and (natp s)
                 (posp p)
@@ -596,7 +566,7 @@
                     :guard-hints (("Goal"
                                    :in-theory
                                    (enable fep pointp point-in-pxp-p)))))
-    (if (equal point '(0 . 0))
+    (if (equal point :infinity)
         point
       (cons (car point) (neg (cdr point) p))))
 )
@@ -617,25 +587,22 @@
              (and (pointp (curve-negate point p))
                   (point-in-pxp-p (curve-negate point p) p)
                   (point-on-elliptic-curve-p (curve-negate point p) p a b)))
-    :hints (("Goal" :in-theory (enable curve-negate
-                                       pointp
-                                       point-in-pxp-p
-                                       point-on-elliptic-curve-p
-                                       neg
-                                       mul
-                                       sub
-                                       add)))))
+    :hints (("Goal" :in-theory (e/d (curve-negate
+                                     pointp
+                                     point-in-pxp-p
+                                     point-on-elliptic-curve-p
+                                     neg
+                                     mul
+                                     sub
+                                     add)
+                                    (;; to avoid loops:
+                                     acl2::mod-sum-cases))))))
 
 (defthm pointp-of-curve-negate
   (implies (and (posp p)
                 (pointp point))
            (pointp (curve-negate point p)))
   :hints (("Goal" :in-theory (enable curve-negate pointp))))
-
-(defthm consp-of-curve-negate
-  (consp (curve-negate point p))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable curve-negate))))
 
 (defthm point-in-pxp-p-of-curve-negate
   (implies (and (posp p)

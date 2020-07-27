@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,36 +19,21 @@
 
 ; This book introduces predicates
 ; for points of elliptic curves over prime fields.
-; It is actually more general than elliptic curves:
-; points are defined as pairs of natural numbers,
-; and an additional predicate is provided to check whether a point
-; has coordinates below an integer p >= 2
-; (where, in the context of elliptic curves, p is the prime).
-; So this book could be factored into a more general library at some point.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following predicate is adequate to model
-; all the possible points (and more) of an elliptic curve over a prime field
-; whose equation is not satisfied by (0, 0),
-; because in that case (0, 0) can be always used to model the point at infinity.
-; For instance, for an elliptic curve in short Weierstrass form,
-; whose equation is y^2 = x^3 + ax + b with a, b, x, y in Fp and p > 3
-; (where Fp is the prime field),
-; if b =/= 0 then (0, 0) can represent the point at infinity.
-; Otherwise, we could model the point at infinity as some other point
-; that does not satisfy the curve equation,
-; or is outside the cartesian product Fp * Fp,
-; such the point (p, p);
-; but in this case the choice may vary with the curve.
-; Eventually, it may be better to generalize this predicate to include
-; an additional elemement (e.g. :INF) to model the point at infinity.
+; The following predicate models (at least)
+; all possible points of all possible elliptic curves.
+; A point is either a pair of natural numbers or a special point at infinity.
+; This type of points is perhaps more general then elliptic curves,
+; and thus it might be factored out into some more general library.
 
 (defund pointp (point)
   (declare (xargs :guard t))
-  (and (consp point)
-       (natp (car point))
-       (natp (cdr point))))
+  (or (and (consp point)
+           (natp (car point))
+           (natp (cdr point)))
+      (eq point :infinity)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,20 +41,22 @@
 ; is in the cartesian product {0,...,p-1} * {0,...,p-1}, where p >= 2.
 ; In the context of elliptic curves, p is the prime,
 ; and this predicate checks if the point is in the "plane" of the curve.
+; This applies to finite points that are pairs of natural numbers;
+; the point at infinity satisfies this predicate,
+; because it is "outside" the cartesian product of the field with itself.
+; The purpose of this predicate is to provide a preliminary constraint
+; for points of curves in specific fields (described by p),
+; and thus we must include the point at infinity in this predicate.
 
 (defund point-in-pxp-p (point p)
   (declare (xargs :guard (and (natp p) (<= 2 p)
                               (pointp point))
                   :guard-hints (("Goal" :in-theory (enable pointp)))))
-  (and (< (car point) p)
-       (< (cdr point) p)))
+  (or (eq point :infinity)
+      (and (< (car point) p)
+           (< (cdr point) p))))
 
-; As discussed above, under certain conditions
-; the point at infinity can be modeled as (0, 0).
-; Our elliptic curve library satisfies those conditions.
-; The following theorem applies to this modeling of the point at infinity.
-
-(defthm point-in-pxp-p-of-inf
+(defthm point-in-pxp-p-of-infinity
   (implies (< 0 p)
-           (point-in-pxp-p '(0 . 0) p))
+           (point-in-pxp-p :infinity p))
   :hints (("Goal" :in-theory (enable point-in-pxp-p))))

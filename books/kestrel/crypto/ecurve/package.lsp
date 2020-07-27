@@ -29,7 +29,9 @@
             byte-listp
             define
             defrule
+            defruled
             defrulel
+            defruledl
             defsection
             defxdoc
             defxdoc+
