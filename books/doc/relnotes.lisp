@@ -187,7 +187,7 @@
 
    (xdoc::p
     "Some XDOC constructors have been added, and others have been improved.
-     See @(see xdoc::apt-constructors.")
+     See @(see xdoc::apt-constructors).")
 
    (xdoc::p
     "Some input processors have been added, and others have been improved.
