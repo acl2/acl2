@@ -55,7 +55,7 @@
 
 (defthm integerp-m2-f2-d2
   (and (integerp (m2 x))
-       ;(integerp (d2 x))
+       (integerp (d2 x))
        (integerp (f2 x))
        (integerp (sum x y))
        (integerp (sum-list x)))
@@ -68,8 +68,8 @@
 (defthm m2-f2-d2-sum-of-ifix
   (and (equal (f2 (ifix x))
               (f2 x))
-       #|(equal (d2 (ifix x))
-              (d2 x))||#
+       (equal (d2 (ifix x))
+              (d2 x))
        (equal (m2 (ifix x))
               (m2 x))
        (equal (sum (ifix x) b)
@@ -77,7 +77,7 @@
        (equal (sum b (ifix x))
               (sum x b)))
   :hints (("Goal"
-           :in-theory (e/d (m2 f2 #|d2||# sum)
+           :in-theory (e/d (m2 f2 d2 sum)
                            (
                             (:REWRITE ACL2::|(equal (if a b c) x)|)
                             (:REWRITE ACL2::|(floor x 2)| . 1))))))
@@ -98,8 +98,8 @@
        (mv 'm2 x))
       (('f2 &)
        (mv 'f2 x))
-      #|(('d2 &)
-       (mv 'd2 x))||#
+      (('d2 &)
+       (mv 'd2 x))
       (('-- x)
        (sum-comm-order-aux x (1+ cnt)))
       (('times2 x)
@@ -157,15 +157,15 @@
        ((or (equal a-type 'merge)
             (equal b-type 'merge))
         (not (equal b-type 'merge)))
-       ((or #|(and (equal a-type 'd2)
-                 (equal b-type 'd2))||#
+       ((or (and (equal a-type 'd2)
+                 (equal b-type 'd2))
             (and (equal a-type 'f2)
                  (equal b-type 'f2)))
         (b* (((mv res &) (lexorder2 a b)))
           res))
-       #|((or (equal a-type 'd2)
+       ((or (equal a-type 'd2)
             (equal b-type 'd2))
-        (not (equal a-type 'd2)))||#
+        (not (equal a-type 'd2)))
        ((or (equal a-type 'f2)
             (equal b-type 'f2))
         (not (equal a-type 'f2)))
@@ -475,7 +475,7 @@
              :in-theory (e/d () (SUM-COMM-1
                                  SUM-COMM-2))))))
 
-#|(encapsulate
+(encapsulate
   nil
 
   (defthm d2-of-times2
@@ -503,7 +503,7 @@
                     (sum (-- a) (d2 (sum a b)))))
     :hints (("Goal"
              :in-theory (e/d () (SUM-COMM-1
-                                 SUM-COMM-2))))))||#
+                                 SUM-COMM-2))))))
 
 (defthm m2-of---
   (and
@@ -619,15 +619,15 @@
   :hints (("Goal"
            :in-theory (e/d (times2) ()))))
 
-#|(defthm d2-to-f2
+(defthm d2-to-f2
   (and (EQUAL (d2 (sum (-- (m2 x)) x))
               (f2 x))
        (EQUAL (d2 (sum x (-- (m2 x))))
               (f2 x)))
   :hints (("Goal"
-           :in-theory (e/d (sum m2 d2 f2) ()))))||#
+           :in-theory (e/d (sum m2 d2 f2) ()))))
 
-#|(defthmd f2-to-d2
+(defthmd f2-to-d2
   (EQUAL (f2 x)
          (d2 (sum (-- (m2 x)) x)))
   :hints (("Goal"
@@ -636,7 +636,7 @@
                             SUM-COMM-2
                             (:REWRITE ACL2::|(mod x 2)| . 1)
                             (:REWRITE ACL2::|(equal (if a b c) x)|)
-                            (:REWRITE ACL2::|(floor x 2)| . 1))))))||#
+                            (:REWRITE ACL2::|(floor x 2)| . 1))))))
 
 (defthmd equal-sum-of-negated
   (and (equal (equal (sum x y) (sum (-- a) b))
@@ -704,7 +704,7 @@
 (add-invisible-fns binary-sum sum-list)
 (add-invisible-fns binary-sum times2)
 
-#|(encapsulate
+(encapsulate
   nil
 
   (local
@@ -764,7 +764,7 @@
     :hints (("Goal"
              :in-theory (e/d (f2-to-d2)
                              (d2-to-f2
-                              ;; D2-OF-MINUS
+                              D2-OF-MINUS
                               )))))
 
   (defthm sum-of-f2s-and-d2
@@ -786,25 +786,25 @@
     :hints (("Goal"
              :in-theory (e/d (f2-to-d2)
                              (d2-to-f2
-                              ;D2-OF-MINUS
-                              ))))))||#
+                              D2-OF-MINUS
+                              ))))))
 
-#|(defthm evenpi-for-2-d2-arguments
+(defthm evenpi-for-2-d2-arguments
   (evenpi (sum a b (-- (m2 (sum a b)))))
   :hints (("Goal"
-           :in-theory (e/d (evenpi sum m2) ()))))||#
+           :in-theory (e/d (evenpi sum m2) ()))))
 
-#|(defthm evenpi-for-3-d2-arguments
+(defthm evenpi-for-3-d2-arguments
   (evenpi (sum a b c (-- (m2 (sum a b c)))))
   :hints (("Goal"
-           :in-theory (e/d (evenpi sum m2) ()))))||#
+           :in-theory (e/d (evenpi sum m2) ()))))
 
-#|(defthm evenpi-for-4-d2-arguments
+(defthm evenpi-for-4-d2-arguments
   (evenpi (sum a b c d (-- (m2 (sum a b c d)))))
   :hints (("Goal"
-           :in-theory (e/d (evenpi sum m2) ()))))||#
+           :in-theory (e/d (evenpi sum m2) ()))))
 
-#|(defthm evenpi-sum-clear
+(defthm evenpi-sum-clear
   (and (equal (evenpi (sum a a b))
               (evenpi (ifix b)))
        (equal (evenpi (sum a a))
@@ -824,7 +824,7 @@
        (equal (evenpi (sum c d e a a))
               (evenpi (sum c d e))))
   :hints (("Goal"
-           :in-theory (e/d (sum evenpi) ()))))||#
+           :in-theory (e/d (sum evenpi) ()))))
 
 (defthm m2-with-extra
   (implies (equal (m2 x) (m2 y))

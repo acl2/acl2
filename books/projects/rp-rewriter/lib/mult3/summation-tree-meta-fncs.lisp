@@ -1326,17 +1326,17 @@
   ;; but it is decompressed so reduced=(sum pp1 (-- (c rest)))
   ;; reduced will be the value returned from create-s-instance right away.
 
-  :returns (mv (pp-res rp-termp :hyp (and (rp-termp pp)
-                                          (rp-termp c)))
-               (c-res rp-termp :hyp (and (rp-termp pp)
-                                         (rp-termp c)))
+  :returns (mv #|(pp-res rp-termp :hyp (and (rp-termp pp)
+                                          (rp-termp c)))||#
+               #|(c-res rp-termp :hyp (and (rp-termp pp)
+                                         (rp-termp c)))||#
                (reduced rp-termp :hyp (and (rp-termp pp)
                                            (rp-termp c)))
                (reducedp booleanp))
   (case-match c
     (('list ('c & ''nil c-pp &))
      (b* (((unless (pp-subsetp pp c-pp))
-           (mv pp c ''0 nil))
+           (mv ''0 nil))
           (compressed (light-compress-s-c `(s '0 ,pp ,c))))
        (case-match compressed
          (('s & ''nil ('list single-c))
@@ -1344,12 +1344,13 @@
                ((unless (and valid
                              (= max 0)
                              (= min -1)))
-                (mv pp c ''0 nil)))
-            (mv ''nil ''nil
-                `(rp 'bitp (c-res 'nil ,pp (list (-- ,(cadr c)))))
+                (mv ''0 nil))
+               ((mv res coughed-pp) (decompress-s-c single-c))
+               (coughed-pp (negate-list-instance coughed-pp)))
+            (mv `(rp 'bitp (c-res 'nil ,coughed-pp (list (-- ,res))))
                 t)))
-         (& (mv pp c ''0 nil)))))
-    (& (mv pp c ''0 nil))))
+         (& (mv ''0 nil)))))
+    (& (mv ''0 nil))))
 
 ;; (compress-s-c '(s '0 (list c b a) (list (c '0 'nil (list d c a) 'nil))))
 ;; (decompress-s-c '(S '0 (LIST B) (LIST (C '0 'NIL (LIST D (-- C) (-- A)) 'NIL))))
@@ -1363,7 +1364,7 @@
        #|((mv pp c changed2) (s-pattern2-reduce pp c))||#
        #|((when (or changed1 changed2))
        (create-s-instance pp c))||#
-       ((mv pp c reduced reducedp)
+       ((mv reduced reducedp)
         (s-pattern3-reduce pp c))
        ((when reducedp)
         reduced))
@@ -1387,13 +1388,13 @@
            `(rp 'bitp ,(cadr c)))
           #|((can-s-be-compressed pp c)
           (compress-s pp c))||#
-          ((and
+          #|((and
             (case-match pp
               (('list & &) t))
             (case-match c
               (('list ('rp ''bitp ('c & & c-pp &)))
                (and (equal c-pp pp)))))
-           (cadr c))
+           (cadr c))||#
 
           (t
            `(rp 'bitp (s ',(calculate-s-hash pp c) ,pp ,c))))))
@@ -1424,11 +1425,11 @@
         (mv c2-lst c1-lst)
       (mv c1-lst c2-lst))))
 
-(local
+#|(local
  (defthm is-rp-of-evenpi
    (IS-RP `(RP 'EVENPI ,x))
    :hints (("Goal"
-            :in-theory (e/d (is-rp) ())))))
+            :in-theory (e/d (is-rp) ())))))||#
 
 ;;;;;;;;;;;;;;
 
@@ -1665,7 +1666,7 @@
         (&
          (progn$ (cw "Unexpected s term ~p0 ~%" cur-s)
                  (hard-error 's-of-s-fix-aux "Read above.." nil)
-                 (mv (list-to-lst `(binary-append ,cur-s (list . ,pp-lst)))
+                 (mv (cons cur-s pp-lst)
                      c-lst))))))
 
   (define light-s-of-s-fix (s pp c-lst)
@@ -1683,33 +1684,73 @@
          (pp (create-list-instance pp-lst)))
       (mv pp c-lst)))
 
+  (define single-c-try-merge-params-aux (cur-s c-hash-code s-arg pp-arg
+                                               c-arg-lst)
+    :inline t
+    :returns (success booleanp)
+    (b* ((cur-s (ex-from-rp cur-s)))
+      (case-match cur-s
+        (('s ('quote s-hash-code) cur-pp-arg cur-c-arg)
+         (and (equal c-hash-code s-hash-code)
+              (b* (((mv pp-arg c-arg-lst)
+                    (light-s-of-s-fix s-arg pp-arg c-arg-lst)))
+                (and (equal c-arg-lst (list-to-lst cur-c-arg))
+                     (equal pp-arg cur-pp-arg)))))
+        (&
+         (hard-error 'single-c-try-merge-params-aux
+                     "Bad form for current s:~p0~%"
+                     (list (cons #\0 cur-s)))))))
+
   (define single-c-try-merge-params (s-lst c-hash-code s-arg pp-arg c-arg-lst)
     :returns (mv (updated-s-lst rp-term-listp :hyp (and (rp-term-listp s-lst)))
                  (success booleanp))
     :measure (acl2-count s-lst)
-    (if (atom s-lst)
-        (mv s-lst nil)
-      (b* ((cur-s (ex-from-rp (car s-lst))))
-        (case-match cur-s
-          (('s ('quote s-hash-code) cur-pp-arg cur-c-arg)
-           (if (and (equal c-hash-code s-hash-code)
-                    (b* (((mv pp-arg c-arg-lst)
-                          (light-s-of-s-fix s-arg pp-arg c-arg-lst)))
-                      (and (equal (create-list-instance c-arg-lst) cur-c-arg)
-                           (equal pp-arg cur-pp-arg))))
-               (mv (cdr s-lst) t)
 
-             (b* (((mv rest-s-lst success)
-                   (single-c-try-merge-params (cdr s-lst) c-hash-code s-arg pp-arg c-arg-lst)))
-               (if success
-                   (mv (cons (car s-lst) rest-s-lst) t)
-                 (mv s-lst nil)))))
-          (&
-           (progn$
-            (hard-error 'single-c-try-merge-params
-                        "Bad form for current s-lst:~p0~%"
-                        (list (cons #\0 s-lst)))
-            (mv s-lst nil))))))))
+    (b* (((when (atom s-lst))
+          (mv s-lst nil))
+         ((when (single-c-try-merge-params-aux (car s-lst) c-hash-code
+                                               s-arg pp-arg c-arg-lst))
+          (mv (cdr s-lst) t))
+         ((mv rest-s-lst success)
+              (single-c-try-merge-params (cdr s-lst) c-hash-code s-arg pp-arg
+                                         c-arg-lst))
+         ((when success)
+          (mv (cons (car s-lst) rest-s-lst) t)))
+      (mv s-lst nil))))
+         
+         
+    
+    ;; (if (atom s-lst)
+    ;;     (mv s-lst nil)
+    ;;   (if (single-c-try-merge-params-aux cur-s c-hash-code
+    ;;                                      s-arg pp-arg c-arg-lst)
+    ;;       (mv (cdr s-lst) t)
+    ;;     (b* (((mv rest-s-lst success)
+    ;;           (single-c-try-merge-params (cdr s-lst) c-hash-code s-arg pp-arg c-arg-lst)))
+    ;;       (if success
+    ;;           (mv (cons (car s-lst) rest-s-lst) t)
+    ;;         (mv s-lst nil)))))))
+        
+        ;; (case-match cur-s
+        ;;   (('s ('quote s-hash-code) cur-pp-arg cur-c-arg)
+        ;;    (if (and (equal c-hash-code s-hash-code)
+        ;;             (b* (((mv pp-arg c-arg-lst)
+        ;;                   (light-s-of-s-fix s-arg pp-arg c-arg-lst)))
+        ;;               (and (equal c-arg-lst (list-to-lst cur-c-arg))
+        ;;                    (equal pp-arg cur-pp-arg))))
+        ;;        (mv (cdr s-lst) t)
+
+        ;;      (b* (((mv rest-s-lst success)
+        ;;            (single-c-try-merge-params (cdr s-lst) c-hash-code s-arg pp-arg c-arg-lst)))
+        ;;        (if success
+        ;;            (mv (cons (car s-lst) rest-s-lst) t)
+        ;;          (mv s-lst nil)))))
+        ;;   (&
+        ;;    (progn$
+        ;;     (hard-error 'single-c-try-merge-params
+        ;;                 "Bad form for current s-lst:~p0~%"
+        ;;                 (list (cons #\0 s-lst)))
+        ;;     (mv s-lst nil))))))))
 
 #|(mutual-recursion
  (defun c-sum-measure (term)
@@ -1727,30 +1768,30 @@
      (+ (c-sum-measure (car term))
         (c-sum-measure-lst (cdr term))))))||#
 
-(progn
-  (mutual-recursion
-   (defun include-n-c (term)
-     (cond ((or (atom term)
-                (quotep term))
-            nil)
-           ((case-match term
-              (('-- ('c . &)) t))
-            t)
-           (t (include-n-c-lst (cdr term)))))
-   (defun include-n-c-lst (lst)
-     (if (atom lst)
-         nil
-       (or (include-n-c (car lst))
-           (include-n-c-lst (cdr lst))))))
+;; (progn
+;;   (mutual-recursion
+;;    (defun include-n-c (term)
+;;      (cond ((or (atom term)
+;;                 (quotep term))
+;;             nil)
+;;            ((case-match term
+;;               (('-- ('c . &)) t))
+;;             t)
+;;            (t (include-n-c-lst (cdr term)))))
+;;    (defun include-n-c-lst (lst)
+;;      (if (atom lst)
+;;          nil
+;;        (or (include-n-c (car lst))
+;;            (include-n-c-lst (cdr lst))))))
 
-  (defun include-n-c-lst-lst (lst)
-    (if (atom lst)
-        nil
-      (or (include-n-c-lst (car lst))
-          (include-n-c-lst-lst (cdr lst))))))
+;;   (defun include-n-c-lst-lst (lst)
+;;     (if (atom lst)
+;;         nil
+;;       (or (include-n-c-lst (car lst))
+;;           (include-n-c-lst-lst (cdr lst))))))
 
-(verify-guards include-n-c)
-(verify-guards include-n-c-lst-lst)
+;; (verify-guards include-n-c)
+;; (verify-guards include-n-c-lst-lst)
 
 (acl2::defines
  count-c

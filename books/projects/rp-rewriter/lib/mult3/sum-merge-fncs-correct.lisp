@@ -350,10 +350,13 @@
   (defthm pp-sum-merge-aux-correct
     (implies (and (rp-evl-meta-extract-global-facts :state state)
                   (mult-formula-checks state))
-             (equal (sum-list (rp-evlt-lst (pp-sum-merge-aux term1 term2)
-                                           a))
-                    (sum (sum-list (rp-evlt-lst term1 a))
-                         (sum-list (rp-evlt-lst term2 a)))))
+             (and (equal (sum-list (rp-evlt-lst (pp-sum-merge-aux term1 term2)
+                                                a))
+                         (sum (sum-list (rp-evlt-lst term1 a))
+                              (sum-list (rp-evlt-lst term2 a))))
+                  (equal (sum-list-eval (pp-sum-merge-aux term1 term2) a)
+                         (sum (sum-list (rp-evlt-lst term1 a))
+                              (sum-list (rp-evlt-lst term2 a))))))
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-TRANS (CONS 'LIST* TERM2))
@@ -396,9 +399,13 @@
                   ;;(rp-term-listp term1)
                   ;;(rp-term-listp term2)
                   )
-             (equal (sum-list (rp-evlt-lst (s-sum-merge-aux term1 term2) a))
-                    (sum (sum-list (rp-evlt `(list . ,term1) a))
-                         (sum-list (rp-evlt `(list . ,term2) a)))))
+             (and
+              (equal (sum-list (rp-evlt-lst (s-sum-merge-aux term1 term2) a))
+                     (sum (sum-list (rp-evlt `(list . ,term1) a))
+                          (sum-list (rp-evlt `(list . ,term2) a))))
+              (equal (sum-list-eval (s-sum-merge-aux term1 term2) a)
+                     (sum (sum-list (rp-evlt `(list . ,term1) a))
+                          (sum-list (rp-evlt `(list . ,term2) a))))))
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-TRANS (CONS 'LIST* TERM2))

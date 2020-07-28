@@ -159,7 +159,15 @@
 
   (define ex-from-rp/-- (x)
     :returns (res rp-termp :hyp (rp-termp x))
-    (cond ((and (consp x)
+    :prepwork ((local
+                (in-theory (enable is-rp))))
+    (cond ((--.p x)
+           (ex-from-rp/-- (cadr x)))
+          ((is-rp x)
+           (ex-from-rp/-- (caddr x)))
+          (t x)))
+           
+    #|(cond ((and (consp x)
                 (consp (cdr x)))
            (if (and (equal (car x) '--)
                     (not (cddr x)))
@@ -169,7 +177,7 @@
                       (not (cdddr x)))
                  (ex-from-rp/-- (caddr x))
                x)))
-          (t x)))
+          (t x))||#
 
   (define ex-from--- (x)
     :inline t
