@@ -110,11 +110,14 @@
 
    (xdoc::p
     "@(tsee defunvar),
+     @(tsee defsoft),
      @(tsee defun2),
-     @(tsee defchoose2), and
-     @(tsee defun-sk2)
+     @(tsee defchoose2),
+     @(tsee defun-sk2),
+     @(tsee define2), and
+     @(tsee define-sk2)
      are wrappers of existing events
-     that record function variables and dependencies on them.
+     that record function variables and dependencies of functions on them.
      They set the stage for @(tsee defun-inst) and @(tsee defthm-inst).")
 
    (xdoc::p
@@ -168,8 +171,7 @@
     "A second-order function is an ACL2 function
      that <see topic='@(url function-variable-dependency)'>depends</see> on
      one or more <see topic='@(url function-variables)'>function variables</see>
-     and that is introduced via
-     @(tsee defun2), @(tsee defchoose2), or @(tsee defun-sk2).")
+     and that is explicitly recorded via @(tsee defsoft).")
 
    (xdoc::p
     "The function variables that the second-order function depends on
@@ -197,8 +199,8 @@
      that <see topic='@(url function-variable-dependency)'>depends</see> on
      one or more
      <see topic='@(url function-variables)'>function variables</see>.
-     A second-order theorem is introduced via @(tsee defthm);
-     SOFT does not provide macros to introduce second-order theorems.")
+     A second-order theorem is recorded implicitly,
+     not explicitly via @(tsee defsoft) (which must not be used on theorems).")
 
    (xdoc::p
     "The second-order theorem is universally quantified
@@ -474,6 +476,87 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc defsoft
+
+  :parents (soft-macros second-order-functions)
+
+  :short "Record an existing function as second-order."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::h3 "General Form")
+
+   (xdoc::codeblock
+    "(defsoft sofun)")
+
+   (xdoc::h3 "Inputs")
+
+   (xdoc::desc
+    "@('sofun')"
+    (xdoc::p
+     "A symbol, which must name an existing ACL2 function
+      that was introduced, at the lowest level,
+      via @(tsee defun) or @(tsee defchoose).
+      The user may have used a higher-level event macro,
+      such as @(tsee define) or @(tsee defun-sk),
+      but such macros eventually reduce to primitive ones like @(tsee defun).")
+    (xdoc::p
+     "The function must "
+     (xdoc::seetopic "function-variable-dependency" "depend")
+     " on at least one "
+     (xdoc::seetopic "function-variables" "function variables")
+     ".")
+    (xdoc::p
+     "If the function is recursive,
+      its well-founded relation must be @(tsee o<).")
+    (xdoc::p
+     "If the function is introduced (directly or indirectly)
+      via a @(tsee defun-sk) with a universal quantifier
+      and a custom rewrite rule (i.e. neither @(':default') nor @(':direct')),
+      the function variables that (the formula of) the custom rule depends on
+      must be the same as the ones that the body of the function depends on."))
+
+   (xdoc::h3 "Generated Events")
+
+   (xdoc::p
+    "A table event that records @('sofun') as a second-order function,
+     along with the function variables that it depends on.")
+
+   (xdoc::h3 "Classification")
+
+   (xdoc::p
+    "If @('sofun') is introduced via @(tsee defchoose),
+     it is called a `choice' second-order function.")
+
+   (xdoc::p
+    "Otherwise, @('sofun') is introduced via @(tsee defun)
+     (see constraints above), and there are two cases.")
+
+   (xdoc::p
+    "If @('sofun') is introduced via @(tsee defun-sk)
+     (which expands to @(tsee defun),
+     but it leaves a record in the ACL2 world),
+     it is called a `quantifier' second-order function.")
+
+   (xdoc::p
+    "Otherwise, @('sofun') is called a `plain' second-order function.")
+
+   (xdoc::p
+    "This classification is important because @(tsee defun-inst) treats
+     these different kinds of second-order functions differently.")
+
+   (xdoc::h3 "Related Macros")
+
+   (xdoc::p
+    "While @('defsoft') may be useful
+     to make a function second-order after the fact,
+     one may often use macros like @(tsee defun2),
+     which combine non-SOFT macros like @(tsee defun) with @('defsoft').")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc defun2
 
   :parents (soft-macros second-order-functions)
@@ -488,53 +571,27 @@
    (xdoc::h3 "General Form")
 
    (xdoc::codeblock
-    "(defun2 sofun (var1 ... varM)"
-    "  doc-string"
-    "  declaration ... declaration"
-    "  body)")
+    "(defun2 sofun ...) ; same as defun")
 
    (xdoc::h3 "Inputs")
 
-   (xdoc::desc
-    "@('sofun')"
-    (xdoc::p
-     "A symbol, which names the
-      <see topic='@(url second-order-functions)'>second-order function</see>.
-      It must be a valid function name that is not already in use."))
+   (xdoc::p
+    "The inputs are identical to @(tsee defun).")
 
-   (xdoc::desc
-    "@('(var1 ... varM)')"
-    (xdoc::p
-     "A list of parameters, as in @(tsee defun)."))
-
-   (xdoc::desc
-    "@('doc-string')"
-    (xdoc::p
-     "An optional documentation string, as in @(tsee defun)."))
-
-   (xdoc::desc
-    "@('declaration ... declaration')"
-    (xdoc::p
-     "Zero or more declarations, as in @(tsee defun)."))
-
-   (xdoc::desc
-    "@('body')"
-    (xdoc::p
-     "A defining body, as in @(tsee defun).
-      If @('sofun') is recursive,
-      its well-founded relation must be @(tsee o<)."))
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('defun2') generates @('(defsoft sofun)') (see below).")
 
    (xdoc::h3 "Generated Events")
 
    (xdoc::codeblock
-    "(defun sofun (var1 ... varM)"
-    "  doc-string"
-    "  declaration ... declaration"
-    "  body)")
+    "(defun sofun ...) ; input form with defun2 replaced by defun"
+    "(defsoft sofun)")
 
    (xdoc::p
     "@('sofun') is introduced as a first-order function using @(tsee defun).
-     The function variables that @('sofun') depends on are also recorded.")
+     It is also recorded as a second-order function via @(tsee defsoft).")
 
    (xdoc::h3 "Examples")
 
@@ -601,50 +658,27 @@
    (xdoc::h3 "General Form")
 
    (xdoc::codeblock
-    "(defchoose2 sofun (bvar1 ... bvarP) (var1 ... varM)"
-    "  body"
-    "  :strengthen ...)")
+    "(defchoose2 sofun ...) ; same as defchoose")
 
    (xdoc::h3 "Inputs")
 
-   (xdoc::desc
-    "@('sofun')"
-    (xdoc::p
-     "A symbol, which names the
-      <see topic='@(url second-order-functions)'>second-order function</see>.
-      It must be a valid function name that is not already in use."))
+   (xdoc::p
+    "The inputs are identical to @(tsee defchoose).")
 
-   (xdoc::desc
-    "@('(bvar1 ... bvarP)')"
-    (xdoc::p
-     "A list of bound variables (or a single variable),
-      as in @(tsee defchoose)."))
-
-   (xdoc::desc
-    "@('(var1 ... varM)')"
-    (xdoc::p
-     "A list of parameters, as in @(tsee defchoose)."))
-
-   (xdoc::desc
-    "@('body')"
-    (xdoc::p
-     "A defining body, as in @(tsee defchoose)."))
-
-   (xdoc::desc
-    "@(':strengthen ...')"
-    (xdoc::p
-     "An option to strengthen the axiom, as in @(tsee defchoose)."))
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('defchoose2') generates @('(defsoft sofun)') (see below).")
 
    (xdoc::h3 "Generated Events")
 
    (xdoc::codeblock
-    "(defchoose2 sofun (bvar1 ... bvarP) (var1 ... varM)"
-    "  body"
-    "  :strengthen ...)")
+    "(defchoose sofun ...) ; input form with defchoose2 replaced by defchoose"
+    "(defsoft sofun)")
 
    (xdoc::p
     "@('sofun') is introduced as a first-order function using @(tsee defchoose).
-     The function variables that @('sofun') depends on are also recorded.")
+     It is also recorded as a second-order function via @(tsee defsoft).")
 
    (xdoc::h3 "Examples")
 
@@ -677,98 +711,26 @@
    (xdoc::h3 "General Form")
 
    (xdoc::codeblock
-    "(defun-sk sofun (var1 ... varM)"
-    "  body"
-    "  :rewrite ..."
-    "  :quant-ok ..."
-    "  :skolem-name ..."
-    "  :thm-name ..."
-    "  :witness-dcls ..."
-    "  :strengthen ..."
-    "  :constrain ...)")
+    "(defun-sk sofun ...) ; same as defun-sk")
 
    (xdoc::h3 "Inputs")
 
-   (xdoc::desc
-    "@('sofun')"
-    (xdoc::p
-     "A symbol, which names the
-      <see topic='@(url second-order-functions)'>second-order function</see>.
-      It must be a valid function name that is not already in use."))
+   (xdoc::p
+    "The inputs are identical to @(tsee defun-sk).")
 
-   (xdoc::desc
-    "@('(var1 ... varM)')"
-    (xdoc::p
-     "A list of parameters, as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@('body')"
-    (xdoc::p
-     "A defining body, as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@(':rewrite ...')"
-    (xdoc::p
-     "An option to customize the rewrite rule, as in @(tsee defun-sk).
-      If a term is supplied,
-      it must <see topic='@(url function-variable-dependency)'>depend</see> on
-      the same function variables that @('body')
-      <see topic='@(url function-variable-dependency)'>depends</see> on.
-      As in @(tsee defun-sk), this option may be present
-      only if the quantifier is universal."))
-
-   (xdoc::desc
-    "@(':quant-ok ...')"
-    (xdoc::p
-     "An option to allow @(tsee acl2::forall) and @(tsee acl2::exists)
-      in the matrix of @('body'),
-      as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@(':skolem-name ...')"
-    (xdoc::p
-     "An option to customize the name of the witness function,
-      as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@(':thm-name ...')"
-    (xdoc::p
-     "An option to customize the name of the rewrite rule,
-      as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@(':witness-dcls ...')"
-    (xdoc::p
-     "An option to customize the declarations of @('sofun'),
-      as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@(':strengthen ...')"
-    (xdoc::p
-     "An option to strengthen the axiom introduced by @(tsee defchoose),
-      as in @(tsee defun-sk)."))
-
-   (xdoc::desc
-    "@(':constrain')"
-    (xdoc::p
-     "An option for constraining, instead of defining, the function,
-      as in @(tsee defun-sk)."))
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('defun-sk2') generates @('(defsoft sofun)') (see below).")
 
    (xdoc::h3 "Generated Events")
 
    (xdoc::codeblock
-    "(defun-sk sofun (var1 ... varM)"
-    "  body"
-    "  :rewrite ..."
-    "  :quant-ok ..."
-    "  :skolem-name ..."
-    "  :thm-name ..."
-    "  :witness-dcls ..."
-    "  :strengthen ...)")
+    "(defun-sk sofun ...) ; input form with defun-sk2 replaced by defun-sk")
 
    (xdoc::p
     "@('sofun') is introduced as a first-order function using @(tsee defun-sk).
-     The function variables that @('sofun') depends on are also recorded.")
+     It is also recorded as a second-order function via @(tsee defsoft).")
 
    (xdoc::h3 "Examples")
 
@@ -784,6 +746,83 @@
    (xdoc::p
     "The same naming convention for the functions introduced by @(tsee defun2)
      apply to the functions introduced by @(tsee defun-sk2).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc define2
+
+  :parents (soft-macros second-order-functions)
+
+  :short "Introduce second-order function
+          via a second-order version of @(tsee define)."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::h3 "General Form")
+
+   (xdoc::codeblock
+    "(define2 sofun ...) ; same as define")
+
+   (xdoc::h3 "Inputs")
+
+   (xdoc::p
+    "The inputs are identical to @(tsee define).")
+
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('define2') generates @('(defsoft sofun)') (see below).")
+
+   (xdoc::h3 "Generated Events")
+
+   (xdoc::codeblock
+    "(define sofun ...) ; input form with define2 replaced by define"
+    "(defsoft sofun)")
+
+   (xdoc::p
+    "@('sofun') is introduced as a first-order function using @(tsee define).
+     It is also recorded as a second-order function via @(tsee defsoft).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc define-sk2
+
+  :parents (soft-macros second-order-functions)
+
+  :short "Introduce second-order function
+          via a second-order version of @(tsee std::define-sk)."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::h3 "General Form")
+
+   (xdoc::codeblock
+    "(define-sk2 sofun ...) ; same as define-sk")
+
+   (xdoc::h3 "Inputs")
+
+   (xdoc::p
+    "The inputs are identical to @(tsee std::define-sk).")
+
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('define-sk2') generates @('(defsoft sofun)') (see below).")
+
+   (xdoc::h3 "Generated Events")
+
+   (xdoc::codeblock
+    "(define-sk sofun ...) ; input form with define-sk2 replaced by define-sk"
+    "(defsoft sofun)")
+
+   (xdoc::p
+    "@('sofun') is introduced as a first-order function
+     using @(tsee std::define-sk).
+     It is also recorded as a second-order function via @(tsee defsoft).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -837,10 +876,11 @@
     "@(':verify-guards')"
     (xdoc::p
      "An option to attempt or omit the guard verification of @('fun').
-      This may be present only if @('sofun') was introduced via @(tsee defun2).
-      If this flag is absent,
+      This may be present only if @('sofun') is a "
+     (xdoc::seetopic "defsoft" "plain or quantifier second-order function")
+     ". If this flag is absent,
       the guard verification of @('fun') is attempted
-      iff @('sofun') is guard-verified.")
+      if and only if @('sofun') is guard-verified.")
     (xdoc::p
      "In general it is not possible to verify the guards
       of an instance of a second-order function
@@ -860,28 +900,29 @@
     "@(':skolem-name')"
     (xdoc::p
      "An option to customize the name of the witness function of @('fun').
-      This may be present
-      only if @('sofun') was introduced via @(tsee defun-sk2).
-      If present,
-      it is passed to the @(tsee defun-sk) generated for @('fun')."))
+      This may be present only if @('sofun') is a "
+     (xdoc::seetopic "defsoft" "quantifier second-order function")
+     ". If present,
+      this input is passed to the @(tsee defun-sk) generated for @('fun')."))
 
    (xdoc::desc
     "@(':thm-name')"
     (xdoc::p
      "An option to customize the name of the rewrite rule of @('fun').
-      This may be present
-      only if @('sofun') was introduced via @(tsee defun-sk2).
-      If present,
-      it is passed to the @(tsee defun-sk) generated for @('fun')."))
+      This may be present only if @('sofun') is a "
+     (xdoc::seetopic "defsoft" "quantifier second-order function")
+     ". If present,
+      this input is passed to the @(tsee defun-sk) generated for @('fun')."))
 
    (xdoc::desc
     "@(':rewrite')"
     (xdoc::p
      "An option to customize the rewrite rule of @('fun').
-      This may be present only if
-      @('sofun') was introduced via @(tsee defun-sk2)
-      and its quantifier is universal.
-      If present, it is passed to the @(tsee defun-sk) generated for @('fun').
+      This may be present only if @('sofun') is a "
+     (xdoc::seetopic "defsoft" "quantifier second-order function")
+     " and its quantifier is universal.
+      If present,
+      this input is passed to the @(tsee defun-sk) generated for @('fun').
       If a term is supplied,
       it must <see topic='@(url function-variable-dependency)'>depend</see> on
       the same function variables that the body of @('fun')
@@ -889,9 +930,7 @@
       in particular, if @('fun') is first-order,
       the term supplied as rewrite rule
       must not depend on any function variables.
-      If this option is absent,
-      @('sofun') was introduced via @(tsee defun-sk2),
-      and its quantifier is universal,
+      If this option is absent and the quantifier is universal,
       then the rewrite rule of @('fun') has the same form as in @('sofun');
       in particular, the function variables in the rewrite rule of @('sofun')
       are instantiated via the instantiation passed to @(tsee defun-inst)."))
@@ -900,9 +939,10 @@
     "@(':constrain')"
     (xdoc::p
      "An option for constraining, instead of defining, @('fun').
-      This may be present only if
-      @('sofun') was introduced via @(tsee defun-sk2).
-      If present, it is passed to the @(tsee defun-sk) generated for @('fun').
+      This may be present only if @('sofun') is a "
+     (xdoc::seetopic "defsoft" "quantifier second-order function")
+     ". If present,
+      this input is passed to the @(tsee defun-sk) generated for @('fun').
       If this options is absent,
       then @('fun') is constrained if @('sofun') is constrained,
       and @('fun') is defined if @('sofun') is defined."))
@@ -929,10 +969,15 @@
 
     (xdoc::li
      (xdoc::codeblock
-      "(defun2 fun ...)")
+      "; if fun is 2nd-order:"
+      "(defun2 fun ...)"
+      ""
+      "; if fun is 1st-order:"
+      "(defun fun ...)")
      (xdoc::p
-      "if @('sofun') was introduced via @(tsee defun2).
-       The body, measure (if recursive), and guard of @('fun')
+      "if @('sofun') is a "
+      (xdoc::seetopic "defsoft" "plain second-order function")
+      ". The body, measure (if recursive), and guard of @('fun')
        are obtained by
        <see topic='@(url function-variable-instantiation)'>applying
        the instantiation</see>
@@ -946,10 +991,15 @@
 
     (xdoc::li
      (xdoc::codeblock
-      "(defchoose2 fun (bvar1 ... bvarP) ...)")
+      "; if fun is 2nd-order:"
+      "(defchoose2 fun ...)"
+      ""
+      "; if fun is 1st-order:"
+      "(defchoose fun ...)")
      (xdoc::p
-      "if @('sofun') was introduced via @(tsee defchoose2).
-       The body of @('fun')
+      "if @('sofun') is a "
+      (xdoc::seetopic "defsoft" "choice second-order function")
+      ". The body of @('fun')
        is obtained by
        <see topic='@(url function-variable-instantiation)'>applying
        the instantiation</see>
@@ -958,10 +1008,15 @@
 
     (xdoc::li
      (xdoc::codeblock
-      "(defun-sk2 fun ...)")
+      "; if fun is 2nd-order:"
+      "(defun-sk2 fun ...)"
+      ""
+      "; if fun is 1st-order:"
+      "(defun-sk fun ...)")
      (xdoc::p
-      "if @('sofun') was introduced via @(tsee defun-sk2).
-       The body and guard of @('fun')
+      "if @('sofun') is a "
+      (xdoc::seetopic "defsoft" "plain second-order function")
+      ". The body and guard of @('fun')
        are obtained by
        <see topic='@(url function-variable-instantiation)'>applying
        the instantiation</see>
@@ -1086,12 +1141,7 @@
    (xdoc::h3 "General Form")
 
    (xdoc::codeblock
-    "(defthm sothm"
-    "  formula"
-    "  :rule-classes ..."
-    "  :instructions ..."
-    "  :hints ..."
-    "  :otf-flg ...)")
+    "(defthm sothm ...) ; a regular defthm")
 
    (xdoc::p
     "This is a normal @(tsee defthm).
@@ -1100,41 +1150,8 @@
 
    (xdoc::h3 "Inputs")
 
-   (xdoc::desc
-    "@('sothm')"
-    (xdoc::p
-     "Name of the
-     <see topic='@(url second-order-theorems)'>second-order theorem</see>,
-     as in @(tsee defthm)."))
-
-   (xdoc::desc
-    "@('formula')"
-    (xdoc::p
-     "Formula of the theorem, as in @(tsee defthm).
-     If @('formula')
-     <see topic='@(url function-variable-dependency)'>depends</see>
-     on some <see topic='@(url function-variables)'>function variables</see>,
-     @('sothm') is a second-order theorem."))
-
-   (xdoc::desc
-    "@(':rule-classes')"
-    (xdoc::p
-     "Rule classes of the theorem, as in @(tsee defthm)."))
-
-   (xdoc::desc
-    "@(':instructions')"
-    (xdoc::p
-     "Proof checker instructions to prove the theorem, as in @(tsee defthm)."))
-
-   (xdoc::desc
-    "@(':hints')"
-    (xdoc::p
-     "Hints to prove the theorem, as in @(tsee defthm)."))
-
-   (xdoc::desc
-    "@(':otf-flg')"
-    (xdoc::p
-     "`Onward Thru the Fog' flag, as in @(tsee defthm)."))
+   (xdoc::p
+    "The inputs are the ones of @(tsee defthm).")
 
    (xdoc::h3 "Generated Events")
 
