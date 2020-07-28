@@ -136,17 +136,17 @@
 
   (local
    (defthm RP-EVL-OF-TRANS-LIST-opener
-     (equal (RP-EVL-OF-TRANS-LIST (cons x y) a)
+     (equal (rp-evl-lst (cons x y) a)
             (cons (rp-evl x a)
-                  (RP-EVL-OF-TRANS-LIST y a)))
+                  (rp-evl-lst y a)))
      :hints (("Goal"
-              :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
+              :in-theory (e/d () ())))))
   (local
    (defthm RP-EVL-OF-TRANS-LIST-opener-when-nil
-     (equal (RP-EVL-OF-TRANS-LIST nil a)
+     (equal (RP-EVL-lst nil a)
             nil)
      :hints (("Goal"
-              :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
+              :in-theory (e/d () ())))))
 
   (in-theory (disable rp-trans)))
 
@@ -167,15 +167,12 @@
                  (mult-formula-checks state))
             (and (equal (sum-list (rp-evl (trans-list (rp-trans-lst lst)) A))
                         (sum-list-eval lst a))
-                 (equal (SUM-LIST (RP-EVL-OF-TRANS-LIST (RP-TRANS-LST LST)
+                 (equal (SUM-LIST (RP-EVL-lst (RP-TRANS-LST LST)
                                                         A))
                         (sum-list-eval lst a))))
    :hints (("Goal"
             :do-not-induct t
             :induct (sum-list-eval lst a)
-            :expand ((RP-EVL-OF-TRANS-LIST NIL A)
-                     (:free (x y)
-                            (RP-EVL-OF-TRANS-LIST (cons x y) a)))
             :in-theory (e/d (sum-list
                              trans-list) ())))))
 
@@ -267,8 +264,7 @@
                    (rp-evlt y a)))
    :hints (("Goal"
             :do-not-induct t
-            :expand ((:free (x y) (RP-EVL-OF-TRANS-LIST (cons x y) a))
-                     (:free (x) (nth 1 x))
+            :expand ((:free (x) (nth 1 x))
                      (:free (x) (nth 0 x))
                      (:free (x) (nth 2 x))
                      (:free (x) (nth 3 x)))
@@ -343,7 +339,6 @@
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-TRANS (CONS 'LIST* TERM2))
-                      (RP-EVL-OF-TRANS-LIST NIL A)
                       (:free (x y)
                              (sum-list (cons x y)))
                       (RP-TRANS (CONS 'LIST* TERM1)))
@@ -358,9 +353,7 @@
                     (sum (sum-list (rp-evlt term1 a))
                          (sum-list (rp-evlt term2 a)))))
     :hints (("Goal"
-             :do-not-induct t
-             :expand ((RP-EVL-OF-TRANS-LIST '('0) A)
-                      (RP-EVL-OF-TRANS-LIST NIL A))
+             :do-not-induct t 
              :use ((:instance pp-sum-merge-aux-correct
                               (term1 (cdr term1))
                               (term2 (cdr term2))
@@ -390,7 +383,6 @@
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-TRANS (CONS 'LIST* TERM2))
-                      (RP-EVL-OF-TRANS-LIST NIL A)
                       (:free (x y)
                              (sum-list (cons x y)))
                       (RP-TRANS (CONS 'LIST* TERM1)))
@@ -407,8 +399,6 @@
                          (sum-list (rp-evlt term2 a)))))
     :hints (("Goal"
              :do-not-induct t
-             :expand ((RP-EVL-OF-TRANS-LIST NIL A)
-                      (RP-EVL-OF-TRANS-LIST '('0) A))
              :use ((:instance s-sum-merge-aux-correct
                               (term1 (cdr term1))
                               (term2 (cdr term2))))
@@ -482,10 +472,10 @@
                   (RP-EVL (RP-TRANS (EX-FROM-RP TERM)) A))))
 (local
  (defthm RP-EVL-OF-TRANS-LIST-of-nil
-   (equal (RP-EVL-OF-TRANS-LIST NIL A)
+   (equal (RP-EVL-lst NIL A)
           nil)
    :hints (("Goal"
-            :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
+            :in-theory (e/d () ())))))
 
 (defthm s-fix-pp-args-aux-correct-dummy-lemma1
   (and (equal (equal (m2 (sum rest1 a))
@@ -543,8 +533,7 @@
              :do-not-induct t
              :expand ((:free (x y)
                              (sum-list (cons x y)))
-                      (:free (x y)
-                             (RP-EVL-OF-TRANS-LIST (cons x y) a)))
+                      )
              :induct (s-fix-pp-args-aux pp-lst)
              :in-theory (e/d (s-fix-pp-args-aux
                               rp-evlt-of-ex-from-rp-reverse)
@@ -648,8 +637,7 @@
            :do-not-induct t
            :expand ((:free (x y)
                            (sum-list (cons x y)))
-                    (:free (x y)
-                           (RP-EVL-OF-TRANS-LIST (cons x y) a)))
+                    )
            :induct (c/d-fix-arg-aux pp-lst neg-flag limit)
            :in-theory (e/d (c/d-fix-arg-aux
                             times2
@@ -1421,6 +1409,15 @@
 ;;                             M2-OF-M2
 ;;                             S-OF-MINUS
 ;;                             S-FIX-PP-ARGS-AUX-CORRECT-DUMMY-LEMMA1)))))
+
+
+(local
+ (defthm cdr-of-rp-trans-lst
+   (equal (cdr (rp-trans-lst x))
+          (rp-trans-lst (cdr x)))
+   :hints (("Goal"
+            :expand (rp-trans-lst x)
+            :in-theory (e/d () ())))))
 
 (encapsulate
   nil

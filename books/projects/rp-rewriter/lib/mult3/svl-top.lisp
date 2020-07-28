@@ -409,6 +409,19 @@
   (local
    (use-arithmetic-5 t))
 
+
+  (defthmd bits-of-binary-fns-lemma
+    (implies (and (not (zp start))
+                  (bitp x))
+             (equal (svl::bits x start 1 )
+                    0)))
+
+  (defthmd bits-of-binary-fns-lemma-2
+    (implies (and (posp size)
+                  (bitp x))
+             (equal (svl::bits x 0 size )
+                    x)))
+  
   (def-rp-rule bits-of-binary-fns
     (implies (not (zp start))
              (and (equal (svl::bits (or$ x y) start 1 )
@@ -429,18 +442,7 @@
                          0)))
     :hints (("goal"
              :do-not '(preprocess)
-             :in-theory (e/d (or$
-                              ADDER-AND
-                              svl::bits
-                              svl::4vec-part-select
-                              sv::4vec->lower
-                              sv::4vec->upper
-                              svl::4vec-zero-ext
-                              svl::4vec-rsh
-                              loghead
-                              not$
-                              mod floor
-                              svl::4vec-shift-core)
+             :in-theory (e/d (bits-of-binary-fns-lemma)
                              (svl::4vec-part-select-is-bits
                               +-IS-SUM
                               SVL::4VEC-ZERO-EXT-IS-BITS
@@ -449,64 +451,26 @@
                               svl::4vec-zero-ext-is-4vec-concat)))))
 
   (def-rp-rule bits-of-binary-fns-start=0
-    (implies t
-             (and (equal (svl::bits (or$ x y) 0 1 )
+    (implies (posp size)
+             (and (equal (svl::bits (or$ x y) 0 size )
                          (or$ x y))
-                  (equal (svl::bits (and$ x y) 0 1 )
+                  (equal (svl::bits (and$ x y) 0 size )
                          (and$ x y))
-                  (equal (svl::bits (and-list hash-code x) 0 1 )
+                  (equal (svl::bits (and-list hash-code x) 0 size )
                          (and-list hash-code x))
-                  (equal (svl::bits (not$ x) 0 1 )
+                  (equal (svl::bits (not$ x) 0 size )
                          (not$ x))
-                  (equal (svl::bits (binary-xor x y) 0 1 )
+                  (equal (svl::bits (binary-xor x y) 0 size )
                          (binary-xor x y))
-                  (equal (svl::bits (binary-? x y z) 0 1 )
+                  (equal (svl::bits (binary-? x y z) 0 size )
                          (binary-? x y z))
-                  (equal (svl::bits (bit-of x y) 0 1 )
+                  (equal (svl::bits (bit-of x y) 0 size )
                          (bit-of x y))
-                  (equal (svl::bits (ADDER-AND x y) 0 1 )
+                  (equal (svl::bits (ADDER-AND x y) 0 size )
                          (ADDER-AND x y))))
     :hints (("goal"
              :do-not '(preprocess)
-             :in-theory (e/d (or$
-                              adder-and
-                              svl::bits
-                              svl::4vec-part-select
-                              sv::4vec->lower
-                              sv::4vec->upper
-                              svl::4vec-zero-ext
-                              svl::4vec-rsh
-                              loghead
-                              not$
-                              mod floor
-                              svl::4vec-shift-core)
-                             (svl::4vec-part-select-is-bits
-                              BITS-IS-BIT-OF
-                              +-IS-SUM
-                              SVL::4VEC-ZERO-EXT-IS-BITS
-                              svl::convert-4vec-concat-to-4vec-concat$
-                              svl::4vec-concat$-of-size=1-term2=0
-                              svl::4vec-zero-ext-is-4vec-concat)))))
-
-  (def-rp-rule bits-of-binary-fns-start=0=size-posp
-    (implies (posp size)
-             (and 
-                  (equal (svl::bits (and-list hash-code x) 0 size)
-                         (and-list hash-code x))))
-    :hints (("goal"
-             :do-not '(preprocess)
-             :in-theory (e/d (or$
-                              adder-and
-                              svl::bits
-                              svl::4vec-part-select
-                              sv::4vec->lower
-                              sv::4vec->upper
-                              svl::4vec-zero-ext
-                              svl::4vec-rsh
-                              loghead
-                              not$
-                              mod floor
-                              svl::4vec-shift-core)
+             :in-theory (e/d (bits-of-binary-fns-lemma-2)
                              (svl::4vec-part-select-is-bits
                               BITS-IS-BIT-OF
                               +-IS-SUM

@@ -291,8 +291,7 @@
       :hints (("Goal"
                :do-not-induct t
                :cases ((is-falist x))
-               :expand ((RP-TRANS Y)
-                        (RP-EVL-OF-TRANS-LIST NIL A))
+               :expand ((RP-TRANS Y))
                :in-theory (e/d (rp-evl-of-fncall-args) ())))))
 
    (local

@@ -41,6 +41,9 @@
 (include-book "summation-tree-meta-fncs")
 
 (local
+ (include-book "lemmas-2"))
+
+(local
  (include-book "projects/rp-rewriter/proofs/rp-equal-lemmas" :dir :system))
 
 (local
@@ -48,48 +51,6 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arith-5
   :disabled t))
-
-(progn
-  (define lte (a b)
-    :verify-guards nil
-    (<= a b)
-    ///
-    (defthm rw-<=-to-lte
-      (equal (<= a b)
-             (lte a b))))
-
-  (define lt (a b)
-    :verify-guards nil
-    (< a b)
-    ///
-    (defthm rw-<-to-lte
-      (equal (< a b)
-             (lt a b))))
-
-  (define gt (a b)
-    :verify-guards nil
-    (> a b)
-    ///
-    (defthm rw->-to-gt
-      (equal (> a b)
-             (gt a b))))
-
-  (define gte (a b)
-    :verify-guards nil
-    (>= a b)
-    ///
-    (defthm rw->=-to-gte
-      (equal (>= a b)
-             (gte a b))))
-
-  (deftheory rw-dir1
-    '(rw-<-to-lte
-      rw->=-to-gte
-      rw->-to-gt
-      rw-<=-to-lte))
-
-  (deftheory rw-dir2
-    '(lt lte gte gt)))
 
 (local
  (defthm ex-from-rp-loose-of-ex-from-rp
@@ -285,32 +246,33 @@
   ;;           (count-c-lst coughed-lst)
   ;;           (count-c-lst res-lst))
   ;;        (count-c-lst lst))
-  (and #|(implies (consp lst)
-   (and (lt (count-c-lst COUGHED-LST)
-   (count-c-lst lst))
-   (not (gte (count-c-lst COUGHED-LST)
-   (count-c-lst lst)))))||#
-   (lte (count-c-lst COUGHED-LST)
-        (count-c-lst lst))
-   (not (gt (count-c-lst COUGHED-LST)
-            (count-c-lst lst)))
-   (lte (count-c-lst RES-LST)
-        (count-c-lst lst))
-   (not (gt (count-c-lst RES-LST)
-            (count-c-lst lst)))
-   (lte (+ (count-c-lst COUGHED-LST)
-           (count-c-lst RES-LST))
-        (count-c-lst lst))
-   (not (gt (+ (count-c-lst COUGHED-LST)
-               (count-c-lst RES-LST))
-            (count-c-lst lst))))
-  :fn COUGH-DUPLICATES
+  (implies (not neg-flag)
+           (and #|(implies (consp lst)
+            (and (lt (count-c-lst COUGHED-LST) ;
+            (count-c-lst lst)) ;
+            (not (gte (count-c-lst COUGHED-LST) ;
+            (count-c-lst lst)))))||#
+            (lte (count-c-lst COUGHED-LST)
+                 (count-c-lst arg-lst))
+            (not (gt (count-c-lst COUGHED-LST)
+                     (count-c-lst arg-lst)))
+            (lte (count-c-lst cleaned-lst)
+                 (count-c-lst arg-lst))
+            (not (gt (count-c-lst cleaned-lst)
+                     (count-c-lst arg-lst)))
+            (lte (+ (count-c-lst COUGHED-LST)
+                    (count-c-lst cleaned-lst))
+                 (count-c-lst arg-lst))
+            (not (gt (+ (count-c-lst COUGHED-LST)
+                        (count-c-lst cleaned-lst))
+                     (count-c-lst arg-lst)))))
+  :fn c-fix-arg-aux
   :hints (("Goal"
            :do-not-induct t
-           :induct (COUGH-DUPLICATES lst)
+           :induct (c-fix-arg-aux arg-lst neg-flag)
            :in-theory (e/d (COUNT-C-LST
                             rw-dir2
-                            COUGH-DUPLICATES)
+                            c-fix-arg-aux)
                            (rw-dir1))))))
 
 (local
@@ -348,40 +310,7 @@
                             ())))))
 
 
-(local
- (defthm local-measure-lemma-1
-   (implies (and (acl2-numberp a)
-                 (acl2-numberp b))
-            (and (equal (< (1+ a) (1+ b))
-                        (< a b))
-                 (equal (lt (1+ a) (1+ b))
-                        (lt a b))
-                 (equal (> (1+ a) (1+ b))
-                        (> a b))
-                 (equal (gt (1+ a) (1+ b))
-                        (gt a b))
-                 (equal (> (+ a 1) (+ b 1))
-                        (> a b))
-                 (equal (gt (+ a 1) (+ b 1))
-                        (gt a b))
-                 (equal (< (+ a 1) (+ b 1))
-                        (< a b))
-                 (equal (lt (+ a 1) (+ b 1))
-                        (lt a b))
-                 (equal (<= (1+ a) (1+ b))
-                        (<= a b))
-                 (equal (lte (1+ a) (1+ b))
-                        (lte a b))
-                 (equal (>= (1+ a) (1+ b))
-                        (>= a b))
-                 (equal (gte (1+ a) (1+ b))
-                        (gte a b))))
-   :hints (("Goal"
-            :in-theory (e/d (rw-dir2
-                             (:REWRITE ACL2::|(+ y x)|)
-                             (:REWRITE ACL2::|(equal (if a b c) x)|)
-                             (:REWRITE ACL2::EQUAL-OF-PREDICATES-REWRITE))
-                            (rw-dir1))))))
+
 
 
 
@@ -602,23 +531,7 @@
             :in-theory (e/d (rw-dir2)
                             (rw-dir1))))))||#
 
-(local
- (defthm local-measure-lemma-3-2
-   (AND (IMPLIES (ACL2::rewriting-positive-literal `(lt ,a ,b))
-                 (equal (lt a b)
-                        (NOT (gte a b))))
-        (IMPLIES (ACL2::rewriting-positive-literal `(Gt ,a ,b))
-                 (equal (gt a b)
-                        (NOT (lte a b))))
-        (IMPLIES (ACL2::rewriting-positive-literal `(gte ,a ,b))
-                 (equal (gte a b)
-                        (NOT (gt b a))))
-        (IMPLIES (ACL2::rewriting-positive-literal `(lte ,a ,b))
-                 (equal (lte a b)
-                        (NOT (gt a b)))))
-   :hints (("Goal"
-            :in-theory (e/d (rw-dir2)
-                            (rw-dir1))))))
+
 
 (local
  (defthm dummy-lemma-5
@@ -637,16 +550,6 @@
                              (ACL2::RHS (+ c d))
                              (ACL2::LHS b)))
             :in-theory (e/d (rw-dir2) (rw-dir1))))))
-
-(defthm lte-and-gte-implies
-  (and (implies (lt x y)
-                (and (lte x y)
-                     (not (gt x y))))
-       (implies (gt x y)
-                (and (gte x y)
-                     (not (gt y x)))))
-  :hints (("Goal"
-           :in-theory (e/d (rw-dir2) (rw-dir1)))))
 
 (local
  (defthm expand-count-c-lst-when-consp
@@ -701,8 +604,7 @@
 
 
 
-(progn
-  (local
+(local
    (defthm count-c-GET-C-ARGS-1
      (and
       (implies (and (MV-NTH 4 (GET-C-ARGS SINGLE-C1))
@@ -717,31 +619,6 @@
                                SINGLE-C-P
                                SINGLE-s-P)
                               ())))))
-
-  #|(local
-  (defthm count-c-GET-C-ARGS-2
-  (and
-  (implies (and (MV-NTH 4 (GET-C-ARGS SINGLE-C1))
-  (CONSP (MV-NTH 1 (GET-C-ARGS SINGLE-C1)))
-  (EQUAL (CAR (MV-NTH 1 (GET-C-ARGS SINGLE-C1)))
-  'LIST))
-  (equal (COUNT-C-LST (MV-NTH 3 (GET-C-ARGS SINGLE-C1)))
-  (1- (count-c SINGLE-C1)))))
-  :hints (("Goal"
-  :do-not-induct t
-  :expand (COUNT-C SINGLE-C1)
-  :in-theory (e/d (GET-C-ARGS
-  SINGLE-C-P
-  SINGLE-s-P)
-  ())))))||#
-
-  #| (local
-  (defthm GET-C-ARGS-lemma1
-  (implies (EQUAL (EX-FROM-RP SINGLE-C1) ''0)
-  (equal (GET-C-ARGS SINGLE-C1)
-  (MV 0 ''NIL ''NIL NIL 'C)))
-  :hints (("Goal"
-  :in-theory (e/d (GET-C-ARGS) ())))))||#)
 
 (local
  (defthm c-sum-merge-nil-lemma
@@ -824,145 +701,8 @@
 ;;    (implies (lte a b)
 ;;             (not (lte b a)))
 
-(progn
 
-  (local
-   (define lte-chain-smart-fn-aux (cl a d)
-     (if (or (atom cl)
-             )
-         (mv nil nil)
-       (b* ((cur (car cl))
-            ((mv rest-b rest-c)
-             (lte-chain-smart-fn-aux (cdr cl) a d))
-            ((unless (case-match cur (('not &) t)))
-             (mv rest-b rest-c))
-            (cur (cadr cur)))
-         (case-match cur
-           (('lte x y)
-            (mv (if (and (equal x a) (not (equal y d))) y rest-b)
-                (if (and (equal y d) (not (equal x a))) x rest-c)))
-           (('gt y x)
-            (mv (if (and (or (not rest-b) (equal rest-c d)) (equal x a) )
-                    (progn$   y)
-                  rest-b)
-                (if (and (or (not rest-c) (equal rest-c a)) (equal y d) )
-                    (progn$   x)
-                  rest-c)))
-           (&
-            (mv rest-b rest-c)))))))
 
-  (local
-   (define lte-chain-smart-fn (a d mfc state)
-     :verify-guards nil
-     (b* ( ;(ancestors  (mfc-ancestors mfc))
-          (rcnst (access acl2::metafunction-context mfc :rcnst))
-          (cl (access acl2::rewrite-constant rcnst :current-clause))
-          (?top-cl (access acl2::rewrite-constant rcnst :top-clause))
-          (cl (beta-search-reduce-subterms cl (expt 2 30)))
-          ((mv b c)
-           (lte-chain-smart-fn-aux cl a d))
-          ;;(- (cw "rcnst : ~p0 ~%" (cddr rcnst)))
-          (b (if (not b) c b))
-          (c (if (not c) b c))
-
-          #|(- (and (or (and b c)
-          (equal a '(binary-+
-          (COUNT-C-LST
-          (MV-NTH '0
-          (COUGH-DUPLICATES (MV-NTH '2 (C-SUM-MERGE-LST-LST C1-LST 'NIL)))))
-          (COUNT-C-LST
-          (MV-NTH
-          '1
-          (COUGH-DUPLICATES (MV-NTH '2 (C-SUM-MERGE-LST-LST C1-LST 'NIL))))))))
-          (cw "a: ~p0
-          b:~p1
-          c:~p2
-          d:~p3
-          cl:~p4
-          "
-          a b c d cl
-          )))||#)
-       (if (and b c)
-           (progn$
-;(cw "a:~p0 b:~p1 c:~p2, d:~p3 ~%" a b c d)
-            `((b . ,b)
-              (c . ,c)))
-         nil))))
-
-  (local
-   (defthm ge-chain-smart
-     (implies (and (bind-free (lte-chain-smart-fn a d mfc state)
-                              (b c))
-                   (or (and (gt b a)
-                            (gt c b)
-                            (gt d c))
-
-                       (and (gt b a)
-                            (gte c b)
-                            (gte d c))
-                       (and (gte b a)
-                            (gte c b)
-                            (gt d c))
-                       (and (gte b a)
-                            (gt c b)
-                            (gte d c))
-
-                       (and (gte b a)
-                            (gt c b)
-                            (gt d c))
-                       (and (gt b a)
-                            (gte c b)
-                            (gt d c))
-                       (and (gt b a)
-                            (gt c b)
-                            (gte d c)))
-                   )
-              (and ;(gt d a)
-               (not (lte d a))))
-     :hints (("Goal"
-              :in-theory (e/d (rw-dir2) (rw-dir1))))))
-
-  (local
-   (defthm lte-chain-smart
-     (implies (and (bind-free (lte-chain-smart-fn a d mfc state)
-                              (b c))
-                   (or (and (lte a b)
-                            (lte b c)
-                            (lte c d))
-
-                       (and (lte a b)
-                            (lte b c)
-                            (lt c d))
-                       (and (lte a b)
-                            (lt b c)
-                            (lte c d))
-                       (and (lt a b)
-                            (lte b c)
-                            (lte c d))
-
-                       (and (lt a b)
-                            (lte b c)
-                            (lt c d))
-                       (and (lte a b)
-                            (lt b c)
-                            (lt c d))
-                       (and (lt a b)
-                            (lt b c)
-                            (lte c d)))
-                   )
-              (and ;(lte a d)
-               (not (gt a d))))
-     :hints (("Goal"
-              :in-theory (e/d (rw-dir2) (rw-dir1))))))
-
-  )
-
-(local
- (defthm gte-to-lte
-   (equal (gte a b)
-          (lte b a))
-   :hints (("Goal"
-            :in-theory (e/d (rw-dir2) (rw-dir1))))))
 
 
 (local
@@ -977,16 +717,91 @@
                              ) ())))))
 
 (local
+ (defthm count-c-of-ex-from-rp
+   (equal (count-c (ex-from-rp term))
+          (count-c term))
+   :hints (("Goal"
+            :induct (ex-from-rp term)
+            :in-theory (e/d (ex-from-rp is-rp count-c) ())))))
+
+(Local
+ (defthmd count-c-for-a-list-arg
+   (implies (equal (car arg) 'list)
+            (equal (count-c arg)
+                   (count-c-lst (cdr arg))))
+   :hints (("Goal"
+            :expand (count-c arg)
+            :in-theory (e/d (single-s-p single-c-p) ())))))
+
+(local
+ (defthmd count-c-when-atom
+   (implies (atom x)
+            (equal (count-c x)
+                   0))
+   :hints (("Goal"
+            :in-theory (e/d (count-c) ())))))
+
+(local
+ (defthmd measure-lemma-light-compress-s-c-aux-lemma
+   (and (implies (NOT
+                  (EQUAL (CAR (MV-NTH 1 (LIGHT-COMPRESS-S-C-AUX pp c-arg)))
+                         'LIST))
+                 (and (equal (MV-NTH 1 (LIGHT-COMPRESS-S-C-AUX pp c-arg))
+                             c-arg)
+                      (not (equal (car c-arg) 'list))))
+        (implies (EQUAL (CAR (MV-NTH 1 (LIGHT-COMPRESS-S-C-AUX pp c-arg)))
+                        'LIST)
+                 (EQUAL (CAR c-arg)
+                        'LIST))
+        (implies (NOT (consp (MV-NTH 1 (LIGHT-COMPRESS-S-C-AUX pp c-arg))))
+                 (not (consp c-arg))))
+   :hints (("Goal"
+            :expand (LIGHT-COMPRESS-S-C-AUX pp c-arg)
+            :in-theory (e/d () ())))))
+                   
+
+
+(local
  (std::defret
-  measure-lemma-compress-s-c
+  measure-lemma-light-compress-s-c-aux
+  (and (equal (count-c c-arg-res)
+              (count-c c-arg))
+       (implies changed
+                (equal (count-c-lst (cdr c-arg-res))
+                       (count-c-lst (cdr c-arg)))))
+  :fn light-compress-s-c-aux
+  :otf-flg t
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((:free (x) (count-c (cons 'list x)))
+                    (COUNT-C (CADR C-ARG))
+                    (:free (x) (single-c-p (cons 'list x)))
+                    (:free (x) (single-c-p (cons 'c x)))
+                    (:free (x) (single-s-p (cons 'list x))))
+           :induct (light-compress-s-c-aux pp c-arg)
+           :in-theory (e/d (light-compress-s-c-aux
+                            count-c
+                            measure-lemma-light-compress-s-c-aux-lemma
+                            count-c-when-atom
+                            count-c-for-a-list-arg
+                            ;is-rp
+                            ;single-c-p
+                            ;single-s-p
+                            )
+                           (ex-from-rp))))))
+
+(local
+ (std::defret
+  measure-lemma-light-compress-s-c
   (equal (count-c res-term)
          (count-c term))
-  :fn compress-s-c
+  :fn light-compress-s-c
   :hints (("Goal"
-           :induct (compress-s-c term :limit limit)
            :do-not-induct t
-           :in-theory (e/d (compress-s-c
+           :expand (COUNT-C TERM)
+           :in-theory (e/d (light-compress-s-c
                             count-c
+                            measure-lemma-light-compress-s-c-aux-lemma
                             single-c-p
                             single-s-p
                             )
@@ -997,6 +812,9 @@
                  (acl2-numberp b))
             (equal (equal (+ 1 a) (+ 1 b))
                    (equal a b)))))
+
+
+ 
 
 (local
  (std::defret
@@ -1010,8 +828,12 @@
            :in-theory (e/d (decompress-s-c
                             CREATE-LIST-INSTANCE
                             count-c
+                            count-c-for-a-list-arg
                             single-c-p
                             single-s-p
+                            case-match-|('s & pp ('list single-c))|
+                            case-match-|('c & ''nil pp ('list single-c))|
+                            case-match-|('c & ''nil pp ''nil)|
                             )
                            ())))))
 (local

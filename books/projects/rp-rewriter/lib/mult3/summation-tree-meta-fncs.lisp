@@ -448,7 +448,7 @@
                               LIST-TO-LST)
                              (MEASURE-LEMMA1
                               MEASURE-LEMMA1-2
-;EX-FROM-RP-LOOSE-IS-RP-TERMP
+;ex-from-rp-loose-is-ex-from-rp
                               (:REWRITE ACL2::O-P-O-INFP-CAR)
                               (:REWRITE DEFAULT-CAR)
                               NOT-INCLUDE-RP)))))
@@ -769,7 +769,14 @@
             :in-theory (e/d () ())))))
 
 (progn
-  (define compress-s-c-pass-pp-lst (pp1-lst pp2-lst under-s)
+  (define abs-term (term)
+    :inline t
+    :returns (mv (abs rp-termp :hyp (rp-termp term))
+                 (signed booleanp))
+    (case-match term (('-- c1) (mv c1 t)) (& (mv term nil))))
+
+
+  (define ligth-compress-s-c$fix-pp-lst$for-s (pp1-lst pp2-lst)
     :measure (+ (cons-count pp1-lst)
                 (cons-count pp2-lst))
     :prepwork ((local
@@ -778,11 +785,63 @@
                                  (:REWRITE DEFAULT-CAR)
                                  (:REWRITE ACL2::O-P-O-INFP-CAR)
                                  (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
-
                                  (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                                  (:TYPE-PRESCRIPTION RP-TERMP)
                                  (:TYPE-PRESCRIPTION RP-EQUAL)
-;(:REWRITE EX-FROM-RP-LOOSE-IS-RP-TERMP)
+                                 (:REWRITE MEASURE-LEMMA1-2)
+                                 (:DEFINITION RP-EQUAL))))))
+    :returns (mv (res-pp1-lst rp-term-listp
+                              :hyp (rp-term-listp pp1-lst))
+                 (changed booleanp))
+    (b* (((when (or (atom pp1-lst)
+                    (atom pp2-lst)))
+          (mv pp1-lst nil))
+         (c1 (car pp1-lst))
+         (c2 (car pp2-lst))
+         ((mv new-c1 changed)
+          (cond ((rp-equal c1 c2)
+                 (case-match c1
+                   (('-- n)
+                    (mv n t))
+                   (&
+                    (mv `(-- ,c1) t))))
+                (t (mv nil nil))))
+         ((when changed)
+          (b* (((mv pp1-lst-rest &)
+                (ligth-compress-s-c$fix-pp-lst$for-s (cdr pp1-lst) (cdr pp2-lst) )))
+            (mv (cons new-c1 pp1-lst-rest) t)))
+         ((mv pp-order &)
+          (pp-order (ex-from-rp/--loose c1) (ex-from-rp/--loose c2))))
+      (if pp-order
+          (b* (((mv pp1-lst-rest rest-changed)
+                (ligth-compress-s-c$fix-pp-lst$for-s (cdr pp1-lst) pp2-lst )))
+            (mv (cons-with-hint c1 pp1-lst-rest pp1-lst) rest-changed))
+        (b* (((mv pp1-lst-rest rest-changed)
+              (ligth-compress-s-c$fix-pp-lst$for-s pp1-lst (cdr pp2-lst) )))
+          (mv pp1-lst-rest rest-changed)))))
+
+  (define light-compress-s-c$fix-pp$for-s (pp1 pp2)
+    :returns (res-pp1 rp-termp :hyp (rp-termp pp1))
+    (b* ((pp1-lst (list-to-lst pp1))
+         (pp2-lst (list-to-lst pp2))
+         ((mv pp1-lst changed)
+          (ligth-compress-s-c$fix-pp-lst$for-s pp1-lst pp2-lst)))
+      (if changed
+          (create-list-instance pp1-lst)
+        pp1)))
+  
+  (define light-compress-s-c$pass-pp-lst (pp1-lst pp2-lst)
+    :measure (+ (cons-count pp1-lst)
+                (cons-count pp2-lst))
+    :prepwork ((local
+                (in-theory (e/d (measure-lemmas)
+                                ((:REWRITE MEASURE-LEMMA1)
+                                 (:REWRITE DEFAULT-CAR)
+                                 (:REWRITE ACL2::O-P-O-INFP-CAR)
+                                 (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                                 (:TYPE-PRESCRIPTION RP-TERM-LISTP)
+                                 (:TYPE-PRESCRIPTION RP-TERMP)
+                                 (:TYPE-PRESCRIPTION RP-EQUAL)
                                  (:REWRITE MEASURE-LEMMA1-2)
                                  (:DEFINITION RP-EQUAL))))))
     :returns (mv (res-pp1-lst rp-term-listp
@@ -797,34 +856,32 @@
          (c1 (car pp1-lst))
          (c2 (car pp2-lst))
          ((mv c1-abs c1-signed)
-          (case-match c1 (('-- c1) (mv c1 t)) (& (mv c1 nil))))
+          (abs-term c1))
+          ;;(case-match c1 (('-- c1) (mv c1 t)) (& (mv c1 nil))))
          ((mv c2-abs c2-signed)
-          (case-match c2 (('-- c2) (mv c2 t)) (& (mv c2 nil))))
+          (abs-term c2))
+          ;(case-match c2 (('-- c2) (mv c2 t)) (& (mv c2 nil))))
          ((mv to-pass passable)
-          (cond ((and under-s (rp-equal c1 c2)
-                      (not c1-signed) (not c2-signed))
-                 (mv `(-- ,c1) t))
-                ((and (not under-s)
-                      (rp-equal c1-abs c2-abs)
-                      c1-signed (not c2-signed))
+          (cond ((and (rp-equal c1-abs c2-abs)
+                      (not (equal c1-signed c2-signed)))
                  (mv c1 t))
                 (t (mv nil nil))))
          ((when passable)
           (b* (((mv pp1-lst-rest pp2-lst-rest &)
-                (compress-s-c-pass-pp-lst (cdr pp1-lst) (cdr pp2-lst) under-s)))
+                (light-compress-s-c$pass-pp-lst (cdr pp1-lst) (cdr pp2-lst))))
             (mv pp1-lst-rest (cons to-pass pp2-lst-rest) t)))
          ((mv pp-order &)
-          (pp-order (ex-from-rp/--loose c1) (ex-from-rp/--loose c2))))
+          (pp-order (ex-from-rp/--loose c1-abs) (ex-from-rp/--loose c2-abs))))
       (if pp-order
           (b* (((mv pp1-lst-rest pp2-lst-rest rest-changed)
-                (compress-s-c-pass-pp-lst (cdr pp1-lst) pp2-lst under-s)))
+                (light-compress-s-c$pass-pp-lst (cdr pp1-lst) pp2-lst)))
             (mv (cons-with-hint c1 pp1-lst-rest pp1-lst)
                 pp2-lst-rest rest-changed))
         (b* (((mv pp1-lst-rest pp2-lst-rest rest-changed)
-              (compress-s-c-pass-pp-lst pp1-lst (cdr pp2-lst) under-s)))
+              (light-compress-s-c$pass-pp-lst pp1-lst (cdr pp2-lst))))
           (mv pp1-lst-rest (cons-with-hint c2 pp2-lst-rest pp2-lst) rest-changed)))))
 
-  (define compress-s-c-pass-pp (pp1 pp2 under-s)
+  (define light-compress-s-c$pass-pp (pp1 pp2)
     :returns (mv (res-pp1 rp-termp :hyp (rp-termp pp1))
                  (res-pp2 rp-termp :hyp (and (rp-termp pp1)
                                              (rp-termp pp2)))
@@ -832,12 +889,100 @@
     (b* ((pp1-lst (list-to-lst pp1))
          (pp2-lst (list-to-lst pp2))
          ((mv pp1-lst pp2-lst changed)
-          (compress-s-c-pass-pp-lst pp1-lst pp2-lst under-s)))
+          (light-compress-s-c$pass-pp-lst pp1-lst pp2-lst)))
       (if changed
           (mv (create-list-instance pp1-lst) (create-list-instance pp2-lst) t)
         (mv pp1 pp2 nil))))
 
-  (define compress-s-c (term &key (limit '(expt 2 30)))
+
+  (local
+   (defthmd o<-chain
+     (and (implies (and
+                    (syntaxp (equal (all-vars x)
+                                    (all-vars y)))
+                    (force (O< (cons-count x) (cons-count y))))
+                   (O< (cons-count (car x))
+                       (cons-count y)))
+          (implies (and
+                    (syntaxp (equal (all-vars x)
+                                    (all-vars y)))
+                    (force (O< (cons-count x) (cons-count y))))
+                   (O< (cons-count (cdr x))
+                       (cons-count y))))
+     :hints (("Goal"
+              :in-theory (e/d (cons-count) ())))))
+
+  (local
+   (defthmd o<-chain-2
+     (and (implies (and
+                    (syntaxp (equal (all-vars x)
+                                    (all-vars y)))
+                    (force (O< (cons-count x) (cons-count y))))
+                   (O< (cons-count (ex-from-rp x))
+                       (cons-count y))))
+     :hints (("Goal"
+              :in-theory (e/d (ex-from-rp
+                               measure-lemmas
+                               ;cons-count
+                               )
+                              ())))))
+  
+  (define light-compress-s-c-aux (pp c-arg)
+    :returns (mv (pp-res rp-termp :hyp (rp-termp pp))
+                 (c-arg-res rp-termp :hyp (and (rp-termp pp)
+                                               (rp-termp c-arg)))
+                 (changed booleanp))
+    :measure (cons-count c-arg)
+    :hints (("Goal"
+             :in-theory (e/d (measure-lemmas
+                              o<-chain-2
+                              o<-chain)
+                             ())))
+    (case-match c-arg
+      (('list single-c)
+       (b* ((single-c (ex-from-rp single-c))
+            ((unless (and (single-c-p single-c)))
+             (mv pp c-arg nil))
+            (pp-arg1 (cadddr single-c))
+            (c-arg1 (car (cddddr single-c)))
+            ((mv pp-new pp-arg1 changed)
+             (light-compress-s-c$pass-pp pp pp-arg1))
+            ((unless changed)
+             (mv pp c-arg nil))
+            ((mv pp-arg1 c-arg1 &)
+             (light-compress-s-c-aux pp-arg1 c-arg1)))
+         (mv pp-new `(list (c ',(calculate-c-hash (caddr single-c) pp-arg1 c-arg1)
+                              ,(caddr single-c) ,pp-arg1 ,c-arg1))
+             t))) 
+      (& (mv pp c-arg nil))))
+
+  (define light-compress-s-c (term)
+    :prepwork ((local
+                (in-theory (enable measure-lemmas))))
+    :returns (res-term rp-termp :hyp (rp-termp term))
+    (b* ((term-orig term)
+         (term (ex-from-rp term)))
+      (case-match term
+        (('s & pp ('list single-c))
+         (b* ((single-c (ex-from-rp single-c)))
+           (case-match single-c
+             (('c & & c-pp &)
+              (b* ((pp (light-compress-s-c$fix-pp$for-s pp c-pp))
+                   ((mv pp c-arg changed)
+                    (light-compress-s-c-aux pp (cadddr term)))
+                   ((Unless changed)
+                    term-orig))
+                `(s ',(calculate-s-hash pp c-arg) ,pp ,c-arg)))
+             (& term-orig))))
+        (('c & s-arg pp c-arg)
+         (b* (((mv pp c-arg changed)
+               (light-compress-s-c-aux pp c-arg)))
+           (if changed
+               `(c ',(calculate-c-hash s-arg pp c-arg) ,s-arg ,pp ,c-arg)
+             term-orig)))
+        (& term-orig))))
+  
+  #|(define compress-s-c (term &key (limit '(expt 2 30)))
     :measure (nfix limit)
     :guard (natp limit)
     :prepwork ((local
@@ -851,59 +996,97 @@
          (b* ((single-c (ex-from-rp single-c)))
            (case-match single-c
              (('c c-hash ''nil c-pp c-arg)
-              (b* (((mv pp c-pp changed)
-                    (compress-s-c-pass-pp pp c-pp t))
+              (b* ((pp (light-compress-s-c$fix-pp$for-s pp c-pp))
+                   ((mv pp c-pp changed)
+                    (light-compress-s-c$pass-pp pp c-pp))
                    ((unless changed) term-orig)
-                   (new-single-c `(c ,c-hash 'nil ,c-pp ,c-arg))
+                   (new-single-c (compress-s-c-aux c-hash c-pp c-arg)) ;;`(c ,c-hash 'nil ,c-pp ,c-arg))
                    (new-single-c (compress-s-c new-single-c :limit (1- limit) )))
-                `(s ,hash-code  ,pp (list ,new-single-c))))
+                `(s ,hash-code ,pp (list ,new-single-c))))
              (& term-orig))))
         (('c hash-code ''nil pp1 ('list single-c))
          (b* ((single-c (ex-from-rp single-c)))
            (case-match single-c
              (('c c-hash ''nil c-pp c2)
               (b* (((mv pp1 c-pp changed)
-                    (compress-s-c-pass-pp pp1 c-pp nil))
+                    (light-compress-s-c$pass-pp pp1 c-pp))
                    ((unless changed) term-orig)
-                   (new-single-c `(c ,c-hash 'nil ,c-pp ,c2))
+                   (new-single-c (compress-s-c-aux c-hash c-pp c2)); `(c ,c-hash 'nil ,c-pp ,c2))
                    (new-single-c (compress-s-c new-single-c :limit (1- limit))))
                 `(c ,hash-code 'nil ,pp1 (list ,new-single-c))))
              (& term-orig))))
-        (& term-orig))))
+        (& term-orig))))||#
 
+
+  (define case-match-|('s & pp ('list single-c))|
+    (term)
+    :inline t
+    "Used by decompress-s-c" 
+    (case-match term
+      (('s & pp ('list single-c))
+       (mv pp single-c t))
+      (& (mv ''nil ''nil nil))))
+
+  (define case-match-|('c & ''nil pp ('list single-c))| (term)
+    :inline t
+    "Used by decompress-s-c" 
+    (case-match term
+      (('c & ''nil pp ('list single-c))
+       (mv pp single-c t))
+      (& (mv ''nil ''nil nil))))
+
+  (define case-match-|('c & ''nil pp ''nil)| (term)
+    :inline t
+    "Used by decompress-s-c" 
+    (case-match term
+      (('c & ''nil pp ''nil)
+       (mv pp t))
+      (& (mv ''nil nil))))
+      
+  
   (define decompress-s-c (term &key (limit '(expt 2 30)))
     :measure (nfix limit)
     :guard (natp limit)
     :returns (mv (res-term)
                  (coughed-term))
+    :prepwork ((local
+                (in-theory (enable case-match-|('s & pp ('list single-c))|
+                                   case-match-|('c & ''nil pp ('list single-c))|
+                                   case-match-|('c & ''nil pp ''nil)|))))
+    
     (b* (((when (zp limit)) (mv term ''nil))
          (term-orig term)
-         (term (ex-from-rp term)))
-      (case-match term
-        (('s & pp ('list single-c))
-         (b* (((mv single-c coughed-pp)
+         (term (ex-from-rp term))
+         ((mv pp single-c match)
+          (case-match-|('s & pp ('list single-c))| term))
+         ((when match)
+          (b* (((mv single-c coughed-pp)
                (decompress-s-c single-c :limit (1- limit)))
               (pp (pp-sum-merge pp coughed-pp))
               (pp (s-fix-args pp))
               (c (create-list-instance (list single-c))))
            (mv `(s ',(calculate-s-hash pp c) ,pp ,c)
                ''nil)))
-        (('c & ''nil pp ('list single-c))
-         (b* (((mv single-c coughed-pp)
+         ((mv pp single-c match)
+          (case-match-|('c & ''nil pp ('list single-c))| term))
+         ((when match)
+          (b* (((mv single-c coughed-pp)
                (decompress-s-c single-c :limit (1- limit)))
               (pp (pp-sum-merge pp coughed-pp))
-              ((mv pp-coughed pp) (c-fix-pp-args pp (expt 2 30)))
+              ((mv pp-coughed pp) (c-fix-pp-args pp ))
               (c (create-list-instance (list single-c))))
            (mv `(c ',(calculate-c-hash ''nil pp c) 'nil ,pp ,c)
                pp-coughed)))
-        (('c & ''nil pp ''nil)
-         (b* (((mv pp-coughed pp) (c-fix-pp-args pp (expt 2 30)))
+         ((mv pp match)
+          (case-match-|('c & ''nil pp ''nil)| term))
+         ((when match)
+          (b* (((mv pp-coughed pp) (c-fix-pp-args pp))
               (c ''nil))
            (mv `(c ',(calculate-c-hash ''nil pp c) 'nil ,pp ,c)
-               pp-coughed)))
-        (& (mv term-orig ''nil))))
+               pp-coughed))))
+      (mv term-orig ''nil))
     ///
-
+    
     (acl2::defret
      rp-termp-of-<fn>
      :hyp (rp-termp term)
@@ -1014,17 +1197,17 @@
         (& (cons `(-- ,cur-orig)
                  rest)))))
 
-  (define negate-lst (lst &optional (cond 't))
+  (define negate-lst (lst &optional (enabled 't))
     :inline t
     :returns (negated-lst rp-term-listp :hyp (rp-term-listp lst))
-    (if cond
+    (if enabled
         (negate-lst-aux lst)
       lst))
 
-  (define negate-list-instance (term &optional (cond 't))
+  (define negate-list-instance (term &optional (enabled 't))
     :returns (res rp-termp :hyp (rp-termp term))
     :inline t
-    (create-list-instance (negate-lst (list-to-lst term) cond))))
+    (create-list-instance (negate-lst (list-to-lst term) enabled))))
     ;; (case-match pp
     ;;   (('list . lst)
     ;;    (create-list-instance (negate-pp-lst lst)))
@@ -1036,6 +1219,8 @@
     ;;             "Unexpected pp instance ~p0 ~%"
     ;;             (list (cons #\0 pp)))
     ;;            `(list (-- (sum-list ,pp))))))))
+
+
 
 (define c-pattern2-reduce (s pp c)
   ;; This function is called before forming a single-c instance as (c s pp c).
@@ -1060,7 +1245,7 @@
        (b* (((unless (pp-subsetp pp c-pp)) (mv s pp c))
             (--pp (negate-list-instance pp))
             (single-c `(c '0 ,s ,--pp ,c))
-            (compressed (compress-s-c single-c)))
+            (compressed (light-compress-s-c single-c)))
          (case-match compressed
            (('c & ''nil ''nil ('list single-c))
             (b* (((mv max min valid) (get-max-min-val single-c))
@@ -1074,9 +1259,10 @@
                  ((unless (equal coughed-pp ''nil))
                   (mv s pp c)))
               (case-match decompressed
-                (('c & s pp ('list . c-lst))
+                (('c & s pp ('list . c-lst)) ;; changed it to this way to prove
+                 ;; measure of c-sum-merge with count-c. 
                  (mv s pp `(list . ,c-lst)))
-                (('c & s pp ''nol)
+                (('c & s pp ''nil)
                  (mv s pp ''nil))
                 (& (mv s pp c)))))
            (& (mv s pp c)))))
@@ -1151,7 +1337,7 @@
     (('list ('c & ''nil c-pp &))
      (b* (((unless (pp-subsetp pp c-pp))
            (mv pp c ''0 nil))
-          (compressed (compress-s-c `(s '0 ,pp ,c))))
+          (compressed (light-compress-s-c `(s '0 ,pp ,c))))
        (case-match compressed
          (('s & ''nil ('list single-c))
           (b* (((mv max min valid) (get-max-min-val single-c))
@@ -1779,7 +1965,7 @@
 
         ((mv coughed-pp-lst new-pp-lst)
          (if (clean-pp-args-cond new-s-arg arg-merged-c-lst)
-             (c-fix-arg-aux pp-lst t (expt 2 30))
+             (c-fix-arg-aux pp-lst t)
            (mv nil pp-lst)))
 
         ;; To-be-coughed c-lst from the args is the coughed-c-lst of the
@@ -2515,7 +2701,7 @@
 
        ((mv pp-coughed arg-pp)
         (if (clean-pp-args-cond arg-s arg-c-lst)
-            (c-fix-pp-args (create-list-instance arg-pp-lst) (expt 2 30))
+            (c-fix-pp-args (create-list-instance arg-pp-lst))
           (mv ''nil (create-list-instance arg-pp-lst))))
        (- (and (equal arg-pp '(LIST ('0)))
                (cw "arg-pp: ~p0, pp-coughed:~p1 ~%"

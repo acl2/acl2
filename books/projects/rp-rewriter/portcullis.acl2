@@ -36,6 +36,8 @@
 
 	    acl2::beta-reduce-lambda-expr
 
+	    std::defret
+	    std::defret-mutual
 
             make-flag
             str::natstr
