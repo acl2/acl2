@@ -779,14 +779,14 @@
                                              state))
        ((er &) (ensure-value-is-boolean$ wrapper "The :WRAPPER input" t nil))
        ((er (list new-name$ wrapper-name$ names-to-avoid))
-        (process-new/wrapper-names new-name
-                                   wrapper-name
-                                   wrapper-name-present
-                                   wrapper
-                                   old$
-                                   nil
-                                   ctx
-                                   state))
+        (process-input-new/wrapper-names new-name
+                                         wrapper-name
+                                         wrapper-name-present
+                                         wrapper
+                                         old$
+                                         nil
+                                         ctx
+                                         state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old state)

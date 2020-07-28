@@ -58,14 +58,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-new/wrapper-names (new-name
-                                   wrapper-name
-                                   (wrapper-name-present booleanp)
-                                   (wrapper-gen booleanp)
-                                   (old symbolp)
-                                   (names-to-avoid symbol-listp)
-                                   ctx
-                                   state)
+(define process-input-new/wrapper-names (new-name
+                                         wrapper-name
+                                         (wrapper-name-present booleanp)
+                                         (wrapper-gen booleanp)
+                                         (old symbolp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
   :returns (mv erp
                (result "A tuple
                         @('(new-name$ wrapper-name$ updated-names-to-avoid)')
