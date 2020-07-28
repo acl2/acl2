@@ -1292,7 +1292,6 @@
            :in-theory (e/d (light-s-of-s-fix)
                            (light-s-of-s-fix-lst-correct)))))
 
-
 #|(local
  (use-arith-5 t))||#
 
@@ -1436,8 +1435,6 @@
               (-- (m2 (sum x2 x3 x4)))
               x5)))||#
 
-
-
 (defret single-c-try-merge-params-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -1524,10 +1521,6 @@
               (sum-list-eval y a)))
   :hints (("Goal"
            :in-theory (e/d (sum-list-eval) ()))))
-
-
-
-
 
 
 (defret single-c-try-merge-params$for-proofs-correct
@@ -1640,8 +1633,6 @@
                             eval-and-all
                             (:REWRITE D2-OF-MINUS))))))
 
-
-
 (defret single-c-try-merge-params-correct-valid-sc
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -1654,17 +1645,516 @@
            :in-theory (e/d (single-c-try-merge-params)
                            ()))))
 
-
-
-:i-am-here
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; c-sum-merge
 
+(defret get-c-args-correct
+  (and (implies (and (rp-evl-meta-extract-global-facts :state state)
+                     (mult-formula-checks state)
+                     valid)
+                (equal (f2 (sum (sum-list (rp-evlt s-args a))
+                                (sum-list (rp-evlt pp-args a))
+                                (sum-list-eval c-arg-lst a)))
+                       (rp-evlt c a)))
+       (implies (valid-sc c a)
+                (and (valid-sc s-args a)
+                     (valid-sc pp-args a)
+                     (valid-sc-subterms c-arg-lst a))))
+  :fn get-c-args
+  :hints (("Goal"
+           :expand (VALID-SC ''NIL A)
+           :in-theory (e/d (get-c-args
+                            rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
+                           (valid-sc
+                            eval-and-all
+                            rp-evlt-of-ex-from-rp
+                            NOT-INCLUDE-RP-MEANS-VALID-SC
+                            NOT-INCLUDE-RP-MEANS-VALID-SC-LST
+                            ex-from-rp
+                            (:REWRITE RP-EVL-OF-IF-CALL))))))
 
+(defret get-c-args-correct-valid-sc
+  (and (implies (valid-sc c a)
+                (and (valid-sc s-args a)
+                     (valid-sc pp-args a)
+                     (valid-sc-subterms c-arg-lst a))))
+  :fn get-c-args
+  :hints (("Goal"
+
+           :in-theory (e/d (rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
+                           (valid-sc
+                            eval-and-all
+                            rp-evlt-of-ex-from-rp
+                            NOT-INCLUDE-RP-MEANS-VALID-SC
+                            NOT-INCLUDE-RP-MEANS-VALID-SC-LST
+                            ex-from-rp
+                            (:REWRITE RP-EVL-OF-IF-CALL))))))
+
+
+
+
+
+(defthmd rp-term-listp-of-cons
+  (implies (consp x)
+           (equal (rp-term-listp x)
+                  (and
+                   (rp-termp (car x))
+                   (rp-term-listp (cdr x)))))
+  :hints (("Goal"
+           :expand (rp-term-listp x)
+           :in-theory (e/d () ()))))
+
+(defthm rp-term-listp-of-cons-2
+  (implies (and (rp-term-listp x)
+                (consp x))
+           (and
+            (rp-termp (car x))
+            (rp-term-listp (cdr x))))
+  :rule-classes :forward-chaining
+  :hints (("Goal"
+           :expand (rp-term-listp x)
+           :in-theory (e/d () ()))))
+
+(defthm valid-sc-subterms-cons-2
+  (implies (and (valid-sc-subterms lst a)
+                (consp lst))
+           (and (valid-sc (car lst) a)
+                (valid-sc-subterms (cdr lst) a)))
+  :rule-classes :forward-chaining)
+
+(defthm dummy-sum-reduce-common-1
+  (equal (equal (sum x y z a)
+                (sum p a q))
+         (equal (sum x y z)
+                (sum p q))))
+
+(defthm valid-sc-subterms-of-consed
+  (equal (VALID-SC-SUBTERMS (cons x y) A)
+         (and (valid-sc x a)
+              (valid-sc-subterms y a))))
+
+(defthm valid-sc-subterms-of-consed-2
+  (implies (and (valid-sc x a)
+                (valid-sc-subterms y a))
+           (VALID-SC-SUBTERMS (cons x y) A)))
+
+(defthm rp-term-listp-of-consed
+  (equal (rp-term-listp (cons x y))
+         (and (rp-termp x)
+              (rp-term-listp y)))
+  :hints (("Goal"
+           :expand (rp-term-listp (cons x y))
+           :in-theory (e/d () ()))))
+
+(defthm rp-term-listp-of-consed-2
+  (implies (and (rp-termp x)
+                (rp-term-listp y))
+           (rp-term-listp (cons x y)))
+  :hints (("Goal"
+           :expand (rp-term-listp (cons x y))
+           :in-theory (e/d () ()))))
+
+(defthm valid-sc-subterms-of-single-list
+  (equal (VALID-SC-SUBTERMS (list x) A)
+         (valid-sc x a)))
+
+(defthm rp-term-listp-of-single-list
+  (iff (rp-term-listp (list x))
+       (rp-termp x))
+  :hints (("Goal"
+           :expand (rp-term-listp (list x))
+           :in-theory (e/d () ()))))
+
+(defthm valid-sc-subterms-cdr
+  (implies (and (consp term)
+                (or (and (valid-sc term a)
+                         (not (equal (car term) 'rp))
+                         (not (equal (car term) 'quote))
+                         (not (equal (car term) 'if)))
+                    (valid-sc-subterms term a)))
+           (valid-sc-subterms (cdr term) a))
+  :hints (("Goal"
+           :in-theory (e/d (valid-sc is-if is-rp) ()))))
+
+(std::defretd
+ get-c-args-correct-reverse-1
+ (implies (and (rp-evl-meta-extract-global-facts :state state)
+               (mult-formula-checks state)
+               valid)
+          (equal (rp-evlt c a)
+                 (f2 (sum (sum-list (rp-evlt (caddr (ex-from-rp c)) a))
+                          (sum-list (rp-evlt (cadddr (ex-from-rp c)) a))
+                          (sum-list-eval (list-to-lst (car (cddddr (ex-from-rp c)))) a)))))
+ :fn GET-C-ARGS
+ :hints (("Goal"
+          :use ((:instance get-c-args-correct))
+          :in-theory (e/d (GET-C-ARGS
+                           rp-evlt-of-ex-from-rp-reverse-only-atom)
+                          (get-c-args-correct
+                           rp-trans
+                           rp-evlt-of-ex-from-rp)))))
+
+(std::defretd
+ get-c-args-correct-reverse-2
+ (implies (and (rp-evl-meta-extract-global-facts :state state)
+               (mult-formula-checks state)
+               valid)
+          (equal (rp-evlt c a)
+                 (f2 (sum (sum-list (rp-evlt s-args a))
+                          (sum-list (rp-evlt pp-args a))
+                          (sum-list-eval c-arg-lst a)))))
+ :fn GET-C-ARGS
+ :hints (("Goal"
+          :use ((:instance get-c-args-correct))
+          :in-theory (e/d ()
+                          (get-c-args-correct
+                           rp-trans
+                           rp-evlt-of-ex-from-rp)))))
+
+(defthmd rp-term-listp-implies-true-listp
+  (implies (rp-term-listp lst)
+           (true-listp lst)))
+
+(defthmd dummy-true-listp-lemma 
+  (implies (and (rp-termp single-c)
+                (consp (MV-NTH 1 (GET-C-ARGS single-c)))
+                (equal (car (MV-NTH 1 (GET-C-ARGS single-c)))
+                       'list)
+                (MV-NTH 4 (GET-C-ARGS single-c)))
+           (RP-TERM-LISTP (CDR (MV-NTH 1 (GET-C-ARGS single-c)))))
+  :hints (("Goal"
+           :in-theory (e/d (GET-C-ARGS
+                            ;rp-termp-implies-true-listp
+                            )
+                           (ex-from-rp)))))
+
+(defret-mutual
+  c-sum-merge-correct-valid-sc
+  (defret single-c-try-merge-correct-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc single-c1 a)
+                  (valid-sc single-c2 a)
+                  ;;(rp-termp single-c1)
+                  ;;(rp-termp single-c2)
+                  merge-success)
+             (and
+              (valid-sc coughed-s a)
+              (valid-sc-subterms coughed-pp-lst a)
+              (valid-sc-subterms produced-c-lst a)))
+    :fn single-c-try-merge)
+  (defret c-sum-merge-lst-aux-correct-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc single-c1 a)
+                  (valid-sc-subterms c2-lst a)
+                  ;;(rp-termp single-c1)
+                  ;;(rp-term-listp c2-lst)
+                  merge-success)
+             (and
+              (valid-sc coughed-s a)
+              (valid-sc-subterms coughed-pp-lst a)
+              (valid-sc-subterms produced-c-lst a)
+              (valid-sc-subterms updated-c2-lst a)))
+    :fn c-sum-merge-lst-aux)
+  (defret c-sum-merge-lst-correct-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc single-c1 a)
+                  (valid-sc-subterms c2-lst a)
+                  ;;(rp-termp single-c1)
+                  ;;(rp-term-listp c2-lst)
+                  )
+             (and
+              (valid-sc coughed-s a)
+              (valid-sc-subterms coughed-pp-lst a)
+              (valid-sc-subterms new-c2-lst a)
+              ))
+    :fn c-sum-merge-lst)
+  (defret c-sum-merge-lst-lst-correct-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms c1-lst a)
+                  (valid-sc-subterms c2-lst a)
+                  ;;(rp-term-listp c1-lst)
+                  ;;(rp-term-listp c2-lst)
+                  )
+             (and
+              (valid-sc coughed-s a)
+              (valid-sc-subterms coughed-pp-lst a)
+              (valid-sc-subterms updated-c2-lst a)
+              ))
+    :fn c-sum-merge-lst-lst)
+  (defret c-sum-merge-correct-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms c1-lst a)
+                  (valid-sc-subterms c2-lst a)
+                  ;;(rp-term-listp c1-lst)
+                  ;;;;(rp-term-listp c2-lst)
+                  )
+             (and
+              (valid-sc coughed-s a)
+              (valid-sc-subterms coughed-pp-lst a)
+              (valid-sc-subterms c-merged-lst a)
+              (valid-sc-subterms to-be-coughed-c-lst a)
+              ))
+    :fn c-sum-merge)
+  (defret c-sum-merge-aux-correct-valid-sc
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms c1-lst a)
+                  (valid-sc-subterms c2-lst a)
+                  ;;(rp-term-listp c1-lst)
+                  ;;(rp-term-listp c2-lst)
+                  )
+             (and
+              (valid-sc coughed-s a)
+              (valid-sc-subterms coughed-pp-lst a)
+              (valid-sc-subterms c-merged-lst a)
+              (valid-sc-subterms to-be-coughed-c-lst a)
+              ))
+    :fn c-sum-merge-aux)
+
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((C-SUM-MERGE-LST SINGLE-C1 C2-LST)
+                    (SINGLE-C-TRY-MERGE SINGLE-C1 SINGLE-C2)
+                    (C-SUM-MERGE-LST-AUX SINGLE-C1 C2-LST)
+                    (C-SUM-MERGE-AUX C1-LST C2-LST
+                                     :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE-LST ''0 C2-LST)
+                    (C-SUM-MERGE-AUX C1-LST NIL
+                                     :CLEAN-C1-LST NIL)
+                    (C-SUM-MERGE-AUX C1-LST NIL
+                                     :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE-AUX NIL C2-LST
+                                     :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE C1-LST C2-LST
+                                 :AUTO-SWAP AUTO-SWAP
+                                 :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE-LST-LST C1-LST C2-LST))
+           :in-theory (e/d (sum-of-repeated-to-times2
+                            rp-term-listp-of-cons-2
+
+                            valid-sc-subterms-cons-2
+                            rp-term-listp-of-consed-2
+                            valid-sc-subterms-of-consed-2
+                            get-c-args-correct-reverse-2
+                            f2-of-times2-reverse
+                            c-fix-arg-aux-correct-lemma)
+                           (NOT-INCLUDE-RP-MEANS-VALID-SC
+
+                            D2-OF-MINUS
+                            SUM-OF-F2S
+
+                            f2-of-times2
+
+                            get-c-args-correct
+                            (:REWRITE SUM-OF-NEGATED-ELEMENTS)
+                            (:DEFINITION EVAL-AND-ALL)
+                            (:REWRITE DEFAULT-CDR)
+                            (:REWRITE MINUS-OF-SUM)
+                            (:REWRITE EX-FROM-SYNP-LEMMA1)
+                            (:DEFINITION IS-SYNP$INLINE)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:REWRITE
+                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                            (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
+                            (:DEFINITION INCLUDE-FNC)
+                            rp-term-listp-of-cons
+                            rp-term-listp-of-consed
+                            valid-sc-subterms-of-consed
+                            valid-sc-subterms-cons
+                            (:DEFINITION TRANS-LIST)
+                            (:REWRITE RP-EVL-OF-VARIABLE)
+                            REWRITING-POSITIVE-LTE-GTE-GT-LT
+                            NOT-INCLUDE-RP-MEANS-VALID-SC-LST
+                            rp-termp
+                            VALID-SC-SUBTERMS
+                            rp-term-listp)))))
+
+(defthmd c-sum-merge-correct-dummy-sum-lemma
+  (implies (equal (sum x1 x2 x3 x4) a)
+           (equal (sum x1 x2 x3 x4 b)
+                  (sum a b))))
+
+(defthm to-sum-list-eval-for-list-instances
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (consp term)
+                (equal (car term) 'list))
+           (equal (sum-list (rp-evlt term a))
+                  (sum-list-eval (cdr term) a))))
+
+(value-triple (hons-clear 't))
+
+(defret-mutual
+  c-sum-merge-correct
+  (defret single-c-try-merge-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc single-c1 a)
+                  (valid-sc single-c2 a)
+                  (rp-termp single-c1)
+                  (rp-termp single-c2)
+                  merge-success)
+             (equal (sum (sum-list (rp-evlt coughed-s a))
+                         (sum-list-eval coughed-pp-lst a)
+                         (sum-list-eval produced-c-lst a))
+                    (sum (rp-evlt single-c1 a)
+                         (rp-evlt single-c2 a))))
+    :fn single-c-try-merge)
+  (defret c-sum-merge-lst-aux-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc single-c1 a)
+                  (valid-sc-subterms c2-lst a)
+                  (rp-termp single-c1)
+                  (rp-term-listp c2-lst)
+                  merge-success)
+             (equal (sum (sum-list (rp-evlt coughed-s a))
+                         (sum-list-eval coughed-pp-lst a)
+                         (sum-list-eval produced-c-lst a)
+                         (sum-list-eval updated-c2-lst a))
+                    (sum (rp-evlt single-c1 a)
+                         (sum-list-eval c2-lst a))))
+    :fn c-sum-merge-lst-aux)
+  (defret c-sum-merge-lst-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc single-c1 a)
+                  (valid-sc-subterms c2-lst a)
+                  (rp-termp single-c1)
+                  (rp-term-listp c2-lst))
+             (equal (sum (sum-list (rp-evlt coughed-s a))
+                         (sum-list-eval coughed-pp-lst a)
+                         (sum-list-eval new-c2-lst a))
+                    (sum (rp-evlt single-c1 a)
+                         (sum-list-eval c2-lst a))))
+    :fn c-sum-merge-lst)
+  (defret c-sum-merge-lst-lst-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms c1-lst a)
+                  (valid-sc-subterms c2-lst a)
+                  (rp-term-listp c1-lst)
+                  (rp-term-listp c2-lst))
+             (equal (sum (sum-list (rp-evlt coughed-s a))
+                         (sum-list-eval coughed-pp-lst a)
+                         (sum-list-eval updated-c2-lst a))
+                    (sum (sum-list-eval c1-lst a)
+                         (sum-list-eval c2-lst a))))
+    :fn c-sum-merge-lst-lst)
+  (defret c-sum-merge-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms c1-lst a)
+                  (valid-sc-subterms c2-lst a)
+                  (rp-term-listp c1-lst)
+                  (rp-term-listp c2-lst))
+             (equal (sum (sum-list (rp-evlt coughed-s a))
+                         (sum-list-eval coughed-pp-lst a)
+                         (sum-list-eval c-merged-lst a)
+                         (sum-list-eval to-be-coughed-c-lst a)
+                         (sum-list-eval to-be-coughed-c-lst a))
+                    (sum (sum-list-eval c1-lst a)
+                         (sum-list-eval c2-lst a))))
+    :fn c-sum-merge)
+  (defret c-sum-merge-aux-correct
+    (implies (and (rp-evl-meta-extract-global-facts :state state)
+                  (mult-formula-checks state)
+                  (valid-sc-subterms c1-lst a)
+                  (valid-sc-subterms c2-lst a)
+                  (rp-term-listp c1-lst)
+                  (rp-term-listp c2-lst))
+             (equal (sum (sum-list (rp-evlt coughed-s a))
+                         (sum-list-eval coughed-pp-lst a)
+                         (sum-list-eval c-merged-lst a)
+                         (sum-list-eval to-be-coughed-c-lst a)
+                         (sum-list-eval to-be-coughed-c-lst a))
+                    (sum (sum-list-eval c1-lst a)
+                         (sum-list-eval c2-lst a))))
+    :fn c-sum-merge-aux)
+
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((C-SUM-MERGE-LST SINGLE-C1 C2-LST)
+                    (SINGLE-C-TRY-MERGE SINGLE-C1 SINGLE-C2)
+                    (C-SUM-MERGE-LST-AUX SINGLE-C1 C2-LST)
+                    (C-SUM-MERGE-AUX C1-LST C2-LST
+                                     :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE-LST ''0 C2-LST)
+                    (C-SUM-MERGE-AUX C1-LST NIL
+                                     :CLEAN-C1-LST NIL)
+                    (C-SUM-MERGE-AUX C1-LST NIL
+                                     :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE-AUX NIL C2-LST
+                                     :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE C1-LST C2-LST
+                                 :AUTO-SWAP AUTO-SWAP
+                                 :CLEAN-C1-LST CLEAN-C1-LST)
+                    (C-SUM-MERGE-LST-LST C1-LST C2-LST))
+           :in-theory (e/d (sum-of-repeated-to-times2
+                            rp-term-listp-of-cons-2
+                            c-sum-merge-correct-dummy-sum-lemma
+                            valid-sc-subterms-cons-2
+                            rp-term-listp-of-consed-2
+                            valid-sc-subterms-of-consed-2
+                            get-c-args-correct-reverse-2
+                            f2-of-times2-reverse
+                            dummy-true-listp-lemma
+                            rp-term-listp-implies-true-listp
+                            c-fix-arg-aux-correct-lemma)
+                           
+                           (NOT-INCLUDE-RP-MEANS-VALID-SC
+                            D2-OF-MINUS
+                            SUM-OF-F2S
+                            f2-of-times2
+                            (:REWRITE DEFAULT-CAR)
+                            (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
+                            (:REWRITE
+                             REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS)
+                            get-c-args-correct
+                            (:REWRITE SUM-OF-NEGATED-ELEMENTS)
+                            (:DEFINITION EVAL-AND-ALL)
+                            (:REWRITE DEFAULT-CDR)
+                            (:REWRITE MINUS-OF-SUM)
+                            (:REWRITE EX-FROM-SYNP-LEMMA1)
+                            (:DEFINITION IS-SYNP$INLINE)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:REWRITE
+                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                            (:REWRITE VALID-SC-WHEN-LIST-INSTANCE)
+                            (:DEFINITION INCLUDE-FNC)
+                            rp-term-listp-of-cons
+                            rp-term-listp-of-consed
+                            valid-sc-subterms-of-consed
+                            valid-sc-subterms-cons
+                            (:DEFINITION TRANS-LIST)
+                            (:REWRITE RP-EVL-OF-VARIABLE)
+                            REWRITING-POSITIVE-LTE-GTE-GT-LT
+                            NOT-INCLUDE-RP-MEANS-VALID-SC-LST
+                            rp-termp
+                            VALID-SC-SUBTERMS
+                            single-c-try-merge-params-correct-2
+                            
+                            rp-term-listp)))
+          ("Subgoal *1/3"
+           :use ((:instance single-c-try-merge-params-correct-2
+                            (x (sum (SUM-LIST (RP-EVLT (MV-NTH 2 (GET-C-ARGS SINGLE-C2))
+                                                       A))
+                                    (SUM-LIST-EVAL (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                   A)))
+                            (C-HASH-CODE (MV-NTH 0 (GET-C-ARGS SINGLE-C1)))
+                            (s-lst (CDR (MV-NTH 1 (GET-C-ARGS SINGLE-C2))))
+                            (s-arg (MV-NTH 1 (GET-C-ARGS SINGLE-C1)))
+                            (pp-arg (MV-NTH 2 (GET-C-ARGS SINGLE-C1)))
+                            (c-arg-lst (MV-NTH 3 (GET-C-ARGS SINGLE-C1))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; create-s-instance, d-to-c and c/d-cough lemmas
-
+:i-am-here
 (defthm create-c-instance-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state))
