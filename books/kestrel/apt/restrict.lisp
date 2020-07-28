@@ -264,7 +264,8 @@
                                     new-enable$
                                     thm-name$
                                     verify-guards$
-                                    hints$)')
+                                    hints$
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -274,23 +275,8 @@
                                          symbolp
                                          booleanp
                                          evmac-input-hints-p
-                                         result)'),
-                        where @('old$') is
-                        the result of @(tsee restrict-process-old),
-                        @('restriction$') is
-                        the result of @(tsee restrict-process-restriction),
-                        @('undefined$') is
-                        the result of @(tsee restrict-process-undefined),
-                        @('new-name$') is
-                        the result of @(tsee process-input-new-name),
-                        @('new-enable$') indicates whether
-                        the new function should be enabled or not,
-                        @('thm-name$') is
-                        the result of @(tsee restrict-process-thm-name),
-                        @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not, and
-                        @('hints$') is
-                        the result of @(tsee evmac-process-input-hints).")
+                                         symbol-listp
+                                         result)').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -318,13 +304,15 @@
                            restriction old$ verify-guards$ ctx state))
        ((er undefined$) (restrict-process-undefined
                          undefined old$ ctx state))
-       ((er new-name$) (process-input-new-name new-name old$ ctx state))
+       ((er (list new-name$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old state)
                           "The :NEW-ENABLE input" t nil))
        ((er thm-name$) (restrict-process-thm-name
                         thm-name old$ new-name$ ctx state))
+       (names-to-avoid (cons thm-name$ names-to-avoid))
        ((er &) (ensure-value-is-boolean$ thm-enable
                                          "The :THM-ENABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
@@ -337,7 +325,8 @@
                  new-enable$
                  thm-name$
                  verify-guards$
-                 hints$))))
+                 hints$
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -723,6 +712,7 @@
    (print$ evmac-input-print-p)
    (show-only$ booleanp)
    (call pseudo-event-formp)
+   (names-to-avoid symbol-listp)
    ctx
    state)
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
@@ -792,7 +782,6 @@
    for visual separation.
    </p>"
   (b* ((wrld (w state))
-       (names-to-avoid (list new-name$ thm-name$))
        (recursivep (recursivep old$ nil wrld))
        (reflexivep
         (and recursivep
@@ -806,7 +795,7 @@
                     'constrained-function
                     names-to-avoid
                     wrld)))
-       (names-to-avoid (if stub? (rcons stub? names-to-avoid) names-to-avoid))
+       (names-to-avoid (if stub? (cons stub? names-to-avoid) names-to-avoid))
        (stub-event? (and stub?
                          (list `(defstub ,stub?
                                   ,(repeat (arity old$ wrld) '*) => *))))
@@ -818,40 +807,40 @@
        ((er (list appcond-thm-events
                   appcond-thm-names
                   names-to-avoid))
-        (evmac-appcond-theorems-no-extra-hints
-         appconds hints$ names-to-avoid print$ ctx state))
+        (evmac-appcond-theorems-no-extra-hints appconds
+                                               hints$
+                                               names-to-avoid
+                                               print$
+                                               ctx
+                                               state))
        ((mv old-unnorm-event
-            old-unnorm-name) (install-not-normalized-event old$
-            t
-            names-to-avoid
-            wrld))
+            old-unnorm-name)
+        (install-not-normalized-event old$ t names-to-avoid wrld))
        (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv new-fn-local-event
-            new-fn-exported-event) (restrict-gen-new-fn
-            old$
-            restriction$
-            undefined$
-            new-name$
-            new-enable$
-            verify-guards$
-            wrld))
+            new-fn-exported-event)
+        (restrict-gen-new-fn old$
+                             restriction$
+                             undefined$
+                             new-name$
+                             new-enable$
+                             verify-guards$
+                             wrld))
        ((mv new-unnorm-event
-            new-unnorm-name) (install-not-normalized-event new-name$
-            t
-            names-to-avoid
-            wrld))
+            new-unnorm-name)
+        (install-not-normalized-event new-name$ t names-to-avoid wrld))
        ((mv old-to-new-thm-local-event
-            old-to-new-thm-exported-event) (restrict-gen-old-to-new-thm
-            old$
-            restriction$
-            new-name$
-            thm-name$
-            thm-enable$
-            appcond-thm-names
-            stub?
-            old-unnorm-name
-            new-unnorm-name
-            wrld))
+            old-to-new-thm-exported-event)
+        (restrict-gen-old-to-new-thm old$
+                                     restriction$
+                                     new-name$
+                                     thm-name$
+                                     thm-enable$
+                                     appcond-thm-names
+                                     stub?
+                                     old-unnorm-name
+                                     new-unnorm-name
+                                     wrld))
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
                                           (restrict-gen-new-fn-verify-guards
@@ -942,7 +931,8 @@
                   new-enable$
                   thm-name$
                   verify-guards$
-                  hints$))
+                  hints$
+                  names-to-avoid))
         (restrict-process-inputs old
                                  restriction
                                  undefined
@@ -954,7 +944,8 @@
                                  hints
                                  print
                                  show-only
-                                 ctx state))
+                                 ctx
+                                 state))
        ((er event) (restrict-gen-everything old$
                                             restriction$
                                             undefined$
@@ -967,6 +958,7 @@
                                             print
                                             show-only
                                             call
+                                            names-to-avoid
                                             ctx
                                             state)))
     (value event)))

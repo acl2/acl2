@@ -460,7 +460,7 @@
                (forth-guard "A @(tsee symbolp).")
                (back-guard "A @(tsee symbolp).")
                (forth-injective "A @(tsee symbolp).")
-               (new-names-to-avoid "A @(tsee symbol-listp)."))
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Return fresh @(tsee defsurj) theorem names."
   :long
@@ -565,7 +565,7 @@
                               ctx
                               state)
   :returns (mv erp
-               (result "A tuple @('(surjmap names-to-avoid)')
+               (result "A tuple @('(surjmap updated-names-to-avoid)')
                         satisfying @('(typed-tuplep expdata-surjmapp
                                                     symbol-listp
                                                     result)').")
@@ -757,7 +757,8 @@
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-surjmaps res-surjmaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-surjmaps res-surjmaps updated-names-to-avoid)')
                         satisfying @('(typed-tuplep expdata-symbol-surjmap-alistp
                                                     expdata-pos-surjmap-alistp
                                                     symbol-listp
@@ -864,7 +865,8 @@
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-surjmaps res-surjmaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-surjmaps res-surjmaps updated-names-to-avoid)')
                         satisfying @('(typed-tuplep expdata-symbol-surjmap-alistp
                                                     expdata-pos-surjmap-alistp
                                                     symbol-listp
@@ -903,7 +905,8 @@
                                   ctx
                                   state)
   :returns (mv erp
-               (result "A tuple @('(arg-surjmaps res-surjmaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-surjmaps res-surjmaps updated-names-to-avoid)')
                         satisfying @('(typed-tuplep expdata-symbol-surjmap-alistp
                                                     expdata-pos-surjmap-alistp
                                                     symbol-listp
@@ -1044,7 +1047,7 @@
                                           ctx
                                           state)
   :returns (mv erp
-               (result "A list @('(newp-of-new$ new-names-to-avoid)')
+               (result "A list @('(newp-of-new$ updated-new-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
@@ -1145,8 +1148,8 @@
   :short "Process all the inputs."
   (b* ((wrld (w state))
        ((er old$) (expdata-process-old old predicate verify-guards ctx state))
-       ((er new$) (process-input-new-name new-name old$ ctx state))
-       (names-to-avoid (list new$))
+       ((er (list new$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
         (process-old-to-new-name old-to-new-name
                                  old-to-new-name-suppliedp

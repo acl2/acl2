@@ -186,6 +186,14 @@
      Utilities to set and retrieve a number of defaults have also been added.")
 
    (xdoc::p
+    "Some XDOC constructors have been added, and others have been improved.
+     See @(see xdoc::apt-constructors).")
+
+   (xdoc::p
+    "Some input processors have been added, and others have been improved.
+     See @(see apt::input-processors).")
+
+   (xdoc::p
     "A new transformation has been added:
      @(tsee apt::expdata), the `expanded data transformation'.
      This can realize data type refinements where

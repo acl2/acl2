@@ -318,7 +318,8 @@
                                     new-enable$
                                     thm-name$
                                     verify-guards$
-                                    case)')
+                                    case
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          symbol-alistp
@@ -327,6 +328,7 @@
                                          symbolp
                                          booleanp
                                          natp
+                                         symbol-listp
                                          result)').")
                state)
   :mode :program
@@ -353,13 +355,15 @@
        ((er static$) (parteval-process-static
                       static old$ verify-guards$ ctx state))
        (case (parteval-case-of-old old$ static$ wrld))
-       ((er new-name$) (process-input-new-name new-name old$ ctx state))
+       ((er (list new-name$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old$ state)
                           "The :NEW-ENABLE input" t nil))
        ((er thm-name$) (parteval-process-thm-name
                         thm-name old$ new-name$ ctx state))
+       (names-to-avoid (cons thm-name$ names-to-avoid))
        ((er &) (ensure-value-is-boolean$ thm-enable
                                          "The :THM-ENABLE input" t nil))
        ((when (and (= case 3)
@@ -384,7 +388,8 @@
                  new-enable$
                  thm-name$
                  verify-guards$
-                 case))))
+                 case
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -893,18 +898,20 @@
                   new-enable$
                   thm-name$
                   verify-guards$
-                  case)) (parteval-process-inputs
-                          old
-                          static
-                          new-name
-                          new-enable
-                          thm-name
-                          thm-enable
-                          verify-guards
-                          untranslate
-                          print
-                          show-only
-                          ctx state))
+                  case
+                  &)) ; NAMES-TO-AVOID
+        (parteval-process-inputs old
+                                 static
+                                 new-name
+                                 new-enable
+                                 thm-name
+                                 thm-enable
+                                 verify-guards
+                                 untranslate
+                                 print
+                                 show-only
+                                 ctx
+                                 state))
        (event (parteval-gen-everything old$
                                        static$
                                        new-name$

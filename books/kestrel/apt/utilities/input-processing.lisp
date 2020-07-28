@@ -27,34 +27,227 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-input-new-name (new-name (old symbolp) ctx state)
-  :returns (mv erp (new "A @(tsee symbolp).") state)
+(define process-input-new-name (new-name
+                                (old symbolp)
+                                (names-to-avoid symbol-listp)
+                                ctx
+                                state)
+  :returns (mv erp
+               (result "A tuple @('(new-name$ updated-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp
+                                         symbol-listp
+                                         result)').")
+               state)
   :mode :program
   :short "Process the @(':new-name') input of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @(':new-name') input of an APT transformations must be
-     either @(':auto') or another (non-keyword) symbol.
-     In the first case, the name of the new function
-     is obtained from the name of the old function (in the argument @('old')),
-     by incrementing its (explicit or implicit) numbered name index.
-     In the second case, the name of the new function
-     is the directly specified symbol,
-     which must therefore be a valid name for a new function."))
-  (b* (((er &) (ensure-value-is-symbol$ new-name "The :NEW-NAME input" t nil))
-       (new-name (case new-name
-                   (:auto (next-numbered-name old (w state)))
-                   (t new-name)))
-       (description (msg "The name ~x0 of the new function, ~@1,"
-                         new-name
-                         (if (eq new-name :auto)
-                             "automatically generated ~
-                              since the :NEW-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ new-name description t nil)))
-    (value new-name)))
+    "The APT transformations that use this utility have
+     a @(':new-name') input but not a @(':wrapper') and @(':wrapper-name') input
+     (the ones with these additional two inputs
+     should use the utility @(tsee process-input-new/wrapper-names) instead).
+     This utility processes (and validates) the @(':new-name') inputs,
+     as described in @(see function-name-generation)."))
+  (b* ((wrld (w state))
+       ((er &) (ensure-value-is-symbol$ new-name "The :NEW-NAME input" t nil))
+       ((mv numbered-name-p base index) (check-numbered-name old wrld))
+       ((mv base index) (if numbered-name-p
+                            (mv base index)
+                          (mv old 0))))
+    (if (eq new-name :auto)
+        (b* (((mv new-name names-to-avoid)
+              (next-fresh-numbered-name base
+                                        (1+ index)
+                                        names-to-avoid
+                                        wrld)))
+          (value (list new-name names-to-avoid)))
+      (b* ((msg/nil (fresh-namep-msg-weak new-name
+                                          'function
+                                          wrld))
+           ((when msg/nil)
+            (er-soft+ ctx t nil
+                      "The name ~x0 specified by :NEW-NAME ~
+                       is already in use.  ~@1"
+                      new-name msg/nil))
+           ((when (member-eq new-name names-to-avoid))
+            (er-soft+ ctx t nil
+                      "The name ~x0 specified by :NEW-NAME ~
+                       must be distinct form the names ~&1 ~
+                       that are also being generated.")))
+        (value (list new-name
+                     (cons new-name names-to-avoid)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-input-new/wrapper-names (new-name
+                                         wrapper-name
+                                         (wrapper-name-present booleanp)
+                                         (wrapper-gen booleanp)
+                                         (old symbolp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
+  :returns (mv erp
+               (result "A tuple
+                        @('(new-name$ wrapper-name$ updated-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp
+                                         symbolp
+                                         symbol-listp
+                                         result)').")
+               state)
+  :mode :program
+  :short "Process the @(':new-name') and @(':wrapper-name') inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility have
+     a @(':new-name'), @(':wrapper-name'), and @(':wrapper') input:
+     the first specifies the name of the new function,
+     the second one specifies the name of the wrapper function,
+     and the third one specifies whether the wrapper function is generated;
+     the second input may be present only if the third input is @('t').
+     This utility processes (and validates)
+     the @(':new-name') and (':wrapper-name') inputs,
+     given the value of the @(':wrapper') input
+     that is passed as the @('wrapper-gen') parameter.
+     The processing is as described in @(see function-name-generation).")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('wrapper-name-present') to @('t')
+     iff the @(':wrapper-name') input is present.
+     It must also pass
+     the value of the @(':wrapper') input as the @('wrapper-gen') parameter,
+     and the name of the target function as the @('old') parameter."))
+  (b* ((wrld (w state))
+       ((er &) (ensure-value-is-symbol$ new-name "The :NEW-NAME input" t nil))
+       ((er &)
+        (ensure-value-is-symbol$ wrapper-name "The :WRAPPER-NAME input" t nil))
+       ((mv numbered-name-p base index) (check-numbered-name old wrld))
+       ((mv base index) (if numbered-name-p
+                            (mv base index)
+                          (mv old 0))))
+    (if wrapper-gen
+        (cond ((and (eq new-name :auto)
+                    (eq wrapper-name :auto))
+               (b* ((new-base (add-suffix base "-AUX"))
+                    (wrapper-base base)
+                    ((mv (list new-name$ wrapper-name$) names-to-avoid)
+                     (next-fresh-numbered-names (list new-base
+                                                      wrapper-base)
+                                                (1+ index)
+                                                names-to-avoid
+                                                wrld)))
+                 (value (list new-name$ wrapper-name$ names-to-avoid))))
+              ((eq new-name :auto)
+               (b* ((msg/nil (fresh-namep-msg-weak wrapper-name
+                                                   'function
+                                                   wrld))
+                    ((when msg/nil)
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :WRAPPER-NAME ~
+                                is already in use.  ~@1"
+                               wrapper-name msg/nil))
+                    ((when (member-eq wrapper-name names-to-avoid))
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :WRAPPER-NAME ~
+                                must be distinct form the names ~&1 ~
+                                that are also being generated."))
+                    ((mv new-name$ names-to-avoid)
+                     (next-fresh-numbered-name base
+                                               (1+ index)
+                                               (cons wrapper-name
+                                                     names-to-avoid)
+                                               wrld)))
+                 (value (list new-name$
+                              wrapper-name
+                              (cons wrapper-name names-to-avoid)))))
+              ((eq wrapper-name :auto)
+               (b* ((msg/nil (fresh-namep-msg-weak new-name
+                                                   'function
+                                                   wrld))
+                    ((when msg/nil)
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :NEW-NAME ~
+                                is already in use.  ~@1"
+                               new-name msg/nil))
+                    ((when (member-eq new-name names-to-avoid))
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :NEW-NAME ~
+                                must be distinct form the names ~&1 ~
+                                that are also being generated."))
+                    ((mv wrapper-name$ names-to-avoid)
+                     (next-fresh-numbered-name base
+                                               (1+ index)
+                                               (cons new-name
+                                                     names-to-avoid)
+                                               wrld)))
+                 (value (list new-name
+                              wrapper-name$
+                              (cons new-name names-to-avoid)))))
+              (t
+               (b* ((msg/nil (fresh-namep-msg-weak wrapper-name
+                                                   'function
+                                                   wrld))
+                    ((when msg/nil)
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :NEW-NAME ~
+                                is already in use.  ~@1"
+                               new-name msg/nil))
+                    (msg/nil (fresh-namep-msg-weak wrapper-name
+                                                   'function
+                                                   wrld))
+                    ((when msg/nil)
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :WRAPPER-NAME ~
+                                is already in use.  ~@1"
+                               wrapper-name msg/nil))
+                    ((when (member-eq new-name names-to-avoid))
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :NEW-NAME ~
+                                must be distinct form the names ~&1 ~
+                                that are also being generated."))
+                    ((when (member-eq wrapper-name names-to-avoid))
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :WRAPPER-NAME ~
+                                must be distinct form the names ~&1 ~
+                                that are also being generated."))
+                    ((when (eq new-name wrapper-name))
+                     (er-soft+ ctx t nil
+                               "The name ~x0 specified by :NEW-NAME ~
+                                and the name ~x1 specified by :WRAPPER-NAME ~
+                                must be distinct."
+                               new-name wrapper-name)))
+                 (value (list new-name
+                              wrapper-name
+                              (list* new-name wrapper-name names-to-avoid))))))
+      (if wrapper-name-present
+          (er-soft+ ctx t nil
+                    "Since the :WRAPPER input is (perhaps by default) NIL, ~
+                     no :WRAPPER-NAME input may be supplied.")
+        (if (eq new-name :auto)
+            (b* (((mv new-name$ names-to-avoid)
+                  (next-fresh-numbered-name base
+                                            (1+ index)
+                                            names-to-avoid
+                                            wrld)))
+              (value (list new-name$ nil names-to-avoid)))
+          (b* ((msg/nil (fresh-namep-msg-weak new-name
+                                              'function
+                                              wrld))
+               ((when msg/nil)
+                (er-soft+ ctx t nil
+                          "The name ~x0 specified by :NEW-NAME ~
+                           is already in use.  ~@1"
+                          new-name msg/nil))
+               ((when (member-eq new-name names-to-avoid))
+                (er-soft+ ctx t nil
+                          "The name ~x0 specified by :NEW-NAME ~
+                           must be distinct form the names ~&1 ~
+                           that are also being generated.")))
+            (value (list new-name nil (cons new-name names-to-avoid)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -456,7 +456,7 @@
                (back-guard "A @(tsee symbolp).")
                (forth-injective "A @(tsee symbolp).")
                (back-injective "A @(tsee symbolp).")
-               (new-names-to-avoid "A @(tsee symbol-listp)."))
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Return fresh @(tsee defiso) theorem names."
   :long
@@ -574,7 +574,7 @@
                              ctx
                              state)
   :returns (mv erp
-               (result "A tuple @('(isomap names-to-avoid)')
+               (result "A tuple @('(isomap updated-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-isomapp
                                                     symbol-listp
                                                     result)').")
@@ -772,7 +772,8 @@
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-isomaps res-isomaps updated-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -879,7 +880,8 @@
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-isomaps res-isomaps update-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -918,7 +920,8 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-isomaps res-isomaps update-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -1063,7 +1066,7 @@
                                           ctx
                                           state)
   :returns (mv erp
-               (result "A list @('(newp-of-new$ new-names-to-avoid)')
+               (result "A list @('(newp-of-new$ update-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
@@ -1164,8 +1167,8 @@
   :short "Process all the inputs."
   (b* ((wrld (w state))
        ((er old$) (isodata-process-old old predicate verify-guards ctx state))
-       ((er new$) (process-input-new-name new-name old$ ctx state))
-       (names-to-avoid (list new$))
+       ((er (list new$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
         (process-old-to-new-name old-to-new-name
                                  old-to-new-name-suppliedp
