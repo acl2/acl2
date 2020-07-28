@@ -27,34 +27,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-input-new-name (new-name (old symbolp) ctx state)
-  :returns (mv erp (new "A @(tsee symbolp).") state)
+(define process-input-new-name (new-name
+                                (old symbolp)
+                                (names-to-avoid symbol-listp)
+                                ctx
+                                state)
+  :returns (mv erp
+               (result "A tuple @('(new-name$ updated-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp
+                                         symbol-listp
+                                         result)').")
+               state)
   :mode :program
   :short "Process the @(':new-name') input of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @(':new-name') input of an APT transformations must be
-     either @(':auto') or another (non-keyword) symbol.
-     In the first case, the name of the new function
-     is obtained from the name of the old function (in the argument @('old')),
-     by incrementing its (explicit or implicit) numbered name index.
-     In the second case, the name of the new function
-     is the directly specified symbol,
-     which must therefore be a valid name for a new function."))
-  (b* (((er &) (ensure-value-is-symbol$ new-name "The :NEW-NAME input" t nil))
-       (new-name (case new-name
-                   (:auto (next-numbered-name old (w state)))
-                   (t new-name)))
-       (description (msg "The name ~x0 of the new function, ~@1,"
-                         new-name
-                         (if (eq new-name :auto)
-                             "automatically generated ~
-                              since the :NEW-NAME input ~
-                              is (perhaps by default) :AUTO"
-                           "supplied as the :NEW-NAME input")))
-       ((er &) (ensure-symbol-new-event-name$ new-name description t nil)))
-    (value new-name)))
+    "The APT transformations that use this utility have
+     a @(':new-name') input but not a @(':wrapper') and @(':wrapper-name') input
+     (the ones with these additional two inputs
+     should use the utility @(tsee process-input-new/wrapper-names) instead).
+     This utility processes (and validates) the @(':new-name') inputs,
+     as described in @(see function-name-generation)."))
+  (b* ((wrld (w state))
+       ((er &) (ensure-value-is-symbol$ new-name "The :NEW-NAME input" t nil))
+       ((mv numbered-name-p base index) (check-numbered-name old wrld))
+       ((mv base index) (if numbered-name-p
+                            (mv base index)
+                          (mv old 0))))
+    (if (eq new-name :auto)
+        (b* (((mv new-name names-to-avoid)
+              (next-fresh-numbered-name base
+                                        (1+ index)
+                                        names-to-avoid
+                                        wrld)))
+          (value (list new-name names-to-avoid)))
+      (b* ((msg/nil (fresh-namep-msg-weak new-name
+                                          'function
+                                          wrld))
+           ((when msg/nil)
+            (er-soft+ ctx t nil
+                      "The name ~x0 specified by :NEW-NAME ~
+                       is already in use.  ~@1"
+                      new-name msg/nil))
+           ((when (member-eq new-name names-to-avoid))
+            (er-soft+ ctx t nil
+                      "The name ~x0 specified by :NEW-NAME ~
+                       must be distinct form the names ~&1 ~
+                       that are also being generated.")))
+        (value (list new-name
+                     (cons new-name names-to-avoid)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -86,8 +109,8 @@
      the second one specifies the name of the wrapper function,
      and the third one specifies whether the wrapper function is generated;
      the second input may be present only if the third input is @('t').
-     This utility processes (including validation)
-     the @(':new-name') and (':wrapper-name') input,
+     This utility processes (and validates)
+     the @(':new-name') and (':wrapper-name') inputs,
      given the value of the @(':wrapper') input
      that is passed as the @('wrapper-gen') parameter.
      The processing is as described in @(see function-name-generation).")
