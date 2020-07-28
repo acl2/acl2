@@ -395,7 +395,8 @@
                                     new-enable$
                                     thm-name$
                                     verify-guards$
-                                    hints$)')
+                                    hints$
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-term-listp
@@ -406,23 +407,8 @@
                                          symbolp
                                          booleanp
                                          symbol-alistp
-                                         result)'),
-                        where @('old$') is
-                        the result of @(tsee casesplit-process-old),
-                        @('conditions$') is
-                        the result of @(tsee casesplit-process-conditions),
-                        @('hyps') and @('news') are
-                        the result of @(tsee casesplit-process-theorems),
-                        @('new-name$') is
-                        the result of @(tsee process-input-new-name),
-                        @('new-enable$') indicates whether
-                        the new function should be enabled or not,
-                        @('thm-name$') is
-                        the result of @(tsee casesplit-process-thm-name),
-                        @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not, and
-                        @('hints$') is
-                        the result of @(tsee evmac-process-input-hints).")
+                                         symbol-listp
+                                         result)').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -449,13 +435,18 @@
                           conditions old$ verify-guards$ ctx state))
        ((er (list hyps news)) (casesplit-process-theorems
                                theorems old$ conditions$ ctx state))
-       ((er new-name$) (process-input-new-name new-name old$ ctx state))
+       ((er (list new-name$ names-to-avoid)) (process-input-new-name new-name
+                                                                     old$
+                                                                     nil
+                                                                     ctx
+                                                                     state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old state)
                           "The :NEW-ENABLE input" t nil))
        ((er thm-name$) (casesplit-process-thm-name
                         thm-name old$ new-name$ ctx state))
+       (names-to-avoid (cons thm-name$ names-to-avoid))
        ((er &) (ensure-value-is-boolean$ thm-enable
                                          "The :THM-ENABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
@@ -469,7 +460,8 @@
                  new-enable$
                  thm-name$
                  verify-guards$
-                 hints$))))
+                 hints$
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -885,6 +877,7 @@
                                   (print$ evmac-input-print-p)
                                   (show-only$ booleanp)
                                   (call pseudo-event-formp)
+                                  (names-to-avoid symbol-listp)
                                   ctx
                                   state)
   :returns (mv erp
@@ -946,7 +939,6 @@
      a blank line is printed just before the @(tsee encapsulate),
      for visual separation."))
   (b* ((wrld (w state))
-       (names-to-avoid (list new-name$ thm-name$))
        (appconds (casesplit-gen-appconds old$
                                          conditions$
                                          hyps
@@ -956,33 +948,35 @@
        ((er (list appcond-thm-events
                   appcond-thm-names
                   names-to-avoid))
-        (evmac-appcond-theorems-no-extra-hints
-         appconds hints$ names-to-avoid print$ ctx state))
+        (evmac-appcond-theorems-no-extra-hints appconds
+                                               hints$
+                                               names-to-avoid
+                                               print$
+                                               ctx
+                                               state))
        ((mv new-fn-local-event
-            new-fn-exported-event) (casesplit-gen-new-fn
-            old$
-            conditions$
-            news
-            new-name$
-            new-enable$
-            verify-guards$
-            appcond-thm-names
-            wrld))
+            new-fn-exported-event)
+        (casesplit-gen-new-fn old$
+                              conditions$
+                              news
+                              new-name$
+                              new-enable$
+                              verify-guards$
+                              appcond-thm-names
+                              wrld))
        ((mv new-unnorm-event
-            new-unnorm-name) (install-not-normalized-event new-name$
-            t
-            names-to-avoid
-            wrld))
+            new-unnorm-name)
+        (install-not-normalized-event new-name$ t names-to-avoid wrld))
        ((mv old-to-new-thm-local-event
-            old-to-new-thm-exported-event) (casesplit-gen-old-to-new-thm
-            old$
-            theorems$
-            new-name$
-            thm-name$
-            thm-enable$
-            appcond-thm-names
-            new-unnorm-name
-            wrld))
+            old-to-new-thm-exported-event)
+        (casesplit-gen-old-to-new-thm old$
+                                      theorems$
+                                      new-name$
+                                      thm-name$
+                                      thm-enable$
+                                      appcond-thm-names
+                                      new-unnorm-name
+                                      wrld))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
@@ -1061,18 +1055,20 @@
                   new-enable$
                   thm-name$
                   verify-guards$
-                  hints$)) (casesplit-process-inputs old
-                                                     conditions
-                                                     theorems
-                                                     new-name
-                                                     new-enable
-                                                     thm-name
-                                                     thm-enable
-                                                     verify-guards
-                                                     hints
-                                                     print
-                                                     show-only
-                                                     ctx state))
+                  hints$
+                  names-to-avoid))
+        (casesplit-process-inputs old
+                                  conditions
+                                  theorems
+                                  new-name
+                                  new-enable
+                                  thm-name
+                                  thm-enable
+                                  verify-guards
+                                  hints
+                                  print
+                                  show-only
+                                  ctx state))
        ((er event) (casesplit-gen-everything old$
                                              conditions$
                                              theorems
@@ -1087,6 +1083,7 @@
                                              print
                                              show-only
                                              call
+                                             names-to-avoid
                                              ctx
                                              state)))
     (value event)))
