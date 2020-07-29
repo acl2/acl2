@@ -119,7 +119,7 @@ list, which is stored in a table:</p>
      (let ((first (postprocess-one-termhint first)))
        `(termhint-append-hints ,first '(use-termhint ,second))))
     (& (postprocess-one-termhint hint))))
-           
+
 
 (defun use-termhint-find-hint (clause world)
   (if (atom clause)
@@ -177,19 +177,19 @@ we want to prove th:</p>
  (defstub b (x) t)
  (defstub c (x) t)
  (defstub d (x) t)
- 
+
  (defaxiom t1
    (implies (p1 a)
             (p2 a (b a) (c a))))
- 
+
  (defaxiom t2
    (implies (p2 a b c)
             (p3 a (d c))))
- 
+
  (defaxiom t3
    (implies (p3 a d)
             (p4 a)))
- 
+
  (defthm th
    (implies (p1 a)
             (p4 a)))
@@ -242,7 +242,7 @@ provides hints at certain endpoints:</p>
      ;; but instead we'll do this, just to show that you can use arbitrary
      ;; computed hints:
      `(my-use-t3-inst-hint ',(hq d))))
-)}
+})
 
 <p>Now, we submit th with the following hints:</p>
 @({
