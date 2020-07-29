@@ -57,8 +57,8 @@
 ; Book release notes are sometimes disorganized.
 ; They are often cleaned up before a release.
 
-; Starting with Version 7.3, we no longer maintain release notes
-; note-x-x-books.  Instead, we hope that the ACL2 Community will track
+; Starting with Version 7.3, Matt and J no longer maintain release notes
+; note-x-x-books.  Instead, they hope that the ACL2 Community will track
 ; changes to the books by maintaining note-x-x-books as they go.
 
 (defxdoc release-notes-books
@@ -725,6 +725,12 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Build System Updates")
+
+   (xdoc::p
+    "The books makefile has updated targets.  The new target @('regression')
+    builds what was formerly known as @('all').  The new target
+    @('regression-everything') builds all of the books, and the target @('all')
+    is now an alias for @('regression-everything').")
 
    (xdoc::p
     "By default, @('make') commands for certifying ACL2 books take advantage of
