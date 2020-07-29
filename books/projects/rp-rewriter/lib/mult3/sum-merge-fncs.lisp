@@ -512,7 +512,9 @@
 
 (progn
 
-  (define cough-lst (lst)
+  
+  
+  #|(define cough-lst (lst)
     :returns (mv (coughed-lst rp-term-listp
                               :hyp (rp-term-listp lst))
                  (res-lst rp-term-listp
@@ -540,7 +542,7 @@
               (t
                (b* (((mv coughed-lst new-lst)
                      (cough-lst (cdr lst))))
-                 (mv coughed-lst (cons-with-hint cur-orig new-lst lst))))))))
+                 (mv coughed-lst (cons-with-hint cur-orig new-lst lst))))))))||#
 
 
   (define c-fix-arg-aux ((arg-lst)
@@ -575,6 +577,9 @@
                      (c-fix-arg-aux (cdr arg-lst) neg-flag )))
                  (mv rest-coughed
                      (pp-cons-with-hint cur-orig rest-pp arg-lst)))))))))
+
+  (defmacro cough-lst (lst)
+    `(c-fix-arg-aux ,lst t))
 
   ;; (c/d-pp-fix-aux '(a a (-- b) c d)) = (mv '(a (-- b)) '(b c d))
   ;; (c/d-pp-fix-aux '(a a (-- b))) = (mv '(a (-- b)) '(b))

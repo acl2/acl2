@@ -40,8 +40,8 @@
 
 (include-book "summation-tree-meta-fncs")
 
-;; (local
-;;  (include-book "summation-tree-meta-fncs-correct"))
+(local
+ (include-book "summation-tree-meta-fncs-correct")) 
 
 (include-book "equal-meta")
 
@@ -152,32 +152,31 @@
 ;;                             rp-term-listp
 ;;                             valid-sc)))))
 
-(skip-proofs
- (rp::add-meta-rules
-  mult-formula-checks
-  (list
-   (make rp-meta-rule-rec
-         :fnc 's-c-spec-meta
-         :trig-fnc 's-spec
-         :dont-rw t
-         :valid-syntax t)
-   (make rp-meta-rule-rec
-         :fnc 's-c-spec-meta
-         :trig-fnc 'c-spec
-         :dont-rw t
-         :valid-syntax t)
-   (make rp-meta-rule-rec
-         :fnc 's-c-spec-meta
-         :trig-fnc 's-c-spec
-         :dont-rw t
-         :valid-syntax t)
-   (make rp-meta-rule-rec
-         :fnc 's-c-spec-meta
-         :trig-fnc 'c-s-spec
-         :dont-rw t
-         :valid-syntax t)
-   (make rp-meta-rule-rec
-         :fnc 'sort-sum-meta
-         :trig-fnc 'sort-sum
-         :dont-rw t
-         :valid-syntax t))))
+(rp::add-meta-rules
+ mult-formula-checks
+ (list
+  (make rp-meta-rule-rec
+        :fnc 's-c-spec-meta
+        :trig-fnc 's-spec
+        :dont-rw t
+        :valid-syntax t)
+  (make rp-meta-rule-rec
+        :fnc 's-c-spec-meta
+        :trig-fnc 'c-spec
+        :dont-rw t
+        :valid-syntax t)
+  (make rp-meta-rule-rec
+        :fnc 's-c-spec-meta
+        :trig-fnc 's-c-spec
+        :dont-rw t
+        :valid-syntax t)
+  (make rp-meta-rule-rec
+        :fnc 's-c-spec-meta
+        :trig-fnc 'c-s-spec
+        :dont-rw t
+        :valid-syntax t)
+  (make rp-meta-rule-rec
+        :fnc 'sort-sum-meta
+        :trig-fnc 'sort-sum
+        :dont-rw t
+        :valid-syntax t)))

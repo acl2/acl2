@@ -124,9 +124,9 @@
        (sum-comm-order-aux x (1+ cnt)))
       (('binary-sum & &)
        (mv 'binary-sum x))
-      (('binary-sum & &)
-       (mv 'binary-sum x))
-      (('EX-FROM-RP/-- &)
+      (('binary-m2-chain & &)
+       (mv 'binary-m2-chain x))
+      (('ex-from-rp/-- &)
        (mv 'm2 x))
       (&
        (mv cnt x))))
@@ -138,7 +138,9 @@
           (sum-comm-order-aux b 0)))
       (cond
        ((or (equal a-type 'binary-sum)
-            (equal b-type 'binary-sum))
+            (equal a-type 'binary-m2-chain)
+            (equal b-type 'binary-sum)
+            (equal b-type 'binary-m2-chain))
         nil)
        ((or (and (equal a-type 'm2)
                  (equal b-type 'm2))

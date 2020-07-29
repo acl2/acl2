@@ -1110,10 +1110,10 @@
 
 (verify-guards c-spec-meta-aux)
 
-(verify-guards c-spec-meta)
+;;(verify-guards c-spec-meta)
 
 (verify-guards s-spec-meta-aux)
 
-(verify-guards s-spec-meta)
+;;(verify-guards s-spec-meta)
 
 (verify-guards s-c-spec-meta)

@@ -2206,13 +2206,13 @@
         (progn$ (hard-error 's-of-s-fix-aux "Limit reached!.." nil)
                 (mv s-lst c-lst)))
        ((when (atom s-lst)) (mv nil c-lst))
-       ((mv pp-lst c-lst) (s-of-s-fix-lst (cdr s-lst) c-lst :limit (1- limit)))
+       ((mv pp-lst new-c-lst) (s-of-s-fix-lst (cdr s-lst) c-lst :limit (1- limit)))
        (cur-s (ex-from-rp/-- (car s-lst))))
     (case-match cur-s
       (('s & cur-pp cur-c)
        (b* ((cur-c-lst (list-to-lst cur-c))
             ((mv coughed-s coughed-pp-lst c-lst &)
-             (c-sum-merge cur-c-lst c-lst))
+             (c-sum-merge cur-c-lst new-c-lst))
             (pp-lst (pp-sum-merge-aux coughed-pp-lst pp-lst))
             (pp-lst (pp-sum-merge-aux (list-to-lst cur-pp) pp-lst))
             (coughed-s-lst (list-to-lst coughed-s))
@@ -2222,11 +2222,13 @@
              (s-of-s-fix-lst coughed-s-lst c-lst :limit (1- limit))))
          (mv (pp-sum-merge-aux rest-pp-lst pp-lst) c-lst)))
       (''nil
-       (mv pp-lst c-lst))
+       (mv pp-lst new-c-lst))
       (&
        (progn$ (cw "Unexpected s term ~p0 ~%" cur-s)
                (hard-error 's-of-s-fix-aux "Read above.." nil)
-               (mv (list-to-lst `(binary-append ,cur-s (list . ,pp-lst)))
+               (mv s-lst
+                   ;;(list-to-lst `(binary-append ,cur-s (list . ,pp-lst)))
+                   
                    c-lst)))))
   ///
   (acl2::defret
@@ -2405,6 +2407,10 @@
             :induct (REPEAT NUM X)
             :in-theory (e/d (rp-term-listp repeat) ())))))
 
+
+;;;;;;;;;;;;;;;;;;;
+
+
 (define extract-new-sum-element (term acc)
   :returns (acc-res rp-term-listp
                     :hyp (and (rp-termp term)
@@ -2443,6 +2449,9 @@
                    (list (cons #\0 term-orig)))
        (cons term-orig acc))))))
 
+
+
+
 (define extract-new-sum-consed (term)
   :measure (cons-count term)
   :hints (("Goal"
@@ -2458,13 +2467,26 @@
       (('cons x rest)
        (b* ((acc (extract-new-sum-consed rest)))
          (extract-new-sum-element x acc)))
+      (''nil
+       nil)
       (('quote x)
        (if (consp x)
-           (b* ((acc (extract-new-sum-consed (list 'quote (cdr x)))))
-             (extract-new-sum-element (list 'quote (car x)) acc))
-         (extract-new-sum-element term-orig nil)))
+           (extract-new-sum-element (list 'quote (sum-list x)) nil)
+         (progn$
+          (hard-error 'extract-new-sum-consed
+                      "Unexpected term. Should be a true-listp formm: ~p0~%"
+                      (list (cons #\0 term-orig)))
+          (list-to-lst term-orig)
+          )))
       (&
-       (extract-new-sum-element term-orig nil)))))
+       (progn$
+        (hard-error 'extract-new-sum-consed
+                    "Unexpected term. Should be a true-listp formm: ~p0~%"
+                    (list (cons #\0 term-orig)))
+        (list-to-lst term-orig)
+        ;(list `(sum-list ,term-orig))
+        ))
+       )))
 
 (define new-sum-merge-aux-dissect-term (term)
   :inline t
@@ -2660,7 +2682,7 @@
       (and (light-pp-term-p (car lst))
            (light-pp-term-list-p (cdr lst)))))
 
-  (define quarternaryp-sum-aux ((term well-formed-new-sum))
+  (define quarternaryp-sum-aux (term)
     :returns (mv (res natp
                       :rule-classes (:rewrite :type-prescription))
                  (valid booleanp))
@@ -2692,7 +2714,7 @@
                 (mv (1+ rest-sum) t))
                ((is-rp-bitp x-orig)
                 (mv (1+ rest-sum) t))
-               ((and-list-p x-orig)
+               ((and-list-p x)
                 (mv (1+ rest-sum) t))
                ((equal x ''0)
                 (mv rest-sum t))
@@ -2709,23 +2731,39 @@
       (''nil
        (mv 0 t))
       (('quote x)
-       (cond ((natp x)
-              (mv x t))
-             ((nat-listp x)
-              (mv (sum-list x) t))
-             (t (mv 0 nil))))
+       (b* ((res (sum-list x)))
+         (if (natp res)
+             (mv res t)
+           (mv 0 nil))))
       (& (mv 0 nil)))
     ///
     (verify-guards quarternaryp-sum-aux
       :hints (("Goal"
-               :in-theory (e/d (WELL-FORMED-NEW-SUM) ())))))
+               :in-theory (e/d () ())))))
 
-  (define quarternaryp-sum ((sum well-formed-new-sum))
+  (define quarternaryp-sum (sum)
     :returns (res booleanp)
     (b* (((mv res valid)
           (quarternaryp-sum-aux sum)))
       (and valid
            (quarternaryp res)))))
+
+
+;; (define light-get-max-min-lst (lst)
+;;   :returns (mv (max-val integerp)
+;;                (min-val integerp)
+;;                (valid booleanp))
+;;   (b* (((when (atom lst))
+;;         (mv 0 0 t))
+;;        ((mv rest-max rest-min valid)
+;;         (light-get-max-min-lst (cdr lst)))
+;;        ((Unless valid)
+;;         (mv 0 0 nil))
+;;        (cur (car lst))
+;;        ((when (is-rp-bitp cur)) (mv 1 0 t)))
+;;     (cond
+;;      ((single-c-
+
 
 (define c-spec-meta-aux (arg-s arg-pp-lst arg-c-lst to-be-coughed-c-lst quarternaryp)
   :returns (res rp-termp
@@ -2744,10 +2782,7 @@
         (if (clean-pp-args-cond arg-s arg-c-lst)
             (c-fix-pp-args (create-list-instance arg-pp-lst))
           (mv ''nil (create-list-instance arg-pp-lst))))
-       (- (and (equal arg-pp '(LIST ('0)))
-               (cw "arg-pp: ~p0, pp-coughed:~p1 ~%"
-                   arg-pp pp-coughed)
-               (hard-error 'nil "" 'nil)))
+       
        (single-c-term (create-c-instance arg-s
                                          arg-pp
                                          (create-list-instance arg-c-lst)))
@@ -2791,34 +2826,34 @@
        (res (if quarternaryp `(rp 'bitp ,res) res)))
     res))
 
-(define c-spec-meta (term)
-  ;; term should be `(c-spec well-formed-new-sum)
-  ;; well-formed-new-sum should be given to new-sum-merge-aux
-  ;; result of new-sum-merge-aux (mv s pp c/d)
-  ;; this should be made into a c term and get  coughed-out
-  ;; then returns `(c-res ,s-coughed ,pp-coughed ,c/d-cleaned)
+;; (define c-spec-meta (term)
+;;   ;; term should be `(c-spec well-formed-new-sum)
+;;   ;; well-formed-new-sum should be given to new-sum-merge-aux
+;;   ;; result of new-sum-merge-aux (mv s pp c/d)
+;;   ;; this should be made into a c term and get  coughed-out
+;;   ;; then returns `(c-res ,s-coughed ,pp-coughed ,c/d-cleaned)
 
-  ;; later try to attach bitp to the returned value.
-  :returns (mv (res rp-termp
-                    :hyp (rp-termp term))
-               (dont-rw dont-rw-syntaxp))
-  :verify-guards nil
-  (b* ((result
-        (case-match term
-          (('c-spec sum)
-           (if (well-formed-new-sum sum)
-               (b* ((;;(mv s pp c)
-                     (mv s pp-lst  c-lst to-be-coughed-c-lst)
-                     (new-sum-merge sum))
-                    (quarternaryp (quarternaryp-sum sum))
+;;   ;; later try to attach bitp to the returned value.
+;;   :returns (mv (res rp-termp
+;;                     :hyp (rp-termp term))
+;;                (dont-rw dont-rw-syntaxp))
+;;   :verify-guards nil
+;;   (b* ((result
+;;         (case-match term
+;;           (('c-spec sum)
+;;            (if (well-formed-new-sum sum)
+;;                (b* ((;;(mv s pp c)
+;;                      (mv s pp-lst  c-lst to-be-coughed-c-lst)
+;;                      (new-sum-merge sum))
+;;                     (quarternaryp (quarternaryp-sum sum))
 
-                    #|(- (and (not quarternarp)
-                    (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#)
-                 (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))
-             (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
-                     term)))
-          (& term))))
-    (mv result t)))
+;;                     #|(- (and (not quarternarp)
+;;                     (cw "s-c-spec This term is not quarternarp ~p0 ~&" sum)))||#)
+;;                  (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))
+;;              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
+;;                      term)))
+;;           (& term))))
+;;     (mv result t)))
 
 ;; (c-spec-meta `(c-spec (cons (binary-and (bit-of a 0) (bit-of b 0))
 ;;                             (cons (binary-or (binary-and (bit-of a 0) (bit-of b 0))
@@ -2840,30 +2875,30 @@
        (res (create-s-instance pp c)))
     res))
 
-(define s-spec-meta (term)
+;; (define s-spec-meta (term)
 
-  ;; term should be `(s-pec well-formed-new-sum)
-  ;; well-formed-new-sum should be given to new-sum-merge-aux
-  ;; result of new-sum-merge-aux (mv s pp c/d)
-  ;; s-of-s-fix should be called on s
-  ;; result should be returned `(s pp-new c/d-new)
+;;   ;; term should be `(s-pec well-formed-new-sum)
+;;   ;; well-formed-new-sum should be given to new-sum-merge-aux
+;;   ;; result of new-sum-merge-aux (mv s pp c/d)
+;;   ;; s-of-s-fix should be called on s
+;;   ;; result should be returned `(s pp-new c/d-new)
 
-  ;; later try to attach bitp to the returned value.
-  :returns (mv (res rp-termp
-                    :hyp (rp-termp term))
-               (dont-rw dont-rw-syntaxp))
-  :verify-guards nil
-  (b* ((result (case-match term
-                 (('s-spec sum)
-                  (cond ((well-formed-new-sum sum)
-                         (b* (((mv s pp-lst c-lst &);;(mv s pp c)
-                               (new-sum-merge sum)))
-                           (s-spec-meta-aux s pp-lst c-lst)))
-                        (t
-                         (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
-                                 term))))
-                 (& term))))
-    (mv result t)))
+;;   ;; later try to attach bitp to the returned value.
+;;   :returns (mv (res rp-termp
+;;                     :hyp (rp-termp term))
+;;                (dont-rw dont-rw-syntaxp))
+;;   :verify-guards nil
+;;   (b* ((result (case-match term
+;;                  (('s-spec sum)
+;;                   (cond ((well-formed-new-sum sum)
+;;                          (b* (((mv s pp-lst c-lst &);;(mv s pp c)
+;;                                (new-sum-merge sum)))
+;;                            (s-spec-meta-aux s pp-lst c-lst)))
+;;                         (t
+;;                          (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
+;;                                  term))))
+;;                  (& term))))
+;;     (mv result t)))
 
 (define s-c-spec-meta (term)
   :returns (mv (res rp-termp

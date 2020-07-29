@@ -697,6 +697,22 @@
                             (term1 (EX-FROM-RP (CAR PP-LST)))
                             (term2 (EX-FROM-RP (CADR PP-LST))))))))
 
+
+(defthm c-fix-arg-aux-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (b* (((mv coughed result)
+                 (c-fix-arg-aux pp-lst neg-flag)))
+             (equal
+              (sum (sum-list-eval coughed a)
+                   (sum-list-eval coughed a)
+                   (sum-list-eval result a)
+                   rest)
+              (sum (sum-list-eval pp-lst a) rest))))
+  :hints (("Goal"
+           :use ((:instance c-fix-arg-aux-correct-lemma))
+           :in-theory (e/d (times2) (c-fix-arg-aux-correct-lemma)))))
+
 (defthmd c/d-fix-arg-aux-correct-dummy-lemma1
   (Implies (force (integerp x))
            (equal (EQUAL x (SUM a (-- c)))
@@ -755,6 +771,28 @@
                             (pp-lst (cdr pp))))
            :in-theory (e/d (c-fix-pp-args)
                            (c-fix-arg-aux-correct-lemma)))))
+
+(defthm c-fix-pp-args-correct-2
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                ;(rp-termp pp)
+                )
+           (b* (((mv coughed result)
+                 (c-fix-pp-args pp )))
+             (and (equal
+                   (sum (sum-list (rp-evlt coughed a))
+                        (sum-list (rp-evlt coughed a))
+                        (sum-list (rp-evlt result a))
+                        rest)
+                   (sum (sum-list (rp-evlt pp a)) rest))
+                  )))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance c-fix-arg-aux-correct 
+                            (neg-flag t)
+                            (pp-lst (cdr pp))))
+           :in-theory (e/d (c-fix-pp-args)
+                           (c-fix-arg-aux-correct)))))
 
 (defthm c-fix-pp-args-correct-on-f2
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -848,6 +886,28 @@
                             (pp-lst (cdr pp))))
            :in-theory (e/d (c-fix-s-args)
                            (c-fix-arg-aux-correct-lemma)))))
+
+(defthm c-fix-s-args-correct-2
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                ;(rp-termp pp)
+                )
+           (b* (((mv coughed result)
+                 (c-fix-s-args pp)))
+             (and (equal
+                   (sum (sum-list (rp-evlt coughed a))
+                        (sum-list (rp-evlt coughed a))
+                        (sum-list (rp-evlt result a))
+                        rest)
+                   (sum (sum-list (rp-evlt pp a)) rest))
+                  )))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance c-fix-arg-aux-correct
+                            (neg-flag t)
+                            (pp-lst (cdr pp))))
+           :in-theory (e/d (c-fix-s-args)
+                           (c-fix-arg-aux-correct)))))
 
 ;; #|(defthm c/d-fix-s-args-correct-with-sk
 ;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
