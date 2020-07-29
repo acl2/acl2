@@ -40,3 +40,4 @@ $STARTJOB -c "nice -n 5 make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLE
 echo "Build was successful."
 
 exit 0
+
