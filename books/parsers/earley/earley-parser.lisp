@@ -742,7 +742,6 @@
         *simple-java-example-chart-tree-target*))
 
 #|
-
 (trace$ earley-parse earley-parse25 earley-parse50 earley-parse100
         earley-parse200 earley-parse400)
 
@@ -756,5 +755,4 @@
         earley-parse load-lexicon)
 
 (trace$ predictor1 predictor scanner completer1 completer)
-
 |#
