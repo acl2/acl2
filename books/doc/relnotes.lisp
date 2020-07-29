@@ -418,6 +418,10 @@
     " have been added.")
 
    (xdoc::p
+    "The macro @(tsee fty::defset) has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
     "The macro @(tsee fty::defomap) has been improved
      to generate additional theorems.")
 
