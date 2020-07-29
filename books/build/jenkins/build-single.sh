@@ -13,9 +13,6 @@ source $JENKINS_HOME/env.sh
 ACL2DIR=`pwd`
 #alias startjob='bash'
 
-git fetch --all
-MASTER_GIT_HASH_AT_START=`git branch -avv | grep remotes/origin/master | tr -s ' ' | cut  -f 3 -d ' '`
-
 if [ -z "$TARGET" ]; then
   echo "Setting TARGET automatically";
   TARGET='manual';
@@ -40,13 +37,6 @@ echo "Building the books."
 cd books
 $STARTJOB -c "nice -n 5 make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
 
-git fetch --all
-MASTER_GIT_HASH_AT_END=`git branch -avv | grep remotes/origin/master | tr -s ' ' | cut  -f 3 -d ' '`
-
-if [$MASTER_GIT_HASH_AT_START != $MASTER_GIT_HASH_AT_END]; then
-    ./books/build/jenkins/rerun-build-due-to-outdated-merge.sh;
-fi
-    
 echo "Build was successful."
 
 exit 0
