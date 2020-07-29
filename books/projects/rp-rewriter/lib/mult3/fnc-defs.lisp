@@ -338,6 +338,12 @@
                      (lexorder2 (cdr x) (cdr y))
                    (mv order-res nil)))))))
 
+  (defun lexorder2- (x y)
+    (declare (xargs :guard t))
+    (b* (((mv order &)
+          (lexorder2 x y)))
+      order))
+
   (encapsulate
     nil
 
@@ -793,3 +799,8 @@
 
 (defmacro cs (&rest args)
   `(c-s-spec (list . ,args)))
+
+(define is-rp-bitp (term)
+  (case-match term
+    (('rp ''bitp &)
+     t)))

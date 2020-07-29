@@ -236,14 +236,82 @@
    (equal (mv-nth 1 (PP-LIST-ORDER-aux x y))
           (equal x y))
    :hints (("Goal"
-            :in-theory (e/d (pp-list-order-aux) ())))))
+            :in-theory (e/d (pp-list-order-aux
+                             rp-equal-subterms)
+                            ())))))
+
+
+(local
+ (defun two-cdrs (x y)
+   (if (atom x)
+       nil
+     (if (atom y)
+         nil
+       (acons (car x)
+              (car y)
+              (two-cdrs (cdr x) (cdr y)))))))
+
+(local
+ (defthm pp-list-order-equals-redef-lemma-1
+   (implies (not (equal (len x) (len y)))
+            (not (rp-equal-subterms x y)))
+   :hints (("Goal"
+            :induct (two-cdrs x y)
+            :in-theory (e/d (rp-equal-subterms) ())))))
+
+
+;; (local
+;;  (defthm pp-list-order-equals-redef-lemma-1.1
+;;    (implies (NOT (EQUAL (LOGAPP (MV-NTH 1 (AND-LIST-HASH-AUX (CDR X)))
+;;                                 (MV-NTH 0 (AND-LIST-HASH-AUX (CDR X)))
+;;                                 (SUM 5 (CADR (CADDR (CAR X)))))
+;;                         (LOGAPP (MV-NTH 1 (AND-LIST-HASH-AUX (CDR X)))
+;;                                 (MV-NTH 0 (AND-LIST-HASH-AUX (CDR X)))
+;;                                 0)))
+
+;; (local
+;;  (defthm pp-list-order-equals-redef-lemma-1.5
+;;    (implies (not (equal (and-list-hash-aux x)
+;;                         (and-list-hash-aux y)))
+;;             (not (rp-equal-subterms x y)))
+;;    :hints (("goal"
+;;             :induct (two-cdrs x y)
+;;             :do-not-induct t
+;;             :expand ((RP-EQUAL (CAR X) (CAR Y))
+;;                      (RP-EQUAL-SUBTERMS X Y)
+;;                      (RP-EQUAL-SUBTERMS (CDR X) (CDR Y))
+;;                      (RP-EQUAL-SUBTERMS (CDR (CAR X))
+;;                                         (CDR (CAR Y))))
+;;             :in-theory (e/d (rp-equal-subterms
+;;                              rp-equal
+;;                              is-rp
+;;                              EX-FROM-RP
+;;                              AND-LIST-HASH-AUX
+;;                              and-list-hash)
+;;                             (floor logapp IFIX-OPENER FLOOR))))))
+
+;; (skip-proofs
+;;  (local
+;;  (defthm pp-list-order-equals-redef-lemma-2
+;;    (implies (not (equal (and-list-hash x)
+;;                         (and-list-hash y)))
+;;             (not (rp-equal-subterms x y)))
+;;    :hints (("goal"
+;;             :induct (two-cdrs x y)
+;;             :do-not-induct t
+;;             :in-theory (e/d (rp-equal-subterms
+;;                              AND-LIST-HASH-AUX
+;;                              and-list-hash)
+;;                             (floor logapp IFIX-OPENER FLOOR)))))))
 
 (local
  (defthm PP-LIST-ORDER-equals-redef
    (equal (mv-nth 1 (PP-LIST-ORDER x y))
           (equal x y))
    :hints (("Goal"
-            :in-theory (e/d (pp-list-order) ())))))
+            :in-theory (e/d (pp-list-order
+                             rp-equal-subterms)
+                            ())))))
 
 (local
  (defthm rp-trans-when-list
@@ -316,7 +384,7 @@
                              (:REWRITE EX-FROM-SYNP-LEMMA1)
                              (:DEFINITION RP-TRANS)
                              RP-EVL-OF-VARIABLE
-
+                             ;;RP-EVL-OF-QUOTE
                              len))))))
 
 (local

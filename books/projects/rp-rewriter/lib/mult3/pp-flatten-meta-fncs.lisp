@@ -174,22 +174,23 @@
         ((equal (car x) (car y))
          (pp-list-order-aux (cdr x) (cdr y)))
         (t
-         (mv
-          #|(b* (((mv order &)
-          (lexorder2 (car x) (car y)))) ; ; ;
-          order)||#
-
-          (b* ((cur-x (car x))
-               (cur-y (car y)))
-            (if (and nil
-                     (case-match cur-x (('bit-of & ('quote &)) t))
-                     (case-match cur-y (('bit-of & ('quote &)) t))
-                     (not (equal (caddr cur-x)
-                                 (caddr cur-y))))
-                (> (ifix (caddr cur-x))
-                   (ifix (caddr cur-y)))
-              (not (lexorder cur-x cur-y))))
-          nil))))
+         (mv (lexorder2- (car x) (car y)) nil))))
+        ;; (mv
+;;          (b* (((mv order &)                           ;
+;;                (lexorder2 (car x) (car y))))          ; ; ; ;
+;;            order)||#                                  ;
+;; ;
+;;          (b* ((cur-x (ex-from-rp (car x)))            ;
+;;               (cur-y (ex-from-rp (car y))))           ;
+;;            (if (and nil                               ;
+;;                     (case-match cur-x (('bit-of & ('quote &)) t)) ;
+;;                     (case-match cur-y (('bit-of & ('quote &)) t)) ;
+;;                     (not (rp-equal (caddr cur-x)                  ;
+;;                                    (caddr cur-y))))               ;
+;;                (> (ifix (caddr cur-x))                            ;
+;;                   (ifix (caddr cur-y)))                           ;
+;;              (not (lexorder cur-x cur-y))))                       ;
+;;          nil)))
 
 (define pp-list-order (x y)
   :returns (mv (order)
@@ -467,7 +468,7 @@
                      (equal f s))
                  (merge-sorted-and$-lists first
                                           (cdr second)))
-                ((lexorder f s)
+                ((lexorder2- f s)
                  (cons (car first) ;;hons
                        (merge-sorted-and$-lists (cdr first)
                                                 second)))
@@ -503,7 +504,7 @@
              ((or (equal b ''1)
                   (equal b a))
               (list a))
-             ((lexorder a b) lst)
+             ((lexorder2- a b) lst)
              (t (list b a)))))
          (t (b* ((first-size (floor len 2))
                  (second-size (- len first-size))
@@ -924,7 +925,7 @@
   (case-match term
     (('binary-and ('bit-of & &) ('bit-of & &))
      (b* ((cur-single 
-           (if (lexorder (cadr term) (caddr term))
+           (if (lexorder2- (cadr term) (caddr term))
                (if sign
                    `(-- ,(create-and-list-instance (cdr term)))
                  (create-and-list-instance (cdr term)))

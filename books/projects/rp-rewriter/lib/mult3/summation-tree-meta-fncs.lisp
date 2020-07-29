@@ -238,10 +238,7 @@
        (calculate-pp-hash pp)
        (* 2 (get-hash-code-of-c c)))))
 
-(define is-rp-bitp (term)
-  (case-match term
-    (('rp ''bitp &)
-     t)))
+
 
 (local
  (in-theory (disable rp-termp)))
@@ -2510,6 +2507,9 @@
       (s-sum-merge-aux to-be-coughed-c-lst
                        (list `(-- ,abs-term-w/-sc)))
     to-be-coughed-c-lst))
+
+
+;;(include-book "pp-flatten-wrapper")
 
 (define new-sum-merge-aux (sum-lst)
   :verify-guards nil
