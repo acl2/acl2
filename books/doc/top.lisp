@@ -616,3 +616,4 @@
 
 (collect-topics-with-name 'acl2::add-listfix-rule (get-xdoc-table (w state)))
 ||#
+
