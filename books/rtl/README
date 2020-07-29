@@ -376,7 +376,7 @@ Lemma 6.84       rne-rto, rna-rto
 Lemma 6.85       rto-plus
 Definition 6.7   rup
 Definition 6.8   rdn
-Lemma 6.86       rup-lower-bound, rdn-lower-bound
+Lemma 6.86       rup-lower-bound, rdn-upper-bound
 Definition 6.9   common-mode-p
 Lemma 6.87       rnd-minus
 Lemma 6.88       rnd-choise
