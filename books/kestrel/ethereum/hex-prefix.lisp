@@ -87,7 +87,26 @@
           (bytes (hp-encode-aux (cddr nibbles))))
        (cons byte bytes))
      :no-function t
-     :hooks (:fix))))
+     :hooks (:fix)
+     ///
+     (local (include-book "arithmetic/top" :dir :system))
+     (defret len-of-hp-encode-aux
+       (equal (len bytes)
+              (floor (len nibbles) 2))
+       :hyp (evenp (len nibbles))
+       :hints (("Goal" :induct (hp-encode-aux nibbles))))))
+
+  ///
+
+  (defret consp-of-hp-encode
+    (consp bytes)
+    :rule-classes :type-prescription)
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defret len-of-hp-encode
+    (equal (len bytes)
+           (1+ (floor (len nibbles) 2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

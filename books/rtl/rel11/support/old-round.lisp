@@ -4420,7 +4420,7 @@ ACL2::SIMPLIFY-SUMS-< ACL2::REDUCE-ADDITIVE-CONSTANT-<)
 
 (local (in-theory (disable rdn)))
 
-(defthmd rdn-lower-bound
+(defthmd rdn-upper-bound
     (implies (and (case-split (rationalp x))
 		  (case-split (integerp n)))
 	     (<= (rdn x n) x))

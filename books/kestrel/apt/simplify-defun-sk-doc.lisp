@@ -631,7 +631,7 @@
 
  @({
  (include-book \"simplify-defun-sk\")
- (include-book \"community/soft-ext\" :dir :kestrel-acl2)
+ (include-book \"kestrel/soft/top\" :dir :system)
  (defunvar ?foo (*) => *)
  (defun-sk2 spec[?foo] (?foo) ()
    (forall (x) (equal (?foo x) (* x 2))))

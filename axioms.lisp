@@ -10816,6 +10816,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; OR and unquoted Ts and NILs and numbers.  See get-guards2 for a discussion of
 ; tflg.
 
+; Implicit in this whole design is the presumption that when tflg = nil all of
+; the macros introduced in our results are ``hygenic'' in the sense used by
+; Felleisen et. al, and the result of this function is at least a pseudo-termp
+; so that we can find all the variables that occur in the macroexpansion by
+; looking for variables in the result produced here.  That way, if we produce
+; an untranslated result like (<= var '23) and want to rename var to var1, we
+; can do so in the unexpanded result, producing (<= var1 '23), knowing that the
+; macroexpansion of that would be the same as renaming var to var in the
+; macroexpansion of (<= var '23).
+
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
                   :mode :program))
@@ -11686,20 +11696,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
        "~%We cannot reincarnate the package ~x0 because it was previously ~
         defined with a different list of imported symbols.~|~%The previous ~
         definition was made ~#1~[at the top level.~|~/in the portcullis of ~
-        the last of the book at the end of the following sequence of included ~
-        books, which starts with the top-most book at the front of the list ~
-        and works down to the book that defined the package.~|~%  ~
-        ~F2~|~]~%The proposed definition is being made ~#3~[at the top ~
-        level.~|~/in the portcullis of the last of the book at the end of the ~
-        following sequence of included books, which starts with the top-most ~
-        book at the front of the list and works down to the book that is ~
-        trying to define the package.~|~%  ~F4~|~]~%~#5~[The previous ~
-        definition imported the following list of symbols that are not ~
-        imports of the proposed definition, and is shown with respect to ~
-        current package ~x9:~|~%  ~x6.~|~%~/~]~#7~[The proposed definition ~
-        imports the following list of symbols not imported by the previous ~
-        definition, and is shown with respect to current package ~x9:~|~%  ~
-        ~x8.~|~%~/~]See :DOC package-reincarnation-import-restrictions."
+        the last book in the following sequence of included books, which ~
+        starts with the top-most book at the front of the list and works down ~
+        to the book that defined the package.~|~%  ~F2~|~]~%The proposed ~
+        definition is being made ~#3~[at the top level.~|~/in the portcullis ~
+        of the last book in the following sequence of included books, which ~
+        starts with the top-most book at the front of the list and works down ~
+        to the book that is trying to define the package.~|~%  ~
+        ~F4~|~]~%~#5~[The previous definition imported the following list of ~
+        symbols that are not imports of the proposed definition, and is shown ~
+        with respect to current package ~x9:~|~%  ~x6.~|~%~/~]~#7~[The ~
+        proposed definition imports the following list of symbols not ~
+        imported by the previous definition, and is shown with respect to ~
+        current package ~x9:~|~%  ~x8.~|~%~/~]See :DOC ~
+        package-reincarnation-import-restrictions."
        name
        (if old-book-path 1 0)
        old-book-path
@@ -13595,6 +13605,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     defstobj-fn ; might be avoidable; see comment in that definition
     apply-user-stobj-alist-or-kwote ; no raw code but ill-guarded; see comments
     accp-info
+    read-file-iterate-safe
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -22422,6 +22433,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro set-inhibit-warnings (&rest lst)
   `(local (set-inhibit-warnings! ,@lst)))
 
+(defun remove1-assoc-string-equal (key alist)
+  (declare (xargs :guard (and (stringp key)
+                              (standard-string-p key)
+                              (standard-string-alistp alist))))
+  (cond ((endp alist) nil)
+        ((string-equal key (caar alist)) (cdr alist))
+        (t (cons (car alist)
+                 (remove1-assoc-string-equal key (cdr alist))))))
+
+(defmacro toggle-inhibit-warning (str)
+  `(table inhibit-warnings-table
+          nil
+          (let ((inhibited-warnings
+                 (table-alist 'inhibit-warnings-table world)))
+            (cond ((assoc-string-equal ',str inhibited-warnings)
+                   (remove1-assoc-string-equal ',str inhibited-warnings))
+                  (t (acons ',str nil inhibited-warnings))))
+          :clear))
+
 (defmacro set-inhibit-output-lst (lst)
 
 ; In spite of the documentation for this macro, 'warning and 'warning! are
@@ -27969,7 +27999,14 @@ Lisp definition."
   nil)
 
 #-acl2-loop-only
-(defg *inside-absstobj-update* #(0))
+(defg *inside-absstobj-update*
+
+; Warning: Do not use #(0) here, because this variable can be destructively
+; modified.  We actually used #(0) here through Version_8.3 and did not see a
+; problem with that, but we see the comment in *fncall-cache* for why we avoid
+; using a constant here.
+
+  (vector 0))
 
 (defun set-absstobj-debug-fn (val always)
   (declare (xargs :guard t))

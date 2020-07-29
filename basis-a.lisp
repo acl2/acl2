@@ -5462,6 +5462,19 @@
                        `(nth ,i (@ wormhole-input)))
                  (io?-wormhole-bindings (1+ i) (cdr vars))))))
 
+(defconst *tracked-warning-summaries*
+
+; If you want to prevent duplicate warning messages of another kind (i.e., with
+; another summary string, e.g., "use" or "free-vars"), add it to this constant.
+; Every element of this list should satisfy both stringp and standard-string-p.
+; We use the wormhole data field of the 'COMMENT-WINDOW-IO wormhole to collect
+; the explanations of those warnings whose summaries are listed here.  This
+; prevents duplicate warnings.  See the note regarding the invariant we
+; maintain in the defmacro of io? where we lay down the entry lambda for the
+; wormhole.
+
+  '("rewrite-lambda-object"))
+
 (defmacro io? (token commentp shape vars body
                      &key
                      (clear 'nil clear-argp)
@@ -5596,8 +5609,92 @@
                `(chk-translatable ,body ,shape)
              nil)
           (wormhole 'comment-window-io
-                    '(lambda (whs)
-                       (set-wormhole-entry-code whs :ENTER))
+                    ',(cond ((or (eq token 'warning)
+                                 (eq token 'warning!))
+
+; ``Invariant'' on the Wormhole-Data field of the COMMENT-WINDOW-IO wormhole:
+
+; We'd like to know that the wormhole-data field of the wormhole named
+; comment-window-io is an alist and that any key in that alist that is
+; string-equal to a member of *tracked-warning-summaries* is bound to a
+; true-listp.  We can't actually guarantee that invariant since there is
+; nothing to stop the user from invoking wormhole on that name.  We can't just
+; prevent the translation of (wormhole 'comment-window-io ...) after boot-strap
+; because many books use this macro to lay down such a form.  So instead of
+; guaranteeing the invariant we merely check that the data field has the right
+; shape when we need it.  The consequence of running this code after the user
+; has violated the invariant is merely that some tracked warnings might be
+; printed multiple times during a proof.
+
+; Preventing Duplicate Warnings: When the comment window is being used for
+; warnings, we assume the supplied input (i.e., the values of the expressions
+; in `vars' here which will become the wormhole-input when we manufacture the
+; actual wormhole) is exactly as laid down in the macro warning1-form.  We
+; check that assumption below as we generate the entry lambda for the wormhole.
+; Given that check, the entry lambda below can refer to summary, ctx, alist,
+; and str which are, respectively, warning's ``label,'' the context, the fmt
+; alist and the fmt string.  Note that the summary here is a string, e.g.,
+; "Use" or "use" or "rewrite-lambda-object" and is colloquially called the
+; warning's ``label'' or ``kind'' in the documentation.  Let's call ctx, alist,
+; and str, collectively as (list ctx alist str), the ``explanation'' of the
+; warning.  When the comment window is being used for warnings and the summary
+; is string-equal to a member of *tracked-warning-summaries* we keep track of
+; the explanations already printed for that summary.  If a warning to be
+; printed has a tracked summary and its explanation is already on the alist
+; paired with that summary in the wormhole-data we do not print the
+; explanation.  We clear the data (of tracked summaries only) in print-summary.
+; We spot check that the data field has the right shape according to our
+; ``invariant'' above: if the summary is to be tracked, we check that the
+; wormhole-data is an alist and that this particular summary string is bound to
+; a true-list (so we can do a member-equal check on it).  If these
+; ``invariants'' don't hold, we proceed as though the warning isn't to be
+; tracked, i.e., we might print the same warning multiple times.
+
+; Here is the entry lambda for warnings:
+                             (assert$
+                              (equal vars '(summary ctx alist str))
+                              '(lambda (whs)
+                                 (cond
+                                  ((and summary
+                                        (member-string-equal
+                                         summary
+                                         *tracked-warning-summaries*)
+                                        (standard-string-alistp
+                                         (wormhole-data whs)))
+                                   (let ((expln (list ctx alist str))
+                                         (entry (or (assoc-string-equal
+                                                     summary
+                                                     (wormhole-data whs))
+                                                    (cons summary nil))))
+                                     (cond
+                                      ((not (true-listp (cdr entry)))
+                                       (set-wormhole-entry-code whs :ENTER))
+                                      ((member-equal expln (cdr entry))
+; This summary and explanation has already been printed.
+                                       (set-wormhole-entry-code whs :SKIP))
+                                      (t (make-wormhole-status
+                                          whs
+                                          :ENTER
+; Note: It would, perhaps, be clearer to use put-assoc-string-equal to update
+; the entry for this summary label.  But that function hasn't been defined and
+; rather than define it we use (the probably faster) put-assoc-equal and
+; instead of looking for the current spelling of the summary we look for (car
+; entry), the first variation of this summary stored.  E.g., imagine multiple
+; "Use" warnings, with different capitalization, e.g., "use", "Use", "USE",
+; etc.  The first one stored becomes the ``standard key'' we look for with
+; put-assoc-equal.
+
+                                          (put-assoc-equal
+                                           (car entry)
+                                           (cons expln (cdr entry))
+                                           (wormhole-data whs)))))))
+                                  (t (set-wormhole-entry-code whs :ENTER))))))
+                            (t
+
+; Here is the entry lambda for non-warnings:
+
+                             '(lambda (whs)
+                                (set-wormhole-entry-code whs :ENTER))))
                     (list ,@vars)
                     ',form
                     :ld-error-action :return!
@@ -7406,7 +7503,7 @@
                              :event event
                              :creator creator
                              :congruent-stobj-rep congruent-stobj-rep
-                             :non-memoizable non-memoizable 
+                             :non-memoizable non-memoizable
                              :non-executable non-executable)))
            (cond (old-pair ; hence raw-mode
                   (fms "Note:  Redefining and ~@0 stobj ~x1 in ~

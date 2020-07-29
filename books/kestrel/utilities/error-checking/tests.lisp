@@ -19,62 +19,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-nil nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-nil '(1 2 3) "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-boolean t "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-boolean nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-boolean "nil" "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol 'abc "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol t "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol :xyz "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-symbol #\a "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-string "" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-string "XYZ" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-string 88 "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-string-or-nil "string" "This" t nil 'test state)))
    (value (equal x nil))))
 
@@ -91,24 +35,6 @@
 
 (must-fail
  (ensure-string-or-nil '("a") "This" t nil 'test state))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol-list nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol-list '(a b c) "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-symbol-list #\Space "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-symbol-list '(a 1 b) "This" t nil 'test state)
- :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

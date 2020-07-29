@@ -4471,22 +4471,22 @@
                         (3 1
                            (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP)))
 (MILAWA::RANK-OF-FOURTH-WEAK)
-(MILAWA::LEMMA (36931 19935
+(MILAWA::LEMMA (36955 19947
                       (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
-               (33650 3153
+               (33662 3165
                       (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
-               (28675 3153
+               (28719 3165
                       (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
                (16341 3736
                       (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
-               (13951 13869 (:REWRITE DEFAULT-<-2))
+               (13959 13877 (:REWRITE DEFAULT-<-2))
                (10310 6170
                       (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
                (9785 6170
                      (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
                (8107 6150
                      (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
-               (6488 501
+               (6528 501
                      (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
                (3983 3314
                      (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
@@ -4508,22 +4508,22 @@
                     (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                (24 24
                    (:REWRITE MILAWA::IRREFLEXIVITY-OF-<)))
-(MILAWA::LEMMA2 (44115 47 (:DEFINITION MILAWA::ORD<))
-                (16657 1464
+(MILAWA::LEMMA2 (44207 47 (:DEFINITION MILAWA::ORD<))
+                (16693 1500
                        (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
-                (15066 1464
+                (15198 1500
                        (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
-                (14113 8414
+                (14185 8450
                        (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
                 (12689 2474
                        (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
-                (7300 7111 (:REWRITE DEFAULT-<-2))
-                (7289 7111 (:REWRITE DEFAULT-<-1))
+                (7324 7135 (:REWRITE DEFAULT-<-2))
+                (7313 7135 (:REWRITE DEFAULT-<-1))
                 (3998 2534
                       (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
                 (3801 2534
                       (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
-                (3644 289
+                (3764 289
                       (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
                 (3573 1413 (:REWRITE DEFAULT-CDR))
                 (3231 2530

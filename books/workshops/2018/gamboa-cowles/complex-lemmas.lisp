@@ -1,5 +1,5 @@
 (in-package "ACL2")
-  
+
 ; cert_param: (uses-acl2r)
 
 
@@ -17,7 +17,7 @@
             :use ((:instance complex-definition)
                   (:instance complex-definition (x (- x)) (y (- y))))))
    :rule-classes nil))
-  
+
 (local
  (defthm realpart-uminnus
    (implies (acl2-numberp z)
@@ -74,7 +74,9 @@
            :use ((:instance complex-small
                             (x (- z1 z2)))
                  )
-           :in-theory (enable i-close))
+           :in-theory (e/d (i-close)
+; Matt K. mod: Avoid loop by disabling |(< (if a b c) x)|.
+                           (|(< (if a b c) x)|)))
           ("Subgoal 2"
            :use ((:instance (:theorem (implies (not (complexp (- z1 z2))) (equal (imagpart (- z1 z2)) 0))))
                  (:instance realpart-when-not-complexp-add (z1 z1) (z2 (- z2)))))
@@ -193,7 +195,7 @@
                                        normalize-factors-gather-exponents))))
    :rule-classes nil))
 
-            
+
 (local
  (defthm lemma-3
    (implies (and (real/rationalp x)

@@ -25,7 +25,7 @@
 
 ;; Let's confirm that the standard generator point
 ;; (secp256k1-generator) has order (secp256k1-order).
-(acl2::assert-equal (secp256k1* (secp256k1-order) (secp256k1-generator)) (cons 0 0))
+(acl2::assert-equal (secp256k1* (secp256k1-order) (secp256k1-generator)) :infinity)
 
 (acl2::assert-equal
  (secp256k1* 999 (secp256k1-generator))
@@ -67,23 +67,23 @@
 
 ;; rule 1, zero on one side
 (defthmd addition-of-zero-1
- (equal (secp256k1+ p1 '(0 . 0))
+ (equal (secp256k1+ p1 :infinity)
         p1)
  :hints (("Goal" :in-theory (enable secp256k1+))))
 
 ;; rule 1, zero on the other side
 (defthmd addition-of-zero-2
- (equal (secp256k1+ '(0 . 0) p2)
+ (equal (secp256k1+ :infinity p2)
         p2)
  :hints (("Goal" :in-theory (enable secp256k1+))))
 
 ;; Specific example of zero
 (acl2::assert-equal
- (secp256k1+ '(22 . 17384355509374335117451332188362459136087449825697451396219196747631138909398) '(0 . 0))
+ (secp256k1+ '(22 . 17384355509374335117451332188362459136087449825697451396219196747631138909398) :infinity)
  '(22 . 17384355509374335117451332188362459136087449825697451396219196747631138909398))
 
 (acl2::assert-equal
- (secp256k1+  '(0 . 0)
+ (secp256k1+  :infinity
               '(22 . 17384355509374335117451332188362459136087449825697451396219196747631138909398))
  '(22 . 17384355509374335117451332188362459136087449825697451396219196747631138909398))
 

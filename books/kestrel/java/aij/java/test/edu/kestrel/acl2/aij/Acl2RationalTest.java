@@ -54,6 +54,38 @@ class Acl2RationalTest {
     }
 
     @Test
+    void makeIntIntIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(1, 1) instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(-50, 5) instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(0, -17) instanceof Acl2Integer);
+    }
+
+    @Test
+    void makeLongLongIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(2000000000000L, 1000000000000L)
+                instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(3L, 1) instanceof Acl2Integer);
+    }
+
+    @Test
+    void makeBigIntegerBigIntegerIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(BigInteger.TEN, BigInteger.TWO)
+                instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make
+                (new BigInteger("-55"), new BigInteger("11"))
+                instanceof Acl2Integer);
+    }
+
+    @Test
+    void makeAcl2IntegerAcl2IntegerIsAcl2Integer() {
+        assertTrue(Acl2Rational.make(Acl2Integer.ZERO, Acl2Integer.make(-1))
+                instanceof Acl2Integer);
+        assertTrue(Acl2Rational.make(Acl2Integer.make(-20),
+                Acl2Integer.make(10))
+                instanceof Acl2Integer);
+    }
+
+    @Test
     void getNumeratorFromMakeIntInt() {
         assertEquals(Acl2Rational.make(3, 4).getNumerator(),
                 Acl2Integer.make(3));
@@ -62,4 +94,109 @@ class Acl2RationalTest {
         assertEquals(Acl2Rational.make(-647, 121).getNumerator(),
                 Acl2Integer.make(-647));
     }
+
+    @Test
+    void getNumeratorFromMakeLongLong() {
+        assertEquals(Acl2Rational.make(37L, 22L).getNumerator(),
+                Acl2Integer.make(37));
+        assertEquals(Acl2Rational.make(3333333333L, 2222222222L).getNumerator(),
+                Acl2Integer.make(3));
+        assertEquals(Acl2Rational.make(10000000000L, -3).getNumerator(),
+                Acl2Integer.make(-10000000000L));
+    }
+
+    @Test
+    void getNumeratorFromMakeBigIntegerBigInteger() {
+        assertEquals(Acl2Rational.make(BigInteger.ONE, BigInteger.TWO)
+                        .getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals(Acl2Rational.make(BigInteger.TWO, BigInteger.TEN)
+                        .getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals(Acl2Rational.make(new BigInteger("20"),
+                new BigInteger("-30"))
+                        .getNumerator(),
+                Acl2Integer.make(-2));
+    }
+
+    @Test
+    void getNumeratorFromMakeAcl2IntegerAcl2Integer() {
+        assertEquals(Acl2Rational.make(Acl2Integer.ONE, Acl2Integer.make(4))
+                        .getNumerator(),
+                Acl2Integer.ONE);
+        assertEquals
+                (Acl2Rational.make(Acl2Integer.make(-55), Acl2Integer.make(-54))
+                                .getNumerator(),
+                        Acl2Integer.make(55));
+    }
+
+    @Test
+    void getDenominatorFromMakeIntInt() {
+        assertEquals(Acl2Rational.make(3, 4).getDenominator(),
+                Acl2Integer.make(4));
+        assertEquals(Acl2Rational.make(20, 30).getDenominator(),
+                Acl2Integer.make(3));
+        assertEquals(Acl2Rational.make(-647, 121).getDenominator(),
+                Acl2Integer.make(121));
+    }
+
+    @Test
+    void getDenominatorFromMakeLongLong() {
+        assertEquals(Acl2Rational.make(37L, 22L).getDenominator(),
+                Acl2Integer.make(22));
+        assertEquals(Acl2Rational.make(3333333333L, 2222222222L)
+                        .getDenominator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Rational.make(10000000000L, -3).getDenominator(),
+                Acl2Integer.make(3));
+        assertEquals(Acl2Rational.make(3, 10000000000L).getDenominator(),
+                Acl2Integer.make(10000000000L));
+    }
+
+    @Test
+    void getDenominatorFromMakeBigIntegerBigInteger() {
+        assertEquals(Acl2Rational.make(BigInteger.ONE, BigInteger.TWO)
+                        .getDenominator(),
+                Acl2Integer.make(2));
+        assertEquals(Acl2Rational.make(BigInteger.TWO, BigInteger.TEN)
+                        .getDenominator(),
+                Acl2Integer.make(5));
+        assertEquals(Acl2Rational.make(new BigInteger("20"),
+                new BigInteger("-30"))
+                        .getDenominator(),
+                Acl2Integer.make(3));
+    }
+
+    @Test
+    void getDenominatorFromMakeAcl2IntegerAcl2Integer() {
+        assertEquals(Acl2Rational.make(Acl2Integer.ONE, Acl2Integer.make(4))
+                        .getDenominator(),
+                Acl2Integer.make(4));
+        assertEquals
+                (Acl2Rational.make(Acl2Integer.make(-55), Acl2Integer.make(-54))
+                                .getDenominator(),
+                        Acl2Integer.make(54));
+    }
+
+    @Test
+    void compareToIntegers() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Rational.make(1, 2).compareTo(Acl2Integer.ONE) < 0);
+        assertTrue(Acl2Rational.make(-5, 4).
+                compareTo(Acl2Integer.make(-10)) > 0);
+        assertTrue(Acl2Rational.make(45, -9).
+                compareTo(Acl2Integer.make(-5)) == 0);
+    }
+
+    @Test
+    void compareToRatios() { // compare arithmetically -- see ACL2's alphorder
+        assertTrue(Acl2Rational.make(11, 17).
+                compareTo(Acl2Rational.make(12, 17)) < 0);
+        assertTrue(Acl2Rational.make(11, 17).
+                compareTo(Acl2Rational.make(1, 16)) > 0);
+        assertTrue(Acl2Rational.make(11, 17).
+                compareTo(Acl2Rational.make(-22, -34)) == 0);
+        assertTrue(Acl2Rational.make(30, 10).
+                compareTo(Acl2Rational.make(8, 9)) > 0);
+    }
+
 }

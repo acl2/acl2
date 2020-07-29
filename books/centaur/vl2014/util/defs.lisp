@@ -46,7 +46,7 @@
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "std/strings/top" :dir :system)
 (include-book "std/strings/cat" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "misc/definline" :dir :system) ;; bozo
 (include-book "std/system/non-parallel-book" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -814,4 +814,3 @@ versions of the standard.  We currently have some support for:</p>
 <li>@(':verilog-2005') corresponds to IEEE Std 1364-2005.</li>
 <li>@(':system-verilog-2012') corresponds to IEEE Std 1800-2012.</li>
 </ul>")
-

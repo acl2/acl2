@@ -13,7 +13,7 @@
 ; Avoid failure for (atj-main-function-type < ...) in ACL2(r):
 ; cert_param: (non-acl2r)
 
-(include-book "types")
+(include-book "type-macros")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,6 +97,8 @@
 (atj-main-function-type string-append (:astring :astring) :astring)
 
 (atj-main-function-type len (:avalue) :ainteger)
+
+(atj-main-function-type char (:astring :ainteger) :acharacter)
 
 ; secondary types:
 

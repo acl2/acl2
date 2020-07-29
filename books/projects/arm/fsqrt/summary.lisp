@@ -584,8 +584,8 @@
        (quot-bnds-inv j)
        (or (zp j)
            (and (approx-inv (1- j))
-               (qpn-inv j)
-               (rpn-inv j)))))
+                (qpn-inv j)
+                (rpn-inv j)))))
 
 (defthmd inv-lemma
   (implies (and (not (specialp))

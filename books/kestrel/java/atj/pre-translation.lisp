@@ -44,9 +44,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned "
-    (xdoc::seetopic "atj-code-generation" "here")
-    ", prior to generating Java code,
+    "As mentioned in @(see atj-code-generation),
+     prior to generating Java code,
      ATJ performs an ACL2-to-ACL2 pre-translation.
      Currently, this pre-translation consists of the following steps.
      The first three steps apply to both the deep and the shallow embedding;
@@ -54,55 +53,45 @@
    (xdoc::ol
     (xdoc::li
      "We remove @(tsee return-last).
-      See "
-     (xdoc::seetopic "atj-pre-translation-remove-return-last" "here")
-     ".")
+      See @(see atj-pre-translation-remove-return-last).")
     (xdoc::li
      "We remove dead @(tsee if) branches.
-      See "
-     (xdoc::seetopic "atj-pre-translation-remove-dead-if-branches" "here")
-     ".")
+      See @(see atj-pre-translation-remove-dead-if-branches).")
     (xdoc::li
      "We remove the unused lambda-bound variables.
-      See "
-     (xdoc::seetopic "atj-pre-translation-unused-vars" "here")
-     ".")
+      See @(see atj-pre-translation-unused-vars).")
     (xdoc::li
      "We remove the trivial lambda-bound variables.
-      See "
-     (xdoc::seetopic "atj-pre-translation-trivial-vars" "here")
-     ".")
+      See @(see atj-pre-translation-trivial-vars).")
     (xdoc::li
      "We replace @(tsee list) calls with @(tsee mv) calls
       in functions that return multiple results.
-      See "
-     (xdoc::seetopic "atj-pre-translation-multiple-values" "here")
-     ".")
+      See @(see atj-pre-translation-multiple-values).")
     (xdoc::li
      "We annotate terms with ATJ type information.
-      See "
-     (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
-     ".")
+      See @(see atj-pre-translation-type-annotation).")
     (xdoc::li
      "We perform a single-threadedness analysis of the Java primitive arrays,
       but only if @(':guards') is @('t').
-      See "
-     (xdoc::seetopic "atj-pre-translation-array-analysis" "here")
-     ".")
+      See @(see atj-pre-translation-array-analysis).")
     (xdoc::li
      "We mark the lambda-bound variables
       that can be reused and destructively updated in Java.
-      See "
-     (xdoc::seetopic "atj-pre-translation-var-reuse" "here")
-     ".")
+      See @(see atj-pre-translation-var-reuse).")
     (xdoc::li
      "We rename variables
       so that their names are valid Java variable names
       and so that different variables with the same name are renamed apart,
       unless they have been marked for reuse in the previous step.
-      See "
-     (xdoc::seetopic "atj-pre-translation-var-renaming" "here")
-     ".")))
+      See @(see atj-pre-translation-var-renaming).")
+    (xdoc::li
+     "We replace calls of the form @('(if a b nil)')
+      with calls of the form @('(and a b)').
+      See @(see atj-pre-translation-conjunctions).")
+    (xdoc::li
+     "We replace calls of the form @('(if a a b)')
+      with calls of the form @('(or a b)').
+      See @(see atj-pre-translation-disjunctions).")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -625,6 +614,7 @@
   :prepwork
   ((define atj-types-id-aux ((types atj-type-listp))
      :returns (id stringp)
+     :parents nil
      (cond ((endp types) "")
            (t (str::cat (atj-type-id (car types))
                         (atj-types-id-aux (cdr types)))))
@@ -649,6 +639,7 @@
   :prepwork
   ((define atj-types-of-id-aux ((chars character-listp) (id stringp))
      :returns (types atj-type-listp)
+     :parents nil
      (b* (((when (endp chars)) nil)
           ((unless (>= (len chars) 2))
            (raise "Internal error: ~x0 does not identify a list of types." id))
@@ -672,9 +663,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned "
-    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
-    ", each ACL2 term is wrapped with a function named @('[src>dst]'),
+    "As mentioned in @(see atj-pre-translation-type-annotation),
+     each ACL2 term is wrapped with a function named @('[src>dst]'),
      where @('src') identifies the ATJ types of the term
      and @('dst') identifies an ATJ types
      to which the term must be converted to.")
@@ -821,6 +811,7 @@
                                          (dst-types atj-type-listp))
      :guard (= (len src-types) (len dst-types))
      :returns (yes/no booleanp)
+     :parents nil
      (or (endp src-types)
          (and (atj-type-conv-allowed-p (car src-types)
                                        (car dst-types))
@@ -993,9 +984,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned "
-    (xdoc::seetopic "atj-pre-translation-type-annotation" "here")
-    ", we systematically add type information to each ACL2 variable.
+    "As mentioned in @(see atj-pre-translation-type-annotation),
+     we systematically add type information to each ACL2 variable.
      We do so by adding @('[types]') before the variable name,
      where @('types') identifies a list of ATJ types.")
    (xdoc::p
@@ -2007,6 +1997,7 @@
      :guard (and (= (len vars) (len args))
                  (consp types))
      :returns (indices nat-listp)
+     :parents nil
      (b* (((when (endp args)) nil)
           ((mv arg arg-src arg-dst) (atj-type-unwrap-term (car args)))
           ((unless (and (not (variablep arg))
@@ -2621,6 +2612,7 @@
                  (= (len arg-types) (len formals)))
      :returns (alist symbol-symbol-alistp :hyp (and (symbol-listp formals)
                                                     (symbol-listp arg-arrays)))
+     :parents nil
      (cond ((endp formals) nil)
            ((atj-type-case (car arg-types) :jprimarr)
             (acons (car formals)
@@ -2636,6 +2628,7 @@
    (define atj-analyze-arrays-output-list ((fn-out-arrays symbol-listp)
                                            (in-arrays symbol-symbol-alistp))
      :returns (list symbol-listp :hyp :guard)
+     :parents nil
      (cond ((endp fn-out-arrays) nil)
            (t (cons (cdr (assoc-eq (car fn-out-arrays) in-arrays))
                     (atj-analyze-arrays-output-list (cdr fn-out-arrays)
@@ -2653,6 +2646,7 @@
                                             (formals symbol-listp))
      :guard (= (len formals) (len arg-arrays))
      :returns (nothing null)
+     :parents nil
      (b* (((when (endp arg-arrays)) nil)
           (arg-array (car arg-arrays))
           ((when (not arg-array))
@@ -2669,6 +2663,7 @@
                                                (indices nat-listp))
      :guard (= (len vars) (len indices))
      :returns (nothing null)
+     :parents nil
      (b* (((when (endp mv-arrays)) nil)
           (mv-array (car mv-arrays))
           ((when (not mv-array))
@@ -2810,6 +2805,7 @@
                                                    (declared symbol-listp))
      :guard (= (len inferred) (len declared))
      :returns (yes/no booleanp)
+     :parents nil
      (or (endp inferred)
          (b* ((inf (car inferred))
               (decl (car declared)))
@@ -2982,6 +2978,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines atj-vars-in-jexpr
+  :short "Variables that will occur in the Java expression
+          generated from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding approach,
+     each Java term is translated to a Java expression
+     preceded by a Java block (which may be empty or not).
+     The block is non-empty when the term involves
+     lambda expressions, which become local variable assignments in Java,
+     and @(tsee if) calls, which become @('if') statements in Java.
+     As detailed below, some of the variables in the ACL2 term
+     will occur (as corresponding Java variables) in the Java expression;
+     while others will only occur in the Java block.
+     The ones that will occur in the Java expression
+     are important for the correct marking of variables.
+     This function returns the ACL2 variables in a term
+     (as a set represented as a list without duplicates)
+     that will occur in the Java expression generated from the term.")
+   (xdoc::p
+    "A quoted constant has no variables,
+     and is always translated to a Java expression without variables.
+     Thus, we return @('nil') (i.e. the empty list of variables) in this case.")
+   (xdoc::p
+    "An ACL2 variable is translated to a corresponding variable in Java,
+     and thus in this case we return the singleton list of the variable.")
+   (xdoc::p
+    "An @(tsee if) call is translated to a block with an @('if') statement
+     that performs all the evaluations of the test and branches,
+     and the resulting Java expression is just a single fresh Java variable
+     that has no counterpart in the ACL2 term.
+     Thus, in this case we return @('nil') (the empty list of variables).")
+   (xdoc::p
+    "A call of a named function different from @(tsee if) is translated
+     to an expression that has subexpressions obtained by translating
+     the arguments of the ACL2 function call.
+     The expression is often a method call,
+     with the subexpressions being its actual arguments,
+     but it may also be an expression involving a Java operator (e.g. @('+'))
+     with the subexpressions as operands.
+     Thus, in this case we return the union of the variables
+     recursively computed for the argument terms.")
+   (xdoc::p
+    "A call of a lamda expression is translated to
+     a Java block that assigns expressions to local variables
+     that correspond to the formal parameters of the lambda expression,
+     and to a Java expression obtained by translating
+     the body of the lambda expression.
+     Thus, in this case we return the variables
+     recursively computed for the body of the lambda expression."))
+
+  (define atj-vars-in-jexpr ((term pseudo-termp))
+    :returns (vars symbol-listp)
+    (pseudo-term-case term
+                      :null (raise "Internal error: null term.")
+                      :quote nil
+                      :var (list term.name)
+                      :fncall (if (eq term.fn 'if)
+                                  (list nil)
+                                (atj-vars-in-jexpr-list term.args))
+                      :lambda (atj-vars-in-jexpr term.body))
+    :measure (pseudo-term-count term))
+
+  (define atj-vars-in-jexpr-list ((terms pseudo-term-listp))
+    :returns (vars symbol-listp)
+    (cond ((endp terms) nil)
+          (t (union-eq (atj-vars-in-jexpr (car terms))
+                       (atj-vars-in-jexpr-list (cdr terms)))))
+    :measure (pseudo-term-list-count terms))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-vars-in-jexpr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atj-mark-term
   :short "Mark the variables in a term as `new' or `old'."
   :long
@@ -3021,7 +3094,7 @@
      (i.e. passed as argument and returned, possibly updated, as result).
      When processing a lambda expression applied to arguments,
      @('vars-in-scope') is threaded first through the arguments,
-     and then through the body (which is evaluated after the argument),
+     and then through the body (which is evaluated after the arguments),
      after augmenting it with the formal parameters.
      The exception mentioned above is for @(tsee if),
      which is turned into a Java @('if')
@@ -3047,10 +3120,9 @@
      which has already been marked).")
    (xdoc::p
     "The parameter @('vars-used-after') consists of the variables
-     that occur free (i.e. whose current value is used)
-     ``after'' the term under consideration.
+     whose current values are used ``after'' the term under consideration.
      At the top level (see @(tsee atj-mark-formals+body)),
-     it is initialized with @('nil'),
+     this is initialized with @('nil'),
      because no variables are used after evaluating the body of the function.
      As we descend into subterms,
      @('vars-used-after') is extended as needed,
@@ -3072,7 +3144,12 @@
      as the argument terms are processed,
      but terms are not expected to be too large in the near future;
      this may be eventually optimized when needed.
-     Calls of @(tsee if) are treated a little differently,
+     Furthermore, as we traverse the arguments of a function call,
+     we augment the used variables with the ones that will occur
+     in the Java expressions generated for the preceding arguments;
+     see @(tsee atj-vars-in-jexpr).")
+   (xdoc::p
+    "Calls of @(tsee if) are treated a little differently,
      because the arguments are not evaluated left-to-right
      in the generated Java code:
      when marking the test, we augment @('vars-used-after')
@@ -3083,8 +3160,9 @@
      The @(tsee or) form of @(tsee if) is treated slightly differently as usual,
      but the essence is the same.
      Unlike @('vars-in-scope'), @('var-used-after') is not threaded through;
-     it is simply passed down, and augmented as needed.
-     The body of a lambda expression is evaluated after its actual arguments:
+     it is simply passed down, and augmented as needed.")
+   (xdoc::p
+    "The body of a lambda expression is evaluated after its actual arguments:
      thus, when marking the actual arguments of a lambda expression
      we must augment @('vars-used-after')
      with the free variables of the lambda expression,
@@ -3225,6 +3303,7 @@
          ((mv marked-args vars-in-scope) (atj-mark-terms args
                                                          vars-in-scope
                                                          vars-used-after-args
+                                                         nil
                                                          vars-to-mark-new))
          ((when (symbolp fn)) (mv (fcons-term fn marked-args)
                                   vars-in-scope))
@@ -3248,6 +3327,7 @@
   (define atj-mark-terms ((terms pseudo-term-listp)
                           (vars-in-scope symbol-listp)
                           (vars-used-after symbol-listp)
+                          (vars-used-in-jexprs symbol-listp)
                           (vars-to-mark-new symbol-listp))
     :returns (mv (marked-terms (and (pseudo-term-listp marked-terms)
                                     (equal (len marked-terms)
@@ -3267,15 +3347,20 @@
          (vars-used-after-first-term (union-eq vars-used-after
                                                (all-vars-open-lst rest-terms)))
          ((mv marked-first-term
-              vars-in-scope) (atj-mark-term first-term
-                                            vars-in-scope
-                                            vars-used-after-first-term
-                                            vars-to-mark-new))
+              vars-in-scope)
+          (atj-mark-term first-term
+                         vars-in-scope
+                         (union-eq vars-used-after-first-term
+                                   vars-used-in-jexprs)
+                         vars-to-mark-new))
          ((mv marked-rest-terms
-              vars-in-scope) (atj-mark-terms rest-terms
-                                             vars-in-scope
-                                             vars-used-after
-                                             vars-to-mark-new)))
+              vars-in-scope)
+          (atj-mark-terms rest-terms
+                          vars-in-scope
+                          vars-used-after
+                          (union-eq vars-used-in-jexprs
+                                    (atj-vars-in-jexpr first-term))
+                          vars-to-mark-new)))
       (mv (cons marked-first-term marked-rest-terms)
           vars-in-scope)))
 
@@ -3907,6 +3992,215 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ atj-pre-translation-conjunctions
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          replacement of @('(if a b nil)') calls with @(tsee and) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done in the shallow embedding.")
+   (xdoc::p
+    "ACL2 turns untranslated calls of the form @('(and a b)')
+     into translated calls of the form @('(if a b nil)').
+     This pre-translation step performs the inverse transformation,
+     so that the ACL2-to-Java translation step can
+     more readily recognize this kind of calls
+     and treat them specially.")
+   (xdoc::p
+    "Note that this pre-translation step
+     turns @('(if a b nil)') into @('(and a b)')
+     even when the original untranslated term was @('(if a b nil)').
+     But this is harmelss, as the two untranslated terms are equivalent."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-restore-and-calls-in-term
+  :short "Restore @(tsee and) calls in a translated term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Recall that, at this point, terms have already been type-annotated.
+     Thus, we must take the type annotations into account here,
+     as we recognize and transform the terms."))
+
+  (define atj-restore-and-calls-in-term ((term pseudo-termp))
+    :returns (new-term pseudo-termp)
+    (b* (((mv uterm src-types dst-types) (atj-type-unwrap-term term)))
+      (pseudo-term-case
+       uterm
+       :null (raise "Internal error: null term.")
+       :var (pseudo-term-fix term)
+       :quote (pseudo-term-fix term)
+       :fncall (b* ((fn (pseudo-term-fncall->fn uterm)))
+                 (if (and (eq fn 'if)
+                          (int= 3 ; this should be always true
+                                (len (pseudo-term-fncall->args uterm)))
+                          (b* (((mv else & &)
+                                (atj-type-unwrap-term
+                                 (nth 2 (pseudo-term-fncall->args uterm)))))
+                            (pseudo-term-equiv else
+                                               (pseudo-term-quote nil))))
+                     (atj-type-wrap-term
+                      (pseudo-term-fncall
+                       'and
+                       (list (atj-restore-and-calls-in-term
+                              (nth 0 (pseudo-term-fncall->args uterm)))
+                             (atj-restore-and-calls-in-term
+                              (nth 1 (pseudo-term-fncall->args uterm)))))
+                      src-types
+                      dst-types)
+                   (atj-type-wrap-term
+                    (pseudo-term-fncall fn
+                                        (atj-restore-and-calls-in-terms
+                                         (pseudo-term-fncall->args uterm)))
+                    src-types
+                    dst-types)))
+       :lambda (atj-type-wrap-term
+                (pseudo-term-lambda (pseudo-term-lambda->formals uterm)
+                                    (atj-restore-and-calls-in-term
+                                     (pseudo-term-lambda->body uterm))
+                                    (atj-restore-and-calls-in-terms
+                                     (pseudo-term-lambda->args uterm)))
+                src-types
+                dst-types)))
+    :measure (pseudo-term-count term))
+
+  (define atj-restore-and-calls-in-terms ((terms pseudo-term-listp))
+    :returns (new-terms pseudo-term-listp)
+    (cond ((endp terms) nil)
+          (t (cons (atj-restore-and-calls-in-term (car terms))
+                   (atj-restore-and-calls-in-terms (cdr terms)))))
+    :measure (pseudo-term-list-count terms)
+    ///
+    (defret len-of-atj-restore-and-calls-in-terms
+      (equal (len new-terms)
+             (len terms))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-restore-and-calls-in-term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atj-pre-translation-disjunctions
+  :parents (atj-pre-translation)
+  :short "Pre-translation step performed by ATJ:
+          replacement of @('(if a a b)') calls with @(tsee or) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is done in the shallow embedding.")
+   (xdoc::p
+    "ACL2 turns untranslated calls of the form @('(or a b)')
+     into translated calls of the form @('(if a a b)').
+     This pre-translation step performs the inverse transformation,
+     so that the ACL2-to-Java translation step can
+     more readily recognize this kind of calls
+     and treat them specially.")
+   (xdoc::p
+    "Note that this pre-translation step
+     turns @('(if a a b)') into @('(or a b)')
+     even when the original untranslated term was @('(if a a b)').
+     But this is harmelss, as the two untranslated terms are equivalent,
+     at least functionally (assuming that @('a') has no side effects)."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atj-restore-or-calls-in-term
+  :short "Restore @(tsee or) calls in a translated term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Recall that, at this point, terms have already been type-annotated.
+     Thus, we must take the type annotations into account here,
+     as we recognize and transform the terms.")
+   (xdoc::p
+    "In general, the test of an @(tsee if)
+     may be type-annotated differently from its branches,
+     even when the unannotated test is the same as a branch.
+     The reason is that the type annotation step ensures that
+     the branches have the same type
+     (by inserting suitable type conversions).
+     Thus, even though an untranslated @('(or a b)')
+     is translated to an unannotated @('(if a a b)'),
+     then its annotated version may be @('(C1 (if (C2 a) (C3 a) (C4 b)))')
+     where @('C2') and @('C3') are different conversions.
+     Thus, we need to unwrap the annotated test and `then' branch
+     before comparing them for equality.")
+   (xdoc::p
+    "When the unwrapped test is equal to the unwrapped `then' branch,
+     we generate the annotated @('(C1 (or (C3 a) (C4 b)))').
+     It is important that we take the annotated `then' branch,
+     not the annotated test,
+     because it is the type of the annotated `then' branch that matters
+     with regard to the result of the disjunction."))
+
+  (define atj-restore-or-calls-in-term ((term pseudo-termp))
+    :returns (new-term pseudo-termp)
+    (b* (((mv uterm src-types dst-types) (atj-type-unwrap-term term)))
+      (pseudo-term-case
+       uterm
+       :null (raise "Internal error: null term.")
+       :var (pseudo-term-fix term)
+       :quote (pseudo-term-fix term)
+       :fncall (b* ((fn (pseudo-term-fncall->fn uterm)))
+                 (if (and (eq fn 'if)
+                          (int= 3 ; this should be always true
+                                (len (pseudo-term-fncall->args uterm)))
+                          (b* (((mv test & &)
+                                (atj-type-unwrap-term
+                                 (nth 0 (pseudo-term-fncall->args uterm))))
+                               ((mv then & &)
+                                (atj-type-unwrap-term
+                                 (nth 1 (pseudo-term-fncall->args uterm)))))
+                            (equal test then)))
+                     (atj-type-wrap-term
+                      (pseudo-term-fncall
+                       'or
+                       (list (atj-restore-or-calls-in-term
+                              (nth 1 (pseudo-term-fncall->args uterm)))
+                             (atj-restore-or-calls-in-term
+                              (nth 2 (pseudo-term-fncall->args uterm)))))
+                      src-types
+                      dst-types)
+                   (atj-type-wrap-term
+                    (pseudo-term-fncall fn
+                                        (atj-restore-or-calls-in-terms
+                                         (pseudo-term-fncall->args uterm)))
+                    src-types
+                    dst-types)))
+       :lambda (atj-type-wrap-term
+                (pseudo-term-lambda (pseudo-term-lambda->formals uterm)
+                                    (atj-restore-or-calls-in-term
+                                     (pseudo-term-lambda->body uterm))
+                                    (atj-restore-or-calls-in-terms
+                                     (pseudo-term-lambda->args uterm)))
+                src-types
+                dst-types)))
+    :measure (pseudo-term-count term))
+
+  (define atj-restore-or-calls-in-terms ((terms pseudo-term-listp))
+    :returns (new-terms pseudo-term-listp)
+    (cond ((endp terms) nil)
+          (t (cons (atj-restore-or-calls-in-term (car terms))
+                   (atj-restore-or-calls-in-terms (cdr terms)))))
+    :measure (pseudo-term-list-count terms)
+    ///
+    (defret len-of-atj-restore-or-calls-in-terms
+      (equal (len new-terms)
+             (len terms))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atj-restore-or-calls-in-term))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-pre-translate ((fn symbolp)
                            (formals symbol-listp)
                            (body pseudo-termp)
@@ -3931,9 +4225,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is done before the translation from ACL2 to Java proper.
-     The pre-translation steps are described "
-    (xdoc::seetopic "atj-pre-translation" "here")
-    ".")
+     The pre-translation steps are described in @(see atj-pre-translation).")
    (xdoc::p
     "We collect all the @(tsee mv) types in the body
      for which we will need to generate @(tsee mv) classes.
@@ -3953,7 +4245,9 @@
                                                                wrld))
        ((mv formals body) (atj-mark-formals+body formals body))
        ((mv formals body) (atj-rename-formals+body
-                           formals body (symbol-package-name fn))))
+                           formals body (symbol-package-name fn)))
+       (body (atj-restore-and-calls-in-term body))
+       (body (atj-restore-or-calls-in-term body)))
     (mv formals body mv-typess))
   ///
 

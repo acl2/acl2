@@ -64,13 +64,13 @@
       (getenv$ "STAT_OUTPUT" state))
      ((mv channel state)
       (open-output-channel val :character state))
-     ((mv & pathname state)
+     ((mv & path state)
       (getenv$ "STAT_INPUT" state))
      (statfsbuf (lofat-statfs fat32-in-memory))
      (state
       (pprogn
        (princ$ "  File: \"" channel state)
-       (princ$ pathname channel state)
+       (princ$ path channel state)
        (princ$"\"" channel state)
        (newline channel state)
        (princ$ "    ID: " channel state)

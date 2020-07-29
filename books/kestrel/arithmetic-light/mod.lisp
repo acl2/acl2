@@ -615,3 +615,49 @@
   :hints (("Goal" :cases ((acl2-numberp x))
            :in-theory (enable mod
                               floor-when-integerp-of-quotient))))
+
+(defthmd mod-when-equal-of-mod-and-0-free
+  (implies (and (equal 0 (mod x y2)) ;y2 is a free var
+                (equal 0 (mod y2 y))
+                (rationalp y2))
+           (equal (mod x y)
+                  0))
+  :hints (("Goal"
+           :use (:instance acl2::integerp-of-*
+                           (x (* x (/ y2)))
+                           (y (* (/ y) y2)))
+           :in-theory (e/d (acl2::equal-of-0-and-mod)
+                           (acl2::integerp-of-*)))))
+
+(defthm mod-when-equal-of-mod-and-0-free-cheap
+  (implies (and (syntaxp (quotep y))
+                (equal 0 (mod x y2)) ;y2 is a free var
+                (syntaxp (quotep y2))
+                (equal 0 (mod y2 y)) ;gets computed
+                (rationalp y2))
+           (equal (mod x y)
+                  0))
+  :hints (("Goal" :in-theory (enable mod-when-equal-of-mod-and-0-free))))
+
+;gen
+(defthmd mod-of-mod-when-multiple
+  (implies (and (equal 0 (mod y1 y2))
+                (rationalp y2)
+                (< 0 y2)
+                (rationalp y1)
+                (not (equal 0 y1)))
+           (equal (mod (mod x y1) y2)
+                  (mod x y2)))
+  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod))))
+
+(defthm mod-of-mod-when-multiple-safe
+  (implies (and (syntaxp (and (quotep y1)
+                              (quotep y2)))
+                (equal 0 (mod y1 y2)) ;gets computed
+                (rationalp y2)
+                (< 0 y2)
+                (rationalp y1)
+                (not (equal 0 y1)))
+           (equal (mod (mod x y1) y2)
+                  (mod x y2)))
+  :hints (("Goal" :use (:instance mod-of-mod-when-multiple))))

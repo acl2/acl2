@@ -296,51 +296,47 @@
 (fty::defprod stat
   :short "State of the wallet."
   :long
-  "<p>
-   The state of the wallet includes a BIP 32 key tree.
-   </p>
-   <p>
-   The key tree will always include:
-   the purpose key (44') just under the root key;
-   the Ethereum mainnet coin type key (60') just under that;
-   the default account key (0') just under that;
-   the external chain key (0) just under that;
-   and 0 or more address keys just under that.
-   In rare cases, some address key may be missing
-   (when their derivation fails);
-   see BIP 32 for details.
-   Thus, every key in the tree is identified by a path of the following form:
-   </p>
-   @({
-     m / 44' / 60' / 0' / 0 / address_index
-   })
-   <p>
-   The state of the wallet also includes
-   the number of address keys derived so far.
-   More precisely, this is the number of address keys
-   attempted to derive so far,
-   since in rare cases key derivation may fail (see BIP 32).
-   </p>
-   <p>
-   Because of this rare eventuality,
-   this additional state component (the number of addresses)
-   is not always redundant with the key tree,
-   i.e. it cannot always be derived from the key tree.
-   For example, the user may have attempted to derive 10 address keys,
-   with indices 0 to 9, all of which were successful
-   except for the one with index 9.
-   Then the key tree would have 9 address keys (with indices 0 to 8),
-   and no key for index 9.
-   However, the additional state component for the number of addresses
-   would be 10 in this case, and not 9.
-   In this way, the next address key derivation attempt can be made
-   at index 10, and not again at index 9 (which would fail again).
-   </p>
-   <p>
-   This fixtype captures the basic structure of the state of the wallet.
-   Additional constraints, including the ones outlined above,
-   are expressed by the well-formedness predicate @(tsee stat-wfp).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The state of the wallet includes a BIP 32 key tree.")
+   (xdoc::p
+    "The key tree will always include:
+     the purpose key (44') just under the root key;
+     the Ethereum mainnet coin type key (60') just under that;
+     the default account key (0') just under that;
+     the external chain key (0) just under that;
+     and 0 or more address keys just under that.
+     In rare cases, some address key may be missing
+     (when their derivation fails);
+     see BIP 32 for details.
+     Thus, every key in the tree
+     is identified by a path of the following form:")
+   (xdoc::codeblock
+    "m / 44' / 60' / 0' / 0 / address_index")
+   (xdoc::p
+    "The state of the wallet also includes
+     the number of address keys derived so far.
+     More precisely, this is the number of address keys
+     attempted to derive so far,
+     since in rare cases key derivation may fail (see BIP 32).")
+   (xdoc::p
+    "Because of this rare eventuality,
+     this additional state component (the number of addresses)
+     is not always redundant with the key tree,
+     i.e. it cannot always be derived from the key tree.
+     For example, the user may have attempted to derive 10 address keys,
+     with indices 0 to 9, all of which were successful
+     except for the one with index 9.
+     Then the key tree would have 9 address keys (with indices 0 to 8),
+     and no key for index 9.
+     However, the additional state component for the number of addresses
+     would be 10 in this case, and not 9.
+     In this way, the next address key derivation attempt can be made
+     at index 10, and not again at index 9 (which would fail again).")
+   (xdoc::p
+    "This fixtype captures the basic structure of the state of the wallet.
+     Additional constraints, including the ones outlined above,
+     are expressed by the well-formedness predicate @(tsee stat-wfp)."))
   ((keys bip32-key-tree)
    (addresses nat))
   :tag :state
@@ -630,18 +626,18 @@
 (fty::deftagsum command-error
   :short "Possible command errors."
   :long
-  "<p>
-   These are structured error values
-   that may be returned by the functions that model the commands of the wallet.
-   </p>
-   <p>
-   Some are directly associated to command inputs (strings)
-   that are incorrect in some ways.
-   Others arise when more internal processes (such as key derivations) fail.
-   The meaning of these errors is explained
-   in the documentation of the functions that may return them.
-   One arises if the file that stores the wallet state has been corrupted.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "These are structured error values
+     that may be returned by the functions
+     that model the commands of the wallet.")
+   (xdoc::p
+    "Some are directly associated to command inputs (strings)
+     that are incorrect in some ways.
+     Others arise when more internal processes (such as key derivations) fail.
+     The meaning of these errors is explained
+     in the documentation of the functions that may return them.
+     One arises if the file that stores the wallet state has been corrupted."))
   (:malformed-mnemonic ((mnemonic string)))
   (:malformed-passphrase ((passphrase string)))
   (:malformed-entropy ((entropy string)))

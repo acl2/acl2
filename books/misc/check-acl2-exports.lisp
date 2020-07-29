@@ -181,6 +181,7 @@
     PRETTYIFY-CLAUSE
     PROGRAMP
     RECURSIVEP
+    REWRITE-LAMBDA-OBJECT
     RW-CACHE-STATE
     STOBJP
     STOBJS-IN
@@ -201,6 +202,13 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    FMT-HARD-RIGHT-MARGIN
+    FMT-SOFT-RIGHT-MARGIN
+    TOGGLE-INHIBIT-WARNING
+    COLLECT$
+    COLLECT$+
+    SUM$
+    SUM$+
   ))
 
 (defconst *special-ops*

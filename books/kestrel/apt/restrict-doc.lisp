@@ -12,7 +12,6 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
-(include-book "restrict")
 
 ; (depends-on "design-notes/restrict.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -20,7 +19,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *restrict-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf" "design notes"))
+  (xdoc::&& "@('restrict') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +51,7 @@
       by taking advantage of the added restrictions.")
 
     (xdoc::p
-     "These " *restrict-design-notes* ", which use "
+     "The " *restrict-design-notes* ", which use "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
@@ -59,7 +60,20 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form-auto restrict)
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(restrict old"
+     "          restriction"
+     "          :undefined       ; default :undefined"
+     "          :new-name        ; default :auto"
+     "          :new-enable      ; default :auto"
+     "          :thm-name        ; default :auto"
+     "          :thm-enable      ; default t"
+     "          :verify-guards   ; default :auto"
+     "          :hints           ; default nil"
+     "          :print           ; default :result"
+     "          :show-only       ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,8 +200,6 @@
     (xdoc::desc-apt-input-thm-name :never)
 
     (xdoc::desc-apt-input-thm-enable :never)
-
-    (xdoc::desc-apt-input-non-executable :never)
 
     (xdoc::desc-apt-input-verify-guards :never)
 

@@ -50,6 +50,10 @@ import java.util.Map;
  *     This function has an {@code unnormalized-body} property,
  *     but is implemented natively in Java for efficiency.
  *     Note that it is actually implemented by raw Lisp code in ACL2.</li>
+ * <li>The ACL2 built-in function {@code char}.
+ *     This function has an {@code unnormalized-body} property,
+ *     but is implemented natively in Java for efficiency.
+ *     Note that it is actually implemented by raw Lisp code in ACL2.</li>
  * </ul>
  * More native functions could be added here in the future,
  * e.g. as optimized implementations of other ACL2 built-in functions.
@@ -124,7 +128,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * and the native functions are reused
      * by the {@link #getInstance(Acl2Symbol)} method;
      * In other words, the native functions are interned.
-     * Invariants: not null, no null keys, no null values.
+     * Invariant: not null, no null keys, no null values.
      */
     private static final Map<Acl2Symbol, Acl2NativeFunction> functions =
             new HashMap<>();
@@ -169,6 +173,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
                 new NonnegativeIntegerQuotient());
         functions.put(Acl2Symbol.STRING_APPEND, new StringAppend());
         functions.put(Acl2Symbol.LEN, new Len());
+        functions.put(Acl2Symbol.CHAR, new Char());
     }
 
     /**
@@ -1151,6 +1156,32 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
         }
     }
 
+    /**
+     * Representation of the {@code char}
+     * ACL2 built-in function.
+     */
+    private static final class Char extends Acl2NativeFunction {
+
+        /**
+         * Constructs this native function.
+         */
+        private Char() {
+            super(Acl2Symbol.CHAR, 2);
+        }
+
+        /**
+         * Applies this native function to the given ACL2 values.
+         *
+         * @param values The actual arguments to pass to the function.
+         *               Invariant: not null, no null elements.
+         * @return The result of the function on the given arguments.
+         */
+        @Override
+        Acl2Value apply(Acl2Value[] values) {
+            return execChar(values[0], values[1]);
+        }
+    }
+
     //////////////////////////////////////// package-private members:
 
     /**
@@ -1690,7 +1721,7 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
      * Executes the native implementation of
      * the {@code symbol-name} ACL2 primitive function,
      * on a symbol,
-     *      * returning a Java string instead of an ACL2 string..
+     * * returning a Java string instead of an ACL2 string..
      *
      * @param x The actual argument to pass to the function.
      *          Precondition: not null.
@@ -2475,6 +2506,68 @@ public abstract class Acl2NativeFunction extends Acl2NamedFunction {
             x = x.cdr();
         }
         return lenObj;
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code char} ACL2 built-in function,
+     * on any values.
+     *
+     * @param s The first actual argument to pass to the function.
+     *          Precondition: not null.
+     * @param n The second actual argument to pass to the function.
+     *          Precondition: not null.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Value execChar(Acl2Value s, Acl2Value n) {
+        return s.charAt(n);
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code char} ACL2 built-in function,
+     * on an ACL2 string and an ACL2 integer.
+     *
+     * @param s The first actual argument to pass to the function.
+     *          Precondition: not null.
+     * @param n The second actual argument to pass to the function.
+     *          Precondition: not null, non-negative, below the string length.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Character execChar(Acl2String s, Acl2Integer n) {
+        // this should be faster than s.charAt(n):
+        return n.charAtThisIndexInRange(s.getJavaString());
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code char} ACL2 built-in function,
+     * on a Java string and an ACL2 integer.
+     *
+     * @param s The first actual argument to pass to the function.
+     *          Precondition: not null, no elements above 255.
+     * @param n The second actual argument to pass to the function.
+     *          Precondition: not null, non-negative, below the string length.
+     * @return The result of the function on the given arguments.
+     */
+    public static Acl2Character execChar(String s, Acl2Integer n) {
+        return Acl2Character.imake(s.charAt(n.getJavaBigInteger().intValue()));
+    }
+
+    /**
+     * Executes the native implementation of
+     * the {@code char} ACL2 built-in function,
+     * on a Java string and an ACL2 integer,
+     * returning a Java character instead of an ACL2 character.
+     *
+     * @param s The first actual argument to pass to the function.
+     *          Precondition: not null, no elements above 255.
+     * @param n The second actual argument to pass to the function.
+     *          Precondition: not null, non-negative, below the string length.
+     * @return The result of the function on the given arguments.
+     */
+    public static char execCharChar(String s, Acl2Integer n) {
+        return s.charAt(n.getJavaBigInteger().intValue());
     }
 
 }

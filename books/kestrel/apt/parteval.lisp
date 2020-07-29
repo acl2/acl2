@@ -10,6 +10,9 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -35,15 +38,15 @@
 
  parteval
 
- :item-state t
-
- :item-wrld t
-
- :item-ctx t
-
  :items
 
- ("@('old'),
+ (xdoc::*evmac-topic-implementation-item-state*
+
+  xdoc::*evmac-topic-implementation-item-wrld*
+
+  xdoc::*evmac-topic-implementation-item-ctx*
+
+  "@('old'),
    @('static'),
    @('new-name'),
    @('new-enable'),
@@ -182,7 +185,7 @@
        ((when (null y1...ym))
         (er-soft+ ctx t nil "~@0 must not be empty." description))
        ((er &) (ensure-list-no-duplicates$ y1...ym description t nil))
-       ((er &) (ensure-symbol-list$ y1...ym description t nil))
+       ((er &) (ensure-value-is-symbol-list$ y1...ym description t nil))
        ((er &) (ensure-list-subset$ y1...ym (formals old$ (w state))
                                     description t nil))
        (c1...cm (strip-cdrs alist))
@@ -206,7 +209,7 @@
                state)
   :mode :program
   :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
                  (make-paired-name old$ new-name$ 2 (w state))
                thm-name))
@@ -315,7 +318,8 @@
                                     new-enable$
                                     thm-name$
                                     verify-guards$
-                                    case)')
+                                    case
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          symbol-alistp
@@ -324,6 +328,7 @@
                                          symbolp
                                          booleanp
                                          natp
+                                         symbol-listp
                                          result)').")
                state)
   :mode :program
@@ -350,14 +355,17 @@
        ((er static$) (parteval-process-static
                       static old$ verify-guards$ ctx state))
        (case (parteval-case-of-old old$ static$ wrld))
-       ((er new-name$) (process-input-new-name new-name old$ ctx state))
+       ((er (list new-name$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old$ state)
                           "The :NEW-ENABLE input" t nil))
        ((er thm-name$) (parteval-process-thm-name
                         thm-name old$ new-name$ ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
+       (names-to-avoid (cons thm-name$ names-to-avoid))
+       ((er &) (ensure-value-is-boolean$ thm-enable
+                                         "The :THM-ENABLE input" t nil))
        ((when (and (= case 3)
                    new-enable$
                    thm-enable))
@@ -380,7 +388,8 @@
                  new-enable$
                  thm-name$
                  verify-guards$
-                 case))))
+                 case
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -889,18 +898,20 @@
                   new-enable$
                   thm-name$
                   verify-guards$
-                  case)) (parteval-process-inputs
-                          old
-                          static
-                          new-name
-                          new-enable
-                          thm-name
-                          thm-enable
-                          verify-guards
-                          untranslate
-                          print
-                          show-only
-                          ctx state))
+                  case
+                  &)) ; NAMES-TO-AVOID
+        (parteval-process-inputs old
+                                 static
+                                 new-name
+                                 new-enable
+                                 thm-name
+                                 thm-enable
+                                 verify-guards
+                                 untranslate
+                                 print
+                                 show-only
+                                 ctx
+                                 state))
        (event (parteval-gen-everything old$
                                        static$
                                        new-name$

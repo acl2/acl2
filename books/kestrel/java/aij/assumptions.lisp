@@ -81,6 +81,7 @@
 (assert-event (equal (symbol-package-name 'cdr) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'equal) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'or) "COMMON-LISP"))
+(assert-event (equal (symbol-package-name 'char) "COMMON-LISP"))
 
 (assert-event (equal (symbol-package-name 'complex-rationalp) "ACL2"))
 (assert-event (equal (symbol-package-name 'acl2-numberp) "ACL2"))

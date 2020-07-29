@@ -1,6 +1,6 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -76,21 +76,21 @@
 ;; which are disabled, thus greatly simplifying proofs.
 
 (defund simp-point-on-elliptic-curve-p (point a b)
-  (let ((x (car point)) (y (cdr point)))
-    (or (equal point '(0 . 0))
+  (or (equal point :infinity)
+      (let ((x (car point)) (y (cdr point)))
         (=p (P[X.Y] x y a b) 0))))
 
 (defund simp-curve-group-+ (point1 point2 a b)
   (declare (ignorable a b))
-  (if (equal point1 '(0 . 0))
+  (if (equal point1 :infinity)
       point2
-    (if (equal point2 '(0 . 0))
+    (if (equal point2 :infinity)
         point1
       (let ((x1 (car point1)) (x2 (car point2))
             (y1 (cdr point1)) (y2 (cdr point2)))
         (if (and (=p x1 x2)
                  (=p (i+ y1 y2) 0))
-            '(0 . 0)
+            :infinity
           (if (=p x1 x2)
               (let* ((slope (alpha{x1=x2} x1 y1 a))
                      (x3 (x3 slope x1 x2))

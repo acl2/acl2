@@ -186,7 +186,7 @@ Fortunately that can all be wrapped up into @(see with-local-nrev).</p>"
 
 
 (include-book "fast")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 ; Some basic sanity checks.
 
@@ -224,5 +224,3 @@ Fortunately that can all be wrapped up into @(see with-local-nrev).</p>"
 
 (assert! (equal (my-map 5)
                 (map-spec 5)))
-
-

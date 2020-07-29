@@ -32,7 +32,7 @@
 (include-book "stobj-swap")
 (include-book "std/stobjs/clone" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 ; This is just a test of the stobj-swap book, which once had a bug.
 

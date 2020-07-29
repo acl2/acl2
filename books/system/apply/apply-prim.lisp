@@ -277,6 +277,11 @@
 ;       :hints (("Goal" :in-theory (disable (:executable-counterpart break$))))
 ;       :rule-classes ((:meta :trigger-fns (apply$-prim)))))
 
+    (local
+     (defthm hide-is-identity
+       (equal (hide x) x)
+       :hints (("Goal" :expand ((hide x))))))
+
     (defthm apply$-prim-meta-fn-correct
       (equal (apply$-prim-meta-fn-ev term alist)
              (apply$-prim-meta-fn-ev (meta-apply$-prim term)

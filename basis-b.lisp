@@ -2187,7 +2187,7 @@
 ; ; try this:
 ;
 ;  (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
-;  (include-book "make-event/assert" :dir :system)
+;  (include-book "std/testing/assert-bang" :dir :system)
 ;
 ; ; Here we establish that the factors of M31-1 are 2, 3, 7, 11, 31, 151, and
 ; ; 331.
@@ -3446,14 +3446,22 @@
 
 (defun chk-ld-prompt (val ctx state)
   (cond ((or (null val)
-             (eq val t)
-             (let ((wrld (w state)))
-               (and (symbolp val)
-                    (equal (arity val wrld) 2)
-                    (equal (stobjs-in val wrld) '(nil state))
-                    (equal (stobjs-out val wrld) '(nil state)))))
+             (eq val t))
          (value nil))
-        (t (er soft ctx *ld-special-error* 'ld-prompt val))))
+        (t (let ((wrld (w state)))
+             (cond ((and (symbolp val)
+                         (equal (arity val wrld) 2)
+                         (equal (stobjs-in val wrld) '(nil state))
+                         (equal (stobjs-out val wrld) '(nil state)))
+                    (cond ((or (eq val 'brr-prompt)
+                               (ttag wrld))
+                           (value nil))
+                          (t (er soft ctx
+                                 "It is illegal to set the ld-prompt to ~x0 ~
+                                  unless there is an active trust ttag.  See ~
+                                  :DOC ~x1."
+                                 val 'ld-prompt))))
+                   (t (er soft ctx *ld-special-error* 'ld-prompt val)))))))
 
 (defun set-ld-prompt (val state)
   (er-progn

@@ -124,7 +124,7 @@
        We may do that in the future, if it turns out to be more convenient."))
     (:simple ((name tidentifier)
               (arguments type-argument-list)))
-    (:package ((package package-namep)
+    (:package ((package package-name)
                (name tidentifier)
                (arguments type-argument-list)))
     (:nested ((enclosing class-type)

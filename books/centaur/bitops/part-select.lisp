@@ -33,7 +33,7 @@
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "ihsext-basics"))
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 
 (defsection bitops/part-select
   :parents (bitops)

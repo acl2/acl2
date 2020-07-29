@@ -31,7 +31,7 @@
 (in-package "VL2014")
 (include-book "centaur/vl2014/util/defs" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 (local (include-book "centaur/vl2014/util/position" :dir :system))
 (local (include-book "std/basic/intern-in-package-of-symbol" :dir :system))

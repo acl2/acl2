@@ -315,6 +315,7 @@
                                           (all-vars string-listp))
      :guard (= (len vars) (len exprs))
      :returns (graph alistp)
+     :parents nil
      (b* (((when (endp vars)) nil)
           (var (car vars))
           (expr (car exprs))
@@ -358,13 +359,19 @@
      which is calculated elsewhere via a topological sort.")
    (xdoc::p
     "We go through the serialization, and for each element (i.e. variable name)
-     we find the position in the @('names') list,
+     we find the position in the @('vars') list,
      and use that position to pick the corresponding expression
-     to use in the assignment."))
+     to use in the assignment.")
+   (xdoc::p
+    "We exclude trivial assignments of a variable to itself.
+     These arise when formal arguments of tail-recursive ACL2 functions
+     are passed unchanged as actual arguments to the recursive calls."))
   (b* (((when (endp serialization)) nil)
        (var (car serialization))
        (pos (acl2::index-of var vars))
        (expr (nth pos exprs))
+       ((when (jexpr-equiv expr (jexpr-name var)))
+        (atj-serialize-parallel-asg (cdr serialization) vars exprs))
        (first-asg (jblock-asg (jexpr-name var) expr))
        (rest-asg (atj-serialize-parallel-asg (cdr serialization) vars exprs)))
     (append first-asg rest-asg)))
@@ -451,6 +458,7 @@
                  (= (len types) (len exprs)))
      :returns (mv (tmp-block jblockp)
                   (asg-block jblockp))
+     :parents nil
      (b* (((when (endp vars)) (mv nil nil))
           (var (car vars))
           (type (car types))
@@ -466,6 +474,97 @@
                                                     (1+ i))))
        (mv (append first-tmp rest-tmp)
            (append first-asg rest-asg))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-elim-tailrec-gen-block ((arg-exprs jexpr-listp)
+                                    (method-params jparam-listp))
+  :returns (block jblockp)
+  :short "Generate the block for eliminating tail recursion."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee atj-elim-tailrec-in-return).
+     When we encounter a tail-recursive call of the method
+     in a @('return') statement,
+     we generate a block consisting of
+     (1) a parallel assignment of the call's actual arguments
+     to the method's parameters, and
+     (2) a @('continue') statement."))
+  (b* ((names (jparam-list->names method-params))
+       (types (jparam-list->types method-params))
+       ((unless (= (len names) (len arg-exprs))) ; just for guards
+        (raise "Internal error: ~
+                call of tail-recursive method has ~x0 parameters ~
+                but is called with ~x1 arguments."
+               (len names) (len arg-exprs))))
+    (append
+     (atj-make-parallel-asg names types arg-exprs)
+     (jblock-continue))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atj-elim-tailrec-in-return ((expr? maybe-jexprp)
+                                    (method-params jparam-listp)
+                                    (method-name stringp))
+  :returns (block jblockp)
+  :short "Eliminate any tail-recursive call in a @('return') statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called by @(tsee atj-elim-tailrec-in-jstatem)
+     when a @('return') statement with an expression is encountered.
+     The first input is the optional expression of the @('return').")
+   (xdoc::p
+    "If the expression is a call of the method,
+     we return a block consisting of
+     (1) a parallel assignment of the call's actual arguments
+     to the method's parameters, and
+     (2) a @('continue') statement.")
+   (xdoc::p
+    "If the expression is a right-associated conditional conjunction
+     @('expr1 && (expr2 && (... && exprN)...)'),
+     and its rightmost conjunct @('exprN') is a call of the method,
+     we return a block of the form")
+   (xdoc::codeblock
+    "if (expr1 && (expr2 && (... && exprN-1)...)) {"
+    "    <parallel-asg>"
+    "    continue;"
+    "} else {"
+    "    return false;"
+    "}")
+   (xdoc::p
+    "In all other cases,
+     we return a block consisting of the single @('return') statement
+     with the given expression;
+     that is, not change to that part of the Java code is made."))
+  (b* (((unless (jexprp expr?)) (list (jstatem-return nil)))
+       (expr expr?))
+    (cond ((and (jexpr-case expr :method)
+                (equal (jexpr-method->name expr)
+                       method-name))
+           (atj-elim-tailrec-gen-block (jexpr-method->args expr)
+                                       method-params))
+          ((and (jexpr-case expr :binary)
+                (jbinop-case (jexpr-binary->op expr) :condand))
+           (b* ((exprs (unmake-right-assoc-condand expr))
+                ((unless (>= (len exprs) 2))
+                 (raise "Internal error: ~
+                         expression ~x0 has fewer than 2 conjuncts."
+                        exprs)
+                 (ec-call (jblock-fix :irrelevant)))
+                (rightmost (car (last exprs)))
+                (others (butlast exprs 1))
+                ((unless (and (jexpr-case rightmost :method)
+                              (equal (jexpr-method->name rightmost)
+                                     method-name)))
+                 (list (jstatem-return expr?))))
+             (jblock-ifelse (make-right-assoc-condand others)
+                            (atj-elim-tailrec-gen-block
+                             (jexpr-method->args rightmost)
+                             method-params)
+                            (jblock-return (jexpr-literal-false)))))
+          (t (list (jstatem-return expr?))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -499,22 +598,9 @@
      statem
      :locvar (list statem)
      :expr (list statem)
-     :return (if (and (jexprp statem.expr?)
-                      (jexpr-case statem.expr? :method)
-                      (equal (jexpr-method->name statem.expr?)
-                             method-name))
-                 (b* ((names (jparam-list->names method-params))
-                      (types (jparam-list->types method-params))
-                      (exprs (jexpr-method->args statem.expr?))
-                      ((unless (= (len names) (len exprs))) ; just for guards
-                       (raise "Internal error: ~
-                               call of method ~s0 has ~x1 parameters ~
-                               but is called with ~x2 arguments."
-                              method-name (len names) (len exprs))))
-                   (append
-                    (atj-make-parallel-asg names types exprs)
-                    (jblock-continue)))
-               (list statem))
+     :return (atj-elim-tailrec-in-return statem.expr?
+                                         method-params
+                                         method-name)
      :throw (list statem)
      :break (list statem)
      :continue (list statem)

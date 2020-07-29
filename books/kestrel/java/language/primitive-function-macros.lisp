@@ -174,7 +174,8 @@
    (xdoc::p
     "This macro also takes an optional argument saying whether
      a theorem should be generated
-    that asserts the commutativity of the operation.")
+     that asserts the commutativity of the operation.
+     There is also an optional argument to supply hints for this.")
    (xdoc::@def "def-primitive-binary"))
 
   (define def-primitive-binary-fn ((name symbolp)
@@ -184,6 +185,7 @@
                                    (operation "An untranslated term.")
                                    (nonzero booleanp)
                                    (commutative booleanp)
+                                   (commutative-hints true-listp)
                                    (parents symbol-listp)
                                    (parents-suppliedp booleanp)
                                    (short "A string or form or @('nil').")
@@ -210,7 +212,8 @@
          (commutative-thm?
           (and commutative
                `(defthm-commutative ,(add-suffix name "-COMMUTATIVE")
-                  ,name))))
+                  ,name
+                  :hints ,commutative-hints))))
       `(define ,name ((operand-left ,in-predicate-left)
                       (operand-right ,in-predicate-right))
          ,@(and guard? (list :guard guard?))
@@ -234,6 +237,7 @@
                                   operation
                                   nonzero
                                   commutative
+                                  commutative-hints
                                   (parents 'nil parents-suppliedp)
                                   (short 'nil short-suppliedp)
                                   (long 'nil long-suppliedp))
@@ -246,6 +250,7 @@
         ',operation
         ,nonzero
         ,commutative
+        ',commutative-hints
         ',parents ,parents-suppliedp
         ,short ,short-suppliedp
         ,long ,long-suppliedp))))
@@ -346,6 +351,7 @@
                                &key
                                operation
                                commutative
+                               commutative-hints
                                (parents 'nil parents-suppliedp)
                                (short 'nil short-suppliedp)
                                (long 'nil long-suppliedp))
@@ -357,6 +363,7 @@
      :out-type (primitive-type-boolean)
      :operation ,operation
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -368,6 +375,7 @@
                            operation
                            nonzero
                            commutative
+                           commutative-hints
                            (parents 'nil parents-suppliedp)
                            (short 'nil short-suppliedp)
                            (long 'nil long-suppliedp))
@@ -380,6 +388,7 @@
      :operation ,operation
      :nonzero ,nonzero
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -391,6 +400,7 @@
                             operation
                             nonzero
                             commutative
+                            commutative-hints
                             (parents 'nil parents-suppliedp)
                             (short 'nil short-suppliedp)
                             (long 'nil long-suppliedp))
@@ -403,6 +413,7 @@
      :operation ,operation
      :nonzero ,nonzero
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -413,6 +424,7 @@
                              &key
                              operation
                              commutative
+                             commutative-hints
                              (parents 'nil parents-suppliedp)
                              (short 'nil short-suppliedp)
                              (long 'nil long-suppliedp))
@@ -424,6 +436,7 @@
      :out-type (primitive-type-float)
      :operation ,operation
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -434,6 +447,7 @@
                               &key
                               operation
                               commutative
+                              commutative-hints
                               (parents 'nil parents-suppliedp)
                               (short 'nil short-suppliedp)
                               (long 'nil long-suppliedp))
@@ -445,6 +459,7 @@
      :out-type (primitive-type-double)
      :operation ,operation
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -455,6 +470,7 @@
                                     &key
                                     operation
                                     commutative
+                                    commutative-hints
                                     (parents 'nil parents-suppliedp)
                                     (short 'nil short-suppliedp)
                                     (long 'nil long-suppliedp))
@@ -467,6 +483,7 @@
      :out-type (primitive-type-boolean)
      :operation ,operation
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -477,6 +494,7 @@
                                      &key
                                      operation
                                      commutative
+                                     commutative-hints
                                      (parents 'nil parents-suppliedp)
                                      (short 'nil short-suppliedp)
                                      (long 'nil long-suppliedp))
@@ -489,6 +507,7 @@
      :out-type (primitive-type-boolean)
      :operation ,operation
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -499,6 +518,7 @@
                                       &key
                                       operation
                                       commutative
+                                      commutative-hints
                                       (parents 'nil parents-suppliedp)
                                       (short 'nil short-suppliedp)
                                       (long 'nil long-suppliedp))
@@ -511,6 +531,7 @@
      :out-type (primitive-type-boolean)
      :operation ,operation
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))
@@ -521,6 +542,7 @@
                                        &key
                                        operation
                                        commutative
+                                       commutative-hints
                                        (parents 'nil parents-suppliedp)
                                        (short 'nil short-suppliedp)
                                        (long 'nil long-suppliedp))
@@ -533,6 +555,7 @@
      :out-type (primitive-type-boolean)
      :operation ,operation
      :commutative ,commutative
+     :commutative-hints ,commutative-hints
      ,@(and parents-suppliedp (list :parents parents))
      ,@(and short-suppliedp (list :short short))
      ,@(and long-suppliedp (list :long long))))

@@ -184,6 +184,7 @@
   :prepwork
   ((define atj-gen-jboolean-array-aux ((booleans boolean-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp booleans) nil)
            (t (cons (atj-gen-jboolean (boolean-value->bool (car booleans)))
                     (atj-gen-jboolean-array-aux (cdr booleans))))))))
@@ -199,6 +200,7 @@
   :prepwork
   ((define atj-gen-jchar-array-aux ((chars char-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp chars) nil)
            (t (cons (atj-gen-jchar (char-value->nat (car chars)))
                     (atj-gen-jchar-array-aux (cdr chars))))))))
@@ -214,6 +216,7 @@
   :prepwork
   ((define atj-gen-jbyte-array-aux ((bytes byte-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp bytes) nil)
            (t (cons (atj-gen-jbyte (byte-value->int (car bytes)))
                     (atj-gen-jbyte-array-aux (cdr bytes))))))))
@@ -229,6 +232,7 @@
   :prepwork
   ((define atj-gen-jshort-array-aux ((shorts short-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp shorts) nil)
            (t (cons (atj-gen-jshort (short-value->int (car shorts)))
                     (atj-gen-jshort-array-aux (cdr shorts))))))))
@@ -244,6 +248,7 @@
   :prepwork
   ((define atj-gen-jint-array-aux ((ints int-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp ints) nil)
            (t (cons (atj-gen-jint (int-value->int (car ints)))
                     (atj-gen-jint-array-aux (cdr ints))))))))
@@ -259,6 +264,7 @@
   :prepwork
   ((define atj-gen-jlong-array-aux ((longs long-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp longs) nil)
            (t (cons (atj-gen-jlong (long-value->int (car longs)))
                     (atj-gen-jlong-array-aux (cdr longs))))))))
@@ -749,9 +755,9 @@
    "We generate a private static method
     for each ACL2 package definition to build.
     This function generates the name of this method,
-    which should be distinct from all the other methods
+    which is distinct from all the other methods
     generated for the same class.")
-  (str::cat "$addPackageDef_"
+  (str::cat "addPackageDef_"
             (implode (atj-chars-to-jchars-id (explode pkg) nil :dash nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -889,6 +895,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-static-initializer ((java-class$ stringp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer of the main Java class."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This calls the @('build()') method of the environment Java class."))
+  (make-jcinitializer
+   :static? t
+   :code (jblock-smethod (jtype-class (str::cat java-class$ "Environment"))
+                         "build"
+                         nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-init-method ()
   :returns (method jmethodp)
   :short "Generate the Java public method to initialize the ACL2 environment."
@@ -897,8 +918,19 @@
    (xdoc::p
     "This method is actually empty,
      but its invocation ensures that the class initializer,
-     which actually initializes the environment,
-     has been executed."))
+     which builds the ACL2 environment,
+     has been executed.")
+   (xdoc::p
+    "The reason for having an empty initialization method
+     and the environment-building code in the static initializer,
+     as opposed to having no static initializer
+     and the environment-building code in the initialization method,
+     is that, in the shallow embedding approach,
+     we need the ACL2 environment to be initialized
+     before we create certain final static fields that involve ACL2 symbols,
+     and that therefore need the ACL2 environment to be built.
+     This is unnecessary in the deep embedding approach,
+     but we use the same code structure for uniformity and simplicity."))
   (make-jmethod :access (jaccess-public)
                 :abstract? nil
                 :static? t

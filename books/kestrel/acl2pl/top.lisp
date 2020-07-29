@@ -18,6 +18,7 @@
 (include-book "primitive-functions")
 (include-book "evaluation-states")
 (include-book "evaluation")
+(include-book "equivalence")
 (include-book "interpreter")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

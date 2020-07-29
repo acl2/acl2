@@ -17,6 +17,8 @@
 (local (include-book "nth"))
 (local (include-book "len"))
 (local (include-book "take"))
+(local (include-book "append"))
+(local (include-book "true-list-fix"))
 
 (defthm true-listp-of-subrange-type-prescription
   (true-listp (subrange start end lst))
@@ -173,3 +175,29 @@
                 )
            (equal (subrange start k lst)
                   (true-list-fix (nthcdr start lst)))))
+
+(defthm append-of-subrange-and-subrange-adjacent
+  (implies (and (equal s2 (+ 1 e1))
+                (< e2 (len lst))
+                (<= s1 e1)
+                (<= s2 e2)
+                (natp e1)
+                (natp s1)
+                (natp s2)
+                (natp e2))
+           (equal (append (subrange s1 e1 lst) (subrange s2 e2 lst))
+                  (subrange s1 e2 lst)))
+  :hints (("Goal" :in-theory (enable equal-of-append))))
+
+(defthm subrange-of-1-and-cons
+  (implies (natp end)
+           (equal (subrange 1 end (cons a x))
+                  (subrange 0 (+ -1 end) x)))
+  :hints (("Goal" :in-theory (enable subrange))))
+
+(defthm equal-of-cdr-and-subrange-same
+  (implies (and (< end (len lst))
+                (natp end))
+           (equal (equal (cdr lst) (subrange 1 end lst))
+                  (and (true-listp lst)
+                       (equal (len lst) (+ 1 end))))))
