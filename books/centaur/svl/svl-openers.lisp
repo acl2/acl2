@@ -379,6 +379,7 @@
                           delayed-env
                           modules)
    :verify-guards nil
+   :parents (svl-run svl-run-phase)
    :flag svl-run-phase-wog
    :measure (acl2::nat-list-measure
              (list (svl-get-module-rank$ modname; (sv::modname-fix modname)
@@ -390,7 +391,12 @@
             :in-theory (e/d (rp::measure-lemmas
                              SVL-GET-MAX-OCC-RANK$
                              SVL-WELL-RANKED-MODULE$) ())))
-
+   
+   :short "Same as @(see svl-run-phase) but without guards"
+   :long "<p>Please see @(see svl::svl-run-phase) for the explanation of the
+arguments. svl-run-phase-wog has the same functionality as svl-run-phase but it
+does not have any guards. This can help makes the rewrite-based proof go faster
+because guards might be executed too many times during such proofs.</p>" 
    (cond ((not (svl-well-ranked-module$ modname modules)) ;; for termination
           (mv nil (make-svl-env)))
          (t

@@ -23,6 +23,7 @@
      (include-book "rp-rewriter/top")
      (include-book "rp-rewriter/lib/mult/doc")
      (include-book "rp-rewriter/lib/mult2/doc")
+     (include-book "rp-rewriter/lib/mult3/doc")
      
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/doc")

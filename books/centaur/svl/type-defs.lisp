@@ -96,6 +96,7 @@
 
 
 
+
 (encapsulate
   nil
   (defun wire-p (wire)
@@ -146,6 +147,11 @@
                              (wire-p
                               wire-fix)))))
 
+  (fty::deffixtype wire
+                 :pred  wire-p
+                 :fix   wire-fix
+                 :equiv equal)
+  
   (fty::deffixtype wire-list
                    :pred  wire-list-p
                    :fix   wire-list-fix
@@ -503,3 +509,19 @@
                :val-type svl-module
                :true-listp t
                :key-type sv::modname-p)
+
+
+
+
+#|(fty::defalist sv-wire-alist
+               :val-type sv::wire-p
+               :key-type wire-p)||#
+
+(defun sv-wire-alist-p (lst)
+  (declare (xargs :guard t))
+  (if (atom lst)
+      (equal lst nil)
+    (and (consp (car lst))
+         (sv::wire-p (cdar lst))
+         (wire-p (caar lst))
+         (sv-wire-alist-p (cdr lst)))))
