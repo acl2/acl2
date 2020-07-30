@@ -62,3 +62,6 @@
                                   (,general normalize-lhs-generated-lemma)
                                   :in-theory
                                   (theory 'minimal-theory)))))))))))))
+
+
+Breaking it
