@@ -557,8 +557,10 @@ $ENV{"ACL2"} = $acl2;
 print "-- Image to use = $acl2\n" if $DEBUG;
 die("Can't determine which ACL2 to use.") if !$acl2;
 
-# Set ACL2_CUSTOMIZATION to NONE.  Not sure why make_cert isn't doing this in my case.
-$ENV{"ACL2_CUSTOMIZATION"}="NONE";
+# Set ACL2_CUSTOMIZATION to NONE if not defined.
+if (! defined($ENV{"ACL2_CUSTOMIZATION"})) {
+    $ENV{"ACL2_CUSTOMIZATION"}="NONE";
+}
 
 # ------------ TEMPORARY LISP FILE FOR ACL2 INSTRUCTIONS ----------------------
 

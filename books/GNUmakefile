@@ -1440,6 +1440,13 @@ clean: milawa-clean
 dummy:
 	@echo "Making dummy -- nothing to do."
 
+### TEMPORARY code added 7/30/2020 to support changes to ../GNUmakefile;
+### these lines will not be included in the revised version of ./GNUmakefile
+### that should be coming soon from David Rager....
+.PHONY: regression regression-everything
+regression: all
+regression-everything: everything
+
 # We now provide a way (adapted from the old Makefile-generic) for
 # developers to be able to check well-formedness of the ACL2 world
 # after including each book.  Note that we skip two problematic

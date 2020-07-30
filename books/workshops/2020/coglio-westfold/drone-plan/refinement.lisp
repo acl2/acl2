@@ -62,6 +62,10 @@
          (set-difference-equal (set-difference-equal x z) y))
   :hints (("Goal" :in-theory (enable set-difference-equal))))
 
+; Matt K. mod: Guard verification fails in ACL2(p) with waterfall-parallelism
+; enabled for the call (simplify extend-path-taken$1 ...) below.
+(set-waterfall-parallelism nil)
+
 (simplify extend-path-taken$1
   :assumptions ((good-dr-state-ext-p drn-st))
   :enable (dr-state-ext set-difference-equal-of-append-rev)

@@ -36,7 +36,7 @@
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
 #   make regression
-#                    ; Certify all the community books and, if present, the
+#                    ; Certify most community books and, if present, the
 #                    ; workshops/ books as well.
 #   make regression ACL2=xxx
 #                    ; Same as make regression, but use xxx as ACL2, which
@@ -51,8 +51,8 @@
 #                    ; experimental extension ACL2(p) of ACL2); see
 #                    ; file acl2-customization-files/README.
 #   make regression-everything
-#                    ; Same as make regression, except that target "everything"
-#                    ; is used in community books file, Makefile.
+#                    ; Same as make regression-everything in books/Makefile;
+#                    ; certifies more than the regression target.
 #   make clean-books ; Remove certificate files, object files, log files,
 #                    ; debris, ..., created by `make basic',
 #                    ; `make regression', etc.
@@ -718,12 +718,12 @@ large-acl2p:
 .PHONY: regression
 regression: check-books
 	uname -a
-	cd books ; $(MAKE) $(ACL2_IGNORE) all ACL2=$(ACL2)
+	cd books ; $(MAKE) $(ACL2_IGNORE) regression ACL2=$(ACL2)
 
 .PHONY: regression-everything
 regression-everything: check-books
 	uname -a
-	cd books ; $(MAKE) $(ACL2_IGNORE) everything ACL2=$(ACL2)
+	cd books ; $(MAKE) $(ACL2_IGNORE) regression-everything ACL2=$(ACL2)
 
 # Do regression tests from scratch.
 # Success can generally be determined by checking for the absence of ** in the
