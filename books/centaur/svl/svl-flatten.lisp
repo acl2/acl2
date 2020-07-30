@@ -2689,10 +2689,12 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
              :expand (LHSLIST->SVEX LHSLST)
              :in-theory (e/d () ())))))
 
+
+
 (define tmp-occs->svl-occs-assign ((occ-name occ-name-p)
                                    (outputs wire-list-p)
                                    (svex sv::svex-p)
-                                   (wires sv::wirelist-p)
+                                   (wire-alist sv-wire-alist-p)
                                    (rsh natp))
   :verify-guards nil
   :returns (res svl-occ-alist-p)
@@ -2701,9 +2703,10 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   (if (atom outputs)
       nil
     (b* ((cur-output (car outputs))
-         (only-1-output (and (equal (len outputs) 1)
+         (only-1-output (and (consp outputs)
+                             (atom (cdr outputs))
                              (equal rsh 0)))
-         (wire  (vl-insouts-assocwire (wire-name cur-output) wires))
+         (wire  (cdr (hons-get (wire-name cur-output) wire-alist)))
          (whole-wire-covered (and (equal (- (nfix (sv::wire->width wire))
                                             (nfix (sv::wire->low-idx wire)))
                                          (wire-size cur-output))
@@ -2733,7 +2736,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                (tmp-occs->svl-occs-assign occ-name
                                           (cdr outputs)
                                           svex
-                                          wires
+                                          wire-alist
                                           (+ rsh (nfix (wire-size cur-output)))))))))
 
 (progn
@@ -2761,8 +2764,26 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
       (cons (lhs->wire-list (car lhslist))
             (lhslist->wire-list (cdr lhslist))))))
 
+
+(define sv-wires-to-sv-wire-alist ((wires sv::wirelist-p))
+  ;; :returns (res sv-wire-alist-p
+  ;;               :hyp (sv::wirelist-p wires)
+  ;;               :hints (("Goal"
+  ;;                        :in-theory (e/d (SV::WIRELIST-P
+  ;;                                         SV::WIRE-P)
+  ;;                                        (SV::SVAR-P)))))
+  (if (atom wires)
+      nil
+    (if (AND (CONSP (CAR WIRES))
+             (CONSP (CAAR WIRES)))
+        (hons-acons (CAAAR WIRES)
+                    (car wires)
+                    (sv-wires-to-sv-wire-alist (cdr wires)))
+      (sv-wires-to-sv-wire-alist (cdr wires)))))
+  
+
 (define tmp-occs->svl-occs ((tmp-occs tmp-occ-alist-p)
-                            (wires sv::wirelist-p))
+                            (wire-alist sv-wire-alist-p))
 ;:returns (res svl-occ-alist :hyp (occ-alist-p occs))
   :verify-guards nil
   :returns (res svl-occ-alist-p)
@@ -2770,9 +2791,9 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
    ((atom tmp-occs) nil)
    ((equal (tmp-occ-kind (cdar tmp-occs)) ':assign)
     (b* (((tmp-occ-assign tmp-occ) (cdar tmp-occs))
-         (new-svl-occs (tmp-occs->svl-occs-assign (caar tmp-occs) tmp-occ.outputs tmp-occ.svex wires 0)))
+         (new-svl-occs (tmp-occs->svl-occs-assign (caar tmp-occs) tmp-occ.outputs tmp-occ.svex wire-alist 0)))
       (append new-svl-occs
-              (tmp-occs->svl-occs (cdr tmp-occs) wires))))
+              (tmp-occs->svl-occs (cdr tmp-occs) wire-alist))))
    (t (b* (((tmp-occ-module tmp-occ) (cdar tmp-occs)))
         (acons (caar tmp-occs)
                (make-svl-occ-module
@@ -2780,7 +2801,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                 :outputs (lhslist->wire-list (strip-cdrs tmp-occ.outputs))
                 :name tmp-occ.name)
                (tmp-occs->svl-occs (cdr tmp-occs)
-                                   wires))))))
+                                   wire-alist))))))
 
 (define union-equal2 ((lst1)
                       (lst2 true-listp))
@@ -2831,11 +2852,12 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
         (mv (cadr (assoc-equal modname vl-insouts))
             (cddr (assoc-equal modname vl-insouts))))
 
-       (- (cw "Processing alias-pairs... "))
+       (- (cw "Processing alias-pairs... ~%"))
        ;; Create svl-aliasdb
-       (svl-aliasdb (mod-aliaspairs->svl-aliasdb modname modalist mods-to-skip))
+       (svl-aliasdb (mod-aliaspairs->svl-aliasdb modname modalist
+                                                 mods-to-skip))
 
-       (- (cw "Creating occs... "))
+       (- (cw "Creating occs... ~%"))
        ;; Create tmp-occs
        ((mv tmp-occs rp::rp-state) (sv-mod->svl-occs modname
                                                      modalist
@@ -2861,8 +2883,8 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                     modname
                                                     modalist))
        (tmp-occs (append init-occs-for-aliased-inputs occs-for-outputs tmp-occs))
-
-       (- (cw "Sorting occs... "))
+       (- (hons-clear t))
+       (- (cw "Sorting occs... ~%"))
        ;; Create Listeners.
        (tmp-occs (make-fast-alist tmp-occs)) ;; necessary for occ-to-occ listeners.
        (sig-to-occ-listeners (fast-alist-clean (create-signal-to-occ-listeners tmp-occs 'sig-to-occ-listeners)))
@@ -2876,9 +2898,11 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
 
        ;; Convert occs to to svl-occs
        (wires (sv::module->wires (cdr (assoc-equal modname modalist))))
-       (new-svl-occs (tmp-occs->svl-occs sorted-occs wires))
+       (sv-wire-alist (sv-wires-to-sv-wire-alist wires))
+       (new-svl-occs (tmp-occs->svl-occs sorted-occs sv-wire-alist))
 
        (- (free-svl-aliasdb svl-aliasdb))
+       (- (fast-alist-free sv-wire-alist))
        (- (fast-alist-free tmp-occs))
        (- (fast-alist-free sig-to-occ-listeners))
        (- (fast-alist-free occ-to-occ-listeners))
@@ -2915,8 +2939,10 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   :guard (svex-simplify-preloaded-guard svex-simplify-preloaded )
   (declare (xargs :mode :program))
   (if (atom modnames)
-      (mv nil rp::rp-state)
-    (b* (((mv this rp::rp-state)
+      (progn$ (hons-clear t)
+              (mv nil rp::rp-state))
+    (b* ((- (hons-clear t))
+         ((mv this rp::rp-state)
           (svl-flatten-mod (car modnames)
                            modalist
                            mods-to-skip
@@ -3100,6 +3126,39 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                             (top 'nil) ;; can override the top module.
                             (state 'state))
   (declare (xargs :mode :program))
+  :parents (acl2::svl)
+  :short "Generate SVL designs from SV and VL Designs"
+  :long "<p>Using SV and  VL (to determine the size of  the module inputs only)
+designs, creates an SVL design. </p>
+<code>
+@('
+(svl-flatten-design sv-design
+                    vl-design
+                    :dont-flatten ...
+                    :top ...)
+')
+</code>
+<p> The sv-design and vl-design arguments are mandatory @(see
+sv::sv-tutorial). </p>
+
+<p> The SVL system allows some of the modules to be flattened, and some
+untouched to remain circuit hierarchy </p>
+
+<p> :dont-flatten  List of names of  the modules that should  not be flattened.
+They should  be the  original names  of the modules  from the  original Verilog
+designs, but not  from SV designs. If users  want to  not flatten  all of the
+modules, they can pass :all. By default, this value is set to nil, which tells
+the system to flatten all the modules. </p>
+
+<p> :top By default, this is set to nil. It tells the program to get the top
+module name from SV Design, if the users want to select another module as top,
+then they can provide the name of that module here. Then, only that module and
+its submodules will be processed. </p>
+
+<p> :rp-state and :state are STOBJs. Users do not need to make assignments to
+them.
+</p>
+"
   (b* (((sv::design sv-design) sv-design)
        (sv-design.modalist (make-fast-alist sv-design.modalist))
 
@@ -3142,7 +3201,8 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                            modules))
        (- (cw "All done! ~%"))
        (- (fast-alist-free sv-design.modalist))
-       (- (svex-rw-free-preload svex-simplify-preloaded)))
+       (- (svex-rw-free-preload svex-simplify-preloaded))
+       (- (hons-clear t)))
     (mv modules rp::rp-state)))
 
 (define svl-modules-port-info ((modules svl-module-alist-p))

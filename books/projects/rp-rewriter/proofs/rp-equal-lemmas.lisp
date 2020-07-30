@@ -593,7 +593,7 @@
                                insert-ex-from-rp-rp-trans)
                               (ex-from-rp
                                trans-list
-                               rp-evl-of-trans-list
+                               
                                RP-EVLT-OF-EX-FROM-RP))))))
 
   (defthm rp-evlt-of-rp-equal

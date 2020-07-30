@@ -103,7 +103,7 @@
     `(def-rp-rule ,(sa base-name 'lambda-opener)
        (and ,@openers)))
 
-  (defun lambdas-to-other-rules (rule-name rule hints)
+  (defun lambdas-to-other-rules (rule-name rule untranslated-rule hints)
     (declare (xargs :mode :program))
     (b* (((mv hyp lhs rhs iff)
           (case-match rule
@@ -144,7 +144,7 @@
              (add-rp-rule ,rule-name)) 
         `(progn
            (defthm ,rule-name
-            ,rule
+            ,untranslated-rule
             ,@hints)
            (add-rp-rule ,rule-name)))))
     
@@ -202,6 +202,7 @@
             (lambdas-to-other-rules
              ',rule-name
              term
+             ',rule
              ',hints)
             state)))))
 

@@ -43,8 +43,9 @@
 (xdoc::defxdoc
  multiplier-proofs
  :parents (rp-rewriter/applications)
- :short "A demo for integer multiplier proofs 1.0"
- :long "This documentation is still under contruction, for a demo of this
- library please check out books/projects/rp-rewriter/lib/mult/demo.lisp"
+ :short "Multiplier verification tool v1"
+ :long " <p>  A newer version is  available with a better  performance at @(see
+ rp::Multiplier-Verification-v3) </p>
 
- )
+ <p> If you  would like to use this  library anyways, then you can  look at the
+ demo.lsp file under projects/rp-rewriter/lib/mult. </p>" )
