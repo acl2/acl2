@@ -1108,6 +1108,8 @@
 
 
 (defstobj-clone aignet2 aignet :suffix "2")
+(defstobj-clone aignet3 aignet :suffix "3")
+(defstobj-clone aignet-tmp aignet :suffix "-TMP")
 
 
 (define num-gates (aignet)

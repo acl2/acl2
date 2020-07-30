@@ -155,6 +155,44 @@
             (and stable-under-simplificationp
                  '(:in-theory (enable b-ior b-and b-xor))))))
 
+(defsection aignet-eval-conjunction-set-congruence
+
+  (local (defthm aignet-eval-conjunction-when-member
+           (implies (And (member lit lits)
+                         (equal (lit-eval lit invals regvals aignet) 0))
+                    (equal (aignet-eval-conjunction lits invals regvals aignet) 0))
+           :hints(("Goal" :in-theory (enable member aignet-eval-conjunction)))))
+
+  (local (defthm aignet-eval-conjunction-of-subset
+           (implies (and (subsetp lits1 lits2)
+                         (equal 1 (aignet-eval-conjunction lits2 invals regvals aignet)))
+                    (equal (aignet-eval-conjunction lits1 invals regvals aignet) 1))
+           :hints(("Goal" :in-theory (enable subsetp aignet-eval-conjunction)))))
+
+  (defcong acl2::set-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 1
+    :hints(("Goal" :in-theory (enable acl2::set-equiv)
+            :cases ((equal 1 (aignet-eval-conjunction lits invals regvals aignet)))))))
+
+(defsection aignet-lit-listp-set-congruence
+  (defthmd aignet-lit-listp-when-member
+    (implies (And (not (aignet-litp lit aignet))
+                  (member lit lits))
+             (not (aignet-lit-listp lits aignet)))
+    :hints(("Goal" :in-theory (enable member aignet-lit-listp))))
+
+  (defthmd aignet-lit-listp-when-subsetp
+    (implies (and (aignet-lit-listp lits2 aignet)
+                  (subsetp lits1 lits2))
+             (aignet-lit-listp lits1 aignet))
+    :hints(("Goal" :in-theory (enable subsetp aignet-lit-listp
+                                      aignet-lit-listp-when-member))))
+
+  (defcong acl2::set-equiv equal (aignet-lit-listp lits aignet) 1
+    :hints(("Goal" :in-theory (enable acl2::set-equiv
+                                      aignet-lit-listp-when-subsetp)
+            :cases ((aignet-lit-listp lits aignet))))))
+
+
 (defsection collect-supergate
 
 

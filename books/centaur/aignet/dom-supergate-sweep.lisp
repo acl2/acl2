@@ -33,6 +33,7 @@
 
 (include-book "internal-observability-super")
 (include-book "supergate-construction")
+(include-book "literal-sort-aignet")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
@@ -203,6 +204,7 @@
 
 
 
+
 (define xor-supergate-under-dominators ((lits lit-listp)
                                         (doms lit-listp))
   :measure (+ (len lits) (len doms))
@@ -302,6 +304,32 @@
                   (< (lits-max-id-val lits) y))
          :hints(("Goal" :in-theory (enable lits-max-id-val aignet-idp)))))
 
+
+
+(defsection lits-max-id-val-of-literal-sort
+  (local (defthm lits-max-id-val-when-member
+           (implies (member lit lits)
+                    (<= (lit->var lit) (lits-max-id-val lits)))
+           :hints(("Goal" :in-theory (enable lits-max-id-val)))))
+
+  (local (defthm lits-max-id-val-when-subsetp
+           (implies (subsetp x y)
+                    (<= (lits-max-id-val x) (lits-max-id-val y)))
+           :hints(("Goal" :in-theory (enable subsetp-equal lits-max-id-val)))))
+
+  (local (defcong acl2::set-equiv equal (lits-max-id-val x) 1
+           :hints(("Goal" :in-theory (enable acl2::set-equiv)
+                   :cases ((< (lits-max-id-val x) (lits-max-id-val x-equiv))
+                           (< (lits-max-id-val x-equiv) (lits-max-id-val x)))))))
+
+  (defthm lits-max-id-val-of-literal-sort
+    (equal (lits-max-id-val (literal-sort-insertsort x))
+           (lits-max-id-val x))))
+
+
+
+
+
 (define sweep-observability-dom-supergate ((n natp)
                                            refcounts
                                            obs-sdom-array
@@ -343,7 +371,7 @@
        ((unless dominfo.reached)
         (b* ((copy (set-lit n 0 copy)))
           (mv copy strash aignet2)))
-       (supergate (gate-node-supergate n refcounts aignet))
+       (supergate (literal-sort (gate-node-supergate n refcounts aignet)))
        ((when xor)
         (b* (((mv negate new-supergate)
               (xor-supergate-under-dominators supergate dominfo.doms))
@@ -386,6 +414,9 @@
     (and (equal (stype-count :pi new-aignet2) (stype-count :pi aignet2))
          (equal (stype-count :reg new-aignet2) (stype-count :reg aignet2))
          (equal (stype-count :po new-aignet2) (stype-count :po aignet2)))))
+
+
+
 
 (define sweep-observability-dom-supergates-rec ((n natp)
                                                 refcounts
@@ -896,7 +927,7 @@
                                  (x :unreach)))
                           :expand (,expand1)))
                        (xor (eql 1 (id->regp n aignet)))
-                       (supergate (gate-node-supergate n refcounts aignet))
+                       (supergate (literal-sort (gate-node-supergate n refcounts aignet)))
                        (toggles (sweep-observability-dom-supergates-toggles
                                  n refcounts invals regvals aignet copy aignet2))
                        ((when xor)
@@ -1012,6 +1043,44 @@
                   (member-equal lit (lit-list-fix lits)))
              (equal (aignet-eval-conjunction-toggle lits toggles invals regvals aignet) 0))
     :hints(("Goal" :in-theory (enable aignet-eval-conjunction-toggle)))))
+
+
+(defsection aignet-eval-parity-toggle-of-literal-sort
+  (local (defthm aignet-eval-parity-toggle-of-literal-sort-insert
+           (equal (aignet-eval-parity-toggle (literal-sort-insert k x)
+                                             toggles invals regvals aignet)
+                  (aignet-eval-parity-toggle (cons k x)
+                                             toggles invals regvals aignet))
+           :hints(("Goal" :in-theory (enable aignet-eval-parity-toggle
+                                             literal-sort-insert)
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-xor))))))
+
+  (defthm aignet-eval-parity-toggle-of-literal-sort
+    (equal (aignet-eval-parity-toggle (literal-sort-insertsort x)
+                                      toggles invals regvals aignet)
+           (aignet-eval-parity-toggle x toggles invals regvals aignet))
+    :hints(("Goal" :in-theory (enable literal-sort-insertsort)))))
+
+
+(defsection aignet-eval-conjunction-toggle-of-literal-sort
+  (local (defthm aignet-eval-conjunction-toggle-of-literal-sort-insert
+           (equal (aignet-eval-conjunction-toggle (literal-sort-insert k x)
+                                             toggles invals regvals aignet)
+                  (aignet-eval-conjunction-toggle (cons k x)
+                                             toggles invals regvals aignet))
+           :hints(("Goal" :in-theory (enable aignet-eval-conjunction-toggle
+                                             literal-sort-insert)
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:in-theory (enable b-and))))))
+
+  (defthm aignet-eval-conjunction-toggle-of-literal-sort
+    (equal (aignet-eval-conjunction-toggle (literal-sort-insertsort x)
+                                      toggles invals regvals aignet)
+           (aignet-eval-conjunction-toggle x toggles invals regvals aignet))
+    :hints(("Goal" :in-theory (enable literal-sort-insertsort)))))
 
 (defsection sweep-observability-dom-supergate-correct
   
@@ -1163,7 +1232,7 @@
                    `(:use ((:instance acl2::mark-clause-is-true
                             (x :unreach)))))
                   (xor (eql 1 (id->regp n aignet)))
-                  (supergate (gate-node-supergate n refcounts aignet))
+                  (supergate (literal-sort (gate-node-supergate n refcounts aignet)))
                   (toggles (sweep-observability-dom-supergates-toggles
                             n refcounts invals regvals aignet copy aignet2))
                   ((when xor)

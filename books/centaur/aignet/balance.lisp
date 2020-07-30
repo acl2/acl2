@@ -39,6 +39,7 @@
 (include-book "centaur/aignet/levels" :dir :system)
 (include-book "count")
 (include-book "supergate")
+(include-book "literal-sort-aignet")
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system ))
 (local (include-book "centaur/aignet/bit-lemmas" :dir :system))
@@ -84,106 +85,10 @@
   :tag :balance-config)
 
 
-(defsection aignet-eval-conjunction
-
-  (local (defthm aignet-eval-conjunction-when-member
-           (implies (And (member lit lits)
-                         (equal (lit-eval lit invals regvals aignet) 0))
-                    (equal (aignet-eval-conjunction lits invals regvals aignet) 0))
-           :hints(("Goal" :in-theory (enable member aignet-eval-conjunction)))))
-
-  (local (defthm aignet-eval-conjunction-of-subset
-           (implies (and (subsetp lits1 lits2)
-                         (equal 1 (aignet-eval-conjunction lits2 invals regvals aignet)))
-                    (equal (aignet-eval-conjunction lits1 invals regvals aignet) 1))
-           :hints(("Goal" :in-theory (enable subsetp aignet-eval-conjunction)))))
-
-  (defcong acl2::set-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 1
-    :hints(("Goal" :in-theory (enable acl2::set-equiv)
-            :cases ((equal 1 (aignet-eval-conjunction lits invals regvals aignet)))))))
 
 
-
-(defcong acl2::set-equiv equal (aignet-lit-listp lits aignet) 1
-  :hints (("goal" :use ((:instance (:functional-instance
-                                    acl2::element-list-p-set-equiv-congruence
-                                    (acl2::element-list-final-cdr-p (lambda (x) t))
-                                    (acl2::element-p (lambda (x) (aignet-litp x aignet)))
-                                    (acl2::element-example (lambda () 0))
-                                    (acl2::element-list-p (lambda (x) (aignet-lit-listp x aignet))))
-                         (x lits) (y lits-equiv)))
-           :do-not-induct t)))
                     
 
-(defsection literal-sort
-  (acl2::defsort literal-sort (x)
-    :compare< <
-    :comparablep litp)
-
-  (defthm literal-sort-list-p-when-lit-listp
-    (implies (lit-listp x)
-             (literal-sort-list-p x))
-    :hints(("Goal" :in-theory (enable literal-sort-list-p))))
-
-
-
-  (defthm set-equiv-of-literal-sort-insert
-    (acl2::set-equiv (literal-sort-insert x y)
-                     (cons x y))
-    :hints(("Goal" :in-theory (enable literal-sort-insert)
-            :induct t)
-           (acl2::set-reasoning)))
-
-  (defthm set-equiv-of-literal-sort
-    (acl2::set-equiv (literal-sort-insertsort x) x)
-    :hints(("Goal" :in-theory (enable literal-sort-insertsort))))
-
-
-
-
-  (defthm lit-listp-of-literal-sort-insert
-    (implies (and (litp x) (lit-listp y))
-             (lit-listp (literal-sort-insert x y)))
-    :hints(("Goal" :in-theory (enable literal-sort-insert))))
-
-  (defthm lit-listp-of-literal-sort-insertsort
-    (implies (lit-listp x)
-             (lit-listp (literal-sort-insertsort x)))
-    :hints(("Goal" :in-theory (enable literal-sort-insertsort))))
-
-  ;; (defthm aignet-lit-listp-of-literal-sort-insert
-  ;;   (implies (and (aignet-litp x aignet) (aignet-lit-listp y aignet))
-  ;;            (aignet-lit-listp (literal-sort-insert x y) aignet))
-  ;;   :hints(("Goal" :in-theory (enable literal-sort-insert))))
-
-  ;; (defthm aignet-lit-listp-of-literal-sort-insertsort
-  ;;   (implies (aignet-lit-listp x aignet)
-  ;;            (aignet-lit-listp (literal-sort-insertsort x) aignet))
-  ;;   :hints(("Goal" :in-theory (enable literal-sort-insertsort))))
-
-  (defthm len-of-literal-sort-insert
-    (equal (len (literal-sort-insert x y))
-           (+ 1 (len y)))
-    :hints(("Goal" :in-theory (enable literal-sort-insert))))
-
-
-  (defthm aignet-eval-parity-of-literal-sort-insert
-    (equal (aignet-eval-parity (literal-sort-insert x y) invals regvals aignet)
-           (aignet-eval-parity (cons x y) invals regvals aignet))
-    :hints(("Goal" :in-theory (enable aignet-eval-parity literal-sort-insert )
-            :induct (literal-sort-insert x y))))
-
-  (defthm aignet-eval-parity-of-literal-sort-insertsort
-    (equal (aignet-eval-parity (literal-sort-insertsort x) invals regvals aignet)
-           (aignet-eval-parity x invals regvals aignet))
-    :hints(("Goal" :in-theory (enable aignet-eval-parity literal-sort-insertsort )
-            :induct (literal-sort-insertsort x))))
-
-  (defthm aignet-lit-listp-of-literal-sort-insertsort
-    (implies (aignet-lit-listp lits aignet)
-             (aignet-lit-listp (literal-sort-insertsort lits) aignet))))
-
-(defstobj-clone levels u32arr :prefix "LEVELS-")
 
 
 (defsection levels-sort

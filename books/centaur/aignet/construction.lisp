@@ -2000,6 +2000,8 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
     (strashtab :type (hash-table eql))
     :inline t)
 
+  (defstobj-clone strash2 strash :suffix "2")
+
   ;; returns (mv exists key id).
   ;; exists implies that id is a gate with the two specified fanins.
   (define strash-lookup ((lit1 litp :type (unsigned-byte 30))
@@ -3385,15 +3387,22 @@ of the @('b*').</li>
              (equal (stype-count stype new-aignet)
                     (stype-count stype aignet))))
 
+  (local (defthm aignet-lit-fix-of-cons-po
+           (equal (aignet-lit-fix lit (cons (po-node lit1) aignet))
+                  (aignet-lit-fix lit aignet))
+           :hints(("Goal" :in-theory (enable aignet-lit-fix
+                                             aignet-id-fix
+                                             aignet-idp)))))
+
   (defret lookup-output-fanin-of-aignet-add-outs
-    (implies (aignet-lit-listp lits aignet)
-             (equal (fanin 0 (lookup-stype n :po new-aignet))
-                    ;;
-                    (cond ((< (nfix n) (stype-count :po aignet))
-                           (fanin 0 (lookup-stype n :po aignet)))
-                          ((< (nfix n) (+ (stype-count :po aignet) (len lits)))
-                           (lit-fix (nth (- (nfix n) (stype-count :po aignet)) lits)))
-                          (t 0))))
+    ;; (implies (aignet-lit-listp lits aignet)
+    (equal (fanin 0 (lookup-stype n :po new-aignet))
+           ;;
+           (cond ((< (nfix n) (stype-count :po aignet))
+                  (fanin 0 (lookup-stype n :po aignet)))
+                 ((< (nfix n) (+ (stype-count :po aignet) (len lits)))
+                  (aignet-lit-fix (nth (- (nfix n) (stype-count :po aignet)) lits) aignet))
+                 (t 0)))
     :hints(("Goal" :in-theory (enable nth lookup-stype)
             :induct t :do-not-induct t)))
 
@@ -3439,14 +3448,23 @@ of the @('b*').</li>
   ;;               (aignet (aignet-set-nxst (car lits) reg-id aignet)))
   ;;            (aignet-set-nxsts-nth-ind (1- (nfix n)) (1+ (lnfix regnum)) (cdr lits) aignet))))
 
+  
+
+  (local (defthm aignet-lit-fix-of-cons-nxst
+           (equal (aignet-lit-fix lit (cons (nxst-node lit1 reg) aignet))
+                  (aignet-lit-fix lit aignet))
+           :hints(("Goal" :in-theory (enable aignet-lit-fix
+                                             aignet-id-fix
+                                             aignet-idp)))))
+
   (defret lookup-nxst-fanin-of-aignet-set-nxsts
-    (implies (And (aignet-lit-listp lits aignet)
+    (implies (And ;; (aignet-lit-listp lits aignet)
                   (< (nfix n) (+ (nfix regnum) (len lits)))
                   (< (nfix n) (stype-count :reg aignet)))
              (equal (lookup-reg->nxst n new-aignet)
                     (if (< (nfix n) (nfix regnum))
                         (lookup-reg->nxst n aignet)
-                      (lit-fix (nth (- (nfix n) (nfix regnum)) lits)))))
+                      (aignet-lit-fix (nth (- (nfix n) (nfix regnum)) lits) aignet))))
     :hints(("Goal" :in-theory (e/d (nth lookup-reg->nxst))
             :induct <call> :do-not-induct t)))
 

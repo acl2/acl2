@@ -338,9 +338,10 @@
 
   
   (defret stype-counts-of-<fn>
-    (and (equal (stype-count :pi new-aignet) (stype-count :pi aignet))
-         (equal (stype-count :reg new-aignet) (stype-count :reg aignet))
-         (equal (stype-count :po new-aignet) (stype-count :po aignet)))))
+    (implies (and (not (equal (stype-fix stype) :and))
+                  (not (equal (stype-fix stype) :xor)))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet)))))
 
 
 (define aignet-hash-and-supergate ((lits lit-listp)
@@ -378,9 +379,10 @@
   (def-aignet-preservation-thms aignet-hash-and-supergate)
 
   (defret stype-counts-of-<fn>
-    (and (equal (stype-count :pi new-aignet) (stype-count :pi aignet))
-         (equal (stype-count :reg new-aignet) (stype-count :reg aignet))
-         (equal (stype-count :po new-aignet) (stype-count :po aignet)))))
+    (implies (and (not (equal (stype-fix stype) :and))
+                  (not (equal (stype-fix stype) :xor)))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet)))))
 
 
 
@@ -439,9 +441,10 @@
   (def-aignet-preservation-thms aignet-hash-xor-supergate-aux)
 
   (defret stype-counts-of-<fn>
-    (and (equal (stype-count :pi new-aignet) (stype-count :pi aignet))
-         (equal (stype-count :reg new-aignet) (stype-count :reg aignet))
-         (equal (stype-count :po new-aignet) (stype-count :po aignet)))))
+    (implies (and (not (equal (stype-fix stype) :and))
+                  (not (equal (stype-fix stype) :xor)))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet)))))
 
 
 (define aignet-hash-xor-supergate ((lits lit-listp)
@@ -494,9 +497,10 @@
   (def-aignet-preservation-thms aignet-hash-xor-supergate)
 
   (defret stype-counts-of-<fn>
-    (and (equal (stype-count :pi new-aignet) (stype-count :pi aignet))
-         (equal (stype-count :reg new-aignet) (stype-count :reg aignet))
-         (equal (stype-count :po new-aignet) (stype-count :po aignet)))))
+    (implies (and (not (equal (stype-fix stype) :and))
+                  (not (equal (stype-fix stype) :xor)))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet)))))
 
 
 

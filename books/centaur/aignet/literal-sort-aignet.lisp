@@ -1,5 +1,5 @@
-; FGL - A Symbolic Simulation Framework for ACL2
-; Copyright (C) 2019 Centaur Technology
+; Copyright (C) 2020 Centaur Technology
+; AIGNET - And-Inverter Graph Networks
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -28,36 +28,25 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
-(in-package "FGL")
 
-(include-book "top-bare")
-(include-book "bitops-primitives")
-(include-book "check-primitives")
-(include-book "svex")
-(include-book "member-equal")
-(include-book "enums")
-(include-book "transform")
-(include-book "simplify")
-(include-book "gatecount")
-(include-book "sat-binder")
-(include-book "equivcheck")
+(in-package "AIGNET")
 
-(local (in-theory (disable w)))
-
-(install-fgl-metafns top)
-(def-fancy-ev-primitives top-fancy-ev-primitives)
-
-#||
-(include-book
- "xdoc/save" :dir :system)
-(include-book
- "std/util/defval-tests" :dir :system)
-(include-book
- "centaur/fty/top" :dir :system)
-(xdoc::change-parents fgl (acl2::top))
-(xdoc::save "./manual"
-            :redef-okp t
-            :error t) 
+(include-book "literal-sort")
+(include-book "supergate")
 
 
-||#
+(defthm aignet-eval-parity-of-literal-sort-insert
+  (equal (aignet-eval-parity (literal-sort-insert x y) invals regvals aignet)
+         (aignet-eval-parity (cons x y) invals regvals aignet))
+  :hints(("Goal" :in-theory (enable aignet-eval-parity literal-sort-insert )
+          :induct (literal-sort-insert x y))))
+
+(defthm aignet-eval-parity-of-literal-sort-insertsort
+  (equal (aignet-eval-parity (literal-sort-insertsort x) invals regvals aignet)
+         (aignet-eval-parity x invals regvals aignet))
+  :hints(("Goal" :in-theory (enable aignet-eval-parity literal-sort-insertsort )
+          :induct (literal-sort-insertsort x))))
+
+(defthm aignet-lit-listp-of-literal-sort-insertsort
+  (equal (aignet-lit-listp (literal-sort-insertsort lits) aignet)
+         (aignet-lit-listp lits aignet)))

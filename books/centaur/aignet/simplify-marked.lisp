@@ -33,6 +33,7 @@
 (include-book "transform-stub")
 (include-book "transform-utils")
 (local (include-book "std/lists/repeat" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (in-theory (disable resize-list)))
 (local (in-theory (disable w)))
@@ -229,8 +230,13 @@
     :hints(("Goal" :in-theory (enable lit-list-vars))))
 
   (defret lit-listp-lookup-in-<fn>
-    (implies (member-equal v (lit-list-vars lits))
+    (implies (member-equal (nfix v) (lit-list-vars lits))
              (aignet-litp (nth-lit v new-litarr) aignet))
+    :hints(("Goal" :in-theory (enable lit-list-vars))))
+
+  (defretd lookup-preserved-in-<fn>-split
+    (implies (case-split (not (member-equal (nfix v) (lit-list-vars lits))))
+             (equal (nth-lit v new-litarr) (nth-lit v litarr)))
     :hints(("Goal" :in-theory (enable lit-list-vars))))
 
   (defret litarr-len-of-<fn>
@@ -306,6 +312,15 @@
                   (< (lits-max-id-val lits) (+ 1 (fanin-count aignet))))
          :hints(("Goal" :in-theory (enable aignet-lit-listp aignet-idp lits-max-id-val)))
          :rule-classes :forward-chaining))
+
+
+(local (defthm nth-lit-of-resize-list-split
+         (equal (nth-lit n (resize-list lits m 0))
+                (if (and (< (nfix n) (nfix m))
+                         (< (nfix n) (len lits)))
+                    (nth-lit n lits)
+                  0))
+         :hints(("Goal" :in-theory (enable nth-lit)))))
 
 (define aignet-simplify-marked-with-tracking
   ((aignet "AIG to be transformed")
@@ -389,12 +404,21 @@
              (aignet-litp (nth-lit n new-litarr) new-aignet)))
 
   (defret aignet-litp-of-<fn>-lits
-    (implies (member n (lit-list-vars lits))
+    (implies (member (nfix n) (lit-list-vars lits))
              (aignet-litp (nth-lit n new-litarr) new-aignet))
     :hints(("Goal" :in-theory (disable aignet-idp))))
 
+  (defret aignet-litp-of-<fn>-lits-when-originally-0
+    (implies (equal (nth-lit n litarr) 0)
+             (aignet-litp (nth-lit n new-litarr) new-aignet))
+    :hints(("Goal" :in-theory (e/d (lookup-preserved-in-aignet-map-outputs-by-lit-list-split)
+                                   (aignet-idp)))))
+
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
+
+
+
 
 
 
@@ -447,6 +471,12 @@
     (implies (equal 1 (nth n bitarr))
              (aignet-litp (nth-lit n new-litarr) new-aignet))
     :hints(("Goal" :in-theory (disable aignet-idp))))
+
+  (defret aignet-litp-of-<fn>-lits-when-originally-0
+    (implies (equal (nth-lit n litarr) 0)
+             (aignet-litp (nth-lit n new-litarr) new-aignet))
+    :hints(("Goal" :in-theory (e/d (lookup-preserved-in-aignet-map-outputs-by-lit-list-split)
+                                   (aignet-idp)))))
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))

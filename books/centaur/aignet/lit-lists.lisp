@@ -77,11 +77,15 @@
                          (copy))
   :guard (< (lits-max-id-val lits) (lits-length copy))
   :guard-hints (("goal" :in-theory (enable lits-max-id-val)))
-  :returns (lits lit-listp)
+  :returns (new-lits lit-listp)
   (if (atom lits)
       nil
     (cons (lit-copy (car lits) copy)
-          (lit-list-copies (cdr lits) copy))))
+          (lit-list-copies (cdr lits) copy)))
+  ///
+  (defret len-of-<fn>
+    (equal (len new-lits)
+           (len lits))))
 
 
 (define lit-list-marked ((lits lit-listp)

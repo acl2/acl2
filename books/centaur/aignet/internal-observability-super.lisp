@@ -1255,25 +1255,6 @@
     (obs-sdom-info-subsetp x x)))
 
 
-(local
- (defsection aignet-lit-listp-set-equiv
-   (defthmd aignet-lit-listp-when-member
-     (implies (and (member-equal lit x)
-                   (not (aignet-litp lit aignet)))
-              (not (aignet-lit-listp x aignet)))
-     :hints(("Goal" :in-theory (enable aignet-lit-listp))))
-
-   (defthmd aignet-lit-listp-when-subsetp
-     (implies (and (aignet-lit-listp y aignet)
-                   (subsetp x y))
-              (aignet-lit-listp x aignet))
-     :hints(("Goal" :in-theory (enable subsetp
-                                       aignet-lit-listp-when-member))))
-
-   (defcong acl2::set-equiv equal (aignet-lit-listp x aignet) 1
-     :hints(("Goal" :in-theory (enable acl2::set-equiv
-                                       aignet-lit-listp-when-subsetp)
-             :cases ((aignet-lit-listp x aignet)))))))
 
 (define obs-sdom-info-add-lits ((lits lit-listp) (x obs-sdom-info-p))
   :returns (new obs-sdom-info-p)

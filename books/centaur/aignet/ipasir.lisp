@@ -820,11 +820,137 @@
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
+
+
+(define aignet-ipasir-assume-lits ((x lit-listp)
+                            sat-lits ipasir)
+  :returns (new-ipasir)
+  :guard (and (aignet-lits-have-sat-vars x sat-lits)
+              (not (eq (ipasir::ipasir-get-status ipasir) :undef)))
+  (b* (((when (atom x))
+        (ipasir-input ipasir))
+       (ipasir (ipasir::ipasir-assume ipasir (aignet-lit->sat-lit (car x) sat-lits))))
+    (aignet-ipasir-assume-lits (cdr x) sat-lits ipasir))
+  ///
+  (defret ipasir-status-of-<fn>
+    (equal (ipasir$a->status new-ipasir) :input))
+
+  (defret ipasir-new-clause-of-<fn>
+    (equal (ipasir$a->new-clause new-ipasir)
+           (ipasir$a->new-clause ipasir)))
+
+  (defret ipasir-formula-of-<fn>
+    (equal (ipasir$a->formula new-ipasir)
+           (ipasir$a->formula ipasir)))
+
+  (defret ipasir-assumption-of-<fn>
+    (equal (ipasir$a->assumption new-ipasir)
+           (revappend (aignet-lits->sat-lits x sat-lits)
+                      (ipasir$a->assumption ipasir)))))
+
+(local (defthm lits-max-id-val-by-aignet-lit-listp
+         (implies (and (aignet-lit-listp x aignet)
+                       (<= (num-fanins aignet) n))
+                  (< (lits-max-id-val x) n))
+         :hints(("Goal" :in-theory (enable lits-max-id-val aignet-idp)))))
+
+(define aignet-lits-ipasir-sat-check-aux ((x lit-listp)
+                                         sat-lits ipasir
+                                         aignet state)
+  ;; Returns ipasir ready to solve
+  :guard (and (aignet-lit-listp x aignet)
+              (non-exec (and (equal sat-lits (create-sat-lits))
+                             (equal ipasir (create-ipasir)))))
+  :returns (mv new-ipasir
+               new-sat-lits
+               new-state)
+  :guard-hints (("goal" :in-theory (enable aignet-idp)))
+  (b* (((acl2::local-stobjs aignet-refcounts)
+        (mv aignet-refcounts ipasir sat-lits state))
+       (sat-lits (mbe :logic (non-exec (create-sat-lits)) :exec sat-lits))
+       (ipasir (mbe :logic (non-exec (create-ipasir)) :exec ipasir))
+       ((mv ipasir state) (ipasir::ipasir-init ipasir state))
+       (sat-lits (resize-aignet->sat (ash (num-fanins aignet) -1) sat-lits)) 
+       (aignet-refcounts (resize-u32 (num-fanins aignet) aignet-refcounts))
+       (aignet-refcounts (aignet-count-refs aignet-refcounts aignet))
+       ((mv sat-lits ipasir)
+        (aignet-lit-list->ipasir (lit-list-fix x) t aignet-refcounts sat-lits aignet ipasir))
+       (ipasir (aignet-ipasir-assume-lits x sat-lits ipasir)))
+    (mv aignet-refcounts ipasir sat-lits state))
+  ///
+  (defret ipasir-status-of-aignet-lits-ipasir-sat-check-aux
+    (equal (ipasir::ipasir$a->status new-ipasir) :input))
+
+  (defret ipasir-new-clause-of-aignet-lits-ipasir-sat-check-aux
+    (equal (ipasir::ipasir$a->new-clause new-ipasir) nil))
+
+  ;; (defret cnf-for-aignet-of-aignet-lits-ipasir-sat-check-aux
+  ;;   (implies (aignet-litp x aignet)
+  ;;            (cnf-for-aignet aignet (ipasir::ipasir$a->formula new-ipasir) new-sat-lits)))
+
+  (defret sat-lits-wfp-of-aignet-lits-ipasir-sat-check-aux
+    (sat-lits-wfp new-sat-lits aignet))
+
+  (defthm normalize-inputs-of-aignet-lits-ipasir-sat-check-aux
+    (implies (syntaxp (not (and (equal sat-lits ''nil)
+                                (equal ipasir ''nil))))
+             (equal (aignet-lits-ipasir-sat-check-aux x sat-lits ipasir aignet state)
+                    (aignet-lits-ipasir-sat-check-aux x nil nil aignet state))))
+
+  (local (defthm sat-lits-wfp-implies-sat-varp-of-lookup-aignet-id-bind
+           (implies (and (bind-free '((aignet . aignet)))
+                         (sat-lits-wfp sat-lits aignet)
+                         (aignet-id-has-sat-var n sat-lits))
+                    (sat-varp (satlink::lit->var (aignet-id->sat-lit n sat-lits))
+                              sat-lits))))
+
+  (local (defthm sat-lits-wfp-implies-lookup-aignet-id-bind
+           (implies (and (bind-free '((aignet . aignet)) (aignet))
+                         (sat-lits-wfp sat-lits aignet)
+                         (bind-free
+                          (match-equiv-or-refinement
+                           'satlink::var-equiv 'id '(satlink::lit->var (aignet-id->sat-lit n sat-lits))
+                           mfc state)
+                          (n))
+                         (satlink::var-equiv id (satlink::lit->var (aignet-id->sat-lit n sat-lits)))
+                         (aignet-id-has-sat-var n sat-lits))
+                    (equal (sat-var->aignet-lit id sat-lits)
+                           (mk-lit
+                            n (satlink::lit->neg (aignet-id->sat-lit n sat-lits)))))
+           :hints (("goal" :by sat-lits-wfp-implies-lookup-aignet-id))))
+
+  (local
+   (defthm sat-lits->aignet-lits-of-aignet-lits->sat-lits-fix
+     (implies (and (bind-free '((aignet . aignet)) (aignet))
+                   (sat-lits-wfp sat-lits aignet)
+                   (aignet-lits-have-sat-vars lits sat-lits))
+              (equal (sat-lits->aignet-lits
+                      (aignet-lits->sat-lits
+                       lits sat-lits)
+                      sat-lits)
+                     (lit-list-fix lits)))
+     :hints (("goal" :use ((:instance sat-lits->aignet-lits-of-aignet-lits->sat-lits
+                            (lits (lit-list-fix lits))))
+              :in-theory (disable sat-lits->aignet-lits-of-aignet-lits->sat-lits)))))
+
+  (defret aignet-lit-ipasir-sat-check/-aux-not-unsat-when-sat
+    (implies (and (equal (aignet-eval-conjunction x some-invals some-regvals aignet) 1)
+                  (aignet-lit-listp x aignet))
+             (b* (((mv status &) (ipasir::ipasir-solve$a new-ipasir)))
+               (not (equal status :unsat))))
+    :hints (("goal" :use ((:instance ipasir::ipasir-solve$a-unsat-implies-unsat
+                           (env$ (aignet->cnf-vals some-invals some-regvals nil new-sat-lits aignet))
+                           (formula (ipasir::ipasir$a->formula new-ipasir))
+                           (solver new-ipasir)))
+             :in-theory (e/d (SAT-LIT-LISTP-OF-AIGNET-LITS->SAT-LITS-RW)
+                             (ipasir::ipasir-solve$a-unsat-implies-unsat)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
                
 
 (acl2::defstobj-clone inmasks bitarr :prefix "INMASKS-")
 (acl2::defstobj-clone regmasks bitarr :prefix "REGMASKS-")
-(acl2::defstobj-clone mark bitarr :suffix "-MARK")
 
 (define aignet-vals-sat-care-masks-rec
   ((id natp "ID to traverse")
@@ -1299,18 +1425,360 @@
                               (aignet-vals-sat-care-masks-rec
                      id inmasks regmasks invals regvals vals mark aignet state)))))))
 
+
+
+(define aignet-vals-sat-care-masks-lits
+  ((lits lit-listp "Literals to traverse")
+   (inmasks  "Bit array accumulating the care set for the inputs")
+   (regmasks "Bit array accumulating the care set for the registers")
+   (invals   "Bit array recording the satisfying assignment for the inputs")
+   (regvals  "Bit array recording the satisfying assignment for the registers")
+   (vals     "Bit array recording the values of all nodes under the satisfying assignment")
+   (mark     "Bit array marking nodes known to be in the care set")
+   (aignet   "AIG network")
+   (state    "ACL2 state, used for random number generation (coin flips)"))
+  :guard (and (aignet-lit-listp lits aignet)
+              (non-exec (equal vals (aignet-record-vals nil invals regvals aignet)))
+              (<= (num-ins aignet) (bits-length inmasks))
+              (<= (num-regs aignet) (bits-length regmasks))
+              (<= (num-ins aignet) (bits-length invals))
+              (<= (num-regs aignet) (bits-length regvals))
+              (< (lits-max-id-val lits) (bits-length vals))
+              (< (lits-max-id-val lits) (bits-length mark)))
+  :verify-guards nil
+  :returns (mv (new-inmasks  "Updated care set of inputs")
+               (new-regmasks "Updated care set of registers")
+               (new-mark     "Updated care set of all nodes")
+               (new-state    "Updated state"))
+
+  :parents (aignet-ipasir)
+  :short "Mark a subset of inputs and registers that, when assigned the same values
+          as in the input assignment, produce the same value on the given
+          @('lits')."
+  (b* (((when (atom lits))
+        (mv inmasks regmasks mark state))
+       ((mv inmasks regmasks mark state)
+        (aignet-vals-sat-care-masks-rec
+         (lit->var (car lits)) inmasks regmasks invals regvals vals mark aignet state)))
+    (aignet-vals-sat-care-masks-lits
+     (cdr lits) inmasks regmasks invals regvals vals mark aignet state))
+  ///
+  (defthm aignet-vals-sat-care-masks-lits-normalize-input
+    (implies (syntaxp (not (equal vals ''nil)))
+             (equal (aignet-vals-sat-care-masks-lits
+                     lits inmasks regmasks invals regvals vals mark aignet state)
+                    (aignet-vals-sat-care-masks-lits
+                     lits inmasks regmasks invals regvals nil mark aignet state))))
+
+  (defret aignet-vals-sat-care-masks-lits-preserve-marks
+    (implies (equal (nth n mark) 1)
+             (equal (nth n new-mark) 1))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret aignet-vals-sat-care-masks-lits-preserve-inmasks
+    (implies (equal (nth n inmasks) 1)
+             (equal (nth n new-inmasks) 1))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret aignet-vals-sat-care-masks-lits-preserve-regmasks
+    (implies (equal (nth n regmasks) 1)
+             (equal (nth n new-regmasks) 1))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret inmasks-length-of-aignet-vals-sat-care-masks-lits
+    (implies (<= (num-ins aignet) (len inmasks))
+             (equal (len new-inmasks) (len inmasks)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret regmasks-length-of-aignet-vals-sat-care-masks-lits
+    (implies (<= (num-regs aignet) (len regmasks))
+             (equal (len new-regmasks) (len regmasks)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret mark-length-of-aignet-vals-sat-care-masks-lits
+    (implies (< (lits-max-id-val lits) (len mark))
+             (equal (len new-mark) (len mark)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (local (defthm lit-id-of-fanin-mark-lemma
+           (implies (< (nfix id) (len mark))
+                    (< (lit-id (fanin ftype (lookup-id id aignet))) (len mark)))
+           :hints (("goal" :cases ((<= (nfix id) (fanin-count aignet)))))))
+
+  (verify-guards aignet-vals-sat-care-masks-lits
+    :hints(("Goal" :in-theory (enable lit-eval))))
+
+
+  (defret aignet-vals-sat-care-masks-lits-preserves-marks-above-id
+    (implies (< (lits-max-id-val lits) (nfix node))
+             (equal (nth node new-mark)
+                    (nth node mark)))
+    :hints ((acl2::just-induct-and-expand <call>)))
+
+  (defret aignet-vals-sat-care-masks-lits-marks-id
+    (implies (member (lit-fix lit) (lit-list-fix lits))
+             (equal (nth (lit->Var lit) new-mark) 1))
+    :hints (("goal" :expand ((:free (vals) <call>)))))
+
+  ;; (local (defretd aignet-vals-sat-care-masks-lits-preserves-marks-above-id-split
+  ;;          (implies (case-split (< (nfix id) (nfix node)))
+  ;;                   (equal (nth node new-mark)
+  ;;                          (if (equal (nth node mark) 1) 1 (nth node mark) )))
+  ;;          :hints ((acl2::just-induct-and-expand <call>))))
+
+  ;; (local (defretd aignet-vals-sat-care-masks-lits-preserve-marks-split
+  ;;          (implies (case-split (equal (nth n mark) 1))
+  ;;                   (equal (nth n new-mark) 1))
+  ;;          :hints ((acl2::just-induct-and-expand <call>))))
+
+  (local (defthm id-eval-of-gate-fanins-when-false
+           (implies (And (equal (id-eval id invals regvals aignet) 0)
+                         (equal (stype (car (lookup-id id aignet))) (and-stype)))
+                    (and (implies (equal (lit-eval (fanin 0 (lookup-id id aignet))
+                                                   invals regvals aignet)
+                                         1)
+                                  (equal (lit-eval (fanin 1 (lookup-id id aignet))
+                                                   invals regvals aignet)
+                                         0))
+                         (implies (equal (lit-eval (fanin 1 (lookup-id id aignet))
+                                                   invals regvals aignet)
+                                         1)
+                                  (equal (lit-eval (fanin 0 (lookup-id id aignet))
+                                                   invals regvals aignet)
+                                         0))))
+           :hints (("goal" :expand ((id-eval id invals regvals aignet))
+                    :in-theory (enable eval-and-of-lits)))))
+
+  (local (defthm id-eval-of-gate-fanins-when-true
+           (implies (and (equal (id-eval id invals regvals aignet) 1)
+                         (equal (stype (car (lookup-id id aignet))) (and-stype)))
+                    (and (equal (lit-eval (fanin 0 (lookup-id id aignet))
+                                          invals regvals aignet)
+                                1)
+                         (equal (lit-eval (fanin 1 (lookup-id id aignet))
+                                          invals regvals aignet)
+                                1)))
+           :hints (("goal" :expand ((id-eval id invals regvals aignet))
+                    :in-theory (enable eval-and-of-lits)))))
+
+  (local (in-theory (disable aignet-vals-sat-care-masks-mark-ok
+                             lookup-id-out-of-bounds)))
+  
+  ;; (defthm aignet-vals-sat-care-masks-mark-ok-of-update-non-gate
+  ;;   (implies (and (aignet-vals-sat-care-masks-mark-ok node mark invals regvals aignet)
+  ;;                 (not (equal (stype (car (lookup-id id aignet))) :gate)))
+  ;;            (aignet-vals-sat-care-masks-mark-ok node (update-nth id 1 mark) invals regvals aignet))
+  ;;   :hints(("Goal" :in-theory (enable aignet-vals-sat-care-masks-mark-ok))))
+
+  ;; (defthm aignet-vals-sat-care-masks-mark-ok-of-non-marked
+  ;;   (implies (not (equal (nth node mark) 1))
+  ;;            (aignet-vals-sat-care-masks-mark-ok node mark invals regvals aignet))
+  ;;   :hints(("Goal" :in-theory (enable aignet-vals-sat-care-masks-mark-ok))))
+
+  ;; To prove this we need to show that the invariant still holds afterward of
+  ;; an arbitrary witness node NODE.
+
+  ;; - If node is <= than the ID of the recursive call(s), then it is fully
+  ;; covered by the inductive invariant.
+  ;; - If the node's mark was already set, then the original hyp implies
+  ;; sufficient conditions about its fanins.
+  ;; - Otherwise, node is ID and we ensure that its fanins are set correctly.
+
+  ;; (defret aignet-vals-sat-care-masks-mark-invar-of-marked-node-preserved
+  ;;   (implies (and (aignet-vals-sat-care-masks-mark-ok node mark invals regvals aignet)
+  ;;                 (equal (nth node mark) 1))
+  ;;            (aignet-vals-sat-care-masks-mark-ok node new-mark invals regvals aignet))
+  ;;   :hints ((acl2::just-induct-and-expand <call>)
+  ;;           (and stable-under-simplificationp
+  ;;                '(:cases ((equal (nfix node) (nfix id)))
+  ;;                  :in-theory (enable* acl2::arith-equiv-forwarding)))))
+
+  ;; (local (defthm not-gate-by-ctype
+  ;;          (implies (not (equal (ctype (stype x)) :gate))
+  ;;                   (not (equal (stype x) :gate)))
+  ;;          :hints(("Goal" :in-theory (enable ctype)))))
+
+  (defret aignet-vals-sat-care-masks-lits-mark-ok-preserved
+    (implies (aignet-vals-sat-care-masks-mark-ok node mark invals regvals aignet)
+             (aignet-vals-sat-care-masks-mark-ok node new-mark invals regvals aignet))
+    :hints ((acl2::just-induct-and-expand <call>)
+            (and stable-under-simplificationp
+                 '(:cases ((equal (nfix node) (nfix id)))
+                   :in-theory (enable* acl2::arith-equiv-forwarding)))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+  
+  (defret aignet-vals-sat-care-masks-lits-mark-invar-preserved
+    (implies (aignet-vals-sat-care-masks-mark-invar id mark invals regvals aignet)
+             (aignet-vals-sat-care-masks-mark-invar id new-mark invals regvals aignet))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(Car (last clause)))))))
+
+  (local (in-theory (enable aignet-marked-inputs-are-masked-necc)))
+
+  (defret aignet-vals-sat-care-masks-lits-preserves-marked-inputs-masked
+    (implies (aignet-marked-inputs-are-masked mark inmasks aignet)
+             (aignet-marked-inputs-are-masked new-mark new-inmasks aignet))
+    :hints ((acl2::just-induct-and-expand <call>)
+            (and stable-under-simplificationp
+                 (let ((last (car (last clause))))
+                   `(:computed-hint-replacement
+                     ((let ((witness (acl2::find-call-lst
+                                 'aignet-marked-inputs-are-masked-witness
+                                 clause)))
+                        `(:clause-processor
+                          (acl2::simple-generalize-cp
+                           clause '((,witness . n))))))
+                     :expand (,last)
+                     :do-not '(generalize fertilize eliminate-destructors)
+                     :do-not-induct t)))))
+
+  (local (in-theory (enable aignet-marked-regs-are-masked-necc)))
+
+  (defret aignet-vals-sat-care-masks-lits-preserves-marked-regs-masked
+    (implies (aignet-marked-regs-are-masked mark regmasks aignet)
+             (aignet-marked-regs-are-masked new-mark new-regmasks aignet))
+    :hints ((acl2::just-induct-and-expand <call>)
+            (and stable-under-simplificationp
+                 (let ((last (car (last clause))))
+                   `(:computed-hint-replacement
+                     ((let ((witness (acl2::find-call-lst
+                                 'aignet-marked-regs-are-masked-witness
+                                 clause)))
+                        `(:clause-processor
+                          (acl2::simple-generalize-cp
+                           clause '((,witness . n))))))
+                     :expand (,last)
+                     :do-not '(generalize fertilize eliminate-destructors)
+                     :do-not-induct t)))))
+
+  ;; (defthmd aignet-vals-sat-care-masks-rec-invariants-imply-counterexample-holds-under-masks
+  ;;   (implies (and (aignet-vals-sat-care-masks-mark-invar max-id mark invals regvals aignet)
+  ;;                 (aignet-marked-inputs-are-masked mark inmasks aignet)
+  ;;                 (aignet-marked-regs-are-masked mark regmasks aignet)
+  ;;                 (vals-equiv-under-masks inmasks invals invals1)
+  ;;                 (vals-equiv-under-masks regmasks regvals regvals1)
+  ;;                 (equal (nth id mark) 1)
+  ;;                 (not (equal (id->type id aignet) (out-type)))
+  ;;                 (<= (nfix id) (nfix max-id)))
+  ;;            (equal (id-eval id invals regvals aignet)
+  ;;                   (id-eval id invals1 regvals1 aignet)))
+  ;;   :hints (("goal" :induct (id-eval-ind id aignet))
+  ;;           (and stable-under-simplificationp
+  ;;                '(:use ((:instance aignet-vals-sat-care-masks-mark-invar-rw
+  ;;                         (id max-id) (node id)))
+  ;;                  :in-theory (e/d (ctype) (aignet-vals-sat-care-masks-mark-invar-rw))
+  ;;                  :expand ((:free (invals regvals)
+  ;;                            (id-eval id invals regvals aignet))
+  ;;                           (:free (lit0 lit1 invals regvals ) (eval-and-of-lits lit0 lit1 invals regvals aignet))
+  ;;                           (:free (lit0 lit1 invals regvals ) (eval-xor-of-lits lit0 lit1 invals regvals aignet))
+  ;;                           (:free (lit invals regvals) (lit-eval lit invals regvals aignet)))))))
+
+  (local (defthm lit-less-than-max-id-val
+           (implies (member-equal (lit-fix lit) (lit-list-fix lits))
+                    (<= (lit->var lit) (lits-max-id-val lits)))
+           :hints(("Goal" :in-theory (enable lits-max-id-val)))))
+
+  (defretd aignet-vals-sat-care-masks-lits-counterexample-under-masks
+    (implies (and (vals-equiv-under-masks new-inmasks invals invals1)
+                  (vals-equiv-under-masks new-regmasks regvals regvals1)
+                  (aignet-vals-sat-care-masks-mark-invar (lits-max-id-val lits) mark invals regvals aignet)
+                  (aignet-marked-inputs-are-masked mark inmasks aignet)
+                  (aignet-marked-regs-are-masked mark regmasks aignet)
+                  (member-equal (lit-fix lit) (lit-list-fix lits)))
+             (equal (id-eval (lit->var lit) invals1 regvals1 aignet)
+                    (id-eval (lit->var lit) invals regvals aignet)))
+    :hints (("goal" :use ((:instance aignet-vals-sat-care-masks-rec-invariants-imply-counterexample-holds-under-masks
+                           (id (lit->var lit)) (max-id (lits-max-id-val lits))
+                           (inmasks new-inmasks)
+                           (regmasks new-regmasks)
+                           (mark new-mark))))))
+
+  (defretd aignet-vals-sat-care-masks-lits-counterexample-under-masks-lit-eval
+    (implies (and (vals-equiv-under-masks new-inmasks invals invals1)
+                  (vals-equiv-under-masks new-regmasks regvals regvals1)
+                  (aignet-vals-sat-care-masks-mark-invar
+                   (lits-max-id-val lits) mark invals regvals aignet)
+                  (aignet-marked-inputs-are-masked mark inmasks aignet)
+                  (aignet-marked-regs-are-masked mark regmasks aignet)
+                  (member-equal (lit-fix lit) (lit-list-fix lits)))
+             (equal (lit-eval lit invals1 regvals1 aignet)
+                    (lit-eval lit invals regvals aignet)))
+    :hints (("goal" :use ((:instance aignet-vals-sat-care-masks-rec-invariants-imply-counterexample-holds-under-masks
+                           (id (lit->var lit)) (max-id (lits-max-id-val lits))
+                           (inmasks new-inmasks)
+                           (regmasks new-regmasks)
+                           (mark new-mark)))
+             :expand ((:free (invals regvals)
+                       (lit-eval lit invals regvals aignet))))))
+
+  (defretd aignet-vals-sat-care-masks-lits-counterexample-under-masks-aignet-eval-conjunction
+    (implies (and (vals-equiv-under-masks new-inmasks invals invals1)
+                  (vals-equiv-under-masks new-regmasks regvals regvals1)
+                  (aignet-vals-sat-care-masks-mark-invar
+                   (lits-max-id-val lits) mark invals regvals aignet)
+                  (aignet-marked-inputs-are-masked mark inmasks aignet)
+                  (aignet-marked-regs-are-masked mark regmasks aignet)
+                  (subsetp-equal (lit-list-fix lits1) (lit-list-fix lits)))
+             (equal (aignet-eval-conjunction lits1 invals1 regvals1 aignet)
+                    (aignet-eval-conjunction lits1 invals regvals aignet)))
+    :hints (("Goal" :induct (len lits1)
+             :expand ((lit-list-fix lits1)
+                      (:free (invals regvals) (aignet-eval-conjunction lits1 invals regvals aignet)))
+             :in-theory (enable aignet-vals-sat-care-masks-lits-counterexample-under-masks-lit-eval))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))
+    :hints ((acl2::just-induct-and-expand
+             (aignet-vals-sat-care-masks-lits
+              lits inmasks regmasks invals regvals vals mark aignet state)
+             :expand-others ((:free (vals)
+                              (aignet-vals-sat-care-masks-lits
+                               lits inmasks regmasks invals regvals vals mark aignet state)))))))
+
        
                                                   
 
 
-(define aignet-lit-ipasir-sat-check
-  ((x litp  "Literal to check for satisfiability")
+
+
+
+
+       
+(define aignet-eval-vals-conjunction ((x lit-listp) vals)
+  :guard (< (lits-max-id-val x) (bits-length vals))
+  :returns (val bitp :rule-classes :type-prescription)
+  :verify-guards nil
+  :prepwork ((local (in-theory (disable aignet-eval-lit))))
+  (if (atom x)
+      1
+    (mbe :logic (b-and (aignet-eval-lit (car x) vals)
+                       (aignet-eval-vals-conjunction (cdr x) vals))
+         :exec (if (eql (aignet-eval-lit (car x) vals) 1)
+                   (aignet-eval-vals-conjunction (cdr x) vals)
+                 0)))
+  ///
+  (verify-guards aignet-eval-vals-conjunction
+    :hints (("goal" :in-theory (enable lits-max-id-val))))
+
+  (defret <fn>-of-aignet-record-vals
+    :pre-bind ((vals (aignet-record-vals vals invals regvals aignet)))
+    (implies (aignet-lit-listp x aignet)
+             (equal val
+                    (aignet-eval-conjunction x invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable aignet-eval-conjunction aignet-eval-lit lit-eval))))
+
+  (local (in-theory (enable aignet-eval-lit))))
+
+
+(define aignet-lits-ipasir-sat-check
+  ((x lit-listp  "Literals (conjoined) to check for satisfiability")
    (invals  "Bit array, overwritten with the input values of the satisfying assignment")
    (regvals "Bit array, overwritten with the register values of the satisfying assignment")
    (vals    "Bit array, overwritten with the values of the satisfying assignment for all aignet nodes")
    (aignet  "AIG network")
    (state   "ACL2 state, used to initialize the incremental solver and generate random numbers"))
-  :guard (fanin-litp x aignet)
+  :guard (aignet-lit-listp x aignet)
   :returns (mv (status (or (equal status :failed)
                            (equal status :unsat)
                            (equal status :sat))
@@ -1335,7 +1803,7 @@ incremental solver, but it at least illustrates how to use it.</p>"
   (b* (((acl2::local-stobjs ipasir sat-lits)
         (mv ipasir sat-lits status invals regvals vals state))
        ((mv ipasir sat-lits state)
-        (aignet-lit-ipasir-sat-check-aux x sat-lits ipasir aignet state))
+        (aignet-lits-ipasir-sat-check-aux x sat-lits ipasir aignet state))
        ((mv status ipasir) (ipasir::ipasir-solve ipasir))
        (invals (resize-bits (num-ins aignet) invals))
        (regvals (resize-bits (num-regs aignet) regvals))
@@ -1346,27 +1814,103 @@ incremental solver, but it at least illustrates how to use it.</p>"
        (regvals (aignet-get-ipasir-ctrex-regvals 0 regvals sat-lits aignet ipasir))
        (ipasir (ipasir-release ipasir))
        (vals (aignet-record-vals vals invals regvals aignet))
-       ((unless (eql (aignet-eval-lit x vals) 1))
+       ((unless (eql (aignet-eval-vals-conjunction x vals) 1))
         (raise "Supposed satisfying assignment didn't work!")
         (mv ipasir sat-lits :failed invals regvals vals state)))
     (mv ipasir sat-lits :sat invals regvals vals state))
   ///
-  (defret satisfying-assign-of-aignet-lit-ipasir-sat-check
+  (defret satisfying-assign-of-aignet-lits-ipasir-sat-check
     (implies (and (equal status :sat)
-                  (aignet-litp x aignet))
-             (equal (lit-eval x sat-invals sat-regvals aignet) 1))
+                  (aignet-lit-listp x aignet))
+             (equal (aignet-eval-conjunction x sat-invals sat-regvals aignet) 1))
     :hints (("goal" :expand ((:free (invals regvals) (lit-eval x invals regvals aignet)))
              :in-theory (enable aignet-idp))))
 
-  (defret aignet-lit-ipasir-sat-check-not-unsat-when-sat
-    (implies (and (equal (lit-eval x some-invals some-regvals aignet) 1)
-                  (aignet-litp x aignet))
+  (defret aignet-lits-ipasir-sat-check-not-unsat-when-sat
+    (implies (and (equal (aignet-eval-conjunction x some-invals some-regvals aignet) 1)
+                  (aignet-lit-listp x aignet))
              (not (equal status :unsat))))
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
 
 
+
+(define aignet-lits-ipasir-sat-minimize
+  ((x lit-listp   "Literals (conjunction) to check for satisfiability")
+   (invals   "Bit array, overwritten with the input values of the satisfying assignment")
+   (regvals  "Bit array, overwritten with the register values of the satisfying assignment")
+   (inmasks  "Bit array, overwritten with the input care set of the satisfying assignment")
+   (regmasks "Bit array, overwritten with the register care set of the satisfying assignment")
+   (aignet   "AIG network")
+   (state    "ACL2 state, used to initialize the incremental solver and generate random numbers"))
+  :guard (aignet-lit-listp x aignet)
+  :returns (mv (status (or (equal status :failed)
+                           (equal status :unsat)
+                           (equal status :sat))
+                       :rule-classes ((:forward-chaining :trigger-terms (status)))
+                       "Status of the satisfiability check")
+               (sat-invals (equal (len sat-invals) (num-ins aignet))
+                           "If satisfiable, input values of the satisfying assignment")
+               (sat-regvals (equal (len sat-regvals) (num-regs aignet))
+                            "If satisfiable, register values of the satisfying assignment")
+               (sat-inmasks (equal (len sat-inmasks) (num-ins aignet))
+                            "If satisfiable, input care set of the satisfying assignment")
+               (sat-regmasks (equal (len sat-regmasks) (num-regs aignet))
+                             "If satisfiable, register care set of the satisfying assignment")
+               (new-state "Updated ACL2 state"))
+  :Guard-debug t
+  :parents (aignet-ipasir)
+  :short "Check satisfiability of a literal, and minimize the satisfying assignment if satisfiable."
+  (b* (((acl2::local-stobjs vals mark)
+        (mv vals mark status invals regvals inmasks regmasks state))
+       ((mv status invals regvals vals state)
+        (aignet-lits-ipasir-sat-check x invals regvals vals aignet state))
+       (inmasks (resize-bits 0 inmasks))
+       (inmasks (resize-bits (num-ins aignet) inmasks))
+       (regmasks (resize-bits 0 regmasks))
+       (regmasks (resize-bits (num-regs aignet) regmasks))
+       ((unless (eql status :sat))
+        (mv vals mark status invals regvals inmasks regmasks state))
+       (mark (resize-bits (+ 1 (lits-max-id-val x)) mark))
+       ((mv inmasks regmasks mark state)
+        (aignet-vals-sat-care-masks-lits x inmasks regmasks invals regvals vals mark aignet state)))
+    (mv vals mark :sat invals regvals inmasks regmasks state))
+  ///
+  (local (defthm aignet-vals-sat-care-masks-mark-invar-of-empty
+           (aignet-vals-sat-care-masks-mark-invar id (resize-list nil n 0) invals regvals aignet)
+           :hints(("Goal" :in-theory (enable aignet-vals-sat-care-masks-mark-invar
+                                             aignet-vals-sat-care-masks-mark-ok)))))
+
+  (local (defthm aignet-marked-inputs-are-masked-of-empty
+           (aignet-marked-inputs-are-masked (resize-list nil n 0) invals aignet)
+           :hints(("Goal" :in-theory (enable aignet-marked-inputs-are-masked)))))
+
+  (local (defthm aignet-marked-regs-are-masked-of-empty
+           (aignet-marked-regs-are-masked (resize-list nil n 0) regvals aignet)
+           :hints(("Goal" :in-theory (enable aignet-marked-regs-are-masked)))))
+
+  (defret satisfying-assign-of-aignet-lits-ipasir-sat-minimize
+    (implies (and (equal status :sat)
+                  (aignet-lit-listp x aignet)
+                  (vals-equiv-under-masks sat-inmasks sat-invals invals1)
+                  (vals-equiv-under-masks sat-regmasks sat-regvals regvals1))
+             (equal (aignet-eval-conjunction x invals1 regvals1 aignet) 1))
+    :hints (("goal" 
+             :in-theory (enable aignet-vals-sat-care-masks-lits-counterexample-under-masks-aignet-eval-conjunction))))
+
+  (defret satisfying-assign-of-aignet-lits-ipasir-sat-minimize-basic
+    (implies (and (equal status :sat)
+                  (aignet-lit-listp x aignet))
+             (equal (aignet-eval-conjunction x sat-invals sat-regvals aignet) 1)))
+
+  (defret aignet-lits-ipasir-sat-minimize-not-unsat-when-sat
+    (implies (and (equal (aignet-eval-conjunction x some-invals some-regvals aignet) 1)
+                  (aignet-lit-listp x aignet))
+             (not (equal status :unsat))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
 
 
 (define aignet-lit-ipasir-sat-minimize
@@ -1395,33 +1939,9 @@ incremental solver, but it at least illustrates how to use it.</p>"
   :Guard-debug t
   :parents (aignet-ipasir)
   :short "Check satisfiability of a literal, and minimize the satisfying assignment if satisfiable."
-  (b* (((acl2::local-stobjs vals mark)
-        (mv vals mark status invals regvals inmasks regmasks state))
-       ((mv status invals regvals vals state)
-        (aignet-lit-ipasir-sat-check x invals regvals vals aignet state))
-       (inmasks (resize-bits 0 inmasks))
-       (inmasks (resize-bits (num-ins aignet) inmasks))
-       (regmasks (resize-bits 0 regmasks))
-       (regmasks (resize-bits (num-regs aignet) regmasks))
-       ((unless (eql status :sat))
-        (mv vals mark status invals regvals inmasks regmasks state))
-       (mark (resize-bits (+ 1 (lit-id x)) mark))
-       ((mv inmasks regmasks mark state)
-        (aignet-vals-sat-care-masks-rec (lit-id x) inmasks regmasks invals regvals vals mark aignet state)))
-    (mv vals mark :sat invals regvals inmasks regmasks state))
+  (aignet-lits-ipasir-sat-minimize
+   (list x) invals regvals inmasks regmasks aignet state)
   ///
-  (local (defthm aignet-vals-sat-care-masks-mark-invar-of-empty
-           (aignet-vals-sat-care-masks-mark-invar id (resize-list nil n 0) invals regvals aignet)
-           :hints(("Goal" :in-theory (enable aignet-vals-sat-care-masks-mark-invar
-                                             aignet-vals-sat-care-masks-mark-ok)))))
-
-  (local (defthm aignet-marked-inputs-are-masked-of-empty
-           (aignet-marked-inputs-are-masked (resize-list nil n 0) invals aignet)
-           :hints(("Goal" :in-theory (enable aignet-marked-inputs-are-masked)))))
-
-  (local (defthm aignet-marked-regs-are-masked-of-empty
-           (aignet-marked-regs-are-masked (resize-list nil n 0) regvals aignet)
-           :hints(("Goal" :in-theory (enable aignet-marked-regs-are-masked)))))
 
   (defret satisfying-assign-of-aignet-lit-ipasir-sat-minimize
     (implies (and (equal status :sat)
@@ -1429,18 +1949,28 @@ incremental solver, but it at least illustrates how to use it.</p>"
                   (vals-equiv-under-masks sat-inmasks sat-invals invals1)
                   (vals-equiv-under-masks sat-regmasks sat-regvals regvals1))
              (equal (lit-eval x invals1 regvals1 aignet) 1))
-    :hints (("goal" 
-             :in-theory (enable aignet-vals-sat-care-masks-rec-counterexample-under-masks-lit-eval))))
+    :hints (("goal" :use ((:instance satisfying-assign-of-aignet-lits-ipasir-sat-minimize
+                           (x (list x))))
+             :in-theory (e/d (aignet-eval-conjunction)
+                             (satisfying-assign-of-aignet-lits-ipasir-sat-minimize)))))
+
+  (local (defthm vals-equiv-under-masks-refl
+           (vals-equiv-under-masks masks vals vals)
+           :hints(("Goal" :in-theory (enable vals-equiv-under-masks)))))
 
   (defret satisfying-assign-of-aignet-lit-ipasir-sat-minimize-basic
     (implies (and (equal status :sat)
                   (aignet-litp x aignet))
-             (equal (lit-eval x sat-invals sat-regvals aignet) 1)))
+             (equal (lit-eval x sat-invals sat-regvals aignet) 1))
+    :hints(("Goal" :in-theory (disable <fn>))))
 
   (defret aignet-lit-ipasir-sat-minimize-not-unsat-when-sat
     (implies (and (equal (lit-eval x some-invals some-regvals aignet) 1)
                   (aignet-litp x aignet))
-             (not (equal status :unsat))))
+             (not (equal status :unsat)))
+    :hints (("goal" :use ((:instance aignet-lits-ipasir-sat-minimize-not-unsat-when-sat
+                           (x (list x))))
+             :in-theory (enable aignet-eval-conjunction))))
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
