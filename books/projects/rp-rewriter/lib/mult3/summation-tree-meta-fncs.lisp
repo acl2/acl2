@@ -73,11 +73,32 @@
 #|(defconst *a*
   '((in1 . 1231231) (in2 . 131321)))||#
 
-(define clean-pp-args-cond (s c-lst)
-  (or nil
-      (and (equal s ''nil)
-           (or (atom c-lst)
-               (atom (cdr c-lst))))))
+(progn
+  (encapsulate
+    (((stingy-pp-clean) => *))
+    (local
+     (defun stingy-pp-clean ()
+       nil)))
+
+  (define return-t ()
+    t)
+  (define return-nil ()
+    nil)
+
+  (defmacro enable-stingy-pp-clean ()
+    `(defattach  stingy-pp-clean return-t))
+
+  (defmacro disable-stingy-pp-clean ()
+    `(defattach  stingy-pp-clean return-nil))
+
+  (enable-stingy-pp-clean)
+  
+  (define clean-pp-args-cond (s c-lst)
+    (or nil
+        (and (stingy-pp-clean)
+             (equal s ''nil)
+             (or (atom c-lst)
+                 (atom (cdr c-lst)))))))
 
 #|(local
  (defthm ex-from-rp-loose-is-rp-termp

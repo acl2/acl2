@@ -3126,6 +3126,39 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                             (top 'nil) ;; can override the top module.
                             (state 'state))
   (declare (xargs :mode :program))
+  :parents (acl2::svl)
+  :short "Generate SVL designs from SV and VL Designs"
+  :long "<p>Using SV and  VL (to determine the size of  the module inputs only)
+designs, creates an SVL design. </p>
+<code>
+@('
+(svl-flatten-design sv-design
+                    vl-design
+                    :dont-flatten ...
+                    :top ...)
+')
+</code>
+<p> The sv-design and vl-design arguments are mandatory @(see
+sv::sv-tutorial). </p>
+
+<p> The SVL system allows some of the modules to be flattened, and some
+untouched to remain circuit hierarchy </p>
+
+<p> :dont-flatten  List of names of  the modules that should  not be flattened.
+They should  be the  original names  of the modules  from the  original Verilog
+designs, but not  from SV designs. If users  want to  not flatten  all of the
+modules, they can pass :all. By default, this value is set to nil, which tells
+the system to flatten all the modules. </p>
+
+<p> :top By default, this is set to nil. It tells the program to get the top
+module name from SV Design, if the users want to select another module as top,
+then they can provide the name of that module here. Then, only that module and
+its submodules will be processed. </p>
+
+<p> :rp-state and :state are STOBJs. Users do not need to make assignments to
+them.
+</p>
+"
   (b* (((sv::design sv-design) sv-design)
        (sv-design.modalist (make-fast-alist sv-design.modalist))
 

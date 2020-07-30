@@ -159,13 +159,12 @@
               (& (mv y nil -1))))
 
            #|((mv x y atom-x atom-y len-x len-y)
-            (if (and (equal len-x 2)
-                     (equal len-y 2))
-                (mv x y atom-x atom-y len-x len-y)
-              (mv y x atom-x atom-y len-x len-y)))||#
-                
-                
-           
+           (if (and (equal len-x 2)
+           (equal len-y 2))
+           (mv x y atom-x atom-y len-x len-y)
+           (mv y x atom-x atom-y len-x len-y)))||#
+
+
            )
         (cond
          ((not (equal len-x len-y))
@@ -483,7 +482,6 @@
                  (hard-error 'c/d-fix-pp-args "" nil)
                  (mv ''nil pp)))))
 
-  
 
   (encapsulate
     (((c/d-remove-repeated-s) => *))
@@ -495,7 +493,6 @@
     t)
   (define return-nil ()
     nil)
-
 
   (defmacro c/d-remove-repeated-s-enable ()
     `(defattach  c/d-remove-repeated-s return-t))
@@ -634,7 +631,7 @@
             (('s pp-arg c/d-arg)
              (progn$
               (and
-               (equal pp-arg pp) (equal c/d-arg c/d) 
+               (equal pp-arg pp) (equal c/d-arg c/d)
                ;;(rp-equal-cnt c/d-arg c/d 10) (rp-equal-cnt pp-arg pp 10)
                )))))
         ;;(can-c-merge-fast-aux (cdr s-lst) pp c/d)
@@ -742,7 +739,6 @@
 
 ;; (memoize 'search-pattern)
 
-
 (local
  (defthm is-rp-of-evenpi
    (IS-RP `(RP 'EVENPI ,x))
@@ -754,7 +750,6 @@
    (IS-RP `(RP 'bitp ,x))
    :hints (("Goal"
             :in-theory (e/d (is-rp) ())))))
-
 
 
 (local
@@ -771,7 +766,6 @@
  (defthm rp-termp-of-list
    (iff (rp-termp `(list . ,x))
         (rp-term-listp x))))
-
 
 
 (local
@@ -792,7 +786,6 @@
   :inline t
   (case-match term
     (('list ('-- ('binary-and & &))) t)))
-  
 
 (define c/d-merge-slow-aux (pp-arg1 pp-arg2 pp-coughed-from-arg
                                     s-arg1 s-arg2 s-coughed-from-arg
@@ -860,11 +853,11 @@
         (cond (c/d1-is-c
                (if (is-a-negated-minterm extra-s-arg1)
                    (b* (((mv pp-arg pp-arg-cnt3)
-                        (pp-sum-merge pp-arg extra-s-arg1)))
+                         (pp-sum-merge pp-arg extra-s-arg1)))
                      (mv s-arg pp-arg pp-arg-cnt3))
                  (mv (s-sum-merge extra-s-arg1 s-arg)
-                        pp-arg
-                        0)))
+                     pp-arg
+                     0)))
               (t (mv s-arg pp-arg 0))))
        ((mv s-arg pp-arg pp-arg-cnt4)
         (cond (c/d2-is-c
@@ -1056,7 +1049,8 @@
        (case-match cur-s
          (('s pp-cur c/d-cur)
           (b* (((mv s-coughed pp-coughed c/d)
-                (c/d-merge c/d c/d-cur nil (1- limit)))
+                (c/d-merge c/d c/d-cur nil  (1- limit) ;;--hereeeee
+                           ))
                ((mv pp &) (pp-sum-merge pp pp-cur))
                ((mv pp &) (pp-sum-merge pp pp-coughed)))
             (case-match s-coughed
@@ -1188,7 +1182,8 @@
                  (mv ''nil ''nil `(binary-sum ,c/d1 ,c/d2))))
 
         ((mv s-coughed-from-arg pp-coughed-from-arg c/d-arg)
-         (c/d-merge c/d-arg1 c/d-arg2 t (1- limit)))
+         (c/d-merge c/d-arg1 c/d-arg2 t ;;(expt 2 40)))
+                    (1- limit)));; --hereeeee
 
         )
      (cond
@@ -1319,7 +1314,7 @@
    rp-termp-of--<fn>
    (rp-termp pp-term)
    :hyp (rp-termp term)
-   
+
    :hints (("Goal"
             :induct (4vec->pp-term term)
             :do-not-induct t
@@ -1335,30 +1330,30 @@
                                 pp-term-p)))))
 
   #|(local
-   (defthm lemma1
-     (IMPLIES (AND (PP-HAS-BITP-RP TERM))
-              (equal (PP-TERM-P TERM)
-                     (B* ((ORIG TERM) (TERM (EX-FROM-RP TERM)))
-                       (CASE-MATCH TERM
-                         (('BINARY-AND X Y)
-                          (AND (PP-TERM-P X) (PP-TERM-P Y)))
-                         (('BINARY-OR X Y)
-                          (AND (PP-TERM-P X) (PP-TERM-P Y)))
-                         (('BINARY-XOR X Y)
-                          (AND (PP-TERM-P X) (PP-TERM-P Y)))
-                         (('BINARY-? X Y Z)
-                          (AND (PP-TERM-P X)
-                               (PP-TERM-P Y)
-                               (PP-TERM-P Z)))
-                         (('BINARY-NOT X) (AND (PP-TERM-P X)))
-                         (('BIT-OF & &) T)
-                         (''1 T)
-                         (& (PP-HAS-BITP-RP ORIG))))))
-     :hints (("goal"
-              :do-not-induct t
-              :expand (pp-term-p term)
-              :in-theory (e/d () (pp-has-bitp-rp))))))||#
-  
+  (defthm lemma1
+  (IMPLIES (AND (PP-HAS-BITP-RP TERM))
+  (equal (PP-TERM-P TERM)
+  (B* ((ORIG TERM) (TERM (EX-FROM-RP TERM)))
+  (CASE-MATCH TERM
+  (('BINARY-AND X Y)
+  (AND (PP-TERM-P X) (PP-TERM-P Y)))
+  (('BINARY-OR X Y)
+  (AND (PP-TERM-P X) (PP-TERM-P Y)))
+  (('BINARY-XOR X Y)
+  (AND (PP-TERM-P X) (PP-TERM-P Y)))
+  (('BINARY-? X Y Z)
+  (AND (PP-TERM-P X)
+  (PP-TERM-P Y)
+  (PP-TERM-P Z)))
+  (('BINARY-NOT X) (AND (PP-TERM-P X)))
+  (('BIT-OF & &) T)
+  (''1 T)
+  (& (PP-HAS-BITP-RP ORIG))))))
+  :hints (("goal"
+  :do-not-induct t
+  :expand (pp-term-p term)
+  :in-theory (e/d () (pp-has-bitp-rp))))))||#
+
   (acl2::defret
    pp-term-p-of--<fn>
    :hyp (good-4vec-term-p term)
@@ -1770,8 +1765,8 @@
                     (c-res (c-spec-meta-aux s pp c/d quarternaryp))
                     (res `(cons ,s-res (cons ,c-res 'nil)))
                     #|(- (if (search-pattern res)
-                           (cw "pattern found s-c-spec-meta ~%")
-                         nil))||#)
+                    (cw "pattern found s-c-spec-meta ~%")
+                    nil))||#)
                  res)
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
@@ -1788,13 +1783,13 @@
              (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
                      term)))
           (('s-spec sum)
-                  (cond ((well-formed-new-sum sum)
-                         (b* (((mv s pp c/d)
-                               (new-sum-merge sum)))
-                           (s-spec-meta-aux s pp c/d)))
-                        (t
-                         (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
-                                 term))))
+           (cond ((well-formed-new-sum sum)
+                  (b* (((mv s pp c/d)
+                        (new-sum-merge sum)))
+                    (s-spec-meta-aux s pp c/d)))
+                 (t
+                  (progn$ (cw "term is not well-formed-new-sum ~p0 ~%" term)
+                          term))))
           (('c-spec sum)
            (if (well-formed-new-sum sum)
                (b* (((mv s pp c/d)
@@ -1970,9 +1965,9 @@
   (local
    (defthm EXTRA-S-CAN-BE-PP-def
      (equal (EXTRA-S-CAN-BE-PP pp c/d)
-             (AND (EQUAL C/D ''0)
-                            (CASE-MATCH PP (('LIST ('BINARY-AND & &)) T))))))
-  
+            (AND (EQUAL C/D ''0)
+                 (CASE-MATCH PP (('LIST ('BINARY-AND & &)) T))))))
+
   (with-output
     :off :all
     :gag-mode nil
@@ -1980,15 +1975,15 @@
     (def-formula-checks
       mult-formula-checks
       (;pp-sum-merge
-       ;s-sum-merge
+;s-sum-merge
        binary-append
-       ;pp-lists-to-term-pp-lst
-       ;pp-term-to-pp-lists
+;pp-lists-to-term-pp-lst
+;pp-term-to-pp-lists
        --
        sum-list
-       ;s-c-spec-meta
-       ;s-spec-meta
-       ;c-spec-meta
+;s-c-spec-meta
+;s-spec-meta
+;c-spec-meta
        binary-and
        and-list
        sort-sum
@@ -2018,14 +2013,13 @@
        m2 d2 f2 times2
        s
        binary-sum
-       ;sort-sum-meta
+;sort-sum-meta
        evenpi
        d-sum
        sv::3vec-fix
        sv::4vec-fix
-       ;c-s-spec-meta
+;c-s-spec-meta
        ))))
-
 
 (defmacro ss (&rest args)
   `(s-spec (list . ,args)))

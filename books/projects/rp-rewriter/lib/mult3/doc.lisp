@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2019, Regents of the University of Texas
+; Copyright (C) 2020 Regents of the University of Texas
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -39,23 +39,23 @@
 (in-package "RP")
 
 (xdoc::defxdoc
- multiplier-proofs-2
+ Multiplier-Verification-v3
  :parents (rp-rewriter/applications)
- :short "A demo for integer multiplier proofs 2.0"
+ :short "A demo for integer multiplier proofs version 3.0"
  :long "<p> We implement an efficient and verified method for multiplier
  correctness proofs from (System) Verilog designs. There exists two
  implementations of the same method. Below is a demo for the second version,
  which is much faster and easier to use. </p>
 
-<p> This program may run verify 64x64 multipliers in 1-3 seconds; 128x128 in
-3-20 seconds depending on encoding; 256x256 in  15-60 seconds; and so on.
+<p> This program may run verify 64x64 multipliers in 0-2 seconds; 128x128 in
+2-5 seconds depending on encoding; 256x256 in  10-20 seconds; and so on.
 </p>
 
 <p>
 1. Include the book that has the rewriter rules and meta rules for RP-Rewriter
 for multiplier proofs:
 <code>
-(include-book \"projects/rp-rewriter/lib/mult2/svl-top\" :dir :system)
+(include-book \"projects/rp-rewriter/lib/mult3/svl-top\" :dir :system)
 </code>
 </p>
 
