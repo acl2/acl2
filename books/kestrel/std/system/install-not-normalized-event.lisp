@@ -23,7 +23,10 @@
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp): the name of the theorem."))
+               (name "A @(tsee symbolp): the name of the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp):
+                                        the input list @('names-to-avoid')
+                                        augmented with @('name')."))
 
   :mode :program
   :parents (std/system install-not-normalized)
@@ -47,7 +50,7 @@
         (if local
             `(local (install-not-normalized ,fn :defthm-name ',name :allp nil))
           `(install-not-normalized ,fn :defthm-name ',name :allp nil))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,7 +60,10 @@
    (names-to-avoid symbol-listp "Avoid these as theorem names.")
    (wrld plist-worldp))
   :returns (mv (events "A list of @(tsee pseudo-event-formp) values.")
-               (names "A @(tsee symbol-listp): the names of the theorems."))
+               (names "A @(tsee symbol-listp): the names of the theorems.")
+               (updated-names-to-avoid "A @(tsee symbol-listp):
+                                        the input list @('names-to-avoid')
+                                        augmented with @('names')."))
   :mode :program
   :parents (std/system install-not-normalized)
   :short "Create a list of event forms to
@@ -75,13 +81,14 @@
      the names of each function suffixed with @('$not-normalized'))
      and ensure their uniqueness
      via @(tsee fresh-logical-name-with-$s-suffix)."))
-  (cond ((endp fns) (mv nil nil))
-        (t (mv-let (event name)
+  (cond ((endp fns) (mv nil nil names-to-avoid))
+        (t (mv-let (event name names-to-avoid)
              (install-not-normalized-event (car fns) local names-to-avoid wrld)
-             (mv-let (rest-events rest-names)
+             (mv-let (rest-events rest-names names-to-avoid)
                (install-not-normalized-event-lst (cdr fns)
                                                  local
-                                                 (cons name names-to-avoid)
+                                                 names-to-avoid
                                                  wrld)
                (mv (cons event rest-events)
-                   (cons name rest-names)))))))
+                   (cons name rest-names)
+                   names-to-avoid))))))

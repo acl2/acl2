@@ -2361,12 +2361,12 @@
         (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
        ((mv old-unnorm-event
-            old-unnorm-name)
+            old-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event old$
                                       t
                                       names-to-avoid
                                       wrld))
-       (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv domain-of-old-event?
             domain-of-old-name?
             names-to-avoid)
@@ -2389,12 +2389,12 @@
                             appcond-thm-names
                             wrld))
        ((mv new-unnorm-event
-            new-unnorm-name)
+            new-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event new-name$
                                       t
                                       names-to-avoid
                                       wrld))
-       (names-to-avoid (cons new-unnorm-name names-to-avoid))
        ((mv new-to-old-thm-local-event
             new-to-old-thm-exported-event)
         (tailrec-gen-new-to-old-thm old$ nonrec updates combine q r
@@ -2503,13 +2503,14 @@
                                     wrld)
           (mv nil nil)))
        ((mv wrapper-unnorm-event?
-            wrapper-unnorm-name?)
+            wrapper-unnorm-name?
+            &)
         (if wrapper$
             (install-not-normalized-event wrapper-name$
                                           t
                                           names-to-avoid
                                           wrld)
-          (mv nil nil)))
+          (mv nil nil names-to-avoid)))
        ((mv
          old-to-wrapper-thm-local-event?
          old-to-wrapper-thm-exported-event?)

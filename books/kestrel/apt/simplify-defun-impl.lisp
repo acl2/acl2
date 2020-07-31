@@ -2711,7 +2711,7 @@
                                                  equiv wrld))
        (fn-simp-is-fn (fn-simp-is-fn fnsr fn-hyps hyps theorem-name
                                      thm-enable equiv wrld))
-       ((mv not-norm-event not-norm-event-name)
+       ((mv not-norm-event not-norm-event-name &)
         (install-not-normalized-event fn t nil wrld)))
     (value
      `(,not-norm-event

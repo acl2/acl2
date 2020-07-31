@@ -3844,9 +3844,9 @@
         (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
        ((mv old-fn-unnorm-event
-            old-fn-unnorm-name)
+            old-fn-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event old$ t names-to-avoid wrld))
-       (names-to-avoid (cons old-fn-unnorm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event)
         (isodata-gen-new-fn old$
@@ -3861,7 +3861,8 @@
                             appcond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
-            new-fn-unnorm-name)
+            new-fn-unnorm-name
+            &)
         (install-not-normalized-event new$ t names-to-avoid wrld))
        ((mv new-to-old-thm-local-event
             new-to-old-thm-exported-event)

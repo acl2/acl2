@@ -23,13 +23,13 @@
                    (getpropc fn 'recursivep nil wrld))))
     (cond
      ((cdr fns)
-      (mv-let (events names)
+      (mv-let (events names names-to-avoid)
         (install-not-normalized-event-lst fns nil names-to-avoid wrld)
-        (declare (ignore names))
+        (declare (ignore names names-to-avoid))
         (cons 'progn events)))
-     (t (mv-let (event name)
+     (t (mv-let (event name names-to-avoid)
           (install-not-normalized-event fn nil names-to-avoid wrld)
-          (declare (ignore name))
+          (declare (ignore name names-to-avoid))
           event)))))
 
 (defmacro install-not-normalized$ (fn &key allp names-to-avoid)
