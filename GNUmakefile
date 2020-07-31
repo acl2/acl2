@@ -36,8 +36,7 @@
 #   make TAGS        ; Create tags table, handy for viewing sources with emacs.
 #   make TAGS!       ; Same as TAGS, except forces a rebuild of TAGS.
 #   make regression
-#                    ; Certify most community books and, if present, the
-#                    ; workshops/ books as well.
+#                    ; Certify most community books.
 #   make regression ACL2=xxx
 #                    ; Same as make regression, but use xxx as ACL2, which
 #                    ; should either be an absolute filename or a command on
