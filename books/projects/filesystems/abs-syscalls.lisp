@@ -7575,18 +7575,18 @@
       :hints (("goal" :do-not-induct t
                :in-theory (e/d (abs-mkdir-correctness-lemma-30
                                 frame-reps-fs abs-mkdir
-                                not-subsetp-when-atom-set-difference$
+                                consp-of-set-difference$
                                 subsetp-equal)
                                ((:rewrite abs-mkdir-correctness-lemma-128)
-                                (:REWRITE ABS-ADDRS-OF-REMOVE-ASSOC)
-                                (:REWRITE ABS-FS-P-OF-ABS-ALLOC-2)
-                                (:REWRITE ABS-FS-P-OF-FRAME-VAL->DIR)
-                                (:REWRITE ABS-SEPARATE-OF-FRAME->FRAME-OF-COLLAPSE-THIS-LEMMA-4)
-                                (:REWRITE COLLAPSE-CONGRUENCE-LEMMA-4 . 2)
-                                (:REWRITE FAT32-FILENAME-P-OF-BASENAME)
-                                (:REWRITE NO-DUPLICATESP-OF-ABS-ADDRS-OF-ABS-ALLOC-1)
-                                (:REWRITE NOT-SUBSETP-WHEN-ATOM-SET-DIFFERENCE$)
-                                (:TYPE-PRESCRIPTION ABS-COMPLETE))))))
+                                (:rewrite abs-addrs-of-remove-assoc)
+                                (:rewrite abs-fs-p-of-abs-alloc-2)
+                                (:rewrite abs-fs-p-of-frame-val->dir)
+                                (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-4)
+                                (:rewrite collapse-congruence-lemma-4 . 2)
+                                (:rewrite fat32-filename-p-of-basename)
+                                (:rewrite no-duplicatesp-of-abs-addrs-of-abs-alloc-1)
+                                (:rewrite consp-of-set-difference$)
+                                (:type-prescription abs-complete))))))
 
     (defthm
       abs-mkdir-correctness-lemma-80
@@ -10465,36 +10465,3 @@
            (< 0 (1st-complete-under-path frame path)))
   :hints (("goal" :in-theory (enable 1st-complete-under-path)))
   :rule-classes :linear)
-
-(fty::defprod
- dir-stream
- ((pos natp)
-  (file-list fat32-filename-list-p)))
-
-(fty::defalist
- dir-stream-table
- :key-type nat
- :val-type dir-stream
- :true-listp t)
-
-(defthm fat32-filename-list-p-of-strip-cars-when-m1-file-alist-p
-  (implies (m1-file-alist-p fs)
-           (fat32-filename-list-p (strip-cars fs))))
-
-(defund hifat-opendir (fs path dir-stream-table)
-  (b*
-      ((path (mbe :exec path :logic (fat32-filename-list-fix path)))
-       ((mv file error-code)
-        (hifat-find-file fs path))
-       ((unless (equal error-code 0))
-        (mv 0 dir-stream-table *enoent*))
-       ((unless (m1-directory-file-p file))
-        (mv 0 dir-stream-table *enotdir*))
-       (dir-stream-table-index
-        (find-new-index (strip-cars dir-stream-table))))
-    (mv
-     dir-stream-table-index
-     (cons
-      (cons dir-stream-table-index (strip-cars (m1-file->contents file)))
-      dir-stream-table)
-     0)))

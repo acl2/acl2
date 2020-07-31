@@ -3370,7 +3370,7 @@
     :use
     (chain-ends-in-abs-complete-lemma-8
      (:instance
-      (:rewrite not-subsetp-when-atom-set-difference$)
+      (:rewrite consp-of-set-difference$)
       (l2 (frame-addrs-before frame x (collapse-1st-index frame x)))
       (l1 (abs-addrs
            (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))
@@ -7159,7 +7159,7 @@
                            (seq-this (collapse-this frame x))))))))
    :hints
    (("goal" :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                        not-subsetp-when-atom-set-difference$
+                                        consp-of-set-difference$
                                         partial-collapse-correctness-lemma-152)
                             ((:rewrite partial-collapse-correctness-lemma-66)
                              collapse-seq-of-collapse-seq
@@ -7230,7 +7230,7 @@
    :hints
    (("goal"
      :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                 not-subsetp-when-atom-set-difference$
+                                 consp-of-set-difference$
                                  partial-collapse-correctness-lemma-152)
                      ((:rewrite partial-collapse-correctness-lemma-65)
                       collapse-seq-of-collapse-seq
@@ -7313,7 +7313,7 @@
    :hints
    (("goal"
      :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                 not-subsetp-when-atom-set-difference$
+                                 consp-of-set-difference$
                                  partial-collapse-correctness-lemma-152)
                      (collapse-seq-of-collapse-seq
                       take set-difference-equal
@@ -7491,7 +7491,7 @@
 
 (local
  (defthm
-   partial-collapse-correctness-lemma-105
+   partial-collapse-correctness-lemma-21
    (implies
     (and
      (not (zp n))
@@ -7520,12 +7520,11 @@
                                          (seq-this (collapse-this frame x))))
                      (list (nth (+ -1 n)
                                 (seq-this (collapse-this frame x)))))))
-     (+ -1 (- n)
-        (len (frame->frame frame)))))
+     (- (len (frame->frame frame)) (+ n 1))))
    :hints
    (("goal"
      :in-theory (e/d (valid-seqp collapse-seq seq-this
-                                 not-subsetp-when-atom-set-difference$
+                                 consp-of-set-difference$
                                  partial-collapse-correctness-lemma-152)
                      (collapse-seq-of-collapse-seq
                       take set-difference-equal
@@ -7838,31 +7837,30 @@
 ;; Inductive, hence kept.
 (local
  (defthm
-   partial-collapse-correctness-lemma-70
+   partial-collapse-correctness-lemma-34
    (implies
     (and (mv-nth 1 (collapse frame))
-         (abs-separate (frame->frame frame))
-         (frame-p (frame->frame frame))
          (no-duplicatesp-equal (strip-cars (frame->frame frame))))
     (equal (1st-complete (frame->frame (collapse-seq frame (seq-this frame))))
            0))
-   :hints (("goal" :in-theory (e/d (collapse-seq
-                                    seq-this collapse-iter collapse)
-                                   ((:rewrite
-                                     assoc-of-frame->frame-of-collapse-this)
-                                    (:rewrite nthcdr-when->=-n-len-l)
-                                    (:definition assoc-equal)
-                                    (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
-                                    (:rewrite
-                                     abs-separate-of-frame->frame-of-collapse-this-lemma-8
-                                     . 2)
-                                    (:linear len-of-seq-this-1)
-                                    (:rewrite subsetp-when-prefixp)
-                                    (:rewrite
-                                     partial-collapse-correctness-lemma-20)))
-            :expand (collapse-iter frame 1)
-            :induct (collapse frame)
-            :do-not-induct t))))
+   :hints
+   (("goal"
+     :in-theory
+     (e/d
+      (collapse-seq seq-this collapse-iter collapse)
+      ((:rewrite assoc-of-frame->frame-of-collapse-this)
+       (:rewrite nthcdr-when->=-n-len-l)
+       (:definition assoc-equal)
+       (:rewrite
+        collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
+       (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
+                 . 2)
+       (:linear len-of-seq-this-1)
+       (:rewrite subsetp-when-prefixp)
+       (:rewrite partial-collapse-correctness-lemma-20)))
+     :expand (collapse-iter frame 1)
+     :induct (collapse frame)
+     :do-not-induct t))))
 
 (defthm
   partial-collapse-correctness-lemma-80
@@ -8330,17 +8328,25 @@
                0))
    (consp (assoc-equal (1st-complete (frame->frame (collapse-seq frame seq)))
                        (frame->frame frame))))
-  :instructions
-  ((:casesplit
-    (member-equal (1st-complete (frame->frame (collapse-seq frame seq)))
-                  (strip-cars (frame->frame (collapse-seq frame seq)))))
-   :bash :promote (:contrapose 1)
-   (:rewrite member-of-strip-cars)
-   :bash)
-  :rule-classes :type-prescription)
+  :hints
+  (("goal"
+    :do-not-induct t
+    :use
+    (:theorem
+     (implies
+      (and
+       (not
+        (consp
+         (assoc-equal (1st-complete (frame->frame (collapse-seq frame seq)))
+                      (frame->frame frame))))
+       (not (equal (1st-complete (frame->frame (collapse-seq frame seq)))
+                   0)))
+      (consp
+       (assoc-equal (1st-complete (frame->frame (collapse-seq frame seq)))
+                    (frame->frame (collapse-seq frame seq)))))))))
 
 (defthm
-  partial-collapse-correctness-lemma-77
+  partial-collapse-correctness-lemma-70
   (implies
    (and
     (ctx-app-ok
@@ -8500,7 +8506,6 @@
            :use (:instance collapse-seq-of-collapse-seq
                            (seq2 (list x))
                            (seq1 seq)))))
-
 
 (local
  (encapsulate
@@ -9192,21 +9197,8 @@
     :induct (frame-addrs-before-seq frame 0 seq)
     :expand ((intersection-equal seq (abs-addrs (frame->root frame)))))))
 
-;; Move later.
 (defthm
-  frame-addrs-root-of-frame->frame-of-collapse-this-1
-  (implies
-   (and (equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-               0)
-        (frame-p frame))
-   (equal (frame-addrs-root (frame->frame (collapse-this frame x)))
-          (remove-equal x
-                        (frame-addrs-root (frame->frame frame)))))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable collapse-this))))
-
-(defthm
-  partial-collapse-correctness-lemma-137
+  partial-collapse-correctness-lemma-77
   (implies (and (atom (frame-val->path (cdr (assoc-equal 0 frame))))
                 (abs-separate frame)
                 (frame-p frame)
