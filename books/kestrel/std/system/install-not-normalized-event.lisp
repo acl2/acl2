@@ -24,6 +24,7 @@
    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp): the name of the theorem."))
+
   :mode :program
   :parents (std/system install-not-normalized)
   :short "Create an event form to
@@ -32,14 +33,14 @@
           of a function,
           ensuring that the name of the theorem will not cause a conflict."
   :long
-  "<p>
-   Ensure that the name of the theorem is not already in use
-   and is not among a list of names to avoid.
-   Start with the default name
-   (i.e. the concatenation of
-   the name of @('fn') with @('$not-normalized'))
-   and ensure its uniqueness via @(tsee fresh-logical-name-with-$s-suffix).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Ensure that the name of the theorem is not already in use
+     and is not among a list of names to avoid.
+     Start with the default name
+     (i.e. the concatenation of
+     the name of @('fn') with @('$not-normalized'))
+     and ensure its uniqueness via @(tsee fresh-logical-name-with-$s-suffix)."))
   (b* ((name (install-not-normalized-name fn))
        (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (event
@@ -65,14 +66,15 @@
           of a list of functions,
           ensuring that the names of the theorems will not cause a conflict."
   :long
-  "<p>
-   Ensure that the names of the theorems are not already in use
-   and are not among a list of names to avoid.
-   Start with the default names
-   (i.e. the concatenation of
-   the names of each function suffixed with @('$not-normalized'))
-   and ensure their uniqueness via @(tsee fresh-logical-name-with-$s-suffix).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Ensure that the names of the theorems are not already in use
+     and are not among a list of names to avoid.
+     Start with the default names
+     (i.e. the concatenation of
+     the names of each function suffixed with @('$not-normalized'))
+     and ensure their uniqueness
+     via @(tsee fresh-logical-name-with-$s-suffix)."))
   (cond ((endp fns) (mv nil nil))
         (t (mv-let (event name)
              (install-not-normalized-event (car fns) local names-to-avoid wrld)
