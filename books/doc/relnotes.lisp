@@ -652,6 +652,14 @@
     "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
      which lifts @(tsee fresh-namep-msg-weak) to lists.")
 
+   (xdoc::p
+    "The utilities
+     @(tsee install-not-normalized-event) and
+     @(tsee install-not-normalized-event-lst)
+     have been improved to return an additional result,
+     namely the updated list of names to avoid.
+     This helps making the calling code more concise and less error-prone.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))

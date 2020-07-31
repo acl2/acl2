@@ -814,9 +814,9 @@
                                                ctx
                                                state))
        ((mv old-unnorm-event
-            old-unnorm-name)
+            old-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event old$ t names-to-avoid wrld))
-       (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event)
         (restrict-gen-new-fn old$
@@ -827,7 +827,8 @@
                              verify-guards$
                              wrld))
        ((mv new-unnorm-event
-            new-unnorm-name)
+            new-unnorm-name
+            &)
         (install-not-normalized-event new-name$ t names-to-avoid wrld))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event)

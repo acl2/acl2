@@ -23,7 +23,11 @@
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
    (wrld plist-worldp))
   :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp): the name of the theorem."))
+               (name "A @(tsee symbolp): the name of the theorem.")
+               (updated-names-to-avoid "A @(tsee symbol-listp):
+                                        the input list @('names-to-avoid')
+                                        augmented with @('name')."))
+
   :mode :program
   :parents (std/system install-not-normalized)
   :short "Create an event form to
@@ -32,21 +36,21 @@
           of a function,
           ensuring that the name of the theorem will not cause a conflict."
   :long
-  "<p>
-   Ensure that the name of the theorem is not already in use
-   and is not among a list of names to avoid.
-   Start with the default name
-   (i.e. the concatenation of
-   the name of @('fn') with @('$not-normalized'))
-   and ensure its uniqueness via @(tsee fresh-logical-name-with-$s-suffix).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "Ensure that the name of the theorem is not already in use
+     and is not among a list of names to avoid.
+     Start with the default name
+     (i.e. the concatenation of
+     the name of @('fn') with @('$not-normalized'))
+     and ensure its uniqueness via @(tsee fresh-logical-name-with-$s-suffix)."))
   (b* ((name (install-not-normalized-name fn))
        (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (event
         (if local
             `(local (install-not-normalized ,fn :defthm-name ',name :allp nil))
           `(install-not-normalized ,fn :defthm-name ',name :allp nil))))
-    (mv event name)))
+    (mv event name (cons name names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,7 +60,10 @@
    (names-to-avoid symbol-listp "Avoid these as theorem names.")
    (wrld plist-worldp))
   :returns (mv (events "A list of @(tsee pseudo-event-formp) values.")
-               (names "A @(tsee symbol-listp): the names of the theorems."))
+               (names "A @(tsee symbol-listp): the names of the theorems.")
+               (updated-names-to-avoid "A @(tsee symbol-listp):
+                                        the input list @('names-to-avoid')
+                                        augmented with @('names')."))
   :mode :program
   :parents (std/system install-not-normalized)
   :short "Create a list of event forms to
@@ -65,21 +72,23 @@
           of a list of functions,
           ensuring that the names of the theorems will not cause a conflict."
   :long
-  "<p>
-   Ensure that the names of the theorems are not already in use
-   and are not among a list of names to avoid.
-   Start with the default names
-   (i.e. the concatenation of
-   the names of each function suffixed with @('$not-normalized'))
-   and ensure their uniqueness via @(tsee fresh-logical-name-with-$s-suffix).
-   </p>"
-  (cond ((endp fns) (mv nil nil))
-        (t (mv-let (event name)
+  (xdoc::topstring
+   (xdoc::p
+    "Ensure that the names of the theorems are not already in use
+     and are not among a list of names to avoid.
+     Start with the default names
+     (i.e. the concatenation of
+     the names of each function suffixed with @('$not-normalized'))
+     and ensure their uniqueness
+     via @(tsee fresh-logical-name-with-$s-suffix)."))
+  (cond ((endp fns) (mv nil nil names-to-avoid))
+        (t (mv-let (event name names-to-avoid)
              (install-not-normalized-event (car fns) local names-to-avoid wrld)
-             (mv-let (rest-events rest-names)
+             (mv-let (rest-events rest-names names-to-avoid)
                (install-not-normalized-event-lst (cdr fns)
                                                  local
-                                                 (cons name names-to-avoid)
+                                                 names-to-avoid
                                                  wrld)
                (mv (cons event rest-events)
-                   (cons name rest-names)))))))
+                   (cons name rest-names)
+                   names-to-avoid))))))
