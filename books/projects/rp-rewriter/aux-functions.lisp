@@ -1570,3 +1570,13 @@
        nil
      (cons (rp-untrans (car lst))
            (rp-untrans-lst (cdr lst))))))
+
+
+(defund force$ (term rule-name hyp)
+  ;; When rules are processed, force instances in the hyps will be replaced by
+  ;; this function. rule-name will be the name of the rule, and hyp will be the
+  ;; main hypothesis from the rule that the force is originated from.
+  ;; when force fails, an error will be thrown and a message will be printed
+  ;; the rule that causes this error is in user-lemmas.lisp
+  (declare (ignorable rule-name hyp))
+  term)
