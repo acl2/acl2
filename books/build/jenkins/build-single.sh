@@ -46,7 +46,7 @@ OOM_KILLER_ADJUSTMENT=500 # medium value for the build-single case
 CMD="nice -n $NICENESS make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
 CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo 500 > /proc/self/oom_score_adj && exec ${CMD})"
 echo "Executing command \"${CMD_WITH_OOM_KILLER_ADJUSTMENT}\""
-$STARTJOB -c ${CMD_WITH_OOM_KILLER_ADJUSTMENT}
+$STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"
 
 echo "Build was successful."
 
