@@ -560,30 +560,6 @@
 (defmacro acl2::defsoft (&rest args)
   `(defsoft ,@args))
 
-(define check-wfrel-o< ((fun symbolp) (wrld plist-worldp))
-  :returns (err-msg? maybe-msgp)
-  :verify-guards nil
-  :short "Check if a recursive second-order function, or an instance of it,
-          uses @(tsee o<) as well-founded relation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "When a recursive second-order function, or an instance thereof,
-     is introduced,
-     the submitted event form first introduces the function,
-     and then checks whether its well-founded relation is @(tsee o<).
-     The following code performs this check.")
-   (xdoc::p
-    "If the check is satisfied, @('nil') is returned.
-     Otherwise, an error message is returned."))
-  (if (recursivep fun nil wrld)
-      (let ((wfrel (well-founded-relation fun wrld)))
-        (if (eq wfrel 'o<)
-            nil
-          (msg "~x0 must use O< as well-founded relation, not ~x1.~%"
-               fun wfrel)))
-    nil))
-
 (define check-qrewrite-rule-funvars ((fun symbolp) (wrld plist-worldp))
   :returns (err-msg? "A @(tsee maybe-msgp).")
   :mode :program
