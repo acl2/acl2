@@ -40,12 +40,18 @@ $STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.
 echo "Building the books."
 cd books
 
-# See https://serverfault.com/questions/786981/adjust-oom-score-at-process-launch for OOM Killer discussion
+# See https://serverfault.com/questions/786981/adjust-oom-score-at-process-launch
+# for OOM Killer discussion, which includes:
+# Because it's in parentheses, it launches a subshell, sets the OOM score for
+# the shell (in this case to 1000, to make it extremely likely to get killed in
+# an OOM situation), and then the exec replaces the subshell with the intended
+# program while leaving the new OOM score intact. It also won't affect the OOM
+# score of the parent process/shell, as everything is happening inside the
+# subshell.
 NICENESS=13
 OOM_KILLER_ADJUSTMENT=500 # medium value for the build-single case
 CMD="nice -n $NICENESS make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
-CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo 500 > /proc/self/oom_score_adj && exec ${CMD})"
-echo "Executing command \"${CMD_WITH_OOM_KILLER_ADJUSTMENT}\""
+CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo ${OOM_KILLER_ADJUSTMENT} > /proc/self/oom_score_adj && exec ${CMD})"
 $STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"
 
 echo "Build was successful."
