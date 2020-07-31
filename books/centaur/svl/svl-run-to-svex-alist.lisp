@@ -288,12 +288,6 @@
 
     `(encapsulate
        nil
-
-       #|(local
-       (rp::disable-meta-rules 4vec-rsh-of-meta
-       bits-of-meta-fn
-       concat-meta))||#
-
        (local
         (rp::disable-all-rules))
 
@@ -454,3 +448,99 @@ of  the   first  four   keys  (:modname,   :binds-ins-alist,  :binds-out-alist,
 :svl-design).  </p>
 
 ")
+
+
+
+
+
+;; (define svl-phase-wog->svexl-list (&key
+;;                                    modname
+;;                                    svl-design
+;;                                    svexl-lst-name
+;;                                    rw-rule-name)
+;;   (b* (((unless (and modname
+;;                      svl-design
+;;                      svexl-lst-name
+;;                      rw-rule-name))
+;;         (hard-error 'svl-phase-wog->svexl-list
+;;                     "You need to assign values to keys ~
+;;                      modname~
+;;                      svl-design~
+;;                      svexl-lst-name rw-rule-name ~%"
+;;                     nil)))
+
+;;     `(encapsulate
+;;        nil
+;;        (local
+;;         (rp::disable-all-rules))
+
+;;        (local
+;;         (rp::enable-rules *svl-compose-rules*))
+
+;;        (local
+;;         (memoize 'rp::rp-equal))
+
+;;        (local
+;;         (rp::disable-exc-counterpart fmt-to-comment-window))
+
+;;        (local
+;;         (rp::disable-all-meta-rules))
+
+;;        (local
+;;         (rp::enable-meta-rules
+;;          ;; bits-of-meta-fn
+;;          ;; concat-meta
+;;          ;; 4vec-rsh-of-meta
+;;          svex-eval-wog-meta-main
+;;          svexl-node-eval-wog-meta-main
+;;          rp::HONS-ACONS-META
+;;          rp::FAST-ALIST-FREE-META
+;;          rp::ASSOC-EQ-VALS-META
+;;          rp::HONS-GET-META
+;;          rp::RP-EQUAL-META
+;;          rp::MV-NTH-META))
+       
+;;        (with-output
+;;          :off :all
+;;          :gag-mode nil
+;;          (make-event
+;;           (b* ((len-vars (len (svl::svl-module->inputs (cdr (assoc-equal ,modname ,svl-design)))))
+;;                (hyp (loop$ for i from 0 to len-vars collect `(sv::4vec-p
+;;                                                               ,(rp::sa 'a i))))
+;;                (term `(svl::svl-run-phase-wog ',,modname
+;;                                               ,(cons 'list (rp::sas 'a 0 len-vas))
+;;                                               ',,binds-ins-alist
+;;                                               ',,binds-out-alist
+;;                                               ',,svl-design))
+;;                ((mv svex-alist rp::rp-state)
+;;                 (rw-svl-run-to-svex-alist term :context hyp)))
+;;             (mv nil
+;;                 `(progn
+
+;;                    (defconst ,',svex-alist-name
+;;                      ',svex-alist)
+
+;;                     (defthmd
+;;                      ,',rw-rule-name
+;;                      (implies (and . ,hyp)
+;;                               (equal (svl::svl-run-phase-wog ,',modname
+;;                                                              ,,(cons 'list (rp::sas 'a 0 len-vas))
+;;                                                              ,',svl-design)
+;;                                      (sv::svex-alist-eval ,',svex-alist-name
+;;                                                            ,env)))
+
+;;                      :hints (("Goal"
+;;                               :do-not-induct t
+;;                               :rw-cache-state nil
+;;                               :do-not '(preprocess generalize fertilize)
+;;                               :clause-processor (rp::rp-cl :runes nil
+;;                                                            :new-synps nil)))
+;;                      )
+;;                    #|(rp::disable-rules '(,',rw-rule-name))||#
+;;                    #|(in-theory (disable ,',rw-rule-name))||#
+
+;;                    (value-triple (cw "~%An svex-alist ~p0 and a disabled rewrite ~
+;; rule ~p1 are created. ~%~%" ',',svex-alist-name ',',rw-rule-name))
+;;                    )
+;;                 state
+;;                 rp::rp-state)))))))

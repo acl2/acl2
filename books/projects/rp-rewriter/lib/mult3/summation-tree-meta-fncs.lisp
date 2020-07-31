@@ -2530,7 +2530,7 @@
     to-be-coughed-c-lst))
 
 
-;;(include-book "pp-flatten-wrapper")
+(include-book "pp-flatten-wrapper")
 
 (define new-sum-merge-aux (sum-lst)
   :verify-guards nil
@@ -2598,7 +2598,7 @@
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      ((good-4vec-term-p abs-term)
       (b* ((abs-term (4vec->pp-term abs-term))
-           (pp-lst2 (pp-flatten abs-term negated))
+           (pp-lst2 (pp-flatten2 abs-term negated))
            (pp-lst (pp-sum-merge-aux pp-lst pp-lst2)))
         (mv s pp-lst c-lst to-be-coughed-c-lst)))
      (t
