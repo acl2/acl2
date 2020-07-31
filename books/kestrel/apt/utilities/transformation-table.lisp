@@ -13,7 +13,7 @@
 (in-package "APT")
 
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
-(include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "kestrel/std/system/macro-required-args" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
