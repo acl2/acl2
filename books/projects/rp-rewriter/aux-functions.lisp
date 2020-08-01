@@ -573,13 +573,21 @@
   (local
    (in-theory (enable ex-from-rp-loose)))
 
+
+  (defun-inline ex-from-rp$ (term)
+    (declare (xargs :guard (rp-termp term)))
+    (mbe :exec (ex-from-rp-loose term)
+         :logic (ex-from-rp term)))
+
+  
   (defun extract-from-rp-with-context (term context)
-    (declare (xargs :guard t #|(rp-termp term)||#))
-    (if (is-rp term)
+    (declare (xargs :guard (rp-termp term)))
+    (if (mbe :logic (is-rp term)
+             :exec (is-rp-loose term))
         (b* ((type (cadr (cadr term)))
              ((mv rcontext rterm)
               (extract-from-rp-with-context (caddr term) context)))
-          (mv (cons `(,type ,(ex-from-rp (caddr term))) rcontext) rterm))
+          (mv (cons `(,type ,(ex-from-rp$ (caddr term))) rcontext) rterm))
       (mv context term)))
 
   (defun extract-from-synp (term)

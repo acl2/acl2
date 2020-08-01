@@ -49,6 +49,9 @@
 (local (include-book "extract-formula-lemmas"))
 
 (in-theory (disable rp-iff-flag rp-lhs rp-rhs rp-hyp))
+  
+
+
 
 (encapsulate
   nil

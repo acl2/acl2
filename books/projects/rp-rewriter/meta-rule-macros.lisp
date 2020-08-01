@@ -354,7 +354,7 @@ RP-Rewriter. </p>
          ,formula-checks-fn-body)
        
        (defun ,fnc-name (term meta-fnc-name)
-         (declare (xargs :guard t))
+         (declare (xargs :guard (rp-termp term)))
          (cond
           ,@(create-rp-rw-meta-rule-fn-aux meta-rules)))
 

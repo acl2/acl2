@@ -39,6 +39,7 @@
 (in-package "RP")
 (include-book "../rp-rewriter")
 (local (include-book "rp-rw-lemmas"))
+(local (include-book "extract-formula-lemmas"))
 (local (include-book "rp-correct"))
 
 (encapsulate
@@ -586,6 +587,15 @@
                         (:TYPE-PRESCRIPTION SYMBOL-ALISTP))))))
 
 
+(defret attach-sc-from-context-returns-rp-termp
+  (implies (and (rp-term-listp context)
+                (rp-termp term))
+           (and (rp-term-listp res-context)
+                (rp-termp res-term)))
+  :fn attach-sc-from-context
+  :hints (("Goal"
+           :induct (ATTACH-SC-FROM-CONTEXT context term)
+           :in-theory (e/d (ATTACH-SC-FROM-CONTEXT) ()))))
 
 (verify-guards rp-rw-aux
   :otf-flg t
