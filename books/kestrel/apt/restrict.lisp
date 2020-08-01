@@ -788,14 +788,15 @@
              (member-eq old$
                         (all-ffn-symbs (termination-theorem old$ (w state))
                                        nil))))
-       (stub? (and reflexivep
-                   (fresh-logical-name-with-$s-suffix
-                    (intern-in-package-of-symbol
-                     "?F" (pkg-witness (symbol-package-name old$)))
-                    'constrained-function
-                    names-to-avoid
-                    wrld)))
-       (names-to-avoid (if stub? (cons stub? names-to-avoid) names-to-avoid))
+       ((mv stub? names-to-avoid)
+        (if reflexivep
+            (fresh-logical-name-with-$s-suffix
+             (intern-in-package-of-symbol
+              "?F" (pkg-witness (symbol-package-name old$)))
+             'constrained-function
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
        (stub-event? (and stub?
                          (list `(defstub ,stub?
                                   ,(repeat (arity old$ wrld) '*) => *))))

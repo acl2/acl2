@@ -25,7 +25,8 @@
                            nil)))
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
-  :returns (fresh-name "A @(tsee symbolp).")
+  :returns (mv (fresh-name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :parents (std/system)
   :short "Suffix a name with as many @('$') signs
@@ -84,7 +85,9 @@
      @(tsee fresh-namep-msg-weak) succeeds when called on
      a symbol in the @('\"COMMON-LISP\"') package and with @('nil') as type."))
   (if (keywordp name)
-      (raise "Cannot generate a fresh logical name from the keyword ~x0." name)
+      (mv (raise "Cannot generate a fresh logical name from the keyword ~x0."
+                 name)
+          names-to-avoid)
     (fresh-logical-name-with-$s-suffix-aux name type names-to-avoid wrld))
 
   :prepwork
@@ -99,7 +102,8 @@
                               nil)))
       (names-to-avoid symbol-listp)
       (wrld plist-worldp))
-     :returns fresh-name ; SYMBOLP
+     :returns (mv fresh-name ; SYMBOLP
+                  updated-names-to-avoid) ; SYMBOL-LISTP
      :mode :program
      (b* ((msg/nil (fresh-namep-msg-weak name type wrld))
           ((when (or msg/nil
@@ -111,4 +115,4 @@
             type
             names-to-avoid
             wrld)))
-       name))))
+       (mv name (cons name names-to-avoid))))))

@@ -147,7 +147,7 @@
   :returns (mv (event "A @(tsee pseudo-event-formp).")
                (thm-name "A @(tsee symbolp).")
                (new-hints "An @(tsee evmac-input-hints-p).")
-               (new-names-to-avoid "A @(tsee symbol-listp)."))
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate a theorem event for an applicability condition."
   :long
@@ -245,13 +245,13 @@
      it is still, mainly, a theorem event."))
   (b* ((wrld (w state))
        ((evmac-appcond appcond) appcond)
-       (thm-name (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
-                                                     (symbol-name appcond.name)
-                                                     (pkg-witness "ACL2"))
-                                                    nil
-                                                    names-to-avoid
-                                                    wrld))
-       (new-names-to-avoid (cons thm-name names-to-avoid))
+       ((mv thm-name updated-names-to-avoid)
+        (fresh-logical-name-with-$s-suffix (intern-in-package-of-symbol
+                                            (symbol-name appcond.name)
+                                            (pkg-witness "ACL2"))
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (thm-formula (untranslate appcond.formula t wrld))
        ((mv thm-hints new-hints) (if (keyword-truelist-alistp hints)
                                      (mv (cdr (assoc-eq appcond.name hints))
@@ -276,7 +276,7 @@
        (event `(local (progn ,@progress-start?
                              ,try-thm-event
                              ,@progress-end?))))
-    (mv event thm-name new-hints new-names-to-avoid)))
+    (mv event thm-name new-hints updated-names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,7 +289,7 @@
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (thm-names "A @(tsee keyword-symbol-alistp).")
                (new-hints "An @(tsee evmac-input-hints-p).")
-               (new-names-to-avoid "A @(tsee symbol-listp)."))
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Lift @(tsee evmac-appcond-theorem)
           to lists of applicability conditions."
@@ -405,8 +405,8 @@
      first one calls @(tsee evmac-appcond-theorem-list)
      and then @(tsee evmac-ensure-no-extra-hints) on the remaining hints.
      This combining function returns no hints result."))
-  (b* (((mv events thm-names remaining-hints new-names-to-avoid)
+  (b* (((mv events thm-names remaining-hints updated-names-to-avoid)
         (evmac-appcond-theorem-list
          appconds hints names-to-avoid print ctx state))
        ((er &) (evmac-ensure-no-extra-hints remaining-hints ctx state)))
-    (value (list events thm-names new-names-to-avoid))))
+    (value (list events thm-names updated-names-to-avoid))))

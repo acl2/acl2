@@ -45,12 +45,13 @@
      the name of @('fn') with @('$not-normalized'))
      and ensure its uniqueness via @(tsee fresh-logical-name-with-$s-suffix)."))
   (b* ((name (install-not-normalized-name fn))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (event
         (if local
             `(local (install-not-normalized ,fn :defthm-name ',name :allp nil))
           `(install-not-normalized ,fn :defthm-name ',name :allp nil))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
