@@ -48,7 +48,7 @@ To load this book, it is sufficient to do something like this:
 
 (in-package "ACL2")
 
-(include-book "arithmetic/top" :dir :system)
+(local (include-book "arithmetic/top" :dir :system))
 
 ;;
 ;; We start out by defining the bisection approximation to square root.  At one
