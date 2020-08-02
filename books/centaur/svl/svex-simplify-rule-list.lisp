@@ -27,6 +27,26 @@
 
 (include-book "meta/top")
 
+
+(defconst *svex-simplify-meta-rules*
+  '((:META SVL::4VEC-RSH-OF-META . SV::4VEC-RSH)
+    (:META SVL::SVEXL-NODE-EVAL-WOG-META-MAIN
+           . SVL::SVEXL-NODE-EVAL-WOG)
+    (:META SVL::SVEX-EVAL-WOG-META-MAIN
+           . SVL::SVEX-EVAL-WOG)
+    (:META SVL::CONCAT-META . SV::4VEC-CONCAT)
+    (:META SVL::CONCAT-META . SVL::4VEC-CONCAT$)
+    (:META SVL::BITS-OF-META-FN . SVL::BITS)
+    (:META SVL::BITS-OF-META-FN
+           . SV::4VEC-PART-SELECT)
+    (:META MV-NTH-META . MV-NTH)
+    (:META RP-EQUAL-META . EQUAL)
+    (:META ASSOC-EQ-VALS-META . ASSOC-EQ-VALS)
+    (:META HONS-GET-META . HONS-GET)
+    (:META FAST-ALIST-FREE-META . FAST-ALIST-FREE)
+    (:META HONS-ACONS-META . HONS-ACONS)))
+
+
 (progn
   (defconst *svex-simplify-rules*
     '((:rewrite concat-of-rsh-with-0-to-bits)

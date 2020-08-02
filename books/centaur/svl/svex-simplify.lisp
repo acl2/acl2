@@ -40,31 +40,31 @@
  (in-theory (disable (:definition rp::rp-rw))))
 
 (defrec svex-simplify-preloaded
-  (exc-rules rules . meta-rules)
+  (exc-rules . rules)
   t)
 
 
-#!RP
-(local
- (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist-aux
-   (and (simple-meta-rule-alistp (create-simple-meta-rules-alist-aux meta-rules disabled-meta-rules))
-        )
-   :hints (("Goal"
-            :induct (create-simple-meta-rules-alist-aux meta-rules
-                                                        disabled-meta-rules)
-            :do-not-induct t
-            :in-theory (e/d (create-simple-meta-rules-alist
-                             SIMPLE-META-RULE-ALISTP
-                             CREATE-SIMPLE-META-RULES-ALIST-AUX)
-                            ())))))
-#!RP
-(local
- (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist
-   (and (simple-meta-rule-alistp (create-simple-meta-rules-alist state)))
-   :hints (("Goal"
-            :in-theory (e/d (create-simple-meta-rules-alist
-                             SIMPLE-META-RULE-ALISTP)
-                            ())))))
+;; #!RP
+;; (local
+;;  (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist-aux
+;;    (and (simple-meta-rule-alistp (create-simple-meta-rules-alist-aux meta-rules disabled-meta-rules))
+;;         )
+;;    :hints (("Goal"
+;;             :induct (create-simple-meta-rules-alist-aux meta-rules
+;;                                                         disabled-meta-rules)
+;;             :do-not-induct t
+;;             :in-theory (e/d (create-simple-meta-rules-alist
+;;                              SIMPLE-META-RULE-ALISTP
+;;                              CREATE-SIMPLE-META-RULES-ALIST-AUX)
+;;                             ())))))
+;; #!RP
+;; (local
+;;  (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist
+;;    (and (simple-meta-rule-alistp (create-simple-meta-rules-alist state)))
+;;    :hints (("Goal"
+;;             :in-theory (e/d (create-simple-meta-rules-alist
+;;                              SIMPLE-META-RULE-ALISTP)
+;;                             ())))))
 
 
 (progn
@@ -86,12 +86,13 @@
 
          ((mv runes exc-rules)
           (if runes
-              (mv runes
+              (mv (acl2::append-without-guard
+                   (rp::get-enabled-meta-rules-from-table state) runes)
                   (rp::get-disabled-exc-rules-from-table
                    (table-alist 'rp::rp-exc-rules world)))
             (rp::get-enabled-rules-from-table state)))
          (rules-alist (rp::get-rules runes state :warning :err))
-         (meta-rules (make-fast-alist (rp::create-simple-meta-rules-alist state)))
+         ;;(meta-rules (make-fast-alist (rp::create-simple-meta-rules-alist state)))
          #|(meta-rules-entry (hons-assoc-equal 'rp::meta-rules-list
                                              (table-alist 'rp::rp-rw world)))||#
          #|(meta-rules (if (consp meta-rules-entry)
@@ -100,7 +101,6 @@
                        nil))||#)
       (make svex-simplify-preloaded
             :exc-rules exc-rules
-            :meta-rules meta-rules
             :rules rules-alist)))
 
   (define svex-simplify-preloaded-guard (svex-simplify-preloaded)
@@ -115,10 +115,7 @@
                                        :rules))
              (symbol-alistp (access svex-simplify-preloaded
                                     svex-simplify-preloaded
-                                    :exc-rules))
-             (rp::simple-meta-rule-alistp (access svex-simplify-preloaded
-                                              svex-simplify-preloaded
-                                              :meta-rules)))))
+                                    :exc-rules)))))
 
   (define svex-rw-free-preload (svex-simplify-preloaded )
     (declare (xargs 
@@ -129,9 +126,6 @@
     :short "Frees the fast-alists created by @(see svl::svex-simplify-preload)"
     (if svex-simplify-preloaded
         (progn$
-         (fast-alist-free (access svex-simplify-preloaded
-                                  svex-simplify-preloaded
-                                  :meta-rules))
          (fast-alist-free (access svex-simplify-preloaded
                                   svex-simplify-preloaded
                                   :rules))
@@ -507,8 +501,7 @@
                       :exc-rules)
               (access svex-simplify-preloaded rules
                       :rules)
-              (access svex-simplify-preloaded rules
-                      :meta-rules)))
+              nil))
          (term `(svexl-node-eval-wog ',node
                                      (rp::rp 'node-env-p node-env)
                                      (rp::rp 'sv::svex-env-p svex-env)))
@@ -558,8 +551,7 @@
                       :exc-rules)
               (access svex-simplify-preloaded rules
                       :rules)
-              (access svex-simplify-preloaded rules
-                      :meta-rules)))
+              nil))
          (term `(svexl-nodelist-eval-wog ',nodelist
                                          (rp::rp 'node-env-p node-env)
                                          (rp::rp 'sv::svex-env-p svex-env)))
@@ -745,8 +737,7 @@
                     :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
-            (access svex-simplify-preloaded rules
-                    :meta-rules)))
+            nil))
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
@@ -852,8 +843,7 @@
                     :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
-            (access svex-simplify-preloaded rules
-                    :meta-rules)))
+            nil))
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
@@ -940,7 +930,6 @@ simplified term ~%"
                        (rp::rp-state 'rp::rp-state)
                        (context 'nil) ;; "Have more context for variables."
                        (runes 'nil)
-                       ;; "if need to work with only certain rules other than current-theory"
                        (preloaded-rules 'nil) ;; Non-nil overrides rule
                        ;; structure  creation for the rewriter. This value
                        ;; can be created with (svex-simplify-preload)

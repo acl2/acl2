@@ -76,6 +76,46 @@
               (dont-rw-syntaxp dont-rw)  
               ))))
 
+;;;;
+
+
+(defthm rp-rw-meta-rule-main-valid-eval
+  (implies (and (rp-termp term)
+                (valid-sc term a)
+                (rp-evl-meta-extract-global-facts)
+                (rp-formula-checks state))
+           (b* (((mv ?term-changed res-term ?dont-rw ?rp-state)
+                 (rp-rw-meta-rule-main term rule rp-state)))
+             (and ;(rp-termp res-term)
+                  ;(dont-rw-syntaxp dont-rw)
+                  (valid-sc res-term a)
+                  (equal (rp-evlt res-term a)
+                         (rp-evlt term a)))))
+  :hints (("Goal"
+           :in-theory (e/d (rp-rw-meta-rule-main) ()))))
+
+(defthm rp-rw-meta-rule-main-valid-rp-termp
+  (implies (and (rp-termp term))
+           (b* (((mv ?term-changed res-term ?dont-rw ?rp-state)
+                 (rp-rw-meta-rule-main term rule rp-state)))
+             (and ;(rp-termp res-term)
+              ;;(dont-rw-syntaxp dont-rw)  
+              (rp-termp res-term))))
+  :hints (("Goal"
+           :in-theory (e/d (rp-rw-meta-rule-main) ()))))
+
+
+(defthm rp-rw-meta-rule-main-valid-dont-rw-syntaxp
+  (implies t
+           (b* (((mv ?term-changed ?res-term ?dont-rw ?rp-state)
+                 (rp-rw-meta-rule-main term rule rp-state)))
+             (and 
+              (dont-rw-syntaxp dont-rw)  
+              )))
+  :hints (("Goal"
+           :in-theory (e/d (rp-rw-meta-rule-main) ()))))
+
+
 ;; (local
 ;;  (in-theory (enable RP-RW-META-RULES
 ;;                     RP-RW-META-RULE)))
@@ -290,6 +330,17 @@
            (rp-statep (mv-nth 3 (rp-rw-meta-rules term meta-rules rp-state))))
   :hints (("Goal"
            :in-theory (e/d (rp-rw-meta-rules
+                            rp-stat-add-to-rules-used-meta-cnt
+                            RP-STATE-PUSH-META-TO-RW-STACK
+                            RP-STATEP)
+                           ()))))
+
+
+(defthm rp-statep-rp-rw-meta-rule-main
+  (implies (rp-statep rp-state)
+           (rp-statep (mv-nth 3 (rp-rw-meta-rule-main term rule rp-state))))
+  :hints (("Goal"
+           :in-theory (e/d (rp-rw-meta-rule-main
                             rp-stat-add-to-rules-used-meta-cnt
                             RP-STATE-PUSH-META-TO-RW-STACK
                             RP-STATEP)

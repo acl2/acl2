@@ -129,8 +129,8 @@
       (if (or (and sigs fncs openers)
               (and (or sigs fncs openers)
                    (hard-error 'lambdas-to-other-rules
-                              "something unexpected happened.... contact Mertcan Temel"
-                              nil)))
+                               "something unexpected happened.... contact Mertcan Temel"
+                               nil)))
           `(encapsulate
              ,sigs
              ,@fncs
@@ -141,57 +141,57 @@
                               ,rhs-body))
                     ,@openers)
                ,@hints)
-             (add-rp-rule ,rule-name)) 
+             (add-rp-rule ,rule-name))
         `(progn
            (defthm ,rule-name
-            ,untranslated-rule
-            ,@hints)
+             ,untranslated-rule
+             ,@hints)
            (add-rp-rule ,rule-name)))))
-    
-    ;; (case-match rule
-    ;;   (('implies p ('equal a b))
-    ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
-    ;;          (search-lambda-to-fnc rule-name 0 p))
-    ;;         ((mv b-sigs b-fncs b-openers b-body &)
-    ;;          (search-lambda-to-fnc rule-name index b)))
-    ;;      `(encapsulate
-    ;;         ,(append p-sigs b-sigs)
-    ;;         ,@(append p-fncs b-fncs)
-    ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
-    ;;         (defthm ,rule-name
-    ;;           (implies ,p-body
-    ;;                    (equal ,a ,b-body))
-    ;;           ,@hints)
-    ;;         (add-rp-rule ,rule-name))))
-    ;;   (('equal a b)
-    ;;    (b* (((mv b-sigs b-fncs b-openers b-body &)
-    ;;          (search-lambda-to-fnc rule-name 0 b)))
-    ;;      `(encapsulate
-    ;;         ,b-sigs
-    ;;         ,@(append b-fncs)
-    ;;         ,(openers-to-rule rule-name b-openers)
-    ;;         (defthm ,rule-name
-    ;;           (equal ,a
-    ;;                  ,b-body)
-    ;;           ,@hints)
-    ;;         (add-rp-rule ,rule-name))))
-    ;;   (('implies p b)
-    ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
-    ;;          (search-lambda-to-fnc rule-name 0 p))
-    ;;         ((mv b-sigs b-fncs b-openers b-body &)
-    ;;          (search-lambda-to-fnc rule-name index b)))
-    ;;      `(encapsulate
-    ;;         ,(append p-sigs b-sigs)
-    ;;         ,@(append p-fncs b-fncs)
-    ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
-    ;;         (defthm ,rule-name
-    ;;           (implies ,p-body
-    ;;                    ,b-body)
-    ;;           ,@hints)
-    ;;         (add-rp-rule ,rule-name))))
-    ;;   (& `(def-rp-rule ,rule-name
-    ;;         ,rule
-    ;;         ,@hints))))
+
+  ;; (case-match rule
+  ;;   (('implies p ('equal a b))
+  ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
+  ;;          (search-lambda-to-fnc rule-name 0 p))
+  ;;         ((mv b-sigs b-fncs b-openers b-body &)
+  ;;          (search-lambda-to-fnc rule-name index b)))
+  ;;      `(encapsulate
+  ;;         ,(append p-sigs b-sigs)
+  ;;         ,@(append p-fncs b-fncs)
+  ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
+  ;;         (defthm ,rule-name
+  ;;           (implies ,p-body
+  ;;                    (equal ,a ,b-body))
+  ;;           ,@hints)
+  ;;         (add-rp-rule ,rule-name))))
+  ;;   (('equal a b)
+  ;;    (b* (((mv b-sigs b-fncs b-openers b-body &)
+  ;;          (search-lambda-to-fnc rule-name 0 b)))
+  ;;      `(encapsulate
+  ;;         ,b-sigs
+  ;;         ,@(append b-fncs)
+  ;;         ,(openers-to-rule rule-name b-openers)
+  ;;         (defthm ,rule-name
+  ;;           (equal ,a
+  ;;                  ,b-body)
+  ;;           ,@hints)
+  ;;         (add-rp-rule ,rule-name))))
+  ;;   (('implies p b)
+  ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
+  ;;          (search-lambda-to-fnc rule-name 0 p))
+  ;;         ((mv b-sigs b-fncs b-openers b-body &)
+  ;;          (search-lambda-to-fnc rule-name index b)))
+  ;;      `(encapsulate
+  ;;         ,(append p-sigs b-sigs)
+  ;;         ,@(append p-fncs b-fncs)
+  ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
+  ;;         (defthm ,rule-name
+  ;;           (implies ,p-body
+  ;;                    ,b-body)
+  ;;           ,@hints)
+  ;;         (add-rp-rule ,rule-name))))
+  ;;   (& `(def-rp-rule ,rule-name
+  ;;         ,rule
+  ;;         ,@hints))))
 
   (defmacro defthm-lambda (rule-name rule &rest hints)
     `(make-event
@@ -205,7 +205,6 @@
              ',rule
              ',hints)
             state)))))
-
 
 (xdoc::defxdoc
  defthm-lambda
@@ -228,7 +227,7 @@
                     (let* ((a (f1 x))
                            (b (f2 x)))
                       (f4 a a b)))))
-                           
+
   ;; The above event is translated into this:
   (encapsulate
     (((foo-redef_lambda-fnc_1 * *) => *)
@@ -270,7 +269,38 @@
             (consp (car rhs))))
       (&
        nil)))
+
+  (defmacro bump-rp-rule (rule-name/rune)
+    `(with-output
+       :off :all
+       :gag-mode nil
+       (make-event
+        (b* ((rule-name/rune ',rule-name/rune)
+             (rune (case-match rule-name/rune
+                     ((& . &) rule-name/rune)
+                     (& (get-rune-name rule-name/rune state))))
+             (- (and (not (consp (hons-assoc-equal rune (table-alist
+                                                         'rp-rules-inorder (w state)))))
+                     (hard-error 'bump-rp-rule
+                                 "This rule is not added with add-rp-rule uet. There is
+nothing to bump!" nil)))
+             (cur-table (table-alist 'rp-rules-inorder (w state)))
+             (cur-table (remove-assoc-equal rune cur-table)))
+          `(progn
+             (table rp-rules-inorder nil ',cur-table :clear)
+             (table rp-rules-inorder ',rune nil))))))
+
+  (defun bump-rp-rules-body (args)
+    (if (atom args)
+        nil
+      (cons `(bump-rp-rule ,(car args))
+            (bump-rp-rules-body (cdr args)))))
   
+  (defmacro bump-rp-rules (&rest args)
+    `(progn
+       . ,(bump-rp-rules-body args)))
+    
+
   (defmacro add-rp-rule (rule-name &key
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
@@ -286,7 +316,7 @@
                                                  "-FOR-RP")
                                        (symbol-package-name ',rule-name))
                             ',rule-name))
-           (rest-body 
+           (rest-body
             `(with-output
                :off :all
                :gag-mode nil
@@ -313,7 +343,6 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
 :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
                (value-triple ',new-rule-name))
           rest-body))))
-            
 
   (defmacro def-rp-rule (rule-name rule &rest hints)
     `(progn
@@ -326,7 +355,6 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
        (,(if defthmd 'defthmd 'defthm)
         ,rule-name ,rule ,@hints)
        (add-rp-rule  ,rule-name :disabled ,disabled))))
-
 
 
 (encapsulate
@@ -378,33 +406,32 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
     (b* ((vars-to-print (set-difference$ (acl2::all-vars (pseudo-term-fix term)) do-not-print)))
       `;(progn
 ;(table rw-opener-error-rules  ',name t)
-      (def-rp-rule$ t ,disabled  
-       ,name
-       (implies (hard-error
-                 ',name
-                 ,(str::cat 
-                   (if message message
-                     (str::cat "A " (symbol-name (car term))
-                               " instance must have slipped through all of its rewrite rules."))
-"To debug, you can try using (rp::update-rp-brr t rp::rp-state) and
+      (def-rp-rule$ t ,disabled
+        ,name
+        (implies (hard-error
+                  ',name
+                  ,(str::cat
+                    (if message message
+                      (str::cat "A " (symbol-name (car term))
+                                " instance must have slipped through all of its rewrite rules."))
+                    "To debug, you can try using (rp::update-rp-brr t rp::rp-state) and
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 12 nil nil)
                  :frames 50). ~%"
-                   (rw-opener-error-args-string vars-to-print 0))
-                 ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0)))
-                (equal
-                 ,term
-                 t))
-       :hints (("Goal"
-                ;:expand (hide ,term)
-                :in-theory '(return-last hard-error))))))
-  
+                    (rw-opener-error-args-string vars-to-print 0))
+                  ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0)))
+                 (equal
+                  ,term
+                  t))
+        :hints (("Goal"
+;:expand (hide ,term)
+                 :in-theory '(return-last hard-error))))))
+
   #|(defmacro disable-opener-error-rule (rule-name)
-    `(table 'rw-opener-error-rules ',rule-name nil))||#
+  `(table 'rw-opener-error-rules ',rule-name nil))||#
 
   #|(defmacro enable-opener-error-rule (rule-name)
-    `(table 'rw-opener-error-rules ',rule-name t))||#)
-
+  `(table 'rw-opener-error-rules ',rule-name t))||#)
 
 (xdoc::defxdoc
  def-rw-opener-error
@@ -414,9 +441,9 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
  In cases where users want to make sure that a term of a certain pattern
  does not occur, or it is taken care of by a rewrite rule with higher
  priority. </p>
- 
+
 <code>
-@('(def-rw-opener-error 
+@('(def-rw-opener-error
   <name> ;; a unique name for the opener error rule
   <pattern> ;; a pattern to match/unify
   ;;optional keys
@@ -437,7 +464,6 @@ make sure that hypotheses are relieved, otherwise this rule will be used and
 RP-Rewriter will throw an eligible error.</p>"
 
  :parents (rp-utilities))
-
 
 (defun translate1-vals-in-alist (alist state)
   (declare (xargs :guard (alistp alist)
@@ -605,7 +631,6 @@ RP-Rewriter will throw an eligible error.</p>"
 (defmacro defthmrp (&rest rest)
   `(def-rp-thm ,@rest))
 
-
 (xdoc::defxdoc
  def-rp-thm
  :parents (rp-other-utilities)
@@ -630,8 +655,8 @@ RP-Rewriter will throw an eligible error.</p>"
                         ;; rewrite rules. Default: nil
   :enable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; an unquoted list of names
                                                ;; of meta functions that users
-                                               ;; wants to enable.  
-  :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above 
+                                               ;; wants to enable.
+  :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above
   :enable-rules (append '(rule1 rule2)
                         *rules3*
                         ...) ;; List of rule-names that users wants enabled in
@@ -640,14 +665,13 @@ RP-Rewriter will throw an eligible error.</p>"
   :disable-rules <...>      ;; Same as above
   :runes '(rule1 rule2 ...) ;; When nil, the macro uses the existing rule-set of
       ;; RP-rewriter. Otherwise, it will overrride everything else regarding rules
-      ;; and use only the rules given in this list. 
+      ;; and use only the rules given in this list.
   )
 ')
 </code>
 </p>
 "
  )
-      
 
 
 (encapsulate
@@ -696,7 +720,6 @@ RP-Rewriter will throw an eligible error.</p>"
                `((,macro-name nil))
              nil)))))
 
-
 (xdoc::defxdoc
  fetch-new-events
  :short "A macro that detects the changes in the theory when a book is
@@ -707,9 +730,9 @@ RP-Rewriter will throw an eligible error.</p>"
 
 <code>
 @('
- (fetch-new-events 
+ (fetch-new-events
   <event>               ;; e.g., (include-book \"arithmetic-5\" :dir :system)
-  <macro-name>          ;; e.g., use-aritmetic-5 
+  <macro-name>          ;; e.g., use-aritmetic-5
   ;;optional key
   :disabled <disabled> ;; When non-nil, the event does not change the current
   theory. Default: nil.
@@ -724,7 +747,7 @@ disable the library as given.
 
 <code>
 @('
- (fetch-new-events 
+ (fetch-new-events
   (include-book \"arithmetic-5\" :dir :system)
   use-aritmetic-5)
 ')
@@ -747,7 +770,6 @@ rp::preserve-current-theory). This utility will work with current theory of any 
 </p>
 "
  )
-
 
 (encapsulate
   nil
@@ -773,7 +795,6 @@ rp::preserve-current-theory). This utility will work with current theory of any 
          ,(preserve-current-theory-step1 event)
          ,(preserve-current-theory-step2)))))
 
-
 (xdoc::defxdoc
  preserve-current-theory
  :short "A macro that detects the changes in the theory when a book is
@@ -782,12 +803,8 @@ rp::preserve-current-theory). This utility will work with current theory of any 
  :long "See @(see rp::fetch-new-events)"
  )
 
-
 (xdoc::defxdoc
  rp-other-utilities
  :short "Some names that are aliases to other tools"
  :parents (rp-utilities)
  )
-
-
-

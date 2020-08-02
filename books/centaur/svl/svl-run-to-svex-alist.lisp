@@ -207,8 +207,7 @@
                     :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
-            (access svex-simplify-preloaded rules
-                    :meta-rules)))
+            nil))
 
      
        ((mv rw rp::rp-state)

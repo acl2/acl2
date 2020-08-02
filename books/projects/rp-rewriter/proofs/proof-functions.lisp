@@ -93,7 +93,7 @@
 
 (defun valid-sc-bindings (bindings a)
   (if (atom bindings)
-      t
+      (equal bindings nil)
     (and (valid-sc (cdar bindings) a)
          (valid-sc-bindings (cdr bindings) a))))
 
@@ -193,7 +193,7 @@
 
 (defun valid-rulesp (rules)
   (if (endp rules)
-      t;(equal rules nil)
+      (equal rules nil)
     (and (valid-rulep (car rules))
          (valid-rulesp (cdr rules)))))
 
@@ -207,7 +207,7 @@
 
 (defun valid-rules-list-listp (rules-list)
   (if (atom rules-list)
-      t;(equal rules-list nil)
+      (equal rules-list nil)
     (and (valid-rulesp (car rules-list))
          (valid-rules-list-listp (cdr rules-list)))))
 
@@ -287,7 +287,7 @@
               (bindings-alistp bindings2))
   :verify-guards nil
   (if (atom keys)
-      t;(equal bindings1 nil)
+      (equal bindings1 nil)
     (let ((entry1 (assoc-eq (car keys) bindings1))
           (entry2 (assoc-eq (car keys) bindings2)))
       (and entry1
@@ -330,7 +330,7 @@
                               acc-bindings))))
  (defun all-vars-bound-subterms (subterms acc-bindings)
    (if (atom subterms)
-       t
+       (equal subterms nil)
      (and (all-vars-bound (car subterms)
                           acc-bindings)
           (all-vars-bound-subterms (cdr subterms)

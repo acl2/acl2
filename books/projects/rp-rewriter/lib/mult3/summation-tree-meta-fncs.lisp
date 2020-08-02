@@ -94,9 +94,8 @@
   (enable-stingy-pp-clean)
 
   (define clean-pp-args-cond (s c-lst)
-    (or nil
-        (and (stingy-pp-clean)
-             (equal s ''nil)
+    (or (not (stingy-pp-clean))
+        (and (equal s ''nil)
              (or (atom c-lst)
                  (atom (cdr c-lst)))))))
 

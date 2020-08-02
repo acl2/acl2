@@ -44,8 +44,6 @@
 
 (include-book "bits-sbits")
 
-(include-book "meta/top")
-
 (include-book "macros")
 
 (include-book "svl-openers")
@@ -53,6 +51,8 @@
 (include-book "svl-flatten")
 
 (include-book "svl-run-to-svex-alist")
+
+(include-book "meta/top")
 
 
 (xdoc::defxdoc
