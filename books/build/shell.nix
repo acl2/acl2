@@ -63,6 +63,5 @@ in mkShell rec {
   ];
   shellHook = ''
     export LD_LIBRARY_PATH=${stdenv.lib.makeLibraryPath [ openssl.out libipasirglucose4 ]}
-    export IPASIR_SHARED_LIBRARY=${libipasirglucose4}/lib/libipasirglucose4.so
   '';
 }
