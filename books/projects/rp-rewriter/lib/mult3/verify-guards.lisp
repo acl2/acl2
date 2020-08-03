@@ -1055,23 +1055,6 @@
                    (C-SUM-MERGE-AUX C1-LST NIL :CLEAN-C1-LST NIL)
                    (C-SUM-MERGE-AUX C1-LST NIL :CLEAN-C1-LST CLEAN-C1-LST))
           :in-theory (e/d () ()))
-
-         #|("Subgoal *1/20.1"
-          ;:expand (COUNT-C-LST C1-LST) ; ; ;
-         :use ((:instance measure-lemma-of-s-sum-merge-aux ;
-         (s1-lst (CDR C1-LST)) ;
-         (s2-lst (MV-NTH 2 ;
-         (C-SUM-MERGE-LST (CAR C1-LST) ;
-         C2-LST))))) ;
-         :in-theory (disable  measure-lemma-of-s-sum-merge-aux))||#
-
-         #|("Subgoal *1/26"
-         :use ((:instance measure-lemma-of-s-sum-merge-aux
-         (s1-lst (CDR C1-LST))
-         (s2-lst (MV-NTH 2
-         (C-SUM-MERGE-LST (CAR C1-LST)
-         C2-LST)))))
-         :in-theory (disable measure-lemma-of-s-sum-merge-aux))||#
          ("Subgoal *1/18"
           :expand ((COUNT-C-LST (LIST SINGLE-C1))
                    (C-SUM-MERGE-LST SINGLE-C1 C2-LST)
