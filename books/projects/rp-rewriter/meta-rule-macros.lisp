@@ -558,7 +558,7 @@ After calling @(see add-meta-rules) or when different books with meta rules are
   (defmacro bump-all-enabled-meta-rules ()
     `(make-event
         (b* ()
-          `(bump-rp-rules ,@(get-enabled-meta-rules-from-table state))))))
+          `(bump-rp-rules ,@(reverse (get-enabled-meta-rules-from-table state)))))))
 
 (defthm iff-of-rp-evlt-lst
   (iff (rp-evlt-lst subterms a)

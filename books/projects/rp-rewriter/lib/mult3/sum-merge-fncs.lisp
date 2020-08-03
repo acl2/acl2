@@ -192,20 +192,20 @@
                  (equals booleanp))
     (b* ((x (ex-from-rp$ x))
          (y (ex-from-rp$ y))
+         ((when (equal y ''1))
+          (mv nil (equal x y)))
+         ((when (equal x ''1))
+          (mv t (equal x y)))
          ((mv x-lst x-hash x-good-format)
           (case-match x
             (('and-list ('quote hash) ('list . lst))
              (mv lst (ifix hash) t))
-            (''1
-             (mv '('1) 1 t))
             (&
              (mv (list x) 0 nil))))
          ((mv y-lst y-hash y-good-format)
           (case-match y
             (('and-list ('quote hash) ('list . lst))
              (mv lst (ifix hash) t))
-            (''1
-             (mv '('1) 1 t))
             (&
              (mv (list y) 0 nil)))))
       (if (= x-hash y-hash)

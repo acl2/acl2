@@ -890,7 +890,7 @@
 
 (local
  (std::defret
-  measure-lemma-c-pattern2-reduce
+  measure-lemma-c-pattern1-reduce
   (and (lte (count-c c-res)
             (count-c c))
        (<= (count-c c-res)
@@ -901,12 +901,12 @@
        (implies (case-match c-res (('list . &) t))
                 (<= (count-c-lst (cdr c-res))
                     (count-c c))))
-  :fn c-pattern2-reduce
+  :fn c-pattern1-reduce
   ;:otf-flg t
   :hints (("goal"
            :do-not-induct t
            :expand ((:free (x) (SINGLE-C-P `(c . ,x))))
-           :in-theory (e/d (c-pattern2-reduce
+           :in-theory (e/d (c-pattern1-reduce
                             count-c
                             count-c-lst)
                            (ex-from-rp))))))
@@ -1055,23 +1055,6 @@
                    (C-SUM-MERGE-AUX C1-LST NIL :CLEAN-C1-LST NIL)
                    (C-SUM-MERGE-AUX C1-LST NIL :CLEAN-C1-LST CLEAN-C1-LST))
           :in-theory (e/d () ()))
-
-         #|("Subgoal *1/20.1"
-          ;:expand (COUNT-C-LST C1-LST) ; ; ;
-         :use ((:instance measure-lemma-of-s-sum-merge-aux ;
-         (s1-lst (CDR C1-LST)) ;
-         (s2-lst (MV-NTH 2 ;
-         (C-SUM-MERGE-LST (CAR C1-LST) ;
-         C2-LST))))) ;
-         :in-theory (disable  measure-lemma-of-s-sum-merge-aux))||#
-
-         #|("Subgoal *1/26"
-         :use ((:instance measure-lemma-of-s-sum-merge-aux
-         (s1-lst (CDR C1-LST))
-         (s2-lst (MV-NTH 2
-         (C-SUM-MERGE-LST (CAR C1-LST)
-         C2-LST)))))
-         :in-theory (disable measure-lemma-of-s-sum-merge-aux))||#
          ("Subgoal *1/18"
           :expand ((COUNT-C-LST (LIST SINGLE-C1))
                    (C-SUM-MERGE-LST SINGLE-C1 C2-LST)
