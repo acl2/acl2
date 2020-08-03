@@ -1289,6 +1289,32 @@
                               abs-file-contents-fix
                               abs-file abs-file-p abs-fs-fix))))
 
+(defthm
+  addrs-at-when-abs-complete-lemma-1
+  (subsetp-equal (abs-top-addrs fs) (abs-addrs fs))
+  :hints (("goal" :in-theory (enable abs-addrs abs-top-addrs)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies
+     (subsetp-equal y (abs-top-addrs fs))
+     (subsetp-equal y (abs-addrs fs))))))
+
+(defthm
+  addrs-at-when-abs-complete-lemma-3
+  (subsetp-equal (abs-top-addrs fs)
+                 (abs-addrs (abs-fs-fix fs))))
+
+(defthm
+  addrs-at-when-abs-complete
+  (implies (abs-complete (abs-fs-fix fs))
+           (equal (addrs-at fs relpath) nil))
+  :hints (("goal" :in-theory (e/d (addrs-at)
+                                  (addrs-at-when-abs-complete-lemma-3))
+           :induct (addrs-at fs relpath))
+          ("subgoal *1/1" :use addrs-at-when-abs-complete-lemma-3)))
+
+
 ;; Where are the numbers going to come from? It's not going to work, the idea
 ;; of letting variables be represented by their index in the list. Under such a
 ;; scheme, we'll never be able to rewrite an (append ...) term, since that
@@ -1478,25 +1504,12 @@
           (:rewrite ctx-app-ok-of-nfix)))))
 
 (defthm
-  ctx-app-ok-when-abs-complete-lemma-1
-  (subsetp-equal (abs-top-addrs fs) (abs-addrs fs))
-  :hints (("goal" :in-theory (enable abs-addrs abs-top-addrs))))
-
-(defthm
   ctx-app-ok-when-abs-complete-lemma-2
   (implies
    (abs-directory-file-p (cdr (assoc-equal name fs)))
    (subsetp-equal (abs-addrs (abs-file->contents (cdr (assoc-equal name fs))))
                   (abs-addrs fs)))
   :hints (("goal" :in-theory (enable abs-addrs))))
-
-(defthm
-  ctx-app-ok-when-abs-complete-lemma-3
-  (subsetp-equal (abs-top-addrs fs)
-                 (abs-addrs (abs-fs-fix fs)))
-  :hints (("goal" :in-theory (disable ctx-app-ok-when-abs-complete-lemma-1)
-           :use (:instance ctx-app-ok-when-abs-complete-lemma-1
-                           (fs (abs-fs-fix fs))))))
 
 (defthm
   ctx-app-ok-when-abs-complete-lemma-4
