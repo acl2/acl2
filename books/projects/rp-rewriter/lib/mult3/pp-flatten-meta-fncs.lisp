@@ -790,6 +790,8 @@
       (list (cons sign (list term))))||#
       (''1
        (list (cons sign (list term))))
+      (''0
+       nil)
       (&
        (if (pp-has-bitp-rp orig)
            (list (cons sign (list orig)))

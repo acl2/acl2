@@ -911,6 +911,34 @@
                             count-c-lst)
                            (ex-from-rp))))))
 
+
+(Local
+ (defthm lte-of-0-with-natp
+   (implies (natp x)
+            (and (not (gt 0 x))
+                 (lte 0 x)))))
+
+(local
+ (std::defret
+  measure-lemma-c-pattern2-reduce
+  (and (lte (count-c res-single-c)
+            (count-c single-c))
+       (not (gt (count-c res-single-c)
+                (count-c single-c)))
+       (<= (count-c res-single-c)
+           (count-c single-c)))
+  :fn c-pattern2-reduce
+  :otf-flg t
+  :hints (("goal"
+           :do-not-induct t
+           :expand ((:free (x) (SINGLE-C-P `(c . ,x))))
+           :in-theory (e/d (c-pattern2-reduce
+                            count-c
+                            count-c-lst)
+                           (ex-from-rp))))))
+
+
+
 (local
  (std::defret
   measure-lemma-create-c-instance
@@ -971,6 +999,36 @@
            measure-lemma-create-c-instance))))))
 
 
+:i-am-here
+
+(local
+ (std::defret
+  measure-lemma-c-pattern2-reduce-casesplit
+  (or  (equal (count-c res-single-c) 0)
+       (equal (count-c res-single-c) (count-c single-c)))
+  :fn c-pattern2-reduce
+  :otf-flg t
+  :hints (("goal"
+           :do-not-induct t
+           :expand ((:free (x) (SINGLE-C-P `(c . ,x))))
+           :in-theory (e/d (c-pattern2-reduce
+                            count-c
+                            count-c-lst)
+                           (ex-from-rp))))))
+
+
+(local
+ (defthm dummy-lemma-18
+   (implies (and 
+                 (natp y)
+                 (lte (+ 2 (COUNT-C-LST (MV-NTH 2
+                               (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                            (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                            :AUTO-SWAP T
+                                            :CLEAN-C1-LST NIL))) y) z))
+            (not (lte z y)))
+   :hints (("Goal"
+            :in-theory (e/d (rw-dir2) (rw-dir1))))))
 
 (std::defret-mutual
  measure-lemma-of-c-sum-merge
@@ -1063,7 +1121,102 @@
                            (s1-lst (LIST SINGLE-C1))
                            (s2-lst C2-LST)))
           :in-theory (disable measure-lemma-of-s-sum-merge-aux))
-
+         ("Subgoal *1/3"
+          :use ((:instance
+                 measure-lemma-c-pattern2-reduce-casesplit
+                 (pp-lst-coughed nil)
+                 (single-c (CREATE-C-INSTANCE
+                            (MV-NTH
+                             1
+                             (C-FIX-S-ARGS
+                              (CREATE-LIST-INSTANCE
+                               (S-SUM-MERGE-AUX
+                                (LIST-TO-LST (MV-NTH 1 (GET-C-ARGS SINGLE-C1)))
+                                (S-SUM-MERGE-AUX
+                                 (LIST-TO-LST
+                                  (MV-NTH 0
+                                          (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                                       (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                       :AUTO-SWAP T
+                                                       :CLEAN-C1-LST NIL)))
+                                 (MV-NTH 0
+                                         (SINGLE-C-TRY-MERGE-PARAMS
+                                          (CDR (MV-NTH 1 (GET-C-ARGS SINGLE-C2)))
+                                          (MV-NTH 0 (GET-C-ARGS SINGLE-C1))
+                                          (MV-NTH 1 (GET-C-ARGS SINGLE-C1))
+                                          (MV-NTH 2 (GET-C-ARGS SINGLE-C1))
+                                          (MV-NTH 3 (GET-C-ARGS SINGLE-C1)))))))))
+                            (CREATE-LIST-INSTANCE
+                             (PP-SUM-MERGE-AUX
+                              (MV-NTH 1
+                                      (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                                   (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                   :AUTO-SWAP T
+                                                   :CLEAN-C1-LST NIL))
+                              (PP-SUM-MERGE-AUX
+                               (LIST-TO-LST (MV-NTH 2 (GET-C-ARGS SINGLE-C1)))
+                               (LIST-TO-LST (MV-NTH 2 (GET-C-ARGS SINGLE-C2))))))
+                            (CREATE-LIST-INSTANCE
+                             (MV-NTH 2
+                                     (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                                  (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                  :AUTO-SWAP T
+                                                  :CLEAN-C1-LST NIL))))))
+                (:instance
+                 measure-lemma-c-pattern2-reduce-casesplit
+                 (pp-lst-coughed (MV-NTH
+                                  0
+                                  (C-FIX-ARG-AUX
+                                   (PP-SUM-MERGE-AUX
+                                    (MV-NTH 1
+                                            (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                                         (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                         :AUTO-SWAP T
+                                                         :CLEAN-C1-LST NIL))
+                                    (PP-SUM-MERGE-AUX (LIST-TO-LST (MV-NTH 2 (GET-C-ARGS SINGLE-C1)))
+                                                      (LIST-TO-LST (MV-NTH 2 (GET-C-ARGS SINGLE-C2)))))
+                                   T)))
+                 (single-c (CREATE-C-INSTANCE
+                            (MV-NTH
+                             1
+                             (C-FIX-S-ARGS
+                              (CREATE-LIST-INSTANCE
+                               (S-SUM-MERGE-AUX
+                                (LIST-TO-LST (MV-NTH 1 (GET-C-ARGS SINGLE-C1)))
+                                (S-SUM-MERGE-AUX
+                                 (LIST-TO-LST
+                                  (MV-NTH 0
+                                          (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                                       (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                       :AUTO-SWAP T
+                                                       :CLEAN-C1-LST NIL)))
+                                 (MV-NTH 0
+                                         (SINGLE-C-TRY-MERGE-PARAMS
+                                          (CDR (MV-NTH 1 (GET-C-ARGS SINGLE-C2)))
+                                          (MV-NTH 0 (GET-C-ARGS SINGLE-C1))
+                                          (MV-NTH 1 (GET-C-ARGS SINGLE-C1))
+                                          (MV-NTH 2 (GET-C-ARGS SINGLE-C1))
+                                          (MV-NTH 3 (GET-C-ARGS SINGLE-C1)))))))))
+                            (CREATE-LIST-INSTANCE
+                             (MV-NTH
+                              1
+                              (C-FIX-ARG-AUX
+                               (PP-SUM-MERGE-AUX
+                                (MV-NTH 1
+                                        (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                                     (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                     :AUTO-SWAP T
+                                                     :CLEAN-C1-LST NIL))
+                                (PP-SUM-MERGE-AUX
+                                 (LIST-TO-LST (MV-NTH 2 (GET-C-ARGS SINGLE-C1)))
+                                 (LIST-TO-LST (MV-NTH 2 (GET-C-ARGS SINGLE-C2)))))
+                               T)))
+                            (CREATE-LIST-INSTANCE
+                             (MV-NTH 2
+                                     (C-SUM-MERGE (MV-NTH 3 (GET-C-ARGS SINGLE-C1))
+                                                  (MV-NTH 3 (GET-C-ARGS SINGLE-C2))
+                                                  :AUTO-SWAP T
+                                                  :CLEAN-C1-LST NIL))))))))
          ))
 
 

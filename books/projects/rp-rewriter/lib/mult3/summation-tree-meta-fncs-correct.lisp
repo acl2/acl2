@@ -983,6 +983,14 @@
                             VALID-SC
                             )))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; c-pattern2-reduce lemmas
+:i-am-here
+
+;; (defret c-pattern2-reduce-valid-sc
+  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; create-s-instance and s-pattern1-reduce lemmas
 

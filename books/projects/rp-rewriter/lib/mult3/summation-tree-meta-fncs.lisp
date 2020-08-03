@@ -1063,7 +1063,56 @@
    :rule-classes :forward-chaining
    :hints (("Goal"
             :in-theory (e/d (and-subsetp) ())))))
-               
+
+
+(progn
+  (define and-list-instance-to-binary-and-aux ((lst))
+    :returns (res rp-termp
+                  :hyp (rp-term-listp lst))
+    (if (atom lst)
+        ''1
+      `(binary-and ,(car lst)
+                   ,(and-list-instance-to-binary-and-aux (cdr lst)))))
+
+  (define and-list-instance-to-binary-and ((term))
+    :Returns (res rp-termp
+                  :hyp (rp-termp term))
+    (case-match term
+      (('and-list & ('list . lst))
+       (and-list-instance-to-binary-and-aux lst))
+      (& term))))
+
+
+(define single-c-to-pp-lst ((pp1)
+                            (pp2)
+                            (pp3))
+  :returns (mv (res-pp-lst rp-term-listp
+                           :hyp (and (rp-termp pp1)
+                                     (rp-termp pp2)
+                                     (rp-termp pp3)))
+               (success booleanp))
+  :verify-guards nil
+  (b* ((pp1 (and-list-instance-to-binary-and pp1))
+       (pp2 (and-list-instance-to-binary-and pp2))
+       (pp3 (and-list-instance-to-binary-and pp3))
+       ((Unless (and (pp-term-p pp1)
+                     (pp-term-p pp2)
+                     (pp-term-p pp3)))
+        (mv nil nil)))
+    (mv (pp-flatten `(binary-or (binary-and ,pp1 ,pp2)
+                                (binary-or (binary-and ,pp2 ,pp3)
+                                           (binary-and ,pp1 ,pp3)))
+                    nil)
+        t))
+  ///
+  (verify-guards single-c-to-pp-lst
+    :hints (("Goal"
+             :expand ((:free (x y)
+                             (pp-term-p `(binary-or ,x ,y))))
+             :in-theory (e/d (is-rp ex-from-rp) ())))))
+
+
+
 (define c-pattern2-reduce ((pp-lst-coughed rp-term-listp)
                            (single-c rp-termp))
   :returns (mv (res-pp-lst-coughed
@@ -1088,38 +1137,29 @@
        (single-c (ex-from-rp$ single-c)))
     (case-match single-c
       (('c & ''nil ('list pp1 pp2 pp3) ''nil)
-       (b* (((unless (and (and-subsetp pp2 pp1)
-                          (and-subsetp pp3 pp1)))
+       (b* (((unless (or (equal pp1 ''1)
+                         (and (and-subsetp pp2 pp1)
+                              (and-subsetp pp3 pp1))))
              (mv pp-lst-coughed single-c-orig))
-            (pp2 (ex-from-rp$ pp2))
-            (pp3 (ex-from-rp$ pp3))
-            (and-list2 (cdr (caddr pp2)))
-            (and-list3 (cdr (caddr pp3)))
-            (res-and-list (merge-sorted-and$-lists and-list2 and-list3))
-            (res-and (create-and-list-instance res-and-list)))
-         (mv (pp-sum-merge-aux (list res-and)
-                               pp-lst-coughed)
-             ''0)))
-      (('c & ''nil ('list pp1 pp2) ''nil)
-       (b* (((unless (and (and-subsetp pp2 pp1)))
+            ((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 pp3))
+            ((unless success)
              (mv pp-lst-coughed single-c-orig)))
-         (mv (pp-sum-merge-aux (list pp1)
+         (mv (pp-sum-merge-aux new-pp-lst pp-lst-coughed) ''0)))
+      (('c & ''nil ('list pp1 pp2) ''nil)
+       (b* (((unless (or (equal pp1 ''1)
+                         (and (and-subsetp pp2 pp1))))
+             (mv pp-lst-coughed single-c-orig))
+            ((mv new-pp-lst success) (single-c-to-pp-lst pp1 pp2 ''0))
+            ((unless success)
+             (mv pp-lst-coughed single-c-orig)))
+         (mv (pp-sum-merge-aux new-pp-lst
                                pp-lst-coughed)
              ''0)))
       (& (mv pp-lst-coughed single-c-orig))))
   ///
   (verify-guards c-pattern2-reduce
     :hints (("Goal"
-             :use ((:instance and-subsetp-IMPLIES-and-list-intance
-                                          (pp1 (CADDR (CADDDR (EX-FROM-RP
-                                                               SINGLE-C))))
-                                          (pp2 (CADR (CADDDR (EX-FROM-RP
-                                                              SINGLE-C)))))
-                               (:instance and-subsetp-IMPLIES-and-list-intance
-                                          (pp1 (CADDDR (CADDDR (EX-FROM-RP SINGLE-C))))
-                                          (pp2 (CADR (CADDDR (EX-FROM-RP SINGLE-C))))))
              :in-theory (e/d () ())))))
-           
 
 (define create-c-instance ((s rp-termp)
                            (pp rp-termp)
@@ -1229,23 +1269,34 @@
 ;; (decompress-s-c '(S '0 (LIST B) (LIST (C '0 'NIL (LIST D (-- C) (-- A)) 'NIL))))
 
 
+(define single-s-to-pp-lst ((pp1)
+                            (pp2)
+                            (pp3))
+  :returns (mv (res-pp-lst rp-term-listp
+                           :hyp (and (rp-termp pp1)
+                                     (rp-termp pp2)
+                                     (rp-termp pp3)))
+               (success booleanp))
+  :verify-guards nil
+  (b* ((pp1 (and-list-instance-to-binary-and pp1))
+       (pp2 (and-list-instance-to-binary-and pp2))
+       (pp3 (and-list-instance-to-binary-and pp3))
+       ((Unless (and (pp-term-p pp1)
+                     (pp-term-p pp2)
+                     (pp-term-p pp3)))
+        (mv nil nil)))
+    (mv (pp-flatten `(binary-xor ,pp1
+                                (binary-xor ,pp2
+                                            ,pp3))
+                    nil)
+        t))
+  ///
+  (verify-guards single-s-to-pp-lst
+    :hints (("Goal"
+             :expand ((:free (x y)
+                             (pp-term-p `(binary-xor ,x ,y))))
+             :in-theory (e/d (is-rp ex-from-rp) ())))))
 
-(progn
-  (define and-list-instance-to-binary-and-aux ((lst rp-term-listp))
-    :returns (res rp-termp
-                  :hyp (rp-term-listp lst))
-    (if (atom lst)
-        ''1
-      `(binary-and ,(car lst)
-                   ,(and-list-instance-to-binary-and-aux (cdr lst)))))
-
-  (define and-list-instance-to-binary-and ((term rp-termp))
-    :Returns (res rp-termp
-                  :hyp (rp-termp term))
-    (case-match term
-      (('and-list & ('list . lst))
-       (and-list-instance-to-binary-and-aux lst))
-      (& term))))
 
 (define s-pattern2-reduce ((pp rp-termp)
                            (c rp-termp))
@@ -1256,25 +1307,24 @@
         (mv ''0 nil)))
     (case-match pp
       (('list pp1 pp2 pp3)
-       (b* (((unless (and (and-subsetp pp2 pp1)
-                          (and-subsetp pp3 pp1)))
+       (b* (((unless (or (equal pp1 ''1)
+                         (and (and-subsetp pp2 pp1)
+                              (and-subsetp pp3 pp1))))
              (mv ''0 nil))
-            (pp
-             `(binary-xor ,(and-list-instance-to-binary-and pp1)
-                          (binary-xor ,(and-list-instance-to-binary-and pp2)
-                                      ,(and-list-instance-to-binary-and pp3))))
-            ((unless (pp-term-p pp))
+            ((mv new-pp-lst success)
+             (single-s-to-pp-lst pp1 pp2 pp3))
+            ((Unless success)
              (mv ''0 nil)))
-         (mv `(rp 'bitp (sum-list ,(create-list-instance (pp-flatten pp nil)))) t)))
+         (mv `(rp 'bitp (sum-list ,(create-list-instance new-pp-lst))) t)))
       (('list pp1 pp2)
-       (b* (((unless (and (and-subsetp pp2 pp1)))
+       (b* (((unless (or (equal pp1 ''1)
+                         (and (and-subsetp pp2 pp1))))
              (mv ''0 nil))
-            (pp
-             `(binary-xor ,(and-list-instance-to-binary-and pp1)
-                          ,(and-list-instance-to-binary-and pp2)))
-            ((unless (pp-term-p pp))
+            ((mv new-pp-lst success)
+             (single-s-to-pp-lst pp1 pp2 ''0))
+            ((Unless success)
              (mv ''0 nil)))
-         (mv `(rp 'bitp (sum-list ,(create-list-instance (pp-flatten pp nil)))) t)))
+         (mv `(rp 'bitp (sum-list ,(create-list-instance new-pp-lst))) t)))
       (& (mv ''0 nil)))))
 
 
@@ -1289,10 +1339,10 @@
         (s-pattern1-reduce pp c))
        ((when reducedp)
         reduced)
-       ;; ((mv reduced reducedp)
-       ;;  (s-pattern2-reduce pp c))
-       ;; ((when reducedp)
-       ;;  reduced)
+       ((mv reduced reducedp)
+        (s-pattern2-reduce pp c))
+       ((when reducedp)
+        reduced)
        )
     (cond ((and (quotep pp)
                 (quotep c)
@@ -1646,8 +1696,8 @@
                                             (create-list-instance
                                              arg-merged-c-lst)))
 
-        #|((mv coughed-pp-lst merged-single-c)
-         (c-pattern2-reduce coughed-pp-lst merged-single-c))||#
+        ((mv coughed-pp-lst merged-single-c)
+         (c-pattern2-reduce coughed-pp-lst merged-single-c))
         
         (produced-c-lst (cons merged-single-c arg-to-be-coughed-c-lst)))
      (mv coughed-s coughed-pp-lst produced-c-lst t)))
@@ -2409,9 +2459,9 @@
                                          arg-pp
                                          (create-list-instance arg-c-lst)))
 
-       ;; ((mv c-pattern2-pp-lst single-c-term)
-       ;;  (c-pattern2-reduce nil single-c-term))
-       ;; (pp-coughed (pp-sum-merge pp-coughed (create-list-instance c-pattern2-pp-lst)))
+       ((mv c-pattern2-pp-lst single-c-term)
+        (c-pattern2-reduce nil single-c-term))
+       (pp-coughed (pp-sum-merge pp-coughed (create-list-instance c-pattern2-pp-lst)))
        
        ((when (not to-be-coughed-c-lst))
         (cond ((and (equal s-coughed ''nil)
