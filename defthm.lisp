@@ -7012,14 +7012,6 @@
     (cond
      ((null install-body)
       (value nil))
-
-; We formerly disallowed the case here of (member-eq fn
-; *definition-minimal-theory*), with non-nil install-body, so that we could
-; assume that calls of (body fn t wrld), which occurred in several places in
-; the source code, refer to the original normalized body of fn, which excuses
-; us from tracking the corresponding rune.  Now we avoid such calls of body in
-; our source code.
-
      ((not (arglistp args))
       (er soft ctx
           "~@0 the arguments on the left-hand side of the rule must be a list ~
