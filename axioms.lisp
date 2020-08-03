@@ -7554,6 +7554,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (mbe :logic (fix acc) :exec acc))
    (t (position-ac-eq-exec item (cdr lst) (1+ acc)))))
 
+(defthm natp-position-ac-eq-exec
+  (implies (natp acc)
+           (or (natp (position-ac-eq-exec item lst acc))
+               (equal (position-ac-eq-exec item lst acc) nil)))
+  :rule-classes :type-prescription)
+
 (defun-with-guard-check position-ac-eql-exec (item lst acc)
   (and (true-listp lst)
        (or (eqlablep item)
@@ -7564,6 +7570,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((eql item (car lst))
     (mbe :logic (fix acc) :exec acc))
    (t (position-ac-eql-exec item (cdr lst) (1+ acc)))))
+
+(defthm natp-position-ac-eql-exec
+  (implies (natp acc)
+           (or (natp (position-ac-eql-exec item lst acc))
+               (equal (position-ac-eql-exec item lst acc) nil)))
+  :rule-classes :type-prescription)
 
 (defun position-equal-ac (item lst acc)
 
@@ -7578,6 +7590,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((equal item (car lst))
     (mbe :exec acc :logic (fix acc)))
    (t (position-equal-ac item (cdr lst) (1+ acc)))))
+
+(defthm natp-position-equal-ac
+  (implies (natp acc)
+           (or (natp (position-equal-ac item lst acc))
+               (equal (position-equal-ac item lst acc) nil)))
+  :rule-classes :type-prescription)
 
 (defmacro position-ac-equal (item lst acc)
 ; See comment about naming in position-equal-ac.
@@ -22442,7 +22460,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (car alist)
                  (remove1-assoc-string-equal key (cdr alist))))))
 
-(defmacro toggle-inhibit-warning (str)
+(defmacro toggle-inhibit-warning! (str)
   `(table inhibit-warnings-table
           nil
           (let ((inhibited-warnings
@@ -22451,6 +22469,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (remove1-assoc-string-equal ',str inhibited-warnings))
                   (t (acons ',str nil inhibited-warnings))))
           :clear))
+
+(defmacro toggle-inhibit-warning (str)
+  `(local (toggle-inhibit-warning! ,str)))
 
 (defmacro set-inhibit-output-lst (lst)
 
