@@ -748,3 +748,5 @@
          (svl::4vec-concat$ 1 (s-spec (list (and$ x y))) z))
   :hints (("Goal"
            :in-theory (e/d (and$) ()))))
+
+(bump-all-enabled-meta-rules)

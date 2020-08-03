@@ -54,7 +54,6 @@
   :disabled t))
 
 
-
 (define and-list-hash-aux (lst)
   :returns (mv (hash integerp)
                (rest-size natp))
@@ -68,7 +67,7 @@
                 (& 0))))
       (mv (logapp rest-size rest cur)
           (+ 14 rest-size)))))
-          
+
       ;; (if (equal rest 0)
       ;;     cur
       ;;   (logapp 14 cur rest)))))
@@ -118,18 +117,18 @@
        lst)
       (''nil
        nil)))
-  
-    #|(case-match pp-term
-      (('list pp2 pp3 pp4 pp1)
-       (b* ((pp-lst2 (case-match pp2 (('list . lst) lst) (''nil nil)))
-            (pp-lst3 (case-match pp3 (('list . lst) lst) (''nil nil)))
-            (pp-lst4 (case-match pp4 (('list . lst) lst) (''nil nil)))
-            (pp-lst1 (case-match pp1 (('list . lst) lst) (''nil nil))))
-         (if (or pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-             (list pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-           nil)))
-      (''nil
-       nil))||#
+
+  #|(case-match pp-term
+  (('list pp2 pp3 pp4 pp1)
+  (b* ((pp-lst2 (case-match pp2 (('list . lst) lst) (''nil nil)))
+  (pp-lst3 (case-match pp3 (('list . lst) lst) (''nil nil)))
+  (pp-lst4 (case-match pp4 (('list . lst) lst) (''nil nil)))
+  (pp-lst1 (case-match pp1 (('list . lst) lst) (''nil nil))))
+  (if (or pp-lst2 pp-lst3 pp-lst4 pp-lst1)
+  (list pp-lst2 pp-lst3 pp-lst4 pp-lst1)
+  nil)))
+  (''nil
+  nil))||#
 
   (define valid-pp-lst-p (pp-lst)
     (or (equal pp-lst nil)
@@ -152,17 +151,17 @@
       (in-theory (enable valid-pp-lst-p))))
     (create-list-instance pp-lst)
     #|(if (equal pp-lst nil)
-        ''nil
-      (b* ((pp2 (car pp-lst))
-           (pp3 (cadr pp-lst))
-           (pp4 (caddr pp-lst))
-           (pp1 (cadddr pp-lst)))
-        (if (or pp2 pp3 pp4 pp1)
-            `(list ,(if pp2 `(list . ,pp2) ''nil)
-                   ,(if pp3 `(list . ,pp3) ''nil)
-                   ,(if pp4 `(list . ,pp4) ''nil)
-                   ,(if pp1 `(list . ,pp1) ''nil))
-          ''nil)))||#))
+    ''nil
+    (b* ((pp2 (car pp-lst))
+    (pp3 (cadr pp-lst))
+    (pp4 (caddr pp-lst))
+    (pp1 (cadddr pp-lst)))
+    (if (or pp2 pp3 pp4 pp1)
+    `(list ,(if pp2 `(list . ,pp2) ''nil)
+    ,(if pp3 `(list . ,pp3) ''nil)
+    ,(if pp4 `(list . ,pp4) ''nil)
+    ,(if pp1 `(list . ,pp1) ''nil))
+    ''nil)))||#))
 
 (define pp-list-order-aux ((x)
                            (y))
@@ -195,7 +194,12 @@
 (define pp-list-order (x y)
   :returns (mv (order)
                (equals booleanp))
-  (b* ((hash-x (and-list-hash x))
+  (b* (((when (equal y '('1)))
+        (mv nil (equal x y)))
+       ((when (equal x '('1)))
+        (mv t (equal x y)))
+
+       (hash-x (and-list-hash x))
        (hash-y (and-list-hash y))
        ((when (not (= hash-x hash-y)))
         (mv (> hash-x hash-y)
@@ -207,12 +211,12 @@
         ;;     (mv t nil)
         ;;   (if (equal len-x 2)
         ;;       (mv nil nil)
-            (mv (> len-x len-y) nil)
-            ;;))
+        (mv (> len-x len-y) nil)
+      ;;))
       ;;(if (and t (equal len-x 2))
-          (pp-list-order-aux x y)    
-        ;;(pp-list-order-aux y x)
-        ;;)
+      (pp-list-order-aux x y)
+      ;;(pp-list-order-aux y x)
+      ;;)
       )))
 
 ;; (defthm pp-list-order-sanity
@@ -231,7 +235,6 @@
          (booleanp (caar x))
          (true-listp (cdar x))
          (pp-lists-p (cdr x)))))
-
 
 
 
@@ -825,7 +828,6 @@
 ;;          (cons (car cur)
 ;;                (pp-lists-to-term-and-list (cdr cur))))))
 
-
 ;; (define ppf-2 ()
 ;;   ())
 
@@ -855,7 +857,7 @@
               (cur (cond ((atom cur)  ''1)
                          ((atom (cdr cur)) (if (equal (car cur) ''1)
                                                ''1
-                                             (create-and-list-instance (list (car cur))) 
+                                             (create-and-list-instance (list (car cur)))
                                              ;;`(and-list (list ))
                                              ))
                          ((atom (cddr cur)) (create-and-list-instance cur))
@@ -865,7 +867,6 @@
                      (pp-lists-to-term-pp-lst (cdr lst)))
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))
-
 
 #|(define pp-lists-to-term-pp-lst ((lst pp-lists-p))
   (b* (((when (atom lst))
@@ -896,17 +897,16 @@
        (pp-lst1 (if (= group 1) (cons cur pp-lst1) pp-lst1)))
     (mv pp-lst2 pp-lst3 pp-lst4 pp-lst1)))||#
 
-
 #|(define pp-flatten ((term pp-term-p)
                     (sign booleanp))
   (case-match term
     (('binary-and ('bit-of & &) ('bit-of & &))
-     (b* ((cur-single 
+     (b* ((cur-single
            (if (lexorder (cadr term) (caddr term))
                (if sign
                    `(-- (and-list (list . ,(cdr term))))
                  `(and-list (list . ,(cdr term))))
-             
+
               (if sign
                   `(-- (and-list (list ,(caddr term) ,(cadr term))))
                 `(and-list (list ,(caddr term) ,(cadr term)))))))
@@ -924,14 +924,14 @@
                     (sign booleanp))
   (case-match term
     (('binary-and ('bit-of & &) ('bit-of & &))
-     (b* ((cur-single 
+     (b* ((cur-single
            (if (lexorder2- (cadr term) (caddr term))
                (if sign
                    `(-- ,(create-and-list-instance (cdr term)))
                  (create-and-list-instance (cdr term)))
-              (if sign
-                  `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
-                (create-and-list-instance (list (caddr term) (cadr term)))))))
+             (if sign
+                 `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
+               (create-and-list-instance (list (caddr term) (cadr term)))))))
        (list cur-single)))
     (&
      (b* ((pp-lists (pp-term-to-pp-lists term sign))
@@ -957,7 +957,6 @@
           (result (pp-lists-to-term-pp-lst pp-lists))
           (result (If pp-lists (cons 'list result) ''nil)))
        result))))||#
-
 
 
 (progn
@@ -1024,7 +1023,7 @@
             (pp-lst (pp-lists-to-term-pp-lst pp-lists))
             (result (If pp-lst
                         `(sum-list
-                          ,(create-list-instance pp-lst) 
+                          ,(create-list-instance pp-lst)
                           ;;(list (list . ,result) 'nil 'nil 'nil)
                           )
                         ''0)))
@@ -1095,14 +1094,13 @@
             :in-theory (e/d (cut-list-by-half
                              dummy-arith-lemma-1) ())))))
 
-(local
- (defthm rp-term-listp-merge-sorted-and$-lists
-   (implies (and (rp-term-listp lst1)
-                 (rp-term-listp lst2))
-            (rp-term-listp (merge-sorted-and$-lists lst1 lst2)))
-   :hints (("Goal"
-            :induct (merge-sorted-and$-lists lst1 lst2)
-            :in-theory (e/d (merge-sorted-and$-lists) ())))))
+(defthm rp-term-listp-merge-sorted-and$-lists
+  (implies (and (rp-term-listp lst1)
+                (rp-term-listp lst2))
+           (rp-term-listp (merge-sorted-and$-lists lst1 lst2)))
+  :hints (("Goal"
+           :induct (merge-sorted-and$-lists lst1 lst2)
+           :in-theory (e/d (merge-sorted-and$-lists) ()))))
 
 (local
  (defthm rp-term-listp-sort-and$-list
@@ -1318,7 +1316,6 @@
                                    a))
    :hints (("Goal"
             :in-theory (e/d (pp-term-to-pp-lists) ())))))
-
 
 (local
  (defthm valid-sc-pp-lists-to-term-p+

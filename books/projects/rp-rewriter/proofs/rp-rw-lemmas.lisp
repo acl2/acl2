@@ -70,7 +70,7 @@
    rp-rw-rule-aux
    is-rp
    (:DEFINITION RP-RW-META-RULES)
-   ;(:DEFINITION RP-RW-META-RULE)
+;(:DEFINITION RP-RW-META-RULE)
    is-synp
    ex-from-rp
    rp-equal2
@@ -112,7 +112,7 @@
                         (:TYPE-PRESCRIPTION QUOTEP)
                         (:TYPE-PRESCRIPTION RETURN-LAST)
                         (:DEFINITION RP-RW-META-RULES)
-                        ;(:DEFINITION RP-RW-META-RULE)
+;(:DEFINITION RP-RW-META-RULE)
                         (:REWRITE DEFAULT-+-2)
                         (:REWRITE DEFAULT-+-1)
 ;(:DEFINITION O<)
@@ -268,6 +268,7 @@
                 (bindings-alistp bindings)
                 (valid-rulep rule)
                 (alistp a)
+                (rp-rule-rwp rule)
                 (rp-termp (rp-rhs rule))
                 (not (rp-iff-flag rule)))
            (and (equal (rp-evlt (rp-apply-bindings (rp-rhs rule) bindings) a)
@@ -308,6 +309,7 @@
                 (bindings-alistp bindings)
                 (valid-rulep rule)
                 (alistp a)
+                (rp-rule-rwp rule)
                 (rp-termp (rp-rhs rule)))
            (and (iff (rp-evlt (rp-apply-bindings (rp-rhs rule) bindings) a)
                      (rp-evlt term a))
@@ -325,7 +327,9 @@
            :in-theory (e/d (valid-rulep
                             valid-rulesp
                             valid-rules-alistp
-                            rule-syntaxp)
+                            rule-syntaxp
+                            rule-syntaxp-implies
+                            rule-syntaxp-implies-2)
                            (rp-evl-of-rp-equal
                             rp-evl-of-rp-equal2
                             (:TYPE-PRESCRIPTION IS-RP$INLINE)
@@ -407,7 +411,6 @@
                                      hons-get
                                      hons-assoc-equal
                                      valid-rules-alistp))))
-
 
 (local
  (defthmd rp-check-context-is-correct-iff-lemma
@@ -818,6 +821,41 @@
                                 UPDATE-NTH
                                 RP-STAT-ADD-TO-RULES-USED)))))))
 
+#|(defthm RP-RW-RULE-AUX-returns-rule-syntaxp
+  (implies (and (MV-NTH 0
+                   (RP-RW-RULE-AUX TERM
+                                   RULES-FOR-TERM CONTEXT IFF-FLG STATE))
+                (rule-list-syntaxp RULES-FOR-TERM))
+           (rule-syntaxp (MV-NTH 0
+                                 (RP-RW-RULE-AUX TERM
+                                                 RULES-FOR-TERM CONTEXT IFF-FLG STATE))
+                         :warning nil))
+  :hints (("Goal"
+           :in-theory (e/d (RP-RW-RULE-AUX
+                            rule-list-syntaxp)
+                           (rule-syntaxp)))))||#
+
+(DEFTHM
+  RULE-SYNTAXP-IMPLIES-3
+  (IMPLIES (AND (RULE-SYNTAXP RULE :WARNING nil)
+                (NOT (RP-RULE-METAP RULE)))
+           (AND (WEAK-CUSTOM-REWRITE-RULE-P RULE)
+                (RP-TERMP (RP-HYP RULE))
+                (RP-TERMP (RP-LHS RULE))
+                (RP-TERMP (RP-RHS RULE))
+                (NOT (INCLUDE-FNC (RP-LHS RULE) 'RP))
+                (NOT (INCLUDE-FNC (RP-HYP RULE) 'RP))
+                (NOT (INCLUDE-FNC (RP-RHS RULE) 'FALIST))
+                (NOT (INCLUDE-FNC (RP-HYP RULE) 'FALIST))
+                (NOT (INCLUDE-FNC (RP-LHS RULE) 'IF))
+                (NOT (INCLUDE-FNC (RP-LHS RULE) 'SYNP))
+                (NO-FREE-VARIABLEP RULE)
+                (NOT (INCLUDE-FNC (RP-LHS RULE) 'LIST))
+                (NOT (INCLUDE-FNC (RP-HYP RULE) 'LIST))
+                (NOT (INCLUDE-FNC (RP-RHS RULE) 'LIST))))
+  :RULE-CLASSES (:REWRITE :FORWARD-CHAINING)
+  :HINTS (("Goal" :IN-THEORY (ENABLE RULE-SYNTAXP))))
+
 (encapsulate
   nil
 
@@ -1128,7 +1166,6 @@
       (defthm rp-termp-rp-rw
         (implies (and (RP-TERMP TERM)
 
-                      
                       ;;(rp-meta-valid-syntax-listp meta-rules state)
                       (CONTEXT-SYNTAXP CONTEXT)
 
@@ -1146,7 +1183,7 @@
         (implies (and (RP-TERMP TERM)
 
                       (RULE-LIST-SYNTAXP RULES-FOR-TERM)
-                      ;(rp-meta-valid-syntax-listp meta-rules state)
+;(rp-meta-valid-syntax-listp meta-rules state)
                       (CONTEXT-SYNTAXP CONTEXT)
 
                       (RULES-ALISTP RULES-ALIST)
@@ -1194,7 +1231,8 @@
                :in-theory (e/d (RP-TERM-LISTP-APPEND
                                 is-if-implies)
                                (rp-termp
-                                is-rp))
+                                is-rp
+                                rp-rule-metap))
                :expand
                (
                 (rp-rw-subterms nil dont-rw context limit
@@ -1363,7 +1401,7 @@
                    (rp-evlt term a)))
    :otf-flg t
    :hints (("Goal"
-            ;:expand (RP-EVL-OF-TRANS-LIST NIL A)
+;:expand (RP-EVL-OF-TRANS-LIST NIL A)
             :cases ((is-falist term))
             :in-theory (e/d (rp-evl-of-fncall-args
                              rp-trans
@@ -1930,6 +1968,18 @@
    (EQUAL (RP-EVL ''NIL A)
           NIL)))
 
+
+(local
+ (in-theory (disable RP-RULE-METAP$INLINE)))
+
+
+(defthm RULE-SYNTAXP-IMPLIES-rp-termp-rp-hyp
+  (implies (and (RULE-SYNTAXP rule)
+                (rp-rule-rwp rule))
+           (rp-termp (rp-rhs rule)))
+  :hints (("Goal"
+           :in-theory (e/d (RULE-SYNTAXP) ()))))
+
 (with-output
   :off (warning event  prove  observation)
   :gag-mode :goals
@@ -1945,7 +1995,7 @@
                     (valid-sc term a)
                     (context-syntaxp context)
                     (valid-sc-subterms context a)
-                   
+
                     (rp-formula-checks state)
                     ;; (valid-rp-meta-rule-listp meta-rules state)
                     ;; (rp-meta-valid-syntax-listp meta-rules state)
@@ -1970,7 +2020,7 @@
                     (context-syntaxp context)
 
                     (valid-sc-subterms context a)
-                    
+
                     (rp-formula-checks state)
                     ;; (valid-rp-meta-rule-listp meta-rules state)
                     ;; (rp-meta-valid-syntax-listp meta-rules state)
@@ -1997,7 +2047,6 @@
 
                     (valid-sc-subterms context a)
 
-                    
                     (rp-formula-checks state)
                     ;; (valid-rp-meta-rule-listp meta-rules state)
                     ;; (rp-meta-valid-syntax-listp meta-rules state)
@@ -2026,7 +2075,6 @@
                     (eval-and-all context a)
                     (valid-rules-alistp rules-alist)
 
-                    
                     (rp-formula-checks state)
                     ;; (valid-rp-meta-rule-listp meta-rules state)
                     ;; (rp-meta-valid-syntax-listp meta-rules state)
@@ -2041,7 +2089,8 @@
       :flag rp-rw-subterms)
     :otf-flg nil
     :hints (("goal"
-             :in-theory (e/d (rp-evl-of-fncall-args)
+             :in-theory (e/d (rp-evl-of-fncall-args
+                              RP-RULE-RWP)
                              (RP-EVL-OF-QUOTE
                               rp-termp
                               is-rp
@@ -2074,6 +2123,11 @@
                               (:REWRITE
                                RP-EX-COUNTERPART-IS-TERM-NOT-QUOTEP)
 
+                              RP-TRANS
+                              RP-TRANS-LST
+                              RP-TRANS-OF-RP-APPLY-BINDINGS
+
+                              
                               (:REWRITE RP-EVL-OF-RP-EQUAL2-SUBTERMS)))
              :expand
              ((:free (x y z)

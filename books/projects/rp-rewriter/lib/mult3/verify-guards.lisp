@@ -890,7 +890,7 @@
 
 (local
  (std::defret
-  measure-lemma-c-pattern2-reduce
+  measure-lemma-c-pattern1-reduce
   (and (lte (count-c c-res)
             (count-c c))
        (<= (count-c c-res)
@@ -901,12 +901,12 @@
        (implies (case-match c-res (('list . &) t))
                 (<= (count-c-lst (cdr c-res))
                     (count-c c))))
-  :fn c-pattern2-reduce
+  :fn c-pattern1-reduce
   ;:otf-flg t
   :hints (("goal"
            :do-not-induct t
            :expand ((:free (x) (SINGLE-C-P `(c . ,x))))
-           :in-theory (e/d (c-pattern2-reduce
+           :in-theory (e/d (c-pattern1-reduce
                             count-c
                             count-c-lst)
                            (ex-from-rp))))))

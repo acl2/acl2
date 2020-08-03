@@ -109,11 +109,12 @@
  ((local
    (in-theory (e/d (rp::measure-lemmas)
                    (+-IS-SUM)))))
- (define s-order (x y)
+ (define s-order ((x rp-termp)
+                  (y rp-termp))
    :measure (+ (cons-count x)
                (cons-count y))
-   (b* ((x (ex-from-rp x))
-        (y (ex-from-rp y)))
+   (b* ((x (ex-from-rp$ x))
+        (y (ex-from-rp$ y)))
      (cond ((equal x y)
             (mv nil t))
            ((or (atom x)
@@ -126,7 +127,8 @@
            (t (if (equal (car x) (car y))
                   (s-order-lst (cdr x) (cdr y))
                 (mv (small-alphorder (car x) (car y)) nil))))))
- (define s-order-lst (lst1 lst2)
+ (define s-order-lst ((lst1 rp-term-listp)
+                      (lst2 rp-term-listp))
    :measure (+ (cons-count lst1)
                (cons-count lst2))
    (cond ((or (atom lst1)
@@ -183,26 +185,27 @@
     :inline t
     (case-match x (('-- a) a) (& x)))
 
-  (define pp-order (x y)
+  (define pp-order ((x rp-termp)
+                    (y rp-termp))
     :inline t
     :returns (mv (order)
                  (equals booleanp))
-    (b* ((x (ex-from-rp x))
-         (y (ex-from-rp y))
+    (b* ((x (ex-from-rp$ x))
+         (y (ex-from-rp$ y))
+         ((when (equal y ''1))
+          (mv nil (equal x y)))
+         ((when (equal x ''1))
+          (mv t (equal x y)))
          ((mv x-lst x-hash x-good-format)
           (case-match x
             (('and-list ('quote hash) ('list . lst))
              (mv lst (ifix hash) t))
-            (''1
-             (mv '('1) 1 t))
             (&
              (mv (list x) 0 nil))))
          ((mv y-lst y-hash y-good-format)
           (case-match y
             (('and-list ('quote hash) ('list . lst))
              (mv lst (ifix hash) t))
-            (''1
-             (mv '('1) 1 t))
             (&
              (mv (list y) 0 nil)))))
       (if (= x-hash y-hash)
@@ -284,15 +287,17 @@
   (mv (not (lexorder y x)) nil)))))
   (t (pp-list-order x y))))))||#
 
-  (define pp-lst-orderedp (lst)
+  (define pp-lst-orderedp ((lst rp-term-listp))
     (if (atom lst)
         t
       (if (atom (cdr lst))
           t
-        (and (not (b* (((mv order &) (pp-order (cadr lst) (car lst)))) order) )
+        (and (b* (((mv order &) (pp-order (ex-from-rp/-- (cadr lst))
+                                          (ex-from-rp/-- (car lst)))))
+               (not order))
              (pp-lst-orderedp (cdr lst))))))
 
-  (define pp-orderedp (pp)
+  (define pp-orderedp ((pp rp-termp))
     (case-match pp
       (('list . lst)
        (pp-lst-orderedp lst))
@@ -303,8 +308,8 @@
 
 
 (progn
-  (define pp-order-and-negated-termsp ((term1)
-                                       (term2))
+  (define pp-order-and-negated-termsp ((term1 rp-termp)
+                                       (term2 rp-termp))
     :returns (mv
               (order)
               (negated-terms booleanp)
@@ -320,8 +325,8 @@
                 equals)
            equals)))
 
-  (define pp-sum-merge-aux ((pp1-lst)
-                            (pp2-lst))
+  (define pp-sum-merge-aux ((pp1-lst rp-term-listp)
+                            (pp2-lst rp-term-listp))
     :measure (+ (cons-count pp1-lst)
                 (cons-count pp2-lst))
     :hints (("Goal"
@@ -349,8 +354,8 @@
                       (b* ((rest (pp-sum-merge-aux pp1-lst (cdr pp2-lst) )))
                         (pp-cons cur2 rest))))))))
 
-  (define pp-sum-merge ((pp1)
-                        (pp2))
+  (define pp-sum-merge ((pp1 rp-termp)
+                        (pp2 rp-termp))
     :returns (merged-pp rp-termp
                         :hyp (and (rp-termp pp1)
                                   (rp-termp pp2)))
@@ -380,8 +385,8 @@
 
 (progn
 
-  (define s-order-and-negated-termsp ((term1)
-                                      (term2))
+  (define s-order-and-negated-termsp ((term1 rp-termp)
+                                      (term2 rp-termp))
     (b* (;;(term1 (ex-from-rp-loose term1))
          ;;(term2 (ex-from-rp-loose term2))
          ((mv neg1 term1)
@@ -394,8 +399,8 @@
           (and (not (equal neg1 neg2))
                terms-are-equal))))
 
-  (define s-sum-merge-aux ((s1-lst)
-                           (s2-lst))
+  (define s-sum-merge-aux ((s1-lst rp-term-listp)
+                           (s2-lst rp-term-listp))
     :measure (+ (cons-count s1-lst)
                 (cons-count s2-lst))
     :hints (("Goal"
@@ -424,8 +429,8 @@
                       (b* ((rest (s-sum-merge-aux s1-lst (cdr s2-lst))))
                         (cons cur2 rest))))))))
 
-  (define s-sum-merge ((s1)
-                       (s2))
+  (define s-sum-merge ((s1 rp-termp)
+                       (s2 rp-termp))
     :returns (merged-s rp-termp
                        :hyp (and (rp-termp s1)
                                  (rp-termp s2)))
@@ -443,14 +448,14 @@
         (create-list-instance res)))))
 
 (progn
-  (define s-fix-pp-args-aux ((pp-lst))
+  (define s-fix-pp-args-aux ((pp-lst rp-term-listp))
     :returns (cleaned-pp-lst rp-term-listp
                              :hyp (rp-term-listp pp-lst))
     (if (atom pp-lst)
         nil
       (b* ((cur (car pp-lst))
            (cur-orig cur)
-           (cur (ex-from-rp cur))
+           (cur (ex-from-rp$ cur))
            ((mv next next-present)
             (if (atom (cdr pp-lst)) (mv ''0 nil) (mv (cadr pp-lst) t))))
         (cond ((and next-present
@@ -470,7 +475,7 @@
   ;;(s-pp-fix '(list a a b b (-- c)))
   ;;(s-pp-fix '(list a a b b (-- c) (-- c)))
 
-  (define s-fix-args ((pp))
+  (define s-fix-args ((pp rp-termp))
     :returns (cleaned-pp rp-termp
                          :hyp (rp-termp pp))
     ;; make every pp positive
@@ -489,63 +494,10 @@
 (defmacro cough-duplicates (lst)
   `(c-fix-arg-aux ,lst nil))
 
-#|(define cough-duplicates (lst)
-  :returns (mv (coughed-lst rp-term-listp
-                            :hyp (rp-term-listp lst))
-               (res-lst rp-term-listp
-                        :hyp (rp-term-listp lst)))
-  (b* (((when (atom lst))
-        (mv nil nil))
-       (cur (car lst))
-       (cur-orig cur)
-       (cur (ex-from-rp cur))
-       ((mv next next-present)
-        (if (atom (cdr lst)) (mv ''0 nil) (mv (cadr lst) t))))
-    (cond ((and next-present (rp-equal-cnt cur next 0))
-           (b* (((mv coughed-lst new-lst)
-                 (cough-duplicates (cddr lst))))
-             (mv (cons cur-orig coughed-lst) new-lst)))
-          (t (b* (((mv coughed-lst new-lst)
-                   (cough-duplicates (cdr lst))))
-               (mv coughed-lst
-                   (cons-with-hint cur-orig new-lst lst)))))))||#
 
 (progn
 
-  
-  
-  #|(define cough-lst (lst)
-    :returns (mv (coughed-lst rp-term-listp
-                              :hyp (rp-term-listp lst))
-                 (res-lst rp-term-listp
-                          :hyp (rp-term-listp lst)))
-    :prepwork
-    ((local
-      (in-theory (enable ex-from-rp-loose-is-ex-from-rp))))
-    (if (atom lst)
-        (mv nil nil)
-      (b* ((cur (car lst))
-           (cur-orig cur)
-           (cur (ex-from-rp cur))
-           ((mv next next-present)
-            (if (atom (cdr lst)) (mv ''0 nil) (mv (cadr lst) t))))
-        (cond ((and next-present
-                    (rp-equal-cnt cur next 0))
-               (b* (((mv coughed-lst new-lst)
-                     (cough-lst (cddr lst))))
-                 (mv (cons cur-orig coughed-lst) new-lst)))
-              ((case-match cur (('-- &) t))
-               (b* (((mv coughed-lst new-lst)
-                     (cough-lst (cdr lst))))
-                 (mv (cons cur-orig coughed-lst)
-                     (cons (cadr cur) new-lst))))
-              (t
-               (b* (((mv coughed-lst new-lst)
-                     (cough-lst (cdr lst))))
-                 (mv coughed-lst (cons-with-hint cur-orig new-lst lst))))))))||#
-
-
-  (define c-fix-arg-aux ((arg-lst)
+  (define c-fix-arg-aux ((arg-lst rp-term-listp)
                          (neg-flag booleanp))
     :returns (mv (coughed-lst rp-term-listp
                               :hyp (rp-term-listp arg-lst))
@@ -557,7 +509,7 @@
      (t
       (b* ((cur (car arg-lst))
            (cur-orig cur)
-           (cur (ex-from-rp cur))
+           (cur (ex-from-rp$ cur))
            ((mv next next-present)
             (if (atom (cdr arg-lst)) (mv ''0 nil) (mv (cadr arg-lst) t))))
         (cond ((and next-present
@@ -589,7 +541,7 @@
   ;; (c/d-pp-fix '(list a a (-- b))) = (mv '(list a (-- b)) '(list b))
   ;; (c/d-pp-fix '(list a a b b)) = (mv '(list a b) ''nil)
 
-  (define c-fix-pp-args ((pp))
+  (define c-fix-pp-args ((pp rp-termp))
     ;; cough out the negatives (leaving positives behind)
     ;; cough out duplicates.
     :returns (mv (coughed-pp rp-termp
@@ -626,7 +578,7 @@
 
   (c/d-remove-repeated-s-disable)
 
-  (define c-fix-s-args ((s))
+  (define c-fix-s-args ((s rp-termp))
     ;; same as c/d-pp-fix but don't touch the negated terms
     ;; cough out duplicates.
     :returns (mv (coughed-s rp-termp

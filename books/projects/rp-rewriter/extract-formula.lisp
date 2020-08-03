@@ -75,6 +75,25 @@
         (mv t ''t formula ''t;`(nonnil-fix ,formula)
             ))))))
 
+
+#|(mutual-recursion
+ (defun force-to-force$ (term rule-name)
+   (cond ((or (atom term)
+              (quotep term))
+          term)
+         ((case-match term (('force &) t))
+          `(force$ ,(cadr term) ',rule-name ',(cadr term)))
+         (t (cons-with-hint (car term)
+                            (force-to-force$ (cdr term) rule-name)
+                            term))))
+ (defun force-to-force$-lst (lst rule-name)
+   (if (atom lst)
+       nil
+     (cons-with-hint (force-to-force$ (car lst) rule-name hyp)
+                     (force-to-force$-lst (cdr lst) rule-name hyp)
+                     lst))))||#
+       
+
 (defund if-to-and-list (if-form)
   (declare (xargs :guard t))
   (case-match if-form
@@ -160,7 +179,7 @@
 
 
 (mutual-recursion
- (defun insert-iff-to-force (term iff-flg)
+ (defun insert-iff-to-force (term rule-name iff-flg)
    (declare (xargs :guard t))
    (cond ((or (atom term)
               (quotep term))
@@ -168,25 +187,31 @@
          (t
           (case-match term
             (('implies p q)
-             `(implies ,(insert-iff-to-force p t)
-                       ,(insert-iff-to-force q t)))
+             `(implies ,(insert-iff-to-force p rule-name t)
+                       ,(insert-iff-to-force q rule-name t)))
             (('force x)
              (if iff-flg
-                 `(force (if ,(insert-iff-to-force x iff-flg) 't 'nil))
-               `(force ,(insert-iff-to-force x iff-flg))))
+                 `(force$ (if ,(insert-iff-to-force x rule-name iff-flg) 't
+                            'nil)
+                          ',rule-name
+                          ',term)
+               `(force$ ,(insert-iff-to-force x rule-name iff-flg)
+                        ',rule-name
+                        ',term)))
             (('if test then else)
-             `(if ,(insert-iff-to-force test t)
-                  ,(insert-iff-to-force then iff-flg)
-                ,(insert-iff-to-force else iff-flg)))
+             `(if ,(insert-iff-to-force test rule-name t)
+                  ,(insert-iff-to-force then rule-name iff-flg)
+                ,(insert-iff-to-force else rule-name iff-flg)))
             (&
-             (cons (car term)
-                   (insert-iff-to-force-lst (cdr term))))))))
- (defun insert-iff-to-force-lst (lst)
+             (cons-with-hint (car term)
+                             (insert-iff-to-force-lst (cdr term) rule-name)
+                             term))))))
+ (defun insert-iff-to-force-lst (lst rule-name)
    (if (atom lst)
        nil
-     (cons (insert-iff-to-force (car lst) nil)
-           (insert-iff-to-force-lst (cdr lst))))))
-   
+     (cons-with-hint (insert-iff-to-force (car lst) rule-name nil)
+                     (insert-iff-to-force-lst (cdr lst) rule-name)
+                     lst))))  
 
 (defund formulas-to-rules (rune rule-new-synp warning formulas)
   (declare (xargs :guard t))
@@ -206,8 +231,8 @@
                      :rune rune
                      :hyp hyp
                      :flg flg
-                     :lhs lhs
-                     :rhs rhs))
+                     :lhs/trig-fnc lhs
+                     :rhs/meta-fnc rhs))
          (rest (formulas-to-rules rune rule-new-synp warning (cdr formulas))))
       (if (and (rule-syntaxp rule :warning warning)
                (or (not (include-fnc rhs 'rp))
@@ -222,7 +247,7 @@
                   :stobjs (state)
                   :verify-guards t))
   (b* ((formula (meta-extract-formula rule-name state))
-       (formula (insert-iff-to-force formula nil))
+       (formula (insert-iff-to-force formula rule-name nil))
        #|((when (equal formula ''t))
         nil)||#
        ((when (not (pseudo-termp formula)))
@@ -257,7 +282,8 @@
                (attach-sc-list-to-rhs rhs (cdr sc-list))))))))
 
 (defun attach-sc-to-rule (rule sc-formula)
-  (declare (xargs :guard (and (rule-syntaxp rule))
+  (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                              (not (rp-rule-metap rule)))
                   :VERIFY-GUARDS t))
   (b* (#|((when (include-fnc (rp-rhs rule) 'if))
        (or (hard-error 'side-condition-check
@@ -276,19 +302,20 @@
             (rule-rhs (rp-rhs rule))
             (rhs-updated (attach-sc-list-to-rhs rule-rhs sc-list))
             (rule (change custom-rewrite-rule rule
-                          :rhs rhs-updated)))
+                          :rhs/meta-fnc rhs-updated)))
          rule))
       (&
        (b* ((sc-list (if-to-and-list sc-formula))
             (rule-rhs (rp-rhs rule))
             (rhs-updated (attach-sc-list-to-rhs rule-rhs sc-list))
             (rule (change custom-rewrite-rule rule
-                          :rhs rhs-updated)))
+                          :rhs/meta-fnc rhs-updated)))
          rule)))))
 
 (defun update-rule-with-sc-aux (rule sc-rule-names state)
   (declare (xargs :guard (and (symbol-listp sc-rule-names)
-                              (rule-syntaxp rule))
+                              (rule-syntaxp rule)
+                              (not (rp-rule-metap rule)))
                   :verify-guards nil
                   :stobjs (state)))
   (if (atom sc-rule-names)
@@ -312,10 +339,35 @@
            (update-rule-with-sc-aux rule (cdr sc-rule-names) state))))
       (update-rule-with-sc-aux rule-tmp (cdr sc-rule-names) state))))
 
+(local
+ (defthm attach-sc-to-rule-returns-weak-custom-rewrite-rule-p
+   (implies (and (rule-syntaxp rule)
+                 (not (rp-rule-metap rule)))
+            (and (weak-custom-rewrite-rule-p (attach-sc-to-rule rule sc-formula))
+                 (not (rp-rule-metap (attach-sc-to-rule rule sc-formula))))))) 
+
+(local
+ (defthm rule-syntaxp-implies-weak-custom-rw-rule
+   (implies (RULE-SYNTAXP RULE :WARNING nil)
+            (weak-custom-rewrite-rule-p rule))
+   :hints (("Goal"
+            :in-theory (e/d (RULE-SYNTAXP) ())))))
+
 (verify-guards update-rule-with-sc-aux
+  :otf-flg t
   :hints (("Goal"
-           :in-theory (e/d () (rule-syntaxp
-                               rp-termp)))))
+           :do-not-induct t
+           :induct (update-rule-with-sc-aux rule sc-rule-names state)
+           :in-theory (e/d (rule-syntaxp-implies
+                            rule-syntaxp-implies-weak-custom-rw-rule
+                            rule-syntaxp-implies-2)
+                           (rule-syntaxp
+                            rp-rule-metap
+                            ;;SYMBOL-LISTP
+                            STATE-P
+                            WEAK-CUSTOM-REWRITE-RULE-P
+                            attach-sc-to-rule
+                            rp-termp)))))
 
 (defun symbol-symbol-alistp (alist)
   (declare (xargs :guard t))
@@ -328,7 +380,8 @@
 
 (defun update-rule-with-sc (rule sc-alist state)
   (declare (xargs :guard (and (symbol-symbol-alistp sc-alist)
-                              (rule-syntaxp rule))
+                              (rule-syntaxp rule)
+                              (not (rp-rule-metap rule)))
                   :verify-guards nil
                   :stobjs (state)))
   (b* ((rule-name (rp-rune rule))
@@ -337,6 +390,7 @@
        ((when (atom sc-rule-names)) rule)
        (sc-rule-names (cdr (assoc-eq rule-name sc-alist))))
     (update-rule-with-sc-aux rule sc-rule-names state)))
+
 
 (verify-guards update-rule-with-sc
   :otf-flg t
@@ -349,6 +403,7 @@
                             rp-termp
                             FALIST-CONSISTENT
                             IS-IF-RP-TERMP
+                            RP-RULE-METAP
                             RP-TERM-LISTP
                             (:TYPE-PRESCRIPTION RP-TERMP)
                             (:TYPE-PRESCRIPTION TRUE-LIST-LISTP)
@@ -365,12 +420,40 @@
                             (:DEFINITION RP-RUNE$INLINE)
                             (:TYPE-PRESCRIPTION EQLABLE-ALISTP))))))
 
+
+(local
+ (defthm rule-list-syntaxp-implies-WEAK-CUSTOM-REWRITE-RULE-LISTP
+   (implies (rule-list-syntaxp rules)
+            (WEAK-CUSTOM-REWRITE-RULE-LISTP rules))
+   :hints (("Goal"
+            :induct (rule-list-syntaxp rules) 
+            :in-theory (e/d () (RULE-SYNTAXP
+                                WEAK-CUSTOM-REWRITE-RULE-P))))))
+
+(local
+ (defthm rp-rule-rw-listp-of-conses
+   (equal (rp-rule-rw-listp (cons a b))
+          (AND (RP-RULE-RWP a)
+               (RP-RULE-RW-LISTP b)))))
+
+(local
+ (defthm RULE-LIST-SYNTAXP-of-conses
+   (equal (RULE-LIST-SYNTAXP (cons a b))
+          (AND (RULE-SYNTAXP a)
+               (RULE-LIST-SYNTAXP b)))))
+
 (defun update-rules-with-sc (rules sc-alist state)
   (declare (xargs :guard (and (rule-list-syntaxp rules)
+                              (rp-rule-rw-listp rules)
                               (symbol-symbol-alistp sc-alist))
                   :guard-hints (("Goal"
                                  :in-theory (e/d ()
                                                  (GET-VARS
+                                                  rule-list-syntaxp
+                                                  RULE-SYNTAXP
+                                                  rp-rule-rw-listp
+                                                  WEAK-CUSTOM-REWRITE-RULE-P
+                                                  WEAK-CUSTOM-REWRITE-RULE-LISTP
                                                   NO-FREE-VARIABLEP))))
                   :stobjs (state)
                   :verify-guards t))
@@ -382,7 +465,7 @@
 (defun add-rule-to-alist (alist rule)
   (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
                               (alistp alist))))
-  (b* ((lhs (access custom-rewrite-rule rule :lhs))
+  (b* ((lhs (access custom-rewrite-rule rule :lhs/trig-fnc))
        (key (if (consp lhs) (car lhs) lhs))
        (key (if (symbolp key) key nil))
        (entry (assoc-eq key alist)))
@@ -423,7 +506,7 @@
   :hints (("Goal"
            :in-theory (e/d () (rule-syntaxp)))))
 
-(define try-to-add-rule-fnc (rules rule-fnc-alist)
+#|(define try-to-add-rule-fnc (rules rule-fnc-alist)
   :guard-hints (("Goal"
            :in-theory (e/d (weak-custom-rewrite-rule-p) ())))
   (if (and (equal (len rules) 1)
@@ -438,14 +521,52 @@
                           :rule-fnc
                           (cdr entry)))
           rules))
-    rules))
+    rules))||#
 
-(defun get-rule-list (runes sc-alist new-synps warning rule-fnc-alist state)
+
+
+(defun meta-rune-p (rune)
+  (declare (xargs :guard t))
+  (case-match rune
+    ((':meta meta-fnc . trig-fnc)
+     (and meta-fnc
+          trig-fnc
+          (symbolp meta-fnc)
+          (symbolp trig-fnc)))))
+
+(defund make-custom-rule-for-meta (rune)
+  (declare (xargs :guard (meta-rune-p rune)))
+  (make custom-rewrite-rule
+                      :meta-rulep t
+                      :hyp ''nil ;; hyp nil will make the rule always correct without
+                      ;; having to identify it as a special meta rule.
+                      :rune rune
+                      :lhs/trig-fnc (cddr rune)  
+                      :rhs/meta-fnc (cadr rune)))
+
+
+(local
+ (in-theory (disable RULE-SYNTAXP)))
+
+(local
+ (defthm FORMULAS-TO-RULES-returns-RP-RULE-RW-LISTP
+   (RP-RULE-RW-LISTP (FORMULAS-TO-RULES RUNE RULE-NEW-SYNP WARNING FORMULAS))
+   :hints (("Goal"
+            :in-theory (e/d (FORMULAS-TO-RULES)
+                            (RULE-SYNTAXP))))))
+
+(local
+ (defthm CUSTOM-REWRITE-WITH-META-EXTRACT-returns-RP-RULE-RW-LISTP
+   (RP-RULE-RW-LISTP (CUSTOM-REWRITE-WITH-META-EXTRACT RULE-NAME RULE-NEW-SYNP WARNING STATE))))
+
+(defun get-rule-list (runes sc-alist new-synps warning state)
   (declare (xargs :guard (and (symbol-symbol-alistp sc-alist)
                               (alistp new-synps))
                   :guard-hints
                   (("Goal"
                     :in-theory (e/d () (rule-syntaxp
+                                        rule-list-syntaxp
+                                        RP-RULE-RW-LISTP
                                         update-rules-with-sc
                                         MAKE-FORMULA-BETTER
                                         CUSTOM-REWRITE-WITH-META-EXTRACT
@@ -454,7 +575,10 @@
                   :verify-guards t))
   (if (atom runes)
       nil
-    (b* ((rune (car runes))
+    (b* ((rest (get-rule-list (cdr runes) sc-alist new-synps warning
+                               state))
+
+         (rune (car runes))
          ((mv rule-name given-rule-type)
           (case-match rune
             ((type name . &) (mv name type))
@@ -463,7 +587,7 @@
           (progn$
            (cw "WARNING! Problem reading the rune name. Skipping ~p0 ~%"
                rune)
-           (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state)))
+           rest))
          ;; if the current rune is just a name, then treat that as a rewrite
          ;; rule for only the following tests. 
          (rule-type (mv-nth 0 (get-rune-name rule-name state)))
@@ -478,20 +602,25 @@
           (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))||#
          #|((when (and (equal given-rule-type ':type-prescription)
                      (or (equal rule-type ':definition))))
-          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist state))||#
+          (get-rule-list (cdr runes) sc-alist new-synps rule-fnc-alist
+         state))||#
+         
+         ((when (meta-rune-p rune)) ;; meta runes are (:meta meta-fncs . trig-fncs)
+          (cons (make-custom-rule-for-meta rune);; let rhs be the name of the meta function.
+                rest))
          ((when (and (not (equal rule-type ':rewrite))
                      (not (equal rule-type ':definition))
                      (not (equal rule-type ':type-prescription))))
-          (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state))
+          rest)
          (rule-new-synp (cdr (assoc-equal rule-name new-synps)))
          (rules (custom-rewrite-with-meta-extract rule-name rule-new-synp
                                                   warning  state))
-         (rules (try-to-add-rule-fnc rules rule-fnc-alist))
+         #|(rules (try-to-add-rule-fnc rules rule-fnc-alist))||#
          ((when (not (rule-list-syntaxp rules)))
           (or (cw "Warning a problem with rule-list ~p0 ~%" rules)
-              (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state)))
+              rest))
          (rules (update-rules-with-sc rules sc-alist state)))
-      (append rules (get-rule-list (cdr runes) sc-alist new-synps warning rule-fnc-alist state)))))
+      (append rules rest))))
 
 (defun to-fast-alist (alist)
   (declare (xargs :guard t))
@@ -527,19 +656,19 @@
         (hard-error 'get-rules
                     "Table is broken. Side condition alist is damaged ~%"
                     nil))
-       (rule-fnc-alist (make-fast-alist (table-alist 'rw-fncs (w state))))
+       #|(rule-fnc-alist (make-fast-alist (table-alist 'rw-fncs (w state))))||#
        (rule-list (get-rule-list runes
                                  sc-alist
                                  new-synps
                                  warning
-                                 rule-fnc-alist
+                                 #|rule-fnc-alist||#
                                  state))
        ((when (not (weak-custom-rewrite-rule-listp rule-list)))
         (hard-error
          'get-rules
          "Something is wrong with the rewrite rule list format"
          nil))
-       (- (fast-alist-free rule-fnc-alist))
+       #|(- (fast-alist-free rule-fnc-alist))||#
        (rules-alist (rule-list-to-alist rule-list))
        (rules-alist (to-fast-alist rules-alist)))
     rules-alist))

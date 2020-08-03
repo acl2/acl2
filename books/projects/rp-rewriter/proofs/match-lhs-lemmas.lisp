@@ -511,7 +511,8 @@
 
   (local
    (defthm lemma1
-     (implies (rule-syntaxp rule)
+     (implies (and (rule-syntaxp rule)
+                   (rp-rule-rwp rule))
               (not (include-fnc (rp-lhs rule) 'if)))
      :hints (("Goal"
               :in-theory (e/d (rule-syntaxp) ())))))
@@ -519,6 +520,7 @@
   (local
    (defthm lemma2
      (implies (and (consp rules-for-term)
+                   (rp-rule-rw-listp rules-for-term)
                    (rule-list-syntaxp rules-for-term))
               (NOT (INCLUDE-FNC (RP-LHS (CAR RULES-FOR-TERM))
                                 'IF)))
@@ -531,6 +533,7 @@
       (declare (ignorable rules-rest rp-context))
       (implies (and rule
                     (rule-list-syntaxp rules-for-term)
+                    (rp-rule-rwp rule)
                     (valid-sc term a))
                (valid-sc-bindings bindings a)))
     :hints (("Goal"
@@ -644,8 +647,10 @@
 
 (defthm rp-rw-rule-aux-does-not-return-rule-with-iff-flg-when-iff-flg=nil
   (implies
-   (mv-nth 0
-           (rp-rw-rule-aux term rules-for-term context nil state))
+   (and (mv-nth 0
+                (rp-rw-rule-aux term rules-for-term context nil state))
+        (rp-rule-rwp (mv-nth 0
+                             (rp-rw-rule-aux term rules-for-term context nil state))))
    (not (rp-iff-flag
          (mv-nth 0
                  (rp-rw-rule-aux term rules-for-term context nil state)))))
@@ -880,6 +885,7 @@
                                      (:DEFINITION FALIST-CONSISTENT-AUX)
                                      rp-does-lhs-match
                                      rp-match-lhs))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm SHOULD-TERM-BE-IN-CONS-implies
@@ -944,7 +950,8 @@
   (defthm-rp-match-lhs
     (defthm rp-match-lhs-binds-all
       (implies (and (mv-nth 2 (rp-match-lhs term rule-lhs
-                                            context acc-bindings)))
+                                            context acc-bindings))
+                    (rp-termp rule-lhs))
                (all-vars-bound
                 rule-lhs
                 (mv-nth 1 (rp-match-lhs term rule-lhs
@@ -953,7 +960,8 @@
     (defthm rp-match-lhs-binds-all-subterms
       (implies (and (mv-nth 2 (rp-match-lhs-subterms subterms
                                                      sublhs
-                                                     context acc-bindings)))
+                                                     context acc-bindings))
+                    (rp-term-listp sublhs))
                (all-vars-bound-subterms
                 sublhs
                 (mv-nth 1 (rp-match-lhs-subterms subterms sublhs
@@ -1481,6 +1489,7 @@
       (implies (and rule
                     (alistp a)
                     (rule-list-syntaxp rules-for-term)
+                    (rp-rule-rwp rule)
                     (rp-termp term))
                (and (equal (rp-evl (rp-apply-bindings (rp-lhs rule)
                                                       (rp-trans-bindings bindings))

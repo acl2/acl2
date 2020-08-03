@@ -142,3 +142,25 @@ Forced term was:~% ~p0 ~% "
    (equal (force forced-term) t))
   :hints (("goal" 
            :in-theory '(return-last hard-error hide))))
+
+(def-rp-rule$ t nil
+  force$-fail
+  (implies
+   (hard-error
+    'force-fail
+    "The below term could not be reduced to 't. 
+If you want to look at the stack, you can try using 
+ (rp::update-rp-brr t rp::rp-state) and
+ (rp::pp-rw-stack :omit '()
+                  :evisc-tuple (evisc-tuple 10 12 nil nil)
+                  :frames 50). 
+
+This was caused by the rule: ~p0
+On the hypothesis: ~p1
+Forced term is ~p2 ~% "
+    (list (cons #\0 rule)
+          (cons #\1 hyp)
+          (cons #\2 forced-term)))
+   (equal (force$ forced-term rule hyp) t))
+  :hints (("goal" 
+           :in-theory '(return-last hard-error hide))))

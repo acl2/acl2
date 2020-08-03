@@ -697,11 +697,13 @@
        (('bit-of name index)
         (b* ((sym (sa  (ex-from-rp-loose name) index)))
           (symbol-name sym)))
-       (& (progn$
-           (hard-error 'make-readable
-                       "Unexpected term instance~p0~%"
-                       (list (cons #\0 term)))
-           nil)))))
+       (& (if (atom term)
+              (symbol-name term)
+            (progn$
+             (hard-error 'make-readable
+                         "Unexpected term instance~p0~%"
+                         (list (cons #\0 term)))
+             nil))))))
  (define make-readable-lst (lst)
    (if (atom lst)
        nil

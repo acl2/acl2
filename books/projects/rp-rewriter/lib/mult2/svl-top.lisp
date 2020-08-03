@@ -744,3 +744,6 @@
            :in-theory (e/d (bitp)
                            ((:TYPE-PRESCRIPTION BIT-OF)
                             (:REWRITE BITP-OF-BIT-OF))))))
+
+
+(bump-all-enabled-meta-rules)

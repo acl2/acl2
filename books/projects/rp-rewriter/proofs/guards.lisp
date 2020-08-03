@@ -39,6 +39,7 @@
 (in-package "RP")
 (include-book "../rp-rewriter")
 (local (include-book "rp-rw-lemmas"))
+(local (include-book "extract-formula-lemmas"))
 (local (include-book "rp-correct"))
 
 (encapsulate
@@ -108,6 +109,16 @@
               (not (cddr (ex-from-rp term))))))
 
   (verify-guards rp-match-lhs))
+
+
+(verify-guards rp-rw-meta-rule-main
+  :hints (("Goal"
+           :expand (RULE-SYNTAXP RULE :WARNING NIL)
+           :in-theory (e/d () (WEAK-CUSTOM-REWRITE-RULE-P
+                               
+                               RP-RULE-METAP$INLINE
+                               RP-RULE-TRIG-FNC$INLINE
+                               RP-RULE-META-FNC$INLINE)))))
 
 (verify-guards rp-rw-rule-aux
   :hints (("Goal"
@@ -531,6 +542,15 @@
             :in-theory (e/d (rp-state-push-to-try-to-rw-stack
                              rp-statep) ())))))
 
+
+(local
+ (defthm rule-syntaxp-implies-WEAK-CUSTOM-REWRITE-RULE-P
+  (implies (rule-syntaxp rule)
+           (WEAK-CUSTOM-REWRITE-RULE-P rule))
+  :hints (("Goal"
+           :in-theory (e/d (rule-syntaxp) ())))))
+
+
 (verify-guards rp-rw
   :otf-flg t
   :hints (("Goal"
@@ -586,6 +606,15 @@
                         (:TYPE-PRESCRIPTION SYMBOL-ALISTP))))))
 
 
+(defret attach-sc-from-context-returns-rp-termp
+  (implies (and (rp-term-listp context)
+                (rp-termp term))
+           (and (rp-term-listp res-context)
+                (rp-termp res-term)))
+  :fn attach-sc-from-context
+  :hints (("Goal"
+           :induct (ATTACH-SC-FROM-CONTEXT context term)
+           :in-theory (e/d (ATTACH-SC-FROM-CONTEXT) ()))))
 
 (verify-guards rp-rw-aux
   :otf-flg t

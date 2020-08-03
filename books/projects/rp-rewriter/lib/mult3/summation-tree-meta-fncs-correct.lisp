@@ -776,7 +776,7 @@
                             )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; c-pattern2-reduce and create-c-instance lemmas
+;; c-pattern1-reduce and create-c-instance lemmas
 
 (defthm minus-of-sum
   (equal (-- (sum a b))
@@ -842,7 +842,7 @@
   (equal (sum (-- a) (f2 (sum a b)))
          (f2 (sum (-- a) b))))
 
-(defthm c-pattern2-reduce-correct-lemma
+(defthm c-pattern1-reduce-correct-lemma
   (b* (((mv max min valid)
         (get-max-min-val term)))
     (implies (and valid
@@ -861,7 +861,7 @@
                            (get-max-min-val-correct
                             rw-dir1)))))
 
-(defret c-pattern2-reduce-correct
+(defret c-pattern1-reduce-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc s a)
@@ -876,7 +876,7 @@
                        (f2 (sum (sum-list (rp-evlt s a))
                                 (sum-list (rp-evlt pp a))
                                 (sum-list (rp-evlt c a)))))))
-  :fn c-pattern2-reduce
+  :fn c-pattern1-reduce
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance decompress-s-c-correct
@@ -911,7 +911,7 @@
                     (:free (x) (valid-sc (cons 'c x) a)))
            ;;:case-split-limitations (10 1)
            :do-not '()
-           :in-theory (e/d (c-pattern2-reduce
+           :in-theory (e/d (c-pattern1-reduce
                             rp-trans-lst-of-consp
                             ;;f2-of-minus-reverse
                             )
@@ -958,12 +958,12 @@
   :fn create-c-instance
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance c-pattern2-reduce-correct))
+           :use ((:instance c-pattern1-reduce-correct))
            :expand ((:free (x) (valid-sc (cons 'c x) a))
                     (:free (x) (valid-sc (cons 'quote x) a)))
            :in-theory (e/d (create-c-instance
                             rp-trans-lst-of-consp)
-                           (c-pattern2-reduce-correct
+                           (c-pattern1-reduce-correct
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             (:REWRITE DEFAULT-CDR)
                             (:REWRITE DEFAULT-CAR)
@@ -984,9 +984,9 @@
                             )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; create-s-instance and s-pattern3-reduce lemmas
+;; create-s-instance and s-pattern1-reduce lemmas
 
-(defthmd s-pattern3-reduce-correct-lemma
+(defthmd s-pattern1-reduce-correct-lemma
   (implies (and (<= val 0)
                 (>= val -1))
            (equal (m2 val) (-- val)))
@@ -1008,7 +1008,7 @@
                            (rw-dir1
                             mod2-is-m2)))))
 
-(defret s-pattern3-reduce-correct
+(defret s-pattern1-reduce-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc pp a)
@@ -1017,7 +1017,7 @@
            (and (equal (rp-evlt reduced a)
                        (m2 (sum (sum-list (rp-evlt pp a))
                                 (sum-list (rp-evlt c a)))))))
-  :fn s-pattern3-reduce
+  :fn s-pattern1-reduce
   :hints (("Goal"
            :do-not-induct t
            :expand (#|(LIGHT-COMPRESS-S-C (LIST 'S ''0 PP C))||#
@@ -1034,15 +1034,15 @@
                  (:instance get-max-min-val-correct
                             (term (CADR (CADDDR (LIGHT-COMPRESS-S-C (LIST 'S ''0 PP C))))))
                  (:instance
-                  s-pattern3-reduce-correct-lemma
+                  s-pattern1-reduce-correct-lemma
                   (val (RP-EVLT (CADR (CADDDR (LIGHT-COMPRESS-S-C (LIST 'S ''0 PP C))))
                                 A))))
-           :in-theory (e/d (s-pattern3-reduce
+           :in-theory (e/d (s-pattern1-reduce
                             rp-trans-lst-of-consp
                             c-res
                             is-rp)
                            (light-compress-s-c-correct
-                            s-pattern3-reduce-correct-lemma
+                            s-pattern1-reduce-correct-lemma
                             get-max-min-val-correct
                             (:REWRITE DEFAULT-CDR)
                             (:TYPE-PRESCRIPTION O<)
@@ -1076,24 +1076,24 @@
    :hints (("Goal"
             :in-theory (e/d (is-rp) ())))))
 
-(defret s-pattern3-reduce-correct-valid-sc
+(defret s-pattern1-reduce-correct-valid-sc
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc pp a)
                 (valid-sc c a)
                 reducedp)
            (valid-sc reduced a))
-  :fn s-pattern3-reduce
+  :fn s-pattern1-reduce
   :hints (("Goal"
-           :use ((:instance s-pattern3-reduce-correct))
+           :use ((:instance s-pattern1-reduce-correct))
            :expand ((:free (x) (valid-sc (cons 'c-res x) a))
                     (:free (x) (valid-sc (cons 'list x) a))
                     (:free (x) (valid-sc (cons '-- x) a)))
-           :in-theory (e/d (s-pattern3-reduce
+           :in-theory (e/d (s-pattern1-reduce
                             valid-sc-single-step
                             is-rp
                             )
-                           (s-pattern3-reduce-correct
+                           (s-pattern1-reduce-correct
                             valid-sc
                             )))))
 (defthmd m2-of-bitp

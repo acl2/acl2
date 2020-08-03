@@ -231,19 +231,21 @@ which submits an event.
 (defund rp-state-push-to-try-to-rw-stack (rule var-bindings rp-context rp-state)
   (declare (xargs :stobjs (rp-state)
                   :guard (WEAK-CUSTOM-REWRITE-RULE-P RULE)))
-  (if (rp-brr rp-state)
+  (if (and (rp-brr rp-state)
+           (not (rp-rule-metap rule)))
       (b* ((old-rw-stack (rw-stack rp-state))
            (index (rw-stack-size rp-state))
-           (new-rw-stack (acons index
-                                (list
-                                 (list ':type 'trying)
-                                 (list ':rune (rp-rune rule))
-                                 (list ':lhs (rp-lhs rule))
-                                 (list ':rhs (rp-rhs rule))
-                                 (list ':hyp (rp-hyp rule))
-                                 (list ':context rp-context)
-                                 (list ':var-bindings var-bindings))
-                                old-rw-stack))
+           (new-rw-stack
+            (acons index
+                   (list
+                    (list ':type 'trying)
+                    (list ':rune (rp-rune rule))
+                    (list ':lhs (rp-lhs rule))
+                    (list ':rhs (rp-rhs rule))
+                    (list ':hyp (rp-hyp rule))
+                    (list ':context rp-context)
+                    (list ':var-bindings var-bindings))
+                   old-rw-stack))
            (rp-state (update-rw-stack new-rw-stack rp-state))
            (rp-state (update-rw-stack-size (1+ index) rp-state)))
         (mv index rp-state))

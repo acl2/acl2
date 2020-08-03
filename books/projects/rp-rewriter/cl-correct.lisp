@@ -62,24 +62,24 @@
 
 
 
-(defund create-simple-meta-rules-alist-aux (meta-rules disabled-meta-rules)
-  (declare (xargs :guard t))
-  (if (atom meta-rules)
-      nil
-    (b* (((when (not (weak-rp-meta-rule-rec-p (car meta-rules))))
-          (progn$ (hard-error 'create-simple-meta-rules-alist-aux
-                              "Possibly broken table! ~p0"
-                              (cons #\0 (car meta-rules)))
-                  nil))
-         (trig-fnc (acl2::symbol-fix (rp-meta-trig-fnc (car meta-rules))))
-         (fnc (acl2::symbol-fix (rp-meta-fnc (car meta-rules))))
-         (rest (create-simple-meta-rules-alist-aux (cdr meta-rules)
-                                               disabled-meta-rules))
-         (entry (hons-get fnc disabled-meta-rules))
-         ((when (and entry
-                     (cdr entry)))
-          rest))
-      (acons trig-fnc fnc rest))))
+;; (defund create-simple-meta-rules-alist-aux (meta-rules disabled-meta-rules)
+;;   (declare (xargs :guard t))
+;;   (if (atom meta-rules)
+;;       nil
+;;     (b* (((when (not (weak-rp-meta-rule-rec-p (car meta-rules))))
+;;           (progn$ (hard-error 'create-simple-meta-rules-alist-aux
+;;                               "Possibly broken table! ~p0"
+;;                               (cons #\0 (car meta-rules)))
+;;                   nil))
+;;          (trig-fnc (acl2::symbol-fix (rp-meta-trig-fnc (car meta-rules))))
+;;          (fnc (acl2::symbol-fix (rp-meta-fnc (car meta-rules))))
+;;          (rest (create-simple-meta-rules-alist-aux (cdr meta-rules)
+;;                                                disabled-meta-rules))
+;;          (entry (hons-get fnc disabled-meta-rules))
+;;          ((when (and entry
+;;                      (cdr entry)))
+;;           rest))
+;;       (acons trig-fnc fnc rest))))
 
 
 (defund get-meta-rules (table-entry)
@@ -90,19 +90,60 @@
    (b* ((e (cdar table-entry)))
      (append (true-list-fix e) (get-meta-rules (cdr table-entry))))))
 
-(defund create-simple-meta-rules-alist (state)
-  (declare (xargs :stobjs (state)))
-  (b* ((world (w state))
-       (rp-rw-meta-rules-with-fc (table-alist 'rp-rw-meta-rules world))
-       (meta-rules (get-meta-rules rp-rw-meta-rules-with-fc))
-       (disabled-meta-rules (Make-Fast-Alist (table-alist 'disabled-rp-meta-rules world)))
-       (simple-meta-rules-list (create-simple-meta-rules-alist-aux meta-rules
-                                                                   disabled-meta-rules))
-       (- (fast-alist-free disabled-meta-rules)))
-    simple-meta-rules-list))
+;; (defund create-simple-meta-rules-alist (state)
+;;   (declare (xargs :stobjs (state)))
+;;   (b* ((world (w state))
+;;        (rp-rw-meta-rules-with-fc (table-alist 'rp-rw-meta-rules world))
+;;        (meta-rules (get-meta-rules rp-rw-meta-rules-with-fc))
+;;        (disabled-meta-rules (Make-Fast-Alist (table-alist 'disabled-rp-meta-rules world)))
+;;        (simple-meta-rules-list (create-simple-meta-rules-alist-aux meta-rules
+;;                                                                    disabled-meta-rules))
+;;        (- (fast-alist-free disabled-meta-rules)))
+;;     simple-meta-rules-list))
 
+(defwarrant rp-meta-fnc)
+(defwarrant RP-META-TRIG-FNC)
 
-(local
+(define get-enabled-meta-rules-from-table (state)
+  :prepwork
+  ((local
+    (defthm WEAK-RP-META-RULE-RECS-P-implies-TRUE-LISTP
+      (implies (WEAK-RP-META-RULE-RECS-P x)
+               (TRUE-LISTP x)))))
+  :guard-hints (("Goal"
+                 :in-theory (e/d () (WEAK-RP-META-RULE-REC-P
+                                     (:REWRITE
+                                      ACL2::MEMBER-EQUAL-STRIP-CARS-ASSOC-EQUAL)
+                                     HONS-GET
+                                     ASSOC-EQUAL
+                                     (:DEFINITION NO-DUPLICATESP-EQUAL)
+                                     (:DEFINITION ALWAYS$)
+                                     (:REWRITE ACL2::FANCY-UQI-INTEGER-1)
+                                     (:DEFINITION INTEGER-LISTP)
+                                     (:DEFINITION FGETPROP)
+                                     (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES
+                                               . 1)
+                                     (:DEFINITION ACL2::APPLY$-BADGEP)
+                                     (:DEFINITION MEMBER-EQUAL)))))
+  (b* ((meta-rules-list (cdr (HONS-ASSOC-EQUAL 'meta-rules-list (table-alist 'rp-rw
+                                                                        (w
+                                                                         state)))))
+       (rp-rules (make-fast-alist (table-alist 'rp-rules (w state))))
+       ((unless (weak-rp-meta-rule-recs-p meta-rules-list))
+        (progn$ (fast-alist-clean rp-rules)))
+       (runes (loop$ for x in meta-rules-list
+                          collect
+                          :guard (weak-rp-meta-rule-rec-p x)           
+                          `(:meta ,(rp-meta-fnc x) . ,(rp-meta-trig-fnc  x))))
+       (res (loop$ for x in runes when (cdr (hons-get x rp-rules)) collect x))
+       (- (fast-alist-clean rp-rules)))
+    res))
+                               
+           
+       
+  
+
+#|(local
  (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist-aux
    (and (simple-meta-rule-alistp (create-simple-meta-rules-alist-aux meta-rules disabled-meta-rules))
         )
@@ -113,15 +154,15 @@
             :in-theory (e/d (create-simple-meta-rules-alist
                              SIMPLE-META-RULE-ALISTP
                              CREATE-SIMPLE-META-RULES-ALIST-AUX)
-                            ())))))
+                            ())))))||#
 
-(local
+#|(local
  (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist
    (and (simple-meta-rule-alistp (create-simple-meta-rules-alist state)))
    :hints (("Goal"
             :in-theory (e/d (create-simple-meta-rules-alist
                              SIMPLE-META-RULE-ALISTP)
-                            ())))))
+                            ())))))||#
 
 (defun rp-clause-processor-aux (cl hints rp-state state)
   (declare #|(ignorable rule-names)||#
@@ -157,11 +198,12 @@
                                 "format of rules-alist is bad ~%" nil)
                     (mv nil (list cl) rp-state state)))
            (rp-state (rp-state-new-run rp-state))
-           (meta-rules (create-simple-meta-rules-alist state))
+           ;;(meta-rules (create-simple-meta-rules-alist state))
            #|(disabled-meta-rules (table-alist 'disabled-rp-meta-rules
            (w state)))||#
            #|(meta-rules (remove-disabled-meta-rules meta-rules disabled-meta-rules))||#
-           (meta-rules (make-fast-alist meta-rules))
+           ;;(meta-rules (make-fast-alist meta-rules))
+           (meta-rules nil)
            ((mv rw rp-state)
             (if (rp-formula-checks state)
                 (rp-rw-aux car-cl
@@ -171,7 +213,7 @@
                            rp-state
                            state)
               (mv car-cl rp-state)))
-           (- (fast-alist-free meta-rules))
+           ;;(- (fast-alist-free meta-rules))
            (- (fast-alist-free exc-rules))
            (- (fast-alist-free rules-alist)))
         (mv nil
@@ -180,10 +222,7 @@
             state))
     (mv nil (list cl) rp-state state)))
 
-;; When the clause-processor is to be proved with a new evaluator, this lemmas
-;; will be used with functional instantiation with the new evaluator and other
-;; functions. We would be needing a new evaluator when we want to use a new
-;; meta function.
+
 (local
  (defthm correctness-of-rp-clause-processor-aux
   (implies (and (pseudo-term-listp cl)
@@ -224,10 +263,6 @@
                             table-alist))))
   :rule-classes :rewrite))
 
-;; This function needs a guard (rp-evl-meta-extract-global-facts :state state)
-;; because we need to use resolve-b+-order-is-valid-rp-meta-rulep proved in
-;; proofs/apply-meta-lemmas.lisp. We need to verify the guards because
-;; rp-clause-processor-aux is not executable (its guards call a defun-sk).
 (defun rp-rewriter (cl hints rp-state state)
   (declare
    (xargs :stobjs (rp-state state)
