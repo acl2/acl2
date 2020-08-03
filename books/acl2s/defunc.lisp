@@ -932,6 +932,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      :rule-classes
      :instructions :function-contract-hints :otf-flg ;for contract defthm
      :body-contracts-hints ;for verify-guards event
+     :lemma ; in case we want to prove some lemmas as part of the
+       ; definition, unsupported
      )))
 
 (deffilter filter-keywords (xs) keywordp)
