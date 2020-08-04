@@ -589,6 +589,12 @@
      reference types; and
      all types.")
 
+   (xdoc::p
+    "The formalization, including the ABNF grammar,
+     have been updated to Java 14.
+     In particular, this involved updating of the ABNF grammar with
+     @('switch') expressions and @('yield') statements.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
