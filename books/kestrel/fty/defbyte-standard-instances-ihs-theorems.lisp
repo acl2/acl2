@@ -10,12 +10,17 @@
 
 (in-package "FTY")
 
+(include-book "ubyte8-ihs-theorems")
 (include-book "ubyte16-ihs-theorems")
+(include-book "ubyte32-ihs-theorems")
+(include-book "ubyte64-ihs-theorems")
+(include-book "ubyte128-ihs-theorems")
 
 (include-book "sbyte8-ihs-theorems")
 (include-book "sbyte16-ihs-theorems")
 (include-book "sbyte32-ihs-theorems")
 (include-book "sbyte64-ihs-theorems")
+(include-book "sbyte128-ihs-theorems")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
