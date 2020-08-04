@@ -751,7 +751,7 @@
                                          symbolp
                                          booleanp
                                          booleanp
-                                         symbol-alistp
+                                         evmac-input-hints-p
                                          symbol-listp
                                          result)').")
                state)
