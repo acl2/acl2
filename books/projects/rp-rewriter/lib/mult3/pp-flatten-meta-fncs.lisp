@@ -1330,7 +1330,7 @@
                              is-rp) ())))))
 
 (defthm pp-flatten-returns-valid-sc
-  (implies (valid-sc term a)
+  (implies (force (valid-sc term a))
            (VALID-SC-SUBTERMS (pp-flatten term sign) a))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten

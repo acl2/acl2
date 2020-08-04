@@ -1685,9 +1685,7 @@
          (c-fix-s-args new-s-arg))
 
         ((mv coughed-pp-lst new-pp-lst)
-         (if (clean-pp-args-cond new-s-arg arg-merged-c-lst)
-             (c-fix-arg-aux pp-lst t)
-           (mv nil pp-lst)))
+         (c-fix-arg-aux-with-cond pp-lst t (clean-pp-args-cond new-s-arg arg-merged-c-lst)))
 
         ;; To-be-coughed c-lst from the args is the coughed-c-lst of the
         ;; new c instance.
@@ -2450,18 +2448,17 @@
   :prepwork ((local
               (in-theory (disable natp))))
   (b* (((mv s-coughed arg-s) (c-fix-s-args arg-s))
-       ((mv pp-coughed arg-pp)
-        (if (clean-pp-args-cond arg-s arg-c-lst)
-            (c-fix-pp-args (create-list-instance arg-pp-lst))
-          (mv ''nil (create-list-instance arg-pp-lst))))
+       ((mv pp-coughed-lst arg-pp-lst)
+        (c-fix-arg-aux-with-cond arg-pp-lst t  (clean-pp-args-cond arg-s arg-c-lst)))
 
        (single-c-term (create-c-instance arg-s
-                                         arg-pp
+                                         (create-list-instance arg-pp-lst)
                                          (create-list-instance arg-c-lst)))
 
-       ((mv c-pattern2-pp-lst single-c-term)
-        (c-pattern2-reduce nil single-c-term))
-       (pp-coughed (pp-sum-merge pp-coughed (create-list-instance c-pattern2-pp-lst)))
+       ((mv pp-coughed-lst single-c-term)
+        (c-pattern2-reduce pp-coughed-lst single-c-term))
+
+       (pp-coughed (create-list-instance pp-coughed-lst))
        
        ((when (not to-be-coughed-c-lst))
         (cond ((and (equal s-coughed ''nil)
@@ -2501,14 +2498,12 @@
                           (rp-term-listp c-lst)))
   (b* ((pp (pp-lst-to-pp pp-lst))
        ((mv pp c-lst) (s-of-s-fix s pp c-lst))
-
-       (pp-orig pp)
        
        (pp (if (clean-pp-args-cond ''nil c-lst) (s-fix-args pp) pp))
 
-       (- (and (clean-pp-args-cond ''nil c-lst)
+       #|(- (and (clean-pp-args-cond ''nil c-lst)
                (not (equal (s-fix-args pp) pp))
-               (cw "pp-orig : ~p0 ~% " pp-orig)))
+               (cw "pp-orig : ~p0 ~% " pp-orig)))||#
 
        (c (create-list-instance c-lst))
        (res (create-s-instance pp c)))

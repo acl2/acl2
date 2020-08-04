@@ -48,7 +48,6 @@
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
 
 (include-book "lemmas")
- 
 
 (include-book "summation-tree-meta-fncs")
 
@@ -57,7 +56,6 @@
 (include-book "sum-merge-fncs-correct")
 
 (include-book "lemmas-2")
- 
 
 (local
  (fetch-new-events
@@ -983,13 +981,325 @@
                             VALID-SC
                             )))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; pp-termp-implies-bitp
+
+(progn
+
+  (local
+   (defthmd is-rp-and-rp-evlt-dummy-lemma
+     (implies (is-rp term)
+              (equal (rp-evlt term a)
+                     (rp-evlt (caddr term) a)))
+     :hints (("Goal"
+              :in-theory (e/d (is-rp) ())))))
+
+  (local
+   (create-regular-eval-lemma cons 2 mult-formula-checks))
+  (local
+   (create-regular-eval-lemma binary-not 1 mult-formula-checks))
+  (local
+   (create-regular-eval-lemma binary-xor 2 mult-formula-checks))
+  (local
+   (create-regular-eval-lemma binary-or 2 mult-formula-checks))
+  (local
+   (create-regular-eval-lemma binary-and 2 mult-formula-checks))
+  (local
+   (create-regular-eval-lemma binary-? 3 mult-formula-checks))
+
+  (local
+   (defthm pp-termp-is-bitp-lemma
+     (implies (and (PP-HAS-BITP-RP TERM)
+                   (rp-evl-meta-extract-global-facts :state state)
+                   (VALID-SC TERM A)
+                   (MULT-FORMULA-CHECKS STATE))
+              (and (BITP (RP-EVLt TERM A))
+                   (BITP (RP-EVLt (EX-FROM-RP TERM) A))))
+     :otf-flg t
+     :hints (("Goal"
+              :induct (PP-HAS-BITP-RP TERM)
+              :do-not-induct t
+              :in-theory (e/d (is-if ;is-rp
+                               valid-sc
+                               is-rp-and-rp-evlt-dummy-lemma
+                               is-rp-implies-fc
+                               valid-sc-single-step
+                               rp-trans-lst-of-consp
+                               PP-HAS-BITP-RP)
+                              (bitp
+                               rp-trans
+                               rp-trans-lst
+                               NOT-INCLUDE-RP-MEANS-VALID-SC))))))
+
+  (local
+   (defthm pp-termp-is-bitp
+     (implies (and (rp-evl-meta-extract-global-facts :state state)
+                   (mult-formula-checks state)
+                   (pp-term-p term)
+                   (valid-sc term a))
+              (bitp (rp-evlt term a)))
+     :hints (("Goal"
+              :do-not-induct t
+              :expand ((PP-TERM-P TERM))
+              :in-theory (e/d (pp-term-p
+                               is-rp
+                               rp-evlt-of-ex-from-rp-reverse-only-atom
+                               is-if)
+                              (bitp
+                               (:DEFINITION VALID-SC)
+                               (:DEFINITION EVAL-AND-ALL)
+                               (:DEFINITION IS-RP$INLINE)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                               PP-HAS-BITP-RP
+                               rp-trans
+                               pp-term-p
+                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                               rp-evlt-of-ex-from-rp
+                               EX-FROM-RP-LEMMA1
+                               rp-evlt-of-ex-from-rp))))))
+
+  (local
+   (defthm light-pp-termp-is-bitp
+     (implies (and (rp-evl-meta-extract-global-facts :state state)
+                   (mult-formula-checks state)
+                   (LIGHT-PP-TERM-P term)
+                   (valid-sc term a))
+              (bitp (rp-evlt term a)))
+     :hints (("Goal"
+              :do-not-induct t
+              :expand ((LIGHT-PP-TERM-P TERM))
+              :in-theory (e/d (LIGHT-PP-TERM-p
+                               is-rp
+                               rp-evlt-of-ex-from-rp-reverse-only-atom
+                               is-if)
+                              (bitp
+                               pp-term-p
+                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                               rp-evlt-of-ex-from-rp
+                               EX-FROM-RP-LEMMA1
+                               rp-evlt-of-ex-from-rp))))))
+
+  (local
+   (defthm PP-HAS-BITP-RP-EX-FROM-RP
+     (not (PP-HAS-BITP-RP (EX-FROM-RP TERM)))
+     :hints (("Goal"
+              :induct (EX-FROM-RP TERM)
+              :do-not-induct t
+              :in-theory (e/d (EX-FROM-RP pp-has-bitp-rp
+                                          is-rp) ())))))
+
+  (local
+   (defthm pp-termp-of-ex-from-rp
+     (implies (pp-term-p (ex-from-rp term))
+              (pp-term-p term))
+     :hints (("Goal"
+              :expand ((PP-TERM-P (EX-FROM-RP TERM))
+                       (pp-term-p term))
+              :do-not-induct t
+              :in-theory (e/d (pp-term-p) ())))))
+
+  (local
+   (defthm LIGHT-PP-TERM-P-of-ex-from-rp
+     (implies (LIGHT-PP-TERM-P (ex-from-rp term))
+              (LIGHT-PP-TERM-P term))
+     :hints (("Goal"
+              :expand ((LIGHT-PP-TERM-P (EX-FROM-RP TERM))
+                       (LIGHT-PP-TERM-P term))
+              :do-not-induct t
+              :in-theory (e/d (LIGHT-PP-TERM-P) ()))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; c-pattern2-reduce lemmas
-:i-am-here
+;; single-c-to-pp-lst, c-pattern2-reduce lemmas
 
-;; (defret c-pattern2-reduce-valid-sc
-  
+(defret AND-LIST-INSTANCE-TO-BINARY-AND-AUX-valid-sc
+  (implies (valid-sc-subterms lst a)
+           (valid-sc res a))
+  :fn AND-LIST-INSTANCE-TO-BINARY-AND-AUX
+  :hints (("Goal"
+           :in-theory (e/d (AND-LIST-INSTANCE-TO-BINARY-AND-AUX
+                            is-rp
+                            is-if)
+                           ()))))
+
+(defret and-list-instance-to-binary-and-aux-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (equal (rp-evlt res a)
+                  (and-list 0 (rp-evlt-lst lst a))))
+  :fn and-list-instance-to-binary-and-aux
+  :hints (("goal"
+           :induct (and-list-instance-to-binary-and-aux lst)
+           :expand ((and-list 0
+                              (cons (rp-evlt (car lst) a)
+                                    (rp-evlt-lst (cdr lst) a))))
+           :in-theory (e/d (and-list-instance-to-binary-and-aux
+                            is-rp
+                            is-if)
+                           ()))))
+
+(defret and-list-instance-to-binary-and-valid-sc
+  (implies (valid-sc term a)
+           (valid-sc res a))
+  :fn and-list-instance-to-binary-and
+  :hints (("goal"
+           :in-theory (e/d (and-list-instance-to-binary-and) ()))))
+
+(defret and-list-instance-to-binary-and-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (equal (rp-evlt res a)
+                  (rp-evlt term a)))
+  :fn and-list-instance-to-binary-and
+  :hints (("goal"
+           :in-theory (e/d (and-list-instance-to-binary-and)
+                           (rp-trans)))))
+
+(defret single-c-to-pp-lst-valid-sc
+  (implies (and (force (valid-sc pp1 a))
+                (force (valid-sc pp2 a))
+                (force (valid-sc pp3 a)))
+           (valid-sc-subterms res-pp-lst a))
+  :fn single-c-to-pp-lst
+  :hints (("Goal"
+           :in-theory (e/d (SINGLE-C-TO-PP-LST is-rp is-if)
+                           (valid-sc))
+           :expand ((:free (x y)
+                           (valid-sc `(BINARY-OR ,X ,Y) a))
+                    (:free (x y)
+                           (valid-sc `(BINARY-and ,X ,Y) a))))))
+
+(defthm pp-flatten-correct-with-sum-list-eval
+  (implies (and (mult-formula-checks state)
+                (force (pp-term-p term))
+                (booleanp sign)
+                (force (valid-sc term a))
+                (rp-evl-meta-extract-global-facts))
+           (equal (sum-list-eval (pp-flatten term sign) a)
+                  (if sign
+                      (-- (rp-evlt term a))
+                    (rp-evlt term a))))
+  :hints (("Goal"
+           :use ((:instance pp-flatten-correct))
+           :in-theory (e/d () ()))))
+
+(local
+ (defthmd f2-of-three-bits
+   (implies (and (bitp a)
+                 (bitp b)
+                 (bitp c))
+            (equal (f2 (sum a b c))
+                   (OR$ (AND$ a b)
+                        (AND$ b c)
+                        (AND$ a c))))
+   :hints (("Goal"
+            :in-theory (e/d (bitp) ())))))
+
+(defret single-c-to-pp-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (force (valid-sc pp1 a))
+                (force (valid-sc pp2 a))
+                (force (valid-sc pp3 a))
+                success)
+           (equal (sum-list-eval res-pp-lst a)
+                  (f2 (sum (rp-evlt pp1 a)
+                           (rp-evlt pp2 a)
+                           (rp-evlt pp3 a)))))
+  :fn single-c-to-pp-lst
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance
+                  and-list-instance-to-binary-and-correct
+                  (term pp1))
+                 (:instance
+                  and-list-instance-to-binary-and-correct
+                  (term pp2))
+                 (:instance
+                  and-list-instance-to-binary-and-correct
+                  (term pp3))
+                 (:instance
+                  f2-of-three-bits
+                  (a (RP-EVLT PP1 A))
+                  (b (RP-EVLT PP2 A))
+                  (c (RP-EVLT PP3 A))))
+           :expand ((:free (x y)
+                           (valid-sc `(BINARY-OR ,X ,Y) a))
+                    (:free (x y)
+                           (pp-term-p `(BINARY-OR ,X ,Y)))
+                    (:free (x y)
+                           (valid-sc `(BINARY-and ,X ,Y) a))
+                    (:free (x y)
+                           (pp-term-p `(BINARY-and ,X ,Y))))
+           :in-theory (e/d (SINGLE-C-TO-PP-LST
+
+                            EX-FROM-RP
+                            is-rp is-if)
+                           (valid-sc
+                            (:DEFINITION PP-TERM-P)
+                            (:REWRITE DEFAULT-CAR)
+                            (:DEFINITION RP-TRANS)
+                            (:REWRITE RP-EQUAL-IS-SYMMETRIC)
+                            (:DEFINITION RP-EQUAL)
+                            (:REWRITE DEFAULT-CDR)
+                            bitp
+                            and-list-instance-to-binary-and-correct)))))
+
+(defret c-pattern2-reduce-valid-sc
+  (implies (and (valid-sc single-c a)
+                (valid-sc-subterms pp-lst-coughed a))
+           (and (valid-sc res-single-c a)
+                (valid-sc-subterms res-pp-lst-coughed a)))
+  :fn c-pattern2-reduce
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (c-pattern2-reduce) ()))))
+
+(defret c-pattern2-reduce-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc single-c a))
+           (equal (sum (sum-list-eval res-pp-lst-coughed a)
+                       (rp-evlt res-single-c a))
+                  (sum (sum-list-eval pp-lst-coughed a)
+                       (rp-evlt single-c a))))
+  :fn c-pattern2-reduce
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((:free (x) (nth 3 x))
+                    (:free (x) (nth 2 x))
+                    (:free (x) (nth 1 x))
+                    (:free (x) (nth 0 x)))
+           :in-theory (e/d (c-pattern2-reduce
+                            rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
+                           (rp-evlt-of-ex-from-rp
+                            rp-trans)))))
+
+(defret c-pattern2-reduce-correct-with-rest
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc single-c a))
+           (equal (sum (sum-list-eval res-pp-lst-coughed a)
+                       (rp-evlt res-single-c a)
+                       rest)
+                  (sum (sum-list-eval pp-lst-coughed a)
+                       (rp-evlt single-c a)
+                       rest)))
+  :fn c-pattern2-reduce
+  :hints (("Goal")))
+
+(defret c-pattern2-reduce-correct-integerp
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc single-c a)
+                (integerp (rp-evlt single-c A)))
+           (and (integerp (sum-list-eval res-pp-lst-coughed a))
+                (integerp (rp-evlt res-single-c a))))
+  :fn c-pattern2-reduce
+  :hints (("Goal"
+           :in-theory (e/d (c-pattern2-reduce) ()))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; create-s-instance and s-pattern1-reduce lemmas
@@ -1099,17 +1409,107 @@
                     (:free (x) (valid-sc (cons '-- x) a)))
            :in-theory (e/d (s-pattern1-reduce
                             valid-sc-single-step
-                            is-rp
-                            )
+                            is-rp)
                            (s-pattern1-reduce-correct
                             valid-sc
                             )))))
+
 (defthmd m2-of-bitp
   (implies (bitp x)
            (equal (m2 x)
                   x))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
+
+(local
+ (defthmd m2-of-three-bits
+   (implies (and (bitp a)
+                 (bitp b)
+                 (bitp c))
+            (equal (m2 (sum a b c))
+                   (binary-xor a
+                               (binary-xor b c))))
+   :hints (("Goal"
+            :in-theory (e/d (bitp) ())))))
+
+(defret single-s-to-pp-lst-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (force (valid-sc pp1 a))
+                (force (valid-sc pp2 a))
+                (force (valid-sc pp3 a))
+                success)
+           (and (valid-sc-subterms res-pp-lst a)
+                (equal (sum-list-eval res-pp-lst a)
+                       (m2 (sum (rp-evlt pp1 a)
+                                (rp-evlt pp2 a)
+                                (rp-evlt pp3 a))))))
+  :fn single-s-to-pp-lst
+  :hints (("goal"
+           :do-not-induct t
+           :use ((:instance
+                  and-list-instance-to-binary-and-correct
+                  (term pp1))
+                 (:instance
+                  and-list-instance-to-binary-and-correct
+                  (term pp2))
+                 (:instance
+                  and-list-instance-to-binary-and-correct
+                  (term pp3))
+                 (:instance
+                  m2-of-three-bits
+                  (a (rp-evlt pp1 a))
+                  (b (rp-evlt pp2 a))
+                  (c (rp-evlt pp3 a))))
+           :expand ((:free (x y)
+                           (valid-sc `(binary-xor ,x ,y) a))
+                    (:free (x y)
+                           (pp-term-p `(binary-xor ,x ,y))))
+           :in-theory (e/d (single-s-to-pp-lst
+                            ex-from-rp
+                            is-rp is-if)
+                           (and-list-instance-to-binary-and-correct
+                            rp-trans
+                            (:DEFINITION PP-TERM-P)
+                            (:REWRITE DEFAULT-CDR)
+                            (:REWRITE RP-EQUAL-IS-SYMMETRIC)
+                            (:REWRITE DEFAULT-CAR)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            valid-sc)))))
+
+(defret s-pattern2-reduce-correct-valid-sc
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc pp a)
+                (valid-sc c a)
+                reducedp)
+           (valid-sc reduced a))
+  :fn s-pattern2-reduce
+  :hints (("Goal"
+           :expand ((:free (x)
+                           (valid-sc `(sum-list ,x) a)))
+           :in-theory (e/d (s-pattern2-reduce
+                            is-rp if
+                            valid-sc-single-step)
+                           (valid-sc)))))
+
+(defret s-pattern2-reduce-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc pp a)
+                (valid-sc c a)
+                reducedp)
+           (and (equal (rp-evlt reduced a)
+                       (m2 (sum (sum-list (rp-evlt pp a))
+                                (sum-list (rp-evlt c a)))))))
+  :fn s-pattern2-reduce
+  :hints (("Goal"
+           :expand ((:free (x)
+                           (valid-sc `(sum-list ,x) a)))
+           :in-theory (e/d (s-pattern2-reduce
+                            is-rp if
+                            valid-sc-single-step)
+                           (valid-sc)))))
 
 (defret create-s-instance-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -2118,6 +2518,7 @@
                                  :CLEAN-C1-LST CLEAN-C1-LST)
                     (C-SUM-MERGE-LST-LST C1-LST C2-LST))
            :in-theory (e/d (sum-of-repeated-to-times2
+                            c-fix-arg-aux-with-cond
                             rp-term-listp-of-cons-2
                             c-sum-merge-correct-dummy-sum-lemma
                             valid-sc-subterms-cons-2
@@ -2523,132 +2924,6 @@
 (local
  (in-theory (disable (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC))))
 
-(local
- (defthmd is-rp-and-rp-evlt-dummy-lemma
-   (implies (is-rp term)
-            (equal (rp-evlt term a)
-                   (rp-evlt (caddr term) a)))
-   :hints (("Goal"
-            :in-theory (e/d (is-rp) ())))))
-
-(progn
-
-  (local
-   (create-regular-eval-lemma cons 2 mult-formula-checks))
-  (local
-   (create-regular-eval-lemma binary-not 1 mult-formula-checks))
-  (local
-   (create-regular-eval-lemma binary-xor 2 mult-formula-checks))
-  (local
-   (create-regular-eval-lemma binary-or 2 mult-formula-checks))
-  (local
-   (create-regular-eval-lemma binary-and 2 mult-formula-checks))
-  (local
-   (create-regular-eval-lemma binary-? 3 mult-formula-checks))
-
-  (local
-   (defthm pp-termp-is-bitp-lemma
-     (implies (and (PP-HAS-BITP-RP TERM)
-                   (rp-evl-meta-extract-global-facts :state state)
-                   (VALID-SC TERM A)
-                   (MULT-FORMULA-CHECKS STATE))
-              (and (BITP (RP-EVLt TERM A))
-                   (BITP (RP-EVLt (EX-FROM-RP TERM) A))))
-     :otf-flg t
-     :hints (("Goal"
-              :induct (PP-HAS-BITP-RP TERM)
-              :do-not-induct t
-              :in-theory (e/d (is-if ;is-rp
-                               valid-sc
-                               is-rp-and-rp-evlt-dummy-lemma
-                               is-rp-implies-fc
-                               valid-sc-single-step
-                               rp-trans-lst-of-consp
-                               PP-HAS-BITP-RP)
-                              (bitp
-                               rp-trans
-                               rp-trans-lst
-                               NOT-INCLUDE-RP-MEANS-VALID-SC))))))
-
-  (local
-   (defthm pp-termp-is-bitp
-     (implies (and (rp-evl-meta-extract-global-facts :state state)
-                   (mult-formula-checks state)
-                   (pp-term-p term)
-                   (valid-sc term a))
-              (bitp (rp-evlt term a)))
-     :hints (("Goal"
-              :do-not-induct t
-              :expand ((PP-TERM-P TERM))
-              :in-theory (e/d (pp-term-p
-                               is-rp
-                               rp-evlt-of-ex-from-rp-reverse-only-atom
-                               is-if)
-                              (bitp
-                               (:DEFINITION VALID-SC)
-                               (:DEFINITION EVAL-AND-ALL)
-                               (:DEFINITION IS-RP$INLINE)
-                               (:REWRITE DEFAULT-CDR)
-                               (:REWRITE ACL2::O-P-O-INFP-CAR)
-                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                               PP-HAS-BITP-RP
-                               rp-trans
-                               pp-term-p
-                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                               rp-evlt-of-ex-from-rp
-                               EX-FROM-RP-LEMMA1
-                               rp-evlt-of-ex-from-rp))))))
-
-  (local
-   (defthm light-pp-termp-is-bitp
-     (implies (and (rp-evl-meta-extract-global-facts :state state)
-                   (mult-formula-checks state)
-                   (LIGHT-PP-TERM-P term)
-                   (valid-sc term a))
-              (bitp (rp-evlt term a)))
-     :hints (("Goal"
-              :do-not-induct t
-              :expand ((LIGHT-PP-TERM-P TERM))
-              :in-theory (e/d (LIGHT-PP-TERM-p
-                               is-rp
-                               rp-evlt-of-ex-from-rp-reverse-only-atom
-                               is-if)
-                              (bitp
-                               pp-term-p
-                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                               rp-evlt-of-ex-from-rp
-                               EX-FROM-RP-LEMMA1
-                               rp-evlt-of-ex-from-rp))))))
-
-  (local
-   (defthm PP-HAS-BITP-RP-EX-FROM-RP
-     (not (PP-HAS-BITP-RP (EX-FROM-RP TERM)))
-     :hints (("Goal"
-              :induct (EX-FROM-RP TERM)
-              :do-not-induct t
-              :in-theory (e/d (EX-FROM-RP pp-has-bitp-rp
-                                          is-rp) ())))))
-
-  (local
-   (defthm pp-termp-of-ex-from-rp
-     (implies (pp-term-p (ex-from-rp term))
-              (pp-term-p term))
-     :hints (("Goal"
-              :expand ((PP-TERM-P (EX-FROM-RP TERM))
-                       (pp-term-p term))
-              :do-not-induct t
-              :in-theory (e/d (pp-term-p) ())))))
-
-  (local
-   (defthm LIGHT-PP-TERM-P-of-ex-from-rp
-     (implies (LIGHT-PP-TERM-P (ex-from-rp term))
-              (LIGHT-PP-TERM-P term))
-     :hints (("Goal"
-              :expand ((LIGHT-PP-TERM-P (EX-FROM-RP TERM))
-                       (LIGHT-PP-TERM-P term))
-              :do-not-induct t
-              :in-theory (e/d (LIGHT-PP-TERM-P) ()))))))
 
 (encapsulate
   nil
@@ -3047,26 +3322,10 @@
                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
                             EVL-OF-EXTRACT-FROM-RP)))))
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; new-sum-merge-aux
 
 (create-regular-eval-lemma sum-list 1 mult-formula-checks)
-
-(defthm pp-flatten-correct-with-sum-list-eval
-  (implies (and (mult-formula-checks state)
-                (pp-term-p term)
-                (booleanp sign)
-                (valid-sc term a)
-                (rp-evl-meta-extract-global-facts))
-           (equal (sum-list-eval (pp-flatten term sign) a)
-                  (if sign
-                      (-- (rp-evlt term a))
-                    (rp-evlt term a))))
-  :hints (("Goal"
-           :use ((:instance pp-flatten-correct))
-           :in-theory (e/d () ()))))
 
 (defthm dummy-sum-cancel-lemma2
   (equal (equal (sum x1 x2 x3 x4 x5 a)
@@ -3095,14 +3354,12 @@
            :use ((:instance C-SUM-MERGE-CORRECT))
            :in-theory (e/d () (C-SUM-MERGE-CORRECT)))))
 
-
 (defthm is-rp-of-cons
   (implies (and (syntaxp (quotep x))
                 (not (equal x 'rp)))
            (not (is-rp (cons x y))))
   :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
-
 
 (defthm valid-sc-of-cons-instance
   (equal (valid-sc `(cons ,x ,y) a)
@@ -3177,7 +3434,7 @@
                             (:TYPE-PRESCRIPTION RP-TERM-LISTP)
                             (:DEFINITION NEW-SUM-MERGE-AUX)
                             (:REWRITE ACL2::O-P-O-INFP-CAR)
-                            
+
                             rp-trans
                             rp-evlt-of-ex-from-rp
                             eval-and-all
@@ -3188,7 +3445,6 @@
                             RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
                             (:REWRITE RP-EVL-OF-VARIABLE)
                             (:DEFINITION IS-FALIST))))))
-
 
 (defret new-sum-merge-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3208,14 +3464,10 @@
   :fn new-sum-merge
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d (new-sum-merge) ())))) 
-
-
+           :in-theory (e/d (new-sum-merge) ()))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; quarternaryp lemmas
-
-
 
 (defthm f2-of-quarternaryp
   (implies (quarternaryp sum)
@@ -3223,14 +3475,11 @@
   :hints (("Goal"
            :in-theory (e/d (quarternaryp) ()))))
 
-
-
 (defthm lte-of-the-same
   (not (gt a a))
   :hints (("Goal"
            :in-theory (e/d (rw-dir2)
                            (rw-dir1)))))
-
 
 (defthmd quarternaryp-sum-aux-correct-dummy-lemma
   (not (LIGHT-PP-TERM-LIST-P (LIST (LIST 'SUM-LIST
@@ -3281,7 +3530,6 @@
                            (rw-dir1
                             +-IS-SUM)))))
 
-
 (defthmd bitp-implies-integerp
   (implies (bitp x)
            (integerp x)))
@@ -3313,7 +3561,6 @@
            :do-not-induct t
            :in-theory (e/d (LIGHT-PP-TERM-LIST-P) ()))))
 
-
 (defthmd lte-dummy-lemma-1
   (implies (and (lte 0 a)
                 (lte 0 b))
@@ -3337,7 +3584,6 @@
            :do-not-induct t
            :in-theory (e/d (LIGHT-PP-TERM-LIST-P
                             lte-dummy-lemma-1) ()))))
-
 
 (defthm AND-LIST-P-max-val
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3402,43 +3648,98 @@
                            (rw-dir1)))))
 
 (defthm quarternaryp-sum-correct
-    (implies (and (rp-evl-meta-extract-global-facts :state state)
-                  (mult-formula-checks state)
-                  (valid-sc term a)
-                  (rp-termp term)
-                  (quarternaryp-sum term))
-             (quarternaryp (sum-list (rp-evlt term a))))
-    :hints (("Goal"
-             :use ((:instance quarternaryp-sum-aux-correct)
-                   (:instance quarternaryp-sum-aux-returns-natp))
-             :in-theory (e/d (quarternaryp-sum
-                              quarternaryp
-                              rw-dir2)
-                             (natp
-                              rw-dir1
-                              quarternaryp-sum-aux-returns-natp
-                              quarternaryp-sum-aux-correct
-                              quarternaryp-sum-aux
-                              REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS
-                              zp
-                              REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS
-                              rp-evlt-of-ex-from-rp
-                              ex-from-rp-lemma1
-                              RP-EVL-OF-VARIABLE
-                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                              ex-from-rp
-                              ex-from-rp-loose
-                              valid-sc
-                              rp-termp)))))
-
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc term a)
+                (rp-termp term)
+                (quarternaryp-sum term))
+           (quarternaryp (sum-list (rp-evlt term a))))
+  :hints (("Goal"
+           :use ((:instance quarternaryp-sum-aux-correct)
+                 (:instance quarternaryp-sum-aux-returns-natp))
+           :in-theory (e/d (quarternaryp-sum
+                            quarternaryp
+                            rw-dir2)
+                           (natp
+                            rw-dir1
+                            quarternaryp-sum-aux-returns-natp
+                            quarternaryp-sum-aux-correct
+                            quarternaryp-sum-aux
+                            REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS
+                            zp
+                            REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS
+                            rp-evlt-of-ex-from-rp
+                            ex-from-rp-lemma1
+                            RP-EVL-OF-VARIABLE
+                            RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                            ex-from-rp
+                            ex-from-rp-loose
+                            valid-sc
+                            rp-termp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; c-spec-meta-aux and s-spec-meta-aux
 
-
 (defthm rp-evl-of-nil
   (equal (RP-EVL ''NIL A)
          nil))
+
+#|(std::defretd
+ c-pattern2-reduce-correct-returns-either-c-or-0
+ (implies (and (EQUAL (CREATE-LIST-INSTANCE res-pp-lst-coughed) ''NIL))
+          (or
+           (equal res-single-c ''0)
+           (and (equal res-single-c single-c)
+                (equal res-pp-lst-coughed pp-lst-coughed))))
+ :fn c-pattern2-reduce
+ :hints (("Goal"
+          :in-theory (e/d (c-pattern2-reduce) ()))))||#
+
+#|(std::defretd
+ c-pattern2-reduce-correct-when-res-c-is-0
+ (implies (and (rp-evl-meta-extract-global-facts :state state)
+               (mult-formula-checks state)
+               (valid-sc single-c a)
+               (or (equal (rp-evlt res-single-c a) 0)
+                   (equal res-single-c ''0)))
+          (and (equal (sum (sum-list-eval res-pp-lst-coughed a)
+                           rest)
+                      (sum (sum-list-eval pp-lst-coughed a)
+                           (rp-evlt single-c a)
+                           rest))
+               (equal (sum rest (sum-list-eval res-pp-lst-coughed a))
+                      (sum (sum-list-eval pp-lst-coughed a)
+                           (rp-evlt single-c a)
+                           rest))))
+ :fn c-pattern2-reduce
+ :hints (("Goal"
+          :use ((:instance c-pattern2-reduce-correct-with-rest))
+          :in-theory (e/d () (c-pattern2-reduce-correct-with-rest
+                              c-pattern2-reduce-correct)))))||#
+
+
+(defthm CREATE-LIST-INSTANCE-equals-nil-implies
+  (implies (equal (CREATE-LIST-INSTANCE lst) ''nil)
+           (equal (sum-list-eval lst a)
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (CREATE-LIST-INSTANCE) ()))))
+           
+
+(defret c-pattern2-reduce-correct-3
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state)
+                (valid-sc single-c a)
+                (integerp (rp-evlt res-single-c a)))
+           (equal (rp-evlt res-single-c a)
+                  (sum (sum-list-eval pp-lst-coughed a)
+                       (-- (sum-list-eval res-pp-lst-coughed a))
+                       (rp-evlt single-c a))))
+  :fn c-pattern2-reduce
+  :hints (("Goal"
+           :use ((:instance c-pattern2-reduce-correct))
+           :in-theory (e/d () (c-pattern2-reduce-correct)))))
+
 
 (defret c-spec-meta-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3452,7 +3753,7 @@
                 (valid-sc-subterms arg-c-lst a)
                 (valid-sc-subterms to-be-coughed-c-lst a)
                 (if quarternaryp
-                    (quarternaryp 
+                    (quarternaryp
                      (sum (sum-list (rp-evlt arg-s a))
                           (sum-list-eval arg-pp-lst a)
                           (sum-list-eval arg-c-lst a)
@@ -3467,6 +3768,7 @@
                                 (sum-list-eval to-be-coughed-c-lst a)
                                 (sum-list-eval to-be-coughed-c-lst a))))))
   :fn c-spec-meta-aux
+  ;;:otf-flg t
   :hints (("Goal"
            :do-not-induct t
            :use ((:instance c-fix-s-args-correct
@@ -3477,8 +3779,14 @@
                             (pp (CREATE-LIST-INSTANCE ARG-PP-LST))
                             (rest (sum (SUM-LIST-EVAL ARG-C-LST A)
                                        (SUM-LIST (RP-EVLT ARG-S A))))))
+           :expand ((C-SUM-MERGE-LST ''0 TO-BE-COUGHED-C-LST))
            :in-theory (e/d (c-spec-meta-aux
+                            ;; c-pattern2-reduce-correct -when-res-c-is-0
+                            ;;c-pattern2-reduce-correct-res-single-c-on-one-side
                             times2
+
+                            minus-of-sum
+                            
                             valid-sc-single-step
                             f2-of-times2-reverse
                             rp-trans-lst-of-consp
@@ -3486,6 +3794,8 @@
                             sum-list-eval-of-atom
                             sum-list-eval-of-cons)
                            (f2-of-times2
+                            F2-OF-MINUS
+                            rp-trans
                             (:REWRITE
                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                             (:TYPE-PRESCRIPTION RP-TERMP)
@@ -3497,9 +3807,9 @@
                             (:REWRITE DEFAULT-CAR)
                             (:DEFINITION
                              INCLUDE-FNC-SUBTERMS)(:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS)
-                             (:TYPE-PRESCRIPTION VALID-SC)
+                            (:TYPE-PRESCRIPTION VALID-SC)
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
-                            (:REWRITE MINUS-OF-SUM)
+                           ; (:REWRITE MINUS-OF-SUM)
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
                             (:REWRITE DEFAULT-CDR)
@@ -3513,10 +3823,7 @@
                             c-fix-s-args-correct
                             c-fix-pp-args-correct
                             c-fix-pp-args-correct-2
-                            c-fix-s-args-correct-2))))) 
-                  
-
-
+                            c-fix-s-args-correct-2)))))
 
 (defret s-spec-meta-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3535,7 +3842,7 @@
   :fn s-spec-meta-aux
   :hints (("Goal"
            :in-theory (e/d (s-spec-meta-aux) ()))))
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; s-c-spec-meta correct
 
@@ -3551,7 +3858,6 @@
                   t))
   :hints (("Goal"
            :in-theory (e/d (sum-of-repeated-to-times2) ()))))
-           
 
 (defret s-c-spec-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)

@@ -530,6 +530,21 @@
                  (mv rest-coughed
                      (pp-cons-with-hint cur-orig rest-pp arg-lst)))))))))
 
+
+  (define c-fix-arg-aux-with-cond ((arg-lst rp-term-listp)
+                                   (neg-flag booleanp)
+                                   cond)
+    :inline t
+    :returns (mv (coughed-lst rp-term-listp
+                              :hyp (rp-term-listp arg-lst))
+                 (cleaned-lst rp-term-listp
+                              :hyp (rp-term-listp arg-lst)))
+    (if cond
+        (c-fix-arg-aux arg-lst neg-flag)
+      (mv nil arg-lst)))
+        
+        
+  
   (defmacro cough-lst (lst)
     `(c-fix-arg-aux ,lst t))
 

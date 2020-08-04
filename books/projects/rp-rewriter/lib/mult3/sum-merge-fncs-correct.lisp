@@ -781,6 +781,21 @@
            :use ((:instance c-fix-arg-aux-correct-lemma))
            :in-theory (e/d (times2) (c-fix-arg-aux-correct-lemma)))))
 
+(defthm c-fix-arg-aux-with-cond-correct
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+                (mult-formula-checks state))
+           (b* (((mv coughed result)
+                 (c-fix-arg-aux-with-cond pp-lst neg-flag cond)))
+             (equal
+              (sum (sum-list-eval coughed a)
+                   (sum-list-eval coughed a)
+                   (sum-list-eval result a)
+                   rest)
+              (sum (sum-list-eval pp-lst a) rest))))
+  :hints (("Goal"
+           :use ((:instance c-fix-arg-aux-correct))
+           :in-theory (e/d (c-fix-arg-aux-with-cond) (c-fix-arg-aux-correct-lemma)))))
+
 (defthmd c/d-fix-arg-aux-correct-dummy-lemma1
   (Implies (force (integerp x))
            (equal (EQUAL x (SUM a (-- c)))
@@ -1302,6 +1317,17 @@
                             rp-trans
                             rp-termp
                             rp-equal)))))
+
+(defthm c-fix-arg-aux-with-cond-valid-sc-subterms
+  (implies (and (valid-sc-subterms pp-lst a))
+           (b* (((mv coughed result)
+                 (c-fix-arg-aux-with-cond pp-lst neg-flag cond)))
+             (and (valid-sc-subterms coughed a)
+                  (valid-sc-subterms result a))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (c-fix-arg-aux-with-cond)
+                           ()))))
 
 (defthm c-fix-pp-args-valid-sc
   (implies (and (valid-sc term a)

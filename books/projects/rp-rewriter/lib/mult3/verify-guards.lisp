@@ -999,7 +999,7 @@
            measure-lemma-create-c-instance))))))
 
 
-:i-am-here
+
 
 (local
  (std::defret
@@ -1112,7 +1112,7 @@
                    (C-SUM-MERGE-LST-AUX SINGLE-C1 C2-LST)
                    (C-SUM-MERGE-AUX C1-LST NIL :CLEAN-C1-LST NIL)
                    (C-SUM-MERGE-AUX C1-LST NIL :CLEAN-C1-LST CLEAN-C1-LST))
-          :in-theory (e/d () ()))
+          :in-theory (e/d (C-FIX-ARG-AUX-WITH-COND) ()))
          ("Subgoal *1/18"
           :expand ((COUNT-C-LST (LIST SINGLE-C1))
                    (C-SUM-MERGE-LST SINGLE-C1 C2-LST)
