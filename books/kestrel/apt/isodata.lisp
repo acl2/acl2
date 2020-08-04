@@ -480,78 +480,74 @@
      if guards must not be verified, since
      those theorems are not generated or used in that case."))
   (b* ((prefix (add-suffix isoname "-"))
-       (forth-image (fresh-logical-name-with-$s-suffix
-                     (add-suffix prefix (symbol-name :alpha-image))
-                     nil
-                     names-to-avoid
-                     wrld))
-       (names-to-avoid (cons forth-image names-to-avoid))
-       (back-image (fresh-logical-name-with-$s-suffix
-                    (add-suffix prefix (symbol-name :beta-image))
-                    nil
-                    names-to-avoid
-                    wrld))
-       (names-to-avoid (cons back-image names-to-avoid))
-       (back-of-forth (fresh-logical-name-with-$s-suffix
-                       (add-suffix prefix (symbol-name :beta-of-alpha))
-                       nil
-                       names-to-avoid
-                       wrld))
-       (names-to-avoid (cons back-of-forth names-to-avoid))
-       (forth-of-back (fresh-logical-name-with-$s-suffix
-                       (add-suffix prefix (symbol-name :alpha-of-beta))
-                       nil
-                       names-to-avoid
-                       wrld))
-       (names-to-avoid (cons forth-of-back names-to-avoid))
-       (oldp-guard (and verify-guards$
-                        (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :doma-guard))
-                         nil
-                         names-to-avoid
-                         wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons oldp-guard names-to-avoid)
-                         names-to-avoid))
-       (newp-guard (and verify-guards$
-                        (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :domb-guard))
-                         nil
-                         names-to-avoid
-                         wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons newp-guard names-to-avoid)
-                         names-to-avoid))
-       (forth-guard (and verify-guards$
-                         (fresh-logical-name-with-$s-suffix
-                          (add-suffix prefix (symbol-name :alpha-guard))
-                          nil
-                          names-to-avoid
-                          wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons forth-guard names-to-avoid)
-                         names-to-avoid))
-       (back-guard (and verify-guards$
-                        (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :beta-guard))
-                         nil
-                         names-to-avoid
-                         wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons back-guard names-to-avoid)
-                         names-to-avoid))
-       (forth-injective (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :alpha-injective))
-                         nil
-                         names-to-avoid
-                         wrld))
-       (names-to-avoid (cons forth-injective names-to-avoid))
-       (back-injective (fresh-logical-name-with-$s-suffix
-                        (add-suffix prefix (symbol-name :beta-injective))
-                        nil
-                        names-to-avoid
-                        wrld))
-       (names-to-avoid (cons back-injective names-to-avoid)))
+       ((mv forth-image names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :alpha-image))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv back-image names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :beta-image))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv back-of-forth names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :beta-of-alpha))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv forth-of-back names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :alpha-of-beta))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv oldp-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :doma-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv newp-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :domb-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv forth-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :alpha-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv back-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :beta-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv forth-injective names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :alpha-injective))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv back-injective names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :beta-injective))
+         nil
+         names-to-avoid
+         wrld)))
     (mv forth-image
         back-image
         back-of-forth
@@ -3844,9 +3840,9 @@
         (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
        ((mv old-fn-unnorm-event
-            old-fn-unnorm-name)
+            old-fn-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event old$ t names-to-avoid wrld))
-       (names-to-avoid (cons old-fn-unnorm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event)
         (isodata-gen-new-fn old$
@@ -3861,7 +3857,8 @@
                             appcond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
-            new-fn-unnorm-name)
+            new-fn-unnorm-name
+            &)
         (install-not-normalized-event new$ t names-to-avoid wrld))
        ((mv new-to-old-thm-local-event
             new-to-old-thm-exported-event)

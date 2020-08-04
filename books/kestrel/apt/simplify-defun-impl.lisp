@@ -321,10 +321,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun fn-hyps-name (fn wrld)
-  (fresh-logical-name-with-$s-suffix
-   (intern$ (concatenate 'string (symbol-name fn) "-HYPS")
-            (symbol-package-name-non-cl fn))
-   'function nil wrld))
+  (b* (((mv name &)
+        (fresh-logical-name-with-$s-suffix
+         (intern$ (concatenate 'string (symbol-name fn) "-HYPS")
+                  (symbol-package-name-non-cl fn))
+         'function nil wrld)))
+    name))
 
 (defun hyps-preserved-thm-name (fn hyps-fn wrld)
   (declare (xargs :guard (and (symbolp fn)
@@ -332,13 +334,15 @@
                               fn
                               hyps-fn
                               (plist-worldp wrld))))
-  (fresh-logical-name-with-$s-suffix
-   (intern$ (concatenate 'string
-                         (symbol-name hyps-fn)
-                         "-PRESERVED-FOR-"
-                         (symbol-name fn))
-            (symbol-package-name-non-cl hyps-fn))
-   nil nil wrld))
+  (b* (((mv name &)
+        (fresh-logical-name-with-$s-suffix
+         (intern$ (concatenate 'string
+                               (symbol-name hyps-fn)
+                               "-PRESERVED-FOR-"
+                               (symbol-name fn))
+                  (symbol-package-name-non-cl hyps-fn))
+         nil nil wrld)))
+    name))
 
 (defun hyps-preserved-thm-name-lst (fn-hyps-alist wrld)
   (cond ((endp fn-hyps-alist) nil)
@@ -359,20 +363,24 @@
                      (value new-name)))))
 
 (defun fn-runes-name (fn wrld)
-  (fresh-logical-name-with-$s-suffix
-   (intern$ (concatenate 'string "*" (symbol-name fn) "-RUNES*")
-            (symbol-package-name-non-cl fn))
-   'acl2::const nil wrld))
+  (b* (((mv name &)
+        (fresh-logical-name-with-$s-suffix
+         (intern$ (concatenate 'string "*" (symbol-name fn) "-RUNES*")
+                  (symbol-package-name-non-cl fn))
+         'acl2::const nil wrld)))
+    name))
 
 (defunsr before-vs-after-name (fnsr index wrld)
-  (fresh-logical-name-with-$s-suffix
-   (add-suffix fnnc
-               (concatenate
-                'string
-                "-BEFORE-VS-AFTER-"
-                (coerce (explode-nonnegative-integer index 10 nil)
-                        'string)))
-   nil nil wrld))
+  (b* (((mv name &)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix fnnc
+                     (concatenate
+                      'string
+                      "-BEFORE-VS-AFTER-"
+                      (coerce (explode-nonnegative-integer index 10 nil)
+                              'string)))
+         nil nil wrld)))
+    name))
 
 (defun fn-simp-is-fn-name (fn fn-simp thm-name wrld)
   (cond ((member-eq thm-name '(nil :auto))
@@ -380,10 +388,12 @@
         (t thm-name)))
 
 (defun fn-simp-is-fn-lemma-name (fn fn-simp theorem-name wrld)
-  (fresh-logical-name-with-$s-suffix
-   (add-suffix (fn-simp-is-fn-name fn fn-simp theorem-name wrld)
-               "-LEMMA")
-   nil nil wrld))
+  (b* (((mv name &)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix (fn-simp-is-fn-name fn fn-simp theorem-name wrld)
+                     "-LEMMA")
+         nil nil wrld)))
+    name))
 
 (defun fn-hyps-alist (fnsr-lst wrld)
   (cond ((endp fnsr-lst) nil)
@@ -2711,7 +2721,7 @@
                                                  equiv wrld))
        (fn-simp-is-fn (fn-simp-is-fn fnsr fn-hyps hyps theorem-name
                                      thm-enable equiv wrld))
-       ((mv not-norm-event not-norm-event-name)
+       ((mv not-norm-event not-norm-event-name &)
         (install-not-normalized-event fn t nil wrld)))
     (value
      `(,not-norm-event

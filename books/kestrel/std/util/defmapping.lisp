@@ -1198,7 +1198,10 @@
      to prevent such hints from sabotaging the generated proofs
      for the theorems that are not applicability conditions;
      this removal is done after proving the applicability conditions,
-     in case their proofs rely on the default or override hints.")
+     in case their proofs rely on the default or override hints.
+     We also add an explicitly local event to prevent @(tsee mv-nth)
+     from being expanded in the generated proofs,
+     which is accomplished via a system attachment.")
    (xdoc::p
     "If @(':print') is @(':all'),
      the expansion is wrapped to show ACL2's output
@@ -1254,6 +1257,10 @@
                      ,@appcond-events
                      (set-default-hints nil)
                      (set-override-hints nil)
+                     (local
+                      (defattach-system
+                        simplifiable-mv-nth-p
+                        constant-nil-function-arity-0))
                      ,@local-thm-events
                      ,@exported-thm-events))
        ((when show-only$)

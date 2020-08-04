@@ -3879,7 +3879,7 @@
 ;;;   actually traced, e.g. trace! macro
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
-            verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
+            verbose-theory-warning     ;;; warn if disabling a *bbody-alist* key
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
@@ -14995,18 +14995,25 @@
   (cons 'iff ; expanded in tautologyp
         *expandable-boot-strap-non-rec-fns*))
 
-(defun new-disables (theory-tail runic-theory ens wrld)
+(defun new-disables (theory-tail runic-theory exception ens wrld)
 
-; This function returns a subset of theory-tail in the same order.  Do not
-; change the order without consulting the case in
-; translate-in-theory-hint(@par) for "disable all primitive functions".
+; This function returns the base-symbols of runes in theory-tail that are
+; enabled with respect to ens, other than the given exception.  Exception may
+; be nil, in which case of course there will be no such exception, as noted in
+; the comment below.
 
   (cond ((endp theory-tail) nil)
         ((and (enabled-runep (car theory-tail) ens wrld)
               (not (member-equal (car theory-tail) runic-theory)))
-         (cons (car theory-tail)
-               (new-disables (cdr theory-tail) runic-theory ens wrld)))
-        (t (new-disables (cdr theory-tail) runic-theory ens wrld))))
+         (let ((sym (base-symbol (car theory-tail))))
+           (if (eq sym exception) ; fails if exception is nil
+               (new-disables (cdr theory-tail) runic-theory
+                             exception ens wrld)
+             (cons sym
+                   (new-disables (cdr theory-tail) runic-theory
+                                 exception ens wrld)))))
+        (t (new-disables (cdr theory-tail) runic-theory
+                         exception ens wrld))))
 
 (defun some-new-disables-1 (theory-tail runic-theory ens wrld)
 
@@ -15083,9 +15090,10 @@
                    (getpropc 'definition-minimal-theory 'theory
                              nil ; so, returns nil early in boot-strap
                              wrld))
+                 (exception (and (not (simplifiable-mv-nth-p)) 'mv-nth))
                  (new-disables
-                  (new-disables definition-minimal-theory runic-value ens
-                                wrld)))
+                  (new-disables definition-minimal-theory runic-value
+                                exception ens wrld)))
             (cond
              (new-disables
               (warning$ ctx ("Theory")
@@ -15095,10 +15103,10 @@
                            some expansions of ~#0~[its~/their~] calls may ~
                            still occur.  See :DOC theories-and-primitives."
                           (:doc theories-and-primitives)
-                          (:new-disables ,(strip-base-symbols new-disables))
+                          (:new-disables ,new-disables)
                           (:rule-class :definition)
                           (:theory-expression ,expr))
-                        (strip-base-symbols new-disables)
+                        new-disables
                         expr))
              (t state)))
           (let* ((executable-counterpart-minimal-theory
@@ -15108,7 +15116,7 @@
                             wrld))
                  (new-disables
                   (new-disables executable-counterpart-minimal-theory
-                                runic-value ens wrld)))
+                                runic-value nil ens wrld)))
             (cond
              (new-disables
               (warning$ ctx ("Theory")
@@ -15119,10 +15127,10 @@
                            ~#0~[its~/their~] calls may still occur.  See :DOC ~
                            theories-and-primitives."
                           (:doc theories-and-primitives)
-                          (:new-disables ,(strip-base-symbols new-disables))
+                          (:new-disables ,new-disables)
                           (:rule-class :executable-counterpart)
                           (:theory-expression ,expr))
-                        (strip-base-symbols new-disables)
+                        new-disables
                         expr))
              (t state)))
 
@@ -15225,9 +15233,10 @@
                   (getpropc 'definition-minimal-theory 'theory
                             nil ; so, returns nil early in boot-strap
                             wrld))
+                (exception (and (not (simplifiable-mv-nth-p)) 'mv-nth))
                 (new-disables
-                 (new-disables definition-minimal-theory runic-value ens
-                               wrld)))
+                 (new-disables definition-minimal-theory runic-value
+                               exception ens wrld)))
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
@@ -15237,10 +15246,10 @@
                   ~#0~[its~/their~] calls may still occur.  See :DOC ~
                   theories-and-primitives."
                  (:doc theories-and-primitives)
-                 (:new-disables ,(strip-base-symbols new-disables))
+                 (:new-disables ,new-disables)
                  (:rule-class :definition)
                  (:theory-expression ,expr))
-               (strip-base-symbols new-disables)
+               new-disables
                expr))
             (t nil)))
          (let* ((executable-counterpart-minimal-theory
@@ -15250,7 +15259,7 @@
                            wrld))
                 (new-disables
                  (new-disables executable-counterpart-minimal-theory
-                               runic-value ens wrld)))
+                               runic-value nil ens wrld)))
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
@@ -15260,10 +15269,10 @@
                   of ~#0~[its~/their~] calls may still occur.  See :DOC ~
                   theories-and-primitives."
                  (:doc theories-and-primitives)
-                 (:new-disables ,(strip-base-symbols new-disables))
+                 (:new-disables ,new-disables)
                  (:rule-class :executable-counterpart)
                  (:theory-expression ,expr))
-               (strip-base-symbols new-disables)
+               new-disables
                expr))
             (t nil)))
 

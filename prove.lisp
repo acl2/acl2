@@ -6891,14 +6891,17 @@
            (let ((new-ht (make-hash-table :test 'equal :size (expt 2 13)
 
 ; Parallelism blemish: CCL locks these hashtable operations automatically
-; because of the argument :shared t below.  However in SBCL and LispWorks, we
-; should really lock these hashtable operations ourselves.  Note that the SBCL
-; documentation at http://www.sbcl.org/manual/Hash-Table-Extensions.html
-; describes a keyword, :synchronized, that is like CCL's :shared but is labeled
-; as "experimental".  At any rate, we are willing to take our chances for now
-; with SBCL and Lispworks.
+; because of the argument :shared t below.  SBCL documentation at
+; http://www.sbcl.org/manual/#Hash-Table-Extensions introduces the keyword,
+; :synchronized, that provides such a locking mechanism, but warns: "This
+; keyword argument is experimental, and may change incompatibly or be removed
+; in the future."  However, it has been around since at least 2011.  Using this
+; experimental feature is easier (and probably performs better) than
+; implementing the locking ourselves.  We would ideally do something similar
+; for LispWorks as well, but for now we are willing to take our chances.
 
-                                          #+ccl :shared #+ccl t)))
+                                          #+ccl :shared #+ccl t
+                                          #+sbcl :synchronized #+sbcl t)))
              (setf *waterfall-parallelism-timings-ht-alist*
                    (acons name
                           new-ht

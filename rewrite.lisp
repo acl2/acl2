@@ -3485,6 +3485,9 @@
            (simplifiable-mv-nth1 (1- n) (fargn cons-term 2) alist)))
         (t (mv nil nil))))
 
+(defstub simplifiable-mv-nth-p () t)
+(defattach simplifiable-mv-nth-p constant-t-function-arity-0)
+
 (defun simplifiable-mv-nth (term alist)
 
 ; Term must be of the form (mv-nth & &), i.e., the ffn-symb of term is known to
@@ -3498,16 +3501,18 @@
 ; that the resulting term has already been rewritten and should not be
 ; rewritten again.
 
-  (let ((arg1 (cond ((variablep (fargn term 1))
-                     (let ((temp (assoc-eq (fargn term 1) alist)))
-                       (cond (temp (cdr temp))
-                             (t (fargn term 1)))))
-                    (t (fargn term 1)))))
-    (cond ((and (quotep arg1)
-                (integerp (cadr arg1))
-                (>= (cadr arg1) 0))
-           (simplifiable-mv-nth1 (cadr arg1) (fargn term 2) alist))
-          (t (mv nil nil)))))
+  (cond ((simplifiable-mv-nth-p)
+         (let ((arg1 (cond ((variablep (fargn term 1))
+                            (let ((temp (assoc-eq (fargn term 1) alist)))
+                              (cond (temp (cdr temp))
+                                    (t (fargn term 1)))))
+                           (t (fargn term 1)))))
+           (cond ((and (quotep arg1)
+                       (integerp (cadr arg1))
+                       (>= (cadr arg1) 0))
+                  (simplifiable-mv-nth1 (cadr arg1) (fargn term 2) alist))
+                 (t (mv nil nil)))))
+        (t (mv nil nil))))
 
 (defun call-stack (fn lst stack assumptions ac)
   (declare (xargs :guard (and (true-listp lst)
@@ -5381,15 +5386,15 @@
 (mutual-recursion
 
 ; Warning: For both functions in this nest, fns should be a subset of
-; *definition-minimal-theory*.  See the error related to
-; *definition-minimal-theory* in chk-acceptable-definition-install-body.
+; the keys of *bbody-alist*.  See the error related to
+; *bbody-alist* in chk-acceptable-definition-install-body.
 
 (defun expand-some-non-rec-fns (fns term wrld)
 
 ; We forcibly expand all calls in term of the fns in fns.  They better
 ; all be non-recursive or this may take a while.
 
-; We assume that fns is a subset of *definition-minimal-theory*.
+; We assume that fns is a subset of the keys of *bbody-alist*.
 
   (cond ((variablep term) term)
         ((fquotep term) term)
@@ -19120,7 +19125,7 @@
 ; which can be inhibited if it gets annoying.  To inhibit the warning but leave
 ; all other warnings on, do (set-inhibit-warnings "rewrite-lambda-object").
 
-; Explanation of an infinite simplify loop: 
+; Explanation of an infinite simplify loop:
 
 ; Prior to using the :rewrite-lambda-object fnstack marker to shut off the
 ; expansion of recursive functions in rewrite-lambda-object we rewrote the body

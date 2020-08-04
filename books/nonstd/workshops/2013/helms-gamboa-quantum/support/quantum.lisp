@@ -210,7 +210,7 @@
   (acl2-sqrt (qustate-amplitudes-sum-squares x)))
 
 (defun qustate-norm-e (x e)
-  (iter-sqrt (qustate-amplitudes-sum-squares x) e))
+  (sqrt-iter (qustate-amplitudes-sum-squares x) e))
 
 (defun qustate-scale (s x)
   (if (endp s)
@@ -426,16 +426,16 @@
 	 (post (nthcdr (1+ n) v))
 	 )
     (if (not q)
-	(list (cons (/ a (iter-sqrt 2 e))
+	(list (cons (/ a (sqrt-iter 2 e))
 		    (append pre
 			    (cons nil post)))
-	      (cons (/ a (iter-sqrt 2 e))
+	      (cons (/ a (sqrt-iter 2 e))
 		    (append pre
 			    (cons t post))))
-      (list (cons (/ a (iter-sqrt 2 e))
+      (list (cons (/ a (sqrt-iter 2 e))
 		  (append pre
 			  (cons nil post)))
-	    (cons (- (/ a (iter-sqrt 2 e)))
+	    (cons (- (/ a (sqrt-iter 2 e)))
 		  (append pre
 			  (cons t post)))))))
 
@@ -464,11 +464,11 @@
       nil
     (qustate-scale-alpha-n (qustate-scale-beta-n s n (/ (- (car (qustate-coefficients s n))
 							   (cdr (qustate-coefficients s n)))
-							(iter-sqrt 2 e)))
+							(sqrt-iter 2 e)))
 			   n
 			   (/ (+ (car (qustate-coefficients s n))
 				 (cdr (qustate-coefficients s n)))
-			      (iter-sqrt 2 e)))))
+			      (sqrt-iter 2 e)))))
 |#
 
 

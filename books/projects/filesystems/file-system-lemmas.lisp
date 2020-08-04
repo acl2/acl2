@@ -1523,7 +1523,7 @@
                 (no-duplicatesp-equal l))
            (not (member-equal x (take n l)))))
 
-(defthmd not-subsetp-when-atom-set-difference$
+(defthmd consp-of-set-difference$
   (iff (consp (set-difference-equal l1 l2))
        (not (subsetp-equal l1 l2))))
 

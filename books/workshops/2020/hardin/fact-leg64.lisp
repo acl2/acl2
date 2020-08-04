@@ -198,6 +198,9 @@
                          :S
                          :TOP :BASH))
 
+; Matt K. addition, to prevent the def-semantics form below from failing in
+; ACL2(p) with waterfall-parallelism enabled:
+(set-waterfall-parallelism nil)
 
 ; Here is the command that causes Codewalker to explore our program and
 ; create a semantic function, named SEM-0, since the initial pc is 0.
@@ -209,7 +212,7 @@
   :hyps+ ((fact-routine-loadedp s)  ;;(equal (ag 'CMEM s) *program1*)
 ;;        (unsigned-byte-p 10 (ag 'pc s))
           (integerp (ag 0 (ag 'REGS s)))
-          (>= (ag 0 (ag 'REGS s)) 1) 
+          (>= (ag 0 (ag 'REGS s)) 1)
 ;;          (<= (ag 0 (ag 'REGS s)) 20)
           (< (ag 0 (ag 'REGS s)) 18446744073709551616)
           (integerp (ag 1 (ag 'REGS s)))
@@ -226,7 +229,7 @@
 ;; ??? The following def-projection fails, but it emits a candidate fn1-loop
 ;; (see below) that can easily be modified to eliminate all mentions of
 ;; state s.  Add a simple :measure, and it can be admitted into ACL2.
-;; 
+;;
 ;; ??? If you issue an (in-theory (enable fact-routine-loadedp)) before
 ;; executing this, the def
 

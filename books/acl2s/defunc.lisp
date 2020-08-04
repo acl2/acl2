@@ -932,6 +932,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      :rule-classes
      :instructions :function-contract-hints :otf-flg ;for contract defthm
      :body-contracts-hints ;for verify-guards event
+     :lemma ; in case we want to prove some lemmas as part of the
+       ; definition, unsupported
      )))
 
 (deffilter filter-keywords (xs) keywordp)
@@ -2300,3 +2302,20 @@ To debug a failed defunc form, you can proceed in multiple ways:
   `(gen-acl2s-local testing-enabled
                     nil
                     ((defundcd ,name ,@args))))
+
+(defmacro prove-body-contracts (name)
+  `(verify-guards ,name))
+
+(defmacro verify-body-contracts (name)
+  `(verify-guards ,name))
+
+(defmacro prove-termination (name)
+  `(verify-termination ,name))
+
+#|
+(defmacro verify-function-contract (name)
+  `(... ,name))
+
+(defmacro prove-function-contract (name)
+  `(... ,name))
+|#

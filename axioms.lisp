@@ -7554,6 +7554,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (mbe :logic (fix acc) :exec acc))
    (t (position-ac-eq-exec item (cdr lst) (1+ acc)))))
 
+(defthm natp-position-ac-eq-exec
+  (implies (natp acc)
+           (or (natp (position-ac-eq-exec item lst acc))
+               (equal (position-ac-eq-exec item lst acc) nil)))
+  :rule-classes :type-prescription)
+
 (defun-with-guard-check position-ac-eql-exec (item lst acc)
   (and (true-listp lst)
        (or (eqlablep item)
@@ -7564,6 +7570,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((eql item (car lst))
     (mbe :logic (fix acc) :exec acc))
    (t (position-ac-eql-exec item (cdr lst) (1+ acc)))))
+
+(defthm natp-position-ac-eql-exec
+  (implies (natp acc)
+           (or (natp (position-ac-eql-exec item lst acc))
+               (equal (position-ac-eql-exec item lst acc) nil)))
+  :rule-classes :type-prescription)
 
 (defun position-equal-ac (item lst acc)
 
@@ -7578,6 +7590,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((equal item (car lst))
     (mbe :exec acc :logic (fix acc)))
    (t (position-equal-ac item (cdr lst) (1+ acc)))))
+
+(defthm natp-position-equal-ac
+  (implies (natp acc)
+           (or (natp (position-equal-ac item lst acc))
+               (equal (position-equal-ac item lst acc) nil)))
+  :rule-classes :type-prescription)
 
 (defmacro position-ac-equal (item lst acc)
 ; See comment about naming in position-equal-ac.
@@ -22442,7 +22460,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (cons (car alist)
                  (remove1-assoc-string-equal key (cdr alist))))))
 
-(defmacro toggle-inhibit-warning (str)
+(defmacro toggle-inhibit-warning! (str)
   `(table inhibit-warnings-table
           nil
           (let ((inhibited-warnings
@@ -22451,6 +22469,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                    (remove1-assoc-string-equal ',str inhibited-warnings))
                   (t (acons ',str nil inhibited-warnings))))
           :clear))
+
+(defmacro toggle-inhibit-warning (str)
+  `(local (toggle-inhibit-warning! ,str)))
 
 (defmacro set-inhibit-output-lst (lst)
 
@@ -28464,14 +28485,16 @@ Lisp definition."
 
   (list* 'mv-nth 'iff *expandable-boot-strap-non-rec-fns*))
 
-(defconst *definition-minimal-theory-alist*
+(defconst *bbody-alist*
 
-; This alist associates each function in *definition-minimal-theory* with its
-; normalized body.  It is built as follows.  The equality of this constant to
-; that expression is checked at the end of the boot-strap.
+; This alist associates each function in *definition-minimal-theory* except
+; mv-nth with its normalized body.  It is built as follows.  The equality of
+; this constant to that expression is checked at the end of the boot-strap.
 
 ;   (merge-sort-lexorder
-;    (loop for f in *definition-minimal-theory* collect
+;    (loop for f in *definition-minimal-theory*
+;          when (not (eq fn 'mv-nth))
+;          collect
 ;          (cons f (body f t (w *the-live-state*)))))
 
   '((/= if (equal x y) 'nil 't)
@@ -28489,11 +28512,6 @@ Lisp definition."
     (listp if (consp x) 't (equal x 'nil))
     (minusp < x '0)
     (mv-list . x)
-    (mv-nth if (consp l)
-            (if (zp n)
-                (car l)
-              (mv-nth (binary-+ '-1 n) (cdr l)))
-            'nil)
     (not if p 'nil 't)
     (null equal x 'nil)
     (plusp < '0 x)
@@ -28506,16 +28524,16 @@ Lisp definition."
 (defun bbody-fn (fn)
 
 ; This is just (body fn t wrld), where wrld is the boot-strap world, except
-; that currently it may only be applied to functions in
-; *definition-minimal-theory*.
+; that currently it may only be applied to functions that are keys in
+; *bbody-alist*.
 
-  (declare (xargs :guard (member-eq fn *definition-minimal-theory*)))
-  (let ((pair (assoc-eq fn *definition-minimal-theory-alist*)))
+  (declare (xargs :guard (assoc-eq fn *bbody-alist*)))
+  (let ((pair (assoc-eq fn *bbody-alist*)))
     (cond (pair (cdr pair))
           (t (er hard! 'bbody
                  "Implementation error: Illegal call of bbody: the symbol ~x0 ~
-                  is not in ~x1."
-                 *definition-minimal-theory-alist*)))))
+                  is not a key of ~x1."
+                 *bbody-alist*)))))
 
 (defmacro bbody (fn)
   (cond ((and (consp fn)

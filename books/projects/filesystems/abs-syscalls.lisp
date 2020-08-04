@@ -628,16 +628,6 @@
   :hints (("goal" :in-theory (enable abs-top-addrs abs-place-file-helper))))
 
 (defthm
-  addrs-at-when-abs-complete
-  (implies (abs-complete (abs-fs-fix fs))
-           (equal (addrs-at fs relpath) nil))
-  :hints
-  (("goal" :in-theory (enable addrs-at)
-    :induct (addrs-at fs relpath))
-   ("subgoal *1/1''" :in-theory (disable ctx-app-ok-when-abs-complete-lemma-3)
-    :use ctx-app-ok-when-abs-complete-lemma-3)))
-
-(defthm
   addrs-at-of-abs-place-file-helper-lemma-1
   (implies (and (m1-file-p file)
                 (or (m1-regular-file-p file)
@@ -7575,18 +7565,18 @@
       :hints (("goal" :do-not-induct t
                :in-theory (e/d (abs-mkdir-correctness-lemma-30
                                 frame-reps-fs abs-mkdir
-                                not-subsetp-when-atom-set-difference$
+                                consp-of-set-difference$
                                 subsetp-equal)
                                ((:rewrite abs-mkdir-correctness-lemma-128)
-                                (:REWRITE ABS-ADDRS-OF-REMOVE-ASSOC)
-                                (:REWRITE ABS-FS-P-OF-ABS-ALLOC-2)
-                                (:REWRITE ABS-FS-P-OF-FRAME-VAL->DIR)
-                                (:REWRITE ABS-SEPARATE-OF-FRAME->FRAME-OF-COLLAPSE-THIS-LEMMA-4)
-                                (:REWRITE COLLAPSE-CONGRUENCE-LEMMA-4 . 2)
-                                (:REWRITE FAT32-FILENAME-P-OF-BASENAME)
-                                (:REWRITE NO-DUPLICATESP-OF-ABS-ADDRS-OF-ABS-ALLOC-1)
-                                (:REWRITE NOT-SUBSETP-WHEN-ATOM-SET-DIFFERENCE$)
-                                (:TYPE-PRESCRIPTION ABS-COMPLETE))))))
+                                (:rewrite abs-addrs-of-remove-assoc)
+                                (:rewrite abs-fs-p-of-abs-alloc-2)
+                                (:rewrite abs-fs-p-of-frame-val->dir)
+                                (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-4)
+                                (:rewrite collapse-congruence-lemma-4 . 2)
+                                (:rewrite fat32-filename-p-of-basename)
+                                (:rewrite no-duplicatesp-of-abs-addrs-of-abs-alloc-1)
+                                (:rewrite consp-of-set-difference$)
+                                (:type-prescription abs-complete))))))
 
     (defthm
       abs-mkdir-correctness-lemma-80
@@ -10274,20 +10264,29 @@
           :in-theory (enable abs-find-file-helper abs-alloc abs-file-alist-p)))
  :otf-flg t)
 
+(defund good-frame-p (frame)
+  (b*
+      (((mv & result) (collapse frame)))
+    (and result
+         (equal (frame-val->path (cdr (assoc-equal 0 frame)))
+                nil)
+         (consp (assoc-equal 0 frame))
+         (equal (frame-val->src (cdr (assoc-equal 0 frame)))
+                0)
+         (frame-p frame)
+         (no-duplicatesp-equal (strip-cars frame))
+         (abs-separate frame)
+         (subsetp-equal (abs-addrs (frame->root frame))
+                        (frame-addrs-root (frame->frame frame))))))
+
+(thm (implies (good-frame-p frame)
+              (frame-reps-fs frame (mv-nth 0 (collapse frame))))
+     :hints (("GOal" :do-not-induct t
+              :in-theory (enable good-frame-p frame-reps-fs))))
+
 (defthm
   abs-lstat-after-abs-mkdir-1
-  (implies (and (mv-nth '1 (collapse frame))
-                (equal (frame-val->path (cdr (assoc-equal 0 frame)))
-                       nil)
-                (consp (assoc-equal 0
-                                    (partial-collapse frame (dirname path))))
-                (equal (frame-val->src (cdr (assoc-equal 0 frame)))
-                       0)
-                (frame-p frame)
-                (no-duplicatesp-equal (strip-cars frame))
-                (abs-separate frame)
-                (subsetp-equal (abs-addrs (frame->root frame))
-                               (frame-addrs-root (frame->frame frame))))
+  (implies (good-frame-p frame)
            (b* (((mv frame & mkdir-error-code)
                  (abs-mkdir frame path)))
              (implies (equal mkdir-error-code 0)
@@ -10297,8 +10296,20 @@
   :hints
   (("goal"
     :in-theory (enable abs-mkdir abs-lstat abs-alloc abs-fs-fix
-                       abs-find-file-helper abs-find-file)
-    :do-not-induct t)))
+                       abs-find-file-helper abs-find-file good-frame-p))))
+
+(defthm
+  abs-lstat-after-abs-mkdir-2
+  (implies (good-frame-p init-frame)
+           (b* (((mv final-frame & mkdir-error-code)
+                 (abs-mkdir init-frame path)))
+             (implies (not (equal mkdir-error-code 0))
+                      (collapse-equiv final-frame init-frame))))
+  :hints
+  (("goal"
+    :in-theory (enable collapse-equiv abs-mkdir abs-lstat abs-alloc abs-fs-fix
+                       abs-find-file-helper abs-find-file good-frame-p) :expand
+                       (:free (root) (collapse (frame-with-root root nil))))))
 
 (defund abs-mknod (frame path)
   (declare (xargs :guard (and (frame-p frame)
@@ -10465,36 +10476,3 @@
            (< 0 (1st-complete-under-path frame path)))
   :hints (("goal" :in-theory (enable 1st-complete-under-path)))
   :rule-classes :linear)
-
-(fty::defprod
- dir-stream
- ((pos natp)
-  (file-list fat32-filename-list-p)))
-
-(fty::defalist
- dir-stream-table
- :key-type nat
- :val-type dir-stream
- :true-listp t)
-
-(defthm fat32-filename-list-p-of-strip-cars-when-m1-file-alist-p
-  (implies (m1-file-alist-p fs)
-           (fat32-filename-list-p (strip-cars fs))))
-
-(defund hifat-opendir (fs path dir-stream-table)
-  (b*
-      ((path (mbe :exec path :logic (fat32-filename-list-fix path)))
-       ((mv file error-code)
-        (hifat-find-file fs path))
-       ((unless (equal error-code 0))
-        (mv 0 dir-stream-table *enoent*))
-       ((unless (m1-directory-file-p file))
-        (mv 0 dir-stream-table *enotdir*))
-       (dir-stream-table-index
-        (find-new-index (strip-cars dir-stream-table))))
-    (mv
-     dir-stream-table-index
-     (cons
-      (cons dir-stream-table-index (strip-cars (m1-file->contents file)))
-      dir-stream-table)
-     0)))

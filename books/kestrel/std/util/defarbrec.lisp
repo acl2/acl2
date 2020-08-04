@@ -857,7 +857,8 @@
     "              (not (natp k)))"
     "         test<(update*-x1 0 x1 ... xn),...,(update*-xn 0 x1 ... xn)>)"))
   (b* ((name (add-suffix fn$ "-UPDATE*-LEMMA"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (test-of-updates-k (defarbrec-gen-test-of-updates-term
                             x1...xn$ test update-names$ k))
        (test-of-updates-0 (defarbrec-gen-test-of-updates-term
@@ -976,7 +977,8 @@
      because we do not generate a function corresponding to @('mu') here
      and we use this theorem only with @(':use') hints."))
   (b* ((name (add-suffix measure-name$ "-NATP"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (event
         `(local
           (defthm ,name
@@ -1024,7 +1026,8 @@
      because we do not generate a function corresponding to @('mu') here
      and we use this theorem only with @(':use') hints."))
   (b* ((name (add-suffix measure-name$ "-END"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (iterations (apply-term measure-name$ `(,@x1...xn$ ,k)))
        (test-of-updates-measure (defarbrec-gen-test-of-updates-term
                                   x1...xn$ test update-names$ iterations))
@@ -1078,7 +1081,8 @@
      because we do not generate a function corresponding to @('mu') here
      and we use this theorem only with @(':use') hints."))
   (b* ((name (add-suffix measure-name$ "-MIN"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (test-of-updates-l (defarbrec-gen-test-of-updates-term
                             x1...xn$ test update-names$ l))
        (test-of-updates-l (untranslate test-of-updates-l nil wrld))

@@ -178,10 +178,10 @@
        (name (if (keywordp name)
                  (intern (symbol-name name) "ACL2")
                name))
-       (thm-name (fresh-logical-name-with-$s-suffix name
-                                                    nil
-                                                    names-to-avoid
-                                                    wrld))
+       ((mv thm-name &) (fresh-logical-name-with-$s-suffix name
+                                                           nil
+                                                           names-to-avoid
+                                                           wrld))
        (thm-event `(,defthm/defthmd ,thm-name
                      ,formula
                      :hints ,hints
