@@ -942,6 +942,27 @@
   (equal (rp-evlt (list 'quote x) a)
          x))
 
+
+(defthm unquote-all-is-correct
+  (implies (quoted-listp lst)
+           (equal (unquote-all lst)
+                  (rp-evlt-lst lst a)))
+  :hints (("goal"
+           :induct (unquote-all lst)
+           :do-not-induct t
+           :in-theory (e/d () (
+                               )))))
+
+(defthm all-quoted-list-correct
+  (implies (all-quoted-list term)
+           (equal (unquote-all (list-to-lst term))
+                  (rp-evlt term a)))
+  :hints (("Goal"
+           :in-theory (e/d (all-quoted-list
+                            LIST-TO-LST)
+                           ()))))
+
+
 (defret create-c-instance-is-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -960,8 +981,12 @@
            :expand ((:free (x) (valid-sc (cons 'c x) a))
                     (:free (x) (valid-sc (cons 'quote x) a)))
            :in-theory (e/d (create-c-instance
+                            sum-comm-1-loop-stopper
+                            sum-comm-2-loop-stopper
                             rp-trans-lst-of-consp)
                            (c-pattern1-reduce-correct
+                            sum-comm-1
+                            sum-comm-2
                             (:REWRITE SUM-OF-NEGATED-ELEMENTS)
                             (:REWRITE DEFAULT-CDR)
                             (:REWRITE DEFAULT-CAR)
@@ -970,7 +995,7 @@
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:TYPE-PRESCRIPTION F2)
                             (:DEFINITION IS-SYNP$INLINE)
-                            TO-LIST*-SUM-EVAL
+                            ;;TO-LIST*-SUM-EVAL
                             (:TYPE-PRESCRIPTION TRANS-LIST)
                             (:REWRITE RP-EVL-OF-VARIABLE)
                             (:REWRITE

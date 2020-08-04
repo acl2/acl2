@@ -1161,6 +1161,25 @@
     :hints (("Goal"
              :in-theory (e/d () ())))))
 
+
+(defun quoted-listp (lst)
+  (declare (xargs :mode :logic :guard t))
+  (if (atom lst)
+      (EQUAL LST NIL)
+    (and (quotep (car lst))
+         (consp (cdar lst))
+         (quoteD-listp (cdr lst)))))
+
+
+(define all-quoted-list (term)
+  (case-match term
+    (('list . lst)
+     (quoted-listp lst))
+    (''nil
+     t)))
+
+
+
 (define create-c-instance ((s rp-termp)
                            (pp rp-termp)
                            (c rp-termp))
@@ -1184,20 +1203,15 @@
                        (or (is-rp-bitp single-c)
                            (is-c-bitp-traverse single-c))))))
            ''0)
-          ((and (quotep pp)
-                (consp (cdr pp))
-                (quotep s)
-                (consp (cdr s))
-                (quotep c)
-                (consp (cdr c)))
-           `',(c 0 (unquote s) (unquote pp) (unquote c)))
+          ((and (all-quoted-list s)
+                (all-quoted-list pp)
+                (all-quoted-list c))
+           `',(c 0
+                 (unquote-all (list-to-lst s))
+                 (unquote-all (list-to-lst pp))
+                 (unquote-all (list-to-lst c))))
           (t
-           (b* ((hash-code (calculate-c-hash s pp c))
-                #|(- (if (equal hash-code 2215122)
-                (progn$ (cw "found hash-code: ~p0 ~%" hash-code) ; ;
-                (sleep 10)) ; ;
-                nil))||#)
-;;;;; hash-code calc..
+           (b* ((hash-code (calculate-c-hash s pp c)))
              `(c ',hash-code ,s ,pp ,c))))))
 
 #|(define s-pattern3-success ()
@@ -1349,6 +1363,11 @@
                 (consp (cdr pp))
                 (consp (cdr c)))
            `',(s 0 (unquote pp) (unquote c)))
+          ((and (all-quoted-list pp)
+                (all-quoted-list c))
+           `',(s 0
+                 (unquote-all (list-to-lst pp))
+                 (unquote-all (list-to-lst c))))
           ((and (equal c ''nil)
                 (case-match pp (('list ('and-list & &)) t)))
            (cadr pp))

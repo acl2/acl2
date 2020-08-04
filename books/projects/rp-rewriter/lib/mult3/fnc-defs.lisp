@@ -493,6 +493,8 @@
     (cond ((or (Not lst)
                (equal lst (list ''0)))
            ''nil)
+          #|((quote-listp lst)
+           `',(unquote-all lst))||#
           (t
            `(list . ,lst)))))
 
