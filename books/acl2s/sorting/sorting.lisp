@@ -1,9 +1,4 @@
 #|
-(include-book 
- "portcullis")
-|#
-
-#|
 
  Author: Pete Manolios
  
@@ -17,8 +12,6 @@
  primarily developed for defdata.
 
 |#
-
-
 
 (in-package "ACL2S")
 (include-book "acl2s/acl2s-sigs" :dir :system :ttags :all)
