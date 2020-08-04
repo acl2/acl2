@@ -1493,13 +1493,28 @@
      iff it is second-order."))
   (b* ((wrld (w state))
        ((unless (subsetp (evens options)
-                         '(:skolem-name :thm-name :rewrite :constrain :print)))
+                         '(:verify-guards
+                           :skolem-name
+                           :thm-name
+                           :rewrite
+                           :constrain
+                           :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
-                   :SKOLEM-NAME, :THM-NAME, :REWRITE, :CONSTRAIN and :PRINT ~
+                   :VERIFY-GUARDS, ~
+                   :SKOLEM-NAME, ~
+                   :THM-NAME,  ~
+                   :REWRITE, ~
+                   :CONSTRAIN and ~
+                   :PRINT ~
                    are allowed, ~
                    because ~x0 is a quantifier second-order function."
                   sofun))
+       (verify-guards (let ((verify-guards-option
+                             (assoc-keyword :verify-guards options)))
+                        (if verify-guards-option
+                            (cadr verify-guards-option)
+                          (guard-verified-p sofun wrld))))
        (bound-vars (defun-sk-bound-vars sofun wrld))
        (quant (defun-sk-quantifier sofun wrld))
        (sofun-matrix (defun-sk-matrix sofun wrld))
@@ -1538,7 +1553,6 @@
        (fun-guard (fun-subst-term inst sofun-guard wrld))
        (fun-guard-funvars (funvars-of-term fun-guard wrld))
        (fun-guard (untranslate fun-guard t wrld))
-       (wit-dcl `(declare (xargs :guard ,fun-guard :verify-guards nil)))
        (formals (formals sofun wrld))
        (strengthen (defun-sk-strengthen sofun wrld))
        (body (list quant bound-vars fun-matrix))
@@ -1548,11 +1562,12 @@
                       (list :rewrite rewrite))
                ,@skolem-name
                ,@thm-name
-               ,@constrain
-               :witness-dcls (,wit-dcl)))
+               ,@constrain))
        (funvars (remove-duplicates (append fun-matrix-funvars
                                            fun-guard-funvars)))
        (defun-sk-event `(defun-sk ,fun ,formals
+                          (declare (xargs :guard ,fun-guard
+                                          :verify-guards ,verify-guards))
                           ,body
                           ,@rest))
        (result `(,(if funvars 'defun-sk2 'defun-sk)

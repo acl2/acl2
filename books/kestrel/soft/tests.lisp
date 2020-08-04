@@ -506,11 +506,6 @@
    :print :result)
  :with-output-off nil)
 
-(must-fail ; bad option for quantifier 2nd-order function
- (defun-inst i (ex (?g . cons))
-   :verify-guards nil)
- :with-output-off nil)
-
 (must-fail ; duplicate options
  (defun-inst i (ex (?g . cons))
    :thm-name ex-thm :thm-name thm-ex)
