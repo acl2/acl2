@@ -97,7 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-title "Isomorphism between (MV X Y) and (MV Y X).")
+(test-title "Isomorphisms between (MV X Y) and (MV Y X).")
 
 (must-succeed*
 
@@ -137,5 +137,21 @@
    groupedp
    group
    ungroup
+   :beta-of-alpha-thm t
+   :alpha-of-beta-thm t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-title "Identity isomorphisms over pairs in an unspecified domain.")
+
+(must-succeed*
+
+ (defstub dom2 (* *) => *)
+
+ (defmapping id-pair
+   dom2
+   dom2
+   (lambda (x y) (mv x y))
+   (lambda (x y) (mv x y))
    :beta-of-alpha-thm t
    :alpha-of-beta-thm t))
