@@ -207,11 +207,6 @@
              abs-place-file-helper-of-fat32-filename-list-fix
              (path path-equiv))))))
 
-(defthm
-  abs-place-file-helper-of-ctx-app-lemma-1
-  (implies (>= (nfix n) (len l))
-           (fat32-filename-equiv (nth n l) nil)))
-
 (defund
   abs-place-file (frame path file)
   (declare
@@ -5447,8 +5442,6 @@
           (:rewrite member-of-abs-addrs-when-natp . 2)
           (:definition hifat-file-alist-fix)
           (:type-prescription assoc-when-zp-len)
-          (:rewrite
-           abs-place-file-helper-of-ctx-app-lemma-1)
           (:rewrite abs-addrs-of-ctx-app-2)
           (:definition put-assoc-equal)
           (:rewrite abs-mkdir-correctness-lemma-42)
