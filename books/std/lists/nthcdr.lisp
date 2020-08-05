@@ -191,7 +191,48 @@ library."
 
   (def-projection-rule nthcdr-of-elementlist-projection
     (equal (nthcdr n (elementlist-projection x))
-           (elementlist-projection (nthcdr n x)))))
+           (elementlist-projection (nthcdr n x))))
+
+  (encapsulate
+    ()
+
+    (local
+     (defthm subsetp-trans
+       (implies (and (subsetp x y) (subsetp y z))
+                (subsetp x z))))
+
+    (local
+     (defthm
+       subsetp-member
+       (implies (and (member a x) (subsetp x y))
+                (member a y))
+       :rule-classes
+       ((:rewrite)
+        (:rewrite :corollary (implies (and (subsetp x y) (member a x))
+                                      (member a y)))
+        (:rewrite
+         :corollary (implies (and (not (member a y)) (subsetp x y))
+                             (not (member a x))))
+        (:rewrite
+         :corollary (implies (and (subsetp x y) (not (member a y)))
+                             (not (member a x)))))))
+
+    (local
+     (defthm nthcdr-when->=-n-len-l
+       (implies (and (true-listp l)
+                     (>= (nfix n) (len l)))
+                (equal (nthcdr n l) nil))))
+
+    (defthm
+      subsetp-of-nthcdr
+      (subsetp-equal (nthcdr n l) l)
+      :hints (("Goal" :induct (nthcdr n l)
+               :in-theory
+               (disable
+                (:rewrite nthcdr-of-cons)
+                (:rewrite nthcdr-when-atom)
+                (:rewrite nthcdr-when-zp)
+                (:rewrite open-small-nthcdr)))))))
 
 
 (defsection rest-n

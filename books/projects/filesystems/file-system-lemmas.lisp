@@ -1464,6 +1464,7 @@
                              (acc 0))))
     :rule-classes :linear))
 
+;; Contributed to books/std/lists/nthcdr.lisp
 (defthm
   subsetp-of-nthcdr
   (subsetp-equal (nthcdr n l) l))
