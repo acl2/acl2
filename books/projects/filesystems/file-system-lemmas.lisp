@@ -1179,8 +1179,7 @@
          (no-duplicatesp-equal (strip-cars alist))))
 
 (defthm nth-when->=-n-len-l
-  (implies (and (true-listp l)
-                (>= (nfix n) (len l)))
+  (implies (>= (nfix n) (len l))
            (equal (nth n l) nil)))
 
 (defthm strip-cars-of-remove1-assoc
@@ -1464,6 +1463,7 @@
                              (acc 0))))
     :rule-classes :linear))
 
+;; Contributed to books/std/lists/nthcdr.lisp
 (defthm
   subsetp-of-nthcdr
   (subsetp-equal (nthcdr n l) l))

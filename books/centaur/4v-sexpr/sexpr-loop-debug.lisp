@@ -247,6 +247,18 @@
      (cw "~%")
      (verilog-summarize-translated-loops-aux (+ 1 n) (cdr comma-strs)))))
 
+(defthm
+   vl2014::string-list-listp-of-len-sort
+   (iff (vl2014::string-list-listp (len-sort x))
+        (vl2014::string-list-listp x))
+   :hints
+   (("goal" :in-theory (disable vl2014::string-list-listp-when-subsetp-equal)
+            :use ((:instance vl2014::string-list-listp-when-subsetp-equal
+                             (y (len-sort x)))
+                  (:instance vl2014::string-list-listp-when-subsetp-equal
+                             (x (len-sort x))
+                             (y x))))))
+
 (defund verilog-summarize-translated-loops (x)
   (declare (xargs :guard t))
   (b* ((loops (verilog-loops-from-translated-loops x))
@@ -349,5 +361,3 @@
                  (cons sig-number ndeps)))
 
 (defattach sneaky-loop-say-how-bad jared-sneaky-loop-say-how-bad)
-
-
