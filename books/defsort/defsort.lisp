@@ -797,9 +797,8 @@ it has a special hack for that particular case.</p>
                        consp-of-comparable-mergesort
                        ,subst1)))
 
-           (defthm ,(mksym prefix "-IS-IDENTITY-UNDER-SET-EQUIV")
-             (equal (consp (,sort x . ,extra-args))
-                    (consp x))
+           (defthm ,(mksym prefix "-SORT-IS-IDENTITY-UNDER-SET-EQUIV")
+             (set-equiv (,sort x . ,extra-args) x)
              :hints ((defsort-functional-inst
                        comparable-mergesort-under-set-equiv
                        ,subst1)))))
