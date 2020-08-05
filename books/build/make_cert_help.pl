@@ -831,15 +831,16 @@ if ($success) {
 	($STEP eq "pcertifyplus") ? "PROVISIONAL CERTIFICATION+" :
 	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
 	($STEP eq "complete") ? "PCERT1->CERT COMLETION" : "UNKNOWN";
-    print "**$taskname FAILED** for $dir$file.lisp\n\n";
-    system("tail -300 $outfile | sed 's/^/   | /'") if $outfile;
-    print "\n\n";
+    print "\n**$taskname FAILED** for $dir$file.lisp\n\n" .
+        ($outfile ? `tail -300 $outfile | sed 's/^/   | /'` : "") .
+        "\n**$taskname FAILED** for $dir$file.lisp\n\n";
 
     if ($ON_FAILURE_CMD) {
-	system($ON_FAILURE_CMD);
+        print "\n-- Executing ON_FAILURE_CMD='$ON_FAILURE_CMD' for $dir$file.lisp\n\n" .
+            `{ $ON_FAILURE_CMD ; } 2>&1` .
+            "\n-- Finished executing ON_FAILURE_CMD='$ON_FAILURE_CMD' for $dir$file.lisp\n\n";
     }
 
-    print "**$taskname FAILED** for $dir$file.lisp\n\n";
     exit(1);
 }
 
