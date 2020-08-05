@@ -795,6 +795,13 @@ it has a special hack for that particular case.</p>
                     (consp x))
              :hints ((defsort-functional-inst
                        consp-of-comparable-mergesort
+                       ,subst1)))
+
+           (defthm ,(mksym prefix "-IS-IDENTITY-UNDER-SET-EQUIV")
+             (equal (consp (,sort x . ,extra-args))
+                    (consp x))
+             :hints ((defsort-functional-inst
+                       comparable-mergesort-under-set-equiv
                        ,subst1)))))
 
        ((when weak) (value events1))
@@ -903,5 +910,3 @@ it has a special hack for that particular case.</p>
 (defmacro defsort (&rest args)
   `(make-event
     (defsort-fn ',args state)))
-
-

@@ -217,12 +217,6 @@ library."
          :corollary (implies (and (subsetp x y) (not (member a y)))
                              (not (member a x)))))))
 
-    (local
-     (defthm nthcdr-when->=-n-len-l
-       (implies (and (true-listp l)
-                     (>= (nfix n) (len l)))
-                (equal (nthcdr n l) nil))))
-
     (defthm
       subsetp-of-nthcdr
       (subsetp-equal (nthcdr n l) l)
