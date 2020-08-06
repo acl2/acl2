@@ -150,6 +150,16 @@
     (xdoc::seetopic "omap::omaps" "the library of ordered maps")
     ".")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "solidity::solidity" "Solidity Library"))
+
+   (xdoc::p
+    "This is a library about
+     the Solidity language for Ethereum smart contracts.
+     It includes a formalization of some aspects of the language.
+     There are plans to extend this to cover more aspects.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
