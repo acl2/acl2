@@ -26,10 +26,4 @@
 
   (defthm symbol-listp-of-cdr-of-assoc-equal-when-string-symbollist-alistp
     (implies (string-symbollist-alistp alist)
-             (symbol-listp (cdr (assoc-equal key alist)))))
-
-  (defthm string-symbollist-alistp-of-put-assoc-equal
-    (implies (string-symbollist-alistp alist)
-             (equal (string-symbollist-alistp (put-assoc-equal key val alist))
-                    (and (stringp key)
-                         (symbol-listp val))))))
+             (symbol-listp (cdr (assoc-equal key alist))))))

@@ -3037,12 +3037,6 @@
                     (frame-val-p nil))))
   :hints (("goal" :in-theory (enable frame-p))))
 
-(defthm frame-p-of-put-assoc-equal
-  (implies (frame-p alist)
-           (equal (frame-p (put-assoc-equal name val alist))
-                  (and (natp name) (frame-val-p val))))
-  :hints (("goal" :in-theory (enable frame-p))))
-
 (defthm frame-p-of-remove-assoc
   (implies (frame-p alist)
            (frame-p (remove-assoc-equal x alist)))

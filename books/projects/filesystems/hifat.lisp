@@ -1959,13 +1959,6 @@
     (t (hifat-find-file fs x))))
   :hints (("goal" :in-theory (enable hifat-find-file))))
 
-(defthm
-  m1-file-alist-p-of-put-assoc-equal
-  (implies
-   (m1-file-alist-p alist)
-   (equal (m1-file-alist-p (put-assoc-equal name val alist))
-          (and (fat32-filename-p name) (m1-file-p val)))))
-
 (defund
   hifat-place-file
   (fs path file)
