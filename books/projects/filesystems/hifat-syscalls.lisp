@@ -1023,6 +1023,19 @@
       (m1-file-alist2
        (hifat-file-alist-fix m1-file-alist1)))))))
 
+(def-alistp-rule alistp-of-put-assoc-equal
+  (implies (and (keyval-alist-p x)
+                (not (keyval-alist-final-cdr-p t)))
+           (iff (keyval-alist-p (put-assoc-equal name val x))
+                (and (keytype-p name) (valtype-p val))))
+  :name keyval-alist-p-of-put-assoc-equal
+  :requirement (and true-listp single-var)
+  :body
+  (implies (and (keyval-alist-p x))
+           (iff (keyval-alist-p (put-assoc-equal name val x))
+                (and (keytype-p name) (valtype-p val))))
+  :tags (:alistp))
+
 (fty::defprod
  dir-stream
  ((file-list fat32-filename-list-p)))
@@ -1130,6 +1143,21 @@
                            "SHARE      " "BIN        "))))
     (equal errno 0))))
 
+(defund string-list-min (str-list)
+  (b*
+      (((unless (consp str-list)) (str-fix nil))
+       (head (car str-list))
+       ((unless (consp (cdr str-list))) head)
+       (tail-val (string-list-min (cdr str-list)))
+       ((unless (string< tail-val head)) head))
+    tail-val))
+
+(defthm string-list-min-correctness-1
+  (implies (consp str-list)
+           (member-equal (string-list-min str-list)
+                         str-list))
+  :hints (("goal" :in-theory (enable string-list-min))))
+
 (defund hifat-readdir (dirp dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
                               (natp dirp))
@@ -1169,11 +1197,6 @@
      dir-stream-table
      '((0 (FILE-LIST "LIB        "
                      "SHARE      " "BIN        ")))))))
-
-(defthm dir-stream-table-p-of-put-assoc-equal
-  (implies (dir-stream-table-p alist)
-           (equal (dir-stream-table-p (put-assoc-equal name val alist))
-                  (and (natp name) (dir-stream-p val)))))
 
 (defthm dir-stream-table-p-of-hifat-readdir
   (dir-stream-table-p (mv-nth 2

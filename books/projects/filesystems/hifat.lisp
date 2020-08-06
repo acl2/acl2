@@ -1272,10 +1272,35 @@
      (dir-ent-directory-p dir-ent-set-first-cluster-file-size)
      (logbitp)))))
 
+(def-listfix-rule nth-of-element-list-fix
+  (equal (nth n (element-list-fix x))
+         (if (< (nfix n) (len x))
+             (element-fix (nth n x))
+           nil)))
+
+(def-listp-rule list-equiv-refines-element-list-equiv
+  (implies (and (list-equiv x y)
+                (not (element-list-final-cdr-p t)))
+           (element-list-equiv x y))
+  :hints (("Goal" :induct (fast-list-equiv x y)
+           :in-theory (enable fast-list-equiv)))
+  :name list-equiv-refines-element-list-equiv
+  :requirement (not true-listp)
+  :body
+  (implies (list-equiv x y)
+           (element-list-equiv x y))
+  :inst-rule-classes :refinement)
+
+(def-listfix-rule
+  prefixp-of-element-list-fix
+  (implies (prefixp x y)
+           (prefixp (element-list-fix x)
+                    (element-list-fix y)))
+  :hints (("goal" :in-theory (enable prefixp))))
+
 (fty::deflist fat32-filename-list
               :elt-type fat32-filename      ;; required, must have a known fixing function
-              :true-listp t
-              )
+              :true-listp t)
 
 ;; The fact that we're having to insert this indicates that deflist should have
 ;; an option to make it come up disabled.

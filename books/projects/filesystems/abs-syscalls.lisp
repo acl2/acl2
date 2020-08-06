@@ -10469,3 +10469,172 @@
            (< 0 (1st-complete-under-path frame path)))
   :hints (("goal" :in-theory (enable 1st-complete-under-path)))
   :rule-classes :linear)
+
+(defthm
+  collapse-hifat-place-file-lemma-2
+  (implies
+   (and
+    (prefixp
+     (frame-val->path
+      (cdr
+       (assoc-equal
+        (frame-val->src (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                          (frame->frame frame))))
+        (frame->frame frame))))
+     (frame-val->path (cdr (assoc-equal (1st-complete (frame->frame frame))
+                                        (frame->frame frame)))))
+    (dist-names root nil (frame->frame frame))
+    (abs-separate (frame->frame frame))
+    (frame-p (frame->frame frame))
+    (no-duplicatesp-equal (strip-cars (frame->frame frame))))
+   (dist-names
+    root nil
+    (frame->frame (collapse-this frame
+                                 (1st-complete (frame->frame frame))))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable collapse-this))))
+
+(defund
+  partial-seq-this (frame pathname)
+  (declare (xargs :guard (and (frame-p frame)
+                              (consp (assoc-equal 0 frame)))
+                  :measure (len (frame->frame frame))))
+  (b*
+      (((when (atom (frame->frame frame)))
+        nil)
+       (head-index
+        (1st-complete-under-path (frame->frame frame)
+                                 pathname))
+       ((when (zp head-index)) nil)
+       (head-frame-val
+        (cdr (assoc-equal head-index (frame->frame frame))))
+       (src
+        (frame-val->src
+         (cdr
+          (assoc-equal
+           (1st-complete-under-path (frame->frame frame)
+                                    pathname)
+           (frame->frame frame))))))
+    (if
+        (zp src)
+        (b*
+            (((unless (ctx-app-ok (frame->root frame)
+                                  head-index
+                                  (frame-val->path head-frame-val)))
+              nil))
+          (cons
+           head-index
+           (partial-seq-this (collapse-this frame head-index)
+                             pathname)))
+      (b*
+          ((path (frame-val->path head-frame-val))
+           ((when (or (equal src head-index)
+                      (atom (assoc-equal src (frame->frame frame)))))
+            nil)
+           (src-path
+            (frame-val->path
+             (cdr (assoc-equal src (frame->frame frame)))))
+           (src-dir
+            (frame-val->dir
+             (cdr (assoc-equal src (frame->frame frame)))))
+           ((unless (and (prefixp src-path path)
+                         (ctx-app-ok src-dir head-index
+                                     (nthcdr (len src-path) path))))
+            nil))
+        (cons
+         head-index
+         (partial-seq-this (collapse-this frame head-index)
+                           pathname))))))
+
+(defthmd
+  collapse-seq-of-partial-seq-this-is-partial-collapse
+  (implies (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+           (equal (partial-collapse frame path)
+                  (collapse-seq frame
+                                (partial-seq-this frame path))))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d (partial-collapse collapse-seq
+                           partial-seq-this collapse-iter)
+         ((:definition assoc-equal)
+          (:rewrite nthcdr-when->=-n-len-l)
+          (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
+                    . 3)
+          (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
+                    . 2)
+          (:definition remove-equal)
+          (:rewrite remove-when-absent)))
+    :induct (partial-seq-this frame path))))
+
+(defthm
+  abs-mkdir-correctness-lemma-89
+  (implies
+   (and
+    (subsetp-equal (abs-addrs (frame->root frame))
+                   (frame-addrs-root (frame->frame frame)))
+    (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+    (frame-p frame)
+    (abs-separate frame)
+    (mv-nth 1 (collapse frame))
+    (abs-complete
+     (frame-val->dir
+      (cdr (assoc-equal y
+                        (frame->frame (partial-collapse frame path))))))
+    (prefixp
+     path
+     (frame-val->path
+      (cdr (assoc-equal y
+                        (frame->frame (partial-collapse frame path)))))))
+   (not (consp (assoc-equal y
+                            (frame->frame (partial-collapse frame path))))))
+  :hints
+  (("goal"
+    :do-not-induct t
+    :in-theory
+    (disable abs-mkdir-correctness-lemma-24
+             1st-complete-under-path-of-frame->frame-of-partial-collapse)
+    :use ((:instance abs-mkdir-correctness-lemma-24
+                     (frame (frame->frame (partial-collapse frame path))))
+          1st-complete-under-path-of-frame->frame-of-partial-collapse))))
+
+;; (encapsulate
+;;   ()
+
+;;   (local (include-book "tricks/chain-leading-to-complete"))
+
+;;   (thm
+;;    (implies
+;;     (and (frame-p frame)
+;;          (no-duplicatesp-equal (strip-cars frame))
+;;          (abs-separate frame)
+;;          (mv-nth 1 (collapse frame))
+;;          (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+;;          (subsetp-equal (abs-addrs (frame->root frame))
+;;                         (frame-addrs-root (frame->frame frame))))
+;;     (abs-complete
+;;      (abs-file->contents$inline
+;;       (mv-nth 0
+;;               (abs-find-file (partial-collapse frame path)
+;;                              path)))))
+;;    :hints
+;;    (("Goal"
+;;      :do-not-induct t
+;;      :in-theory
+;;      (disable
+;;       abs-mkdir-correctness-lemma-158
+;;       abs-find-file-src-correctness-2
+;;       abs-mkdir-correctness-lemma-86)
+;;      :use
+;;      (:instance
+;;       abs-find-file-src-correctness-2
+;;       (frame (partial-collapse frame path))))
+;;     ("subgoal 2"
+;;      :use
+;;      (:instance
+;;       (:rewrite abs-find-file-of-put-assoc-lemma-4)
+;;       (path path)
+;;       (frame (partial-collapse frame path))))
+;;     ("Subgoal 1" :use
+;;      collapse-seq-of-partial-seq-this-is-partial-collapse))))
