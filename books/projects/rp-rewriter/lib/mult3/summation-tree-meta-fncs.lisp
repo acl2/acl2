@@ -1083,6 +1083,35 @@
       (& term))))
 
 
+(define single-s-to-pp-lst ((pp1)
+                            (pp2)
+                            (pp3))
+  :returns (mv (res-pp-lst rp-term-listp
+                           :hyp (and (rp-termp pp1)
+                                     (rp-termp pp2)
+                                     (rp-termp pp3)))
+               (success booleanp))
+  :verify-guards nil
+  (b* ((pp1 (and-list-instance-to-binary-and pp1))
+       (pp2 (and-list-instance-to-binary-and pp2))
+       (pp3 (and-list-instance-to-binary-and pp3))
+       ((Unless (and (pp-term-p pp1)
+                     (pp-term-p pp2)
+                     (pp-term-p pp3)
+                     ))
+        (mv nil nil)))
+    (mv (pp-flatten `(binary-xor ,pp1
+                                 (binary-xor ,pp2
+                                             ,pp3))
+                    nil)
+        t))
+  ///
+  (verify-guards single-s-to-pp-lst
+    :hints (("Goal"
+             :expand ((:free (x y)
+                             (pp-term-p `(binary-xor ,x ,y))))
+             :in-theory (e/d (is-rp ex-from-rp) ())))))
+
 (define single-c-to-pp-lst ((pp1)
                             (pp2)
                             (pp3))
@@ -1283,33 +1312,7 @@
 ;; (decompress-s-c '(S '0 (LIST B) (LIST (C '0 'NIL (LIST D (-- C) (-- A)) 'NIL))))
 
 
-(define single-s-to-pp-lst ((pp1)
-                            (pp2)
-                            (pp3))
-  :returns (mv (res-pp-lst rp-term-listp
-                           :hyp (and (rp-termp pp1)
-                                     (rp-termp pp2)
-                                     (rp-termp pp3)))
-               (success booleanp))
-  :verify-guards nil
-  (b* ((pp1 (and-list-instance-to-binary-and pp1))
-       (pp2 (and-list-instance-to-binary-and pp2))
-       (pp3 (and-list-instance-to-binary-and pp3))
-       ((Unless (and (pp-term-p pp1)
-                     (pp-term-p pp2)
-                     (pp-term-p pp3)))
-        (mv nil nil)))
-    (mv (pp-flatten `(binary-xor ,pp1
-                                (binary-xor ,pp2
-                                            ,pp3))
-                    nil)
-        t))
-  ///
-  (verify-guards single-s-to-pp-lst
-    :hints (("Goal"
-             :expand ((:free (x y)
-                             (pp-term-p `(binary-xor ,x ,y))))
-             :in-theory (e/d (is-rp ex-from-rp) ())))))
+
 
 
 (define s-pattern2-reduce ((pp rp-termp)

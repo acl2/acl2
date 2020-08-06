@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2019, Regents of the University of Texas
+; Copyright (C) 2020, Regents of the University of Texas
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -41,9 +41,7 @@
 (include-book "rp-rewriter")
 (include-book "extract-formula")
 (include-book "eval-functions")
-;(include-book "proof-functions")
 
-;(include-book "tools/with-supporters" :dir :system)
 (local (include-book "proofs/extract-formula-lemmas"))
 (local (include-book "proofs/rp-correct"))
 (local (include-book "proofs/rp-equal-lemmas"))
@@ -60,28 +58,6 @@
     (and  (weak-rp-cl-hints-p hints)
           (alistp (access rp-cl-hints hints :new-synps)))))
 
-
-
-;; (defund create-simple-meta-rules-alist-aux (meta-rules disabled-meta-rules)
-;;   (declare (xargs :guard t))
-;;   (if (atom meta-rules)
-;;       nil
-;;     (b* (((when (not (weak-rp-meta-rule-rec-p (car meta-rules))))
-;;           (progn$ (hard-error 'create-simple-meta-rules-alist-aux
-;;                               "Possibly broken table! ~p0"
-;;                               (cons #\0 (car meta-rules)))
-;;                   nil))
-;;          (trig-fnc (acl2::symbol-fix (rp-meta-trig-fnc (car meta-rules))))
-;;          (fnc (acl2::symbol-fix (rp-meta-fnc (car meta-rules))))
-;;          (rest (create-simple-meta-rules-alist-aux (cdr meta-rules)
-;;                                                disabled-meta-rules))
-;;          (entry (hons-get fnc disabled-meta-rules))
-;;          ((when (and entry
-;;                      (cdr entry)))
-;;           rest))
-;;       (acons trig-fnc fnc rest))))
-
-
 (defund get-meta-rules (table-entry)
  (declare (xargs :guard t ))
  (if (or (atom table-entry)
@@ -90,44 +66,33 @@
    (b* ((e (cdar table-entry)))
      (append (true-list-fix e) (get-meta-rules (cdr table-entry))))))
 
-;; (defund create-simple-meta-rules-alist (state)
-;;   (declare (xargs :stobjs (state)))
-;;   (b* ((world (w state))
-;;        (rp-rw-meta-rules-with-fc (table-alist 'rp-rw-meta-rules world))
-;;        (meta-rules (get-meta-rules rp-rw-meta-rules-with-fc))
-;;        (disabled-meta-rules (Make-Fast-Alist (table-alist 'disabled-rp-meta-rules world)))
-;;        (simple-meta-rules-list (create-simple-meta-rules-alist-aux meta-rules
-;;                                                                    disabled-meta-rules))
-;;        (- (fast-alist-free disabled-meta-rules)))
-;;     simple-meta-rules-list))
-
 (defwarrant rp-meta-fnc)
-(defwarrant RP-META-TRIG-FNC)
+(defwarrant rp-meta-trig-fnc)
 
 (define get-enabled-meta-rules-from-table (state)
   :prepwork
   ((local
-    (defthm WEAK-RP-META-RULE-RECS-P-implies-TRUE-LISTP
-      (implies (WEAK-RP-META-RULE-RECS-P x)
-               (TRUE-LISTP x)))))
+    (defthm weak-rp-meta-rule-recs-p-implies-true-listp
+      (implies (weak-rp-meta-rule-recs-p x)
+               (true-listp x)))))
   :guard-hints (("Goal"
-                 :in-theory (e/d () (WEAK-RP-META-RULE-REC-P
-                                     (:REWRITE
-                                      ACL2::MEMBER-EQUAL-STRIP-CARS-ASSOC-EQUAL)
-                                     HONS-GET
-                                     ASSOC-EQUAL
-                                     (:DEFINITION NO-DUPLICATESP-EQUAL)
-                                     (:DEFINITION ALWAYS$)
-                                     (:REWRITE ACL2::FANCY-UQI-INTEGER-1)
-                                     (:DEFINITION INTEGER-LISTP)
-                                     (:DEFINITION FGETPROP)
-                                     (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES
+                 :in-theory (e/d () (weak-rp-meta-rule-rec-p
+                                     (:rewrite
+                                      acl2::member-equal-strip-cars-assoc-equal)
+                                     hons-get
+                                     assoc-equal
+                                     (:definition no-duplicatesp-equal)
+                                     (:definition always$)
+                                     (:rewrite acl2::fancy-uqi-integer-1)
+                                     (:definition integer-listp)
+                                     (:definition fgetprop)
+                                     (:rewrite acl2::apply$-badgep-properties
                                                . 1)
-                                     (:DEFINITION ACL2::APPLY$-BADGEP)
-                                     (:DEFINITION MEMBER-EQUAL)))))
-  (b* ((meta-rules-list (cdr (HONS-ASSOC-EQUAL 'meta-rules-list (table-alist 'rp-rw
-                                                                        (w
-                                                                         state)))))
+                                     (:definition acl2::apply$-badgep)
+                                     (:definition member-equal)))))
+  (b* ((meta-rules-list (cdr (hons-assoc-equal 'meta-rules-list
+                                               (table-alist 'rp-rw
+                                                            (w state)))))
        (rp-rules (make-fast-alist (table-alist 'rp-rules (w state))))
        ((unless (weak-rp-meta-rule-recs-p meta-rules-list))
         (progn$ (fast-alist-clean rp-rules)))
@@ -138,43 +103,17 @@
        (res (loop$ for x in runes when (cdr (hons-get x rp-rules)) collect x))
        (- (fast-alist-clean rp-rules)))
     res))
-                               
-           
-       
-  
-
-#|(local
- (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist-aux
-   (and (simple-meta-rule-alistp (create-simple-meta-rules-alist-aux meta-rules disabled-meta-rules))
-        )
-   :hints (("Goal"
-            :induct (create-simple-meta-rules-alist-aux meta-rules
-                                                        disabled-meta-rules)
-            :do-not-induct t
-            :in-theory (e/d (create-simple-meta-rules-alist
-                             SIMPLE-META-RULE-ALISTP
-                             CREATE-SIMPLE-META-RULES-ALIST-AUX)
-                            ())))))||#
-
-#|(local
- (defthm simple-meta-rule-alistp-of-create-simple-meta-rules-alist
-   (and (simple-meta-rule-alistp (create-simple-meta-rules-alist state)))
-   :hints (("Goal"
-            :in-theory (e/d (create-simple-meta-rules-alist
-                             SIMPLE-META-RULE-ALISTP)
-                            ())))))||#
 
 (defun rp-clause-processor-aux (cl hints rp-state state)
-  (declare #|(ignorable rule-names)||#
+  (declare
    (xargs
-    :guard (and #|(rp-meta-rule-recs-p meta-rules state)||#
+    :guard (and 
             (rp-cl-hints-p hints))
     :stobjs (rp-state state)
     :guard-hints (("Goal"
                    :in-theory (e/d ()
                                    (rp-rw-aux
                                     get-rules
-                                    #|GET-ENABLED-EXEC-RULES||#
                                     beta-search-reduce))))
     :verify-guards t))
   (if (and (consp cl)
@@ -198,22 +137,17 @@
                                 "format of rules-alist is bad ~%" nil)
                     (mv nil (list cl) rp-state state)))
            (rp-state (rp-state-new-run rp-state))
-           ;;(meta-rules (create-simple-meta-rules-alist state))
-           #|(disabled-meta-rules (table-alist 'disabled-rp-meta-rules
-           (w state)))||#
-           #|(meta-rules (remove-disabled-meta-rules meta-rules disabled-meta-rules))||#
-           ;;(meta-rules (make-fast-alist meta-rules))
-           (meta-rules nil)
+           (rules-alist-outside-in nil)
            ((mv rw rp-state)
             (if (rp-formula-checks state)
                 (rp-rw-aux car-cl
                            rules-alist
                            exc-rules
-                           meta-rules
+                           rules-alist-outside-in
                            rp-state
                            state)
               (mv car-cl rp-state)))
-           ;;(- (fast-alist-free meta-rules))
+           (- (fast-alist-free rules-alist-outside-in))
            (- (fast-alist-free exc-rules))
            (- (fast-alist-free rules-alist)))
         (mv nil
@@ -226,9 +160,6 @@
 (local
  (defthm correctness-of-rp-clause-processor-aux
   (implies (and (pseudo-term-listp cl)
-                ;; (rp-meta-valid-syntax-listp meta-rules state)
-                ;; (valid-rp-meta-rule-listp meta-rules state)
-                ;;(rp-formula-checks state)
                 (alistp a)
                 (rp-evl-meta-extract-global-facts :state state))
            (iff (rp-evl (acl2::conjoin-clauses
@@ -239,26 +170,22 @@
   :otf-flg t
   :hints (("Goal"
            :do-not-induct t
-           :expand ((REMOVE-DISABLED-META-RULES
-                     NIL
-                     (TABLE-ALIST 'DISABLED-RP-META-RULES
-                                  (CDR (ASSOC-EQUAL 'ACL2::CURRENT-ACL2-WORLD
-                                                    (NTH 2 STATE))))))
+           :expand ((remove-disabled-meta-rules
+                     nil
+                     (table-alist 'disabled-rp-meta-rules
+                                  (cdr (assoc-equal 'acl2::current-acl2-world
+                                                    (nth 2 state))))))
            :in-theory (e/d (rp-evl-of-fncall-args
-                            ;; valid-rp-meta-rule-listp
                             rp-evl-of-beta-search-reduce
                             rp-meta-valid-syntax-listp
-                            ;;symbol-alistp-get-enabled-exec-rules
                             rp-rw-aux-is-correct)
                            (get-rules
                             valid-rp-meta-rule-listp
-
                             valid-rp-meta-rulep
                             rp-meta-valid-syntaxp-sk
                             ex-from-synp-lemma1
                             valid-rules-alistp
                             rp-rw-aux
-                            #|get-enabled-exec-rules||#
                             assoc-eq
                             table-alist))))
   :rule-classes :rewrite))
@@ -283,7 +210,6 @@
 (progn
   (table rp-rw 'meta-rules nil)
   (table rp-rw 'simple-meta-rules-alist nil)
-
   (table rp-rw 'rp-rewriter
          'rp-rewriter))
 
@@ -322,3 +248,4 @@
                             acl2::conjoin-clauses
                             acl2::clauses-result))))
   :rule-classes :clause-processor)
+

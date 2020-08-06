@@ -137,7 +137,7 @@
 
 ;;(verify-guards rp-rw-meta-rule)
 
-(progn
+#|(progn
   (local
    (defthm hons-assoc-equal-of-simple-meta-rule-alistp
      (implies (and (simple-meta-rule-alistp meta-rules)
@@ -154,7 +154,7 @@
     :hints (("Goal"
              :in-theory (e/d (
                               )
-                             ())))))
+                             ())))))||#
 
 (local
  (defthm rp-term-listp-lemma1
@@ -224,11 +224,11 @@
                   term))
   :hints (("goal" :in-theory (enable rp-rw-apply-meta))))||#
 
-(defthm not-meta-changed-flg-implies-rp-rw-meta-rules
+#|(defthm not-meta-changed-flg-implies-rp-rw-meta-rules
   (implies (not (mv-nth 0 (rp-rw-meta-rules term meta-rules rp-state )))
            (equal (mv-nth 1 (rp-rw-meta-rules term meta-rules rp-state ))
                   term))
-  :hints (("goal" :in-theory (enable rp-rw-meta-rules))))
+  :hints (("goal" :in-theory (enable rp-rw-meta-rules))))||#
 
 (defthm rule-list-syntaxp-rp-get-rules-for-term
   (implies (rules-alistp rules-alist)
@@ -593,7 +593,7 @@
                         is-if
                         IS-FALIST
                         #|RP-RW-APPLY-FALIST-META||#
-                        rp-rw-meta-rules
+                        
 
                         RP-EX-COUNTERPART
                         (:DEFINITION LEN)

@@ -30,6 +30,8 @@
 
 (include-book "svl-flatten-simplify-lemmas")
 
+(set-ignore-ok t)
+
 (progn
   (defun vl-insouts-get-range (vl-logic)
     (b* (((unless (or (equal (car vl-logic)
@@ -1001,6 +1003,7 @@
       (mv aliases-alist
           (hons-acons cur-svar cur-svex
                       rest)))))
+
 (acl2::defines
  mod-aliaspairs->svl-aliasdb-pt2
  :prepwork
