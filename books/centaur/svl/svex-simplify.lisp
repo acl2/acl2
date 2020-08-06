@@ -509,7 +509,7 @@
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
            exc-rules meta-rules nil rp::rp-state state))
-
+         (- (clear-memoize-table '4vec-to-svex))
          ((mv err node-new) (4vec-to-svex rw t nil))
          (- (and err
                  (hard-error
@@ -1036,6 +1036,7 @@ local nodes in SVEXL will be simplified.
                                :preloaded-rules preloaded-rules
                                :linearize linearize
                                :only-local only-local))
+       (- (clear-memoize-table '4vec-to-svex))
        ((mv err svex-res)
         (if only-local
             (locally-simplified-to-svex rw)
