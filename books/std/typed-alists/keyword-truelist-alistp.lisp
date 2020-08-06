@@ -21,9 +21,4 @@
   :val (true-listp x)
   :true-listp t
   :keyp-of-nil nil
-  :valp-of-nil t
-  ///
-
-  (defthm true-listp-of-cdr-of-assoc-equal-when-keyword-truelist-alistp
-    (implies (keyword-truelist-alistp alist)
-             (true-listp (cdr (assoc-equal key alist))))))
+  :valp-of-nil t)

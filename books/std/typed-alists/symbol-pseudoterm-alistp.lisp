@@ -21,9 +21,4 @@
   :val (pseudo-termp x)
   :true-listp t
   :keyp-of-nil t
-  :valp-of-nil t
-  ///
-
-  (defthm pseudo-termp-of-cdr-of-assoc-equal-when-symbol-pseudoterm-alistp
-    (implies (symbol-pseudoterm-alistp alist)
-             (pseudo-termp (cdr (assoc-equal key alist))))))
+  :valp-of-nil t)
