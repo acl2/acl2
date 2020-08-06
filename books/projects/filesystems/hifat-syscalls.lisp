@@ -1023,19 +1023,6 @@
       (m1-file-alist2
        (hifat-file-alist-fix m1-file-alist1)))))))
 
-(def-alistp-rule alistp-of-put-assoc-equal
-  (implies (and (keyval-alist-p x)
-                (not (keyval-alist-final-cdr-p t)))
-           (iff (keyval-alist-p (put-assoc-equal name val x))
-                (and (keytype-p name) (valtype-p val))))
-  :name keyval-alist-p-of-put-assoc-equal
-  :requirement (and true-listp single-var)
-  :body
-  (implies (and (keyval-alist-p x))
-           (iff (keyval-alist-p (put-assoc-equal name val x))
-                (and (keytype-p name) (valtype-p val))))
-  :tags (:alistp))
-
 (fty::defprod
  dir-stream
  ((file-list fat32-filename-list-p)))
