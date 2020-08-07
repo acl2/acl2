@@ -800,7 +800,7 @@ it has a special hack for that particular case.</p>
            (defthm ,(mksym prefix "-SORT-IS-IDENTITY-UNDER-SET-EQUIV")
              (set-equiv (,sort x . ,extra-args) x)
              :hints ((defsort-functional-inst
-                       comparable-mergesort-under-set-equiv
+                       comparable-mergesort-is-identity-under-set-equiv
                        ,subst1)))))
 
        ((when weak) (value events1))

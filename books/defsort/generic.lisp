@@ -1151,11 +1151,12 @@
             (and (subsetp a c)
                  (subsetp b c)))))
 
+  (local (in-theory (enable nth take)))
+
   (local
    (defthm member-equal-nth
      (implies (< (nfix n) (len l))
-              (member-equal (nth n l) l))
-     :hints (("Goal" :in-theory (enable nth)))))
+              (member-equal (nth n l) l))))
 
   (local
    (defthm subsetp-of-comparable-mergesort
@@ -1164,37 +1165,35 @@
                                      floor-bounded-by-/)
                                     (len))))))
 
-  (local (include-book "std/basic/inductions" :dir :system))
-
   (local
-   (defthmd comparable-mergesort-under-set-equiv-lemma-2
+   (defthmd comparable-mergesort-is-identity-under-set-equiv-lemma-2
      (implies (not (zp n))
               (equal (take n x) (append (take (- n 1) x)
-                                        (list (nth (- n 1) x)))))
-     :hints (("Goal" :induct (take n x) :in-theory (enable take)))))
+                                        (list (nth (- n 1) x)))))))
 
   (local
-   (defthmd comparable-mergesort-under-set-equiv-lemma-3
+   (defthmd comparable-mergesort-is-identity-under-set-equiv-lemma-3
      (iff (member-equal x lst)
           (not (zp (duplicity x lst))))))
 
+  (local (include-book "std/basic/inductions" :dir :system))
+
   (local
    (defthmd
-     comparable-mergesort-under-set-equiv-lemma-1
+     comparable-mergesort-is-identity-under-set-equiv-lemma-1
      (implies (<= (nfix n) (len x))
               (subsetp-equal (take n x)
                              (comparable-mergesort x)))
-     :hints (("goal" :in-theory (enable take)
-              :induct (dec-induct n)
-              :expand ((:with comparable-mergesort-under-set-equiv-lemma-3
+     :hints (("goal" :induct (dec-induct n)
+              :expand ((:with comparable-mergesort-is-identity-under-set-equiv-lemma-3
                               (member-equal (nth (+ -1 n) x)
                                             (comparable-mergesort x)))
-                       (:with comparable-mergesort-under-set-equiv-lemma-2
+                       (:with comparable-mergesort-is-identity-under-set-equiv-lemma-2
                               (take n x)))))))
 
   (defthm
-    comparable-mergesort-under-set-equiv
+    comparable-mergesort-is-identity-under-set-equiv
     (set-equiv (comparable-mergesort x) x)
     :hints (("goal" :in-theory (enable set-equiv)
-             :use (:instance comparable-mergesort-under-set-equiv-lemma-1
+             :use (:instance comparable-mergesort-is-identity-under-set-equiv-lemma-1
                              (n (len x)))))))
