@@ -42,7 +42,7 @@
 (include-book "dom-supergate-sweep")
 
 (defxdoc aignet-comb-transforms
-  :parents (aignet)
+  :parents (aignet-transforms)
   :short "Aignet transforms that simplify the network while preserving combinational equivalence"
   :long "<p>The functions @(see apply-comb-transforms) and @(see
 apply-comb-transforms!) may be used to apply several transforms to an aignet
@@ -147,6 +147,7 @@ for translating between ABC and aignet does not support xors.</p>"
 
 (fty::deftranssum comb-transform
   :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
+  :parents (aignet-comb-transforms)
   (balance-config
    fraig-config
    rewrite-config
@@ -158,6 +159,8 @@ for translating between ABC and aignet does not support xors.</p>"
    prune-config
    unreachability-config
    dom-supergates-sweep-config))
+
+(fty::deflist comb-transformlist :elt-type comb-transform :true-listp t)
 
 (define comb-transform->name ((x comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)
@@ -252,22 +255,19 @@ for translating between ABC and aignet does not support xors.</p>"
 
 
 (defxdoc aignet-n-output-comb-transforms
-  :parents (aignet)
-  :short "Aignet transforms that simplify the network while preserving combinational equivalence of the first N primary outputs."
-  :long "<p>The functions @(see apply-n-output-comb-transforms) and @(see
-apply-n-output-comb-transforms!) may be used to apply several transforms to an aignet
-network, each of which preserves combinational equivalence with the original
-network on the first N primary outputs.  Generally the rest of the outputs and the register nextstates may not be equivalent, but there may be heuristic uses for them.  The transforms are chosen by listing several @(see n-output-comb-transform)
-objects, each of which is a configuration object for one of the supported
-transforms.  The currently supported transforms include the @(see aignet-comb-transforms), which preserve complete cominbational equivalence, and an n-output unreachability transform.</p>
-")
+  :parents (aignet-transforms)
+  :short "Aignet transforms that simplify the network while preserving combinational
+          equivalence of the first N primary outputs.")
 
 
 (fty::deftranssum n-output-comb-transform
   :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
+  :parents (aignet-n-output-comb-transforms)
   (comb-transform
    n-outputs-unreachability-config
    n-outputs-dom-supergates-sweep-config))
+
+(fty::deflist n-output-comb-transformlist :elt-type n-output-comb-transform :true-listp t)
 
 (define n-output-comb-transform->name ((x n-output-comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)
@@ -360,13 +360,26 @@ transforms.  The currently supported transforms include the @(see aignet-comb-tr
 (defattach apply-n-output-comb-transform apply-n-output-comb-transform-default)
 
 
+(defxdoc aignet-m-assumption-n-output-transforms
+  :parents (aignet-transforms)
+  :short "Aignet transforms that simplify the network while preserving combinational
+          equivalence of the first M primary outputs and combinational equivalence
+          when assuming the first M primary outputs true on the next N primary
+          outputs.")
+
+
 
 (fty::deftranssum m-assumption-n-output-comb-transform
-  :short "Configuration object for any combinational transform supported by @(see apply-comb-transforms)."
+  :short "Configuration object for any combinational transform supported by @(see
+          apply-m-assumtion-n-output-output-transform-default)."
+  :parents (aignet-m-assumption-n-output-transform)
   (comb-transform
    n-outputs-unreachability-config
    n-outputs-dom-supergates-sweep-config
    m-assum-n-output-observability-config))
+
+(fty::deflist m-assumption-n-output-comb-transformlist
+  :elt-type m-assumption-n-output-comb-transform :true-listp t)
 
 (define m-assumption-n-output-comb-transform->name ((x m-assumption-n-output-comb-transform-p))
   :returns (name stringp :rule-classes :type-prescription)

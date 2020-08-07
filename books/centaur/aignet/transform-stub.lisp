@@ -36,8 +36,50 @@
 
 (local (in-theory (disable w)))
 
+(defxdoc aignet-transforms
+  :parents (aignet)
+  :short "Various types of transforms preserving different properties of the AIG"
+  :long
+"
+<p>The following kinds of transforms are defined:</p>
+<ul>
+<li>@(see aignet-comb-transforms): Combinational equivalence-preserving transforms</li>
+
+<li>@(see aignet-n-output-comb-transforms): Transforms that preserve
+combinational equivalence only on the first @('n') outputs, for a given
+@('n')</li>
+
+<li>@(see aignet-m-assumption-n-output-transforms): Transforms that preserve
+combinational equivalence of the first @('m') outputs, and preserve
+combinational equivalence of the following @('n') outputs assuming the truth of
+the first @('m') outputs, for given @('m') and @('n').</li>
+</ul>
+
+<p>Each of these transform types has a constrained function,
+@('apply-<name>-transform'), which takes a source AIG @('aignet'), a
+destination AIG @('aignet2'), a configuration object, and the ACL2 state and
+returns a modified destination AIG and state. The constraints on these define
+the contracts of each transform type.  Using this stub function, we also define
+@('apply-<name>-transform!') which uses @(see swap-stobjs) to overwrite the
+source AIG with the result instead of dealing with a second destination AIG.
+The properties defining these transforms are all transitive, so for each type
+we also define functions @('apply-<name>-transforms') and
+@('apply-<name>-transforms!') which apply a sequence of transforms specified by
+a list of configuration objects.</p>
+
+<p>Each of the transform types has an implementation of its constrained
+@('apply') function defined in @('centaur/aignet/transforms.lisp') and
+attached to the @('apply') function when that book is included.</p>
+
+")
+
+
 (defconst *apply-transform-template*
   '(progn
+     (defxdoc apply-<name>-transform
+       :parents <parents>
+       :short <short>
+       :long <long>)
      (encapsulate
        (((apply-<name>-transform <extra-formals-*> aignet aignet2 * state) => (mv aignet2 state)
          :guard <encap-guard>
@@ -88,6 +130,7 @@
                                       aignet
                                       transform
                                       state)
+       :parents (apply-<name>-transform)
        :guard <guard>
        :returns (mv new-aignet new-state)
        :enabled t
@@ -138,6 +181,7 @@
                                        aignet
                                        transforms
                                        state)
+       :parents (apply-<name>-transform)
        :guard <guard>
        :enabled t
        :hooks nil
@@ -173,6 +217,7 @@
          :hints(("Goal" :in-theory (disable <fn>-equals-apply-<name>-transforms!)))))
 
      (define apply-<name>-transforms (<extra-define-formals> aignet aignet2 transforms state)
+       :parents (apply-<name>-transform)
        :guard <guard>
        :returns (mv new-aignet2 new-state)
        :guard-hints (("goal" :expand ((apply-<name>-transforms!-core <extra-args> aignet transforms state))))
@@ -220,7 +265,8 @@
 (defun def-apply-transform-fn (name
                                extra-define-formals
                                guard
-                               correctness-claim)
+                               correctness-claim
+                               parents short long)
   (declare (xargs :mode :program))
   (b* ((formals (std::parse-formals `(def-apply-transform ,name)
                                     extra-define-formals nil nil))
@@ -236,7 +282,10 @@
          :atoms `((<encap-guard> . ,full-guard)
                   (<guard> . ,guard)
                   (<correctness-claim-aignet> . ,correctness-claim)
-                  (<correctness-claim-aignet2> . ,correctness-claim-aignet2))
+                  (<correctness-claim-aignet2> . ,correctness-claim-aignet2)
+                  (<parents> . ,parents)
+                  (<short> . ,short)
+                  (<long> . ,long))
          :strs `(("<NAME>" . ,(symbol-name name)))
          :pkg-sym 'aignet-package)))
     (acl2::template-subst-top *apply-transform-template* subst)))
@@ -244,18 +293,24 @@
 (defmacro def-apply-transform (name extra-define-formals
                                &key
                                (guard 't)
-                               (correctness-claim))
-  (def-apply-transform-fn name extra-define-formals guard correctness-claim))
+                               (correctness-claim)
+                               parents short long)
+  (def-apply-transform-fn name extra-define-formals guard correctness-claim parents short long))
 
 (def-apply-transform comb ()
-  :correctness-claim (comb-equiv new-aignet aignet))
+  :correctness-claim (comb-equiv new-aignet aignet)
+  :parents (aignet-comb-transforms)
+  :short "Stub for an AIG transform that preserves combinational equivalence")
 
 (def-apply-transform n-output-comb ((n natp))
   :guard (<= n (num-outs aignet))
   :correctness-claim
   (implies (< (nfix i) (nfix n))
            (equal (output-eval i invals regvals new-aignet)
-                  (output-eval i invals regvals aignet))))
+                  (output-eval i invals regvals aignet)))
+  :parents (aignet-n-output-comb-transforms)
+  :short "Stub for an AIG transform that preserves combinational equivalence of
+          the first N primary outputs")
 
 (define output-lit-range ((start natp) (count natp) aignet)
   :returns (lits lit-listp)
@@ -433,7 +488,14 @@
   (defthm conjoin-output-range-of-take-regs
     (equal (conjoin-output-range start n invals (take (stype-count :reg aignet) regvals) aignet)
            (conjoin-output-range start n invals regvals aignet))
-    :hints(("Goal" :in-theory (enable conjoin-output-range output-eval)))))
+    :hints(("Goal" :in-theory (enable conjoin-output-range output-eval))))
+
+
+  (defthm conjoin-output-range-of-extension
+    (implies (and (aignet-extension-binding)
+                  (<= (+ (nfix start) (nfix n)) (stype-count :po orig)))
+             (equal (conjoin-output-range start n invals regvals new)
+                    (conjoin-output-range start n invals regvals orig)))))
 
 (local (in-theory (enable output-range-equiv-by-badguy)))
 
@@ -448,4 +510,8 @@
                      (equal (conjoin-output-range 0 m invals regvals aignet)
                             1))
                 (equal (output-eval i invals regvals new-aignet)
-                       (output-eval i invals regvals aignet)))))
+                       (output-eval i invals regvals aignet))))
+  :parents (aignet-m-assumption-n-output-transforms)
+  :short "Stub for an AIG transform that preserves combinational equivalence of
+          the first M primary outputs, then preserves combinational equivalence
+          of the next N primary outputs under the assumption of the first N")

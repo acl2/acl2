@@ -247,21 +247,24 @@
     :hints (("goal" :do-not '(preprocess)
              :in-theory (enable logicman-ipasir-sat-lits-invar
                                 logicman-ipasirs-assumption-free
-                                bfr-listp-when-not-member-witness))))
+                                bfr-listp-when-not-member-witness)
+             :expand ((:free (var) (aignet::nbalist-boundp var nil))))))
 
   (defret pathcond-eval-of-<fn>
     (logicman-pathcond-eval env (interp-st->pathcond new-interp-st)
                             (interp-st->logicman new-interp-st))
     :hints (("goal" :do-not '(preprocess)
              :in-theory (enable logicman-pathcond-eval
-                                aignet::aignet-pathcond-eval))))
+                                aignet::aignet-pathcond-eval)
+             :expand ((:free (var) (aignet::nbalist-boundp var nil))))))
 
   (defret constraint-eval-of-<fn>
     (logicman-pathcond-eval env (interp-st->constraint new-interp-st)
                             (interp-st->logicman new-interp-st))
     :hints (("goal" :do-not '(preprocess)
              :in-theory (enable logicman-pathcond-eval
-                                aignet::aignet-pathcond-eval))))
+                                aignet::aignet-pathcond-eval)
+             :expand ((:free (var) (aignet::nbalist-boundp var nil))))))
 
   (defret equiv-contexts-of-<fn>
     (equal (interp-st->equiv-contexts new-interp-st) nil)

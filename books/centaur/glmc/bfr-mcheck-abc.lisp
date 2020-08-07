@@ -348,7 +348,7 @@
    #!aignet
    (defthm rewrite-to-output-eval-seq
      (implies (< (nfix n) (num-outs aignet))
-              (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
+              (equal (lit-eval-seq k (fanin 0 (lookup-stype n :po aignet))
                                    frames
                                    initsts
                                    aignet)

@@ -3160,10 +3160,10 @@ aignet when its initial value is the specified vector:</p>
               lits aignet mark copy
               strash gatesimp aignet2))))
 
-  (local (defthm dfs-copy-onto-invar-of-node-list-fix
-           (implies (dfs-copy-onto-invar aignet mark copy aignet2)
-                    (dfs-copy-onto-invar aignet mark copy (node-list-fix aignet2)))
-           :hints (("goal" :expand ((dfs-copy-onto-invar aignet mark copy (node-list-fix aignet2)))))))
+  (defthm dfs-copy-onto-invar-of-node-list-fix
+    (implies (dfs-copy-onto-invar aignet mark copy aignet2)
+             (dfs-copy-onto-invar aignet mark copy (node-list-fix aignet2)))
+    :hints (("goal" :expand ((dfs-copy-onto-invar aignet mark copy (node-list-fix aignet2))))))
 
   (defthm dfs-copy-onto-invar-holds-of-aignet-copy-dfs-list
     (implies (and ;; (aignet-idp id aignet)

@@ -102,4 +102,7 @@
   (if (atom x)
       nil
     (cons (lit->var (car x))
-          (lit-list-vars (cdr x)))))
+          (lit-list-vars (cdr x))))
+  ///
+  (defret len-of-<fn>
+    (equal (len vars) (len x))))
