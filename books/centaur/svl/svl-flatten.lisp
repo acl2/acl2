@@ -2886,7 +2886,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                     modname
                                                     modalist))
        (tmp-occs (append init-occs-for-aliased-inputs occs-for-outputs tmp-occs))
-       (- (hons-clear t))
+       (- (gc$))
        (- (cw "Sorting occs... ~%"))
        ;; Create Listeners.
        (tmp-occs (make-fast-alist tmp-occs)) ;; necessary for occ-to-occ listeners.
@@ -2944,7 +2944,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   (if (atom modnames)
       (progn$ (hons-clear t)
               (mv nil rp::rp-state))
-    (b* ((- (hons-clear t))
+    (b* ((- (gc$))
          ((mv this rp::rp-state)
           (svl-flatten-mod (car modnames)
                            modalist
@@ -3205,7 +3205,7 @@ them.
        (- (cw "All done! ~%"))
        (- (fast-alist-free sv-design.modalist))
        (- (svex-rw-free-preload svex-simplify-preloaded))
-       (- (hons-clear t)))
+       (- (gc$)))
     (mv modules rp::rp-state)))
 
 (define svl-modules-port-info ((modules svl-module-alist-p))

@@ -2025,15 +2025,15 @@
            :in-theory (e/d (get-disabled-exc-rules-from-table) ()))))
 
 (defthm true-listp-get-enabled-rules-from-table-aux
-  (b* (((mv rules-rw rules-def)
-        (get-enabled-rules-from-table-aux rp-rules-inorder rp-rules)))
+  (b* (((mv rules-rw rules-rw-oi)
+        (get-enabled-rules-from-table-aux rp-rules)))
     (and (true-listp rules-rw)
-         (true-listp rules-def)))
+         (true-listp rules-rw-oi)))
   :hints (("Goal"
            :in-theory (e/d (get-enabled-rules-from-table-aux) ()))))
 
 (defthm symbol-listp-get-enabled-rules-from-table
-  (symbol-alistp (mv-nth 1 (get-enabled-rules-from-table state)))
+  (symbol-alistp (mv-nth 2 (get-enabled-rules-from-table state)))
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (get-enabled-rules-from-table) ()))))

@@ -470,6 +470,25 @@
          (+ (cons-count (car x))
             (cons-count (cdr x))))))
 
+(progn
+  (defun cons-count-compare-aux (x count)
+    (declare (xargs :guard (natp count)))
+    (cond ((zp count)
+           (mv 0 t))
+          ((atom x)
+           (mv (1- count) nil))
+          (t (b* (((mv count count-reached)
+                   (cons-count-compare-aux (car x) count))
+                  ((when count-reached)
+                   (mv 0 t)))
+               (cons-count-compare-aux (cdr x) count)))))
+
+  (defun cons-count-compare (x count)
+    (declare (xargs :guard (natp count)))
+    (b* (((mv & count-reached)
+          (cons-count-compare-aux x count)))
+      count-reached)))
+
 (mutual-recursion
  (defun count-lambdas (x)
    (declare (xargs :guard t
@@ -1282,7 +1301,8 @@
     (trig-fnc ;; trigger function name
      fnc ;; function name that meta rule executes
      dont-rw ;; if meta rule also returns a structure for dont-rw
-     . valid-syntax ;; if meta rule returns valid-syntax (rp-valid-termp)
+     valid-syntax ;; if meta rule returns valid-syntax (rp-valid-termp)
+     outside-in
      )
     t)
 
@@ -1301,6 +1321,10 @@
   (defun rp-meta-syntax-verified (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
     (access rp-meta-rule-rec rule :valid-syntax))
+
+  (defun rp-meta-outside-in (rule)
+    (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
+    (access rp-meta-rule-rec rule :outside-in))
 
   #|(defun rp-meta-rule-syntaxp (term)
   "Returned term from meta rule functin should meet this syntax."

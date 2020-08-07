@@ -51,7 +51,7 @@
 (encapsulate
   nil
   (defrec rp-cl-hints
-    (runes . new-synps)
+    (runes runes-outside-in . new-synps)
     t)
   (defun rp-cl-hints-p (hints)
     (declare (xargs :guard t))
@@ -69,7 +69,7 @@
 (defwarrant rp-meta-fnc)
 (defwarrant rp-meta-trig-fnc)
 
-(define get-enabled-meta-rules-from-table (state)
+(define get-enabled-meta-rules-from-table (outside-in-flg state)
   :prepwork
   ((local
     (defthm weak-rp-meta-rule-recs-p-implies-true-listp
@@ -100,7 +100,17 @@
                           collect
                           :guard (weak-rp-meta-rule-rec-p x)           
                           `(:meta ,(rp-meta-fnc x) . ,(rp-meta-trig-fnc  x))))
-       (res (loop$ for x in runes when (cdr (hons-get x rp-rules)) collect x))
+       (res (loop$ for x in runes when
+                   (b* ((entry (cdr (hons-get x rp-rules))))
+                     (case-match entry
+                       ((':outside-in . t)
+                        outside-in-flg)
+                       ((':inside-out . t)
+                        (not outside-in-flg))
+                       (&
+                        (and entry
+                             (not outside-in-flg)))))
+                   collect x))
        (- (fast-alist-clean rp-rules)))
     res))
 
@@ -125,19 +135,27 @@
             ;; appear in the term but rp-termp does not.
             (mv nil (list cl) rp-state state))
            (runes (access rp-cl-hints hints :runes))
-           ((mv runes exc-rules)
-            (if runes
-                (mv runes (get-disabled-exc-rules-from-table
+           (runes-outside-in (access rp-cl-hints hints :runes-outside-in))
+           (- (and runes-outside-in (not runes)
+                   (cw "WARNING: You passed some values for runes-outside-in
+but did not pass anything for runes. Assigning values to any one of those
+values will cause runes to be not retrieved from the table.~%")))
+           
+           ((mv runes runes-outside-in exc-rules)
+            (if (or runes runes-outside-in)
+                (mv runes runes-outside-in
+                    (get-disabled-exc-rules-from-table
                            (table-alist 'rp-exc-rules (w state))))
               (get-enabled-rules-from-table state)))
            (new-synps (access rp-cl-hints hints :new-synps))
            (rules-alist (get-rules runes state :new-synps new-synps))
-           ((when (not (rules-alistp rules-alist)))
+           (rules-alist-outside-in (get-rules runes-outside-in state :new-synps new-synps))
+           ((unless (and (rules-alistp rules-alist)
+                         (rules-alistp rules-alist-outside-in)))
             (progn$ (hard-error 'rp-clause-precessor-aux
                                 "format of rules-alist is bad ~%" nil)
                     (mv nil (list cl) rp-state state)))
            (rp-state (rp-state-new-run rp-state))
-           (rules-alist-outside-in nil)
            ((mv rw rp-state)
             (if (rp-formula-checks state)
                 (rp-rw-aux car-cl

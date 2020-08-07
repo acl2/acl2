@@ -279,33 +279,33 @@
              (rune (case-match rule-name/rune
                      ((& . &) rule-name/rune)
                      (& (get-rune-name rule-name/rune state))))
-             (- (and (not (consp (hons-assoc-equal rune (table-alist
-                                                         'rp-rules-inorder (w state)))))
+             (entry (hons-assoc-equal rune (table-alist
+                                            'rp-rules (w state))))
+             (- (and (not (consp entry))
                      (hard-error 'bump-rp-rule
                                  "This rule is not added with add-rp-rule uet. There is
 nothing to bump!" nil)))
-             (cur-table (table-alist 'rp-rules-inorder (w state)))
+             (cur-table (table-alist 'rp-rules (w state)))
              (cur-table (remove-assoc-equal rune cur-table)))
           `(progn
-             (table rp-rules-inorder nil ',cur-table :clear)
-             (table rp-rules-inorder ',rune nil))))))
+             (table rp-rules nil ',cur-table :clear)
+             (table rp-rules ',rune ',(cdr entry)))))))
 
   (defun bump-rp-rules-body (args)
     (if (atom args)
         nil
       (cons `(bump-rp-rule ,(car args))
             (bump-rp-rules-body (cdr args)))))
-  
+
   (defmacro bump-rp-rules (&rest args)
     `(progn
        . ,(bump-rp-rules-body args)))
-    
 
   (defmacro add-rp-rule (rule-name &key
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
                                    (hints 'nil)
-                                   )
+                                   (outside-in 'nil))
     `(make-event
       (b* ((body (and ,beta-reduce
                       (meta-extract-formula ',rule-name state)))
@@ -324,9 +324,11 @@ nothing to bump!" nil)))
                 (b* ((rune (get-rune-name ',new-rule-name state))
                      (disabled ,,disabled)
                      (- (get-rules `(,rune) state :warning :err)))
-                  `(progn
-                     (table rp-rules-inorder ',rune nil)
-                     (table rp-rules ',rune ,(not disabled))))))))
+                  `(progn  
+                     (table rp-rules
+                            ',rune
+                            (cons ,(if ,,outside-in ':outside-in ':inside-out)
+                                  ,(not disabled)))))))))
         (if beta-reduce
             `(progn
                (defthm-lambda ,new-rule-name
@@ -355,7 +357,6 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
        (,(if defthmd 'defthmd 'defthm)
         ,rule-name ,rule ,@hints)
        (add-rp-rule  ,rule-name :disabled ,disabled))))
-
 
 (encapsulate
   nil
@@ -493,6 +494,7 @@ RP-Rewriter will throw an eligible error.</p>"
                        (enable-rules 'nil)
                        (disable-rules 'nil)
                        (runes 'nil)
+                       (runes-outside-in 'nil)
                        (time 't)
                        (not-simplified-action ':warning))
   `(encapsulate
@@ -524,34 +526,39 @@ RP-Rewriter will throw an eligible error.</p>"
             (acl2::translate1 ',term t nil nil 'top-level (w state) state))
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
            (term (beta-search-reduce term 1000))
-           ((mv runes exc-rules)
+           (- (and ,runes-outside-in (not ,runes)
+                   (cw "WARNING: You passed some values for runes-outside-in
+but did not pass anything for runes. Assigning values to any one of those
+values will cause runes to be not retrieved from the table.~%")))
+           ((mv runes runes-outside-in exc-rules)
             ,(if runes
-                 `(mv ,runes (get-disabled-exc-rules-from-table (table-alist 'rp-exc-rules world)))
+                 `(mv ,runes ,runes-outside-in (get-disabled-exc-rules-from-table (table-alist 'rp-exc-rules world)))
                '(get-enabled-rules-from-table state)))
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
            (rules-alist (get-rules runes state :new-synps new-synps))
+           (rules-alist-outside-in (get-rules runes-outside-in state :new-synps new-synps))
            (rp-state (rp-state-new-run rp-state))
            (old-not-simplified-action (not-simplified-action rp-state))
            (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
-           (meta-rules  (make-fast-alist (create-simple-meta-rules-alist state)))
-
+           
            ((mv rw rp-state)
             (if ,time
                 (time$
                  (rp-rw-aux term
                             rules-alist
                             exc-rules
-                            meta-rules
+                            rules-alist-outside-in
                             rp-state
                             state))
               (rp-rw-aux term
                          rules-alist
                          exc-rules
-                         meta-rules
+                         rules-alist-outside-in
                          rp-state
                          state)))
            (rw (if ,untranslate (untranslate rw t (w state)) rw))
-           (- (fast-alist-free meta-rules))
+           (- (fast-alist-free rules-alist))
+           (- (fast-alist-free rules-alist-outside-in))
            (state (fms "~p0~%"
                        (list
                         (cons #\0 rw))
@@ -560,10 +567,12 @@ RP-Rewriter will throw an eligible error.</p>"
         (mv nil `(value-triple :none) state rp-state)))))
 
 (defmacro rp-cl (&key (new-synps 'nil)
-                      (runes 'nil))
+                      (runes 'nil)
+                      (RUNES-OUTSIDE-IN 'nil)) ;
   `(rp-rewriter
     clause
     (make rp-cl-hints
+          :runes-outside-in ',RUNES-OUTSIDE-IN
           :runes ',runes #|,(if rules-override
           rules-override
           `(append (let ((world (w state))) (current-theory :here))
@@ -581,7 +590,8 @@ RP-Rewriter will throw an eligible error.</p>"
                            (enable-meta-rules 'nil)
                            (enable-rules 'nil)
                            (disable-rules 'nil)
-                           (runes 'nil) ;; when nil, runes will be read from
+                           (runes 'nil)
+                           (runes-outside-in 'nil);; when nil, runes will be read from
                            ;; rp-rules table
                            )
   `(make-event
@@ -594,6 +604,7 @@ RP-Rewriter will throw an eligible error.</p>"
                            :do-not '(preprocess generalize fertilize)
                            :clause-processor
                            (rp-cl :runes ,,runes
+                                  :runes-outside-in ,,runes-outside-in
                                   :new-synps ,',new-synps))))))
       ,(if (or disable-meta-rules
                enable-meta-rules
@@ -601,11 +612,6 @@ RP-Rewriter will throw an eligible error.</p>"
                disable-rules)
            ``(encapsulate
                nil
-               ;; ,@(if ,use-opener-error-rules
-               ;;       `((local
-               ;;          (in-theory (enable . ,opener-error-rules))))
-               ;;     'nil)
-
                ,@(if ',enable-meta-rules
                      `((local
                         (enable-meta-rules ,@',enable-meta-rules)))
@@ -672,7 +678,6 @@ RP-Rewriter will throw an eligible error.</p>"
 </p>
 "
  )
-
 
 (encapsulate
   nil

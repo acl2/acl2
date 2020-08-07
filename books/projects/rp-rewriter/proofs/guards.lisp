@@ -500,6 +500,15 @@
                              context-syntaxp
                              RULES-ALISTP))))))||#
 
+
+(local
+ (defthm is-rp-loose-is-is-rp
+   (implies (rp-termp term)
+            (equal (is-rp-loose term)
+                   (is-rp term)))
+   :hints (("Goal"
+            :in-theory (e/d (is-rp is-rp-loose) ())))))
+
 (verify-guards check-if-relieved-with-rp-aux
   :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
@@ -550,6 +559,26 @@
   :hints (("Goal"
            :in-theory (e/d (rule-syntaxp) ())))))
 
+(local
+ (make-flag match-lhs-for-dont-rw :defthm-macro-name defthm-match-lhs-for-dont-rw))
+
+(local
+ (defthm-match-lhs-for-dont-rw
+   (defthm match-lhs-for-dont-rw-returns-alistp
+     (implies (alistp acc-bindings)
+              (ALISTP (match-lhs-for-dont-rw lhs dont-rw ACC-BINDINGS)))
+     :flag match-lhs-for-dont-rw)
+   (defthm match-lhs-for-dont-rw-lst-returns-alistp
+     (implies (alistp acc-bindings)
+              (ALISTP (match-lhs-for-dont-rw-lst lhs-lst dont-rw ACC-BINDINGS)))
+     :flag match-lhs-for-dont-rw-lst)
+   :hints (("Goal"
+            :expand ((MATCH-LHS-FOR-DONT-RW LHS DONT-RW ACC-BINDINGS)
+                     (MATCH-LHS-FOR-DONT-RW-LST LHS-LST DONT-RW ACC-BINDINGS))
+            :in-theory (e/d () ())))))
+
+(verify-guards match-lhs-for-dont-rw)
+(verify-guards calculate-dont-rw$inline)
 
 (verify-guards rp-rw
   :otf-flg t

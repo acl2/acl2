@@ -705,20 +705,24 @@
            (rune (get-rune-name name state))
            (rune (if given-type rule rune))
            (rest
-            (if (not (consp (hons-assoc-equal rune (table-alist 'rp-rules-inorder (w state)))))
+            (if (not (consp (hons-assoc-equal rune (table-alist 'rp-rules (w state)))))
                 (progn$
-                 (if (or (atom rune)
-                         (and (not (equal (car rune) ':definition))
-                              (not (equal (car rune) ':executable-counterpart))))
-                     (cw "Warning! ~p0 does not seem to be registered with ~
+                 (and (or (atom rune)
+                          (and (not (equal (car rune) ':definition))
+                               (not (equal (car rune) ':executable-counterpart))))
+                      (cw "Warning! ~p0 does not seem to be registered with ~
   rp::add-rp-rule. Will do that now, but be aware that it will have a higher priority. ~%"
-                         rune)
-                   nil)
+                          rune))
                  (if (or (atom rune)
                          (not (equal (car rune) ':executable-counterpart)))
-                     (cons `(table rp-rules-inorder ',rune nil) rest)
+                     (cons `(table rp-rules ',rune '(:inside-out . t)) rest)
                    rest))
-              rest)))
+              rest))
+           (rune-entry-value (cdr (hons-assoc-equal rune (table-alist 'rp-rules
+                                                                      (w state)))))
+           (outside-in (case-match rune-entry-value
+                         ((':outside-in . &) t)
+                         (& nil))))
         (case-match rune
           ((':executable-counterpart name)
            (cons (if e/d
@@ -726,7 +730,10 @@
                    `(disable-exc-counterpart ,name))
                  rest))
           (&
-           (cons `(table rp-rules ',rune ,e/d) rest))))))
+           (cons `(table rp-rules ',rune ',(if outside-in
+                                              `(:outside-in . ,e/d)
+                                            `(:inside-out . ,e/d)))
+                         rest))))))
 
   (defmacro enable-rules (rules)
     `(make-event
@@ -864,38 +871,59 @@ This submits an event and disables all the rewrite rules.
                         rest)
           rest))))
 
+
+
+  (defund get-enabled-rules-from-table-aux (rp-rules)
+    (declare (xargs :guard t))
+    (if (atom rp-rules)
+        (mv nil nil)
+      (b* (((mv rest-inside-out rest-outside-in)
+            (get-enabled-rules-from-table-aux (cdr rp-rules)))
+           ((unless (consp (car rp-rules)))
+            (mv rest-inside-out rest-outside-in))
+
+           (rule (caar rp-rules))
+           (value (cdar rp-rules))
+           ((mv outside-in enabled)
+            (case-match value
+              ((':outside-in . enabled) (mv t enabled))
+              ((':inside-out . enabled) (mv nil enabled))
+              (& (mv nil value))))
+           ((unless enabled)
+            (mv rest-inside-out rest-outside-in)))
+        (case-match rule
+          ((:executable-counterpart &)
+           (mv rest-inside-out rest-outside-in))
+          (& 
+           (if outside-in
+               (mv rest-inside-out (cons rule rest-outside-in))
+             (mv (cons rule rest-inside-out) rest-outside-in)))))))
   
   
-  (defund get-enabled-rules-from-table-aux (rp-rules-inorder rp-rules)
+  #|(defund get-enabled-rules-from-table-aux (rp-rules-inorder)
     (declare (xargs :guard t))
     (if (atom rp-rules-inorder)
         (mv nil #|nil||# nil)
       (b* ((rule (and (consp (car rp-rules-inorder)) (caar rp-rules-inorder)))
-           ((mv rest-rw #|rest-ex||# rest-def)
-            (get-enabled-rules-from-table-aux (cdr rp-rules-inorder)
-                                              rp-rules)))
+           (rule-enabled (and (consp (car rp-rules-inorder)) (cdar rp-rules-inorder)))
+           ((mv rest-rw rest-def)
+            (get-enabled-rules-from-table-aux (cdr rp-rules-inorder))))
         (case-match rule
           ((:executable-counterpart &)
-           (mv rest-rw #|rest-ex||# rest-def)
-           #|(b* ((rp-rules-entry (hons-get rule rp-rules)))
-           (if (or (and rp-rules-entry ;
-           (not (cdr rp-rules-entry))) ;
-           (not (symbolp name))) ;
-           (mv rest-rw rest-ex rest-def) ;
-           (mv rest-rw (hons-acons name nil rest-ex) rest-def)))||#)
+           (mv rest-rw rest-def))
           ((:definition . &)
-           (if (cdr (hons-get rule rp-rules))
+           (if rule-enabled ;;(cdr (hons-get rule rp-rules))
                (mv rest-rw #|rest-ex||# (cons rule rest-def))
              (mv rest-rw #|rest-ex||# rest-def)))
           (& 
-           (if (cdr (hons-get rule rp-rules))
+           (if rule-enabled ;;(cdr (hons-get rule rp-rules))
                (mv (cons rule rest-rw) #|rest-ex||# rest-def)
-             (mv rest-rw #|rest-ex||# rest-def)))))))
+             (mv rest-rw #|rest-ex||# rest-def)))))))||#
 
   (local
    (defthm true-listp-get-enabled-rules-from-table-aux-for-guards
      (b* (((mv rules-rw #|rules-ex||# rules-def)
-           (get-enabled-rules-from-table-aux rp-rules-inorder rp-rules)))
+           (get-enabled-rules-from-table-aux rp-rules-inorder )))
        (and (true-listp rules-rw)
             #|(true-listp rules-ex)||#
             #|(symbol-alistp rules-ex)||#
@@ -904,17 +932,33 @@ This submits an event and disables all the rewrite rules.
               :in-theory (e/d (get-enabled-rules-from-table-aux) ())))))
 
 
-  (defund get-enabled-rules-from-table (state)
+  (define get-enabled-rules-from-table (state)
     (declare (xargs :stobjs (state)
                     :guard t))
     (b* ((world (w state))
-         (rp-rules-inorder (table-alist 'rp-rules-inorder world))
-         (rp-rules (make-fast-alist (table-alist 'rp-rules world)))
-         ((mv rules-rw #|rules-ex||# rules-def)
-          (get-enabled-rules-from-table-aux rp-rules-inorder rp-rules))
-         (- (fast-alist-free rp-rules))
-
+         (rp-rules (table-alist 'rp-rules world))
+         ((mv rules-inside-out rules-outside-in)
+          (get-enabled-rules-from-table-aux rp-rules))
          (rp-exc-rules (table-alist 'rp-exc-rules world))
          (rules-ex (get-disabled-exc-rules-from-table rp-exc-rules)))
-      (mv (append rules-rw rules-def) rules-ex))))
+      (mv rules-inside-out
+          rules-outside-in
+          rules-ex)))
+
+  #|(define get-enabled-rules-from-table (state)
+    (declare (xargs :stobjs (state)
+                    :guard t))
+    (b* ((world (w state))
+         (rp-rules (table-alist 'rp-rules world))
+         (rp-rules-outside-in (table-alist 'rp-rules-outside-in world))
+         ((mv rules-rw rules-def)
+          (get-enabled-rules-from-table-aux rp-rules))
+         ((mv rules-rw-oi rules-def-oi)
+          (get-enabled-rules-from-table-aux rp-rules-outside-in))
+         (rp-exc-rules (table-alist 'rp-exc-rules world))
+         (rules-ex (get-disabled-exc-rules-from-table rp-exc-rules)))
+      (mv (append rules-rw rules-def)
+          (append rules-rw-oi rules-def-oi)
+          rules-ex)))||#)
+
 

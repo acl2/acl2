@@ -40,7 +40,7 @@
  (in-theory (disable (:definition rp::rp-rw))))
 
 (defrec svex-simplify-preloaded
-  (exc-rules . rules)
+  (exc-rules rules rules-outside-in)
   t)
 
 
@@ -69,6 +69,7 @@
 
 (progn
   (define svex-simplify-preload (&key (runes 'nil)
+                                      (runes-outside-in 'nil)
                                       (state 'state))
     (declare (xargs :guard-hints (("Goal"
                                    :in-theory (e/d () (table-alist))))
@@ -84,14 +85,18 @@
          (- (rp::check-if-clause-processor-up-to-date world))
          ;;(runes (if runes runes (current-theory :here)))
 
-         ((mv runes exc-rules)
-          (if runes
+         ((mv runes runes-outside-in exc-rules)
+          (if (or runes
+                  runes-outside-in)
               (mv (acl2::append-without-guard
-                   (rp::get-enabled-meta-rules-from-table state) runes)
+                   (rp::get-enabled-meta-rules-from-table nil state) runes)
+                  (acl2::append-without-guard
+                   (rp::get-enabled-meta-rules-from-table t state) runes-outside-in)
                   (rp::get-disabled-exc-rules-from-table
                    (table-alist 'rp::rp-exc-rules world)))
             (rp::get-enabled-rules-from-table state)))
          (rules-alist (rp::get-rules runes state :warning :err))
+         (rules-alist-outside-in (rp::get-rules runes-outside-in state :warning :err))
          ;;(meta-rules (make-fast-alist (rp::create-simple-meta-rules-alist state)))
          #|(meta-rules-entry (hons-assoc-equal 'rp::meta-rules-list
                                              (table-alist 'rp::rp-rw world)))||#
@@ -101,6 +106,7 @@
                        nil))||#)
       (make svex-simplify-preloaded
             :exc-rules exc-rules
+            :rules-outside-in rules-alist-outside-in
             :rules rules-alist)))
 
   (define svex-simplify-preloaded-guard (svex-simplify-preloaded)
@@ -113,15 +119,16 @@
              (rp::rules-alistp (access svex-simplify-preloaded
                                        svex-simplify-preloaded
                                        :rules))
+             (rp::rules-alistp (access svex-simplify-preloaded
+                                       svex-simplify-preloaded
+                                       :rules-outside-in))
              (symbol-alistp (access svex-simplify-preloaded
                                     svex-simplify-preloaded
                                     :exc-rules)))))
 
   (define svex-rw-free-preload (svex-simplify-preloaded )
-    (declare (xargs 
-                    :guard (svex-simplify-preloaded-guard
-                            svex-simplify-preloaded))
-             )
+    (declare (xargs  :guard (svex-simplify-preloaded-guard
+                             svex-simplify-preloaded)))
     :parents (svex-simplify-preload)
     :short "Frees the fast-alists created by @(see svl::svex-simplify-preload)"
     (if svex-simplify-preloaded
@@ -129,6 +136,9 @@
          (fast-alist-free (access svex-simplify-preloaded
                                   svex-simplify-preloaded
                                   :rules))
+         (fast-alist-free (access svex-simplify-preloaded
+                                  svex-simplify-preloaded
+                                  :rules-outside-in))
          (fast-alist-free (access svex-simplify-preloaded
                                   svex-simplify-preloaded
                                   :exc-rules))
