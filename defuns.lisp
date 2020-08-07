@@ -11616,7 +11616,7 @@
              (pprogn
               (fms "Macro ~x0~|~
                     Macro Args:  ~y1~|~
-                    Guard:       ~Q23~|~~%"
+                    Guard:       ~Q23~|~%"
                    (list (cons #\0 name)
                          (cons #\1 args)
                          (cons #\2 guard)
