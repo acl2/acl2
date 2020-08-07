@@ -125,19 +125,19 @@
                       (acl2-numberp size)))))
      :rule-classes :forward-chaining)))
 
-(define is-bits-0-1-of-a-bitp (orig-term start size)
+(define is-bits-0-pos-size-of-a-bitp (orig-term start size)
   :progn t
   :inline t
   (and (case-match orig-term (('rp ''bitp &) t))
        (equal start 0)
-       (equal size 1))
+       (posp size))
   ///
   (local
    (defthm is-bits-0-1-of-a-bitp-implies
-     (implies (is-bits-0-1-of-a-bitp orig-term start size)
+     (implies (is-bits-0-pos-size-of-a-bitp orig-term start size)
               (and (case-match orig-term (('rp ''bitp &) t))
                    (equal start 0)
-                   (equal size 1)))
+                   (posp size)))
      :rule-classes :forward-chaining)))
 
 (define is-bitand/or/xor (term)
@@ -344,7 +344,7 @@
                                                  (cdr term))
                                  term)
                  `(nil ,dont-rw1 ,dont-rw2))))
-          ((is-bits-0-1-of-a-bitp orig-term start size)
+          ((is-bits-0-pos-size-of-a-bitp orig-term start size)
            (mv orig-term t))
           (t
            (mv `(bits ,orig-term ',start ',size)
@@ -352,7 +352,7 @@
 
 (define bits-meta-fn-aux-can-change (val start size)
   :inline t
-  (or (is-bits-0-1-of-a-bitp val start size)
+  (or (is-bits-0-pos-size-of-a-bitp val start size)
       (b* ((val (rp::ex-from-rp val)))
         (or (is-bitand/or/xor val)
             (is-bits val)
@@ -437,12 +437,12 @@
 
   (local
    (defthm IS-BITS-0-1-OF-A-BITP-def
-     (equal (IS-BITS-0-1-OF-A-BITP term start size)
+     (equal (is-bits-0-pos-size-of-a-bitp term start size)
             (AND (CASE-MATCH TERM (('RP ''BITP &) T))
                  (EQUAL START 0)
-                 (EQUAL SIZE 1)))
+                 (posp SIZE)))
      :hints (("Goal"
-              :in-theory (e/d (is-bits-0-1-of-a-bitp) ())))))
+              :in-theory (e/d (is-bits-0-pos-size-of-a-bitp) ())))))
 
   (with-output
     :off :all
@@ -517,7 +517,7 @@
               :induct (bits-meta-fn-aux term start size)
               :do-not-induct t
               :in-theory (e/d (bits-meta-fn-aux
-                               IS-BITS-0-1-OF-A-BITP
+                               is-bits-0-pos-size-of-a-bitp
                                natp)
                               (rp::falist-consistent))))))
 
@@ -578,7 +578,7 @@
             :induct (bits-meta-fn-aux term start size)
             :do-not-induct t
             :in-theory (e/d (bits-meta-fn-aux
-                             is-bits-0-1-of-a-bitp
+                             is-bits-0-pos-size-of-a-bitp
                              rp::is-rp rp::is-if
                              natp)
                             (rp::falist-consistent
@@ -622,7 +622,7 @@
             :induct (bits-meta-fn-aux term start size)
             :do-not-induct t
             :in-theory (e/d (bits-meta-fn-aux
-                             IS-BITS-0-1-OF-A-BITP
+                             is-bits-0-pos-size-of-a-bitp
                              natp)
                             (rp::falist-consistent))))))
 
@@ -691,12 +691,16 @@
 
 
 
+
+
+
+
 (local
  (defthm bits-meta-fn-aux-correct-lemma1
    (implies
     (and (rp-evl-meta-extract-global-facts)
          (rp::valid-sc term a)
-         (IS-BITS-0-1-OF-A-BITP TERM START SIZE)
+         (is-bits-0-pos-size-of-a-bitp TERM START SIZE)
          (bits-of-formula-checks state))
     (equal (BITS (RP-EVL (RP-TRANS (RP::EX-FROM-RP TERM))
                          A)
@@ -706,7 +710,7 @@
    :hints (("Goal"
             :in-theory (e/d (rp::valid-sc-single-step
                              RP::IS-RP
-                             IS-BITS-0-1-OF-A-BITP)
+                             is-bits-0-pos-size-of-a-bitp)
                             (rp::valid-sc))))))
 
 (local
@@ -723,11 +727,11 @@
 
 (local
  (defthm dummy-lemma1
-   (implies (IS-BITS-0-1-OF-A-BITP TERM START SIZE)
-            (IS-BITS-0-1-OF-A-BITP TERM 0 1))
+   (implies (is-bits-0-pos-size-of-a-bitp TERM START SIZE)
+            (is-bits-0-pos-size-of-a-bitp TERM 0 1))
    :rule-classes :forward-chaining
    :hints (("Goal"
-            :in-theory (e/d (IS-BITS-0-1-OF-A-BITP) ())))))
+            :in-theory (e/d (is-bits-0-pos-size-of-a-bitp) ())))))
 
 (local
  (defthm bits-meta-fn-aux-correct

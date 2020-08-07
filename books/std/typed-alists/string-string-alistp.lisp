@@ -27,10 +27,4 @@
   (defthm stringp-of-cdr-of-assoc-equal-when-string-string-alistp
     (implies (string-string-alistp alist)
              (iff (stringp (cdr (assoc-equal key alist)))
-                  (assoc-equal key alist))))
-
-  (defthm string-string-alistp-of-put-assoc-equal
-    (implies (string-string-alistp alist)
-             (equal (string-string-alistp (put-assoc-equal key val alist))
-                    (and (stringp key)
-                         (stringp val))))))
+                  (assoc-equal key alist)))))

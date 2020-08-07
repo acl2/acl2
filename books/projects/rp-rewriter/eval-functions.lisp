@@ -43,6 +43,7 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "proofs/measure-lemmas")
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "misc/untranslate-patterns" :dir :system)
 
 (defrec rp-evaluators
   (valid-rp-meta-rule-listp
@@ -153,6 +154,9 @@
 (defmacro rp-evlt-lst (lst a)
   `(rp-evl-lst (rp-trans-lst ,lst) ,a))
 
+
+(acl2::add-untranslate-pattern (rp-evl (rp-trans ?x) ?y)  (rp-evlt ?x ?y))
+(acl2::add-untranslate-pattern (rp-evl-lst (rp-trans-lst ?x) ?y)  (rp-evlt-lst ?x ?y))
 
 ;; ;; register the rp-evl name because it may change later when a new meta rule is
 ;; ;; added.

@@ -1,9 +1,9 @@
 (RP::SHOULD-SUM-TERMS-CANCEL$INLINE)
 (RP::PP-ORDER-HAS-PRIORITY?$INLINE)
 (RP::EX-FROM-RP/TYPE-FIX/--
-     (918 15
+     (920 15
           (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (909 12 (:DEFINITION APPLY$-BADGEP))
+     (911 14 (:DEFINITION APPLY$-BADGEP))
      (585 3 (:DEFINITION SUBSETP-EQUAL))
      (546 42 (:DEFINITION MEMBER-EQUAL))
      (473 416 (:REWRITE DEFAULT-CDR))
@@ -16,7 +16,7 @@
      (230 22 (:DEFINITION LEN))
      (152 38 (:REWRITE COMMUTATIVITY-OF-+))
      (152 38 (:DEFINITION INTEGER-ABS))
-     (134 134 (:REWRITE DEFAULT-CAR))
+     (136 136 (:REWRITE DEFAULT-CAR))
      (132 132
           (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
      (96 96
@@ -24,12 +24,12 @@
      (93 93 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (90 65 (:REWRITE DEFAULT-<-2))
      (86 65 (:REWRITE DEFAULT-<-1))
-     (75 6 (:DEFINITION NATP))
-     (63 63 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (76 6 (:DEFINITION NATP))
      (63 63
          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
      (60 60
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
+     (59 59 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
      (57 57
          (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
      (57 38 (:REWRITE STR::CONSP-OF-EXPLODE))
@@ -45,8 +45,8 @@
          (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
      (36 18 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
      (36 9 (:REWRITE O-P-O-INFP-CAR))
-     (30 12 (:DEFINITION WEAK-APPLY$-BADGE-P))
-     (30 9
+     (34 14 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (32 9
          (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
      (25 25
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
@@ -137,8 +137,8 @@
                    (1 1 (:REWRITE O-P-DEF-O-FINP-1)))
 (RP::PP-LIST-ORDER-SANITY (36 36 (:REWRITE DEFAULT-CAR))
                           (8 8 (:REWRITE DEFAULT-CDR)))
-(RP::PP-ORDER-AND$ (1506 17 (:DEFINITION APPLY$-BADGEP))
-                   (1505 20
+(RP::PP-ORDER-AND$ (1508 19 (:DEFINITION APPLY$-BADGEP))
+                   (1507 20
                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
                    (975 5 (:DEFINITION SUBSETP-EQUAL))
                    (910 70 (:DEFINITION MEMBER-EQUAL))
@@ -149,15 +149,15 @@
                    (242 6 (:REWRITE O<=-O-FINP-DEF))
                    (210 14 (:DEFINITION LENGTH))
                    (205 149 (:REWRITE DEFAULT-+-1))
-                   (199 199 (:REWRITE DEFAULT-CAR))
+                   (201 201 (:REWRITE DEFAULT-CAR))
                    (189 19 (:DEFINITION LEN))
                    (155 155 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                   (125 10 (:DEFINITION NATP))
+                   (126 10 (:DEFINITION NATP))
                    (112 28 (:REWRITE COMMUTATIVITY-OF-+))
                    (112 28 (:DEFINITION INTEGER-ABS))
                    (105 105
                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-                   (102 102 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                   (98 98 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
                    (78 78
                        (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
                    (72 49 (:REWRITE DEFAULT-<-2))
@@ -166,10 +166,10 @@
                    (60 49 (:REWRITE DEFAULT-<-1))
                    (52 52
                        (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
-                   (50 15
+                   (52 15
                        (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
                    (49 49 (:TYPE-PRESCRIPTION LEN))
-                   (44 17 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                   (48 19 (:DEFINITION WEAK-APPLY$-BADGE-P))
                    (42 42
                        (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
                    (42 28 (:REWRITE STR::CONSP-OF-EXPLODE))

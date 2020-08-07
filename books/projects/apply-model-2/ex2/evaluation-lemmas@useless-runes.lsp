@@ -1,12 +1,12 @@
 (MODAPP::BADGE-IS-BADGE! (3 1
                             (:REWRITE MODAPP::APPLY$-PRIMP-BADGE)))
-(MODAPP::BOOM (2763 17 (:DEFINITION MODAPP::APPLY$-BADGEP))
-              (1892 28
+(MODAPP::BOOM (2778 20 (:DEFINITION MODAPP::APPLY$-BADGEP))
+              (1907 28
                     (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 1))
               (1530 18 (:REWRITE MODAPP::TAMEP-IMPLICANT-1))
               (1476 18 (:DEFINITION MODAPP::TAMEP))
               (1330 605 (:REWRITE DEFAULT-+-2))
-              (941 19
+              (946 19
                    (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
               (828 9 (:DEFINITION TRUE-LISTP))
               (825 605 (:REWRITE DEFAULT-+-1))
@@ -19,35 +19,35 @@
               (346 18 (:REWRITE O<=-O-FINP-DEF))
               (211 23 (:DEFINITION SYMBOL-LISTP))
               (196 148 (:REWRITE DEFAULT-<-2))
-              (186 18 (:DEFINITION NATP))
+              (196 18 (:DEFINITION NATP))
               (176 148 (:REWRITE DEFAULT-<-1))
               (150 150 (:TYPE-PRESCRIPTION LEN))
-              (143 143
+              (137 137
                    (:TYPE-PRESCRIPTION MODAPP::APPLY$-BADGEP))
               (126 126 (:TYPE-PRESCRIPTION MODAPP::TAMEP))
               (108 108
                    (:TYPE-PRESCRIPTION MODAPP::SUITABLY-TAMEP-LISTP))
               (102 102 (:REWRITE DEFAULT-UNARY-MINUS))
+              (76 20
+                  (:DEFINITION MODAPP::WEAK-APPLY$-BADGE-P))
               (72 36
                   (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 3))
               (71 18 (:REWRITE AC-<))
               (69 69 (:REWRITE DEFAULT-COERCE-2))
               (69 69 (:REWRITE DEFAULT-COERCE-1))
-              (64 17
-                  (:DEFINITION MODAPP::WEAK-APPLY$-BADGE-P))
               (63 10 (:REWRITE O-FIRST-EXPT-<))
               (54 54 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
               (54 27
                   (:LINEAR MODAPP::APPLY$-BADGEP-PROPERTIES . 1))
               (54 9 (:DEFINITION ALL-NILS))
+              (52 15
+                  (:LINEAR MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
               (51 51 (:REWRITE DEFAULT-REALPART))
               (51 51 (:REWRITE DEFAULT-NUMERATOR))
               (51 51 (:REWRITE DEFAULT-IMAGPART))
               (51 51 (:REWRITE DEFAULT-DENOMINATOR))
               (45 45 (:TYPE-PRESCRIPTION ALL-NILS))
               (43 20 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
-              (42 15
-                  (:LINEAR MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
               (36 36 (:TYPE-PRESCRIPTION TRUE-LISTP))
               (36 36 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
               (36 18 (:REWRITE O-INFP-O-FINP-O<=))
@@ -79,9 +79,9 @@
 (MODAPP::TAMEP-IS-TAMEP!)
 (MODAPP::TAMEP-FUNCTIONP-IS-TAMEP-FUNCTIONP!)
 (MODAPP::SUITABLY-TAMEP-LISTP-IS-SUITABLY-TAMEP-LISTP!)
-(MODAPP::BANG (4778800 24109
+(MODAPP::BANG (4779434 24395
                        (:DEFINITION MODAPP::APPLY$-BADGEP))
-              (4330771 52298
+              (4331297 52298
                        (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 1))
               (2674610 31466
                        (:REWRITE MODAPP::TAMEP-IMPLICANT-1))
@@ -94,19 +94,19 @@
               (649948 62932 (:DEFINITION MEMBER-EQUAL))
               (648516 507160 (:REWRITE DEFAULT-+-1))
               (605114 480024 (:REWRITE O-P-DEF-O-FINP-1))
-              (538262 21388
+              (538500 21388
                       (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
               (337053 34665 (:DEFINITION SYMBOL-LISTP))
-              (300362 31467 (:DEFINITION NATP))
+              (300762 31467 (:DEFINITION NATP))
               (244723 186599 (:REWRITE DEFAULT-<-1))
-              (216645 216645
+              (216073 216073
                       (:TYPE-PRESCRIPTION MODAPP::APPLY$-BADGEP))
               (212499 186599 (:REWRITE DEFAULT-<-2))
               (125864 62932
                       (:REWRITE MODAPP::APPLY$-BADGEP-PROPERTIES . 3))
               (125090 125090 (:TYPE-PRESCRIPTION O-FINP))
               (122661 17523 (:DEFINITION MODAPP::NATS))
-              (113630 24109
+              (114376 24395
                       (:DEFINITION MODAPP::WEAK-APPLY$-BADGE-P))
               (94398 94398 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
               (94398 47199
@@ -120,7 +120,7 @@
               (62932 62932 (:TYPE-PRESCRIPTION TRUE-LISTP))
               (62932 62932
                      (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-              (49930 20349
+              (50398 20349
                      (:LINEAR MODAPP::APPLY$-BADGEP-PROPERTIES . 2))
               (42979 42924 (:REWRITE DEFAULT-REALPART))
               (42979 42924 (:REWRITE DEFAULT-IMAGPART))

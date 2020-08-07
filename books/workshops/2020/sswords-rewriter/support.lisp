@@ -107,8 +107,7 @@
              (local (include-book "centaur/fgl/primitive-lemmas" :dir :system)))
   :origfn syntactically-true :formals (arg))
 
-(local (in-theory (disable ;; set::empty-set-unique
-                           equal-of-booleans-rewrite
+(local (in-theory (disable equal-of-booleans-rewrite
                            lrat::nth-n59-listp
                            lrat::nth-i60-listp)))
 

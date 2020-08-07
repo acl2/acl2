@@ -111,8 +111,36 @@
 
 (defun badged-fns-of-world (wrld)
 
-; We return the list of badged functions in wrld, but in a way that can be
-; guard-verified and can be proved to return a list of function symbols.
+; We return the list of all warranted functions in wrld, but in a way that can
+; be guard-verified and can be proved to return a list of function symbols.
+
+; Historical Note: The name ``badged-fns-of-world'' is somewhat of a misnomer.
+; There are badged functions, like CAR, not in this list.  To be precise, this
+; function returns the names of all the functions in the
+; :badge-userfn-structure of the badge-table.  Those symbols are put there by
+; defwarrant and every symbol in the returned list has a warrant.  Every
+; function having a warrant is in the alist, and the alist associates the
+; function name with its badge, which sort of explains why ``badge'' is part of
+; the name of :badge-userfn-structure.  But it ought, perhaps be named
+; :badges-of-all-warranted-functions since there are functions not in the list
+; that have badges, i.e., the 800+ apply$ primitives!  Strictly speaking, even
+; the use of the term ``userfn'' in the name is a misnomer!  The list contains
+; many symbols that are not, strictly speaking, user-defined but are in fact
+; built-in, like the loop$ scions, COLLECT$ and COLLECT$+ and other loop$
+; supporters like FROM-TO-BY.  All uses of ``userfn'' in discussions related to
+; apply$ ought to be changed to ``warranted-fns'' or something!  The messiness
+; of our nomenclature is in part due to the facts that initially apply$ was
+; truly introduced after the fact in a book rather than as a system primitive,
+; and that even after it was a system primitive there were badged functions
+; that were not primitives but weren't warranted, i.e., multi-valued functions
+; to which defwarrant could assign a badge (so they could be used in tame
+; functions) but which were not given warrants (because at the time apply$ was
+; not axiomatized to handle multiple values).  It was only after the
+; accommodation of multi-valued functions that we achieved the goal that the
+; functions known to apply$ could be partitioned into three classes: the 800+
+; apply$ primitives, the apply$ boot functions (like badge and apply$), and
+; warranted functions.  The first two sets all have badges but not warrants,
+; all in the last set have badges and warrants.
 
   (declare (xargs :mode :logic :guard (plist-worldp wrld)))
   (and (alistp (table-alist 'badge-table wrld))
@@ -205,13 +233,29 @@
 ; nil -   Always the global value, and always the value when *aokp* is non-nil
 ; t   -   Represents the empty list, enabling accumulation of function symbols
 ;         whose (true) warrants support evaluation
-; lst   - A non-empty, duplicate-free list, which represents a set of function
-;         symbols whose (true) warrants support evaluation
+; lst   - A non-empty, duplicate-free list, which represents a set of warranted
+;         function symbols whose (true) warrants support evaluation
 ; :nil! - Like nil, but causes evaluation to stop if a warrant is ever required
 ; fn  -   A function symbol for which evaluation is aborted because its warrant
 ;         is required (because *warrant-reqs* is :nil!)
 
   nil)
+
+; The third result of ev-fncall+ is LOGICALLY constrained (in the
+; partial-encapsulate in rewrite.lisp before the logic definition of
+; ev-fncall+-w) to always be a subset of the functions named in the
+; :badge-userfn-structure of the badge-table.  Thus, every function named in
+; that third result has a warrant because :badge-userfn-structure is updated
+; only by successful defwarrants.  But the COMPUTED value of the third result
+; is accumulated in raw Lisp as the value of the special *warrant-reqs*.  This
+; comment explains how we know *warrant-reqs* satisfies the constraint.
+
+; The function maybe-extend-warrant-reqs is the only way we add a new element
+; to *warrant-reqs*.  That function is called in doppelganger-badge-userfn and
+; doppelganger-apply$-userfn.  In both contexts, maybe-extend-warrant-reqs is
+; used to extend *warrant-reqs* with a function, fn, that has passed
+; query-badge-userfn-structure, which does just what its name suggests: it
+; inspects the :badge-userfn-structure.
 
 #-acl2-loop-only
 (defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
@@ -3441,6 +3485,9 @@
            (simplifiable-mv-nth1 (1- n) (fargn cons-term 2) alist)))
         (t (mv nil nil))))
 
+(defstub simplifiable-mv-nth-p () t)
+(defattach simplifiable-mv-nth-p constant-t-function-arity-0)
+
 (defun simplifiable-mv-nth (term alist)
 
 ; Term must be of the form (mv-nth & &), i.e., the ffn-symb of term is known to
@@ -3454,16 +3501,18 @@
 ; that the resulting term has already been rewritten and should not be
 ; rewritten again.
 
-  (let ((arg1 (cond ((variablep (fargn term 1))
-                     (let ((temp (assoc-eq (fargn term 1) alist)))
-                       (cond (temp (cdr temp))
-                             (t (fargn term 1)))))
-                    (t (fargn term 1)))))
-    (cond ((and (quotep arg1)
-                (integerp (cadr arg1))
-                (>= (cadr arg1) 0))
-           (simplifiable-mv-nth1 (cadr arg1) (fargn term 2) alist))
-          (t (mv nil nil)))))
+  (cond ((simplifiable-mv-nth-p)
+         (let ((arg1 (cond ((variablep (fargn term 1))
+                            (let ((temp (assoc-eq (fargn term 1) alist)))
+                              (cond (temp (cdr temp))
+                                    (t (fargn term 1)))))
+                           (t (fargn term 1)))))
+           (cond ((and (quotep arg1)
+                       (integerp (cadr arg1))
+                       (>= (cadr arg1) 0))
+                  (simplifiable-mv-nth1 (cadr arg1) (fargn term 2) alist))
+                 (t (mv nil nil)))))
+        (t (mv nil nil))))
 
 (defun call-stack (fn lst stack assumptions ac)
   (declare (xargs :guard (and (true-listp lst)
@@ -5337,15 +5386,15 @@
 (mutual-recursion
 
 ; Warning: For both functions in this nest, fns should be a subset of
-; *definition-minimal-theory*.  See the error related to
-; *definition-minimal-theory* in chk-acceptable-definition-install-body.
+; the keys of *bbody-alist*.  See the error related to
+; *bbody-alist* in chk-acceptable-definition-install-body.
 
 (defun expand-some-non-rec-fns (fns term wrld)
 
 ; We forcibly expand all calls in term of the fns in fns.  They better
 ; all be non-recursive or this may take a while.
 
-; We assume that fns is a subset of *definition-minimal-theory*.
+; We assume that fns is a subset of the keys of *bbody-alist*.
 
   (cond ((variablep term) term)
         ((fquotep term) term)
@@ -5423,18 +5472,29 @@
 
 (defun being-openedp-rec (fn fnstack)
 
-; The fnstack used by the rewriter is a list.  Each element is a
-; function symbol, a list of function symbols, or of the form (:term
-; . term) for some term, term.  The first case means we are expanding
-; a definition of that symbol and the symbol is non-recursively
-; defined.  The second means we are expanding a singly or mutually
-; recursive function.  (In fact, the fnstack element is the recursivep
-; flag of the function we're expanding.)  The third means that we are
-; rewriting the indicated term (through the recursive dive in the
-; rewriter that rewrites the just-rewritten term).  Lambda-expressions
-; are not pushed onto the fnstack, though fn may be a
-; lambda-expression.  We determine whether fn is on fnstack (including
-; being a member of a mutually recursive clique).
+; We determine whether fn is ``on'' fnstack (including being a member of a
+; mutually recursive clique).
+
+; The fnstack used by the rewriter is a list.  Each element is one of four
+; shapes:
+
+; (1) a function symbol -- we are expanding a definition of that symbol and the
+; symbol is non-recursively defined.
+
+; (2) a list of function symbols -- we are expanding a singly or mutually
+; recursive function.  (In fact, the fnstack element is the recursivep flag of
+; the function we're expanding.)
+
+; (3) a list of the form (:term . term) for some term, term -- we are rewriting
+; the indicated term (through the recursive dive in the rewriter that rewrites
+; the just-rewritten term).  See the extended comment in fnstack-term-member
+; for an explanation and example.
+
+; (4) the symbol :rewrite-lambda-object -- we are in the process of rewriting a
+; lambda object.
+
+; Lambda-expressions are never pushed onto the fnstack even though fn may be a
+; lambda-expression.
 
   (cond ((null fnstack) nil)
         ((consp (car fnstack))
@@ -5443,7 +5503,10 @@
         (t (or (eq fn (car fnstack))
                (being-openedp-rec fn (cdr fnstack))))))
 
-(defmacro being-openedp (fn fnstack clique)
+(defstub being-openedp-limited-for-nonrec () t)
+(defattach being-openedp-limited-for-nonrec constant-t-function-arity-0)
+
+(defmacro being-openedp (fn fnstack clique settled-down-p)
 
 ; We found a 1.8% slowdown when we modified the code, in a preliminary cut at
 ; Version_2.7, to improve the speed of being-openedp when large cliques are on
@@ -5458,10 +5521,22 @@
   (declare (xargs :guard (symbolp fnstack)))
   `(and ,fnstack
         (let ((clique ,clique))
-          (being-openedp-rec (if clique
-                                 (car clique)
-                               ,fn)
-                             ,fnstack))))
+          (and (or clique
+
+; At one time this fnstack check could completely stop the opening up of a
+; non-recursive function call.  After Version_8.3 we decided that we would like
+; to avoid making that stop (based on an example that arose), but for backward
+; compatibility we defeat this fnstack check only when "desperate": when
+; simplification of the clause has just settled down (before attempting to
+; eliminate destructors).  An attachable function allows the original, full
+; being-openedp check to take place after all.
+
+                   (not ,settled-down-p)
+                   (not (being-openedp-limited-for-nonrec)))
+               (being-openedp-rec (if clique
+                                      (car clique)
+                                    ,fn)
+                                  ,fnstack)))))
 
 (defun recursive-fn-on-fnstackp (fnstack)
 
@@ -7008,45 +7083,46 @@
 ; phrase.
 
   (case called-sys-fn
-        (rewrite
-         (cond ((integerp bkptr)
-                (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
-                                                   add-linear-lemma))
-                       (msg " the atom of the ~n0 hypothesis" (list bkptr)))
-                      ((eq calling-sys-fn 'simplify-clause)
-                       (msg " the atom of the ~n0 literal" (list bkptr)))
-                      (t (msg " the ~n0 argument" (list bkptr)))))
-               ((consp bkptr)
-                (msg " the rhs of the ~n0 hypothesis"
-                     (list (cdr bkptr))))
-               ((symbolp bkptr)
-                (case bkptr
-                      (body " the body")
-                      (lambda-body " the lambda body")
-                      (rewritten-body " the rewritten body")
-                      (expansion " the expansion")
-                      (equal-consp-hack-car " the equality of the cars")
-                      (equal-consp-hack-cdr " the equality of the cdrs")
-                      (rhs " the rhs of the conclusion")
-                      (meta " the result of the metafunction")
-                      (nth-update " the result of the nth/update rewriter")
-                      (multiply-alists2 " the product of two polys")
-                      (forced-assumption " a forced assumption")
-                      (proof-builder " proof-builder top level")
-                      (otherwise (er hard 'tilde-@-bkptr-phrase
-                                     "When ~x0 calls ~x1 we get an unrecognized ~
+    (rewrite
+     (cond ((integerp bkptr)
+            (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
+                                               add-linear-lemma))
+                   (msg " the atom of the ~n0 hypothesis" (list bkptr)))
+                  ((eq calling-sys-fn 'simplify-clause)
+                   (msg " the atom of the ~n0 literal" (list bkptr)))
+                  (t (msg " the ~n0 argument" (list bkptr)))))
+           ((consp bkptr)
+            (msg " the rhs of the ~n0 hypothesis"
+                 (list (cdr bkptr))))
+           ((symbolp bkptr)
+            (case bkptr
+              (body " the body")
+              (lambda-body " the lambda body")
+              (lambda-object-body " the body of the lambda object")
+              (rewritten-body " the rewritten body")
+              (expansion " the expansion")
+              (equal-consp-hack-car " the equality of the cars")
+              (equal-consp-hack-cdr " the equality of the cdrs")
+              (rhs " the rhs of the conclusion")
+              (meta " the result of the metafunction")
+              (nth-update " the result of the nth/update rewriter")
+              (multiply-alists2 " the product of two polys")
+              (forced-assumption " a forced assumption")
+              (proof-builder " proof-builder top level")
+              (otherwise (er hard 'tilde-@-bkptr-phrase
+                             "When ~x0 calls ~x1 we get an unrecognized ~
                                       bkptr, ~x2."
-                                     calling-sys-fn called-sys-fn bkptr))))
-               (t (er hard 'tilde-@-bkptr-phrase
-                      "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
-                      calling-sys-fn called-sys-fn bkptr))))
-        ((rewrite-with-lemma setup-simplify-clause-pot-lst simplify-clause
-                             add-terms-and-lemmas add-linear-lemma
-                             non-linear-arithmetic synp)
-         "")
-        (t (er hard 'tilde-@-bkptr-phrase
-               "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
-               calling-sys-fn called-sys-fn bkptr))))
+                             calling-sys-fn called-sys-fn bkptr))))
+           (t (er hard 'tilde-@-bkptr-phrase
+                  "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
+                  calling-sys-fn called-sys-fn bkptr))))
+    ((rewrite-with-lemma setup-simplify-clause-pot-lst simplify-clause
+                         add-terms-and-lemmas add-linear-lemma
+                         non-linear-arithmetic synp)
+     "")
+    (t (er hard 'tilde-@-bkptr-phrase
+           "When ~x0 calls ~x1 we get an unrecognized bkptr, ~x2."
+           calling-sys-fn called-sys-fn bkptr))))
 
 (defmacro get-rule-field (x field)
 
@@ -10092,9 +10168,11 @@
 ; Finally, assume the following: ev is not ancestral in any defaxiom or in
 ; EXTRA-FNS; no ancestor of ev or EXTRA-FNS with an attachment is ancestral in
 ; meta-fn or hyp-fn; and no ancestor of any defaxiom has an attachment.  (See
-; chk-evaluator-use-in-rule for enforcement.  Also see the Appendix below for a
-; remark about allowing an attachment to ev even if it is ancestral in meta-fn
-; or hyp-fn.)
+; chk-evaluator-use-in-rule for enforcement.  See the example towards the end
+; of :DOC evaluator-restrictions for necessity of ruling out functions that are
+; "both ancestral in the evaluator and also ancestral in the meta or
+; clause-processor functions."  Also see the Appendix below for a remark about
+; allowing an attachment to ev even if it is ancestral in meta-fn or hyp-fn.)
 
 ; Then the following is a theorem of (mfc-world *mfc*), or equivalently (since
 ; the worlds have the same logical theory), (w *the-live-state*):
@@ -12748,6 +12826,109 @@
         (cons (car *fake-rune-for-cert-data*)
               "previously-computed data")))
 
+(defun merge-runes (l1 l2)
+  (cond ((null l1) l2)
+        ((null l2) l1)
+        ((rune-< (car l1) (car l2))
+         (cons (car l1) (merge-runes (cdr l1) l2)))
+        (t (cons (car l2) (merge-runes l1 (cdr l2))))))
+
+(defun merge-sort-runes (l)
+  (cond ((null (cdr l)) l)
+        (t (merge-runes (merge-sort-runes (evens l))
+                        (merge-sort-runes (odds l))))))
+
+(defun fn-slot-from-geneqvp (geneqv)
+  (cond ((endp geneqv) nil)
+        ((eq 'fn-equal (access congruence-rule (car geneqv) :equiv))
+         t)
+        (t (fn-slot-from-geneqvp (cdr geneqv)))))
+
+(defun rewrite-lambda-object-warning (evg rewritten-body ttree wrld)
+
+; Evg is a well-formed quoted lambda object whose body has been rewritten to
+; rewritten-body using the runes in ttree.  However, rewritten-body has been
+; rejected either because it contains free vars or is untame.  We print a
+; rather verbost warning.  This warning can be avoided by doing
+; (set-inhibit-warnings "rewrite-lambda-object").
+
+  (let* ((free-vars (set-difference-eq (all-vars rewritten-body)
+                                       (lambda-object-formals evg)))
+         (untamep (not (executable-tamep rewritten-body wrld)))
+         (violations
+          (if free-vars
+              (if (cdr free-vars)
+                  (if untamep 0 1)
+                  (if untamep 2 3))
+              (if untamep 4 5))))
+; violations =
+; 0 - multiple free vars and untame
+; 1 - multiple free vars [but tame]
+; 2 - a single free var and untame
+; 3 - a single free var [but tame]
+; 4 - [no free vars] untame
+; 5 - [no free vars and tame, so rejected by push-warrants]
+
+    (let ((state-vars (default-state-vars nil)))
+      (warning$-cw1 'rewrite-lambda-object
+                    "rewrite-lambda-object"
+                    "The body of the well-formed (and tame) lambda ~
+                     object~%~Y01rewrote to~%~Y21which was rejected because ~
+                     ~#3~[it contains the variables ~&4 not listed among the ~
+                     formals, and it is not tame~/it contains the variables ~
+                     ~&4 not listed among the formals~/it contains the ~
+                     variable ~&4 not listed among the formals, and it is not ~
+                     tame~/it contains the variable ~&4 not listed among the ~
+                     formals~/it is not tame~/it may not be apply$-equivalent ~
+                     in the current prover environment (see :doc ~
+                     rewrite-lambda-object)~].  The following runes were used ~
+                     to produce this rejected object: ~X51.  See :DOC ~
+                     rewrite-lambda-object."
+                    evg            ; lambda object
+                    nil            ; evisc tuple -- print everything
+                    `(lambda ,(lambda-object-formals evg)
+                       ,rewritten-body) ; rejected body
+                    violations     ; 0, 1, 2, 3, 4, or 5
+                    free-vars
+                    (merge-sort-runes (all-runes-in-ttree ttree nil))))))
+
+(defun collect-0-ary-hyps (type-alist)
+
+; This function returns a type-alist to be used while rewriting the body of a
+; quoted lambda object.  We collect every triple in type-alist that assigns a
+; type-set to a call of a 0-ary function.  We are actually interested only in
+; warrant hypotheses, but there is no harm in collecting other variable-free
+; assumptions.  We could even collect the bindings for terms not sharing any
+; variables with the locals of the target lambda object, but that might invite
+; the introduction of an unbound free var into the rewritten body.  For
+; example, the type-alist might include the assumption of (INTEGERP I) and
+; while the lambda object formals are just LOOP$-GVARS and LOOP$-IVARS.  But if
+; a rewrite rule has a free variable to be assigned by finding some integer,
+; the inclusion of this (INTEGERP I) hyp might cause the rewritten body to
+; mention I, which would invalidate the lambda body and cause the entire
+; rewrite to be abandoned.  So we just don't ``import'' anything but
+; variable-free assumptions at the moment.
+
+  (cond ((endp type-alist) nil)
+        ((and (consp (car (car type-alist)))
+              (null (cdr (car (car type-alist)))))
+         (cons (car type-alist)
+               (collect-0-ary-hyps (cdr type-alist))))
+        (t (collect-0-ary-hyps (cdr type-alist)))))
+
+(defun warranted-fns (fns badge-userfn-alist)
+
+; Fns is a list if function symbols and we collect those elements that have
+; warrants.  Badge-userfn-alist is just the alist mapping warranted fns to
+; their badges, as found in :badge-userfn-structure of the badge-table
+; maintained by defwarrant.
+
+  (cond
+   ((endp fns) nil)
+   ((assoc-eq (car fns) badge-userfn-alist)
+    (cons (car fns) (warranted-fns (cdr fns) badge-userfn-alist)))
+   (t (warranted-fns (cdr fns) badge-userfn-alist))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -12824,7 +13005,18 @@
         (rewrite-solidify-plus (let ((temp (assoc-eq term alist)))
                                  (cond (temp (cdr temp))
                                        (t term))))))
-      ((fquotep term) (mv step-limit term ttree))
+      ((fquotep term)
+       (cond ((fn-slot-from-geneqvp geneqv)
+              (sl-let
+               (evg1 ttree1)
+               (rewrite-entry
+                (rewrite-lambda-object (unquote term)))
+               (cond ((equal evg1 (unquote term))
+                      (mv step-limit term ttree))
+                     (t (mv step-limit
+                            (list 'quote evg1)
+                            (cons-tag-trees ttree1 ttree))))))
+             (t (mv step-limit term ttree))))
       ((eq (ffn-symb term) 'if)
 
 ; Normally we rewrite (IF a b c) by rewriting a and then one or both
@@ -15446,8 +15638,12 @@
                      (not (eq obj t))
                      (not (equal (access rewrite-rule lemma :rhs) *nil*)))
                  (or (flambdap (ffn-symb term)) ; hence not on fnstack
-                     (not (being-openedp (ffn-symb term) fnstack
-                                         (recursivep (ffn-symb term) t wrld)))
+                     (not (being-openedp (ffn-symb term)
+                                         fnstack
+                                         (recursivep (ffn-symb term) t wrld)
+                                         (eq (access rewrite-constant rcnst
+                                                     :rewriter-state)
+                                             'settled-down)))
                      (not (ffnnamep (ffn-symb term)
                                     (access rewrite-rule lemma :rhs)))))
             (let ((lhs (access rewrite-rule lemma :lhs))
@@ -15638,8 +15834,13 @@
           (recursivep (and rule ; it's a don't-care if (flambdap fn)
                            (car (access rewrite-rule rule :heuristic-info)))))
      (cond ((and (not (flambdap fn))
-                 (or (being-openedp fn fnstack recursivep)
-                     (fnstack-term-member term fnstack)))
+                 (or (being-openedp fn fnstack recursivep
+                                    (eq (access rewrite-constant rcnst
+                                                :rewriter-state)
+                                        'settled-down))
+                     (fnstack-term-member term fnstack)
+                     (and recursivep
+                          (member-eq :rewrite-lambda-object fnstack))))
             (prepend-step-limit
              2
              (rewrite-solidify term type-alist obj geneqv
@@ -18899,4 +19100,170 @@
       (t
        (mv step-limit nil term ttree))))))
 
+(defun rewrite-lambda-object (evg ; &extra formals
+                              rdepth step-limit
+                              type-alist obj geneqv pequiv-info wrld state
+                              fnstack ancestors backchain-limit
+                              simplify-clause-pot-lst rcnst gstack ttree)
+
+; Evg is some evg and rewrite has been called on 'evg.  Furthermore, we know
+; from geneqv that 'evg is in a :FN slot.  If evg is in fact a well-formed
+; lambda object we attempt to rewrite its body, in a context-free way, carrying
+; no external assumptions in and expanding no recursive functions in it.  (The
+; last restriction is accomplished by pushing :rewrite-lambda-object on the
+; fnstack, which signals rewrite-fncall not to open any recursive function.
+; See the explanation of a simplify loop below.)  If the rewritten body is
+; different, contains no free variables and is tame, we return a new lambda
+; object with the rewritten body.  Coincidentally, we drop the optional DECLARE
+; form permitted in lambda objects; we take no special action to eliminate
+; RETURN-LAST because there is an abbreviation-style rewrite rule that will do
+; that.  But if evg is not well-formed or its rewritten body is equal to the
+; original body (and there is no DECLARE form) or it contains free variables,
+; or it is not tame, we return evg unchanged.  In the case that a well-formed
+; lambda object is rewritten but the rewritten body is rejected on the grounds
+; of free variables or tameness, we print a "rewrite-lambda-object" warning,
+; which can be inhibited if it gets annoying.  To inhibit the warning but leave
+; all other warnings on, do (set-inhibit-warnings "rewrite-lambda-object").
+
+; Explanation of an infinite simplify loop:
+
+; Prior to using the :rewrite-lambda-object fnstack marker to shut off the
+; expansion of recursive functions in rewrite-lambda-object we rewrote the body
+; using the pre-existing fnstack.  This caused an infinite loop in the presence
+; of loop$-recursive functions, at least in those whose only recursions were
+; within loop$ although we didn't look for other infinite loops.  The simplest
+; example involves the nonsensical defun and non-theorem below:
+
+; (defun foo (x)
+;   (declare (xargs :loop$-recursion t :measure (acl2-count x)))
+;   (loop$ for e in x collect (foo e)))
+
+; (thm (foo x))
+
+; Goal (foo x) simplifies to Goal' (collect$ (lambda$ (iv)(foo iv)) x). But
+; then the lambda object is rewritten with fnstack nil (because we're in a
+; top-level goal) to produce Goal'' (collect$ (lambda$ (iv) (collect$ (lambda$
+; (iv) (foo iv)) iv)) x), etc.
+
+; To solve this we adopted the most radical solution: never open a recursive
+; function while rewriting a lambda object.  This is accomplished in
+; rewrite-fncall, by checking to see whether :rewrite-lambda-object is an
+; element of the fnstack.  Less radical would be the idea of rewriting the call
+; and deciding whether to keep it.  But since lambda bodies are simplified
+; without any of the external context in which the lambda object occurs, the
+; context of the call never changes.  So one has to ask why didn't the user
+; just write what the recursive function would simplify to?  We may eventually
+; see why a more sophisticated solution is needed.  But as a first cut we just
+; don't open recursive functions in lambda bodies.
+
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit)
+           (ignore obj geneqv pequiv-info
+                   ancestors simplify-clause-pot-lst))
+
+  (the-mv
+   3
+   (signed-byte 30)
+   (cond ((well-formed-lambda-objectp evg wrld)
+          (let ((formals (lambda-object-formals evg))
+                (dcl (lambda-object-dcl evg))
+                (body (lambda-object-body evg))
+                (type-alist1 (collect-0-ary-hyps type-alist)))
+            (sl-let
+             (rewritten-body ttree1)
+             (rewrite-entry (rewrite body
+                                     nil
+                                     'lambda-object-body)
+                            :fnstack (cons :rewrite-lambda-object fnstack)
+                            :type-alist type-alist1
+                            :obj '?
+                            :geneqv nil ; maintain EQUAL
+                            :pequiv-info nil
+                            :ancestors nil
+                            :simplify-clause-pot-lst nil
+                            :ttree nil)
+             (mv-let (rewritten-body1 ttree1)
+               (normalize rewritten-body
+                          nil ; iff-flg
+                          nil ; type-alist
+                          (access rewrite-constant
+                                  rcnst
+                                  :current-enabled-structure)
+                          wrld
+                          ttree1
+                          (backchain-limit wrld :ts))
+               (cond
+                ((equal rewritten-body1 body)
+                 (cond
+                  ((null dcl)
+                   (mv step-limit evg ttree))
+                  (t (mv step-limit
+                         `(lambda ,formals ,body) ; Just drop the dcl
+                         ttree))))
+                ((or (not (subsetp-eq (all-vars rewritten-body1) formals))
+                     (not (executable-tamep rewritten-body1 wrld)))
+
+; If the rewritten body contains free variables or is not tame, we reject this
+; whole rewrite, after possibly printing a warning.
+
+                 (prog2$ (rewrite-lambda-object-warning evg rewritten-body
+                                                        ttree1 wrld)
+                         (mv step-limit evg ttree)))
+                (t (let ((fns (warranted-fns
+                               (all-fnnames1 nil
+                                             rewritten-body
+                                             (all-fnnames1 nil body nil))
+                               (cdr (assoc-eq :badge-userfn-structure
+                                              (table-alist 'badge-table
+                                                           wrld))))))
+
+; The replacement of body by rewritten-body (or, actually, by the normalized
+; rewritten-body) inside a quoted lambda object depends on the equivalence of
+; the ev$ of the quotations of those two terms.  We know that body is equal to
+; rewritten-body, by the correctness of rewrite.  So the equivalence of the
+; ev$s of their quotations is just analogous to the theorem justifying meta
+; rules, except we need to know that (ev$ '(fn a1 ... an) env) = (fn (ev$ 'a1
+; env) ... (ev$ 'an env)), for every function in either term.  (Note: here
+; ``ev$'' is used where a suitable evaluator is used in metafunction
+; correctness theorems.)  But we have that theorem for every apply$ primitive
+; and for every apply$ boot function (provided the two terms are both tame),
+; but we need it for every warranted function in either term.  (The tameness
+; hypotheses required in the warrants are already assured by the tameness
+; checks here.)  Furthermore, we need to have each warrant hypothesis!  The
+; tameness checks we've done just assure us that the warrants exist in the
+; logic; we need them to be assumed true in the type-alist!  So we ensure that
+; now, by collecting all the warranted functions occurring in either term and
+; then calling push-warrants.
+
+                     (mv-let (erp ttree2)
+                       (push-warrants fns
+                                      body
+                                      type-alist1
+                                      (access rewrite-constant rcnst
+                                              :current-enabled-structure)
+                                      wrld
+                                      (ok-to-force rcnst)
+                                      ttree1 ttree)
+
+; Body, above, is passed in as the ``target'' for push-warrants.  The target is
+; only used in commentary about the forcing.  The :target of a forced rewerite
+; rule is generally the term to which the rule was applied, but here we're
+; talking about function symbols that must (probably) be apply$'d during the
+; rewriting of :target.
+                       (cond
+                        (erp
+
+; A warrant is assumed false, the apply$ rule for a fn is disabled, or forcing
+; is not allowed.
+
+                         (prog2$
+                          (rewrite-lambda-object-warning evg rewritten-body
+                                                         ttree1 wrld)
+                          (mv step-limit
+                              evg
+                              ttree)))
+                        (t (mv step-limit
+                               `(lambda ,formals ,rewritten-body1)
+                               (cons-tag-trees ttree2 ttree))))))))))))
+         (t (mv step-limit evg ttree)))))
 )

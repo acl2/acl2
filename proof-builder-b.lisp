@@ -4809,6 +4809,11 @@
      ((null cl)
       (er soft ctx
           "There is no legal way to prove a goal of NIL!"))
+     ((not (true-listp instr-list))
+      (er soft ctx
+          "The value of the :INSTRUCTIONS hint must be a true ~
+           (null-terminated) list.  The value ~x0 is thus illegal."
+          instr-list))
      (t
       (let ((term (make-implication (dumb-negate-lit-lst (butlast cl 1))
                                     (car (last cl))))

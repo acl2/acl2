@@ -74,14 +74,22 @@
   :returns (mv (order)
                (equals booleanp))
   (b* ((len-x (len x))
-       (len-y (len y)))
+       (len-y (len y))
+       #|((mv x y len-x len-y)
+        (if (and (equal len-x 2)
+                 (equal len-y 2))
+            (mv y x  len-y len-x)
+          (mv x y len-x len-y)))||#
+       )
     (if (not (equal len-x len-y))
         (if (equal len-y 2)
             (mv t nil)
           (if (equal len-x 2)
               (mv nil nil)
             (mv (> len-x len-y) nil)))
-      (pp-list-order-aux x y))))
+      ;;(pp-list-order-aux x y) ;; default
+      (pp-list-order-aux x y)
+      )))
 
 ;; (defthm pp-list-order-sanity
 ;;   (implies (mv-nth 0 (pp-list-order x y))

@@ -28,7 +28,7 @@
         (t (cmds-back-to-boot-strap (cdr wrld) acc))))
 
 (defconst *keeper-cmds*
-  '(defpkg include-book xdoc add-include-book-dir add-include-book-dir!))
+  '(defpkg include-book xdoc add-include-book-dir add-include-book-dir! set-in-theory-redundant-okp))
 
 (defun initial-keeper-cmds-length (cmds keeper-cmds acc)
   (cond ((endp cmds) acc)

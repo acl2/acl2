@@ -340,12 +340,12 @@ Now in defthm.lisp
                 (print-base-p b))
            (character-listp (explode-atom x b))))
 
-(verify-termination fix-pkg)
+; (verify-termination fix-pkg) ; Matt K. mod: now comes in :logic mode
 (verify-termination fix-sym)
 (verify-termination pack-to-string)
 (verify-termination gen-sym-sym)
 
-(verify-guards fix-pkg)
+; (verify-guards fix-pkg) ; Matt K. mod: now comes guard-verified
 (verify-guards fix-sym)
 (verify-guards pack-to-string)
 (verify-guards gen-sym-sym)

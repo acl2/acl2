@@ -1,0 +1,9 @@
+(include-book "../portcullis")
+
+#+acl2-par
+(set-waterfall-parallelism nil)
+
+#+acl2-par
+(set-parallel-execution nil)
+
+; cert-flags: ? t :ttags :all

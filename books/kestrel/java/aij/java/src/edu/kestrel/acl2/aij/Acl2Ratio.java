@@ -21,13 +21,13 @@ final class Acl2Ratio extends Acl2Rational {
 
     /**
      * Numerator of the ratio.
-     * Invariants: not null, coprime with the denominator.
+     * Invariant: not null, coprime with the denominator.
      */
     private final Acl2Integer numerator;
 
     /**
      * Denominator of the ratio.
-     * Invariants: not null, greater than 1, coprime with the numerator.
+     * Invariant: not null, greater than 1, coprime with the numerator.
      */
     private final Acl2Integer denominator;
 

@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -70,19 +70,17 @@
 ; Semigroup with operation ?OP.
 
 (defun-sk2 semigroup[?op] ()
+  (declare (xargs :guard t))
   (forall (x y z)
           (equal (?op (?op x y) z)
                  (?op x (?op y z)))))
 
-(verify-guards semigroup[?op])
-
 ; Identity ID for operation ?OP.
 
 (defun-sk2 identity[?op] (id)
+  (declare (xargs :guard t))
   (forall x (and (equal (?op id x) x)
                  (equal (?op x id) x))))
-
-(verify-guards identity[?op])
 
 ; Monoid with operation ?OP and identity ID.
 
@@ -94,10 +92,9 @@
 ; Inverse ?INV for identity ID of operation ?OP.
 
 (defun-sk2 inverse[?op][?inv] (id)
+  (declare (xargs :guard t))
   (forall x (and (equal (?op x (?inv x)) id)
                  (equal (?op (?inv x) x) id))))
-
-(verify-guards inverse[?op][?inv])
 
 ; Group with operation ?OP, inverse ?INV, and identity ID.
 

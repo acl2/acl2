@@ -1,7 +1,7 @@
 ; APT (Automated Program Transformations) Library
 ;
 ; Copyright (C) 2018 Regents of the University of Texas
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 ;
@@ -47,7 +47,8 @@
 
 (def-error-checker ensure-is-untranslate-specifier
   ((x "Value to check."))
-  "Cause an error if a value is not a untranslate specifier."
+  :short "Cause an error if a value is not a untranslate specifier."
+  :body
   (((untranslate-specifier-p x)
     "~@0 must be an APT untranslate specifier. ~
      See :DOC APT::UNTRANSLATE-SPECIFIER."

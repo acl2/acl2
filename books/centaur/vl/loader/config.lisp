@@ -32,7 +32,7 @@
 (include-book "preprocessor/defines")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (local (defthm string-listp-of-remove-equal
          (implies (force (string-listp x))

@@ -50,6 +50,7 @@
      (integers, rationals, numbers,
      characters, strings, symbols,
      @(tsee cons) pairs, and all values),
+     the @('java.lang.String') class type,
      all the Java primitive types,
      and all the Java primitive array types."))
   (and (member-equal x (list *aij-type-int*
@@ -60,6 +61,7 @@
                              *aij-type-symbol*
                              *aij-type-cons*
                              *aij-type-value*
+                             (jtype-class "String")
                              (jtype-boolean)
                              (jtype-char)
                              (jtype-byte)

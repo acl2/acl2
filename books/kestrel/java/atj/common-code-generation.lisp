@@ -184,6 +184,7 @@
   :prepwork
   ((define atj-gen-jboolean-array-aux ((booleans boolean-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp booleans) nil)
            (t (cons (atj-gen-jboolean (boolean-value->bool (car booleans)))
                     (atj-gen-jboolean-array-aux (cdr booleans))))))))
@@ -199,6 +200,7 @@
   :prepwork
   ((define atj-gen-jchar-array-aux ((chars char-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp chars) nil)
            (t (cons (atj-gen-jchar (char-value->nat (car chars)))
                     (atj-gen-jchar-array-aux (cdr chars))))))))
@@ -214,6 +216,7 @@
   :prepwork
   ((define atj-gen-jbyte-array-aux ((bytes byte-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp bytes) nil)
            (t (cons (atj-gen-jbyte (byte-value->int (car bytes)))
                     (atj-gen-jbyte-array-aux (cdr bytes))))))))
@@ -229,6 +232,7 @@
   :prepwork
   ((define atj-gen-jshort-array-aux ((shorts short-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp shorts) nil)
            (t (cons (atj-gen-jshort (short-value->int (car shorts)))
                     (atj-gen-jshort-array-aux (cdr shorts))))))))
@@ -244,6 +248,7 @@
   :prepwork
   ((define atj-gen-jint-array-aux ((ints int-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp ints) nil)
            (t (cons (atj-gen-jint (int-value->int (car ints)))
                     (atj-gen-jint-array-aux (cdr ints))))))))
@@ -259,6 +264,7 @@
   :prepwork
   ((define atj-gen-jlong-array-aux ((longs long-value-listp))
      :returns (exprs jexpr-listp)
+     :parents nil
      (cond ((endp longs) nil)
            (t (cons (atj-gen-jlong (long-value->int (car longs)))
                     (atj-gen-jlong-array-aux (cdr longs))))))))
@@ -340,12 +346,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-string ((string stringp))
+(define atj-gen-string ((string stringp) (deep$ symbolp) (guards$ symbolp))
   :returns (expr jexprp)
   :short "Generate Java code to build an ACL2 string."
-  (jexpr-smethod *aij-type-string*
-                 "make"
-                 (list (atj-gen-jstring string))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the shallow embedding with guards,
+     we translate ACL2 Strings to Java string expression.
+     This is because, in the shallow embedding with guards,
+     ACL2 strings are represented as Java strings.")
+   (xdoc::p
+    "In the deep embedding, or in the shallow embedding without guards,
+     we generate an expression of type @('Acl2String'),
+     by calling the factory method on the Java string expression."))
+  (if (and (not deep$)
+           guards$)
+      (atj-gen-jstring string)
+    (jexpr-smethod *aij-type-string*
+                   "make"
+                   (list (atj-gen-jstring string)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,13 +512,16 @@
      and then calls @('Acl2ConsValue.make()') with the two local variables.")
    (xdoc::p
     "The @('deep$') and @('guards$') arguments are passed
-     from @(tsee atj-gen-value) to @(tsee atj-gen-symbol)
+     from @(tsee atj-gen-value) to
+     @(tsee atj-gen-symbol), @(tsee atj-gen-char), and @(tsee atj-gen-string)
      only at the top level;
-     this is so that we generate Java boolean literals for @('t') and @('nil')
+     this is so that we generate Java boolean, character, and string expressions
+     for ACL2 boolean, character, and string values,
      in the shallow embedding with guards.
      But at the non-top levels, these flags are set to @('t') and @('nil'),
-     because @('t') and @('nil') inside other values (@(tsee cons)es)
-     are represented as @('Acl2Symbol')s.")
+     because ACL2 booleans, characters, and strings
+     are represented as @('Acl2Symbol'), @('Acl2Character'), and @('Acl2String')
+     instances inside other values (@(tsee cons)es).")
    (xdoc::@def "atj-gen-value")
    (xdoc::@def "atj-gen-values")
    (xdoc::@def "atj-gen-list")
@@ -517,7 +540,7 @@
                                   (atj-gen-char value deep$ guards$)
                                   jvar-value-index))
           ((stringp value) (mv nil
-                               (atj-gen-string value)
+                               (atj-gen-string value deep$ guards$)
                                jvar-value-index))
           ((symbolp value) (mv nil
                                (atj-gen-symbol value deep$ guards$)
@@ -658,9 +681,11 @@
      in this sense it is ``flat''.")
    (xdoc::p
     "We set the @('deep$') and @('guards$') flags to @('t') and @('nil')
-     when we call @(tsee atj-gen-symbol) and @(tsee atj-gen-char),
-     so that we generate @('Acl2Symbol')s for the ACL2 booleans
-     and @('Acl2Character')s for the ACL2 characters.
+     when we call
+     @(tsee atj-gen-symbol), @(tsee atj-gen-char), and @(tsee atj-gen-string),
+     so that we generate @('Acl2Symbol')s for the ACL2 booleans,
+     @('Acl2Character')s for the ACL2 characters,
+     and @('Acl2String')s for the ACL2 strings.
      This is because @(tsee atj-gen-value-flat) is only called
      on @(tsee cons)es at the top level;
      see the documentation of @(tsee atj-gen-value).")
@@ -673,7 +698,7 @@
     :returns (expr jexprp)
     :parents nil
     (cond ((characterp value) (atj-gen-char value t nil))
-          ((stringp value) (atj-gen-string value))
+          ((stringp value) (atj-gen-string value t nil))
           ((symbolp value) (atj-gen-symbol value t nil))
           ((integerp value) (atj-gen-integer value))
           ((rationalp value) (atj-gen-rational value))
@@ -730,9 +755,9 @@
    "We generate a private static method
     for each ACL2 package definition to build.
     This function generates the name of this method,
-    which should be distinct from all the other methods
+    which is distinct from all the other methods
     generated for the same class.")
-  (str::cat "$addPackageDef_"
+  (str::cat "addPackageDef_"
             (implode (atj-chars-to-jchars-id (explode pkg) nil :dash nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -870,6 +895,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atj-gen-static-initializer ((java-class$ stringp))
+  :returns (initializer jcinitializerp)
+  :short "Generate the static initializer of the main Java class."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This calls the @('build()') method of the environment Java class."))
+  (make-jcinitializer
+   :static? t
+   :code (jblock-smethod (jtype-class (str::cat java-class$ "Environment"))
+                         "build"
+                         nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atj-gen-init-method ()
   :returns (method jmethodp)
   :short "Generate the Java public method to initialize the ACL2 environment."
@@ -878,8 +918,19 @@
    (xdoc::p
     "This method is actually empty,
      but its invocation ensures that the class initializer,
-     which actually initializes the environment,
-     has been executed."))
+     which builds the ACL2 environment,
+     has been executed.")
+   (xdoc::p
+    "The reason for having an empty initialization method
+     and the environment-building code in the static initializer,
+     as opposed to having no static initializer
+     and the environment-building code in the initialization method,
+     is that, in the shallow embedding approach,
+     we need the ACL2 environment to be initialized
+     before we create certain final static fields that involve ACL2 symbols,
+     and that therefore need the ACL2 environment to be built.
+     This is unnecessary in the deep embedding approach,
+     but we use the same code structure for uniformity and simplicity."))
   (make-jmethod :access (jaccess-public)
                 :abstract? nil
                 :static? t

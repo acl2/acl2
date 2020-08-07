@@ -1,0 +1,34 @@
+os: linux
+dist: bionic
+language: generic
+
+env:
+  jobs:
+    - LISP=sbcl
+    - LISP=sbcl32
+    - LISP=ccl
+    - LISP=ccl32
+    - LISP=ecl
+    - LISP=clisp
+    - LISP=clisp32
+    # - LISP=abcl
+    # - LISP=allegro
+
+jobs:
+  allow_failures:
+    # - env: LISP=sbcl
+    # - env: LISP=allegro
+    - env: LISP=ccl32
+    - env: LISP=clisp
+    - env: LISP=clisp32
+    - env: LISP=sbcl32
+
+install:
+  - if [ "${LISP:(-2)}" = "32" ]; then sudo apt-get install libc6-dev-i386 libffi-dev:i386; fi
+  - curl -L https://raw.githubusercontent.com/sionescu/cl-travis/master/install.sh | sh
+
+script:
+  - cl -e '(ql:quickload :cffi-grovel)
+           (ql:quickload :osicat/tests)
+           (unless (osicat/tests:run)
+             (uiop:quit 1))'

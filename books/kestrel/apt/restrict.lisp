@@ -10,6 +10,8 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -32,22 +34,21 @@
 
  restrict
 
- :item-state t
-
- :item-wrld t
-
- :item-ctx t
-
  :items
 
- ("@('old'),
+ (xdoc::*evmac-topic-implementation-item-state*
+
+  xdoc::*evmac-topic-implementation-item-wrld*
+
+  xdoc::*evmac-topic-implementation-item-ctx*
+
+  "@('old'),
    @('restriction'),
    @('undefined'),
    @('new-name'),
    @('new-enable'),
    @('thm-name'),
    @('thm-enable'),
-   @('non-executable'),
    @('verify-guards'),
    @('hints'),
    @('print'), and
@@ -65,7 +66,6 @@
    @('new-enable$'),
    @('thm-name$'),
    @('thm-enable$'),
-   @('non-executable$'),
    @('verify-guards$'),
    @('hints$'),
    @('print$'), and
@@ -218,7 +218,7 @@
                state)
   :mode :program
   :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
                  (make-paired-name old$ new-name$ 2 (w state))
                thm-name))
@@ -250,7 +250,6 @@
                                  new-enable
                                  thm-name
                                  thm-enable
-                                 non-executable
                                  verify-guards
                                  hints
                                  print
@@ -264,9 +263,9 @@
                                     new-name$
                                     new-enable$
                                     thm-name$
-                                    non-executable$
                                     verify-guards$
-                                    hints$)')
+                                    hints$
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-termp
@@ -275,28 +274,9 @@
                                          booleanp
                                          symbolp
                                          booleanp
-                                         booleanp
                                          evmac-input-hints-p
-                                         result)'),
-                        where @('old$') is
-                        the result of @(tsee restrict-process-old),
-                        @('restriction$') is
-                        the result of @(tsee restrict-process-restriction),
-                        @('undefined$') is
-                        the result of @(tsee restrict-process-undefined),
-                        @('new-name$') is
-                        the result of @(tsee process-input-new-name),
-                        @('new-enable$') indicates whether
-                        the new function should be enabled or not,
-                        @('thm-name$') is
-                        the result of @(tsee restrict-process-thm-name),
-                        @('non-executable$') indicates whether
-                        the new function should be
-                        non-executable or not,
-                        @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not, and
-                        @('hints$') is
-                        the result of @(tsee evmac-process-input-hints).")
+                                         symbol-listp
+                                         result)').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -324,18 +304,17 @@
                            restriction old$ verify-guards$ ctx state))
        ((er undefined$) (restrict-process-undefined
                          undefined old$ ctx state))
-       ((er new-name$) (process-input-new-name new-name old$ ctx state))
+       ((er (list new-name$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old state)
                           "The :NEW-ENABLE input" t nil))
        ((er thm-name$) (restrict-process-thm-name
                         thm-name old$ new-name$ ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
-                              non-executable
-                              (non-executablep old wrld)
-                              "The :NON-EXECUTABLE input" t nil))
+       (names-to-avoid (cons thm-name$ names-to-avoid))
+       ((er &) (ensure-value-is-boolean$ thm-enable
+                                         "The :THM-ENABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
@@ -345,9 +324,9 @@
                  new-name$
                  new-enable$
                  thm-name$
-                 non-executable$
                  verify-guards$
-                 hints$))))
+                 hints$
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -467,7 +446,6 @@
                              (undefined$ pseudo-termp)
                              (new-name$ symbolp)
                              (new-enable$ booleanp)
-                             (non-executable$ booleanp)
                              (verify-guards$ booleanp)
                              (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
@@ -479,6 +457,7 @@
    The macro used to introduce the new function is determined by
    whether the new function must be
    enabled or not, and non-executable or not.
+   We make it non-executable if and only if @('old') is non-executable.
    </p>
    <p>
    The new function has the same formal arguments as the old function.
@@ -520,7 +499,7 @@
    Guard verification is deferred;
    see @(tsee restrict-gen-new-fn-verify-guards).
    </p>"
-  (b* ((macro (function-intro-macro new-enable$ non-executable$))
+  (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
        (formals (formals old$ wrld))
        (old-body (if (non-executablep old$ wrld)
                      (unwrapped-nonexec-body old$ wrld)
@@ -728,12 +707,12 @@
    (new-enable$ booleanp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
-   (non-executable$ booleanp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
    (print$ evmac-input-print-p)
    (show-only$ booleanp)
    (call pseudo-event-formp)
+   (names-to-avoid symbol-listp)
    ctx
    state)
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
@@ -803,21 +782,21 @@
    for visual separation.
    </p>"
   (b* ((wrld (w state))
-       (names-to-avoid (list new-name$ thm-name$))
        (recursivep (recursivep old$ nil wrld))
        (reflexivep
         (and recursivep
              (member-eq old$
                         (all-ffn-symbs (termination-theorem old$ (w state))
                                        nil))))
-       (stub? (and reflexivep
-                   (fresh-logical-name-with-$s-suffix
-                    (intern-in-package-of-symbol
-                     "?F" (pkg-witness (symbol-package-name old$)))
-                    'constrained-function
-                    names-to-avoid
-                    wrld)))
-       (names-to-avoid (if stub? (rcons stub? names-to-avoid) names-to-avoid))
+       ((mv stub? names-to-avoid)
+        (if reflexivep
+            (fresh-logical-name-with-$s-suffix
+             (intern-in-package-of-symbol
+              "?F" (pkg-witness (symbol-package-name old$)))
+             'constrained-function
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
        (stub-event? (and stub?
                          (list `(defstub ,stub?
                                   ,(repeat (arity old$ wrld) '*) => *))))
@@ -829,41 +808,41 @@
        ((er (list appcond-thm-events
                   appcond-thm-names
                   names-to-avoid))
-        (evmac-appcond-theorems-no-extra-hints
-         appconds hints$ names-to-avoid print$ ctx state))
+        (evmac-appcond-theorems-no-extra-hints appconds
+                                               hints$
+                                               names-to-avoid
+                                               print$
+                                               ctx
+                                               state))
        ((mv old-unnorm-event
-            old-unnorm-name) (install-not-normalized-event old$
-            t
-            names-to-avoid
-            wrld))
-       (names-to-avoid (cons old-unnorm-name names-to-avoid))
-       ((mv new-fn-local-event
-            new-fn-exported-event) (restrict-gen-new-fn
-            old$
-            restriction$
-            undefined$
-            new-name$
-            new-enable$
-            non-executable$
-            verify-guards$
-            wrld))
-       ((mv new-unnorm-event
-            new-unnorm-name) (install-not-normalized-event new-name$
-            t
-            names-to-avoid
-            wrld))
-       ((mv old-to-new-thm-local-event
-            old-to-new-thm-exported-event) (restrict-gen-old-to-new-thm
-            old$
-            restriction$
-            new-name$
-            thm-name$
-            thm-enable$
-            appcond-thm-names
-            stub?
             old-unnorm-name
+            names-to-avoid)
+        (install-not-normalized-event old$ t names-to-avoid wrld))
+       ((mv new-fn-local-event
+            new-fn-exported-event)
+        (restrict-gen-new-fn old$
+                             restriction$
+                             undefined$
+                             new-name$
+                             new-enable$
+                             verify-guards$
+                             wrld))
+       ((mv new-unnorm-event
             new-unnorm-name
-            wrld))
+            &)
+        (install-not-normalized-event new-name$ t names-to-avoid wrld))
+       ((mv old-to-new-thm-local-event
+            old-to-new-thm-exported-event)
+        (restrict-gen-old-to-new-thm old$
+                                     restriction$
+                                     new-name$
+                                     thm-name$
+                                     thm-enable$
+                                     appcond-thm-names
+                                     stub?
+                                     old-unnorm-name
+                                     new-unnorm-name
+                                     wrld))
        (new-fn-verify-guards-event? (and verify-guards$
                                          (list
                                           (restrict-gen-new-fn-verify-guards
@@ -920,7 +899,6 @@
                      new-enable
                      thm-name
                      thm-enable
-                     non-executable
                      verify-guards
                      hints
                      print
@@ -954,9 +932,9 @@
                   new-name$
                   new-enable$
                   thm-name$
-                  non-executable$
                   verify-guards$
-                  hints$))
+                  hints$
+                  names-to-avoid))
         (restrict-process-inputs old
                                  restriction
                                  undefined
@@ -964,12 +942,12 @@
                                  new-enable
                                  thm-name
                                  thm-enable
-                                 non-executable
                                  verify-guards
                                  hints
                                  print
                                  show-only
-                                 ctx state))
+                                 ctx
+                                 state))
        ((er event) (restrict-gen-everything old$
                                             restriction$
                                             undefined$
@@ -977,12 +955,12 @@
                                             new-enable$
                                             thm-name$
                                             thm-enable
-                                            non-executable$
                                             verify-guards$
                                             hints$
                                             print
                                             show-only
                                             call
+                                            names-to-avoid
                                             ctx
                                             state)))
     (value event)))
@@ -1009,7 +987,6 @@
                       (new-enable ':auto)
                       (thm-name ':auto)
                       (thm-enable 't)
-                      (non-executable ':auto)
                       (verify-guards ':auto)
                       (hints 'nil)
                       (print ':result)
@@ -1021,7 +998,6 @@
                                     ',new-enable
                                     ',thm-name
                                     ',thm-enable
-                                    ',non-executable
                                     ',verify-guards
                                     ',hints
                                     ',print

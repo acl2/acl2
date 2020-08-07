@@ -2360,7 +2360,7 @@
             (:rewrite (:rewrite l6-wrchs-correctness-1-lemma-31 . 1))
             :top :bash
             :bash :bash :bash :bash :bash (:dive 2)
-            (:rewrite len-of-binary-append)
+            (:rewrite len-of-append)
             :top (:dive 1)
             (:rewrite len)
             :top :bash))

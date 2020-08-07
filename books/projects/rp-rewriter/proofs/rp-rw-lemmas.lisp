@@ -1363,7 +1363,7 @@
                    (rp-evlt term a)))
    :otf-flg t
    :hints (("Goal"
-            :expand (RP-EVL-OF-TRANS-LIST NIL A)
+            ;:expand (RP-EVL-OF-TRANS-LIST NIL A)
             :cases ((is-falist term))
             :in-theory (e/d (rp-evl-of-fncall-args
                              rp-trans
@@ -1371,7 +1371,7 @@
                              rp-trans-lst
                              lemma4-lemma)
                             (trans-list
-                             rp-evl-of-trans-list))))))
+                             ))))))
 
 (local
  (defthm lemma5

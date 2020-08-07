@@ -65,12 +65,11 @@
  sequential circuits but it fails in case of combinational loops.
 </p>
 
-<p> You need @(see acl2::VL) and @(see acl2::SV) designs to create SVL
-designs. You can use functions svl::svl-flatten-design to create SVL design,
-and svl::svl-run to run the generated design.</p>
+<p>  You  need @(see  acl2::VL)  and  @(see  acl2::SV)  designs to  create  SVL
+designs. You  can use  functions @(see  svl::svl-flatten-design) to  create SVL
+design, and @(see svl::svl-run) to run the generated design.</p>
 "
  )
-
 
 (xdoc::defxdoc
  svl

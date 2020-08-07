@@ -55,7 +55,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes tterms
 
@@ -141,7 +141,7 @@
   :short "Fixtype of translated terms and @('nil')."
   :pred maybe-ttermp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines lift-term
   :short "Lift pseudo-terms to the meta level."
@@ -170,3 +170,48 @@
   ///
   (verify-guards lift-term
     :hints (("Goal" :in-theory (enable good-pseudo-termp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines tterm-free-vars
+  :short "Set of free variables in a (translated) term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Even though ACL2 internally closes all lambda expressions,
+     in our formalization of translated terms we do assume or enforce that.
+     In fact, we want to have more flexibility,
+     and allow non-closed lambda expression.
+     Thus, the free variables of a lambda expression,
+     as common in other languages,
+     are the ones in the body minus the formal parameters."))
+
+  (define tterm-free-vars ((term ttermp))
+    :returns (vars symbol-value-setp)
+    (tterm-case term
+                :variable (set::insert term.name nil)
+                :constant nil
+                :call (set::union (tfunction-free-vars term.function)
+                                  (tterm-list-free-vars term.arguments)))
+    :measure (tterm-count term))
+
+  (define tfunction-free-vars ((fun tfunctionp))
+    :returns (vars symbol-value-setp)
+    (tfunction-case fun
+                    :named nil
+                    :lambda (set::difference (tterm-free-vars fun.body)
+                                             (set::mergesort fun.parameters)))
+    :measure (tfunction-count fun))
+
+  (define tterm-list-free-vars ((terms tterm-listp))
+    :returns (vars symbol-value-setp)
+    (cond ((endp terms) nil)
+          (t (set::union (tterm-free-vars (car terms))
+                         (tterm-list-free-vars (cdr terms)))))
+    :measure (tterm-list-count terms))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards tterm-free-vars)
+
+  (fty::deffixequiv-mutual tterm-free-vars))

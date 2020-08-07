@@ -18,6 +18,7 @@
 (include-book "bitcoin/top")
 (include-book "built-in-theorems-doc")
 (include-book "crypto/top")
+(include-book "error-checking/top")
 (include-book "event-macros/top")
 (include-book "hdwallet/top")
 (include-book "ethereum/top")
@@ -26,6 +27,7 @@
 (include-book "prime-fields/top")
 (include-book "simpl-imp/top")
 (include-book "soft/top")
+(include-book "solidity/top")
 (include-book "std/top")
 (include-book "utilities/top")
 

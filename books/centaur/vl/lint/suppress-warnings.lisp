@@ -33,7 +33,7 @@
 (include-book "../mlib/stmt-tools")
 (include-book "centaur/fty/visitor" :dir :system)
 (local (include-book "../util/arithmetic"))
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system))))
 

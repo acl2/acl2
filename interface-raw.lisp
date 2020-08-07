@@ -2819,6 +2819,7 @@
                       (guard " the guard")
                       (body " the body")
                       (lambda-body " the lambda body")
+                      (lambda-object-body " the body of the lambda object")
                       (rewritten-body " the rewritten body")
                       (expansion " the expansion")
                       (equal-consp-hack-car " the equality of the cars")
@@ -6165,21 +6166,28 @@
 ; body), where dcl may be omitted.  We make a function or macro definition for
 ; each raw-def, and we make a defun for the oneification of each axiomatic-def.
 
-          (let ((absp (eq (car (cddr trip)) 'defabsstobj))
-                (name (nth 1 (cddr trip)))
-                (the-live-name (nth 2 (cddr trip)))
-                (init (nth 3 (cddr trip)))
-                (raw-defs (nth 4 (cddr trip)))
-                (template-or-event (nth 5 (cddr trip)))
-                (ax-defs (nth 6 (cddr trip)))
-                (new-defs
+          (let* ((absp (eq (car (cddr trip)) 'defabsstobj))
+                 (name (nth 1 (cddr trip)))
+                 (the-live-name (nth 2 (cddr trip)))
+                 (init (nth 3 (cddr trip)))
+                 (raw-defs (nth 4 (cddr trip)))
+                 (template-or-event (nth 5 (cddr trip))) ; event iff absp
+                 (ax-defs (nth 6 (cddr trip)))
+                 (event-form (if absp
+                                 template-or-event
+                               (nth 7 (cddr trip))))
+                 (non-executable (and (not absp)
+                                      (access defstobj-template
+                                              template-or-event
+                                              :non-executable)))
+                 (new-defs
 
 ; We avoid "undefined function" warnings by Allegro during compilation by
 ; defining all the functions first, and compiling them only after they have all
 ; been defined.  But we go further; see the comment in the binding of new-defs
 ; in the previous case.
 
-                 nil))
+                  nil))
             (maybe-push-undo-stack 'defconst '*user-stobj-alist*)
 
 ; Memoize-flush expects the variable (st-lst name) to be bound.  We take care
@@ -6194,24 +6202,25 @@
 ; defabsstobj in raw lisp, so we set up the redundancy stuff:
 
             (setf (get the-live-name 'redundant-raw-lisp-discriminator)
-                  (cond (absp template-or-event)
-                        (t (list* 'defstobj
-                                  (access defstobj-template template-or-event
-                                          :recognizer)
-                                  (access defstobj-template template-or-event
+                  (cond (absp event-form)
+                        (t (cons 'defstobj
+                                 (make
+                                  defstobj-redundant-raw-lisp-discriminator-value
+                                  :event event-form
+                                  :creator
+                                  (access defstobj-template
+                                          template-or-event
                                           :creator)
-                                  (access defstobj-template template-or-event
-                                          :field-templates)
-                                  (if (access defstobj-template
+                                  :congruent-stobj-rep
+                                  (or (access defstobj-template
                                               template-or-event
                                               :congruent-to)
-                                      (congruent-stobj-rep-raw
-                                       (access defstobj-template
-                                               template-or-event
-                                               :congruent-to))
-                                    name)
-                                  (access defstobj-template template-or-event
-                                          :non-memoizable)))))
+                                      name)
+                                  :non-memoizable
+                                  (access defstobj-template
+                                          template-or-event
+                                          :non-memoizable)
+                                  :non-executable non-executable)))))
 
 ; The following assignment to *user-stobj-alist* is structured to keep
 ; new ones at the front, so we can more often exploit the optimization
@@ -6222,9 +6231,12 @@
 
 ; This is a redefinition!  We'll just replace the old entry.
 
-                         (put-assoc-eq name
-                                       (eval init)
-                                       *user-stobj-alist*))
+                         (if non-executable
+                             (remove1-assoc-eq name *user-stobj-alist*)
+                           (put-assoc-eq name
+                                         (eval init)
+                                         *user-stobj-alist*)))
+                        (non-executable *user-stobj-alist*)
                         (t (cons (cons name (eval init))
                                  *user-stobj-alist*))))
 
@@ -6266,8 +6278,8 @@
 ; access/update/array-length functions for stobjs, but only for these, where
 ; speed is often a requirement for efficiency.
 
-                                    (cons 'defabbrev
-                                          (remove-stobj-inline-declare def)))
+                                  (cons 'defabbrev
+                                        (remove-stobj-inline-declare def)))
                                  (t (cons 'defun def)))))
                        (setq new-defs (cons def new-defs))))))
             (dolist
@@ -6588,6 +6600,8 @@
 
 (defvar *saved-user-stobj-alist* nil)
 
+(defvar *saved-non-executable-user-stobj-lst* nil)
+
 (defun update-wrld-structures (wrld state)
   (install-global-enabled-structure wrld state)
   (recompress-global-enabled-structure
@@ -6606,6 +6620,21 @@
      (strip-cars *user-stobj-alist*)
      wrld)
     (setq *saved-user-stobj-alist* *user-stobj-alist*))
+  (when (not (eq *saved-non-executable-user-stobj-lst*
+                 *non-executable-user-stobj-lst*))
+
+; On 12/12/2019 we found, using CCL on a Mac, that the time for (include-book
+; "centaur/sv/top" :dir :system) was reduced by 2.6% by adding the test above
+; before calling recompress-stobj-accessor-arrays.  The time reduction however
+; was only 0.2% for (include-book "projects/x86isa/top" :dir :system).  The
+; former book involved many more stobjs: 27 after including it, vs. only 4 for
+; the latter book.  So this change seems important mainly for scalability.
+
+    (recompress-stobj-accessor-arrays
+     *non-executable-user-stobj-lst*
+     wrld)
+    (setq *saved-non-executable-user-stobj-lst*
+          *non-executable-user-stobj-lst*))
   (when (let ((i (f-get-global 'certify-book-info state)))
           (and i
                (not (access certify-book-info i :include-book-phase))
@@ -7946,20 +7975,22 @@
          `(defconst *initial-built-in-clauses*
             (list ,@good-lst))
          nil))))
-    (cond ((not (equal *definition-minimal-theory-alist*
+    (cond ((not (equal *bbody-alist*
                        (merge-sort-lexorder
-                        (loop for f in *definition-minimal-theory* collect
+                        (loop for f in *definition-minimal-theory*
+                              when (not (eq f 'mv-nth))
+                              collect
                               (cons f (body f t (w *the-live-state*)))))))
            (interface-er
-            "There is a discrepancy between the value of ~
-             *definition-minimal-theory-alist* and its expected ~
-             value.~%Actual value of ~
-             *definition-minimal-theory-alist*:~%~X01~%Expected value of ~
-             *definition-minimal-theory-alist*:~X21"
-            *definition-minimal-theory-alist*
+            "There is a discrepancy between the value of *bbody-alist* and ~
+             its expected value.~%Actual value of ~
+             *bbody-alist*:~%~X01~%Expected value of *bbody-alist*:~X21"
+            *bbody-alist*
             nil
             (merge-sort-lexorder
-             (loop for f in *definition-minimal-theory* collect
+             (loop for f in *definition-minimal-theory*
+                   when (not (eq f 'mv-nth))
+                   collect
                    (cons f (body f t (w *the-live-state*))))))))
     (mv-let (when-pass-2-result macros-found program-found logic-found)
       (fns-different-wrt-acl2-loop-only *acl2-files*)
@@ -8015,6 +8046,28 @@
                       bad-logic
                       '*initial-logic-fns-with-raw-code*))
             (error "Check failed!")))))
+    (let* ((wrld (w state))
+           (fns (loop for fn in (append (strip-cars *ttag-fns*)
+                                        *initial-untouchable-fns*)
+                      when
+
+; It is tempting to conjoin (logicp fn wrld) below.  But we awnt to include
+; relevant program mode functions too, if any, in case the user converts them
+; to logic mode.
+
+                      (and (getpropc fn 'unnormalized-body nil wrld)
+                           (all-nils (stobjs-in fn wrld))
+                           (all-nils (stobjs-out fn wrld)))
+                      collect fn))
+           (bad (set-difference-eq fns
+; Avoid undefined constant warning during boot-strap by using symbol-value:
+                                   (symbol-value '*blacklisted-apply$-fns*))))
+      (when bad
+        (interface-er
+         "The value of *blacklisted-apply$-fns* fails to include ~&0.  This ~
+          is an error because all functions from *ttag-fns* and ~
+          *initial-untouchable-fns* must be in *blacklisted-apply$-fns*."
+         bad)))
 
 ; The following is a start on checking that we don't have superfluous symbols
 ; in the list values of certain constants.  But in fact there can be such

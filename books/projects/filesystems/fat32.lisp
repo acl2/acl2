@@ -589,7 +589,10 @@
            (<= (count-free-clusters fa-table)
                (- (len fa-table)
                   *ms-first-data-cluster*)))
-  :rule-classes :linear
+  :rule-classes
+  ((:linear
+    :trigger-terms
+    ((count-free-clusters fa-table))))
   :hints (("goal" :in-theory (enable count-free-clusters))))
 
 (defund

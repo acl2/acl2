@@ -52,21 +52,22 @@
                          cons-pos-alistp
                          define-sk
                          defmacro+
+                         defthm-commutative
                          defxdoc+
                          doublets-to-alist
                          dumb-occur-var-open
                          dumb-occur-var-open-lst
-                         ensure-boolean$
                          ensure-doublet-list$
                          ensure-function-name$
                          ensure-function-name-list$
                          ensure-list-functions$
                          ensure-list-no-duplicates$
                          ensure-member-of-list$
-                         ensure-string$
                          ensure-string-or-nil$
                          ensure-term$
                          ensure-term-ground$
+                         ensure-value-is-boolean$
+                         ensure-value-is-string$
                          er-soft+
                          explode
                          fargn
@@ -135,10 +136,13 @@
                          pseudo-term-call->fn
                          pseudo-term-case
                          pseudo-term-count
+                         pseudo-term-equiv
                          pseudo-term-fix
+                         pseudo-term-fncall
                          pseudo-term-fncall->args
                          pseudo-term-fncall->fn
                          pseudo-term-kind
+                         pseudo-term-lambda
                          pseudo-term-lambda->args
                          pseudo-term-lambda->body
                          pseudo-term-lambda->formals
@@ -186,6 +190,7 @@
                          symbol-pos-alistp
                          symbol-string-alistp
                          symbol-symbol-alistp
+                         symbol-symbollist-alistp
                          symbol-package-name-lst
                          table-alist+
                          tail-recursive-p

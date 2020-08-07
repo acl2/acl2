@@ -2222,6 +2222,16 @@
 ;-----------------------------------------------------------------
 ; REDUNDANCY-BUNDLE
 
+; Through Version_8.3 we stored a so-called redundancy-bundle for a defstobj
+; event.  We found however that this was not sufficient for determining
+; redundancy, as discussed in :doc note-8-4.  Perhaps everything in this
+; section could therefore be deleted; however, it seems harmless to leave these
+; functions in place for now, which could be helpful if they are useful
+; elsewhere.
+
+; At any rate, everything below in this section should be considered irrelevant
+; to well-formedness of a world.
+
 ; The structure of a redundancy-bundle of a stobj is actually pretty
 ; unimportant.  They are only used as fingerprints of a defstobj event,
 ; allowing us to recognize a redundant event.  It is not clear that internal
@@ -2859,7 +2869,6 @@
           (RECOGNIZER-ALIST (pseudo-recognizer-alistp sym val))
           (RECURSIVEP (pseudo-recursivepp sym val))
           (REDEFINED (redefinedp sym val))
-          (REDUNDANCY-BUNDLE (pseudo-redundancy-bundlep sym val))
           (RUNIC-MAPPING-PAIRS (pseudo-runic-mapping-pairsp sym val))
           (SIBLINGS (siblings-propertyp sym val))
           (SIGNATURE-RULES-FORM-1

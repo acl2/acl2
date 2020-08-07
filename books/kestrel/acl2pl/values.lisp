@@ -11,6 +11,7 @@
 (in-package "ACL2PL")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/std/basic/good-valuep" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -30,7 +31,7 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod symbol-value
   :short "Fixtype of symbol values."
@@ -71,6 +72,14 @@
   :pred maybe-symbol-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset symbol-value-set
+  :short "Fixtype of finite sets of symbol values."
+  :elt-type symbol-value
+  :elementp-of-nil nil
+  :pred symbol-value-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-symbol ((sym symbolp))
   :returns (symval symbol-valuep)
@@ -136,7 +145,7 @@
     (intern-in-package-of-symbol name (pkg-witness package)))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum value
   :short "Fixtype of values."
@@ -295,15 +304,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define value-list ((values value-listp))
+(define value-list-of ((values value-listp))
   :returns (value valuep)
   :short "Make a meta-level list value from a list of meta-level values."
   (cond ((endp values) (value-nil))
         (t (value-cons (car values)
-                       (value-list (cdr values)))))
+                       (value-list-of (cdr values)))))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-value ((x good-valuep))
   :returns (xval valuep)

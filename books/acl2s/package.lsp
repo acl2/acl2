@@ -70,7 +70,7 @@
      
      mget mset wf-keyp good-map
 
-     fix-pkg
+     ;; fix-pkg ; Matt K. mod: now in acl2::*acl2-exports*
      fix-sym
      fix-intern$
      fix-intern-in-pkg-of-sym
@@ -299,7 +299,7 @@
       cgen
       tests-and-calls
 
-      fix-pkg
+      ;; fix-pkg ; Matt K. mod: now in acl2::*acl2-exports*
       fix-sym
       fix-intern$
       fix-intern-in-pkg-of-sym

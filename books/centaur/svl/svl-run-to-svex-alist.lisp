@@ -386,7 +386,7 @@ rule ~p1 are created. ~%~%" ',',svex-alist-name ',',rw-rule-name))
 (xdoc::defxdoc
  svl-run->svex-alist
  :parents (acl2::svl)
- :short "Convert a SVL design to an @(see sv::svex-alist)."
+ :short "Convert an SVL design to an @(see sv::svex-alist)."
  :long " <p> Using @(see rp::rp-rewriter), converts an SVL design usign svl-run
 to an @(see sv::svex-alist).
 </p>
@@ -444,7 +444,13 @@ exports svl-run-top-module-composed and *svl-run-top-module-composed*.
                      :svex-alist-name *svl-run-top-module-composed*)
 ')
 </code>
-
 </p>
+
+<p> This will  produce a constant *svl-run-top-module-composed*,  which has the
+svex-alist representation  of the  given svl-run instance;  and a  rewrite rule
+with the name svl-run-top-module-composed,  which rewrites the svl-run instance
+to evaluation of this svex-alist. See @(see svl::svl-run) for concrete examples
+of  the   first  four   keys  (:modname,   :binds-ins-alist,  :binds-out-alist,
+:svl-design).  </p>
 
 ")

@@ -26,6 +26,7 @@
 (include-book "defmax-nat-doc")
 (include-book "defsurj")
 (include-book "defsurj-doc")
+(include-book "defthm-commutative")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

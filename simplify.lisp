@@ -8989,18 +8989,6 @@
   (list "" "~@*" "~@* and " "~@*, "
         (tilde-*-conjunction-of-possibly-forced-names-phrase1 lst)))
 
-(defun merge-runes (l1 l2)
-  (cond ((null l1) l2)
-        ((null l2) l1)
-        ((rune-< (car l1) (car l2))
-         (cons (car l1) (merge-runes (cdr l1) l2)))
-        (t (cons (car l2) (merge-runes l1 (cdr l2))))))
-
-(defun merge-sort-runes (l)
-  (cond ((null (cdr l)) l)
-        (t (merge-runes (merge-sort-runes (evens l))
-                        (merge-sort-runes (odds l))))))
-
 (defun tilde-*-simp-phrase1 (alist abbreviations-flg)
   (cond
    ((null alist) (mv nil nil))

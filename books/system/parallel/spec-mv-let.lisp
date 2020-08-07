@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/eval" :dir :system)
 
 (defun foo (z)

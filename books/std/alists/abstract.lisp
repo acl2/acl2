@@ -391,7 +391,29 @@ about keyval-alistp."
     (implies (and (keyval-alist-p x)
                   (keyval-alist-p y))
              (keyval-alist-p (hons-shrink-alist x y)))
-    :name keyval-alist-p-of-hons-shrink-alist))
+    :name keyval-alist-p-of-hons-shrink-alist)
+
+  (def-alistp-rule alistp-of-put-assoc
+    (implies (and (keyval-alist-p x)
+                  (not (keyval-alist-final-cdr-p t)))
+             (iff (keyval-alist-p (put-assoc-equal name val x))
+                  (and (keytype-p name) (valtype-p val))))
+    :name keyval-alist-p-of-put-assoc
+    :requirement true-listp
+    :body
+    (implies (and (keyval-alist-p x))
+             (iff (keyval-alist-p (put-assoc-equal name val x))
+                  (and (keytype-p name) (valtype-p val))))
+    :tags (:alistp))
+
+  (def-alistp-rule valtype-p-of-cdr-of-assoc-when-keyval-alist-p-valtype-p-nil
+    (implies (and (keyval-alist-p x)
+                  (valtype-p nil))
+             (valtype-p (cdr (assoc-equal k x))))
+    :name valtype-p-of-cdr-of-assoc-when-keyval-alist-p
+    :requirement valtype-p-of-nil
+    :body (implies (keyval-alist-p x)
+                   (valtype-p (cdr (assoc-equal k x))))))
 
 
 ;; expensive...

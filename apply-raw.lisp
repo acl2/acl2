@@ -90,7 +90,9 @@
 ; been assigned a badge by defwarrant.  We return one of three answers:
 
 ; - (mv nil badge): fn was found in the badge-table and the badge is badge.
-;      Fn's warrant is named APPLY$-WARRANT-fn.
+;      Every symbol in the :badge-userfn-structure has both a badge and a
+;      warrant, because defwarrant put the symbol there after successfully
+;      processing it.  Fn's warrant is named APPLY$-WARRANT-fn.
 
 ; - (mv msg nil): there is no entry for fn in the badge-table, so no
 ;      defwarrant has been successful on fn; msg is a tilde-@ msg possibly

@@ -12,7 +12,6 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
-(include-book "parteval")
 
 ; (depends-on "design-notes/parteval.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -20,7 +19,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *parteval-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/parteval.pdf" "design notes"))
+  (xdoc::&& "@('parteval') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/parteval.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,7 +62,7 @@
       but does not change its parameters.")
 
     (xdoc::p
-     "These " *parteval-design-notes* ", which use "
+     "The " *parteval-design-notes* ", which use "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
@@ -70,7 +71,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form-auto parteval)
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(parteval old"
+     "          static"
+     "          :new-name       ; default :auto"
+     "          :new-enable     ; default :auto"
+     "          :thm-name       ; default :auto"
+     "          :thm-enable     ; default t"
+     "          :verify-guards  ; default :auto"
+     "          :untranslate    ; default :nice"
+     "          :print          ; default :result"
+     "          :show-only      ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,7 +93,7 @@
      (xdoc::p
       "@('old') must
        be in logic mode,
-       be defined,
+       be " (xdoc::seetopic "definedness" "defined") ",
        return a non-<see topic='@(url mv)'>multiple</see> value, and
        have no input or output <see topic='@(url acl2::stobj)'>stobjs</see>.
        If the @(':verify-guards') input is @('t'),

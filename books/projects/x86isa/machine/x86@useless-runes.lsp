@@ -1181,59 +1181,60 @@
  (1 1 (:REWRITE |(mod (- x) y)| . 1))
  (1 1
     (:REWRITE |(mod (* x (/ y)) z) not rewriting-goal-literal|)))
-(X86ISA::LOGHEAD-ASH-0 (7978 19 (:REWRITE LOGHEAD-IDENTITY))
-                       (5133 110 (:DEFINITION UNSIGNED-BYTE-P**))
-                       (3656 182 (:REWRITE UNSIGNED-BYTE-P-PLUS))
-                       (3285 70 (:REWRITE UNSIGNED-BYTE-P-OF-ASH))
-                       (2555 84 (:LINEAR X86ISA::ASH-MONOTONE-2))
-                       (2400 44 (:DEFINITION UNSIGNED-BYTE-P))
-                       (2250 44 (:DEFINITION INTEGER-RANGE-P))
-                       (1769 105 (:REWRITE BITOPS::LOGCDR-OF-BIT))
-                       (1677 103
+(X86ISA::LOGHEAD-ASH-0 (7604 19 (:REWRITE LOGHEAD-IDENTITY))
+                       (5492 98 (:DEFINITION UNSIGNED-BYTE-P**))
+                       (3076 162 (:REWRITE UNSIGNED-BYTE-P-PLUS))
+                       (3040 64 (:REWRITE UNSIGNED-BYTE-P-OF-ASH))
+                       (2510 76 (:DEFINITION UNSIGNED-BYTE-P))
+                       (2472 80 (:LINEAR X86ISA::ASH-MONOTONE-2))
+                       (2308 72 (:DEFINITION INTEGER-RANGE-P))
+                       (1886 99 (:REWRITE BITOPS::LOGCDR-OF-BIT))
+                       (1830 97
                              (:REWRITE FTY::BITP-WHEN-UNSIGNED-BYTE-P-1))
-                       (1280 1280
+                       (1121 203 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+                       (1096 1096
                              (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
-                       (1159 211 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-                       (735 651 (:REWRITE DEFAULT-<-2))
-                       (685 651 (:REWRITE DEFAULT-<-1))
-                       (610 270 (:REWRITE FOLD-CONSTS-IN-+))
-                       (546 159 (:REWRITE ASH-0))
-                       (444 394 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                       (403 403
-                            (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
-                       (380 42 (:REWRITE COMMUTATIVITY-2-OF-+))
-                       (358 358 (:REWRITE DEFAULT-+-2))
-                       (358 358 (:REWRITE DEFAULT-+-1))
-                       (336 2 (:REWRITE BITOPS::LOGCAR-OF-BIT))
-                       (332 261
+                       (742 650 (:REWRITE DEFAULT-<-2))
+                       (690 650 (:REWRITE DEFAULT-<-1))
+                       (578 258 (:REWRITE FOLD-CONSTS-IN-+))
+                       (520 151 (:REWRITE ASH-0))
+                       (426 376 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+                       (378 279
                             (:TYPE-PRESCRIPTION BITOPS::LOGCDR-NATP))
-                       (295 295 (:TYPE-PRESCRIPTION BITP))
-                       (252 63
-                            (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
-                       (249 49 (:REWRITE NATP-WHEN-INTEGERP))
+                       (369 369
+                            (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
+                       (368 40 (:REWRITE COMMUTATIVITY-2-OF-+))
+                       (336 336 (:REWRITE DEFAULT-+-2))
+                       (336 336 (:REWRITE DEFAULT-+-1))
+                       (336 2 (:REWRITE BITOPS::LOGCAR-OF-BIT))
+                       (279 279 (:TYPE-PRESCRIPTION BITP))
                        (240 48 (:REWRITE BITOPS::LOGTAIL-OF-0-I))
-                       (231 85
+                       (228 57
+                            (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
+                       (221 81
                             (:REWRITE FTY::UNSIGNED-BYTE-P-1-WHEN-BITP))
-                       (210 210 (:REWRITE ZIP-OPEN))
-                       (196 66 (:REWRITE ZP-WHEN-GT-0))
+                       (213 43 (:REWRITE NATP-WHEN-INTEGERP))
+                       (200 200 (:REWRITE ZIP-OPEN))
+                       (184 62 (:REWRITE ZP-WHEN-GT-0))
                        (176 32 (:REWRITE COMMUTATIVITY-OF-+))
-                       (154 18
+                       (138 16
                             (:REWRITE BITOPS::UNSIGNED-BYTE-P-OF-0-X))
-                       (105 21
-                            (:REWRITE X86ISA::UNSIGNED-BYTE-P-WHEN-2BITS-P))
-                       (98 98 (:REWRITE EXPT-WITH-VIOLATED-GUARDS))
-                       (84 42 (:REWRITE UNICITY-OF-0))
-                       (70 70 (:REWRITE DEFAULT-UNARY-MINUS))
-                       (48 48 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
-                       (42 42 (:TYPE-PRESCRIPTION X86ISA::2BITS-P))
-                       (42 42 (:DEFINITION FIX))
-                       (42 21
+                       (106 106
+                            (:REWRITE EXPT-WITH-VIOLATED-GUARDS))
+                       (95 19
+                           (:REWRITE X86ISA::UNSIGNED-BYTE-P-WHEN-2BITS-P))
+                       (76 38 (:REWRITE UNICITY-OF-0))
+                       (64 64 (:REWRITE DEFAULT-UNARY-MINUS))
+                       (52 52 (:LINEAR BITOPS::LOGCDR-<=-LOGCDR))
+                       (38 38 (:TYPE-PRESCRIPTION X86ISA::2BITS-P))
+                       (38 38 (:DEFINITION FIX))
+                       (38 19
                            (:REWRITE X86ISA::2BITS-P-WHEN-UNSIGNED-BYTE-P))
-                       (19 19
+                       (22 22
                            (:LINEAR BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP))
+                       (8 8 (:REWRITE BITOPS::LOGCDR-<-CONST))
                        (6 2
                           (:TYPE-PRESCRIPTION BITOPS::LOGCONS-POSP-1))
-                       (4 4 (:REWRITE BITOPS::LOGCDR-<-CONST))
                        (4 2
                           (:TYPE-PRESCRIPTION BITOPS::LOGCONS-NEGP))
                        (2 2 (:TYPE-PRESCRIPTION POSP))

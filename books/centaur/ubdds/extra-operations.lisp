@@ -1204,7 +1204,10 @@ always false."
     :hints(("Goal"
             :induct (q-and-is-nilc2 x y)
             :in-theory (e/d (q-and-c2 q-and-is-nilc2 ubddp)
-                            (canonicalize-q-and-c2 equal-by-eval-bdds))))))
+                            (canonicalize-q-and-c2 equal-by-eval-bdds
+; Matt K. mod, 6/2020: Disable the following rule, which causes the proof to
+; fail now that ACL2 is loosening its "being-openedp" heuristic restriction.
+                                                   canonicalize-q-not))))))
 
 
 (defund q-is-atomic (x)

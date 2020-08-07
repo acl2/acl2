@@ -18,7 +18,8 @@
 (local (include-book "len"))
 (local (include-book "nth"))
 
-;; We use memberp as the normal form.
+;; This enforces memberp as the normal form.
+;; TODO: Consider disabling.
 (defthm member-equal-becomes-memberp
   (iff (member-equal a x)
        (memberp a x))

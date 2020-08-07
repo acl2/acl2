@@ -19,55 +19,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (mv-list 2 (install-not-normalized-event 'f nil nil (w state)))
+(assert-equal (mv-list 3 (install-not-normalized-event 'f nil nil (w state)))
               '((install-not-normalized f
                                         :defthm-name 'f$not-normalized
                                         :allp nil)
-                f$not-normalized))
+                f$not-normalized
+                (f$not-normalized)))
 
-(assert-equal (mv-list 2 (install-not-normalized-event 'g t nil (w state)))
+(assert-equal (mv-list 3 (install-not-normalized-event 'g t nil (w state)))
               '((local
                  (install-not-normalized g
                                          :defthm-name 'g$not-normalized
                                          :allp nil))
-                g$not-normalized))
+                g$not-normalized
+                (g$not-normalized)))
 
-(assert-equal (mv-list 2 (install-not-normalized-event 'f nil '(a b) (w state)))
+(assert-equal (mv-list 3 (install-not-normalized-event 'f nil '(a b) (w state)))
               '((install-not-normalized f
                                         :defthm-name 'f$not-normalized
                                         :allp nil)
-                f$not-normalized))
+                f$not-normalized
+                (f$not-normalized a b)))
 
-(assert-equal (mv-list 2 (install-not-normalized-event
+(assert-equal (mv-list 3 (install-not-normalized-event
                           'f nil '(a f$not-normalized) (w state)))
               '((install-not-normalized f
                                         :defthm-name 'f$not-normalized$
                                         :allp nil)
-                f$not-normalized$))
+                f$not-normalized$
+                (f$not-normalized$ a f$not-normalized)))
 
 (must-succeed*
  (defun f$not-normalized (x) x)
- (assert-equal (mv-list 2 (install-not-normalized-event 'f nil nil (w state)))
+ (assert-equal (mv-list 3 (install-not-normalized-event 'f nil nil (w state)))
                '((install-not-normalized f
                                          :defthm-name 'f$not-normalized$
                                          :allp nil)
-                 f$not-normalized$)))
+                 f$not-normalized$
+                 (f$not-normalized$))))
 
 (must-succeed*
  (defun f$not-normalized (x) x)
  (defun f$not-normalized$ (x) x)
- (assert-equal (mv-list 2 (install-not-normalized-event 'f nil nil (w state)))
+ (assert-equal (mv-list 3 (install-not-normalized-event 'f nil nil (w state)))
                '((install-not-normalized f
                                          :defthm-name 'f$not-normalized$$
                                          :allp nil)
-                 f$not-normalized$$)))
+                 f$not-normalized$$
+                 (f$not-normalized$$))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
  (defun f (x) x)
  (make-event
-  (b* (((mv event &)
+  (b* (((mv event & &)
         (install-not-normalized-event 'f nil nil (w state))))
     event))
  (assert! (theorem-namep 'f$not-normalized (w state))))
@@ -77,7 +83,7 @@
  (encapsulate
    ()
    (make-event
-    (b* (((mv event &)
+    (b* (((mv event & &)
           (install-not-normalized-event 'g t nil (w state))))
       event))
    (assert! (theorem-namep 'g$not-normalized (w state))))
@@ -86,7 +92,7 @@
 (must-succeed*
  (defun f (x) x)
  (make-event
-  (b* (((mv event &)
+  (b* (((mv event & &)
         (install-not-normalized-event 'f nil '(a b) (w state))))
     event))
  (assert! (theorem-namep 'f$not-normalized (w state))))
@@ -94,7 +100,7 @@
 (must-succeed*
  (defun f (x) x)
  (make-event
-  (b* (((mv event &)
+  (b* (((mv event & &)
         (install-not-normalized-event
          'f nil '(a f$not-normalized) (w state))))
     event))
@@ -104,7 +110,7 @@
  (defun f (x) x)
  (defun f$not-normalized (x) x)
  (make-event
-  (b* (((mv event &)
+  (b* (((mv event & &)
         (install-not-normalized-event 'f nil nil (w state))))
     event))
  (assert! (theorem-namep 'f$not-normalized$ (w state))))
@@ -114,7 +120,7 @@
  (defun f$not-normalized (x) x)
  (defun f$not-normalized$ (x) x)
  (make-event
-  (b* (((mv event &)
+  (b* (((mv event & &)
         (install-not-normalized-event 'f nil nil (w state))))
     event))
  (assert! (theorem-namep 'f$not-normalized$$ (w state))))

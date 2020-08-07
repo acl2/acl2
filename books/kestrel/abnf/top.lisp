@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,9 @@
 (include-book "operations")
 (include-book "core-rules")
 (include-book "concrete-syntax")
+(include-book "parsing-primitives")
 (include-book "parser")
+(include-book "parser-verification")
 (include-book "abstractor")
 (include-book "parser-and-abstractor-validation")
 
@@ -61,6 +63,8 @@
       into a formal representation suitable for formal specification
       (e.g. for HTTP parsing).")
     (xdoc::li
+     "An abstractor from ABNF concrete syntax to ABNF abstract syntax.")
+    (xdoc::li
      "Executable operations on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
@@ -80,14 +84,11 @@
      as nouns or parenthetically.")
 
    (xdoc::p
-    "The "
+    "This "
     (xdoc::ahref
      "https://www.kestrel.edu/home/people/coglio/vstte18.pdf"
-     "VSTTE 2018 paper
-      ``A Formalization of the ABNF Notation
-      and a Verified Parser of ABNF Grammars''")
-    " by Alessandro Coglio
-     provides an overview
+     "VSTTE 2018 paper")
+    " provides an overview
      of the formalization of the ABNF notation
      and of the verified parser
      (but not of the operations on ABNF grammars).

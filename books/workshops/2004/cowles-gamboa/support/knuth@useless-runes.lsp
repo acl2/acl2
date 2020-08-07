@@ -185,17 +185,18 @@
                                       (4 4 (:REWRITE DEFAULT-+-1))
                                       (2 2 (:REWRITE TEST1-STEP1^N)))
 (G^N-BASE1=NOT-TEST1-STEP1^N
-     (476 68 (:DEFINITION STEP1^N-DEF))
-     (214 66
+     (483 69 (:DEFINITION STEP1^N-DEF))
+     (218 67
           (:REWRITE TEST1-STEP1^N-BASE1=>TEST1-STEP1^N))
-     (121 97 (:REWRITE TEST1-BASE1=>TEST1))
-     (109 8 (:DEFINITION G-DEF))
-     (93 93 (:REWRITE DEFAULT-<-2))
-     (93 93 (:REWRITE DEFAULT-<-1))
+     (185 8 (:DEFINITION G-DEF))
+     (126 100 (:REWRITE TEST1-BASE1=>TEST1))
+     (94 94 (:REWRITE DEFAULT-<-2))
+     (94 94 (:REWRITE DEFAULT-<-1))
      (82 14 (:REWRITE G^N=NOT-TEST1-STEP1^N))
-     (79 79 (:REWRITE DEFAULT-+-2))
-     (79 79 (:REWRITE DEFAULT-+-1))
-     (50 50 (:REWRITE TEST1-STEP1^N)))
+     (80 80 (:REWRITE DEFAULT-+-2))
+     (80 80 (:REWRITE DEFAULT-+-1))
+     (51 51 (:REWRITE TEST1-STEP1^N))
+     (5 5 (:REWRITE BASE1-STEP1=STEP1-BASE1)))
 (G^N-BASE1-G^N (21 3 (:DEFINITION STEP1^N-DEF))
                (13 2
                    (:REWRITE TEST1-STEP1^N-BASE1=>TEST1-STEP1^N-A))
@@ -210,19 +211,19 @@
                (4 4 (:REWRITE DEFAULT-+-1))
                (2 2 (:REWRITE TEST1-STEP1^N)))
 (G^N-STEP1=G^N (987 141 (:DEFINITION STEP1^N-DEF))
-               (824 395 (:REWRITE NOT-TEST1-STEP1^N))
+               (822 393 (:REWRITE NOT-TEST1-STEP1^N))
                (732 183 (:REWRITE ZP-OPEN))
-               (670 385 (:REWRITE TEST1-BASE1=>TEST1))
-               (666 107
+               (668 107
                     (:REWRITE TEST1-STEP1^N-BASE1=>TEST1-STEP1^N-A))
-               (528 141
+               (667 383 (:REWRITE TEST1-BASE1=>TEST1))
+               (529 141
                     (:REWRITE TEST1-STEP1^N-BASE1=>TEST1-STEP1^N))
-               (336 27 (:DEFINITION GN))
+               (339 27 (:DEFINITION GN))
                (201 201 (:REWRITE DEFAULT-+-2))
                (201 201 (:REWRITE DEFAULT-+-1))
                (198 198 (:REWRITE DEFAULT-<-2))
                (198 198 (:REWRITE DEFAULT-<-1))
-               (186 186 (:REWRITE BASE1-STEP1=STEP1-BASE1))
+               (190 190 (:REWRITE BASE1-STEP1=STEP1-BASE1))
                (45 15 (:REWRITE FOLD-CONSTS-IN-+))
                (18 6
                    (:REWRITE G^N-BASE1=NOT-TEST1-STEP1^N)))

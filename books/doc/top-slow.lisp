@@ -356,7 +356,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "coi/documentation" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 
-(include-book "std/util/defret-mutual-generate" :dir :system)
+(include-book "std/util/defretgen" :dir :system)
 ) ;; end progn for including all the books
 
 #||

@@ -54,7 +54,7 @@
   :parents (ordering)
   :short "Case-insensitively sort a string list."
   :long "<p>This is an efficient, stable mergesort for string lists based on
-@(see istr<) and implemented with the defsort book.</p>"
+@(see istr<) and implemented with the @(see acl2::defsort) book.</p>"
 
   (defmacro istrsort (x)
     `(istr-sort ,x)))

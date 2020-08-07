@@ -32,7 +32,7 @@
 (in-package "FTY")
 (include-book "../deftypes")
 (include-book "../basetypes")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/strings/defs-program" :dir :system)
 (include-book "defsort/duplicated-members" :dir :system)
 (include-book "std/osets/top" :dir :system)

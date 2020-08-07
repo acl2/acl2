@@ -40,6 +40,8 @@
 (defconst *fib-med*   #+cmucl 28 #-cmucl 35)
 (defconst *fib-large* #+cmucl 30 #-cmucl 38)
 
+(comp t) ; especially important for Allegro CL
+
 ;; Test of basic forms
 (make-event
  (b* (((mv time1 bytes1 ans1 state) (oracle-time (fib *fib-small*)))

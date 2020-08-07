@@ -95,7 +95,8 @@
   ((x "Value to check.")
    (legal-kwds (and (acl2::keyword-listp legal-kwds)
                     (no-duplicatesp-eq legal-kwds))))
-  "Cause an error if a value is not a hints specifier."
+  :short "Cause an error if a value is not a hints specifier."
+  :body
   (((hints-specifier-p x legal-kwds)
     "~@0 must be an APT hints specifier.  See :DOC APT::HINTS-SPECIFIER."
     description))

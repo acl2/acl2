@@ -1560,7 +1560,7 @@
      (698 698 (:META CANCEL_PLUS-LESSP-CORRECT))
      (560 14 (:REWRITE LOGTAIL-IDENTITY))
      (454 140 (:LINEAR EXPT->-1))
-     (374 374
+     (334 334
           (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
      (334 86 (:REWRITE DEFAULT-*-1))
      (280 280

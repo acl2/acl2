@@ -9,8 +9,11 @@
 (defthm make-character-list-makes-character-list
   (character-listp (make-character-list x)))
 
-(defthm len-of-binary-append
-  (equal (len (binary-append x y)) (+ (len x) (len y))))
+;; The following is redundant with the definition in
+;; books/std/lists/append.lisp, from where it was taken with thanks.
+(defthm len-of-append
+  (equal (len (append x y))
+         (+ (len x) (len y))))
 
 (defthm len-of-make-character-list
   (equal (len (make-character-list x)) (len x)))
@@ -307,10 +310,107 @@
   (equal (nth n (nthcdr m x))
          (nth (+ (nfix n) (nfix m)) x)))
 
-(defthmd intersect-with-subset
+(defthm intersect-with-subset
   (implies (and (subsetp-equal x y)
                 (intersectp-equal x z))
-           (intersectp-equal y z)))
+           (intersectp-equal y z))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (and (intersectp-equal x z)
+                  (subsetp-equal x y))
+             (intersectp-equal y z)))
+   (:rewrite
+    :corollary
+    (implies (and (intersectp-equal z x)
+                  (subsetp-equal x y))
+             (intersectp-equal y z)))
+   (:rewrite
+    :corollary
+    (implies (and (subsetp-equal x y)
+                  (intersectp-equal z x))
+             (intersectp-equal z y)))
+   (:rewrite
+    :corollary
+    (implies (and (intersectp-equal z x)
+                  (subsetp-equal x y))
+             (intersectp-equal z y)))
+   (:rewrite
+    :corollary
+    (implies (and (intersectp-equal x z)
+                  (subsetp-equal x y))
+             (intersectp-equal z y)))
+   (:rewrite
+    :corollary
+    (implies (and (subsetp-equal x y)
+                  (not
+                   (intersectp-equal y z)))
+             (not
+              (intersectp-equal x z))))
+   (:rewrite
+    :corollary
+    (implies (and (not
+                   (intersectp-equal y z))
+                  (subsetp-equal x y))
+             (not
+              (intersectp-equal x z))))
+   (:rewrite
+    :corollary
+    (implies (and (not
+                   (intersectp-equal z y))
+                  (subsetp-equal x y))
+             (not
+              (intersectp-equal x z))))
+   (:rewrite
+    :corollary
+    (implies (and (subsetp-equal x y)
+                  (not
+                   (intersectp-equal y z)))
+             (not
+              (intersectp-equal z x))))
+   (:rewrite
+    :corollary
+    (implies (and (not
+                   (intersectp-equal y z))
+                  (subsetp-equal x y))
+             (not
+              (intersectp-equal z x))))
+   (:rewrite
+    :corollary
+    (implies (and (not
+                   (intersectp-equal z y))
+                  (subsetp-equal x y))
+             (not
+              (intersectp-equal z x))))
+   (:rewrite
+    :corollary
+    (implies (and (intersectp-equal x z)
+                  (not
+                   (intersectp-equal z y)))
+             (not
+              (subsetp-equal x y))))
+   (:rewrite
+    :corollary
+    (implies (and (intersectp-equal z x)
+                  (not
+                   (intersectp-equal z y)))
+             (not
+              (subsetp-equal x y))))
+   (:rewrite
+    :corollary
+    (implies (and (not
+                   (intersectp-equal z y))
+                  (intersectp-equal x z))
+             (not
+              (subsetp-equal x y))))
+   (:rewrite
+    :corollary
+    (implies (and (not
+                   (intersectp-equal y z))
+                  (intersectp-equal x z))
+             (not
+              (subsetp-equal x y))))))
 
 (defthm update-nth-of-make-list
   (implies (and (integerp key) (>= key n) (natp n))
@@ -765,35 +865,36 @@
            (iff (member-equal x1 (remove1-equal x2 l))
                 (member-equal x1 l))))
 
+;; Contributed to books/std/lists/intersection.lisp
 (defthm
   member-of-intersection$
-  (implies (or (not (member-equal x l1)) (not (member-equal x l2)))
-           (not (member-equal x (intersection-equal l1 l2))))
+  (iff (member a (intersection$ x y))
+       (and (member a x) (member a y)))
   :rule-classes
   (:rewrite
    (:type-prescription
     :corollary
-    (implies (not (member-equal x l1))
-             (not (member-equal x (intersection-equal l1 l2)))))
+    (implies (not (member a x))
+             (not (member a (intersection$ x y)))))
    (:type-prescription
     :corollary
-    (implies (not (member-equal x l2))
-             (not (member-equal x (intersection-equal l1 l2)))))))
+    (implies (not (member a y))
+             (not (member a (intersection$ x y)))))))
 
 (defthm
   nth-of-intersection$
   (implies (< (nfix n)
-              (len (intersection-equal l1 l2)))
+              (len (intersection-equal x y)))
            (and
-            (member-equal (nth n (intersection-equal l1 l2))
-                          l1)
-            (member-equal (nth n (intersection-equal l1 l2))
-                          l2)))
+            (member-equal (nth n (intersection-equal x y))
+                          x)
+            (member-equal (nth n (intersection-equal x y))
+                          y)))
   :hints
   (("goal"
     :in-theory (disable member-of-intersection$)
     :use (:instance member-of-intersection$
-                    (x (nth n (intersection-equal l1 l2)))))))
+                    (a (nth n (intersection-equal x y)))))))
 
 (defthm
   member-of-strip-cars-of-remove-assoc
@@ -1078,8 +1179,7 @@
          (no-duplicatesp-equal (strip-cars alist))))
 
 (defthm nth-when->=-n-len-l
-  (implies (and (true-listp l)
-                (>= (nfix n) (len l)))
+  (implies (>= (nfix n) (len l))
            (equal (nth n l) nil)))
 
 (defthm strip-cars-of-remove1-assoc
@@ -1218,7 +1318,7 @@
   (equal (put-assoc-equal name val (true-list-fix alist))
          (true-list-fix (put-assoc-equal name val alist))))
 
-(defthm len-when-consp
+(defthmd len-when-consp
   (implies (consp x) (not (zp (len x))))
   :rule-classes :type-prescription)
 
@@ -1363,6 +1463,7 @@
                              (acc 0))))
     :rule-classes :linear))
 
+;; Contributed to books/std/lists/nthcdr.lisp
 (defthm
   subsetp-of-nthcdr
   (subsetp-equal (nthcdr n l) l))
@@ -1422,7 +1523,7 @@
                 (no-duplicatesp-equal l))
            (not (member-equal x (take n l)))))
 
-(defthmd subsetp-when-atom-set-difference$
+(defthmd consp-of-set-difference$
   (iff (consp (set-difference-equal l1 l2))
        (not (subsetp-equal l1 l2))))
 
@@ -1433,7 +1534,7 @@
        (and (member a x) (not (member a y))))
   :hints (("goal" :induct (len x))))
 
-(defthm no-duplicatesp-of-set-difference
+(defthm no-duplicatesp-of-set-difference$
   (implies
    (no-duplicatesp-equal l1)
    (no-duplicatesp-equal (set-difference-equal l1 l2))))
@@ -1473,7 +1574,7 @@
   :rule-classes :linear)
 
 (defthm
-  len-of-set-difference-when-subsetp
+  len-of-set-difference$-when-subsetp
   (implies (and (subsetp-equal x y)
                 (no-duplicatesp-equal x))
            (<= (+ (len x)
@@ -1501,9 +1602,9 @@
            (member-equal (car (last x)) x)))
 
 (defthm append-of-take-and-last
-  (equal (append (take (+ -1 (len pathname)) pathname)
-                 (last pathname))
-         pathname))
+  (equal (append (take (+ -1 (len path)) path)
+                 (last path))
+         path))
 
 (defthm atom-of-cdr-of-last
   (atom (cdr (last x)))
@@ -1527,3 +1628,77 @@
            (iff (true-listp (put-assoc-equal name val alist))
                 (or (true-listp alist)
                     (atom (assoc-equal name alist))))))
+
+(defthm
+  assoc-after-remove1-assoc-when-no-duplicatesp
+  (implies (and (not (null name))
+                (no-duplicatesp-equal (remove-equal nil (strip-cars alist))))
+           (not (consp (assoc-equal name
+                                    (remove1-assoc-equal name alist))))))
+
+(defthmd last-alt (equal (last x) (nthcdr (- (len x) 1) x)))
+
+(defthm nat-listp-when-subsetp
+  (implies (and (subsetp-equal x y) (nat-listp y))
+           (nat-listp (true-list-fix x)))
+  :hints (("goal" :in-theory (enable subsetp-equal))))
+
+;; The following is redundant with the eponymous theorem in
+;; books/std/lists/remove.lisp, from where it was taken with thanks.
+(defthm remove-of-set-difference-equal
+  (equal (remove a (set-difference-equal x y))
+         (set-difference-equal (remove a x) y)))
+
+(defthm set-difference$-of-remove-when-member-1
+  (implies (member-equal a y)
+           (equal (set-difference-equal (remove a x) y)
+                  (set-difference-equal x y))))
+
+(defthm
+  set-difference$-of-intersection$-1
+  (equal (set-difference-equal l1 (intersection-equal l1 l2))
+         (set-difference-equal l1 l2))
+  :hints
+  (("goal"
+    :induct (mv (intersection-equal l1 l2)
+                (set-difference-equal l1 l2))
+    :expand
+    (:with set-difference$-redefinition
+           (set-difference-equal l1
+                                 (cons (car l1)
+                                       (intersection-equal (cdr l1) l2)))))))
+
+(defthm len-of-put-assoc-equal-2
+  (implies (consp (assoc-equal name alist))
+           (equal (len (put-assoc-equal name val alist))
+                  (len alist))))
+
+(defthm intersection$-of-remove-1
+  (equal (intersection-equal y (remove-equal x l))
+         (if (not (member-equal x y))
+             (intersection-equal y l)
+             (remove-equal x (intersection-equal y l)))))
+
+(defthm set-difference$-when-not-intersectp
+  (implies (not (intersectp-equal x y))
+           (equal (set-difference-equal x y)
+                  (true-list-fix x))))
+
+(defthm set-difference$-of-append-2
+  (equal (set-difference-equal x (append x y))
+         nil))
+
+(defthm
+  set-difference$-of-self-lemma-1
+  (equal (set-difference-equal x (append y nil)) (set-difference-equal x y)))
+
+(defthm
+  set-difference$-of-self
+  (equal (set-difference-equal x x) nil)
+  :hints (("goal" :in-theory (disable set-difference$-of-append-2)
+           :use (:instance set-difference$-of-append-2 (y nil)))))
+
+(defthm set-difference$-of-append-1
+  (equal (set-difference-equal (append x y) z)
+         (append (set-difference-equal x z)
+                 (set-difference-equal y z))))

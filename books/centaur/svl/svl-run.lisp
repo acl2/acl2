@@ -253,15 +253,38 @@
 
 (acl2::defines
  svl-run-phase
- (define svl-run-phase ((modname sv::modname-p)
-                        (inputs sv::4veclist-p)
-                        (delayed-env svl-env-p)
-                        (modules svl-module-alist-p))
+ (define svl-run-phase ((modname sv::modname-p "Name of the module to run")
+                        (inputs sv::4veclist-p "Values of the inputs as a list")
+                        (delayed-env svl-env-p "Environment from the previos
+ phase for state holding components")
+                        (modules svl-module-alist-p "The constant SVL-design instance"))
    :verify-guards nil
 
    ;; :guard (and (assoc-equal modname modules)
    ;;             (svl-well-ranked-module modname modules))
 
+
+   :parents (svl-run)
+   :short "Run a single phase of @(see svl::svl-run)"
+   :long "<p> The @(see svl::svl-run) function operates on phases as defined by
+the input bindings alits (input simulation pattern). SVL-RUN-PHASE is the
+function to run each each phase for each module. </p>
+
+<p> 'inputs' arguments should be a list of the concrete (for execution) or
+variables (for proofs). The order of inputs are determined by their order in
+the SVL-design entry. </p>
+
+<p> 'delayed-env' is a special structure for state holding elements. If the
+user is dealing with sequential circuit designs, then it is recommended to use
+@(see svl::svl-run) instead. @(see svl::svl-run) can be used for combinational
+circuits as well. If you would like to use svl-run-phase on combinational
+circuits, then you can pass '(nil nil) or (svl::make-svl-env) for
+delayed-env. This designates empty state. </p>
+
+<p> svl-run-phase might be too slow to use for proofs. You can use @(see
+svl-run-phase-wog) instead, which has the same arguments but no guards.
+</p>
+"
    :measure (acl2::nat-list-measure
              (list (svl-get-module-rank modname modules)
                    (cons-count (sv::modname-fix modname))))
@@ -796,6 +819,56 @@
     :guard (and (string-listp (strip-cars out-bind-alist))
                 (string-listp (strip-cars ins-bind-alist)))
     :returns (res alistp)
+    :parents (acl2::svl)
+    :short "Evaluate SVL designs"
+    :long "<p>SVL-RUN has similar inputs to (@see acl2::def-svtv). However, some
+of those inputs (i.e., simulation patterns) are supplied to svl-run at runtime
+(or during the proofs). </p>
+
+<ul>
+<li>modname: Name of the module to run.</li>
+<li>inputs-env: An alist that binds input wires to concrete values (during
+execution) or variables (during proofs).</li>
+<li>ins-bind-alist: the simulation pattern for inputs. It should be an alist,
+an example is given below. </li>
+<li>out-bind-alist: same as ins-bind-alist but for outputs instead.</li>
+</ul>
+
+<p>
+For example:
+</p>
+<code>
+@('
+(defconst *counter-input-binds-alist*
+   `((\"Clock\" 0 ~)
+     (\"Reset\" 1 1 1 1 1)
+     (\"Enable\" 0 0 0 0 0 0 0 0 0 0)
+     (\"Load\" 0 1)
+     (\"Mode\" 0)
+     (\"Data[8:0]\" data8-10)
+     (\"Data[63:9]\" data-rest)))
+')
+</code>
+<code>
+@('
+   (defconst *counter-outputs*
+     `((\"Count[31:0]\" count_low1 _ _ _ _ _ _ _ _ _ count_low8 _ count_low10)
+       (\"Count[63:32]\" count_high1 _ _ _ count_high2)))
+')
+</code>
+
+<code>
+@('
+(svl-run \"COUNTER\" 
+         (make-fast-alist '((count_low1 . -5)
+                            (count_low8 . 5)
+                            (count_low10 . 10)))
+         *counter-input-binds-alist*
+         *counter-outputs*
+         *counter-svl-design*)))
+')
+</code>
+"
     (declare (ignorable out-bind-alist))
     (b* ((module (assoc-equal modname modules))
          ((unless module)

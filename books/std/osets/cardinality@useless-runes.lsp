@@ -1,6 +1,6 @@
 (SET::CARDINALITY)
 (SET::CARDINALITY (201 201 (:REWRITE DEFAULT-CDR))
-                  (104 104 (:REWRITE SET::IN-SET))
+                  (105 105 (:REWRITE SET::IN-SET))
                   (87 87 (:REWRITE DEFAULT-CAR))
                   (78 14 (:REWRITE SET::SFIX-WHEN-EMPTY))
                   (69 36 (:REWRITE DEFAULT-+-2))

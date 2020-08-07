@@ -1272,7 +1272,7 @@
 	     (>= (rup x n) x))
   :rule-classes :linear)
 
-(defthmd rdn-lower-bound
+(defthmd rdn-upper-bound
     (implies (and (case-split (rationalp x))
 		  (case-split (integerp n)))
 	     (<= (rdn x n) x))

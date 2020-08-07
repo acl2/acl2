@@ -105,6 +105,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule pseudo-term-count-lemma4
+  (implies (< (nfix i) (len terms))
+           (< (pseudo-term-count (nth i terms))
+              (pseudo-term-list-count terms)))
+  :rule-classes :linear
+  :enable (pseudo-term-count pseudo-term-list-count))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define fty-check-mv-let-call ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (mv-var symbolp)
@@ -288,6 +297,7 @@
    "Readable"
    "Runnable"
    ;; classes:
+   "Boolean"
    "Byte"
    "Character"
    "Class"

@@ -58,5 +58,5 @@
      which generates class and jar files in the same place
      where IntelliJ IDEA does.
      This @('Makefile') also generates Javadoc HTML documentation.
-     This @('Makefile') assumes that OpenJDK Java 13 is in the path,
+     This @('Makefile') assumes that OpenJDK Java 14 is in the path,
      but it may well work with other Java versions or implementations.")))

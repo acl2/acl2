@@ -213,9 +213,9 @@ h = 01
             (b (secp256k1-b))
             (point (secp256k1-generator)))
        ;; body of point-on-elliptic-curve-p:
-       (let ((x (car point))
-             (y (cdr point)))
-         (or (and (= x 0) (= y 0))
+       (or (eq point :infinity)
+           (let ((x (car point))
+                 (y (cdr point)))
              (let ((y^2 (pfield::mul y y p))
                    (x^3 (pfield::mul x (pfield::mul x x p) p)))
                (let ((x^3+ax+b (pfield::add x^3
@@ -400,13 +400,6 @@ h = 01
            (pointp (secp256k1+ point1 point2)))
   :hints (("Goal" :in-theory (enable secp256k1+ secp256k1-a secp256k1-b fep))))
 
-(defthm consp-of-secp256k1+
-  (implies (and (consp point1)
-                (consp point2))
-           (consp (secp256k1+ point1 point2)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable secp256k1+))))
-
 (defthm point-in-pxp-p-of-secp256k1+
   (implies (and (pointp point1)
                 (pointp point2)
@@ -478,12 +471,6 @@ h = 01
            (pointp (secp256k1* s point)))
   :hints (("Goal" :in-theory (enable secp256k1* secp256k1-a secp256k1-b fep))))
 
-(defthm consp-of-secp256k1*
-  (implies (consp point)
-           (consp (secp256k1* s point)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable secp256k1*))))
-
 (defthm point-in-pxp-p-of-secp256k1*
   (implies (and (natp s)
                 (pointp point)
@@ -504,24 +491,6 @@ h = 01
                                       (secp256k1-a)
                                       (secp256k1-b)))
   :hints (("Goal" :in-theory (enable secp256k1* secp256k1-a secp256k1-b))))
-
-(defthm natp-of-car-of-secp256k1*
-  (implies (pointp point)
-           (natp (car (secp256k1* s point))))
-  :rule-classes :type-prescription
-  :hints (("Goal"
-           :in-theory (e/d (pointp)
-                           (pointp-of-secp256k1*))
-           :use (:instance pointp-of-secp256k1* (s s) (point point)))))
-
-(defthm natp-of-cdr-of-secp256k1*
-  (implies (pointp point)
-           (natp (cdr (secp256k1* s point))))
-  :rule-classes :type-prescription
-  :hints (("Goal"
-           :in-theory (e/d (pointp)
-                           (pointp-of-secp256k1*))
-           :use (:instance pointp-of-secp256k1* (s s) (point point)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -544,11 +513,6 @@ h = 01
 (defthm pointp-of-secp256k1-negate
   (implies (pointp point)
            (pointp (secp256k1-negate point)))
-  :hints (("Goal" :in-theory (enable secp256k1-negate))))
-
-(defthm consp-of-secp256k1-negate
-  (consp (secp256k1-negate point))
-  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable secp256k1-negate))))
 
 (defthm point-in-pxp-p-of-secp256k1-negate

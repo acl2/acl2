@@ -369,14 +369,14 @@
     (xdoc::p
      "The @(':beta-of-alpha') applicability condition (when present)
       implies the injectivity of @($\\alpha$).
-      See the @($\\alpha{}i$$) and @($\\alpha{}i'$) theorems in the "
+      See the @($\\alpha{}i$) and @($\\alpha{}i'$) theorems in the "
      *defmapping-design-notes*
      ", and the generated theorem @(':alpha-injective') below.")
 
     (xdoc::p
      "The @(':alpha-of-beta') applicability condition (when present)
       implies the injectivity of @($\\beta$).
-      See the @($\\beta{}i$$) and @($\\beta{}i'$) theorems in the "
+      See the @($\\beta{}i$) and @($\\beta{}i'$) theorems in the "
      *defmapping-design-notes*
      ", and the generated theorem @(':beta-injective') below.")
 

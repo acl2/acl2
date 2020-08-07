@@ -1,5 +1,5 @@
-Hierarchical Deterministic Wallet for Crypocurrencies
-=====================================================
+Hierarchical Deterministic Wallet for Cryptocurrencies
+======================================================
 
 This wallet is a simple proof of concept: it is not meant as a product
 to use with keys that control access to significant assets.

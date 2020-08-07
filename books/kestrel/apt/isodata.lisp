@@ -10,6 +10,9 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
@@ -38,15 +41,15 @@
 
  isodata
 
- :item-state t
-
- :item-wrld t
-
- :item-ctx t
-
  :items
 
- ("@('old'),
+ (xdoc::*evmac-topic-implementation-item-state*
+
+  xdoc::*evmac-topic-implementation-item-wrld*
+
+  xdoc::*evmac-topic-implementation-item-ctx*
+
+  "@('old'),
    @('isomaps'),
    @('predicate'),
    @('new-name'),
@@ -191,7 +194,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist isodata-isomap-listp (x)
-  :short "Recognize true lists of isomorphic mapping records."
+  :short "Recognize lists of isomorphic mapping records."
   (isodata-isomapp x)
   :true-listp t
   :elementp-of-nil nil)
@@ -363,7 +366,7 @@
                ((er j) (isodata-process-res arg/res-list m
                                             err-msg-preamble ctx state)))
             (value (list nil (list j)))))
-      (b* (((er &) (ensure-symbol-list$
+      (b* (((er &) (ensure-value-is-symbol-list$
                     arg/res-list
                     (msg "Since the ~n0 ARG/RES component of the second input ~
                           is not an atom, it"
@@ -453,14 +456,14 @@
                (back-guard "A @(tsee symbolp).")
                (forth-injective "A @(tsee symbolp).")
                (back-injective "A @(tsee symbolp).")
-               (new-names-to-avoid "A @(tsee symbol-listp)."))
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Return fresh @(tsee defiso) theorem names."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These will be used as the @(':thm-names') input
-     of a @(tsee defiso) that @(tsee isodata) will generate locally,
+    "These are used as the @(':thm-names') input
+     of a @(tsee defiso) that @(tsee isodata) generates locally,
      when the @('iso') input is not a name.")
    (xdoc::p
     "In order for the generated @(tsee defiso) to succeed,
@@ -477,77 +480,74 @@
      if guards must not be verified, since
      those theorems are not generated or used in that case."))
   (b* ((prefix (add-suffix isoname "-"))
-       (forth-image (fresh-logical-name-with-$s-suffix
-                     (add-suffix prefix (symbol-name :alpha-image))
-                     nil
-                     names-to-avoid
-                     wrld))
-       (names-to-avoid (cons forth-image names-to-avoid))
-       (back-image (fresh-logical-name-with-$s-suffix
-                    (add-suffix prefix (symbol-name :beta-image))
-                    nil
-                    names-to-avoid
-                    wrld))
-       (names-to-avoid (cons back-image names-to-avoid))
-       (back-of-forth (fresh-logical-name-with-$s-suffix
-                       (add-suffix prefix (symbol-name :beta-of-alpha))
-                       nil
-                       names-to-avoid
-                       wrld))
-       (names-to-avoid (cons back-of-forth names-to-avoid))
-       (forth-of-back (fresh-logical-name-with-$s-suffix
-                       (add-suffix prefix (symbol-name :alpha-of-beta))
-                       nil
-                       names-to-avoid
-                       wrld))
-       (names-to-avoid (cons forth-of-back names-to-avoid))
-       (oldp-guard (and verify-guards$
-                        (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :doma-guard))
-                         nil
-                         names-to-avoid
-                         wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons oldp-guard names-to-avoid)
-                         names-to-avoid))
-       (newp-guard (and verify-guards$
-                        (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :domb-guard))
-                         nil
-                         names-to-avoid
-                         wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons newp-guard names-to-avoid)
-                         names-to-avoid))
-       (forth-guard (and verify-guards$
-                         (fresh-logical-name-with-$s-suffix
-                          (add-suffix prefix (symbol-name :alpha-guard))
-                          nil
-                          names-to-avoid
-                          wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons forth-guard names-to-avoid)
-                         names-to-avoid))
-       (back-guard (and verify-guards$
-                        (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :beta-guard))
-                         nil
-                         names-to-avoid
-                         wrld)))
-       (names-to-avoid (if verify-guards$
-                           (cons back-guard names-to-avoid)
-                         names-to-avoid))
-       (forth-injective (fresh-logical-name-with-$s-suffix
-                         (add-suffix prefix (symbol-name :alpha-injective))
-                         nil
-                         names-to-avoid
-                         wrld))
-       (names-to-avoid (cons forth-injective names-to-avoid))
-       (back-injective (fresh-logical-name-with-$s-suffix
-                        (add-suffix prefix (symbol-name :beta-injective))
-                        nil
-                        names-to-avoid
-                        wrld)))
+       ((mv forth-image names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :alpha-image))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv back-image names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :beta-image))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv back-of-forth names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :beta-of-alpha))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv forth-of-back names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :alpha-of-beta))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv oldp-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :doma-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv newp-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :domb-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv forth-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :alpha-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv back-guard names-to-avoid)
+        (if verify-guards$
+            (fresh-logical-name-with-$s-suffix
+             (add-suffix prefix (symbol-name :beta-guard))
+             nil
+             names-to-avoid
+             wrld)
+          (mv nil names-to-avoid)))
+       ((mv forth-injective names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :alpha-injective))
+         nil
+         names-to-avoid
+         wrld))
+       ((mv back-injective names-to-avoid)
+        (fresh-logical-name-with-$s-suffix
+         (add-suffix prefix (symbol-name :beta-injective))
+         nil
+         names-to-avoid
+         wrld)))
     (mv forth-image
         back-image
         back-of-forth
@@ -570,7 +570,7 @@
                              ctx
                              state)
   :returns (mv erp
-               (result "A tuple @('(isomap names-to-avoid)')
+               (result "A tuple @('(isomap updated-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-isomapp
                                                     symbol-listp
                                                     result)').")
@@ -601,7 +601,7 @@
     "When @('iso') is not the name of an existing @(tsee defiso),
      and instead we generate a local one as part of @(tsee isodata),
      we use @(tsee defiso)'s input processing code,
-     and then we check that they are all unary and single-valued;
+     and then we check that the functions are all unary and single-valued;
      given the constraints already checked
      by the @(tsee defiso) input processing code,
      here it suffices to check that the two domains are unary.
@@ -624,13 +624,14 @@
     "If the processing is successful,
      we return the isomorphic mapping record specified by @('iso')."))
   (if (atom iso)
-      (b* (((er &) (ensure-symbol$ iso
-                                   (msg "The ~n0 ISO component ~x1 ~
-                                         of the second input ~
-                                         must be a symbol or a list. ~
-                                         Since it is an atom,"
-                                        (list k) iso)
-                                   t nil))
+      (b* (((er &) (ensure-value-is-symbol$
+                    iso
+                    (msg "The ~n0 ISO component ~x1 ~
+                          of the second input ~
+                          must be a symbol or a list. ~
+                          Since it is an atom,"
+                         (list k) iso)
+                    t nil))
            (info (defiso-lookup iso (w state)))
            ((unless info)
             (er-soft+ ctx t nil
@@ -767,7 +768,8 @@
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-isomaps res-isomaps updated-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -874,7 +876,8 @@
    ctx
    state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-isomaps res-isomaps update-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -913,7 +916,8 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A tuple @('(arg-isomaps res-isomaps names-to-avoid)')
+               (result "A tuple
+                        @('(arg-isomaps res-isomaps update-names-to-avoid)')
                         satisfying @('(typed-tuplep isodata-symbol-isomap-alistp
                                                     isodata-pos-isomap-alistp
                                                     symbol-listp
@@ -1052,162 +1056,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define isodata-process-old-to-new-name (old-to-new-name
-                                         (old-to-new-name-suppliedp booleanp)
-                                         (old$ symbolp)
-                                         (new$ symbolp)
-                                         (names-to-avoid symbol-listp)
-                                         ctx
-                                         state)
-  :returns (mv erp
-               (result "A list @('(old-to-new$ new-names-to-avoid)')
-                        satisfying
-                        @('(typed-tuplep symbolp symbol-listp result)').")
-               state)
-  :mode :program
-  :short "Process the @(':old-to-new-name') input."
-  (b* ((wrld (w state))
-       ((er &)
-        (ensure-symbol$ old-to-new-name "The :OLD-TO-NEW-NAME input" t nil))
-       (name (if (or (not old-to-new-name-suppliedp)
-                     (keywordp old-to-new-name))
-                 (b* ((kwd (if old-to-new-name-suppliedp
-                               old-to-new-name
-                             (get-default-input-old-to-new-name wrld))))
-                   (intern-in-package-of-symbol
-                    (concatenate 'string
-                                 (symbol-name old$)
-                                 (symbol-name kwd)
-                                 (symbol-name new$))
-                    new$))
-               old-to-new-name))
-       (description (msg "The name ~x0 of the theorem ~
-                          that relates the old function ~x1 ~
-                          to the new function ~x2, ~
-                          specified (perhaps by default) ~
-                          by the :OLD-TO-NEW-NAME input ~x3,"
-                         name old$ new$ old-to-new-name))
-       (error-msg? (fresh-namep-msg-weak name nil wrld))
-       ((when error-msg?)
-        (er-soft+ ctx t nil
-                  "~@0 must be a valid fresh theorem name. ~@1"
-                  description error-msg?))
-       ((er &) (ensure-not-member-of-list$
-                name
-                names-to-avoid
-                (msg "among the names ~x0 of other events ~
-                      generated by this transformation"
-                     names-to-avoid)
-                description
-                t
-                nil)))
-    (value (list name (cons name names-to-avoid)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-process-old-to-new-enable
-  (old-to-new-enable
-   (old-to-new-enable-suppliedp booleanp)
-   ctx
-   state)
-  :returns (mv erp
-               (old-to-new-enable$ booleanp)
-               state)
-  :short "Process the @(':old-to-new-enable') input."
-  (b* (((er &) (ensure-boolean$ old-to-new-enable
-                                "The :OLD-TO-NEW-ENABLE input" t nil)))
-    (value (if old-to-new-enable-suppliedp
-               old-to-new-enable
-             (get-default-input-old-to-new-enable (w state)))))
-  :prepwork ((local (in-theory (enable acl2::ensure-boolean)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-process-new-to-old-name (new-to-old-name
-                                         (new-to-old-name-suppliedp booleanp)
-                                         (old$ symbolp)
-                                         (new$ symbolp)
-                                         (names-to-avoid symbol-listp)
-                                         ctx
-                                         state)
-  :returns (mv erp
-               (result "A list @('(new-to-old$ new-names-to-avoid)')
-                        satisfying
-                        @('(typed-tuplep symbolp symbol-listp result)').")
-               state)
-  :mode :program
-  :short "Process the @(':new-to-old-name') input."
-  (b* ((wrld (w state))
-       ((er &)
-        (ensure-symbol$ new-to-old-name "The :NEW-TO-OLD-NAME input" t nil))
-       (name (if (or (not new-to-old-name-suppliedp)
-                     (keywordp new-to-old-name))
-                 (b* ((kwd (if new-to-old-name-suppliedp
-                               new-to-old-name
-                             (get-default-input-new-to-old-name (w state)))))
-                   (intern-in-package-of-symbol
-                    (concatenate 'string
-                                 (symbol-name new$)
-                                 (symbol-name kwd)
-                                 (symbol-name old$))
-                    new$))
-               new-to-old-name))
-       (description (msg "The name ~x0 of the theorem ~
-                          that relates the new function ~x1 ~
-                          to the old function ~x2, ~
-                          specified (perhaps by default) ~
-                          by the :NEW-TO-OLD-NAME input ~x3,"
-                         name new$ old$ new-to-old-name))
-       (error-msg? (fresh-namep-msg-weak name nil wrld))
-       ((when error-msg?)
-        (er-soft+ ctx t nil
-                  "~@0 must be a valid fresh theorem name. ~@1"
-                  description error-msg?))
-       ((er &) (ensure-not-member-of-list$
-                name
-                names-to-avoid
-                (msg "among the names ~x0 of other events ~
-                      generated by this transformation"
-                     names-to-avoid)
-                description
-                t
-                nil)))
-    (value (list name (cons name names-to-avoid)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define isodata-process-new-to-old-enable
-  (new-to-old-enable
-   (new-to-old-enable-suppliedp booleanp)
-   ctx
-   state)
-  :returns (mv erp
-               (new-to-old-enable$ booleanp)
-               state)
-  :short "Process the @(':new-to-old-enable') input."
-  (b* (((er &) (ensure-boolean$ new-to-old-enable
-                                "The :NEW-TO-OLD-ENABLE input" t nil)))
-    (value (if new-to-old-enable-suppliedp
-               new-to-old-enable
-             (get-default-input-new-to-old-enable (w state)))))
-  :prepwork ((local (in-theory (enable acl2::ensure-boolean)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define isodata-process-newp-of-new-name (newp-of-new-name
                                           (new$ symbolp)
                                           (names-to-avoid symbol-listp)
                                           ctx
                                           state)
   :returns (mv erp
-               (result "A list @('(newp-of-new$ new-names-to-avoid)')
+               (result "A list @('(newp-of-new$ update-names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
   :mode :program
   :short "Process the @(':newp-of-new-name') input."
   (b* (((er &)
-        (ensure-symbol$ newp-of-new-name "The :NEWP-OF-NEW-NAME input" t nil))
+        (ensure-value-is-symbol$
+         newp-of-new-name "The :NEWP-OF-NEW-NAME input" t nil))
        (newp-of-new$ (case newp-of-new-name
                        (:auto (add-suffix new$ "-NEW-REPRESENTATION"))
                        (t newp-of-new-name)))
@@ -1300,24 +1163,24 @@
   :short "Process all the inputs."
   (b* ((wrld (w state))
        ((er old$) (isodata-process-old old predicate verify-guards ctx state))
-       ((er new$) (process-input-new-name new-name old$ ctx state))
-       (names-to-avoid (list new$))
+       ((er (list new$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
-        (isodata-process-old-to-new-name old-to-new-name
-                                         old-to-new-name-suppliedp
-                                         old$
-                                         new$
-                                         names-to-avoid
-                                         ctx
-                                         state))
+        (process-old-to-new-name old-to-new-name
+                                 old-to-new-name-suppliedp
+                                 old$
+                                 new$
+                                 names-to-avoid
+                                 ctx
+                                 state))
        ((er (list new-to-old$ names-to-avoid))
-        (isodata-process-new-to-old-name new-to-old-name
-                                         new-to-old-name-suppliedp
-                                         old$
-                                         new$
-                                         names-to-avoid
-                                         ctx
-                                         state))
+        (process-new-to-old-name new-to-old-name
+                                 new-to-old-name-suppliedp
+                                 old$
+                                 new$
+                                 names-to-avoid
+                                 ctx
+                                 state))
        ((er (list newp-of-new$ names-to-avoid))
         (isodata-process-newp-of-new-name newp-of-new-name
                                           new$
@@ -1335,18 +1198,19 @@
                                  names-to-avoid
                                  ctx
                                  state))
-       ((er &) (ensure-boolean$ predicate "The :PREDICATE input" t nil))
+       ((er &) (ensure-value-is-boolean$ predicate
+                                         "The :PREDICATE input" t nil))
        ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
                           new-enable
                           (fundef-enabledp old$ state)
                           "The :NEW-ENABLE input"
                           t nil))
-       ((er old-to-new-enable$) (isodata-process-old-to-new-enable
+       ((er old-to-new-enable$) (process-old-to-new-enable
                                  old-to-new-enable
                                  old-to-new-enable-suppliedp
                                  ctx
                                  state))
-       ((er new-to-old-enable$) (isodata-process-new-to-old-enable
+       ((er new-to-old-enable$) (process-new-to-old-enable
                                  new-to-old-enable
                                  new-to-old-enable-suppliedp
                                  ctx
@@ -1367,9 +1231,9 @@
                       "Internal error: ~
                        the default :OLD-TO-NEW-ENABLE and :NEW-TO-OLD-ENABLE ~
                        are both T."))))
-       ((er &) (ensure-boolean$ newp-of-new-enable
-                                "The :NEWP-OF-NEW-ENABLE input"
-                                t nil))
+       ((er &) (ensure-value-is-boolean$ newp-of-new-enable
+                                         "The :NEWP-OF-NEW-ENABLE input"
+                                         t nil))
        ((when (and newp-of-new-name-suppliedp
                    (not res-isomaps)))
         (er-soft+ ctx t nil
@@ -3022,7 +2886,6 @@
                                               res-isomaps)))
                (conjoin-equalities mv-nths-of-old-call
                                    back-of-mv-nths-of-new-call))))))
-
     (implicate (conjoin oldp-of-x1...xn)
                consequent)))
 
@@ -3977,9 +3840,9 @@
         (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
        ((mv old-fn-unnorm-event
-            old-fn-unnorm-name)
+            old-fn-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event old$ t names-to-avoid wrld))
-       (names-to-avoid (cons old-fn-unnorm-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event)
         (isodata-gen-new-fn old$
@@ -3994,7 +3857,8 @@
                             appcond-thm-names
                             wrld))
        ((mv new-fn-unnorm-event
-            new-fn-unnorm-name)
+            new-fn-unnorm-name
+            &)
         (install-not-normalized-event new$ t names-to-avoid wrld))
        ((mv new-to-old-thm-local-event
             new-to-old-thm-exported-event)

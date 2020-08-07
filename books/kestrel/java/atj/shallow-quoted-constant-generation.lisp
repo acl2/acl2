@@ -359,7 +359,7 @@
    "This is a private static final field with an initializer,
     which constructs the string value.")
   (b* ((name (atj-gen-shallow-string-field-name string))
-       (init (atj-gen-string string))
+       (init (atj-gen-string string t nil))
        (type *aij-type-string*))
     (make-jfield :access (jaccess-private)
                  :static? t
@@ -537,13 +537,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atj-gen-shallow-string ((string stringp))
+(define atj-gen-shallow-string ((string stringp) (guards$ booleanp))
   :returns (expr jexprp)
   :short "Generate a shallowly embedded ACL2 quoted string."
   :long
-  (xdoc::topstring-p
-   "This is just a reference to the field for the quoted string.")
-  (jexpr-name (atj-gen-shallow-string-field-name string)))
+  (xdoc::topstring
+   (xdoc::p
+    "If guards are assumed,
+     we generate the corresponding Java string expression.")
+   (xdoc::p
+    "Otherwise,
+     we generate a reference to the field for the quoted string."))
+  (if guards$
+      (atj-gen-jstring string)
+    (jexpr-name (atj-gen-shallow-string-field-name string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,7 +608,7 @@
   :short "Generate a shallowly embedded ACL2 value."
   (cond ((acl2-numberp value) (atj-gen-shallow-number value))
         ((characterp value) (atj-gen-shallow-char value guards$))
-        ((stringp value) (atj-gen-shallow-string value))
+        ((stringp value) (atj-gen-shallow-string value guards$))
         ((symbolp value) (atj-gen-shallow-symbol value
                                                  pkg-class-names
                                                  curr-pkg

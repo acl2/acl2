@@ -13,7 +13,11 @@
 (include-book "tailrec")
 
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-fail-local" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,12 +108,7 @@
       nil))
   (must-fail (tailrec f)))
 
- ;; first branch calls function:
- (must-succeed*
-  (defun f (x) (if (consp x) (f (cdr x)) nil))
-  (must-fail (tailrec f)))
-
- ;; first branch is not ground and variant is :MONOID or :MONOID-ALT:
+ ;; base branch is not ground and variant is :MONOID or :MONOID-ALT:
  (must-succeed*
   (defun f (x) (if (atom x) (list x) (f (cdr x))))
   (must-fail (tailrec f :variant :monoid))
@@ -174,8 +173,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defun f{1}-wrapper (x) (f{1} x nil))
-   (defthm f-~>-f{1}-wrapper (equal (f x) (f{1}-wrapper x)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; without guard verification:
  (must-succeed*
@@ -187,10 +185,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x) :verify-guards nil))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defun f{1}-wrapper (x)
-     (declare (xargs :verify-guards nil))
-     (f{1} x nil))
-   (defthm f-~>-f{1}-wrapper (equal (f x) (f{1}-wrapper x))))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,8 +214,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defun f{1}-wrapper (x) (f{1} x nil))
-   (defthm f-~>-f{1}-wrapper (equal (f x) (f{1}-wrapper x)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; monoidal:
  (must-succeed*
@@ -229,8 +223,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defun f{1}-wrapper (x) (f{1} x nil))
-   (defthm f-~>-f{1}-wrapper (equal (f x) (f{1}-wrapper x)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; alternative monoidal:
  (must-succeed*
@@ -239,8 +232,7 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) r (f{1} (cdr x) (lub r (car x)))))
-   (defun f{1}-wrapper (x) (f{1} x nil))
-   (defthm f-~>-f{1}-wrapper (equal (f x) (f{1}-wrapper x)))))
+   (defthm f-to-f{1} (equal (f x) (f{1} x nil)))))
 
  ;; associative:
  (must-succeed*
@@ -249,8 +241,9 @@
    (defun f{1} (x r)
      (declare (xargs :measure (acl2-count x)))
      (if (atom x) (lub r nil) (f{1} (cdr x) (lub r (car x)))))
-   (defun f{1}-wrapper (x) (and (not (atom x)) (f{1} (cdr x) (car x))))
-   (defthm f-~>-f{1}-wrapper (equal (f x) (f{1}-wrapper x))))))
+   (defthm f-to-f{1}
+     (equal (f x)
+            (and (not (atom x)) (f{1} (cdr x) (car x))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -332,10 +325,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defun fact{1}-wrapper (n)
-      (declare (xargs :guard (natp n)))
-      (fact{1} n 1))
-    (defthm fact-~>-fact{1}-wrapper (equal (fact n) (fact{1}-wrapper n)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; automatic:
   (must-succeed*
@@ -345,10 +335,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defun fact{1}-wrapper (n)
-      (declare (xargs :guard (natp n)))
-      (fact{1} n 1))
-    (defthm fact-~>-fact{1}-wrapper (equal (fact n) (fact{1}-wrapper n)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; function name:
   (must-succeed*
@@ -357,10 +344,7 @@
     (defun fact{1} (n r)
       (declare (xargs :measure (acl2-count n) :guard (and (natp n) (natp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defun fact{1}-wrapper (n)
-      (declare (xargs :guard (natp n)))
-      (fact{1} n 1))
-    (defthm fact-~>-fact{1}-wrapper (equal (fact n) (fact{1}-wrapper n)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; macro name:
   (must-succeed*
@@ -371,10 +355,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (integerp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defun fact{1}-wrapper (n)
-      (declare (xargs :guard (natp n)))
-      (fact{1} n 1))
-    (defthm fact-~>-fact{1}-wrapper (equal (fact n) (fact{1}-wrapper n)))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))
 
   ;; lambda expression:
   (must-succeed*
@@ -384,10 +365,7 @@
       (declare (xargs :measure (acl2-count n)
                       :guard (and (natp n) (acl2-numberp r))))
       (if (zp n) r (fact{1} (+ -1 n) (* r n))))
-    (defun fact{1}-wrapper (n)
-      (declare (xargs :guard (natp n)))
-      (fact{1} n 1))
-    (defthm fact-~>-fact{1}-wrapper (equal (fact n) (fact{1}-wrapper n)))))))
+    (defthm fact-to-fact{1} (equal (fact n) (fact{1} n 1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -501,6 +479,47 @@
 
 (must-succeed*
 
+ (test-title "Test the :ACCUMULATOR option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; not a legal variable name and not :AUTO:
+ (must-fail (tailrec f :accumulator "acc"))
+ (must-fail (tailrec f :accumulator 15))
+ (must-fail (tailrec f :accumulator (acc)))
+ (must-fail (tailrec f :accumulator :acc))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'r))
+
+ ;; automatic:
+ (must-succeed*
+  (tailrec f :accumulator :auto)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'r))
+
+ ;; specified:
+ (must-succeed*
+  (tailrec f :accumulator a)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'a))
+ (must-succeed*
+  (tailrec f :accumulator acc)
+  (assert-equal (car (last (formals 'f{1} (w state)))) 'acc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
  (test-title "Test the :WRAPPER option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
@@ -520,17 +539,24 @@
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (function-namep 'f{1}-wrapper (w state))))
+  (assert! (not (function-namep 'f-aux{1} (w state))))
+  (assert! (function-namep 'f{1} (w state)))
+  (assert! (irecursivep 'f{1} (w state))))
 
  ;; generate:
  (must-succeed*
   (tailrec f :wrapper t)
-  (assert! (function-namep 'f{1}-wrapper (w state))))
+  (assert! (function-namep 'f-aux{1} (w state)))
+  (assert! (function-namep 'f{1} (w state)))
+  (assert! (irecursivep 'f-aux{1} (w state)))
+  (assert! (not (irecursivep 'f{1} (w state)))))
 
  ;; do not generate:
  (must-succeed*
   (tailrec f :wrapper nil)
-  (assert! (not (function-namep 'f{1}-wrapper (w state))))))
+  (assert! (not (function-namep 'f-aux{1} (w state))))
+  (assert! (function-namep 'f{1} (w state)))
+  (assert! (irecursivep 'f{1} (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -550,31 +576,34 @@
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
  ;; not a symbol:
- (must-fail (tailrec f :wrapper-name 33))
+ (must-fail (tailrec f :wrapper t :wrapper-name 33))
 
  ;; in the main Lisp package:
- (must-fail (tailrec f :wrapper-name cons))
+ (must-fail (tailrec f :wrapper t :wrapper-name cons))
 
  ;; keyword (other than :AUTO):
- (must-fail (tailrec f :wrapper-name :g))
+ (must-fail (tailrec f :wrapper t :wrapper-name :g))
 
  ;; name that already exists:
- (must-fail (tailrec f :wrapper-name car-cdr-elim))
+ (must-fail (tailrec f :wrapper t :wrapper-name car-cdr-elim))
 
  ;; default:
  (must-succeed*
-  (tailrec f)
-  (assert! (function-namep 'f{1}-wrapper (w state))))
+  (tailrec f :wrapper t)
+  (assert! (function-namep 'f{1} (w state)))
+  (assert! (not (irecursivep 'f{1} (w state)))))
 
  ;; automatic:
  (must-succeed*
-  (tailrec f :wrapper-name :auto)
-  (assert! (function-namep 'f{1}-wrapper (w state))))
+  (tailrec f :wrapper t :wrapper-name :auto)
+  (assert! (function-namep 'f{1} (w state)))
+  (assert! (not (irecursivep 'f{1} (w state)))))
 
  ;; specified:
  (must-succeed*
-  (tailrec f :wrapper-name g)
-  (assert! (function-namep 'g (w state)))))
+  (tailrec f :wrapper t :wrapper-name g)
+  (assert! (function-namep 'g (w state)))
+  (assert! (not (irecursivep 'g (w state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -594,28 +623,28 @@
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
  ;; not T or NIL:
- (must-fail (tailrec f :wrapper-enable 4))
+ (must-fail (tailrec f :wrapper t :wrapper-enable 4))
 
  ;; default:
  (must-succeed*
-  (tailrec f)
-  (assert! (fundef-enabledp 'f{1}-wrapper state)))
+  (tailrec f :wrapper t)
+  (assert! (fundef-disabledp 'f{1} state)))
 
  ;; enable:
  (must-succeed*
-  (tailrec f :wrapper-enable t)
-  (assert! (fundef-enabledp 'f{1}-wrapper state)))
+  (tailrec f :wrapper t :wrapper-enable t)
+  (assert! (fundef-enabledp 'f{1} state)))
 
  ;; disable:
  (must-succeed*
-  (tailrec f :wrapper-enable nil)
-  (assert! (fundef-disabledp 'f{1}-wrapper state))))
+  (tailrec f :wrapper t :wrapper-enable nil)
+  (assert! (fundef-disabledp 'f{1} state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
 
- (test-title "Test the :THM-NAME option.")
+ (test-title "Test the :OLD-TO-NEW-NAME option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
  ;; and all the other values between NIL and T and incomparable to each other:
@@ -629,47 +658,203 @@
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
  ;; not a symbol:
- (must-fail (tailrec f :thm-name 33))
+ (must-fail (tailrec f :old-to-new-name 33))
 
  ;; in the main Lisp package:
- (must-fail (tailrec f :thm-name cons))
-
- ;; keyword (other than :AUTO):
- (must-fail (tailrec f :thm-name :f))
+ (must-fail (tailrec f :old-to-new-name cons))
 
  ;; name that already exists:
- (must-fail (tailrec f :thm-name car-cdr-elim))
+ (must-fail (tailrec f :old-to-new-name car-cdr-elim))
 
  ;; determining a name that already exists:
  (must-succeed*
-  (defun f-is-f{1}-wrapper () nil)
-  (must-fail (tailrec f :thm-name :is)))
+  (defun f-is-f{1} () nil)
+  (must-fail (tailrec f :old-to-new-name :-is-)))
 
  ;; determining, by default, a name that already exists:
  (must-succeed*
-  (defun f-~>-f{1}-wrapper () nil)
+  (defun f-to-f{1} () nil)
   (must-fail (tailrec f)))
 
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (theorem-namep 'f-~>-f{1}-wrapper (w state))))
+  (assert! (theorem-namep 'f-to-f{1} (w state))))
 
- ;; automatic:
+ ;; specified separator:
  (must-succeed*
-  (tailrec f :thm-name :auto)
-  (assert! (theorem-namep 'f-~>-f{1}-wrapper (w state))))
+  (tailrec f :old-to-new-name :-becomes-)
+  (assert! (theorem-namep 'f-becomes-f{1} (w state))))
 
  ;; specified:
  (must-succeed*
-  (tailrec f :thm-name f-thm)
+  (tailrec f :old-to-new-name f-thm)
   (assert! (theorem-namep 'f-thm (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
 
- (test-title "Test the :THM-ENABLE option.")
+ (test-title "Test the :NEW-TO-OLD-NAME option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; not a symbol:
+ (must-fail (tailrec f :new-to-old-name 33))
+
+ ;; in the main Lisp package:
+ (must-fail (tailrec f :new-to-old-name cons))
+
+ ;; name that already exists:
+ (must-fail (tailrec f :new-to-old-name car-cdr-elim))
+
+ ;; determining a name that already exists:
+ (must-succeed*
+  (defun f{1}-is-f () nil)
+  (must-fail (tailrec f :new-to-old-name :-is-)))
+
+ ;; determining, by default, a name that already exists:
+ (must-succeed*
+  (defun f{1}-to-f () nil)
+  (must-fail (tailrec f)))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f)
+  (assert! (theorem-namep 'f{1}-to-f (w state))))
+
+ ;; specified separator:
+ (must-succeed*
+  (tailrec f :new-to-old-name :-becomes-)
+  (assert! (theorem-namep 'f{1}-becomes-f (w state))))
+
+ ;; specified:
+ (must-succeed*
+  (tailrec f :new-to-old-name f-thm)
+  (assert! (theorem-namep 'f-thm (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :OLD-TO-WRAPPER-NAME option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper nil :old-to-wrapper-name g))
+
+ ;; not a symbol:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-name 33))
+
+ ;; in the main Lisp package:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-name cons))
+
+ ;; name that already exists:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-name car-cdr-elim))
+
+ ;; determining a name that already exists:
+ (must-succeed*
+  (defun f-is-f{1} () nil)
+  (must-fail (tailrec f :wrapper t :old-to-wrapper-name :-is-)))
+
+ ;; determining, by default, a name that already exists:
+ (must-succeed*
+  (defun f-to-f{1} () nil)
+  (must-fail (tailrec f :wrapper t)))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f :wrapper t)
+  (assert! (theorem-namep 'f-to-f{1} (w state))))
+
+ ;; specified separator:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-name :-becomes-)
+  (assert! (theorem-namep 'f-becomes-f{1} (w state))))
+
+ ;; specified:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-name f-thm)
+  (assert! (theorem-namep 'f-thm (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :WRAPPER-TO-OLD-NAME option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper nil :wrapper-to-old-name g))
+
+ ;; not a symbol:
+ (must-fail (tailrec f :wrapper t :wrapper-to-old-name 33))
+
+ ;; in the main Lisp package:
+ (must-fail (tailrec f :wrapper t :wrapper-to-old-name cons))
+
+ ;; name that already exists:
+ (must-fail (tailrec f :wrapper t :wrapper-to-old-name car-cdr-elim))
+
+ ;; determining a name that already exists:
+ (must-succeed*
+  (defun f{1}-is-f () nil)
+  (must-fail (tailrec f :wrapper t :wrapper-to-old-name :-is-)))
+
+ ;; determining, by default, a name that already exists:
+ (must-succeed*
+  (defun f{1}-to-f () nil)
+  (must-fail (tailrec f :wrapper t)))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f :wrapper t)
+  (assert! (theorem-namep 'f{1}-to-f (w state))))
+
+ ;; specified separator:
+ (must-succeed*
+  (tailrec f :wrapper t :wrapper-to-old-name :-becomes-)
+  (assert! (theorem-namep 'f{1}-becomes-f (w state))))
+
+ ;; specified:
+ (must-succeed*
+  (tailrec f :wrapper t :wrapper-to-old-name f-thm)
+  (assert! (theorem-namep 'f-thm (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :OLD-TO-NEW-ENABLE option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
  ;; and all the other values between NIL and T and incomparable to each other:
@@ -683,28 +868,32 @@
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
  ;; not T or NIL:
- (must-fail (tailrec f :thm-enable 7))
+ (must-fail (tailrec f :old-to-new-enable 7))
 
  ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (rune-enabledp '(:rewrite f-~>-f{1}-wrapper) state)))
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable:
  (must-succeed*
-  (tailrec f :thm-enable t)
-  (assert! (rune-enabledp '(:rewrite f-~>-f{1}-wrapper) state)))
+  (tailrec f :old-to-new-enable t)
+  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; disable:
  (must-succeed*
-  (tailrec f :thm-enable nil)
-  (assert! (rune-disabledp '(:rewrite f-~>-f{1}-wrapper) state))))
+  (tailrec f :old-to-new-enable nil)
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state)))
+
+ ;; enabled when also the new-to-old theorem is:
+ (must-fail
+  (tailrec f :wrapper t :old-to-new-enable t :new-to-old-enable t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
 
- (test-title "Test the :NON-EXECUTABLE option.")
+ (test-title "Test the :NEW-TO-OLD-ENABLE option.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
  ;; and all the other values between NIL and T and incomparable to each other:
@@ -717,52 +906,139 @@
  ;; target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
 
- ;; non-executable target function:
- (defun-nx g (x) (if (atom x) nil (lub (car x) (g (cdr x)))))
+ ;; not T or NIL:
+ (must-fail (tailrec f :new-to-old-enable 7))
 
- ;; not T, NIL, or :AUTO:
- (must-fail (tailrec f :non-executable "t"))
- (must-fail (tailrec g :non-executable 0))
-
- ;; default, with target function not non-executable:
+ ;; default:
  (must-succeed*
   (tailrec f)
-  (assert! (not (non-executablep 'f{1} (w state)))))
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state)))
 
- ;; default, with target function non-executable:
+ ;; enable:
  (must-succeed*
-  (tailrec g)
-  (assert! (non-executablep 'g{1} (w state))))
+  (tailrec f :new-to-old-enable t)
+  (assert! (rune-enabledp '(:rewrite f{1}-to-f) state)))
 
- ;; automatic, with target function not non-executable:
+ ;; disable:
  (must-succeed*
-  (tailrec f :non-executable :auto)
-  (assert! (not (non-executablep 'f{1} (w state)))))
+  (tailrec f :new-to-old-enable nil)
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state)))
 
- ;; automatic, with target function non-executable:
- (must-succeed*
-  (tailrec g :non-executable :auto)
-  (assert! (non-executablep 'g{1} (w state))))
+ ;; enabled when also the old-to-new theorem is:
+ (must-fail
+  (tailrec f :new-to-old-enable t :old-to-new-enable t)))
 
- ;; make non-executable, with target function not non-executable:
- (must-succeed*
-  (tailrec f :non-executable t)
-  (assert! (non-executablep 'f{1} (w state))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- ;; make non-executable, with target function non-executable:
- (must-succeed*
-  (tailrec g :non-executable t)
-  (assert! (non-executablep 'g{1} (w state))))
+(must-succeed*
 
- ;; do not make non-executable, with target function not non-executable:
- (must-succeed*
-  (tailrec f :non-executable nil)
-  (assert! (not (non-executablep 'f{1} (w state)))))
+ (test-title "Test the :OLD-TO-WRAPPER-ENABLE option.")
 
- ;; do not make non-executable, with target function non-executable:
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper nil :old-to-wrapper-enable t))
+ (must-fail (tailrec f :wrapper nil :old-to-wrapper-enable nil))
+
+ ;; not T or NIL:
+ (must-fail (tailrec f :wrapper t :old-to-wrapper-enable 7))
+
+ ;; default:
  (must-succeed*
-  (tailrec g :non-executable nil)
-  (assert! (not (non-executablep 'g{1} (w state))))))
+  (tailrec f :wrapper t)
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state)))
+
+ ;; enable:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-enable t)
+  (assert! (rune-enabledp '(:rewrite f-to-f{1}) state)))
+
+ ;; disable:
+ (must-succeed*
+  (tailrec f :wrapper t :old-to-wrapper-enable nil)
+  (assert! (rune-disabledp '(:rewrite f-to-f{1}) state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test the :WRAPPER-TO-OLD-ENABLE option.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+
+ ;; supplied when disallowed:
+ (must-fail (tailrec f :wrapper nil :wrapper-to-old-enable t))
+ (must-fail (tailrec f :wrapper nil :wrapper-to-old-enable nil))
+
+ ;; not T or NIL:
+ (must-fail (tailrec f :wrapper t :wrapper-to-old-enable 7))
+
+ ;; default:
+ (must-succeed*
+  (tailrec f :wrapper t :wrapper-enable nil)
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state)))
+
+ ;; enable:
+ (must-succeed*
+  (tailrec f
+           :wrapper t
+           :wrapper-enable nil
+           :old-to-wrapper-enable nil
+           :wrapper-to-old-enable t)
+  (assert! (rune-enabledp '(:rewrite f{1}-to-f) state)))
+
+ ;; disable:
+ (must-succeed*
+  (tailrec f :wrapper t :wrapper-to-old-enable nil)
+  (assert! (rune-disabledp '(:rewrite f{1}-to-f) state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test non-executability.")
+
+ ;; least upper bound in lattice consisting of NIL as bottom, T as top,
+ ;; and all the other values between NIL and T and incomparable to each other:
+ (defun lub (x y)
+   (cond ((null x) y)
+         ((null y) x)
+         ((equal x y) x)
+         (t t)))
+
+ ;; executable target function:
+ (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+ (assert! (not (non-executablep 'f (w state))))
+
+ ;; non-executable target function:
+ (defun-nx g (x) (if (atom x) nil (lub (car x) (g (cdr x)))))
+ (assert! (non-executablep 'g (w state)))
+
+ ;; transforming F preserves executability:
+ (tailrec f)
+ (assert! (not (non-executablep 'f{1} (w state))))
+
+ ;; transforming G preserves non-executability:
+ (tailrec g)
+ (assert! (non-executablep 'g{1} (w state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1100,101 +1376,12 @@
 
 (must-succeed*
 
- (test-title "More examples.")
+ (test-title "Test handling of swapped base and recursive branches.")
 
- ;; triangular numbers:
- (must-succeed*
-  (defun tri (n)
-    (declare (xargs :guard (natp n)))
-    (if (zp n) 0 (+ n (tri (1- n)))))
-  (tailrec tri :domain rationalp)
-  (must-be-redundant
-   (defun tri{1} (n r)
-     (declare (xargs :measure (acl2-count n)
-                     :guard (and (natp n) (rationalp r))))
-     (if (zp n) r (tri{1} (+ -1 n) (+ r n))))
-   (defun tri{1}-wrapper (n)
-     (declare (xargs :guard (natp n)))
-     (tri{1} n 0))
-   (defthm tri-~>-tri{1}-wrapper (equal (tri n) (tri{1}-wrapper n)))))
+ (defun fact (n)
+   (declare (xargs :guard (natp n)))
+   (if (not (zp n))
+       (* n (fact (1- n)))
+     1))
 
- ;; pyramidal numbers (i.e. sum of squares):
- (must-succeed*
-  (defun pyr (n)
-    (declare (xargs :guard (natp n)))
-    (if (zp n) 0 (+ (* n n) (pyr (1- n)))))
-  (tailrec pyr :domain integerp)
-  (must-be-redundant
-   (defun pyr{1} (n r)
-     (declare (xargs :measure (acl2-count n)
-                     :guard (and (natp n) (integerp r))))
-     (if (zp n) r (pyr{1} (+ -1 n) (+ r (* n n)))))
-   (defun pyr{1}-wrapper (n)
-     (declare (xargs :guard (natp n)))
-     (pyr{1} n 0))
-   (defthm pyr-~>-pyr{1}-wrapper (equal (pyr n) (pyr{1}-wrapper n)))))
-
- ;; sum list elements:
- (must-succeed*
-  (defun list-sum (l)
-    (declare (xargs :guard (acl2-number-listp l)))
-    (if (endp l) 0 (+ (car l) (list-sum (cdr l)))))
-  (tailrec list-sum :variant :monoid-alt :domain acl2-numberp)
-  (must-be-redundant
-   (defun list-sum{1} (l r)
-     (declare (xargs :measure (acl2-count l)
-                     :guard (and (acl2-number-listp l) (acl2-numberp r))))
-     (if (endp l) r (list-sum{1} (cdr l) (+ r (car l)))))
-   (defun list-sum{1}-wrapper (l)
-     (declare (xargs :guard (acl2-number-listp l)))
-     (list-sum{1} l 0))
-   (defthm list-sum-~>-list-sum{1}-wrapper
-     (equal (list-sum l) (list-sum{1}-wrapper l)))))
-
- ;; length of list:
- (must-succeed*
-  (defun list-len (l)
-    (declare (xargs :guard (true-listp l)))
-    (if (endp l) 0 (1+ (list-len (cdr l)))))
-  (tailrec list-len :domain natp)
-  (must-be-redundant
-   (defun list-len{1} (l r)
-     (declare (xargs :measure (acl2-count l)
-                     :guard (and (true-listp l) (natp r))))
-     (if (endp l) r (list-len{1} (cdr l) (+ r 1))))
-   (defun list-len{1}-wrapper (l)
-     (declare (xargs :guard (true-listp l)))
-     (list-len{1} l 0))
-   (defthm list-len-~>-list-len{1}-wrapper
-     (equal (list-len l) (list-len{1}-wrapper l)))))
-
- ;; reverse list:
- (must-succeed*
-  (defun list-rev (l)
-    (if (atom l) nil (append (list-rev (cdr l)) (list (car l)))))
-  (tailrec list-rev :domain true-listp)
-  (must-be-redundant
-   (defun list-rev{1} (l r)
-     (declare (xargs :measure (acl2-count l) :guard (true-listp r)))
-     (if (atom l) r (list-rev{1} (cdr l) (append (list (car l)) r))))
-   (defun list-rev{1}-wrapper (l) (list-rev{1} l nil))
-   (defthm list-rev-~>-list-rev{1}-wrapper
-     (equal (list-rev l) (list-rev{1}-wrapper l)))))
-
- ;; raise to power:
- (must-succeed*
-  (defun power (x n)
-    (declare (xargs :guard (and (acl2-numberp x) (natp n))))
-    (if (zp n) 1 (* x (power x (1- n)))))
-  (tailrec power :variant :monoid-alt :domain acl2-numberp)
-  (must-be-redundant
-   (defun power{1} (x n r)
-     (declare (xargs :measure (acl2-count n)
-                     :guard (and (and (acl2-numberp x) (natp n))
-                                 (acl2-numberp r))))
-     (if (zp n) r (power{1} x (+ -1 n) (* r x))))
-   (defun power{1}-wrapper (x n)
-     (declare (xargs :guard (and (acl2-numberp x) (natp n))))
-     (power{1} x n 1))
-   (defthm power-~>-power{1}-wrapper
-     (equal (power x n) (power{1}-wrapper x n))))))
+ (tailrec fact))

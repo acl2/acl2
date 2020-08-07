@@ -1,29 +1,29 @@
 (RP::CUSTOM-REWRITE-FROM-FORMULA)
-(RP::IF-TO-AND-LIST (171 12 (:DEFINITION APPLY$-BADGEP))
+(RP::IF-TO-AND-LIST (174 15 (:DEFINITION APPLY$-BADGEP))
                     (144 69 (:REWRITE DEFAULT-+-2))
                     (138 4 (:REWRITE O<=-O-FINP-DEF))
                     (120 102 (:REWRITE DEFAULT-CDR))
-                    (96 9
+                    (99 9
                         (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
                     (93 69 (:REWRITE DEFAULT-+-1))
+                    (90 6 (:DEFINITION NATP))
                     (90 6 (:DEFINITION LENGTH))
-                    (87 6 (:DEFINITION NATP))
-                    (81 9
+                    (82 9
                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
                     (66 6 (:DEFINITION LEN))
-                    (51 51 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                    (48 48 (:REWRITE DEFAULT-CAR))
                     (48 48
                         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
+                    (48 15 (:DEFINITION WEAK-APPLY$-BADGE-P))
                     (48 12 (:DEFINITION INTEGER-ABS))
-                    (45 45 (:REWRITE DEFAULT-CAR))
-                    (42 12 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                    (45 45 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
                     (33 25 (:REWRITE DEFAULT-<-2))
                     (33 9
                         (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
                     (32 32
                         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
                     (32 25 (:REWRITE DEFAULT-<-1))
-                    (30 9
+                    (31 9
                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
                     (20 20
                         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
@@ -72,30 +72,30 @@
      (946 86 (:DEFINITION LEN))
      (835 577 (:REWRITE DEFAULT-CDR))
      (688 172 (:DEFINITION INTEGER-ABS))
-     (405 24 (:DEFINITION APPLY$-BADGEP))
+     (410 29 (:DEFINITION APPLY$-BADGEP))
      (299 228 (:REWRITE DEFAULT-<-2))
      (272 228 (:REWRITE DEFAULT-<-1))
      (258 258
           (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
      (258 172 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (255 27
+     (257 27
           (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (236 236 (:REWRITE DEFAULT-CAR))
+     (241 241 (:REWRITE DEFAULT-CAR))
      (230 230
           (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
-     (219 21
+     (222 21
           (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
      (172 172 (:REWRITE DEFAULT-UNARY-MINUS))
      (172 86
           (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+     (162 12 (:DEFINITION NATP))
      (160 160
           (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
-     (159 12 (:DEFINITION NATP))
      (140 35 (:REWRITE O-P-O-INFP-CAR))
      (132 35 (:REWRITE AC-<))
-     (111 111 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
      (104 104
           (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
+     (101 101 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
      (98 98
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
      (90 90
@@ -113,9 +113,9 @@
      (86 86 (:REWRITE DEFAULT-NUMERATOR))
      (86 86 (:REWRITE DEFAULT-IMAGPART))
      (86 86 (:REWRITE DEFAULT-DENOMINATOR))
-     (72 24 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (82 29 (:DEFINITION WEAK-APPLY$-BADGE-P))
      (70 35 (:REWRITE O-INFP-O-FINP-O<=))
-     (60 18
+     (64 18
          (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
      (54 9 (:REWRITE O-FIRST-EXPT-<))
      (36 18 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))

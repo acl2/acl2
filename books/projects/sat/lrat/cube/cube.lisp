@@ -294,7 +294,7 @@
 (local
  (encapsulate
    ()
-   (local (include-book "std/testing/assert" :dir :system))
+   (local (include-book "std/testing/assert-bang-stobj" :dir :system))
    (local (acl2::assert!-stobj
            #+gcl
 

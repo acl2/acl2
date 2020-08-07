@@ -107,6 +107,12 @@
          (member-equal a x)))
   :hints (("Goal" :in-theory (enable member-equal remove-equal))))
 
+(defthm member-equal-of-remove1-equal-irrel
+  (implies (not (equal a b))
+           (iff (member-equal a (remove1-equal b x))
+                (member-equal a x)))
+  :hints (("Goal" :in-theory (enable member-equal remove-equal))))
+
 ;; Disabled since consp is so common.
 (defthmd consp-when-member-equal
   (implies (member-equal a x) ;note that a is a free var

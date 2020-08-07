@@ -369,17 +369,12 @@
                               (posp k)
                               (< k *q*))
                   :guard-hints (("Goal"
-                                 :use
-                                 ((:instance ecurve::natp-of-car-of-secp256k1*
-                                   (s k)
-                                   (point (ecurve::secp256k1-generator)))
-                                  (:instance ecurve::natp-of-cdr-of-secp256k1*
-                                   (s k)
-                                   (point (ecurve::secp256k1-generator))))
+                                 :use (:instance ecurve::pointp-of-secp256k1*
+                                       (point (ecurve::secp256k1-generator))
+                                       (s k))
                                  :in-theory
-                                 (e/d (pfield::fep)
-                                      (ecurve::natp-of-car-of-secp256k1*
-                                       ecurve::natp-of-cdr-of-secp256k1*))))))
+                                 (e/d (pfield::fep ecurve::pointp)
+                                      (ecurve::pointp-of-secp256k1*))))))
 
 ;; "1. H(m) is transformed into an integer modulo q using the bits2int
 ;;     transform and an extra modular reduction:
@@ -409,8 +404,8 @@
 ;;    computed again (this is an utterly improbable occurrence).
 
        (new-point (secp256k1* k (secp256k1-generator)))
-       (rx (car new-point))
-       (ry (cdr new-point))
+       (rx (if (eq new-point :infinity) 0 (car new-point)))
+       (ry (if (eq new-point :infinity) 0 (cdr new-point)))
        (r (mod rx *q*))
        ((when (= r 0)) (mv t 0 nil 0 0))
        (x-index (floor rx *q*))
@@ -453,9 +448,10 @@
     (natp (mv-nth 1 (ecdsa-sign-given-k mh privkey k)))
     :rule-classes :type-prescription
     :hints (("Goal"
-             :use (:instance ecurve::natp-of-car-of-secp256k1*
+             :use (:instance ecurve::pointp-of-secp256k1*
                    (s k) (point (ecurve::secp256k1-generator)))
-             :in-theory (enable ecdsa-sign-given-k)))))
+             :in-theory (e/d (ecdsa-sign-given-k ecurve::pointp)
+                             (ecurve::pointp-of-secp256k1*))))))
 
 (defthm booleanp-of-mv-nth-2-of-ecdsa-sign-given-k
   (booleanp (mv-nth 2 (ecdsa-sign-given-k mh privkey k)))
@@ -467,18 +463,20 @@
            (posp (mv-nth 3 (ecdsa-sign-given-k mh privkey k))))
   :rule-classes :type-prescription
   :hints (("Goal"
-           :use (:instance ecurve::natp-of-car-of-secp256k1*
+           :use (:instance ecurve::pointp-of-secp256k1*
                  (s k) (point (ecurve::secp256k1-generator)))
-           :in-theory (enable ecdsa-sign-given-k))))
+           :in-theory (e/d (ecdsa-sign-given-k ecurve::pointp)
+                           (ecurve::pointp-of-secp256k1*)))))
 
 (defthm <-*q*-of-mv-nth-3-of-ecdsa-sign-given-k
   (< (mv-nth 3 (ecdsa-sign-given-k mh privkey k))
      *q*)
   :rule-classes :linear
   :hints (("Goal"
-           :use (:instance ecurve::natp-of-car-of-secp256k1*
+           :use (:instance ecurve::pointp-of-secp256k1*
                  (s k) (point (ecurve::secp256k1-generator)))
-           :in-theory (enable ecdsa-sign-given-k))))
+           :in-theory (e/d (ecdsa-sign-given-k ecurve::pointp)
+                           (ecurve::pointp-of-secp256k1*)))))
 
 (defthm posp-of-mv-nth-4-of-ecdsa-sign-given-k
   (implies (and (not (mv-nth 0 (ecdsa-sign-given-k mh privkey k)))
@@ -487,9 +485,10 @@
            (posp (mv-nth 4 (ecdsa-sign-given-k mh privkey k))))
   :rule-classes :type-prescription
   :hints (("Goal"
-           :use (:instance ecurve::natp-of-car-of-secp256k1*
+           :use (:instance ecurve::pointp-of-secp256k1*
                  (s k) (point (ecurve::secp256k1-generator)))
-           :in-theory (enable ecdsa-sign-given-k))))
+           :in-theory (e/d (ecdsa-sign-given-k ecurve::pointp)
+                           (ecurve::pointp-of-secp256k1*)))))
 
 (defthm <-*q*-of-mv-nth-4-of-ecdsa-sign-given-k
   (implies (and (posp privkey)
@@ -498,9 +497,10 @@
               *q*))
   :rule-classes :linear
   :hints (("Goal"
-           :use (:instance ecurve::natp-of-car-of-secp256k1*
+           :use (:instance ecurve::pointp-of-secp256k1*
                  (s k) (point (ecurve::secp256k1-generator)))
-           :in-theory (enable ecdsa-sign-given-k))))
+           :in-theory (e/d (ecdsa-sign-given-k ecurve::pointp)
+                           (ecurve::pointp-of-secp256k1*)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

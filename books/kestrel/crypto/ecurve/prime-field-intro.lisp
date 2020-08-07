@@ -138,8 +138,7 @@
 
 (defthm mul-of-/p-arg1
   (implies (and (integerp y)
-                (integerp x)
-                (posp p))
+                (integerp x))
            (equal (pfield::mul (/p x) y (prime))
                   (pfield::mul (pfield::inv x (prime)) y (prime))))
   :hints (("Goal" :do-not '(preprocess)
@@ -150,8 +149,7 @@
 
 (defthm mul-of-/p-arg2
   (implies (and (integerp y)
-                (integerp x)
-                (posp p))
+                (integerp x))
            (equal (pfield::mul y (/p x) (prime))
                   (pfield::mul y (pfield::inv x (prime)) (prime))))
   :hints (("Goal" :do-not '(preprocess)

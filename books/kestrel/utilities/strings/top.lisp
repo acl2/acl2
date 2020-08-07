@@ -29,3 +29,10 @@
   :long
   (xdoc::topstring-p
    "These utilities may be eventually integrated into @(see std/strings)."))
+
+(defcong
+  str::charlisteqv equal (chars=>nats x)
+  1
+  :hints
+  (("goal" :in-theory (enable chars=>nats fast-list-equiv)
+    :induct (fast-list-equiv x x-equiv))))

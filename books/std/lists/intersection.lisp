@@ -89,7 +89,17 @@ library."
   (defthm member-of-intersection$
     (iff (member a (intersection$ x y))
          (and (member a x)
-              (member a y))))
+              (member a y)))
+    :rule-classes
+    (:rewrite
+     (:type-prescription
+      :corollary
+      (implies (not (member a x))
+               (not (member a (intersection$ x y)))))
+     (:type-prescription
+      :corollary
+      (implies (not (member a y))
+               (not (member a (intersection$ x y)))))))
 
   (defthm subsetp-equal-of-intersection$-1
     (subsetp-equal (intersection$ x y) x))
@@ -126,4 +136,3 @@ library."
     (<= (len (intersection$ x y))
         (len x))
     :rule-classes ((:rewrite) (:linear))))
-

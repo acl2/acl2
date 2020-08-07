@@ -31,7 +31,7 @@
 (in-package "VL2014")
 (include-book "emodwire")
 (include-book "centaur/vl2014/util/merge-indices" :dir :system)
-(local (include-book "std/testing/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (include-book "centaur/vl2014/util/arithmetic" :dir :system))
 
 
@@ -257,4 +257,3 @@ For instance,</p>
   (implies (force (symbol-listp x))
            (string-listp (vl-verilogify-symbols x)))
   :hints(("Goal" :in-theory (enable vl-verilogify-symbols))))
-

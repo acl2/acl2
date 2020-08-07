@@ -16,7 +16,7 @@
 
 ;; ======================================================================
 
-;; REG* n 
+;; REG* n
 
 ;; An n-bit scan register. Scans from low-order to high-order.  The high order
 ;; bit Q_(n-1) is the scan-out.
@@ -69,6 +69,10 @@
     (cons (reg* n) *b-buf-pwr*)))
 
 ;;  REG value
+
+; Matt K. mod: ACL2(p) with waterfall parallelism hangs in SBCL, so we turn it
+; off.
+(set-waterfall-parallelism nil)
 
 (defthm reg-body$unbound-in-body
   (and (unbound-in-body 'CLK (reg-body m n ti te))
@@ -210,7 +214,7 @@
 
 ;; ======================================================================
 
-;; WE-REG* n 
+;; WE-REG* n
 
 ;; An n-bit write-enabled scan register.  Scans from low-order to high-order.
 ;; The high order bit Q_(n-1) is the scan-out.
