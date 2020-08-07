@@ -18,95 +18,129 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'abcdefg 'function nil (w state))
- 'abcdefg)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'abcdefg 'function nil (w state)))
+ '(abcdefg
+   (abcdefg)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'abcdefg 'function '(a b c) (w state))
- 'abcdefg)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'abcdefg 'function '(a b c) (w state)))
+ '(abcdefg
+   (abcdefg a b c)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'abcdefg 'function '(abcdefg nil) (w state))
- 'abcdefg$)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'abcdefg 'function '(abcdefg nil) (w state)))
+ '(abcdefg$
+   (abcdefg$ abcdefg nil)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'len 'function '(len$ len$$) (w state))
- 'len$$$)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'len 'function '(len$ len$$) (w state)))
+ '(len$$$
+   (len$$$ len$ len$$)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'len 'function '(len$ len$$$) (w state))
- 'len$$)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'len 'function '(len$ len$$$) (w state)))
+ '(len$$
+   (len$$ len$ len$$$)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'cons 'macro nil (w state))
- 'acl2::cons$)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'cons 'macro nil (w state)))
+ '(acl2::cons$
+   (acl2::cons$)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix '*myconst* 'const '(*c* fn mac) (w state))
- '*myconst*)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             '*myconst* 'const '(*c* fn mac) (w state)))
+ '(*myconst*
+   (*myconst* *c* fn mac)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix '*myconst* 'const '(myconst) (w state))
- '*myconst*)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             '*myconst* 'const '(myconst) (w state)))
+ '(*myconst*
+   (*myconst* myconst)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix '*myconst* 'const '(*myconst* f g) (w state))
- '*myconst$*)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             '*myconst* 'const '(*myconst* f g) (w state)))
+ '(*myconst$*
+   (*myconst$* *myconst* f g)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix '*myconst*
-                                    'const
-                                    '(*myconst* *myconst$* *myconst$$*)
-                                    (w state))
- '*myconst$$$*)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             '*myconst*
+             'const
+             '(*myconst* *myconst$* *myconst$$*)
+             (w state)))
+ '(*myconst$$$*
+   (*myconst$$$* *myconst* *myconst$* *myconst$$*)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'atom 'constrained-function nil (w state))
- 'acl2::atom$)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'atom 'constrained-function nil (w state)))
+ '(acl2::atom$
+   (acl2::atom$)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'abcdefg 'stobj '(abcdefg) (w state))
- 'abcdefg$)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'abcdefg 'stobj '(abcdefg) (w state)))
+ '(abcdefg$
+   (abcdefg$ abcdefg)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'common-lisp::th nil nil (w state))
- 'common-lisp::th)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'common-lisp::th nil nil (w state)))
+ '(common-lisp::th
+   (common-lisp::th)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'mythm nil '(mythm abc) (w state))
- 'mythm$)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'mythm nil '(mythm abc) (w state)))
+ '(mythm$
+   (mythm$ mythm abc)))
 
 (must-succeed*
  (defun f (x) x)
  (defun f$ (x) x)
  (defun f$$ (x) x)
  (defun f$$$ (x) x)
- (assert-equal (fresh-logical-name-with-$s-suffix 'f 'function nil (w state))
-               'f$$$$)
- (assert-equal (fresh-logical-name-with-$s-suffix 'f nil nil (w state))
-               'f$$$$))
+ (assert-equal
+  (mv-list 2 (fresh-logical-name-with-$s-suffix 'f 'function nil (w state)))
+  '(f$$$$ (f$$$$)))
+ (assert-equal
+  (mv-list 2 (fresh-logical-name-with-$s-suffix 'f nil nil (w state)))
+  '(f$$$$ (f$$$$))))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'acl2-user::f 'macro nil (w state))
- 'acl2-user::f)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix
+             'acl2-user::f 'macro nil (w state)))
+ '(acl2-user::f
+   (acl2-user::f)))
 
 (assert-equal
- (fresh-logical-name-with-$s-suffix 'acl2-user::f nil nil (w state))
- 'acl2-user::f)
+ (mv-list 2 (fresh-logical-name-with-$s-suffix 'acl2-user::f nil nil (w state)))
+ '(acl2-user::f (acl2-user::f)))
 
 (must-succeed*
  (defun acl2-user::f (x) x)
  (assert-equal
-  (fresh-logical-name-with-$s-suffix 'acl2-user::f
-                                     'constrained-function
-                                     nil
-                                     (w state))
-  'acl2-user::f$))
+  (mv-list 2 (fresh-logical-name-with-$s-suffix 'acl2-user::f
+                                                'constrained-function
+                                                nil
+                                                (w state)))
+  '(acl2-user::f$ (acl2-user::f$))))
 
-(assert-equal (fresh-logical-name-with-$s-suffix 'cons 'stobj nil (w state))
-              'acl2::cons$)
+(assert-equal
+ (mv-list 2 (fresh-logical-name-with-$s-suffix 'cons 'stobj nil (w state)))
+ '(acl2::cons$ (acl2::cons$)))
 
 (must-succeed*
  (defthm th (acl2-numberp (- x)))
- (assert-equal (fresh-logical-name-with-$s-suffix 'th 'function nil (w state))
-               'th$))
+ (assert-equal
+  (mv-list 2 (fresh-logical-name-with-$s-suffix 'th 'function nil (w state)))
+  '(th$ (th$))))

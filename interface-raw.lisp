@@ -7975,20 +7975,22 @@
          `(defconst *initial-built-in-clauses*
             (list ,@good-lst))
          nil))))
-    (cond ((not (equal *definition-minimal-theory-alist*
+    (cond ((not (equal *bbody-alist*
                        (merge-sort-lexorder
-                        (loop for f in *definition-minimal-theory* collect
+                        (loop for f in *definition-minimal-theory*
+                              when (not (eq f 'mv-nth))
+                              collect
                               (cons f (body f t (w *the-live-state*)))))))
            (interface-er
-            "There is a discrepancy between the value of ~
-             *definition-minimal-theory-alist* and its expected ~
-             value.~%Actual value of ~
-             *definition-minimal-theory-alist*:~%~X01~%Expected value of ~
-             *definition-minimal-theory-alist*:~X21"
-            *definition-minimal-theory-alist*
+            "There is a discrepancy between the value of *bbody-alist* and ~
+             its expected value.~%Actual value of ~
+             *bbody-alist*:~%~X01~%Expected value of *bbody-alist*:~X21"
+            *bbody-alist*
             nil
             (merge-sort-lexorder
-             (loop for f in *definition-minimal-theory* collect
+             (loop for f in *definition-minimal-theory*
+                   when (not (eq f 'mv-nth))
+                   collect
                    (cons f (body f t (w *the-live-state*))))))))
     (mv-let (when-pass-2-result macros-found program-found logic-found)
       (fns-different-wrt-acl2-loop-only *acl2-files*)

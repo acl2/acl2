@@ -9,3 +9,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "portcullis")
+
+; Matt K. mod: Prevent the following error that occurred for at least two
+; events.  "Clause-processors that return one or more stobjs are not officially
+; supported when waterfall parallelism is enabled."
+#+acl2-par
+(set-waterfall-parallelism nil)

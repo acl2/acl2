@@ -178,7 +178,7 @@ function that logically just always returns 0:</dd>
      (thm (equal (weird-quantifier x) 0))
 })
 
-<dd>Similarly, here is an quantified function that actually returns multiple
+<dd>Similarly, here is a quantified function that actually returns multiple
 values:</dd>
 
 @({

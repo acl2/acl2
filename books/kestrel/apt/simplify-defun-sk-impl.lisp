@@ -365,7 +365,7 @@
        ((mv fn-simp-is-fn computed-hint-call)
         (fn-simp-is-fn-sk/computed-hint-call fn fn-simp hyps theorem-name
                                              thm-enable state))
-       ((mv not-norm-event -)
+       ((mv not-norm-event - -)
         (install-not-normalized-event fn t nil (w state))))
     (value
      `(encapsulate-report-errors

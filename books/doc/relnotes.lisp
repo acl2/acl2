@@ -418,6 +418,10 @@
     " have been added.")
 
    (xdoc::p
+    "The macro @(tsee fty::defset) has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
     "The macro @(tsee fty::defomap) has been improved
      to generate additional theorems.")
 
@@ -585,6 +589,12 @@
      reference types; and
      all types.")
 
+   (xdoc::p
+    "The formalization, including the ABNF grammar,
+     have been updated to Java 14.
+     In particular, this involved updating of the ABNF grammar with
+     @('switch') expressions and @('yield') statements.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
@@ -648,6 +658,14 @@
     "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
      which lifts @(tsee fresh-namep-msg-weak) to lists.")
 
+   (xdoc::p
+    "The utilities
+     @(tsee install-not-normalized-event) and
+     @(tsee install-not-normalized-event-lst)
+     have been improved to return an additional result,
+     namely the updated list of names to avoid.
+     This helps making the calling code more concise and less error-prone.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
@@ -656,6 +674,11 @@
     "The contents of the file @('[books]/misc/assert-tests.lisp')
      have been moved to new separate files under Std/testing.
      That file has been removed.")
+
+   (xdoc::p
+    "The relocation stub @('[books]/misc/assert.lisp')
+     for books that are now in Std/testing
+     has been removed.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

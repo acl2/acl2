@@ -406,7 +406,7 @@
                                          booleanp
                                          symbolp
                                          booleanp
-                                         symbol-alistp
+                                         evmac-input-hints-p
                                          symbol-listp
                                          result)').")
                state)
@@ -965,7 +965,8 @@
                               appcond-thm-names
                               wrld))
        ((mv new-unnorm-event
-            new-unnorm-name)
+            new-unnorm-name
+            &)
         (install-not-normalized-event new-name$ t names-to-avoid wrld))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event)

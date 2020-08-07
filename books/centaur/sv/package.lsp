@@ -173,23 +173,13 @@
       why
       with-redef
 
-      f w x y z g s
+      f w x y z g s _
       def-b*-binder
       std::defines
       std::defret
       mod
       index-of
       nat-list-measure
-      fty::defprod
-      fty::deflist
-      fty::defalist
-      fty::deftypes
-      fty::deffixequiv
-      fty::deffixequiv-mutual
-      fty::deffixtype
-      fty::defflexsum
-      fty::deffixcong
-      fty::fty-discipline
 
       natarr get-nat set-nat resize-nats
       u32arr u32s-length get-u32 set-u32 resize-u32s set-u32n
@@ -213,7 +203,16 @@
       fast-alist
       fast-alists
 
-      symlet)
+      symlet
+
+      hons-set-diff
+      hons-dups-p
+      fal-extract
+      assocs
+      access
+      alist-fix
+      b-and b-ior b-not b-xor bfix bit->bool bool->bit bool-fix
+      logcons logcar logcdr)
 
     #!VL
     '(warnings
@@ -229,9 +228,37 @@
       vl-expr-p
       vl-expr-welltyped-p
       vl-atom-p
-      xf-cwtime))
+      xf-cwtime)
 
+    #!std
+    '(add-default-post-define-hook)
+
+    #!xdoc
+    '(set-default-parents)
+
+    #!fty
+    '(defprod
+      deflist
+      defalist
+      deftypes
+      deffixequiv
+      deffixequiv-mutual
+      deffixtype
+      defflexsum
+      deffixcong
+      fty-discipline
+      defvisitor
+      defvisitor-multi
+      defvisitor-template
+      defvisitors
+      deftagsum
+      )
+    
+
+    #!str
+    '(cat natstr hexify intstr parse-nat-from-string rchars-to-string strpos strtok str-fix))
     ;; Things to remove:
     '(acl2::warn
       std::defalist
-       std::deflist)))
+      std::deflist
+      common-lisp::values)))

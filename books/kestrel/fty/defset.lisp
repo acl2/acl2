@@ -216,6 +216,7 @@
        (pred-of-union (acl2::packn-pos (list pred '-of-union) pkg-witness))
        (pred-of-difference (acl2::packn-pos (list pred '-of-difference)
                                             pkg-witness))
+       (pred-of-delete (acl2::packn-pos (list pred '-of-delete) pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -275,7 +276,11 @@
            (defrule ,pred-of-difference
              (implies (,pred ,x)
                       (,pred (set::difference ,x ,y)))
-             :enable set::difference)))
+             :enable set::difference)
+           (defrule ,pred-of-delete
+             (implies (,pred ,x)
+                      (,pred (set::delete ,a ,x)))
+             :enable set::delete)))
        (fix-event
         `(define ,fix ((,x ,pred))
            :parents (,type)

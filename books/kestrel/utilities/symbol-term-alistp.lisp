@@ -22,6 +22,13 @@
                 (pseudo-termp (cdr (car x)))
                 (symbol-term-alistp (cdr x))))))
 
+(defthm symbol-term-alistp-of-acons
+  (equal (symbol-term-alistp (acons key val alist))
+         (and (symbolp key)
+              (pseudo-termp val)
+              (symbol-term-alistp alist)))
+  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
+
 (defthm symbol-term-alistp-of-cdr
   (implies (symbol-term-alistp alist)
            (symbol-term-alistp (cdr alist)))

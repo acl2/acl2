@@ -751,7 +751,7 @@
                                          symbolp
                                          booleanp
                                          booleanp
-                                         symbol-alistp
+                                         evmac-input-hints-p
                                          symbol-listp
                                          result)').")
                state)
@@ -1110,10 +1110,11 @@
    (xdoc::p
     "This theorem event is local,
     because it is a lemma used to prove the exported main theorem."))
-  (b* ((name (fresh-logical-name-with-$s-suffix 'domain-of-old
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'domain-of-old
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (formula (untranslate (apply-term* domain$
                                           (apply-term old$
                                                       (formals old$
@@ -1166,7 +1167,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1601,10 +1602,11 @@
    <p>
    The name used for @($\\alpha$) is returned, along with the event.
    </p>"
-  (b* ((name (fresh-logical-name-with-$s-suffix 'alpha
-                                                'function
-                                                names-to-avoid
-                                                wrld))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'alpha
+                                           'function
+                                           names-to-avoid
+                                           wrld))
        (formals (formals old$ wrld))
        (body `(if ,test (list ,@formals) (,name ,@updates)))
        (wfrel (well-founded-relation old$ wrld))
@@ -1620,7 +1622,7 @@
                                   :verify-guards nil
                                   :normalize nil))
                   ,body))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1689,10 +1691,11 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-logical-name-with-$s-suffix 'test-of-alpha
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'test-of-alpha
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-gen-alpha-component-terms alpha-name
                                                                  old$
@@ -1705,7 +1708,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1737,10 +1740,11 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-logical-name-with-$s-suffix 'old-guard-of-alpha
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'old-guard-of-alpha
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (formals (formals old$ wrld))
        (alpha-component-terms (tailrec-gen-alpha-component-terms alpha-name
                                                                  old$
@@ -1757,7 +1761,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1785,10 +1789,11 @@
    This theorem event is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-logical-name-with-$s-suffix 'domain-of-ground-base
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'domain-of-ground-base
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (formula (apply-term* domain$ base))
        (domain-of-base-thm
         (cdr (assoc-eq :domain-of-base appcond-thm-names)))
@@ -1807,7 +1812,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1839,10 +1844,11 @@
    This theorem is local,
    because it is just a lemma used to prove other theorems.
    </p>"
-  (b* ((name (fresh-logical-name-with-$s-suffix 'combine-left-identity-ground
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'combine-left-identity-ground
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (u (tailrec-gen-var-u old$))
        (combine-op (tailrec-gen-combine-op combine q r))
        (formula (implicate (apply-term* domain$ u)
@@ -1865,7 +1871,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1893,10 +1899,11 @@
    because it is just a lemma used to prove other theorems.
    </p>"
   (b* ((wrld (w state))
-       (name (fresh-logical-name-with-$s-suffix 'base-guard
-                                                nil
-                                                names-to-avoid
-                                                wrld))
+       ((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'base-guard
+                                           nil
+                                           names-to-avoid
+                                           wrld))
        (formula (implicate (guard old$ nil wrld)
                            (term-guard-obligation base state)))
        (formals (formals old$ wrld))
@@ -1915,7 +1922,7 @@
                         ,formula
                         :rule-classes nil
                         :hints ,hints))))
-    (mv event name (cons name names-to-avoid))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2361,12 +2368,12 @@
         (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
        ((mv old-unnorm-event
-            old-unnorm-name)
+            old-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event old$
                                       t
                                       names-to-avoid
                                       wrld))
-       (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv domain-of-old-event?
             domain-of-old-name?
             names-to-avoid)
@@ -2389,12 +2396,12 @@
                             appcond-thm-names
                             wrld))
        ((mv new-unnorm-event
-            new-unnorm-name)
+            new-unnorm-name
+            names-to-avoid)
         (install-not-normalized-event new-name$
                                       t
                                       names-to-avoid
                                       wrld))
-       (names-to-avoid (cons new-unnorm-name names-to-avoid))
        ((mv new-to-old-thm-local-event
             new-to-old-thm-exported-event)
         (tailrec-gen-new-to-old-thm old$ nonrec updates combine q r
@@ -2503,13 +2510,14 @@
                                     wrld)
           (mv nil nil)))
        ((mv wrapper-unnorm-event?
-            wrapper-unnorm-name?)
+            wrapper-unnorm-name?
+            &)
         (if wrapper$
             (install-not-normalized-event wrapper-name$
                                           t
                                           names-to-avoid
                                           wrld)
-          (mv nil nil)))
+          (mv nil nil names-to-avoid)))
        ((mv
          old-to-wrapper-thm-local-event?
          old-to-wrapper-thm-exported-event?)

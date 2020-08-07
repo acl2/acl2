@@ -868,11 +868,26 @@ files "ipasirglucoseglue.o" and "libipasirglucose4.a".</p>
 <p>(Note: Counterintuitively, it is important that the .o file is listed before the .a file.)</p>
 
 <p>Finally, move the resulting shared library "libipasirglucose4.so" to a
-permanent location and set the IPASIR_SHARED_LIBRARY environment variable to
-its absolute path.  Or, ensure that its destination directory is listed in
-your LD_LIBRARY_PATH environment variable and set IPASIR_SHARED_LIBRARY
-to "libipasirglucose4.so".</p>
+permanent location and either:</p>
 
+<ul>
+
+<li>Ensure that the directory containing the shared library is listed in your
+$LD_LIBRARY_PATH environment variable. (Note: this assumes the library is named
+"libipasirglucose4.so"; if you name it something else, then also set
+$IPASIR_SHARED_LIBRARY to its filename, e.g. "foobar.so".)</li>
+
+<li>Or, just set the $IPASIR_SHARED_LIBRARY environment variable to the full
+absolute path of the shared library.</li>
+
+<li>If you want to be really fancy, install the shared library into your system
+libraries using @('ldconfig') or similar.  However, our build system isn't
+smart enough to tell that you have done this, so you should also set
+$IPASIR_SHARED_LIBRARY to the name of the installed library,
+e.g. "libipasirglucose4.so", otherwise these IPASIR-related books will be
+skipped when building the community books.</li>
+
+</ul>
 """})
 
 (defxdoc ipasir
