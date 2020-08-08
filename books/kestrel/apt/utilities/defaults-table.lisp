@@ -613,6 +613,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ set-default-input-old-if-new-enable (bool)
+  (declare (xargs :guard (booleanp bool)))
+  :short "Set the default @(':old-if-new-enable') input of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':old-if-new-enable') input
+     that specifies whether to enable the generated theorem
+     asserting that the old function is implied by the old function.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':old-if-new-enable') input.
+     It must be a boolean.")
+   (xdoc::p
+    "The initial value of this default is @('nil')."))
+  `(table ,*defaults-table-name* :wrapper-enable ,bool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-old-if-new-enable ((wrld plist-worldp))
+  :returns (bool booleanp)
+  :short "Get the default @(':old-if-new-enable') input of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-old-if-new-enable).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :old-if-new-enable table))
+       ((unless (consp pair))
+        (raise "No :OLD-IF-NEW-ENABLE found in APT defaults table."))
+       (bool (cdr pair))
+       ((unless (booleanp bool))
+        (raise
+         "The default :OLD-IF-NEW-ENABLE is ~x0, which is not a boolean.")))
+    bool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-old-if-new-enable nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ set-default-input-wrapper-enable (bool)
   (declare (xargs :guard (booleanp bool)))
   :short "Set the default @(':wrapper-enable') input of APT transformations."
