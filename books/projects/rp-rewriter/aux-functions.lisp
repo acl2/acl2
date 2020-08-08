@@ -477,6 +477,8 @@
            (mv 0 t))
           ((atom x)
            (mv (1- count) nil))
+          ((quotep x)
+           (mv (1- count) nil))
           (t (b* (((mv count count-reached)
                    (cons-count-compare-aux (car x) count))
                   ((when count-reached)

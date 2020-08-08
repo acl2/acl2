@@ -147,6 +147,7 @@
                                      context-syntaxp-def
                                      ))))
 
+
 (defthm extract-context-is-valid-sc
   (implies (and (valid-sc term a)
                 (rp-evlt term a))
