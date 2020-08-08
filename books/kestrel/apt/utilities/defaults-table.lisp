@@ -557,6 +557,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ set-default-input-old-if-new-name (kwd)
+  (declare (xargs :guard (keywordp kwd)))
+  :short "Set the default @(':old-if-new-name') input of APT transformations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Some APT transformations include an @(':old-if-new-name') input
+     that specifies the name of the generated theorem
+     asserting that the old function is implied by the old function.
+     When this input is a symbol that is a valid theorem name,
+     it is used as the theorem name.
+     When this input is a keyword (which is never a valid theorem name),
+     the theorem name is the concatenation of
+     the old function name, the keyword, and the new function name,
+     e.g. @('f-if-g') if
+     @('f') is the old function name,
+     @('g') is the new function name,
+     and @(':-if-') is the keyword passed as the @(':old-if-new-name') input.
+     Thus, the keyword specifies a separator
+     between old and new function names.
+     The concatenated symbol is in the same package as the new function name.")
+   (xdoc::p
+    "This macro sets an entry in the APT defaults table
+     that provides the default value of the @(':old-if-new-name') input.
+     It must be a keyword, which is used as a separator as described above.
+     It would not make sense to have a complete theorem name as default.")
+   (xdoc::p
+    "The initial value of this default is @(':-if-')."))
+  `(table ,*defaults-table-name* :old-if-new-name ,kwd))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-default-input-old-if-new-name ((wrld plist-worldp))
+  :returns (kwd keywordp)
+  :short "Get the default @(':old-if-new-name') input of APT transformations."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee set-default-input-old-if-new-name).")
+  (b* ((table (table-alist+ *defaults-table-name* wrld))
+       (pair (assoc-eq :old-if-new-name table))
+       ((unless (consp pair))
+        (prog2$ (raise "No :OLD-IF-NEW-NAME found in APT defaults table.")
+                :irrelevant-keyword-for-unconditional-returns-theorem))
+       (kwd (cdr pair))
+       ((unless (keywordp kwd))
+        (prog2$ (raise
+                 "The default :OLD-IF-NEW-NAME is ~x0, which is not a keyword.")
+                :irrelevant-keyword-for-unconditional-returns-theorem)))
+    kwd))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(set-default-input-old-if-new-name :-if-)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ set-default-input-wrapper-enable (bool)
   (declare (xargs :guard (booleanp bool)))
   :short "Set the default @(':wrapper-enable') input of APT transformations."
