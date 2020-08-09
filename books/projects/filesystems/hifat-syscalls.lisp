@@ -1041,6 +1041,158 @@
   (implies (dir-stream-table-p dir-stream-table)
            (nat-listp (strip-cars dir-stream-table))))
 
+;; Here's an interesting example that gives the lie to the idea that set-equiv
+;; means much of anything when the sort is stable:
+;; (b* ((alist '((5 . 1) (6 . 1) (7 . 2))) (l1 (list 5 6)) (l2 (list 6 5)))
+;;   (and (set-equiv l1 l2) (not (equal (intval-alist-sort l1 alist)
+;;                                      (intval-alist-sort l2 alist)))))
+(encapsulate
+  ()
+
+  (local (include-book "defsort/examples" :dir :system))
+
+  (defund string-less-p (x y)
+    (declare (xargs :guard (and (stringp x) (stringp y))))
+    (if (string< x y) t nil))
+
+  (defund string2-merge-tr (x y acc)
+    (declare (xargs :measure (+ (len x) (len y))
+                    :stobjs nil
+                    :guard (and t (string-listp x)
+                                (string-listp y))))
+    (cond ((atom x)
+           (revappend-without-guard acc y))
+          ((atom y)
+           (revappend-without-guard acc x))
+          ((string-less-p (car y) (car x))
+           (string2-merge-tr x (cdr y)
+                             (cons (car y) acc)))
+          (t (string2-merge-tr (cdr x)
+                               y (cons (car x) acc)))))
+
+  (defund
+    string2-mergesort-fixnum (x len)
+    (declare (xargs :measure (nfix len)
+                    :stobjs nil
+                    :guard (and t (string-listp x)
+                                (natp len)
+                                (<= len (len x)))
+                    :verify-guards nil)
+             (type (signed-byte 30) len))
+    (cond
+     ((mbe :logic (zp len)
+           :exec (eql (the (signed-byte 30) len) 0))
+      nil)
+     ((eql (the (signed-byte 30) len) 1)
+      (list (car x)))
+     (t (let* ((len1 (the (signed-byte 30)
+                          (ash (the (signed-byte 30) len) -1)))
+               (len2 (the (signed-byte 30)
+                          (- (the (signed-byte 30) len)
+                             (the (signed-byte 30) len1))))
+               (part1 (string2-mergesort-fixnum x len1))
+               (part2 (string2-mergesort-fixnum (rest-n len1 x)
+                                                len2)))
+              (string2-merge-tr part1 part2 nil)))))
+
+  (verify-guards
+    string2-mergesort-fixnum)
+
+  (defund
+    string2-mergesort-integers (x len)
+    (declare (xargs :measure (nfix len)
+                    :stobjs nil
+                    :guard (and t (string-listp x)
+                                (natp len)
+                                (<= len (len x)))
+                    :verify-guards nil)
+             (type integer len))
+    (cond
+     ((mbe :logic (zp len)
+           :exec (eql (the integer len) 0))
+      nil)
+     ((eql (the integer len) 1)
+      (list (car x)))
+     (t
+      (let*
+       ((len1 (the integer (ash (the integer len) -1)))
+        (len2 (the integer
+                   (- (the integer len)
+                      (the integer len1))))
+        (part1 (if (< (the integer len1)
+                      (mergesort-fixnum-threshold))
+                   (string2-mergesort-fixnum x len1)
+                   (string2-mergesort-integers x len1)))
+        (part2 (if (< (the integer len2)
+                      (mergesort-fixnum-threshold))
+                   (string2-mergesort-fixnum (rest-n len1 x)
+                                             len2)
+                   (string2-mergesort-integers (rest-n len1 x)
+                                               len2))))
+       (string2-merge-tr part1 part2 nil)))))
+
+  (verify-guards
+    string2-mergesort-integers)
+
+  (defund string2-merge (x y)
+    (declare (xargs :measure (+ (len x) (len y))
+                    :stobjs nil
+                    :guard (and t (string-listp x)
+                                (string-listp y))))
+    (cond ((atom x) y)
+          ((atom y) x)
+          ((string-less-p (car y) (car x))
+           (cons (car y)
+                 (string2-merge x (cdr y))))
+          (t (cons (car x)
+                   (string2-merge (cdr x) y)))))
+
+  (defthm fat32-filename-list-p-of-string2-merge
+    (implies (and (fat32-filename-list-p x) (fat32-filename-list-p y))
+             (fat32-filename-list-p (string2-merge x y)))
+    :hints (("Goal" :in-theory (e/d (string2-merge)
+                                    (floor len)))))
+
+  (defund
+    string2-sort (x)
+    (declare (xargs :guard (and t (string-listp x))
+                    :measure (len x)
+                    :stobjs nil
+                    :verify-guards nil))
+    (mbe
+     :logic
+     (cond
+      ((atom x) nil)
+      ((atom (cdr x)) (list (car x)))
+      (t (let ((half (floor (len x) 2)))
+              (string2-merge (string2-sort (take half x))
+                             (string2-sort (nthcdr half x))))))
+     :exec (let ((len (len x)))
+                (if (< len (mergesort-fixnum-threshold))
+                    (string2-mergesort-fixnum x len)
+                    (string2-mergesort-integers x len)))))
+
+  (verify-guards
+    string2-sort)
+
+  (local (include-book "ihs/ihs-lemmas" :dir :system))
+
+  (defthm fat32-filename-list-p-of-string2-sort-when-fat32-filename-list-p
+    (implies
+     (fat32-filename-list-p x)
+     (fat32-filename-list-p (string2-sort x)))
+    :hints (("Goal" :in-theory (e/d (string2-sort
+                                     floor-bounded-by-/)
+                                    (floor len)))))
+
+  (defthm
+    string2-sort-is-identity-under-set-equiv
+    (set-equiv (string2-sort x) x)))
+
+(defthm string-listp-when-fat32-filename-listp
+  (implies (fat32-filename-list-p x)
+           (string-listp x)))
+
 (defund hifat-opendir (fs path dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
                               (m1-file-alist-p fs)
@@ -1073,7 +1225,8 @@
       (cons dir-stream-table-index
             (make-dir-stream
              :file-list
-             (strip-cars (m1-file->contents file))))
+             (string2-sort
+              (strip-cars (m1-file->contents file)))))
       dir-stream-table)
      0)))
 
@@ -1126,24 +1279,9 @@
    (and
     (equal dirp 0)
     (equal dir-stream-table
-           '((0 (FILE-LIST "LOCAL      " "LIB        "
-                           "SHARE      " "BIN        "))))
+           '((0 (FILE-LIST "BIN        " "LIB        "
+                           "LOCAL      " "SHARE      "))))
     (equal errno 0))))
-
-(defund string-list-min (str-list)
-  (b*
-      (((unless (consp str-list)) (str-fix nil))
-       (head (car str-list))
-       ((unless (consp (cdr str-list))) head)
-       (tail-val (string-list-min (cdr str-list)))
-       ((unless (string< tail-val head)) head))
-    tail-val))
-
-(defthm string-list-min-correctness-1
-  (implies (consp str-list)
-           (member-equal (string-list-min str-list)
-                         str-list))
-  :hints (("goal" :in-theory (enable string-list-min))))
 
 (defund hifat-readdir (dirp dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
@@ -1175,15 +1313,15 @@
  (b*
      (((mv name errno dir-stream-table)
        (hifat-readdir 0
-                      '((0 (FILE-LIST "LOCAL      " "LIB        "
-                                      "SHARE      " "BIN        "))))))
+                      '((0 (FILE-LIST "BIN        " "LIB        "
+                                      "LOCAL      " "SHARE      "))))))
    (and
-    (equal name "LOCAL      ")
+    (equal name "BIN        ")
     (equal errno 0)
     (equal
      dir-stream-table
-     '((0 (FILE-LIST "LIB        "
-                     "SHARE      " "BIN        ")))))))
+     '((0  (FILE-LIST "LIB        "
+                      "LOCAL      " "SHARE      ")))))))
 
 (defthm dir-stream-table-p-of-hifat-readdir
   (dir-stream-table-p (mv-nth 2
