@@ -9174,40 +9174,6 @@
          but the following is not:  ~p0."
         p))))
 
-(defun expand-tilde-to-user-home-dir (str os ctx state)
-
-; Note that character `~' need not get special treatment by Windows.  See
-; comment just above error message below, and see absolute-pathname-string-p.
-
-  (cond ((or (equal str "~")
-             (and (< 1 (length str))
-                  (eql (char str 0) #\~)
-                  (eql (char str 1) #\/)))
-         (let ((user-home-dir (f-get-global 'user-home-dir state)))
-           (cond
-            (user-home-dir
-             (concatenate 'string
-                          user-home-dir
-                          (subseq str 1 (length str))))
-            (t
-
-; On Linux or Mac OS, it is surprising to find that user-home-dir is nil.  (See
-; the definition of lp to see how it is set.)  But on Windows, it seems that
-; this could be the case, say outside an environment like Cygwin, MSYS, or
-; MinGW.
-
-             (let ((certify-book-info (f-get-global 'certify-book-info state)))
-               (prog2$ (and (or certify-book-info
-                                (not (eq os :mswindows)))
-                            (er hard ctx
-                                "The use of ~~/ for the user home directory ~
-                                 in filenames is not supported ~@0."
-                                (if certify-book-info
-                                    "inside books being certified"
-                                  "for this host Common Lisp")))
-                       str))))))
-        (t str)))
-
 #-acl2-loop-only
 (progn
 
@@ -24928,58 +24894,6 @@
         'state
         (list 'quote event-form)))
 
-#+acl2-loop-only
-(defun checkpoint-world (flushp state)
-  (declare (ignore flushp state))
-  nil)
-
-#-acl2-loop-only
-(progn
-
-(defvar *checkpoint-world-len-and-alist-stack*
-  nil)
-
-(defmacro checkpoint-world-len-and-alist ()
-  '(car *checkpoint-world-len-and-alist-stack*))
-
-(defun checkpoint-world1 (flushp wrld state)
-
-; When flushp is true, we are promising never to undo back past wrld.  For
-; example, we could be calling checkpoint-world1 when finishing the boot-strap
-; or executing (reset-prehistory t), but not when executing (reset-prehistory
-; nil).
-
-  (let (saved-alist)
-    (loop for entry in (known-package-alist state)
-          do
-          (let ((pkg (find-package (package-entry-name entry))))
-            (assert pkg)
-            (when flushp
-              (do-symbols (sym pkg)
-                (when (get sym '*undo-stack*)
-                  (setf (get sym '*undo-stack*) nil))))
-            (do-symbols (sym pkg)
-              (let ((alist (get sym *current-acl2-world-key* :unfound)))
-                (when (not (eq alist :unfound))
-                  (push (cons sym (copy-alist alist))
-                        saved-alist))))))
-    (let ((new (list* wrld (length wrld) saved-alist)))
-      (cond (flushp (setq *checkpoint-world-len-and-alist-stack*
-                          (list new)))
-            (t (push new *checkpoint-world-len-and-alist-stack*))))))
-
-(defun checkpoint-world (flushp state)
-  (revert-world-on-error
-   (let* ((wrld0 (w state))
-          (wrld (scan-to-command wrld0)))
-     (set-w 'retraction wrld state)
-     (checkpoint-world1 flushp wrld state)
-     (set-w 'extension wrld0 state)
-     (value nil)))
-  nil)
-
-)
-
 (defun reset-kill-ring (n state)
   (declare (xargs :guard (or (eq n t) (natp n))))
   (let ((n (if (eq n t)
@@ -25044,8 +24958,7 @@
                                wrld)
                               state)))
              (er-progn (reset-kill-ring t state)
-                       (prog2$ (checkpoint-world permanent-p state)
-                               (value val)))))))))
+                       (value val))))))))
 
 ; Next we develop memoization table support.  We defer this way past hons.lisp
 ; because some functions we call are defined relatively late (at least that was
@@ -29324,20 +29237,19 @@
 ; attachments, then the memo table is not cleared; otherwise, it is.  The
 ; analogous actions are taken when we undo.
 
-; For efficiency, we implement extend-world1, retract-world1, and recover-world
-; so that they do not update such fields or clear memo-tables until all trips
-; have been processed.  (This update is performed by
-; update-memo-entries-for-attachments, which is called at the end of the above
-; world updates, by update-wrld-structures.)  At that point we see whether any
-; defattach event has been installed or undone, and then we see whether any
-; memo-table's :ext-anc-attachments field needs to be recalculated, and whether
-; furthermore the table needs to be invalidated, as discussed above.  For
-; efficiency, we set a global variable, *defattach-fns*, to a list L of
-; canonical siblings of all functions whose attachment may have been installed,
-; eliminated, or changed.  We then restrict our check on :ext-anc-attachments
-; fields (in update-memo-entries-for-attachments) to check attachments for
-; siblings of functions in L.  In particular, if L is empty then nothing needs
-; to be done.
+; For efficiency, we implement extend-world1 and retract-world1 so that they do
+; not update such fields or clear memo-tables until all trips have been
+; processed.  (This update is performed by update-memo-entries-for-attachments,
+; which is called at the end of the above world updates, by
+; update-wrld-structures.)  At that point we see whether any defattach event
+; has been installed or undone, and then we see whether any memo-table's
+; :ext-anc-attachments field needs to be recalculated, and whether furthermore
+; the table needs to be invalidated, as discussed above.  For efficiency, we
+; set a global variable, *defattach-fns*, to a list L of canonical siblings of
+; all functions whose attachment may have been installed, eliminated, or
+; changed.  We then restrict our check on :ext-anc-attachments fields (in
+; update-memo-entries-for-attachments) to check attachments for siblings of
+; functions in L.  In particular, if L is empty then nothing needs to be done.
 
 ; The case of warrants is a bit subtle, because we do not store their
 ; attachments in the world global, 'attachment-records.  (That world global is

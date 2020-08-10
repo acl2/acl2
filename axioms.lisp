@@ -1560,8 +1560,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; compiler.  For example, (defuns a b c) expands into a progn of defun
 ; forms, (defthm ...) is a no-op, etc.
 
-(defparameter *in-recover-world-flg* nil)
-
 ; Warning:  Keep the initial value of the following defparameter identical to
 ; that of the ACL2 constant *initial-known-package-alist* below.
 
@@ -11815,8 +11813,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; hidden variables if we are recovering from an error or booting.
 
               (cond
-               ((and (not *in-recover-world-flg*)
-                     not-boot-strap)
+               (not-boot-strap
                 (cond ((find-package global-name)
                        (do-symbols (sym (find-package global-name))
                                    (makunbound sym)))
@@ -13582,7 +13579,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     prove ; #+write-arithmetic-goals
     make-event-fn
     oops-warning
-    checkpoint-world
     ubt-prehistory-fn
     get-declaim-list
     pathname-unix-to-os
@@ -21264,8 +21260,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     set-evisc-tuple-fn1
     set-iprint-ar
     init-iprint-fal update-iprint-fal-rec update-iprint-fal init-iprint-fal+
-
-    checkpoint-world
 
     untouchable-marker
 

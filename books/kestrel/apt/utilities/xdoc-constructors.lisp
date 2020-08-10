@@ -488,6 +488,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ xdoc::desc-apt-input-old-if-new-name ()
+  :short "Build a description of the @(':old-if-new-name') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':old-if-new-name') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines the name of the theorem asserting that
+      the old function is implied by the old function.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A keyword, to use as separator between
+       the names of @('old') and @('new').
+       A keyword @(':kwd') specifies the theorem name @('oldkwdnew'),
+       in the same package as @('new').")
+     (xdoc::li
+      "Any other symbol, to use as the name of the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-old-if-new-name)."))
+    (xdoc::p
+     "In the rest of this documentation page,
+      let @('old-if-new') be the name of this theorem.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::desc-apt-input-old-if-new-enable ()
+  :short "Build a description of the @(':old-if-new-enable') input
+          for the user documentation of an APT transformation."
+  `(xdoc::desc
+    "@(':old-if-new-enable') &mdash;
+     default from <see topic='@(url defaults-table)'>table</see>"
+    (xdoc::p
+     "Determines whether the @('old-if-new') theorem is enabled.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to enable the theorem.")
+     (xdoc::li
+      "@('nil'), to disable the theorem.")
+     (xdoc::li
+      "Absent, to use the value from the APT defaults table,
+       which is set via @(tsee set-default-input-old-if-new-enable)."))
+    (xdoc::p
+     "If this input is @('t'),
+      the @(':new-to-old-enable') input must be @('nil').
+      At most one of these two inputs may be @('t') at any time.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ xdoc::desc-apt-input-verify-guards (wrapper? &rest additional)
   (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
   :short "Build a description of the @(':verify-guards') input

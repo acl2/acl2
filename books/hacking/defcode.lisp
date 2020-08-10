@@ -84,9 +84,9 @@
 ; execute code in (extend-progn! global-value #) triples on world extension
 (modify-raw-defun-permanent
  add-trip pre-defcode-add-trip
- (world-name world-key trip)
+ (world-name world-key trip status)
  (progn
-  (pre-defcode-add-trip world-name world-key trip)
+  (pre-defcode-add-trip world-name world-key trip status)
   (when (and (eq (car trip) 'extend-progn!)
              (eq (cadr trip) 'global-value))
         (mv-let (erp val state)

@@ -7930,6 +7930,40 @@
 #-acl2-loop-only
 (defvar *lp-init-forms* nil)
 
+(defun expand-tilde-to-user-home-dir (str os ctx state)
+
+; Note that character `~' need not get special treatment by Windows.  See
+; comment just above error message below, and see absolute-pathname-string-p.
+
+  (cond ((or (equal str "~")
+             (and (< 1 (length str))
+                  (eql (char str 0) #\~)
+                  (eql (char str 1) #\/)))
+         (let ((user-home-dir (f-get-global 'user-home-dir state)))
+           (cond
+            (user-home-dir
+             (concatenate 'string
+                          user-home-dir
+                          (subseq str 1 (length str))))
+            (t
+
+; On Linux or Mac OS, it is surprising to find that user-home-dir is nil.  (See
+; the definition of lp to see how it is set.)  But on Windows, it seems that
+; this could be the case, say outside an environment like Cygwin, MSYS, or
+; MinGW.
+
+             (let ((certify-book-info (f-get-global 'certify-book-info state)))
+               (prog2$ (and (or certify-book-info
+                                (not (eq os :mswindows)))
+                            (er hard ctx
+                                "The use of ~~/ for the user home directory ~
+                                 in filenames is not supported ~@0."
+                                (if certify-book-info
+                                    "inside books being certified"
+                                  "for this host Common Lisp")))
+                       str))))))
+        (t str)))
+
 (defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
                                    toplevel-args inert-args return-from-lp
                                    init-forms)
@@ -8005,7 +8039,10 @@
 
           (cons (saved-build-date-string)
                 *saved-build-date-lst*))
-    (save-exec-raw exec-filename
+    (save-exec-raw (expand-tilde-to-user-home-dir exec-filename
+                                                  (os (w *the-live-state*))
+                                                  'save-exec
+                                                  *the-live-state*)
                    host-lisp-args
                    #+sbcl toplevel-args
                    inert-args))
