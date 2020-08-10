@@ -229,6 +229,9 @@ occasionally improve efficiency.</p>")
    item     ; the symbolp the user wrote as a guard
    world)
   (b* ((__function__ 'check-formal-guard)
+       ((unless world)
+        ;; Bypass these checks if there's no world available
+        nil)
        (macro-args (getprop item 'acl2::macro-args :bad 'acl2::current-acl2-world world))
        ((unless (eq macro-args :bad))
         ;; The shorthand guard is a macro.  Can't really check anything.

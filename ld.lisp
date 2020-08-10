@@ -2092,11 +2092,7 @@
                              state)))
                       (er-progn
                        (reset-kill-ring t state)
-                       (prog2$ #-acl2-loop-only
-                               (pop *checkpoint-world-len-and-alist-stack*)
-                               #+acl2-loop-only
-                               nil
-                               (value val))))))))
+                       (value val)))))))
 
 (defun oops-warning (state)
 

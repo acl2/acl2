@@ -4945,24 +4945,10 @@
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
     (std::defret-mutual-generate interp-st-bfrs-ok-of-<fn>
-      :formal-hyps
-      (((interp-st-bfr-p x)           (lbfr-p x (interp-st->logicman interp-st)))
-       ((fgl-object-p x)               (lbfr-listp (fgl-object-bfrlist x) (interp-st->logicman interp-st)))
-       ((fgl-objectlist-p x)           (lbfr-listp (fgl-objectlist-bfrlist x) (interp-st->logicman interp-st)))
-       ((fgl-object-bindings-p x)     (lbfr-listp (fgl-object-bindings-bfrlist x) (interp-st->logicman interp-st)))
-       (interp-st                     (interp-st-bfrs-ok interp-st))
-       ((constraint-instancelist-p x) (lbfr-listp (constraint-instancelist-bfrlist x) (interp-st->logicman interp-st))))
-      :return-concls
-      ((xbfr                        (lbfr-p xbfr (interp-st->logicman new-interp-st)))
-       ((fgl-object-p x)             (lbfr-listp (fgl-object-bfrlist x) (interp-st->logicman new-interp-st)))
-       ((fgl-objectlist-p x)         (lbfr-listp (fgl-objectlist-bfrlist x) (interp-st->logicman new-interp-st)))
-       (new-interp-st               (interp-st-bfrs-ok new-interp-st)))
       :rules
-      (;; (t (:add-keyword :hints ('(:do-not-induct t)
-       ;;                          (let ((flag (find-flag-is-hyp clause)))
-       ;;                            (and flag
-       ;;                                 (prog2$ (cw "flag: ~x0~%" flag)
-       ;;                                         '(:no-op t)))))))
+      ((t (:add-bindings
+           ((?new-logicman (interp-st->logicman new-interp-st))
+            (?logicman (interp-st->logicman interp-st)))))
        ((or (:fnname fgl-rewrite-try-rules)
             (:fnname fgl-rewrite-try-rule)
             (:fnname fgl-rewrite-try-rewrite)
@@ -4972,8 +4958,20 @@
             (:fnname fgl-rewrite-binder-try-rewrite)
             (:fnname fgl-rewrite-binder-try-meta)
             (:fnname fgl-rewrite-try-rules3))
-        (:add-hyp (scratchobj-case (stack$a-top-scratch (double-rewrite (interp-st->stack interp-st))) :fgl-objlist))))
-      
+        (:add-hyp (scratchobj-case (stack$a-top-scratch (double-rewrite (interp-st->stack interp-st)))
+                    :fgl-objlist))))
+      :formal-hyps    ;; generates hypotheses
+      (((interp-st-bfr-p x)           (lbfr-p x logicman))
+       ((fgl-object-p x)              (lbfr-listp (fgl-object-bfrlist x) logicman))
+       ((fgl-objectlist-p x)          (lbfr-listp (fgl-objectlist-bfrlist x) logicman))
+       ((fgl-object-bindings-p x)     (lbfr-listp (fgl-object-bindings-bfrlist x) logicman))
+       (interp-st                     (interp-st-bfrs-ok interp-st))
+       ((constraint-instancelist-p x) (lbfr-listp (constraint-instancelist-bfrlist x) logicman)))
+      :return-concls  ;; generates conclusions
+      ((xbfr                          (lbfr-p xbfr new-logicman))
+       ((fgl-object-p x)              (lbfr-listp (fgl-object-bfrlist x) new-logicman))
+       ((fgl-objectlist-p x)          (lbfr-listp (fgl-objectlist-bfrlist x) new-logicman))
+       (new-interp-st                 (interp-st-bfrs-ok new-interp-st)))
       :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world)
               `(:do-not-induct t
                 ;; :clause-processor (cmr::resolve-flags-cp clause
@@ -4984,9 +4982,7 @@
                 (and flag
                      (prog2$ (cw "flag: ~x0~%" flag)
                              '(:no-op t)))))
-      :mutual-recursion fgl-interp
-      ;; :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world))
-      )))
+      :mutual-recursion fgl-interp)))
 
 
 

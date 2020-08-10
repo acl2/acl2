@@ -688,7 +688,7 @@ write_whole_file($lisptmp, $instrs);
     $shinsts .= "echo >> '$outfile'\n";
 
     $shinsts .= "echo Environment variables: >> '$outfile'\n";
-    my @relevant_env_vars = ("ACL2_CUSTOMIZATION", "ACL2_SYSTEM_BOOKS", "ACL2");
+    my @relevant_env_vars = ("ACL2_CUSTOMIZATION", "ACL2_SYSTEM_BOOKS", "ACL2", "ACL2_USELESS_RUNES");
     foreach my $var (@relevant_env_vars) {
 	if (exists $ENV{$var}) {
 	    $shinsts .= "echo $var=$ENV{$var} >> '$outfile'\n";

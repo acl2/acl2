@@ -33,6 +33,7 @@
 (include-book "centaur/aignet/mark-impls" :dir :system)
 (include-book "aignet-pathcond-stobj")
 (include-book "centaur/aignet/deps" :dir :System)
+(include-book "centaur/aignet/lit-lists" :dir :System)
 (local (include-book "theory"))
 (local (include-book "std/util/termhints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -51,7 +52,7 @@
 
 (defsection nbalist-lookup
   (local (std::set-define-current-function nbalist-lookup))
-  (local (in-theory (enable nbalist-lookup)))
+  (local (in-theory (enable nbalist-lookup nbalist-boundp)))
 
   (local (defthm cdr-hons-assoc-equal-when-nbalistp
          (implies (nbalistp x)
@@ -60,12 +61,12 @@
                        (iff (bitp (cdr (hons-assoc-equal n x)))
                             (hons-assoc-equal n x))))))
 
-  (defret maybe-bitp-of-<fn>
-    (acl2::maybe-bitp ans)
-    :hints (("goal" :cases (ans)))
-    :rule-classes :type-prescription)
+  ;; (defret maybe-bitp-of-<fn>
+  ;;   (acl2::maybe-bitp ans)
+  ;;   :hints (("goal" :cases (ans)))
+  ;;   :rule-classes :type-prescription)
 
-  (defret bitp-of-<fn>
+  (defret bitp-of-<fn>-under-iff
     (iff (bitp ans) ans))
 
   (defthm nbalist-lookup-of-cons
@@ -77,6 +78,13 @@
                  (bfix val)
                rest-lookup)))
     :hints(("Goal" :in-theory (enable nbalist-fix))))
+
+  (defthm nbalist-boundp-of-cons
+    (equal (nbalist-boundp id (cons (cons key val) x))
+           (or (and (equal (nfix id) (nfix key))
+                    (not (and (zp key) (zbp val))))
+               (nbalist-boundp id x)))
+    :hints(("Goal" :in-theory (enable nbalist-fix nbalist-boundp))))
 
   (defthm nbalist-fix-of-cons
     (equal (nbalist-fix (cons pair x))
@@ -96,6 +104,15 @@
                 ((unless (consp x)) nil)
                 ((when (equal (nfix k) (caar x))) (cdar x)))
              (nbalist-lookup k (cdr x))))
+    :hints(("Goal" :expand ((hons-assoc-equal (nfix k) (nbalist-fix x)))))
+    :rule-classes :definition)
+
+  (defthmd nbalist-boundp-redef
+    (equal (nbalist-boundp k x)
+           (b* ((x (nbalist-fix x))
+                ((unless (consp x)) nil)
+                ((when (equal (nfix k) (caar x))) t))
+             (nbalist-boundp k (cdr x))))
     :hints(("Goal" :expand ((hons-assoc-equal (nfix k) (nbalist-fix x)))))
     :rule-classes :definition)
 
@@ -180,6 +197,7 @@
                  (and (< (caar nbalist) (nfix num-fanins))
                       (bounded-pathcond-p (cdr nbalist) num-fanins)))))
     :hints (("goal" :in-theory (e/d (nbalist-lookup-redef
+                                     nbalist-boundp-redef
                                      cdar-when-nbalistp)
                                     (bounded-pathcond-p
                                      bounded-pathcond-p-necc)))
@@ -259,7 +277,10 @@
                      `(:use ((:instance aignet-pathcond-eval-necc
                               (id key)
                               (nbalist (cons (cons key val) nbalist))))
-                       :in-theory (disable aignet-pathcond-eval-necc)))))))
+                       :expand ((:with nbalist-boundp-redef
+                                 (nbalist-boundp key (cons (cons key val) nbalist))))
+                       :in-theory (e/d ()
+                                       (aignet-pathcond-eval-necc))))))))
 
   (defthm aignet-pathcond-eval-of-cons-when-already-false
     (implies (not (aignet-pathcond-eval aignet nbalist invals regvals))
@@ -583,7 +604,7 @@
               (not (and (eql (car a) 0) (eql (cdr a) 0)))
               (not (nbalist-lookup (car a) x))
               (nbalistp x)))
-  :hints(("Goal" :in-theory (enable nbalist-lookup))))
+  :hints(("Goal" :in-theory (enable nbalist-lookup nbalist-boundp))))
 
 (local (in-theory (disable nbalistp-of-cons)))
 
@@ -611,6 +632,14 @@
     :hints (("goal" :induct t)
             (and stable-under-simplificationp
                  '(:in-theory (enable nbalist-lookup-redef)))))
+
+  (defthm nbalist-boundp-of-extension
+    (implies (and (nbalist-extension-p x y)
+                  (nbalist-boundp k y))
+             (nbalist-boundp k x))
+    :hints (("goal" :induct t)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable nbalist-boundp-redef)))))
 
   (defthm nbalist-extension-implies-len-gte
     (implies (nbalist-extension-p x y)
@@ -641,15 +670,19 @@
 (define nbalist-bound ((x nbalistp))
   :measure (len (nbalist-fix x))
   :returns (bound natp :rule-classes :type-prescription)
+  :verify-guards nil
   (b* ((x (nbalist-fix x))
        ((when (atom x)) 0))
     (max (caar x)
          (nbalist-bound (cdr x))))
   ///
+  (verify-guards nbalist-bound)
+
   (defthmd nbalist-lookup-implies-id-lte-bound
     (implies (nbalist-lookup id nbalist)
              (<= (nfix id) (nbalist-bound nbalist)))
-    :hints(("Goal" :in-theory (enable nbalist-lookup-redef)))
+    :hints(("Goal" :in-theory (enable nbalist-lookup-redef
+                                      nbalist-boundp-redef)))
     :rule-classes :forward-chaining)
 
   (defthmd nbalist-lookup-implies-id-lte-bound-natp
@@ -712,7 +745,8 @@
                             (id (if (depends-on (nfix key) (innum->id v aignet) aignet)
                                     key
                                   (nbalist-depends-on-witness . ,(cdr other-lit))))))
-                     :in-theory (disable nbalist-depends-on-suff)))))
+                     :in-theory (e/d ()
+                                     (nbalist-depends-on-suff))))))
     :otf-flg t)
 
   (defthm nbalist-depends-on-of-nbalist-fix
@@ -898,7 +932,11 @@
   
   (defret lookup-0-of-<fn>
     (equal (nbalist-lookup 0 new-nbalist-stobj) (nbalist-lookup 0 nbalist-stobj))
-    :hints(("Goal" :in-theory (enable nbalist-lookup)))))
+    :hints(("Goal" :in-theory (enable nbalist-lookup nbalist-boundp))))
+
+  (defret boundp-0-of-<fn>
+    (equal (nbalist-boundp 0 new-nbalist-stobj) (nbalist-boundp 0 nbalist-stobj))
+    :hints(("Goal" :in-theory (enable nbalist-boundp)))))
 
 
 (define nbalist-stobj-rewind ((len natp)
@@ -1147,6 +1185,7 @@
                            (cdar nbalist))
                     (aignet-pathcond-eval aignet (cdr nbalist) invals regvals)))))
   :hints (("goal" :in-theory (e/d (nbalist-lookup-redef
+                                   nbalist-boundp-redef
                                    cdar-when-nbalistp)
                                   (aignet-pathcond-eval
                                    aignet-pathcond-eval-necc)))
@@ -1209,6 +1248,13 @@
     :hints(("Goal" :in-theory (enable bounded-pathcond-p-redef
                                       aignet-lit-listp
                                       aignet-idp))))
+
+  (defret lits-max-id-val-of-<fn>
+    (implies (and (bounded-pathcond-p nbalist bound)
+                  (posp bound))
+             (< (lits-max-id-val cube) bound))
+    :hints(("Goal" :in-theory (enable bounded-pathcond-p-redef
+                                      lits-max-id-val))))
 
   (defret len-of-<fn>
     (equal (len cube)

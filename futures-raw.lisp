@@ -571,28 +571,6 @@
        (futures-parallelism-buffer-has-space-available)
        (not-too-many-futures-already-in-existence)))
 
-(defmacro unwind-protect-disable-interrupts-during-cleanup
-  (body-form &rest cleanup-forms)
-
-; As the name suggests, this is unwind-protect but with a guarantee that
-; cleanup-form cannot be interrupted.  Note that CCL's implementation already
-; disables interrupts during cleanup.
-
-  #+ccl
-  `(unwind-protect ,body-form ,@cleanup-forms)
-  #+sb-thread
-  `(unwind-protect ,body-form (without-interrupts ,@cleanup-forms))
-
-; Parallelism wart: we should specify a Lispworks compile-time definition (as
-; we did for CCL and SBCL).  Or, perhaps we should merge the CCL definition
-; into the LispWorks definition.  Regardless, we need to check that interrupts
-; are disabled during the cleanup form in LispWorks and then make a note that
-; LispWorks has this property (perhaps by merging with the note about CCL,
-; above).
-
-  #-(or ccl sb-thread)
-  `(unwind-protect ,body-form ,@cleanup-forms))
-
 (define-atomically-modifiable-counter *threads-waiting-for-starting-core*
 
 ; Once upon a time this variable was only used for debugging purposes, so we

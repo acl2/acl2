@@ -69,6 +69,14 @@
                                            hons-assoc-equal-when-equal-car-nth)
                  :induct (nth n x)))))
 
+(local (defthm nbalist-boundp-of-nth-n
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x)))
+                  (nbalist-boundp (car (nth n x)) x))
+         :hints(("Goal" :in-theory (enable nbalist-lookup nbalistp nth hons-assoc-equal
+                                           hons-assoc-equal-when-equal-car-nth)
+                 :induct (nth n x)))))
+
 (local (defthm nthcdr-of-nil
          (equal (nthcdr n nil) nil)))
 
