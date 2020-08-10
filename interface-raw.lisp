@@ -3207,13 +3207,7 @@
 ; new state and then have the computation aborted.  To handle this,
 ; extend-world1 and retract-world1 both save the current world alist
 ; before they begin to make any changes.  If they are interrupted, the
-; original configuration can be recovered by retracting back to nil
-; and then extending to the saved current world.  This is admittedly
-; inefficient -- all 20,000 properties of a typical current-acl2-world
-; might have to be stored again because we didn't bother to remember
-; how much of the extension we had done when we were interrupted.  On
-; the other hand, it is truly simple and elegant and only comes into
-; play with aborts during installation.
+; original configuration is recovered by an unwind-protect cleanup form.
 
 ; Inspection of the lisp code for defpkg will reveal that it is
 ; sensitive to abort recovery in one other aspect.  If we are in abort
@@ -3386,7 +3380,12 @@
                    (get name '*undo-stack*)))))
         #+hons
         (memoize
-         (push `(unmemoize-fn ',name)
+
+; We check that the function is actually memoized.  See the comment about this
+; in the memoize case of add-trip.
+
+         (push `(when (memoizedp-raw ',name)
+                  (unmemoize-fn ',name))
                (get name '*undo-stack*)))
         #+hons
         (unmemoize
@@ -3435,16 +3434,6 @@
      ((null stk) nil)
      (t (eval (car stk))
         (setf (get name '*undo-stack*) (cdr stk))))))
-
-(defun-one-output flush-undo-stack (name)
-
-; We completely wipe out the undo-stack of name, after returning
-; the relevant cell to its initial configuration.
-
-  (let* ((name (if (symbolp name) name (intern name "ACL2")))
-         (stk (get name '*undo-stack*)))
-    (cond (stk (eval (car (last stk)))))
-    (remprop name '*undo-stack*)))
 
 ; Now we define the two programs that manage the stacks of old
 ; property values.
@@ -5920,7 +5909,7 @@
 
   '(apply$-prim apply$-lambda))
 
-(defun-one-output add-trip (world-name world-key trip)
+(defun-one-output add-trip (world-name world-key trip status)
 
 ; Warning: If you change this function, consider making corresponding changes
 ; to hcomp-build-from-state-raw.
@@ -5935,15 +5924,21 @@
 ; these will ultimately be behind the world-key property (as guaranteed at the
 ; end of the code for this function).
 
+; For an explanation of status and its connection to the uses of
+; without-interrupts below, see the comment in extend-world1 where status is
+; bound.
+
   (global-symbol (car trip))
   (*1*-symbol? (car trip)) ; e.g. hard-error for *1*-symbol with (table :a 3 4)
 
 ; Our next step is to push val onto the key stack in (get symb world-key).
 
-  (setf (get (car trip) world-key)
-        (destructive-push-assoc (cadr trip) (cddr trip)
-                                (get (car trip) world-key)
-                                world-key))
+  (without-interrupts
+   (let ((alist (get (car trip) world-key)))
+     (setf (get (car trip) world-key)
+           (destructive-push-assoc (cadr trip) (cddr trip) alist world-key))
+     (setf (car status) (cadr trip))
+     (setf (cdr status) alist)))
 
 ; Now, in the case that we are messing with 'current-acl2-world and
 ; symb is 'CLTL-COMMAND and key is 'GLOBAL-VALUE, we smash the
@@ -6017,57 +6012,65 @@
 
                  nil)
                 (new-*1*-defs nil))
-            (dolist
-              (def (cdddr (cddr trip)))
-              (cond ((and boot-strap-flg
-                          (not (global-val 'boot-strap-pass-2 wrld)))
+            (without-interrupts
+
+; We need all the calls of maybe-push-undo-stack to be done atomically, in
+; support of extend-world1 (specifically, the invocation of retract-world1 in
+; the cleanup form of extend-world1).  We expect that disabling interrupts here
+; will not prevent interruptions from taking place quickly overall, because the
+; actions below will be completed very quickly.
+
+             (dolist
+               (def (cdddr (cddr trip)))
+               (cond ((and boot-strap-flg
+                           (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
 ; defined already be defined in raw lisp.  During pass two we can't expect this
 ; because there may be LOCAL defuns that got skipped during compilation and the
 ; first pass.
 
-                     (or (fboundp (car def))
+                      (or (fboundp (car def))
 
 ; Note that names of macros are fboundp, so we can get away with symbols that
 ; are defined to be macros in raw Lisp but functions in the logic (e.g.,
 ; return-last).
 
-                         (interface-er "~x0 is not fboundp!"
-                                       (car def)))
+                          (interface-er "~x0 is not fboundp!"
+                                        (car def)))
 
 ; But during the first pass of initialization, we do NOT assume that every (or
 ; any) function's corresponding *1* function has been defined.  So we take care
 ; of that now.
 
-                     (or (member-eq (car def)
+                      (or (member-eq (car def)
 
 ; For explanation of the special handling of the first three of the following
 ; function symbols, see the comments in their defun-*1* forms.  For
 ; *defun-overrides*, we have already taken responsibility for defining *1*
 ; functions that we don't want to override here.
 
-                                    `(mv-list return-last wormhole-eval
-                                              ,@*defun-overrides*))
-                         (setq new-*1*-defs
-                               (cons (list* 'oneify-cltl-code
-                                            defun-mode
-                                            def
+                                     `(mv-list return-last wormhole-eval
+                                               ,@*defun-overrides*))
+                          (setq new-*1*-defs
+                                (cons (list* 'oneify-cltl-code
+                                             defun-mode
+                                             def
 
 ; The if below returns the stobj name being introduced, if any.
 
-                                            (if (consp ignorep)
-                                                (cdr ignorep)
-                                              nil))
-                                     new-*1*-defs))))
-                    ((and (not ignorep)
-                          (equal *main-lisp-package-name*
-                                 (symbol-package-name (car def))))
-                     (interface-er "It is illegal to redefine a function in ~
+                                             (if (consp ignorep)
+                                                 (cdr ignorep)
+                                               nil))
+                                      new-*1*-defs))))
+                     ((and (not ignorep)
+                           (equal *main-lisp-package-name*
+                                  (symbol-package-name (car def))))
+                      (interface-er "It is illegal to redefine a function in ~
                                     the main Lisp package, such as ~x0!"
-                                   (car def)))
-                    ((and (consp ignorep)
-                          (eq (car ignorep) 'defstobj))
+                                    (car def)))
+                     ((and (consp ignorep)
+                           (eq (car ignorep) 'defstobj))
 
 ; We wait for the cltl-command from the defstobj or defabsstobj (which is laid
 ; down last by defstobj-fn or defabsstobj-fn, using install-event) before
@@ -6078,11 +6081,11 @@
 ; still save the existing values (if any) of the current def and the current
 ; *1* def; see the next comment about ignorep.
 
-                     (maybe-push-undo-stack 'defun (car def) ignorep))
-                    ((and boot-strap-flg
-                          (member-eq (car def)
-                                     *boot-strap-pass-2-acl2-loop-only-fns*)))
-                    (t (maybe-push-undo-stack 'defun (car def) ignorep)
+                      (maybe-push-undo-stack 'defun (car def) ignorep))
+                     ((and boot-strap-flg
+                           (member-eq (car def)
+                                      *boot-strap-pass-2-acl2-loop-only-fns*)))
+                     (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
 ; Note: If ignorep is '(defstobj . stobj), we save both the current def and the
 ; current *1* def.  If ignorep is 'reclassifying, we save only the *1* def.
@@ -6091,19 +6094,20 @@
 ; neither.  The code for installing a defstobj CLTL-COMMAND doesn't bother to
 ; do undo-stack work, because it knows both cells were saved by the defun.
 
-                       (or ignorep
-                           (setq new-defs (cons (cons 'defun def) new-defs)))
-                       (setq new-*1*-defs
-                             (cons (list* 'oneify-cltl-code
-                                          defun-mode
-                                          def
+                        (or ignorep
+                            (setq new-defs (cons (cons 'defun def) new-defs)))
+                        (setq new-*1*-defs
+                              (cons (list* 'oneify-cltl-code
+                                           defun-mode
+                                           def
 
 ; The if below returns the stobj name being introduced, if any.
 
-                                          (if (consp ignorep)
-                                              (cdr ignorep)
-                                            nil))
-                                   new-*1*-defs)))))
+                                           (if (consp ignorep)
+                                               (cdr ignorep)
+                                             nil))
+                                    new-*1*-defs)))))
+             (setf (cdr status) 'maybe-push-undo-stack-completed))
             (setq new-defs (nconc new-defs new-*1*-defs))
             (install-defs-for-add-trip new-defs
                                        (eq ignorep 'reclassifying)
@@ -6166,154 +6170,156 @@
 ; body), where dcl may be omitted.  We make a function or macro definition for
 ; each raw-def, and we make a defun for the oneification of each axiomatic-def.
 
-          (let* ((absp (eq (car (cddr trip)) 'defabsstobj))
-                 (name (nth 1 (cddr trip)))
-                 (the-live-name (nth 2 (cddr trip)))
-                 (init (nth 3 (cddr trip)))
-                 (raw-defs (nth 4 (cddr trip)))
-                 (template-or-event (nth 5 (cddr trip))) ; event iff absp
-                 (ax-defs (nth 6 (cddr trip)))
-                 (event-form (if absp
-                                 template-or-event
-                               (nth 7 (cddr trip))))
-                 (non-executable (and (not absp)
-                                      (access defstobj-template
-                                              template-or-event
-                                              :non-executable)))
-                 (new-defs
+         (let* ((absp (eq (car (cddr trip)) 'defabsstobj))
+                (name (nth 1 (cddr trip)))
+                (the-live-name (nth 2 (cddr trip)))
+                (init (nth 3 (cddr trip)))
+                (raw-defs (nth 4 (cddr trip)))
+                (template-or-event (nth 5 (cddr trip))) ; event iff absp
+                (ax-defs (nth 6 (cddr trip)))
+                (event-form (if absp
+                                template-or-event
+                              (nth 7 (cddr trip))))
+                (non-executable (and (not absp)
+                                     (access defstobj-template
+                                             template-or-event
+                                             :non-executable)))
+                (new-defs
 
 ; We avoid "undefined function" warnings by Allegro during compilation by
 ; defining all the functions first, and compiling them only after they have all
 ; been defined.  But we go further; see the comment in the binding of new-defs
 ; in the previous case.
 
-                  nil))
+                 nil))
+           (without-interrupts
             (maybe-push-undo-stack 'defconst '*user-stobj-alist*)
+            (setf (cdr status) 'maybe-push-undo-stack-completed))
 
 ; Memoize-flush expects the variable (st-lst name) to be bound.  We take care
 ; of that directly here.  We see no need to involve install-for-add-trip or the
 ; like.
 
-            #+hons (let ((var (st-lst name)))
-                     (or (boundp var)
-                         (eval `(defg ,var nil))))
+           #+hons (let ((var (st-lst name)))
+                    (or (boundp var)
+                        (eval `(defg ,var nil))))
 
 ; As with defconst we want to make it look like we eval'd this defstobj or
 ; defabsstobj in raw lisp, so we set up the redundancy stuff:
 
-            (setf (get the-live-name 'redundant-raw-lisp-discriminator)
-                  (cond (absp event-form)
-                        (t (cons 'defstobj
-                                 (make
-                                  defstobj-redundant-raw-lisp-discriminator-value
-                                  :event event-form
-                                  :creator
-                                  (access defstobj-template
-                                          template-or-event
-                                          :creator)
-                                  :congruent-stobj-rep
-                                  (or (access defstobj-template
-                                              template-or-event
-                                              :congruent-to)
-                                      name)
-                                  :non-memoizable
-                                  (access defstobj-template
-                                          template-or-event
-                                          :non-memoizable)
-                                  :non-executable non-executable)))))
+           (setf (get the-live-name 'redundant-raw-lisp-discriminator)
+                 (cond (absp event-form)
+                       (t (cons 'defstobj
+                                (make
+                                 defstobj-redundant-raw-lisp-discriminator-value
+                                 :event event-form
+                                 :creator
+                                 (access defstobj-template
+                                         template-or-event
+                                         :creator)
+                                 :congruent-stobj-rep
+                                 (or (access defstobj-template
+                                             template-or-event
+                                             :congruent-to)
+                                     name)
+                                 :non-memoizable
+                                 (access defstobj-template
+                                         template-or-event
+                                         :non-memoizable)
+                                 :non-executable non-executable)))))
 
 ; The following assignment to *user-stobj-alist* is structured to keep
 ; new ones at the front, so we can more often exploit the optimization
 ; in put-assoc-eq-alist.
 
-            (setq *user-stobj-alist*
-                  (cond ((assoc-eq name *user-stobj-alist*)
+           (setq *user-stobj-alist*
+                 (cond ((assoc-eq name *user-stobj-alist*)
 
 ; This is a redefinition!  We'll just replace the old entry.
 
-                         (if non-executable
-                             (remove1-assoc-eq name *user-stobj-alist*)
-                           (put-assoc-eq name
-                                         (eval init)
-                                         *user-stobj-alist*)))
-                        (non-executable *user-stobj-alist*)
-                        (t (cons (cons name (eval init))
-                                 *user-stobj-alist*))))
+                        (if non-executable
+                            (remove1-assoc-eq name *user-stobj-alist*)
+                          (put-assoc-eq name
+                                        (eval init)
+                                        *user-stobj-alist*)))
+                       (non-executable *user-stobj-alist*)
+                       (t (cons (cons name (eval init))
+                                *user-stobj-alist*))))
 
 ; We eval and compile the raw lisp definitions first, some of which may be
 ; macros (because :inline t was supplied for defstobj, or because we are
 ; handling defabsstobj), before dealing with the *1* functions.
 
-            (dolist
-              (def raw-defs)
-              (cond ((and boot-strap-flg
-                          (not (global-val 'boot-strap-pass-2 wrld)))
+           (dolist
+             (def raw-defs)
+             (cond ((and boot-strap-flg
+                         (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
 ; defined already be defined in raw lisp.  During pass two we can't expect this
 ; because there may be LOCAL defuns that got skipped during compilation and the
 ; first pass.
 
-                     (or (fboundp (car def))
-                         (interface-er "~x0 is not fboundp!"
-                                       (car def))))
-                    ((equal *main-lisp-package-name*
-                            (symbol-package-name (car def)))
-                     (interface-er
-                      "It is illegal to redefine a function in the main Lisp ~
-                       package, such as ~x0!"
-                      (car def)))
+                    (or (fboundp (car def))
+                        (interface-er "~x0 is not fboundp!"
+                                      (car def))))
+                   ((equal *main-lisp-package-name*
+                           (symbol-package-name (car def)))
+                    (interface-er
+                     "It is illegal to redefine a function in the main Lisp ~
+                      package, such as ~x0!"
+                     (car def)))
 
 ; We don't do maybe-push-undo-stack for defuns (whether inlined or not) under
 ; the defstobj or defabsstobj CLTL-COMMAND, because we did it for their
 ; defuns.
 
-                    (t
-                     (let ((def (cond
-                                 (absp (cons 'defmacro def))
-                                 ((member-equal *stobj-inline-declare* def)
+                   (t
+                    (let ((def (cond
+                                (absp (cons 'defmacro def))
+                                ((member-equal *stobj-inline-declare* def)
 
 ; We now handle the case where we are going to inline the function calls by
 ; defining the function as a defabbrev.  Note that this is allowed for
 ; access/update/array-length functions for stobjs, but only for these, where
 ; speed is often a requirement for efficiency.
 
-                                  (cons 'defabbrev
-                                        (remove-stobj-inline-declare def)))
-                                 (t (cons 'defun def)))))
-                       (setq new-defs (cons def new-defs))))))
-            (dolist
-              (def ax-defs)
-              (setq new-defs (cons (list* 'oneify-cltl-code :logic def name)
-                                   new-defs)))
-            (setq new-defs
+                                 (cons 'defabbrev
+                                       (remove-stobj-inline-declare def)))
+                                (t (cons 'defun def)))))
+                      (setq new-defs (cons def new-defs))))))
+           (dolist
+             (def ax-defs)
+             (setq new-defs (cons (list* 'oneify-cltl-code :logic def name)
+                                  new-defs)))
+           (setq new-defs
 
 ; We reverse new-defs because we want to be sure to define the *1*
 ; defs after the raw Lisp defs (which may be macros, because of :inline).
 
-                  (nreverse new-defs))
-            (install-defs-for-add-trip new-defs nil wrld (not boot-strap-flg)
-                                       t)
-            (when (and (eq (f-get-global 'compiler-enabled *the-live-state*)
-                           t)
-                       (not *inside-include-book-fn*)
-                       (default-compile-fns wrld))
-              (dolist (def new-defs)
-                (assert$
+                 (nreverse new-defs))
+           (install-defs-for-add-trip new-defs nil wrld (not boot-strap-flg)
+                                      t)
+           (when (and (eq (f-get-global 'compiler-enabled *the-live-state*)
+                          t)
+                      (not *inside-include-book-fn*)
+                      (default-compile-fns wrld))
+             (dolist (def new-defs)
+               (assert$
 
 ; Install-defs-for-add-trip can't make def nil, since the value of
 ; 'ld-skip-proofsp is not 'include-book.
 
-                 def
-                 (let ((name (cond ((or (eq (car def) 'defun)
-                                        (eq (car def) 'defabbrev)
-                                        (eq (car def) 'defmacro))
-                                    (cadr def))
-                                   ((eq (car def) 'oneify-cltl-code)
-                                    (car (caddr def)))
-                                   (t (error "Implementation error: ~
+                def
+                (let ((name (cond ((or (eq (car def) 'defun)
+                                       (eq (car def) 'defabbrev)
+                                       (eq (car def) 'defmacro))
+                                   (cadr def))
+                                  ((eq (car def) 'oneify-cltl-code)
+                                   (car (caddr def)))
+                                  (t (error "Implementation error: ~
                                               unexpected form in add-trip, ~x0"
-                                             def)))))
+                                            def)))))
 
 ; CMUCL versions 18e and 19e cannot seem to compile macros at the top level.
 ; Email from Raymond Toy on June 9, 2004 suggests that this appears to be a bug
@@ -6321,14 +6327,16 @@
 ; version 18 or 19 of CMUCL, but we'll avoid that for CMUCL version 20, since
 ; 20D at least can compile macros.
 
-                   #+(and cmu (or cmu18 cmu19))
-                   (cond ((and (not (eq (car def) 'defabbrev))
-                               (not (eq (car def) 'defmacro)))
-                          (eval `(compile ',name))))
-                   #-(and cmu (or cmu18 cmu19))
-                   (eval `(compile ',name))))))))
+                  #+(and cmu (or cmu18 cmu19))
+                  (cond ((and (not (eq (car def) 'defabbrev))
+                              (not (eq (car def) 'defmacro)))
+                         (eval `(compile ',name))))
+                  #-(and cmu (or cmu18 cmu19))
+                  (eval `(compile ',name))))))))
         (defpkg
-          (maybe-push-undo-stack 'defpkg (cadr (cddr trip)))
+          (without-interrupts
+           (maybe-push-undo-stack 'defpkg (cadr (cddr trip)))
+           (setf (cdr status) 'maybe-push-undo-stack-completed))
           (eval (cons 'defpkg (cdr (cddr trip)))))
         (defconst
 
@@ -6424,43 +6432,50 @@
                  (interface-er "It is illegal to redefine a defconst in the ~
                                 main Lisp package, such as ~x0!"
                                (cadr (cddr trip))))
-                (t (maybe-push-undo-stack 'defconst (cadr (cddr trip)))
+                (t (without-interrupts
+                    (maybe-push-undo-stack 'defconst (cadr (cddr trip)))
 
 ; We do not want to eval (defconst var form) here because that will recompute
 ; val.  But we make raw Lisp look like it did that.
 
-                   (setf (get (cadr (cddr trip))
-                              'redundant-raw-lisp-discriminator)
-                         (list* 'defconst
-                                (caddr (cddr trip)) ; form
-                                (cadddr (cddr trip)))) ; val
-                   (install-for-add-trip `(defparameter ,(cadr (cddr trip))
-                                            ',(cadddr (cddr trip)))
-                                         nil
-                                         t))))
+                    (setf (get (cadr (cddr trip))
+                               'redundant-raw-lisp-discriminator)
+                          (list* 'defconst
+                                 (caddr (cddr trip))    ; form
+                                 (cadddr (cddr trip)))) ; val
+                    (install-for-add-trip `(defparameter ,(cadr (cddr trip))
+                                             ',(cadddr (cddr trip)))
+                                          nil
+                                          t)
+                    (setf (cdr status)
+                          'maybe-push-undo-stack-completed)))))
         (defmacro
-          (cond ((and boot-strap-flg
-                      (not (global-val 'boot-strap-pass-2 wrld)))
+            (cond ((and boot-strap-flg
+                        (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
 ; defined already be defined in raw lisp.  During pass two we can't expect this
 ; because there may be LOCAL defuns that got skipped during compilation and the
 ; first pass.
 
-                 (or (fboundp (cadr (cddr trip)))
-                     (interface-er "~x0 is not fboundp!"
-                                   (cadr (cddr trip)))))
-                ((equal *main-lisp-package-name*
-                        (symbol-package-name (cadr (cddr trip))))
-                 (interface-er "It is illegal to redefine a macro in the ~
+                   (or (fboundp (cadr (cddr trip)))
+                       (interface-er "~x0 is not fboundp!"
+                                     (cadr (cddr trip)))))
+                  ((equal *main-lisp-package-name*
+                          (symbol-package-name (cadr (cddr trip))))
+                   (interface-er "It is illegal to redefine a macro in the ~
                                 main Lisp package, such as ~x0!"
-                               (cadr (cddr trip))))
-                (t (maybe-push-undo-stack 'defmacro (cadr (cddr trip)))
-                   (install-for-add-trip (cddr trip) nil t))))
+                                 (cadr (cddr trip))))
+                  (t (without-interrupts
+                      (maybe-push-undo-stack 'defmacro (cadr (cddr trip)))
+                      (setf (cdr status) 'maybe-push-undo-stack-completed))
+                     (install-for-add-trip (cddr trip) nil t))))
         (attachment ; (cddr trip) is produced by attachment-cltl-cmd
          (dolist (x (cdr (cddr trip)))
            (let ((name (if (symbolp x) x (car x))))
-             (maybe-push-undo-stack 'attachment name)
+             (without-interrupts
+              (maybe-push-undo-stack 'attachment name)
+              (setf (cdr status) 'maybe-push-undo-stack-completed))
              (unless (eq name *special-cltl-cmd-attachment-mark-name*)
 
 ; See maybe-push-undo-stack for relevant discussion of the condition above.
@@ -6474,7 +6489,18 @@
                 t)))))
         #+hons
         (memoize
-         (maybe-push-undo-stack 'memoize (cadr (cddr trip)))
+
+; Should we push onto the undo-stack first or should we memoize first?  The
+; danger of memoizing first is that an interrupt could come immediately after
+; that, before pushing onto the undo-stack.  This would leave the function
+; memoized after cleaning up in extend-world1 (by executing retract-world1).
+; So instead, we push first; then if we're interrupted before memoization is
+; complete, we are OK because the form pushed by maybe-push-undo-stack checks
+; that the function is memoized before unmemoizing it.
+
+         (without-interrupts
+          (maybe-push-undo-stack 'memoize (cadr (cddr trip)))
+          (setf (cdr status) 'maybe-push-undo-stack-completed))
          (let* ((tuple (cddr trip))
                 (cl-defun (nth 4 tuple)))
            (assert$ cl-defun
@@ -6493,8 +6519,10 @@
                                  :aokp       (nth 12 tuple))))))
         #+hons
         (unmemoize
-         (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
-         (unmemoize-fn (cadr (cddr trip))))))))
+         (without-interrupts
+          (unmemoize-fn (cadr (cddr trip)))
+          (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
+          (setf (cdr status) 'maybe-push-undo-stack-completed)))))))
 
 ; Finally, we make sure always to leave the *current-acl2-world-key* as the
 ; first property on the symbol-plist of the symbol.
@@ -6505,8 +6533,7 @@
            (setf (symbol-plist (car trip))
                  (cons *current-acl2-world-key*
                        (cons temp
-                             (remove-current-acl2-world-key
-                              plist))))))))
+                             (remove-current-acl2-world-key plist))))))))
 
 (defun-one-output undo-trip (world-name world-key trip)
 
@@ -6548,34 +6575,6 @@
                  (maybe-pop-undo-stack name)))))
           (otherwise nil)))))
 
-(defun-one-output flush-trip (name world-key trip)
-  (remprop (car trip) world-key)
-  (cond ((and (eq name 'current-acl2-world)
-              (eq (car trip) 'cltl-command)
-              (eq (cadr trip) 'global-value)
-              (consp (cddr trip)))
-         (case (car (cddr trip))
-          (defuns
-
-; Note that :inlined stobj functions are handled properly here; see the
-; corresponding comment in undo-trip.
-
-            (dolist (tuple (cdddr (cddr trip)))
-                    (flush-undo-stack (car tuple))))
-          ((defstobj defabsstobj)
-            (let ((name (nth 1 (cddr trip))))
-              (flush-undo-stack name)
-              (flush-undo-stack '*user-stobj-alist*)))
-          (defpkg nil)
-          ((defconst defmacro #+hons memoize #+hons unmemoize)
-            (flush-undo-stack (cadr (cddr trip))))
-          (attachment ; (cddr trip) is produced by attachment-cltl-cmd
-           (let ((lst (cdr (cddr trip))))
-             (dolist (x lst)
-               (let ((name (if (symbolp x) x (car x))))
-                 (flush-undo-stack name)))))
-          (otherwise nil)))))
-
 (defvar *bad-wrld*)
 
 (defun check-acl2-world-invariant (wrld old-wrld)
@@ -6590,7 +6589,7 @@
                   (w *the-live-state*)))
          (setq *bad-wrld* wrld)
          (interface-er
-          "Extend-world1 or rollback-world1 has been asked to install ~
+          "Extend-world1 or retract-world1 has been asked to install ~
            a world at a moment when the current global value of ~
            'current-acl2-world was not the installed world!  The ~
            world we were asked to install may be found in the variable ~
@@ -6667,25 +6666,39 @@
 ; If you don't want these changes to occur to your state, don't call
 ; this program!
 
-  (let ((pair (get name 'acl2-world-pair)) old-wrld world-key new-trips)
-    (cond
-     ((null pair)
-      (setq pair (cons nil (if (eq name 'current-acl2-world)
-                               *current-acl2-world-key*
-                               (gensym))))
-      (pushnew name *known-worlds*)
-      (cond ((eq name 'current-acl2-world)
-             (f-put-global 'current-acl2-world nil *the-live-state*)))
-      (setf (get name 'acl2-world-pair) pair)))
-    (setq old-wrld (car pair))
-    (setq world-key (cdr pair))
+  (let ((status
+
+; This variable is a cons that may be destructively modified.  Its value is
+; normally '(nil . nil).  Immediately after add-trip completes a call of
+; (destructive-push-assoc key val alist world-key), the value of status becomes
+; (cons key alist).  Then if there are maybe-push-undo-stack calls, the value
+; is (cons <irrelevant> maybe-push-undo-stack-completed) immediately after they
+; are (atomically) completed.  For more on this, see the cleanup form below.
+
+         (cons nil nil))
+        (state *the-live-state*)
+        (pair (get name 'acl2-world-pair))
+        old-wrld world-key new-trips)
+    (unwind-protect-disable-interrupts-during-cleanup
+     (progn
+       (cond
+        ((null pair)
+         (setq pair (cons nil (if (eq name 'current-acl2-world)
+                                  *current-acl2-world-key*
+                                (gensym))))
+         (pushnew name *known-worlds*)
+         (cond ((eq name 'current-acl2-world)
+                (f-put-global 'current-acl2-world nil state)))
+         (setf (get name 'acl2-world-pair) pair)))
+       (setq old-wrld (car pair))
+       (setq world-key (cdr pair))
 
 ; Pair is of the form (old-wrld . world-key) and means that the world
 ; currently installed under name is old-wrld and its properties are
 ; stored at world-key.
 
-    (cond ((eq name 'current-acl2-world)
-           (check-acl2-world-invariant wrld old-wrld)))
+       (cond ((eq name 'current-acl2-world)
+              (check-acl2-world-invariant wrld old-wrld)))
 
 ; We now scan down the about-to-be-installed world and push onto the
 ; temporary new-trips the triples that constitute the extension.  If
@@ -6696,31 +6709,23 @@
 ; order, the triples we must install.  The order in which we push the
 ; values into the property lists is important!
 
-    (do ((tl wrld (cdr tl)))
-        ((equal tl old-wrld)) ; best to avoid eq; see comment in retract-world1
-        (cond
-         ((null tl)
-          (setq *bad-wrld* wrld)
-          (er hard 'extend-world1
-              "Extend-world1 was called upon to ``extend'' ~x0.  But ~
-               the world supplied to extend-world1, which is now the ~
-               value of the Lisp global *bad-wrld*, is not an ~
-               extension of the current ~x0.  The alist corresponding ~
-               to the current ~x0 may be obtained via ~x1.  No ~
-               properties were modified -- that is, the symbol-plists ~
-               still reflect the pre-extend-world1 ~x0."
-              name
-              `(car (get ',name 'acl2-world-pair))))
-         (t (push (car tl) new-trips))))
-    (let ((state *the-live-state*))
-
-; We bind state only so our use of acl2-unwind-protect below isn't so odd
-; looking.  Logically the body never signals an error, but if an abort
-; occurs, we will do recover-world for cleanup.
-
-      (acl2-unwind-protect
-       "extend-world1"
-       (value
+       (do ((tl wrld (cdr tl)))
+           ((equal tl old-wrld)) ; best to avoid eq; see comment in retract-world1
+           (cond
+            ((null tl)
+             (setq *bad-wrld* wrld)
+             (er hard 'extend-world1
+                 "Extend-world1 was called upon to ``extend'' ~x0.  But the ~
+                  world supplied to extend-world1, which is now the value of ~
+                  the Lisp global *bad-wrld*, is not an extension of the ~
+                  current ~x0.  The alist corresponding to the current ~x0 ~
+                  may be obtained via ~x1.  No properties were modified -- ~
+                  that is, the symbol-plists still reflect the ~
+                  pre-extend-world1 ~x0.  You may report this problem to the ~
+                  ACL2 implementors."
+                 name
+                 `(car (get ',name 'acl2-world-pair))))
+            (t (push (car tl) new-trips))))
 
 ; It is a bit unfortunate to use with-more-warnings-suppressed below, since we
 ; have such a call in LP.  However, this is how we see a way to suppress
@@ -6730,42 +6735,84 @@
 ; least, we have seen this with CCL and Allegro CL -- but only for calls of
 ; compile-file.
 
-        (with-more-warnings-suppressed
+       (with-more-warnings-suppressed
+        (loop
+         (when (null new-trips) (return))
+         (let ((trip (car new-trips)))
+           (setf (cdr status) nil)
+           (add-trip name world-key trip status)
+           (setq new-trips (cdr new-trips))))
+        (setf (car pair) wrld)))
 
-; Observe that wrld has recover-world properties (a) and (b).  (a) at
-; the time of any abort during this critical section, every symbol
-; that may have a world-key property is in wrld (because the only
-; symbols with a world-key property initially are those in old-wrld,
-; wrld is an extension of old-wrld, and during the critical section we
-; add world-key properties just to symbols in wrld); and (b): every
-; symbol in old-wrld is a symbol in wrld (because wrld is an extension
-; of old-wrld).  (Of course, by "symbol in" here we mean "symbol
-; occurring as the car of an element".)
+; Now clean up.
 
-          (dolist (trip new-trips)
-            (add-trip name world-key trip))
-          (setf (car pair) wrld)
-          (cond ((eq name 'current-acl2-world)
-                 (f-put-global 'current-acl2-world wrld *the-live-state*)
-                 (update-wrld-structures wrld state)))))
-       (recover-world 'extension name old-wrld wrld nil)
+     (cond
+      ((eq (car pair) wrld) ; everything above completed
+       (when (eq name 'current-acl2-world)
+         (f-put-global 'current-acl2-world wrld state)
+         (update-wrld-structures wrld state)))
+      (t
 
-; Observe that wrld has recover-world properties (a) and (b).  (a) at
-; the time of any abort during this critical section, every symbol
-; that may have a world-key property is in wrld (because the only
-; symbols with a world-key property initially are those in old-wrld,
-; wrld is an extension of old-wrld, and during the critical section we
-; add world-key properties just to symbols in wrld); and (b): every
-; symbol in old-wrld is a symbol in wrld (because wrld is an extension
-; of old-wrld).  (Of course, by "symbol in" here we mean "symbol
-; occurring as the car of an element".)
+; We should never get here if extend-world1 was called from the cleanup form in
+; retract-world1.  That's because the cleanup form is executed without
+; interrupts and we don't expect errors or throws during the retraction
+; process; thus, we expect the (setf (car pair) wrld) form above would have
+; completed.
 
-       state)
+       (when (eq name 'current-acl2-world)
+         (format t
+                 "~%~
+                  ; *Note*: Interrupt or error detected while extending the~%~
+                  ;         ACL2 logical world; now reverting the world with~%~
+                  ;         interrupts disabled.  This should complete~%~
+                  ;         quickly.~&~%")
+         (finish-output))
 
-; The acl2-unwind-protect returns (mv nil x *the-live-state*), for some x.
-; All three values are ignored.
+; Recall that new-trips was originally the list of triples that will extend
+; old-world, which was the starting current ACL2 world, to the parameter, wrld.
+; When the process above completes normally we expect to process, with
+; add-trip, all of new-trips.  But if we reach here then that process was
+; incomplete; thus, new-trips contains just those triples that weren't yet
+; fully processed.  To a first approximation, then, we retract the extension of
+; old-world by new-trips back to old-world.  But that doesn't account for the
+; possibility of a partially-processed triple, T0, which is still in new-trips
+; (as the car).  There are various cases, which we reference by letter in the
+; code below.
 
-      wrld)))
+; (a) When the cdr of status is maybe-push-undo-stack-completed, then we
+;     completed enough of add-trip for T0 to include it in the world that we
+;     will retract back to old-world.  Note that in add-trip we are careful
+;     that any forms executed after maybe-push-undo-stack are harmless, in that
+;     their effects would disappear anyhow during retraction (by undo-trip).
+
+; (b) When the cdr of status is a non-empty alist as indicated above, then T0
+;     will not be treated as added, but the destructive-push-assoc that was
+;     completed for T0 (on the key and alist stored in status) will be undone
+;     explicitly.
+
+; (c) Otherwise the cdr of status is nil, in which case add-trip was never
+;     invoked after the last triple popped from new-trips or else nothing was
+;     done for T0.
+
+       (let* ((alist (cdr status))
+              (remaining (if (eq alist 'maybe-push-undo-stack-completed) ; (a)
+                             (assert$ (consp new-trips) ; didn't finish
+                                      (1- (length new-trips)))
+                           (length new-trips)))
+              (w (nthcdr remaining wrld)))
+         (when (consp alist) ; (b)
+           (assert$ (consp new-trips) ; didn't finish
+                    (destructive-pop-assoc (car status) alist)))
+         (setf (car pair) w)
+         (when (eq name 'current-acl2-world)
+           (f-put-global 'current-acl2-world w state)
+           (update-wrld-structures w state))
+         (retract-world1 name old-wrld))))))
+
+; When we finally get past the unwind-protect above, even if the initial
+; attempt is interrupted before proceeding to the cleanup form, we return wrld.
+
+  wrld)
 
 (defun-one-output retract-world1 (name wrld)
 
@@ -6781,39 +6828,37 @@
 ; if we have to.  If you don't want these changes to occur to your state, don't
 ; call this program!
 
-  (let ((pair (get name 'acl2-world-pair)) old-wrld world-key)
-    (cond
-     ((null pair)
-      (setq pair (cons nil (if (eq name 'current-acl2-world)
-                               *current-acl2-world-key*
-                               (gensym))))
-      (pushnew name *known-worlds*)
-      (cond ((eq name 'current-acl2-world)
-             (f-put-global 'current-acl2-world nil *the-live-state*)))
-      (setf (get name 'acl2-world-pair) pair)))
-    (setq old-wrld (car pair))
-    (setq world-key (cdr pair))
+  (let ((state *the-live-state*)
+        (pair (get name 'acl2-world-pair))
+        (processed 0)
+        old-wrld world-key)
+    (unwind-protect-disable-interrupts-during-cleanup
+     (progn
+       (cond
+        ((null pair)
+         (setq pair (cons nil (if (eq name 'current-acl2-world)
+                                  *current-acl2-world-key*
+                                (gensym))))
+         (pushnew name *known-worlds*)
+         (cond ((eq name 'current-acl2-world)
+                (f-put-global 'current-acl2-world nil state)))
+         (setf (get name 'acl2-world-pair) pair)))
+       (setq old-wrld (car pair))
+       (setq world-key (cdr pair))
 
 ; Pair is of the form (old-wrld . world-key) and means that the world currently
 ; installed under name is old-wrld and its properties are stored at world-key.
 
-    (cond ((eq name 'current-acl2-world)
-           (check-acl2-world-invariant wrld old-wrld)))
-    (let ((state *the-live-state*)
-          (pkg (current-package *the-live-state*)))
-
-      (acl2-unwind-protect
-       "retract-world1"
-       (value
-        (progn
+       (cond ((eq name 'current-acl2-world)
+              (check-acl2-world-invariant wrld old-wrld)))
 
 ; We now scan down old-wrld until we get to wrld, doing a pop for each triple
 ; in the initial segment of old-wrld.  Note that we do not do the pops in the
 ; reverse order (as we did the pushes).  It doesn't matter.  All that matters
 ; is that we one pop for each push that was done.
 
-          (do ((tl old-wrld (cdr tl)))
-              ((equal tl
+       (do ((tl old-wrld (cdr tl)))
+           ((equal tl
 
 ; At one time we used eq here.  But old-wrld and wrld are equal, but not eq,
 ; when retract-world1 is called in the following example.
@@ -6825,186 +6870,94 @@
 ; :oops
 
                    wrld))
-              (cond
-               ((null tl)
-                (setq *bad-wrld* wrld)
-                (er hard 'retract-world1
-                    "Retract-world1 was called upon to ``retract'' ~
-                    ~x0.  But the world supplied to retract-world1, ~
-                    which is now the value of the Lisp global ~
-                    variable *bad-wrld*, is not a retraction of the ~
-                    currently installed ~x0.  The alist corresponding ~
-                    to the current ~x0 may be obtained via ~x1.  ~
-                    Unfortunately, this problem was not discovered ~
-                    until all of the properties in ~x0 were removed.  ~
-                    Those properties can be restored via ~
-                    (recover-world)."
-                    name
-                    `(car (get ',name 'acl2-world-pair))))
-               (t (undo-trip name world-key (car tl)))))
-          (setf (car pair) wrld)
-          (cond ((eq name 'current-acl2-world)
-                 (f-put-global 'current-acl2-world wrld *the-live-state*)
-                 (cond ((not (find-non-hidden-package-entry
-                              (current-package *the-live-state*)
-                              (known-package-alist *the-live-state*)))
+           (cond
+            ((null tl)
+             (setq *bad-wrld* wrld)
+             (er hard 'retract-world1
+                 "Retract-world1 was called upon to ``retract'' ~x0.  But the ~
+                  world supplied to retract-world1, which is now the value of ~
+                  the Lisp global variable *bad-wrld*, is not a retraction of ~
+                  the currently installed ~x0.  The alist corresponding to ~
+                  the current ~x0 may be obtained via ~x1.  Unfortunately, ~
+                  this problem was not discovered until all of the properties ~
+                  in ~x0 were removed.~@2"
+                 name
+                 `(car (get ',name 'acl2-world-pair))
+                 (cond ((eq name 'current-acl2-world)
 
-; Note: Known-package-alist returns the new known packages because of the setf
+; Perhaps we could first evaluate
+; (setf (get 'current-acl2-world 'acl2-world-pair) nil)
+; to install the empty world, and then call extend-world1 on old-wrld to
+; reinstall that world.  That could be slow, however, and anyhow we do not
+; expect to get here!  So we probably will wait until we get a complaint about
+; this, if ever, before attempting such an enhancement.  In that case we might
+; use acl2-query to see if the user really want to attempt such restoration.
+
+                        "  Your session is not recoverable.  You may report ~
+                         this issue to the ACL2 implementors, as a workaround ~
+                         might be possible.")
+                       (t ""))))
+            (t (without-interrupts
+
+; We expect undo-trip to be fast, except perhaps in the extremely rare case
+; that we are re-memoizing when undoing an unmemoize triple and the compilation
+; of the memoized function is expensive.  The simplicity of treating undo-trip
+; atomically seems worth that very small exception.
+
+                (undo-trip name world-key (car tl))
+                (incf processed)))))
+       (setf (car pair) wrld))
+
+; Now clean up.
+
+     (cond
+      ((eq (car pair) wrld)
+       (when (eq name 'current-acl2-world)
+         (f-put-global 'current-acl2-world wrld state)
+         (when (not (find-non-hidden-package-entry
+                     (current-package state)
+                     (known-package-alist state)))
+
+; Note: Known-package-alist returns the new known packages because of a setf
 ; above!
 
-                        (f-put-global 'current-package "ACL2" *the-live-state*)))
-                 (update-wrld-structures wrld state)))))
-       (recover-world 'retraction name old-wrld old-wrld pkg)
+           (f-put-global 'current-package "ACL2" state))
 
-; Note that old-wrld has recover-world properties (a) and (b).  (a) At the time
-; of any abort during this critical section, every symbol that may possibly
-; have the world-key property occurs as a car of some element of old-wrld (at
-; the beginning of this operation the only symbols with the world-key property
-; are in old-wrld and during the critical section we may only remove the
-; property). (b) Every symbol in old-wrld is in old-wrld.  Note that it is not
-; important whether wrld is actually a retraction, because we are just removing
-; world-key properties.
+; It's not clear (as of this writing) that we need to update-wrld-structures if
+; we are about to finish by calling retract-world1, but that seems safest and
+; relatively cheap.
 
-       state)
-      wrld)))
+         (update-wrld-structures wrld state)))
+      ((and (eq name 'current-acl2-world)
+            (boundp '*bad-wrld*)
+            *bad-wrld*))
+      (t ; so, never executed (setf (car pair) wrld)
 
-(defun-one-output recover-world1 (wrld saved-wrld ans)
+; We should never get here if retract-world1 was called from the cleanup form
+; in extend-world1.  That's because the cleanup form is executed without
+; interrupts and we don't expect errors or throws during the retraction
+; process; thus, we expect the (setf (car pair) wrld) form above would have
+; completed.
 
-; This is like (revappend wrld ans) except that we cons successive tails of
-; wrld onto ans instead of successive elements until wrld is either saved-wrld
-; or nil.  Thus, assuming saved-wrld is nil, if you start with wrld = '(trip3
-; trip2 trip1) you end up with ans = '((trip1) (trip2 trip1) (trip3 trip2
-; trip1)).  By scanning ans you will see the successive cdrs of world, starting
-; with the shortest.
+       (let ((w ; reflect the undo-trip calls that completed above
+              (nthcdr processed old-wrld)))
+         (setf (car pair) w)
+         (when (eq name 'current-acl2-world)
+           (f-put-global 'current-acl2-world w state)
+           (format t
+                   "~%~
+                    ; *Note*: Interrupt or error detected while retracting~%~
+                    ;         the ACL2 logical world; now extending the~%~
+                    ;         world (~s triples) with interrupts disabled.~%~
+                    ;         This may take awhile.~&~%"
+                   processed)
+           (finish-output))
+         (extend-world1 name old-wrld))))))
 
-  (cond ((eq wrld saved-wrld)
-         ans)
-        ((null wrld)
-         (error "Implementation error in recover-world1"))
-        (t (recover-world1 (cdr wrld) saved-wrld (cons wrld ans)))))
+; When we finally get past the unwind-protect above, even if the initial
+; attempt is interrupted before proceeding to the cleanup form, we return wrld.
 
-(defun-one-output recover-world (op name old-wrld universe pkg)
-
-; If this function is called then an extension or retraction operation (op) was
-; aborted.  The arguments tell us how to restore the world to the configuration
-; it had when the aborted operation was initiated.  Toward that end, the two
-; operations execute this form on the cleanup1 side of acl2-unwind-protects,
-; after saving in locals the name and world before they start making changes to
-; the symbol- plists.  Our recovery mechanism has two steps.  First, we throw
-; away all properties stored under the name in question.  Second, we extend
-; that empty world to the saved one.  The extension part is easy.
-
-; But how do we "throw away all properties" stored under a given name?  One way
-; is to get the world key, world-key, associated with the name, and then visit
-; each CLTL symbol, sym, and do (remprop sym world-key).  But sweeping through
-; all symbols seems to be slow.  So instead we enforce the discipline of having
-; a "universal list" of all the symbols which might, remotely, have the
-; world-key property.  This list is actually a list of triples (it is, in fact,
-; always one of the two worlds involved in the aborted operation) and we visit
-; the symbol in each car of each triple.
-
-; So much for spoon-fed background information.  Name is the name of the world
-; whose installation was aborted.  We know that the cdr of the 'acl2-world-pair
-; property of name is some uninterned symbol, world-key, at which all the
-; properties for this world are stored.  Old-wrld is the alist of triples that
-; was actually installed at the time the aborted operation was initiated -- and
-; is thus the world we are going to re-install.  And universe is a list of
-; pairs (triples actually) with the following two properties:
-
-; (a) at the time of any abort during the critical section, each symbol having
-; the world-key property occurs as the car of some pair in universe, and (b)
-; each symbol occurring as the car of some pair in old-wrld occurs as the car of
-; a pair in universe.
-
-; The latter property is necessary to ensure that we can recover from an
-; aborted attempt to recover.
-
-; In addition, if operation is 'retraction, then pkg is the current- package at
-; the inception of the operation.  If operation is not 'retraction, pkg is
-; irrelevant.
-
-  (let* ((pair (get name 'acl2-world-pair))
-         (world-key (cdr pair))
-         #+hons *defattach-fns* ; needs to be bound, but not truly used
-         (*in-recover-world-flg* t))
-
-; The *in-recover-world-flg* is used by the raw lisp implementation of defpkg.
-; How is defpkg called from within this function?  Add-trip, above, is the
-; program used to add the triples in old-wrld to the raw property lists.  It
-; notes CLTL-COMMAND triples and executes the appropriate Common Lisp to cause
-; the raw defuns, defmacros, constants, and packages to come into existence.
-; So we execute defpkg when we store a CLTL-COMMAND property with val (DEFPKG
-; ...).  Normally, defpkg unbinds all the symbols in the dual package (where
-; state globals are actually stored).  But we can't afford to do that if we
-; are recovering the world (because state globals are unaffected by world
-; operations).
-
-    (when (null pair)
-      (er hard 'recover-world
-          "There is no acl2-world-pair stored on ~x0, which is the name of ~
-           the world we are supposed to recover."
-          name))
-    (fmt1 "Flushing current installed world.~%"
-          nil 0 (standard-co *the-live-state*) *the-live-state*
-          nil)
-    (dolist (trip universe) (flush-trip name world-key trip))
-    (let* ((checkpoint-world-len-and-alist (checkpoint-world-len-and-alist))
-           (chkpt-alist (cddr checkpoint-world-len-and-alist))
-           (start-wrld
-            (and (eq name 'current-acl2-world)
-                 *checkpoint-world-len-and-alist-stack*
-                 (let ((chkpt-wrld (car checkpoint-world-len-and-alist))
-                       (chkpt-len (cadr checkpoint-world-len-and-alist))
-                       (old-wrld-len (length old-wrld)))
-                   (and (<= chkpt-len old-wrld-len)
-                        (eq (nthcdr (- old-wrld-len chkpt-len) old-wrld)
-                            chkpt-wrld)
-                        (let ((universe-len (length universe)))
-                          (and (<= chkpt-len universe-len)
-                               (eq (nthcdr (- universe-len chkpt-len) universe)
-                                   chkpt-wrld)
-                               chkpt-wrld)))))))
-      (dolist (x chkpt-alist)
-        (setf (get (car x) world-key)
-              (copy-alist (cdr x))))
-      (cond ((eq name 'current-acl2-world)
-             (f-put-global 'current-acl2-world start-wrld
-                           *the-live-state*)))
-      (setf (car pair) start-wrld)
-      (fmt1 "Reversing the new world.~%" nil 0
-            (standard-co *the-live-state*) *the-live-state* nil)
-      (let ((rwtls (recover-world1 old-wrld start-wrld nil))
-            (*inside-include-book-fn*
-
-; We defeat the special hash table processing done by the install-for-add-trip*
-; functions.  (This binding might not be necessary, but it seems safe.)
-
-             nil))
-        (fmt1 "Installing the new world.~%" nil 0
-              (standard-co *the-live-state*) *the-live-state* nil)
-
-; It is a bit unfortunate to use with-more-warnings-suppressed below, since we
-; have such a call in LP.  However, this is how we see a way to suppress
-; complaints about undefined functions during the build, without suppressing
-; compiler warnings entirely during the build.  Note that with-compilation-unit
-; does not always defer warnings for calls of the compiler in general -- at
-; least, we have seen this with CCL and Allegro CL -- but only for calls of
-; compile-file.
-
-        (with-more-warnings-suppressed
-         (do ((tl rwtls (cdr tl)))
-             ((null tl))
-             (add-trip name world-key (caar tl))
-             (cond ((eq name 'current-acl2-world)
-                    (f-put-global 'current-acl2-world (car tl)
-                                  *the-live-state*)))
-             (setf (car pair) (car tl)))))
-      (cond ((eq name 'current-acl2-world)
-             (cond ((eq op 'retraction)
-                    (f-put-global 'current-package pkg
-                                  *the-live-state*)))
-             #+hons (setq *defattach-fns* :clear)
-             (update-wrld-structures old-wrld *the-live-state*))))))
+  wrld)
 
 ;                              VIRGINITY
 
@@ -7350,7 +7303,6 @@
   (stop-proof-tree-fn *the-live-state*)
   (f-put-global 'ld-skip-proofsp nil *the-live-state*)
   (move-current-acl2-world-key-to-front (w *the-live-state*))
-  (checkpoint-world1 t (w *the-live-state*) *the-live-state*)
   #+hons
   (progn (initialize-never-memoize-ht)
          (acl2h-init-memoizations))
