@@ -14,11 +14,8 @@
 |#
 
 (in-package "ACL2S")
-(include-book "acl2s/acl2s-sigs" :dir :system :ttags :all)
 (include-book "acl2s/custom" :dir :system :ttags :all)
 (include-book "sorting/msort" :dir :system)
-(acl2::acl2s-common-settings)
-(set-defunc-timeout 200)
 
 (definec merge2 (x :integer-list y :integer-list) :integer-list
   (cond ((endp x) y)
@@ -185,5 +182,3 @@ Some testing
 (time$ (progn$ (acl2::msort (makelst 40000)) nil))   ;  0.06 secs
 (time$ (progn$ (isort (makelst 40000)) nil))         ; 26.28 secs
 |#
-
-(acl2::acl2s-common-settings)
