@@ -15,6 +15,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/apply-fn-into-ifs" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
@@ -3895,8 +3896,7 @@
                              (set-irrelevant-formals-ok t)
                              ,@defsurj-events
                              ,@appcond-thm-events
-                             (set-default-hints nil)
-                             (set-override-hints nil)
+                             (evmac-prepare-proofs)
                              ,old-fn-unnorm-event
                              ,new-fn-local-event
                              ,new-fn-unnorm-event

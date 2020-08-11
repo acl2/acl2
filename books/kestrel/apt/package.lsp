@@ -162,6 +162,7 @@
                          evmac-appcondp
                          evmac-input-hints-p
                          evmac-input-print-p
+                         evmac-prepare-proofs
                          evmac-process-input-hints
                          evmac-process-input-hints$
                          evmac-process-input-print

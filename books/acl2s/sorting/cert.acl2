@@ -1,4 +1,7 @@
 (include-book "../portcullis")
+(include-book "acl2s/custom" :dir :system :ttags :all)
+(acl2::acl2s-common-settings)
+(acl2s::set-defunc-timeout 500)
 
 #+acl2-par
 (set-waterfall-parallelism nil)
