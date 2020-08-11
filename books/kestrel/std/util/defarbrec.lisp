@@ -15,6 +15,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
@@ -1340,8 +1341,7 @@
                      (logic)
                      (set-ignore-ok t)
                      (set-irrelevant-formals-ok t)
-                     (set-default-hints nil)
-                     (set-override-hints nil)
+                     (evmac-prepare-proofs)
                      ,@local-update-fns
                      ,@exported-update-fns
                      ,update-fns-lemma
