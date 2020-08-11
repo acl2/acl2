@@ -3037,11 +3037,6 @@
                     (frame-val-p nil))))
   :hints (("goal" :in-theory (enable frame-p))))
 
-(defthm frame-p-of-remove-assoc
-  (implies (frame-p alist)
-           (frame-p (remove-assoc-equal x alist)))
-  :hints (("goal" :in-theory (enable frame-p))))
-
 (defthm frame-p-of-remove1-assoc
   (implies (frame-p alist)
            (frame-p (remove1-assoc-equal x alist)))

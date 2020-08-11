@@ -18,7 +18,6 @@
                         (:definition intersection-equal)
                         (:definition integer-listp)
                         (:rewrite true-listp-when-string-list)
-                        (:definition string-listp)
                         (:linear position-equal-ac-when-member)
                         (:linear position-when-member)
                         (:rewrite nth-when->=-n-len-l)
@@ -945,7 +944,7 @@
       (equal (abs-lstat frame path)
              (hifat-lstat fs path)))
      :hints (("goal" :do-not-induct t
-              :in-theory (enable abs-lstat frame-reps-fs)))))
+              :in-theory (enable abs-lstat frame-reps-fs hifat-lstat)))))
 
   (defthm
     abs-lstat-refinement
@@ -10728,7 +10727,7 @@
       (cons dir-stream-table-index
             (make-dir-stream
              :file-list
-             (string2-sort
+             (<<-sort
               (strip-cars (m1-file->contents file)))))
       dir-stream-table)
      0
@@ -10743,3 +10742,445 @@
   :hints (("goal" :do-not-induct t
            :in-theory (enable good-frame-p
                               abs-opendir collapse-equiv))))
+
+(defthm
+  abs-opendir-correctness-lemma-1
+  (implies
+   (and
+    (mv-nth 1 (collapse frame))
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (abs-separate frame)
+    (subsetp-equal (abs-addrs (frame->root frame))
+                   (frame-addrs-root (frame->frame frame)))
+    (m1-directory-file-p (mv-nth 0
+                                 (hifat-find-file (mv-nth 0 (collapse frame))
+                                                  path))))
+   (m1-directory-file-p
+    (mv-nth '0
+            (hifat-find-file (mv-nth '0
+                                     (collapse (partial-collapse frame path)))
+                             path))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable abs-opendir
+                              hifat-opendir good-frame-p))))
+
+(defthm
+  abs-opendir-correctness-lemma-2
+  (implies
+   (and
+    (mv-nth 1 (collapse frame))
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (abs-separate frame)
+    (subsetp-equal (abs-addrs (frame->root frame))
+                   (frame-addrs-root (frame->frame frame)))
+    (m1-directory-file-p (mv-nth 0
+                                 (hifat-find-file (mv-nth 0 (collapse frame))
+                                                  path))))
+   (set-equiv
+    (strip-cars
+     (m1-file->contents
+      (mv-nth
+       0
+       (hifat-find-file (mv-nth 0
+                                (collapse (partial-collapse frame path)))
+                        path))))
+    (strip-cars
+     (m1-file->contents (mv-nth 0
+                                (hifat-find-file (mv-nth 0 (collapse frame))
+                                                 path))))))
+  :hints
+  (("goal"
+    :in-theory (disable hifat-equiv-implies-set-equiv-strip-cars-1)
+    :do-not-induct t
+    :use
+    (:instance
+     hifat-equiv-implies-set-equiv-strip-cars-1
+     (fs1
+      (m1-file->contents
+       (mv-nth
+        0
+        (hifat-find-file (mv-nth 0
+                                 (collapse (partial-collapse frame path)))
+                         path))))
+     (fs2
+      (m1-file->contents (mv-nth 0
+                                 (hifat-find-file (mv-nth 0 (collapse frame))
+                                                  path))))))))
+
+(defthm
+  abs-opendir-correctness-lemma-3
+  (implies
+   (and
+    (mv-nth 1 (collapse frame))
+    (not (frame-val->path (cdr (assoc-equal 0 frame))))
+    (frame-p frame)
+    (no-duplicatesp-equal (strip-cars frame))
+    (abs-separate frame)
+    (subsetp-equal (abs-addrs (frame->root frame))
+                   (frame-addrs-root (frame->frame frame)))
+    (m1-directory-file-p (mv-nth 0
+                                 (hifat-find-file (mv-nth 0 (collapse frame))
+                                                  path))))
+   (equal
+    (<<-sort
+     (strip-cars
+      (m1-file->contents
+       (mv-nth
+        0
+        (hifat-find-file (mv-nth 0
+                                 (collapse (partial-collapse frame path)))
+                         path)))))
+    (<<-sort
+     (strip-cars
+      (m1-file->contents (mv-nth 0
+                                 (hifat-find-file (mv-nth 0 (collapse frame))
+                                                  path)))))))
+  :hints
+  (("goal"
+    :in-theory (disable common-<<-sort-for-perms)
+    :do-not-induct t
+    :use
+    (:instance
+     common-<<-sort-for-perms
+     (x
+      (strip-cars
+       (m1-file->contents
+        (mv-nth
+         0
+         (hifat-find-file (mv-nth 0
+                                  (collapse (partial-collapse frame path)))
+                          path)))))
+     (y
+      (strip-cars
+       (m1-file->contents (mv-nth 0
+                                  (hifat-find-file (mv-nth 0 (collapse frame))
+                                                   path)))))))))
+
+(defthmd
+  abs-opendir-correctness-2
+  (implies
+   (good-frame-p frame)
+   (b*
+       (((mv fs &) (collapse frame)))
+     (and
+      (equal (mv-nth 0 (abs-opendir frame path dir-stream-table))
+             (mv-nth 0 (hifat-opendir fs path dir-stream-table)))
+      (equal (mv-nth 1 (abs-opendir frame path dir-stream-table))
+             (mv-nth 1 (hifat-opendir fs path dir-stream-table)))
+      (equal (mv-nth 2 (abs-opendir frame path dir-stream-table))
+             (mv-nth 2 (hifat-opendir fs path dir-stream-table))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (enable abs-opendir hifat-opendir good-frame-p))))
+
+(defund abs-readdir (dirp dir-stream-table)
+  (hifat-readdir dirp dir-stream-table))
+
+(defund abs-closedir (dirp dir-stream-table)
+  (hifat-closedir dirp dir-stream-table))
+
+(encapsulate
+  ()
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defund
+    tar-len-encode-helper (len n)
+    (declare (xargs :guard (and (natp len) (natp n))))
+    (if
+        (zp n)
+        nil
+      (cons (code-char (+ (mod len 8) (char-code #\0)))
+            (tar-len-encode-helper (floor len 8) (- n 1))))))
+
+(defthm
+  character-listp-of-tar-len-encode-helper
+  (character-listp (tar-len-encode-helper len n))
+  :hints (("goal" :in-theory (enable tar-len-encode-helper))))
+
+(defund tar-len-encode (len)
+  ;; It would be folly to stipulate that the length has to be less than 8^11,
+  ;; and then keep struggling with every new guard proof.
+  (declare (xargs :guard (natp len)
+                  :guard-hints (("goal" :in-theory (e/d(
+                                                        tar-len-encode-helper)
+                                                       ((:rewrite revappend-removal)))) )))
+  (coerce (revappend (tar-len-encode-helper len 11) (list (code-char 0)))
+          'string))
+
+;; Redundant with the definition in test/tar-writer.lisp - please update both
+;; if necessary.
+(defund
+  tar-header-block (path len typeflag)
+  (declare
+   (xargs :guard (and (characterp typeflag)
+                      (stringp path)
+                      (>= 100 (length path))
+                      (natp len))
+          :guard-hints
+          (("goal" :in-theory (e/d
+                               (string-listp)
+                               (make-list-ac-removal))))))
+  (let ((path (mbe :exec path
+                       :logic (str-fix path))))
+       (concatenate
+        'string
+        path
+        (coerce (make-list (- 124 (length path))
+                           :initial-element (code-char 0))
+                'string)
+        (tar-len-encode len)
+        (coerce (make-list (- 155 136)
+                           :initial-element (code-char 0))
+                'string)
+        (string (mbe :exec typeflag
+                     :logic (char-fix typeflag)))
+        (coerce (make-list (- 512 156)
+                           :initial-element (code-char 0))
+                'string))))
+
+;; This is defined in tar-stuff.lisp.
+(defconst *tar-regtype* #\0)
+(defconst *tar-dirtype* #\5)
+
+(encapsulate
+  ()
+
+  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
+
+  (defund hifat-tar-reg-file-string (fs path)
+    (declare (xargs :guard (and (stringp path) (m1-file-alist-p fs)
+                                (hifat-no-dups-p fs) (<= (length path) 100))
+                    :guard-debug t
+                    :guard-hints (("Goal" :in-theory (e/d
+                                                      (string-listp)
+                                                      (MAKE-LIST-AC-REMOVAL))))))
+    (b*
+        ((fat32-path (path-to-fat32-path (coerce path 'list)))
+         ((unless (fat32-filename-list-p fat32-path)) "")
+         ((mv val & &) (hifat-lstat fs fat32-path))
+         (file-length (struct-stat->st_size val))
+         ((mv fd-table file-table fd &)
+          (hifat-open fat32-path nil nil))
+         ((unless (>= fd 0)) "")
+         ((mv contents & &)
+          (hifat-pread
+           fd file-length 0 fs fd-table file-table))
+         (len (length contents))
+         (first-block
+          (tar-header-block path len *tar-regtype*)))
+      (concatenate
+       'string
+       first-block
+       contents
+       (coerce
+        (make-list
+         (- (* 512 (ceiling len 512)) len) :initial-element
+         (code-char 0))
+        'string)))))
+
+;; Path is not needed as an argument! This is the recursive part only.
+(defund
+  hifat-get-names-from-dirp
+  (dirp dir-stream-table)
+  (declare
+   (xargs
+    :measure
+    (len
+     (dir-stream->file-list
+      (cdr
+       (assoc-equal (nfix dirp)
+                    (dir-stream-table-fix dir-stream-table)))))
+    :hints (("goal" :in-theory (enable hifat-readdir)))
+    :guard (and (natp dirp) (dir-stream-table-p dir-stream-table))))
+  (b*
+      (((mv name errno dir-stream-table)
+        (hifat-readdir dirp dir-stream-table))
+       ((when (or (equal errno *ebadf*)
+                  (equal name *empty-fat32-name*)))
+        (mv nil dir-stream-table))
+       ((mv tail dir-stream-table)
+        (hifat-get-names-from-dirp dirp dir-stream-table)))
+    (mv (list* name tail) dir-stream-table)))
+
+(defthm fat32-filename-list-p-of-hifat-get-names-from-dirp
+  (fat32-filename-list-p
+   (mv-nth 0
+           (hifat-get-names-from-dirp dirp dir-stream-table)))
+  :hints (("goal" :in-theory (enable hifat-get-names-from-dirp
+                                     hifat-readdir))))
+
+(defthm dir-stream-table-p-of-hifat-get-names-from-dirp
+  (dir-stream-table-p
+   (mv-nth 1
+           (hifat-get-names-from-dirp dirp dir-stream-table)))
+  :hints (("goal" :in-theory (enable hifat-get-names-from-dirp
+                                     hifat-readdir))))
+
+(include-book "hifat-entry-count")
+
+;; Move later.
+(defthm character-listp-of-fat32-name-to-name
+  (character-listp (fat32-name-to-name character-list)))
+(defthm natp-of-hifat-opendir
+  (natp (mv-nth 0
+                (hifat-opendir fs path dir-stream-table)))
+  :hints (("goal" :in-theory (enable hifat-opendir)))
+  :rule-classes :type-prescription)
+
+;; Making a recursive function to do tar can get really annoying because in
+;; theory we could hit directory cycles and just keep traversing deeper and
+;; deeper into the tree. It's important for proof purposes that we induct on
+;; the pathnames, keeping the fs the same and accessing its inside parts only
+;; through system calls.
+;;
+;; The way this proof is going to look is, we'll have to do one real
+;; partial collapse, and possibly a few more later which won't have any
+;; effect. But the one partial collapse will bring the whole directory into one
+;; variable, and then effectively all lookups will just be lookups inside that
+;; thing.
+;;
+;; Always gotta remember, though, that indiscriminate use of hifat-find-file will
+;; be incorrect for looking up the contents of a directory because that
+;; function will not work for looking up a root directory!
+;; Anyway, to return to the induction scheme, it will be needed to make
+;; something like a max path length and stop when we get there...
+(encapsulate
+  ()
+
+  (local (in-theory (disable
+                     hifat-close hifat-open hifat-pread)))
+
+  (defthm
+    natp-of-hifat-pread
+    (natp
+     (mv-nth 2
+             (hifat-pread fd count offset fs fd-table file-table)))
+    :hints (("goal" :in-theory (enable hifat-pread)))
+    :rule-classes :type-prescription)
+
+  (defund
+    hifat-tar-name-list-string
+    (fs path name-list fd-table file-table dir-stream-table entry-count)
+    (declare
+     (xargs
+      :guard (and
+              (m1-file-alist-p fs)
+              (hifat-no-dups-p fs)
+              (fat32-filename-list-p path)
+              (natp entry-count)
+              (fat32-filename-list-p name-list)
+              (file-table-p file-table)
+              (fd-table-p fd-table)
+              (dir-stream-table-p dir-stream-table))
+      :measure (nfix entry-count)
+      :verify-guards nil))
+    (b*
+        ((fd-table (mbe :exec fd-table :logic (fd-table-fix fd-table)))
+         (file-table (mbe :exec file-table :logic (file-table-fix file-table)))
+         (dir-stream-table (mbe :exec dir-stream-table
+                                :logic (dir-stream-table-fix dir-stream-table)))
+         ((unless (and (consp name-list)
+                       (not (zp entry-count))))
+          (mv "" fd-table file-table))
+         (head (car name-list))
+         (head-path
+          (append path (list head)))
+         ((mv st & &) (hifat-lstat fs head-path))
+         (len (struct-stat->st_size st))
+         ((mv fd-table file-table fd &)
+          (hifat-open head-path
+                      fd-table file-table))
+         ((unless (>= fd 0)) (mv "" fd-table file-table))
+         ((mv & & pread-error-code)
+          (hifat-pread
+           fd len 0 fs fd-table file-table))
+         ((mv fd-table file-table &) (hifat-close fd fd-table file-table))
+         ((unless (and (<= (len (fat32-path-to-path head-path)) 100)))
+          (mv "" fd-table file-table))
+         (head-string
+          (hifat-tar-reg-file-string fs (implode (fat32-path-to-path head-path))))
+         ((when (zp pread-error-code))
+          (b*
+              (((mv tail-string fd-table file-table)
+                (hifat-tar-name-list-string fs
+                                            head-path
+                                            (cdr name-list)
+                                            fd-table file-table
+                                            dir-stream-table
+                                            (- entry-count 1))))
+            (mv
+             (concatenate
+              'string
+              head-string
+              tail-string)
+             fd-table file-table)))
+         ((mv dirp dir-stream-table &)
+          (hifat-opendir fs head-path dir-stream-table))
+         ((mv names dir-stream-table)
+          (hifat-get-names-from-dirp dirp dir-stream-table))
+         ((mv & dir-stream-table) (hifat-closedir dirp dir-stream-table))
+         ((mv head-string fd-table file-table)
+          (hifat-tar-name-list-string fs
+                                      (append path (list))
+                                      names
+                                      fd-table file-table
+                                      dir-stream-table
+                                      (- entry-count 1)))
+         ((mv tail-string fd-table file-table)
+          (hifat-tar-name-list-string fs
+                                      path
+                                      (cdr name-list)
+                                      fd-table file-table
+                                      dir-stream-table
+                                      (- entry-count 1))))
+      (mv
+       (concatenate
+        'string
+        (tar-header-block
+         (implode (fat32-path-to-path head-path))
+         0 *tar-dirtype*)
+        head-string tail-string)
+       fd-table file-table)))
+
+  (defthm
+    fd-table-p-of-hifat-tar-name-list-string
+    (fd-table-p
+     (mv-nth 1
+             (hifat-tar-name-list-string fs path name-list fd-table file-table
+                                         dir-stream-table entry-count)))
+    :hints
+    (("goal" :in-theory (e/d (hifat-tar-name-list-string)
+                             (append append-of-cons)))))
+
+  (defthm
+    stringp-of-hifat-tar-name-list-string
+    (stringp
+     (mv-nth 0
+             (hifat-tar-name-list-string fs path name-list fd-table file-table
+                                         dir-stream-table entry-count)))
+    :hints
+    (("goal" :in-theory (e/d (hifat-tar-name-list-string)
+                             (append append-of-cons))))
+    :rule-classes :type-prescription)
+
+  (defthm
+    file-table-p-of-hifat-tar-name-list-string
+    (file-table-p
+     (mv-nth 2
+             (hifat-tar-name-list-string fs path name-list fd-table file-table
+                                         dir-stream-table entry-count)))
+    :hints
+    (("goal" :in-theory (e/d (hifat-tar-name-list-string)
+                             (append append-of-cons)))))
+
+  (verify-guards
+    hifat-tar-name-list-string
+    :guard-debug t :otf-flg t
+    :hints (("GOal" :in-theory (e/d (hifat-tar-name-list-string)
+                                    (append append-of-cons))
+                   :do-not-induct t))))
