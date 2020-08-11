@@ -15,6 +15,7 @@
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
@@ -983,8 +984,7 @@
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
                              ,@appcond-thm-events
-                             (set-default-hints nil)
-                             (set-override-hints nil)
+                             (evmac-prepare-proofs)
                              ,new-fn-local-event
                              ,new-unnorm-event
                              ,old-to-new-thm-local-event
