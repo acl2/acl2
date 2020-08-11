@@ -12,6 +12,7 @@
 
 (include-book "defdigits")
 
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -406,8 +407,7 @@
     `(encapsulate
        ()
        (logic)
-       (set-default-hints nil)
-       (set-override-hints nil)
+       (evmac-prepare-proofs)
        ,group-bendian-event
        ,group-lendian-event
        ,ungroup-bendian-event
