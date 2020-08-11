@@ -148,7 +148,7 @@
                                      fat32-filename-list-fix)
            :induct (basename-dirname-helper path))))
 
-(defun hifat-lstat (fs path)
+(defund hifat-lstat (fs path)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)
                               (fat32-filename-list-p path))))
@@ -164,6 +164,10 @@
      (make-struct-stat
       :st_size st_size)
      0 0)))
+
+(defthm struct-stat-p-of-hifat-lstat
+  (struct-stat-p (mv-nth 0 (hifat-lstat fs path)))
+  :hints (("goal" :in-theory (enable hifat-lstat))))
 
 ;; By default, we aren't going to check whether the file exists.
 (defun hifat-open (path fd-table file-table)
@@ -525,16 +529,6 @@
      (remove-assoc fd fd-table)
      (remove-assoc (cdr fd-table-entry) file-table)
      0)))
-
-(defthm
-  fd-table-p-of-remove-assoc
-  (implies (fd-table-p fd-table)
-           (fd-table-p (remove-assoc-equal fd fd-table))))
-
-(defthm
-  file-table-p-of-remove-assoc
-  (implies (file-table-p file-table)
-           (file-table-p (remove-assoc-equal fd file-table))))
 
 (defthm hifat-close-correctness-1
   (b* (((mv fd-table file-table &)
@@ -1055,141 +1049,37 @@
     (declare (xargs :guard (and (stringp x) (stringp y))))
     (if (string< x y) t nil))
 
-  (defund string2-merge-tr (x y acc)
-    (declare (xargs :measure (+ (len x) (len y))
-                    :stobjs nil
-                    :guard (and t (string-listp x)
-                                (string-listp y))))
-    (cond ((atom x)
-           (revappend-without-guard acc y))
-          ((atom y)
-           (revappend-without-guard acc x))
-          ((string-less-p (car y) (car x))
-           (string2-merge-tr x (cdr y)
-                             (cons (car y) acc)))
-          (t (string2-merge-tr (cdr x)
-                               y (cons (car x) acc)))))
+  (defsort :comparablep stringp
+    :compare< string-less-p
+    :prefix string2
+    :comparable-listp string-listp
+    :true-listp t)
 
-  (defund
-    string2-mergesort-fixnum (x len)
-    (declare (xargs :measure (nfix len)
-                    :stobjs nil
-                    :guard (and t (string-listp x)
-                                (natp len)
-                                (<= len (len x)))
-                    :verify-guards nil)
-             (type (signed-byte 30) len))
-    (cond
-     ((mbe :logic (zp len)
-           :exec (eql (the (signed-byte 30) len) 0))
-      nil)
-     ((eql (the (signed-byte 30) len) 1)
-      (list (car x)))
-     (t (let* ((len1 (the (signed-byte 30)
-                          (ash (the (signed-byte 30) len) -1)))
-               (len2 (the (signed-byte 30)
-                          (- (the (signed-byte 30) len)
-                             (the (signed-byte 30) len1))))
-               (part1 (string2-mergesort-fixnum x len1))
-               (part2 (string2-mergesort-fixnum (rest-n len1 x)
-                                                len2)))
-              (string2-merge-tr part1 part2 nil)))))
-
-  (verify-guards
-    string2-mergesort-fixnum)
-
-  (defund
-    string2-mergesort-integers (x len)
-    (declare (xargs :measure (nfix len)
-                    :stobjs nil
-                    :guard (and t (string-listp x)
-                                (natp len)
-                                (<= len (len x)))
-                    :verify-guards nil)
-             (type integer len))
-    (cond
-     ((mbe :logic (zp len)
-           :exec (eql (the integer len) 0))
-      nil)
-     ((eql (the integer len) 1)
-      (list (car x)))
-     (t
-      (let*
-       ((len1 (the integer (ash (the integer len) -1)))
-        (len2 (the integer
-                   (- (the integer len)
-                      (the integer len1))))
-        (part1 (if (< (the integer len1)
-                      (mergesort-fixnum-threshold))
-                   (string2-mergesort-fixnum x len1)
-                   (string2-mergesort-integers x len1)))
-        (part2 (if (< (the integer len2)
-                      (mergesort-fixnum-threshold))
-                   (string2-mergesort-fixnum (rest-n len1 x)
-                                             len2)
-                   (string2-mergesort-integers (rest-n len1 x)
-                                               len2))))
-       (string2-merge-tr part1 part2 nil)))))
-
-  (verify-guards
-    string2-mergesort-integers)
-
-  (defund string2-merge (x y)
-    (declare (xargs :measure (+ (len x) (len y))
-                    :stobjs nil
-                    :guard (and t (string-listp x)
-                                (string-listp y))))
-    (cond ((atom x) y)
-          ((atom y) x)
-          ((string-less-p (car y) (car x))
-           (cons (car y)
-                 (string2-merge x (cdr y))))
-          (t (cons (car x)
-                   (string2-merge (cdr x) y)))))
-
-  (defthm fat32-filename-list-p-of-string2-merge
+  (defthm fat32-filename-list-p-of-<<-merge
     (implies (and (fat32-filename-list-p x) (fat32-filename-list-p y))
-             (fat32-filename-list-p (string2-merge x y)))
-    :hints (("Goal" :in-theory (e/d (string2-merge)
+             (fat32-filename-list-p (<<-merge x y)))
+    :hints (("Goal" :in-theory (e/d (<<-merge)
                                     (floor len)))))
-
-  (defund
-    string2-sort (x)
-    (declare (xargs :guard (and t (string-listp x))
-                    :measure (len x)
-                    :stobjs nil
-                    :verify-guards nil))
-    (mbe
-     :logic
-     (cond
-      ((atom x) nil)
-      ((atom (cdr x)) (list (car x)))
-      (t (let ((half (floor (len x) 2)))
-              (string2-merge (string2-sort (take half x))
-                             (string2-sort (nthcdr half x))))))
-     :exec (let ((len (len x)))
-                (if (< len (mergesort-fixnum-threshold))
-                    (string2-mergesort-fixnum x len)
-                    (string2-mergesort-integers x len)))))
-
-  (verify-guards
-    string2-sort)
 
   (local (include-book "ihs/ihs-lemmas" :dir :system))
 
-  (defthm fat32-filename-list-p-of-string2-sort-when-fat32-filename-list-p
+  (defthm fat32-filename-list-p-of-<<-sort-when-fat32-filename-list-p
     (implies
      (fat32-filename-list-p x)
-     (fat32-filename-list-p (string2-sort x)))
-    :hints (("Goal" :in-theory (e/d (string2-sort
+     (fat32-filename-list-p (<<-sort x)))
+    :hints (("Goal" :in-theory (e/d (<<-sort
                                      floor-bounded-by-/)
-                                    (floor len)))))
+                                    (floor len
+                                           <<-mergesort-equals-insertsort)))))
 
   (defthm
-    string2-sort-is-identity-under-set-equiv
-    (set-equiv (string2-sort x) x)))
+    common-<<-sort-for-perms
+    (implies (set-equiv x y)
+             (equal (<<-sort (remove-duplicates-equal x))
+                    (<<-sort (remove-duplicates-equal y))))
+    :rule-classes :congruence))
 
-(defthm string-listp-when-fat32-filename-listp
+(defthm string-listp-when-fat32-filename-list-p
   (implies (fat32-filename-list-p x)
            (string-listp x)))
 
@@ -1225,7 +1115,7 @@
       (cons dir-stream-table-index
             (make-dir-stream
              :file-list
-             (string2-sort
+             (<<-sort
               (strip-cars (m1-file->contents file)))))
       dir-stream-table)
      0)))
@@ -1329,8 +1219,11 @@
   :hints (("goal" :in-theory (enable hifat-readdir))))
 
 (defund hifat-closedir (dirp dir-stream-table)
+  (declare (xargs :guard (dir-stream-table-p dir-stream-table)))
   (b*
-      ((alist-elem
+      ((dir-stream-table (mbe :exec dir-stream-table :logic
+                              (dir-stream-table-fix dir-stream-table)))
+       (alist-elem
         (assoc-equal dirp dir-stream-table))
        ((unless (consp alist-elem))
         (mv *ebadf* dir-stream-table)))
@@ -1339,6 +1232,10 @@
      (remove-assoc-equal
       dirp
       dir-stream-table))))
+
+(defthm dir-stream-table-p-of-hifat-closedir
+  (dir-stream-table-p (mv-nth 1 (hifat-closedir dirp dir-stream-table)))
+  :hints (("Goal" :in-theory (enable hifat-closedir))))
 
 (assert-event
  (b*
