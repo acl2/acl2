@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
-; Author: Eric Smith (eric.smith@kestrel.edu)
+; Main Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
