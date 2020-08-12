@@ -1598,16 +1598,6 @@
 
 (in-theory (disable fat32-filename-p fat32-filename-fix))
 
-(defthm
-  m1-file-alist-p-of-remove-assoc-equal
-  (implies (m1-file-alist-p fs)
-           (m1-file-alist-p (remove-assoc-equal key fs))))
-
-(defthm member-equal-of-strip-cars-when-m1-file-alist-p
-  (implies (and (not (fat32-filename-p x))
-                (m1-file-alist-p fs))
-           (not (member-equal x (strip-cars fs)))))
-
 (defun
     hifat-bounded-file-alist-p-helper (x ac)
   (declare (xargs :guard (and (m1-file-alist-p x) (natp ac))
