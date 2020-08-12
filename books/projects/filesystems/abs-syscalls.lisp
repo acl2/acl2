@@ -5582,8 +5582,6 @@
           (:rewrite
            fat32-filename-list-p-when-subsetp-equal)
           (:rewrite abs-addrs-of-put-assoc-lemma-1)
-          (:rewrite
-           member-equal-of-strip-cars-when-m1-file-alist-p)
           (:rewrite hifat-file-alist-fix-guard-lemma-1)
           (:rewrite abs-addrs-of-put-assoc-lemma-2)
           (:rewrite true-listp-when-dir-ent-p)))))
