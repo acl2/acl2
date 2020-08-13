@@ -842,6 +842,7 @@
     "(defun-inst fun"
     "  (sofun (fvar1 . fun1) ... (fvarN . funN))"
     "  :verify-guards ..."
+    "  :enable ..."
     "  :skolem-name ..."
     "  :thm-name ..."
     "  :rewrite ..."
@@ -895,6 +896,18 @@
       when it is not accomplished automatically (i.e. without hints).
       (An option to supply guard verification hints
       will be added to @(tsee defun-inst).)"))
+
+   (xdoc::desc
+    "@(':enable')"
+    (xdoc::p
+     "An option to enable or disable @('fun'),
+      and the associated rewrite rule
+      if @('sofun') is a quantifier second-order-function.
+      This may be present only if @('sofun') is a "
+     (xdoc::seetopic "defsoft" "plain or quantifier second-order function")
+     ". If this flag is absent,
+      @('fun') (and the associated rewrite rule, if applicable)
+      is enabled if and only if @('sofun') is enabled."))
 
    (xdoc::desc
     "@(':skolem-name')"

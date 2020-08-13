@@ -633,6 +633,11 @@
      @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
      followed by @(tsee soft::defsoft).")
 
+   (xdoc::p
+    "An option @(':enable') has been added to @(tsee soft::defun-inst),
+     to control the enablement of the generated function
+     (and, for quantifier functions, also of the associated rewrite rule).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
