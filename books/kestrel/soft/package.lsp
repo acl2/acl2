@@ -43,6 +43,7 @@
                          fn-symb
                          formals
                          function-symbol-listp
+                         fundef-enabledp
                          guard-verified-p
                          impossible
                          irecursivep

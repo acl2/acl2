@@ -2746,11 +2746,6 @@ the way.</li>
                  (and (not err)
                       (cons (vl-expr-fix arg) rest))))))
 
-  (local (defthm vl-call-namedargs-p-of-remove-assoc
-           (implies (vl-call-namedargs-p x)
-                    (vl-call-namedargs-p (acl2::remove-assoc key x)))
-           :hints(("Goal" :in-theory (enable acl2::remove-assoc-equal)))))
-
   (local (defthm funcall-args-to-ordered-of-remove-assoc-when-not-member
            (implies (not (member key (vl-portdecllist->names ports)))
                     (equal (vl-funcall-args-to-ordered
