@@ -636,7 +636,7 @@
    (xdoc::p
     "New macros @(tsee soft::define2) and @(tsee soft::define-sk2)
      have been added.
-     These abbreviate @(tsee define) and @(tsee define-sk)
+     These abbreviate @(tsee define) and @(tsee std::define-sk)
      followed by @(tsee soft::defsoft),
      analogously to other macros as described above.")
 
