@@ -1598,16 +1598,6 @@
 
 (in-theory (disable fat32-filename-p fat32-filename-fix))
 
-(defthm
-  m1-file-alist-p-of-remove-assoc-equal
-  (implies (m1-file-alist-p fs)
-           (m1-file-alist-p (remove-assoc-equal key fs))))
-
-(defthm member-equal-of-strip-cars-when-m1-file-alist-p
-  (implies (and (not (fat32-filename-p x))
-                (m1-file-alist-p fs))
-           (not (member-equal x (strip-cars fs)))))
-
 (defun
     hifat-bounded-file-alist-p-helper (x ac)
   (declare (xargs :guard (and (m1-file-alist-p x) (natp ac))
@@ -1822,6 +1812,12 @@
                 (m1-file-alist-p hifat-file-alist)
                 (m1-directory-file-p (cdr (car hifat-file-alist))))
            (hifat-no-dups-p (m1-file->contents (cdr (car hifat-file-alist)))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+
+(defthm no-duplicatesp-of-strip-cars-when-hifat-no-dups-p
+  (implies (and (hifat-no-dups-p fs)
+                (m1-file-alist-p fs))
+           (no-duplicatesp-equal (strip-cars fs)))
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
 (defun hifat-file-alist-fix (hifat-file-alist)
@@ -2804,7 +2800,7 @@
 ;;                                                      CHARACTER-LIST))) ))
 
 (defun fat32-path-to-path (string-list)
-  ;; (declare (xargs :guard (string-listp string-list)))
+  (declare (xargs :guard (fat32-filename-list-p string-list)))
   (if (atom string-list)
       nil
     (append (fat32-name-to-name (coerce (car string-list) 'list))

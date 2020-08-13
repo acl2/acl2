@@ -3037,11 +3037,6 @@
                     (frame-val-p nil))))
   :hints (("goal" :in-theory (enable frame-p))))
 
-(defthm frame-p-of-remove-assoc
-  (implies (frame-p alist)
-           (frame-p (remove-assoc-equal x alist)))
-  :hints (("goal" :in-theory (enable frame-p))))
-
 (defthm frame-p-of-remove1-assoc
   (implies (frame-p alist)
            (frame-p (remove1-assoc-equal x alist)))
@@ -4434,7 +4429,6 @@
     :use (:instance (:rewrite absfat-equiv-implies-set-equiv-names-at-1-lemma-3)
                     (x (fat32-filename-fix (car x-path)))))))
 
-;; The second rewrite rule of this defthm is needed...
 (defthm
   absfat-equiv-implies-set-equiv-names-at-1-lemma-5
   (implies (and (absfat-subsetp abs-file-alist1 abs-file-alist2)
@@ -4447,7 +4441,6 @@
     (e/d (absfat-subsetp)
          (intersectp-is-commutative
           (:rewrite abs-file->contents-when-m1-file-p)
-          (:rewrite member-equal-of-strip-cars-when-m1-file-alist-p)
           (:rewrite absfat-subsetp-transitivity))))))
 
 (defthm

@@ -83,7 +83,7 @@
      0)))
   :hints
   (("goal"
-    :in-theory (e/d ()
+    :in-theory (e/d (hifat-lstat)
                     ((:rewrite take-of-take-split)
                      (:linear len-of-member-equal))))))
 
@@ -144,7 +144,7 @@
                  (lofat-lstat fat32-in-memory path)))
              (implies (equal unlink-errno 0)
                       (equal lstat-errno -1))))
-  :hints (("goal" :do-not-induct t)))
+  :hints (("goal" :do-not-induct t :in-theory (enable hifat-lstat))))
 
 (defthm
   ls-1-after-rm-1

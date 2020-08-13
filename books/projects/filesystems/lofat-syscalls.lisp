@@ -313,7 +313,7 @@
   :hints
   (("goal"
     :in-theory
-    (e/d (lofat-to-hifat lofat-lstat
+    (e/d (lofat-to-hifat lofat-lstat hifat-lstat
                          lofat-lstat-refinement-lemma-1)
          ((:rewrite lofat-find-file-correctness-1)
           (:rewrite lofat-pread-refinement-lemma-2)
