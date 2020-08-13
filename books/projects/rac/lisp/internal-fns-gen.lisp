@@ -1,6 +1,6 @@
 ;; Cuong Chau <ckc8687@gmail.com>
 
-;; July 2020
+;; August 2020
 
 ;; Direct reasoning about complex functions is often unachievable in most
 ;; existing verification tools.  Decomposition is a common technique for
@@ -41,8 +41,7 @@
 ;;   (local (defun b () <b-value>))
 
 ;;   (defthm input-constraints-lemma
-;;     <constraints-on-the-arguments>
-;;     :rule-classes nil))
+;;     <constraints-on-the-arguments>))
 
 ;; LOOP-FNS-GEN takes a function name and produces a set of mutually recursive
 ;; functions.  Each generated function computes the value of the corresponding
@@ -451,7 +450,8 @@
            (n? (cadr x))
            (mv-list-form? (caddr x)))
       (if (equal (car mv-list-form?) 'mv-list)
-          (let ((if1/mv-form? (caddr mv-list-form?)))
+          (let ((if1/mv-form? (caddr mv-list-form?))
+                (rtl-if1 (intern$ "IF1" "RTL")))
             (cond
              ;; Simplify an MV form
              ((equal (car if1/mv-form?) 'mv)
@@ -468,8 +468,8 @@
                                                ,@(last if1/mv-form?)))))))
                     (simplify-mv-nth-forms (cdr lst))))
              ;; Simplify an IF1 form
-             ((equal (car if1/mv-form?) 'if1)
-              (cons `(if1 ,(cadr if1/mv-form?)
+             ((equal (car if1/mv-form?) rtl-if1)
+              (cons `(,rtl-if1 ,(cadr if1/mv-form?)
                           ,@(simplify-mv-nth-forms
                              (list (rewrite-mv-nth-form
                                     `(mv-nth
@@ -1123,4 +1123,3 @@
            `((in-theory (disable ,@(pairlis$ all-fn-names nil)))
              (in-theory (enable ,@inter-names)))
          `((in-theory (disable ,@(pairlis$ all-fn-names nil))))))))
-
