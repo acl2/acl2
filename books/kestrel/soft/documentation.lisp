@@ -1450,9 +1450,13 @@
 
    (xdoc::p
     "Besides second-order versions of
-     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk),
+     @(tsee defun),
+     @(tsee defchoose),
+     @(tsee defun-sk),
+     @(tsee define2), and
+     @(tsee define-sk2),
      we could add support for second-order versions of
-     @(tsee defund), @(tsee defun-nx), @(tsee define), @(tsee defpun),
+     @(tsee defund), @(tsee defun-nx), @(tsee defpun),
      and other function introduction events.
      @(tsee defun-inst) would generate the same macros for instances.
      The macros could be called @('defund2'), @('defun-nx2'), etc.")
