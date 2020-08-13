@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
@@ -658,7 +659,7 @@
                      but ~x0 is not a legal variable name."
                     accumulator))
          (x1...xn (formals+ old$ (w state)))
-         ((er &) (ensure-not-member-of-list$
+         ((er &) (ensure-value-is-not-in-list$
                   accumulator
                   x1...xn
                   (msg "one of the formal arguments ~&0 of ~x1" x1...xn old$)

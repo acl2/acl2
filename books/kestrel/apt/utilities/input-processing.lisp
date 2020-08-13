@@ -13,6 +13,7 @@
 (include-book "defaults-table")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -329,7 +330,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name.  ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 name
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -390,7 +391,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name.  ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 name
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -529,7 +530,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name.  ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 name
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -627,7 +628,7 @@
             (er-soft+ ctx t nil
                       "~@0 must be a valid fresh theorem name.  ~@1"
                       description error-msg?))
-           ((er &) (ensure-not-member-of-list$
+           ((er &) (ensure-value-is-not-in-list$
                     name
                     names-to-avoid
                     (msg "among the names ~x0 of other events ~
@@ -697,7 +698,7 @@
             (er-soft+ ctx t nil
                       "~@0 must be a valid fresh theorem name.  ~@1"
                       description error-msg?))
-           ((er &) (ensure-not-member-of-list$
+           ((er &) (ensure-value-is-not-in-list$
                     name
                     names-to-avoid
                     (msg "among the names ~x0 of other events ~
