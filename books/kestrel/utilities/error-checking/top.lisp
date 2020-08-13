@@ -104,16 +104,6 @@
                              with keywords at its even-numbered positions ~
                              (counting from 0)." description)))
 
-(def-error-checker ensure-member-of-list
-  ((x "Value to check.")
-   (list true-listp "List that must include @('x') as member.")
-   (list-description msgp "Description of @('list') for the error message."))
-  :short
-  "Cause an error if a value is not a member of a list."
-  :body
-  (((member-equal x list)
-    "~@0 must be ~@1." description list-description)))
-
 (def-error-checker ensure-not-member-of-list
   ((x "Value to check.")
    (list true-listp "List that must not include @('x') as member.")
