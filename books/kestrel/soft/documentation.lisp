@@ -404,7 +404,7 @@
 
   :parents (soft-macros function-variables)
 
-  :short "Introduce function variable."
+  :short "Introduce a function variable."
 
   :long
 
@@ -561,7 +561,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee defun)."
 
   :long
@@ -648,7 +648,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee defchoose)."
 
   :long
@@ -701,7 +701,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee defun-sk)."
 
   :long
@@ -753,7 +753,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee define)."
 
   :long
@@ -791,7 +791,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee std::define-sk)."
 
   :long
@@ -830,7 +830,7 @@
 
   :parents (soft-macros second-order-function-instances)
 
-  :short "Introduce function by instantiating a second-order functions."
+  :short "Introduce a function by instantiating a second-order functions."
 
   :long
 
@@ -1132,7 +1132,7 @@
 
   :parents (soft-macros second-order-theorems)
 
-  :short "Introduce second-order theorem."
+  :short "Introduce a second-order theorem."
 
   :long
 
@@ -1240,7 +1240,7 @@
 
   :parents (soft-macros second-order-theorem-instances)
 
-  :short "Introduce theorem by instantiating a second-order theorem."
+  :short "Introduce a theorem by instantiating a second-order theorem."
 
   :long
 
