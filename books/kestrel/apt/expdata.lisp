@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
@@ -1072,7 +1073,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name. ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 newp-of-new$
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~

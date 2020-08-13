@@ -769,28 +769,28 @@ it has a special hack for that particular case.</p>
                       ,subst1
                       :in-theory (enable ,orderedp))))
 
-           (defthm ,(mksym prefix "-NO-DUPLICATESP-EQUAL")
+           (defthm ,(mksym prefix "-SORT-NO-DUPLICATESP-EQUAL")
              (equal (no-duplicatesp-equal (,sort x . ,extra-args))
                     (no-duplicatesp-equal x))
              :hints((defsort-functional-inst
                       no-duplicatesp-equal-of-comparable-mergesort
                       ,subst1)))
 
-           (defthm ,(mksym prefix "-TRUE-LISTP")
+           (defthm ,(mksym prefix "-SORT-TRUE-LISTP")
              (true-listp (,sort x . ,extra-args))
              :rule-classes :type-prescription
              :hints((defsort-functional-inst
                       true-listp-of-comparable-mergesort
                       ,subst1)))
 
-           (defthm ,(mksym prefix "-LEN")
+           (defthm ,(mksym prefix "-SORT-LEN")
              (equal (len (,sort x . ,extra-args))
                     (len x))
              :hints ((defsort-functional-inst
                        len-of-comparable-mergesort
                        ,subst1)))
 
-           (defthm ,(mksym prefix "-CONSP")
+           (defthm ,(mksym prefix "-SORT-CONSP")
              (equal (consp (,sort x . ,extra-args))
                     (consp x))
              :hints ((defsort-functional-inst
@@ -800,7 +800,7 @@ it has a special hack for that particular case.</p>
            (defthm ,(mksym prefix "-SORT-IS-IDENTITY-UNDER-SET-EQUIV")
              (set-equiv (,sort x . ,extra-args) x)
              :hints ((defsort-functional-inst
-                       comparable-mergesort-under-set-equiv
+                       comparable-mergesort-is-identity-under-set-equiv
                        ,subst1)))))
 
        ((when weak) (value events1))
@@ -884,26 +884,26 @@ it has a special hack for that particular case.</p>
            (defthm ,(mksym prefix "-INSERTSORT-NO-DUPLICATESP-EQUAL")
              (equal (no-duplicatesp-equal (,insertsort x . ,extra-args))
                     (no-duplicatesp-equal x))
-             :hints(("goal" :use ,(mksym prefix "-NO-DUPLICATESP-EQUAL")
-                     :in-theory (disable ,(mksym prefix "-NO-DUPLICATESP-EQUAL")))))
+             :hints(("goal" :use ,(mksym prefix "-SORT-NO-DUPLICATESP-EQUAL")
+                     :in-theory (disable ,(mksym prefix "-SORT-NO-DUPLICATESP-EQUAL")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-TRUE-LISTP")
              (true-listp (,insertsort x . ,extra-args))
              :rule-classes :type-prescription
-             :hints(("goal" :use ,(mksym prefix "-TRUE-LISTP")
-                     :in-theory (disable ,(mksym prefix "-TRUE-LISTP")))))
+             :hints(("goal" :use ,(mksym prefix "-SORT-TRUE-LISTP")
+                     :in-theory (disable ,(mksym prefix "-SORT-TRUE-LISTP")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-LEN")
              (equal (len (,insertsort x . ,extra-args))
                     (len x))
-             :hints (("goal" :use ,(mksym prefix "-LEN")
-                     :in-theory (disable ,(mksym prefix "-LEN")))))
+             :hints (("goal" :use ,(mksym prefix "-SORT-LEN")
+                     :in-theory (disable ,(mksym prefix "-SORT-LEN")))))
 
            (defthm ,(mksym prefix "-INSERTSORT-CONSP")
              (equal (consp (,insertsort x . ,extra-args))
                     (consp x))
-             :hints (("goal" :use ,(mksym prefix "-CONSP")
-                      :in-theory (disable ,(mksym prefix "-CONSP"))))))))
+             :hints (("goal" :use ,(mksym prefix "-SORT-CONSP")
+                      :in-theory (disable ,(mksym prefix "-SORT-CONSP"))))))))
     (value (append events1 events2))))
 
 (defmacro defsort (&rest args)

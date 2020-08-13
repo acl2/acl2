@@ -62,11 +62,11 @@
                          ensure-function-name-list$
                          ensure-list-functions$
                          ensure-list-no-duplicates$
-                         ensure-member-of-list$
                          ensure-string-or-nil$
                          ensure-term$
                          ensure-term-ground$
                          ensure-value-is-boolean$
+                         ensure-value-is-in-list$
                          ensure-value-is-string$
                          er-soft+
                          explode

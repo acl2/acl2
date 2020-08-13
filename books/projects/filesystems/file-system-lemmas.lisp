@@ -1702,3 +1702,8 @@
   (equal (set-difference-equal (append x y) z)
          (append (set-difference-equal x z)
                  (set-difference-equal y z))))
+
+(defthm remove-duplicates-when-no-duplicatesp
+  (implies (no-duplicatesp-equal x)
+           (equal (remove-duplicates-equal x)
+                  (true-list-fix x))))
