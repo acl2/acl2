@@ -336,32 +336,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-variable-name 'x "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-variable-name 'acl2-user::var "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-variable-name t "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-variable-name nil "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-variable-name :x "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-variable-name 67 "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-constant-name '*c* "This" t nil 'test state)))
    (value (equal x nil))))
 

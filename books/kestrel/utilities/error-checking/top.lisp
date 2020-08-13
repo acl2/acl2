@@ -168,14 +168,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-error-checker ensure-variable-name
-  ((x "Value to check."))
-  :short
-  "Cause an error if a value is not a valid variable name."
-  :body
-  (((legal-variablep x)
-    "~@0 must be a valid name for a variable." description)))
-
 (def-error-checker ensure-constant-name
   ((x "Value to check."))
   :short
