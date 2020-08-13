@@ -180,6 +180,9 @@
      (336 168
           (:TYPE-PRESCRIPTION TRUE-LISTP-MEMBER-EQUAL))
      (168 168 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (82 41
+         (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+     (41 41 (:TYPE-PRESCRIPTION NATP))
      (16 16 (:REWRITE DEFAULT-CAR))
      (8 8 (:REWRITE DEFAULT-<-2))
      (8 8 (:REWRITE DEFAULT-<-1))
@@ -444,11 +447,14 @@
                            (2 1 (:REWRITE DEFAULT-<-1))
                            (1 1 (:REWRITE DEFAULT-CAR))
                            (1 1 (:REWRITE DEFAULT-<-2)))
-(LEQ-POSITION-EQUAL-AC-LEN (228 114
+(LEQ-POSITION-EQUAL-AC-LEN (586 293
+                                (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+                           (293 293 (:TYPE-PRESCRIPTION NATP))
+                           (228 114
                                 (:TYPE-PRESCRIPTION TRUE-LISTP-MEMBER-EQUAL))
+                           (132 7 (:REWRITE DEFAULT-<-2))
                            (114 114 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                           (72 7 (:REWRITE DEFAULT-<-2))
-                           (41 11
+                           (71 11
                                (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                            (38 21 (:REWRITE DEFAULT-+-2))
                            (22 21 (:REWRITE DEFAULT-+-1))
@@ -1184,22 +1190,25 @@
              (150 150
                   (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
              (87 87 (:REWRITE DEFAULT-UNARY-MINUS)))
-(NTH-POSITION-EQUAL-AC (496 16 (:REWRITE NTH-WITH-LARGE-INDEX))
+(NTH-POSITION-EQUAL-AC (572 16 (:REWRITE NTH-WITH-LARGE-INDEX))
                        (314 157
                             (:TYPE-PRESCRIPTION TRUE-LISTP-MEMBER-EQUAL))
-                       (179 58 (:REWRITE DEFAULT-+-2))
+                       (292 146
+                            (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+                       (259 58 (:REWRITE DEFAULT-+-2))
                        (157 157 (:TYPE-PRESCRIPTION TRUE-LISTP))
                        (148 12 (:LINEAR LEQ-POSITION-EQUAL-LEN))
+                       (146 146 (:TYPE-PRESCRIPTION NATP))
                        (124 24 (:DEFINITION LEN))
-                       (77 35
-                           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                       (73 58 (:REWRITE DEFAULT-+-1))
+                       (119 35
+                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                       (85 58 (:REWRITE DEFAULT-+-1))
+                       (80 14 (:DEFINITION NFIX))
                        (64 64 (:REWRITE DEFAULT-CDR))
                        (63 7 (:DEFINITION POSITION-EQUAL))
-                       (60 14 (:DEFINITION NFIX))
+                       (56 35 (:REWRITE DEFAULT-<-1))
                        (51 35 (:REWRITE DEFAULT-<-2))
                        (50 50 (:REWRITE DEFAULT-CAR))
-                       (46 35 (:REWRITE DEFAULT-<-1))
                        (22 14 (:REWRITE FOLD-CONSTS-IN-+))
                        (7 7 (:REWRITE DEFAULT-COERCE-2))
                        (7 7 (:REWRITE DEFAULT-COERCE-1))
@@ -1364,11 +1373,18 @@
      (5 5 (:REWRITE EQUAL-CONSTANT-+)))
 (XPOSITION-EQUAL (2 2 (:REWRITE DEFAULT-CAR))
                  (1 1 (:REWRITE DEFAULT-CDR)))
-(POSITION-EQUAL-AC-EQUALS-XPOSITION-EQUAL1 (21 21 (:REWRITE DEFAULT-CAR))
-                                           (14 14 (:REWRITE DEFAULT-+-2))
-                                           (14 14 (:REWRITE DEFAULT-+-1))
-                                           (11 11 (:REWRITE DEFAULT-CDR)))
+(POSITION-EQUAL-AC-EQUALS-XPOSITION-EQUAL1
+     (230 115
+          (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+     (115 115 (:TYPE-PRESCRIPTION NATP))
+     (21 21 (:REWRITE DEFAULT-CAR))
+     (14 14 (:REWRITE DEFAULT-+-2))
+     (14 14 (:REWRITE DEFAULT-+-1))
+     (11 11 (:REWRITE DEFAULT-CDR)))
 (POSITION-EQUAL-AC-EQUALS-XPOSITION-EQUAL2
+     (384 192
+          (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+     (192 192 (:TYPE-PRESCRIPTION NATP))
      (29 21 (:REWRITE DEFAULT-+-2))
      (21 21 (:REWRITE DEFAULT-CAR))
      (21 21 (:REWRITE DEFAULT-+-1))
@@ -1380,7 +1396,10 @@
 (POSITION-EQUAL-AC-IFF-MEMBER-EQUAL
      (310 155
           (:TYPE-PRESCRIPTION TRUE-LISTP-MEMBER-EQUAL))
+     (168 84
+          (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
      (155 155 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (84 84 (:TYPE-PRESCRIPTION NATP))
      (38 38 (:REWRITE DEFAULT-CAR))
      (34 34 (:REWRITE DEFAULT-CDR))
      (29 29 (:REWRITE DEFAULT-+-2))

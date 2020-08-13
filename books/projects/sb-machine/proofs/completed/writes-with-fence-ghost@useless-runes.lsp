@@ -12,13 +12,14 @@
 (SB::GHOST-STATE-P-WHEN-NOT-CONSP)
 (SB::GHOST-STATE-P-OF-CDR-WHEN-GHOST-STATE-P)
 (SB::GHOST-STATE-P-OF-CONS)
-(SB::GHOST-STATE-P-OF-HONS-SHRINK-ALIST
+(SB::GHOST-STATE-P-OF-PUT-ASSOC
      (51 10
          (:REWRITE SB::GHOST-STATE-P-OF-CDR-WHEN-GHOST-STATE-P))
      (16 16
          (:REWRITE SB::GHOST-STATE-P-WHEN-NOT-CONSP))
      (1 1
         (:TYPE-PRESCRIPTION SB::BOOLEANP-OF-SYMBOLP-FOR-GHOST-STATE-P-KEY)))
+(SB::GHOST-STATE-P-OF-HONS-SHRINK-ALIST)
 (SB::GHOST-STATE-P-OF-HONS-ACONS)
 (SB::ALISTP-WHEN-GHOST-STATE-P)
 (SB::SYMBOLP-OF-CAAR-WHEN-GHOST-STATE-P)
@@ -155,14 +156,18 @@
      (10 2 (:REWRITE SYMBOL-FIX-WHEN-SYMBOLP))
      (8 2
         (:REWRITE SB::SYMBOLP-OF-CAAR-WHEN-GHOST-STATE-P)))
-(SB::PUT-ASSOC-GHOST-STATE (270 66 (:REWRITE SB::LEN-CONSP))
-                           (254 66
-                                (:REWRITE SB::SB-LATEST-IMPLIES-NOT-EMPTY))
-                           (192 16 (:DEFINITION TRUE-LISTP))
-                           (111 47 (:REWRITE SB::SB-P-WHEN-NOT-CONSP))
-                           (100 100 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                           (31 31 (:REWRITE DEFAULT-CDR))
-                           (12 3 (:REWRITE SB::SB-P-OF-CDR-WHEN-SB-P)))
+(SB::PUT-ASSOC-GHOST-STATE (32 1 (:DEFINITION PUT-ASSOC-EQUAL))
+                           (30 6 (:REWRITE SB::LEN-CONSP))
+                           (23 6
+                               (:REWRITE SB::SB-LATEST-IMPLIES-NOT-EMPTY))
+                           (22 2 (:DEFINITION TRUE-LISTP))
+                           (21 3 (:REWRITE DEFAULT-CAR))
+                           (19 1
+                               (:REWRITE SB::GHOST-STATE-P-WHEN-NOT-CONSP))
+                           (12 12 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                           (11 11 (:TYPE-PRESCRIPTION SB::SB-P))
+                           (8 5 (:REWRITE SB::SB-P-WHEN-NOT-CONSP))
+                           (4 4 (:REWRITE DEFAULT-CDR)))
 (SB::ASSOC-GHOST-STATE
      (684 145 (:REWRITE SB::LEN-CONSP))
      (619 145

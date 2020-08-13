@@ -1,48 +1,51 @@
-(SVL::4VEC-RSH-OF-META (16383 253 (:DEFINITION APPLY$-BADGEP))
+(SVL::4VEC-RSH-OF-META (22236 253 (:DEFINITION APPLY$-BADGEP))
+                       (11177 185
+                              (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                       (10445 88 (:DEFINITION SUBSETP-EQUAL))
+                       (10038 8543 (:REWRITE DEFAULT-CDR))
                        (8880 9 (:REWRITE O<=-O-FINP-DEF))
-                       (8805 7310 (:REWRITE DEFAULT-CDR))
-                       (8157 185
-                             (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                       (8703 649 (:DEFINITION MEMBER-EQUAL))
+                       (7142 144
+                             (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
                        (6778 2422 (:REWRITE DEFAULT-+-2))
                        (6218 58
                              (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
                        (5538 29 (:DEFINITION TRUE-LISTP))
-                       (5206 144
-                             (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
-                       (5013 29 (:DEFINITION SUBSETP-EQUAL))
+                       (5123 390
+                             (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+                       (5039 217 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
                        (4990 110
                              (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
-                       (4716 36 (:DEFINITION RP::RP-TERMP))
-                       (4636 346 (:DEFINITION MEMBER-EQUAL))
-                       (4048 2422 (:REWRITE DEFAULT-+-1))
-                       (3836 113
+                       (4733 113
                              (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
-                       (3804 3798 (:REWRITE DEFAULT-CAR))
+                       (4716 36 (:DEFINITION RP::RP-TERMP))
+                       (4191 4185 (:REWRITE DEFAULT-CAR))
+                       (4048 2422 (:REWRITE DEFAULT-+-1))
                        (3726 18 (:DEFINITION RP::FALIST-CONSISTENT))
                        (2898 18
                              (:DEFINITION RP::FALIST-CONSISTENT-AUX))
-                       (2704 10
+                       (2806 10
                              (:REWRITE |a < b & b < c  =>  a < c|))
-                       (2694 203
-                             (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
                        (2505 167 (:DEFINITION LENGTH))
                        (2502 633 (:REWRITE O-P-O-INFP-CAR))
                        (2040 196 (:DEFINITION LEN))
+                       (1358 1358 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                        (1230 46 (:DEFINITION RP::RP-TERM-LISTP))
-                       (791 791 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                       (1170 1170
+                             (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
+                       (1133 1133 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+                       (780 780
+                            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
                        (731 253 (:DEFINITION WEAK-APPLY$-BADGE-P))
                        (691 691 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
                        (680 593 (:REWRITE O-P-DEF-O-FINP-1))
-                       (609 609
-                            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
+                       (615 615 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                        (537 500 (:REWRITE DEFAULT-<-2))
                        (537 500 (:REWRITE DEFAULT-<-1))
                        (501 501
                             (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
                        (501 334 (:REWRITE STR::CONSP-OF-EXPLODE))
                        (468 82 (:REWRITE RP::RP-TERMP-CADDDR))
-                       (406 406
-                            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
                        (370 370 (:TYPE-PRESCRIPTION LEN))
                        (363 357 (:REWRITE DEFAULT-UNARY-MINUS))
                        (344 102 (:REWRITE RP::RP-TERMP-CADR))
@@ -57,6 +60,8 @@
                             (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                        (232 116
                             (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+                       (217 217
+                            (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
                        (196 196
                             (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
                        (193 193
@@ -81,7 +86,6 @@
                        (134 134
                             (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
                        (116 116 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                       (116 116 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                        (116 116 (:LINEAR LEN-WHEN-PREFIXP))
                        (112 112 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
                        (99 99
@@ -92,6 +96,8 @@
                        (87 87 (:TYPE-PRESCRIPTION O-FINP))
                        (58 58
                            (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
+                       (58 58 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+                       (58 58 (:LINEAR BOUNDS-POSITION-EQUAL))
                        (58 8 (:REWRITE O-FIRST-EXPT-<))
                        (50 10 (:REWRITE AC-<))
                        (48 8

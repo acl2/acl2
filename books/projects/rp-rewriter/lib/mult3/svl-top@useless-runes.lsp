@@ -259,320 +259,250 @@
      (1 1 (:REWRITE |(< (* x y) 0)|)))
 (RP::4VEC-FIX=-OF-BINARY-FNS (4 2 (:REWRITE RP::F2-OF-BIT))
                              (2 2 (:TYPE-PRESCRIPTION BITP)))
+(RP::BITS-OF-BINARY-FNS-LEMMA)
+(RP::BITS-OF-BINARY-FNS-LEMMA-2
+     (1 1 (:REWRITE THE-FLOOR-BELOW))
+     (1 1 (:REWRITE THE-FLOOR-ABOVE))
+     (1 1
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
+     (1 1
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
+     (1 1 (:REWRITE SIMPLIFY-SUMS-<))
+     (1 1
+        (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (1 1 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (1 1 (:REWRITE REMOVE-STRICT-INEQUALITIES))
+     (1 1
+        (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+     (1 1
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+     (1 1 (:REWRITE REDUCE-INTEGERP-+))
+     (1 1 (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
+     (1 1 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (1 1 (:REWRITE INTEGERP-MINUS-X))
+     (1 1 (:REWRITE INTEGERP-<-CONSTANT))
+     (1 1
+        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (1 1 (:REWRITE DEFAULT-LESS-THAN-2))
+     (1 1 (:REWRITE DEFAULT-LESS-THAN-1))
+     (1 1 (:REWRITE CONSTANT-<-INTEGERP))
+     (1 1
+        (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+     (1 1
+        (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+     (1 1
+        (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+     (1 1
+        (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+     (1 1 (:REWRITE |(< c (- x))|))
+     (1 1 (:REWRITE |(< 0 (/ x))|))
+     (1 1 (:REWRITE |(< 0 (* x y))|))
+     (1 1
+        (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+     (1 1
+        (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+     (1 1
+        (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+     (1 1
+        (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+     (1 1 (:REWRITE |(< (/ x) (/ y))|))
+     (1 1 (:REWRITE |(< (- x) c)|))
+     (1 1 (:REWRITE |(< (- x) (- y))|))
+     (1 1 (:META META-INTEGERP-CORRECT)))
 (RP::BITS-OF-BINARY-FNS
- (3336 32 (:REWRITE FLOOR-X-Y-=-1 . 2))
- (2284 32 (:REWRITE DEFAULT-FLOOR-RATIO))
- (1904 32 (:REWRITE FLOOR-=-X/Y . 2))
- (1852 32 (:REWRITE FLOOR-=-X/Y . 3))
- (1712 72 (:REWRITE |(* y x)|))
- (1090
-   1090
-   (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT))
- (1090
-  1090
-  (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT))
- (1090
-      1090
-      (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT))
- (1090
-     1090
-     (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT))
- (1090 1090
-       (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B))
- (1090 1090
-       (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A))
- (984 32 (:REWRITE FLOOR-X-Y-=--1 . 2))
- (972 162 (:REWRITE DEFAULT-TIMES-2))
- (946 162 (:REWRITE DEFAULT-TIMES-1))
- (940 32 (:REWRITE FLOOR-ZERO . 5))
- (928 8 (:REWRITE |(* x (+ y z))|))
- (927 135 (:REWRITE DEFAULT-LESS-THAN-2))
- (828 32 (:REWRITE FLOOR-X-Y-=-1 . 3))
- (828 32 (:REWRITE FLOOR-X-Y-=--1 . 3))
- (703 19 (:REWRITE ZP-WHEN-GT-0))
- (660 66 (:REWRITE DEFAULT-DIVIDE))
- (633 99 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
- (588 112
-      (:REWRITE INTEGERP-OF-CAR-WHEN-INTEGER-LISTP))
- (575 7 (:REWRITE RP::BITS-IS-BIT-OF))
- (420 28 (:DEFINITION INTEGER-LISTP))
- (411 109
-      (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
- (396 66 (:REWRITE |(/ (expt x n))|))
- (376 116 (:REWRITE DEFAULT-LESS-THAN-1))
- (344 8 (:REWRITE |(* x (- y))|))
- (339 24
-      (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
- (320 32 (:REWRITE DEFAULT-FLOOR-2))
- (319 263 (:REWRITE INTEGERP-MINUS-X))
- (297 99
-      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
- (273 7 (:REWRITE NATP-WHEN-GTE-0))
- (268 58 (:REWRITE ACL2-NUMBERP-X))
- (266 145 (:REWRITE DEFAULT-MINUS))
- (263 263 (:REWRITE REDUCE-INTEGERP-+))
- (263 263
-      (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
- (263 263 (:META META-INTEGERP-CORRECT))
- (253 103 (:REWRITE |(< (- x) c)|))
- (245 7 (:DEFINITION NATP))
- (240 24 (:REWRITE RP::INTEGERP-OF-*))
- (238 42 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
- (238 42 (:REWRITE IFIX-WHEN-INTEGERP))
- (217 97 (:REWRITE SIMPLIFY-SUMS-<))
- (198 198 (:REWRITE DEFAULT-EXPT-2))
- (198 198 (:REWRITE DEFAULT-EXPT-1))
- (198 198 (:REWRITE |(expt 1/c n)|))
- (198 198 (:REWRITE |(expt (- x) n)|))
- (196 196 (:TYPE-PRESCRIPTION INTEGER-LISTP))
- (190 35 (:REWRITE DEFAULT-PLUS-2))
- (180 18 (:REWRITE |(* 1 x)|))
- (177 105 (:REWRITE |(< c (- x))|))
- (176 176
-      (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
- (176 176
-      (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
- (176 176
-      (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
- (176 176
-      (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-2))
- (176 176
-      (:TYPE-PRESCRIPTION INTEGERP-/-EXPT-1))
- (168 84
-      (:TYPE-PRESCRIPTION NOT-INTEGERP-4A-EXPT))
- (145 11 (:REWRITE O-INFP->NEQ-0))
- (140 4 (:REWRITE |(floor (+ x r) i)|))
- (135 135 (:REWRITE THE-FLOOR-BELOW))
- (135 135 (:REWRITE THE-FLOOR-ABOVE))
- (117 35 (:REWRITE DEFAULT-PLUS-1))
- (111 105 (:REWRITE |(< (- x) (- y))|))
- (109 109
-      (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
- (109 109
-      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
- (105 105
-      (:REWRITE |(< c (/ x)) positive c --- present in goal|))
- (105 105
-      (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
- (105 105
-      (:REWRITE |(< c (/ x)) negative c --- present in goal|))
- (105 105
-      (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
- (105 105
-      (:REWRITE |(< (/ x) c) positive c --- present in goal|))
- (105 105
-      (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
- (105 105
-      (:REWRITE |(< (/ x) c) negative c --- present in goal|))
- (105 105
-      (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
- (105 105 (:REWRITE |(< (/ x) (/ y))|))
- (105 6 (:REWRITE RATIONALP-X))
- (99 99
-     (:REWRITE REMOVE-STRICT-INEQUALITIES))
- (99 99 (:REWRITE INTEGERP-<-CONSTANT))
- (99 99 (:REWRITE CONSTANT-<-INTEGERP))
- (95 19 (:REWRITE ZP-WHEN-INTEGERP))
- (90 6 (:REWRITE |(+ y (+ x z))|))
- (84 84
-     (:TYPE-PRESCRIPTION NOT-INTEGERP-3A-EXPT))
- (84 84
-     (:TYPE-PRESCRIPTION NOT-INTEGERP-2A-EXPT))
- (84 84
-     (:TYPE-PRESCRIPTION NOT-INTEGERP-1A-EXPT))
- (78 78 (:REWRITE REMOVE-WEAK-INEQUALITIES))
- (68 34
-     (:TYPE-PRESCRIPTION NOT-INTEGERP-4B-EXPT))
- (64 64
-     (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
- (60 32 (:REWRITE DEFAULT-FLOOR-1))
- (58 58
-     (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
- (57 19 (:REWRITE RP::BIT-FIX-OPENER))
- (56 56
-     (:REWRITE INTEGER-LISTP-WHEN-NOT-CONSP))
- (56 56 (:REWRITE DEFAULT-CAR))
- (56 28
-     (:REWRITE INTEGER-LISTP-OF-CDR-WHEN-INTEGER-LISTP))
- (50 50
-     (:REWRITE SV::2VEC-P$INLINE-OF-4VEC-FIX-X-NORMALIZE-CONST))
- (50 50 (:LINEAR EXPT-LINEAR-UPPER-<=))
- (50 50 (:LINEAR EXPT-LINEAR-UPPER-<))
- (50 50 (:LINEAR EXPT-LINEAR-LOWER-<=))
- (50 50 (:LINEAR EXPT-LINEAR-LOWER-<))
- (50 50 (:LINEAR EXPT->=-1-TWO))
- (50 50 (:LINEAR EXPT->-1-TWO))
- (50 50 (:LINEAR EXPT-<=-1-TWO))
- (50 50 (:LINEAR EXPT-<=-1-ONE))
- (50 50 (:LINEAR EXPT-<-1-TWO))
- (50 50 (:LINEAR EXPT-<-1-ONE))
- (48 48 (:REWRITE |(< (* x y) 0)|))
- (46 46 (:REWRITE |(< (/ x) 0)|))
- (44 44
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
- (44 44
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
- (43 6 (:REWRITE O-FIRST-EXPT-O-INFP))
- (42 42 (:REWRITE DEFAULT-CDR))
- (41 24
-     (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
- (40 4 (:REWRITE RP::STUPID-LEMMA1))
- (38 38 (:TYPE-PRESCRIPTION BITP))
- (37 19 (:REWRITE NORMALIZE-ADDENDS))
- (37 6 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
- (36 36
-     (:LINEAR EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1))
- (36 36
-     (:LINEAR EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
- (36 36
-     (:LINEAR EXPT-IS-INCREASING-FOR-BASE->-1))
- (36 36
-     (:LINEAR EXPT-IS-DECREASING-FOR-POS-BASE-<-1))
- (35 35 (:REWRITE |(< 0 (* x y))|))
- (35 7 (:REWRITE NATP-WHEN-INTEGERP))
- (34 34
-     (:TYPE-PRESCRIPTION NOT-INTEGERP-3B-EXPT))
- (34 34
-     (:TYPE-PRESCRIPTION NOT-INTEGERP-2B-EXPT))
- (34 34
-     (:TYPE-PRESCRIPTION NOT-INTEGERP-1B-EXPT))
- (33 33
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
- (33 33
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
- (33 33 (:REWRITE |(< 0 (/ x))|))
- (30 16 (:REWRITE ODD-EXPT-THM))
- (28 28
-     (:REWRITE CAR-OF-INTEGER-LIST-FIX-X-NORMALIZE-CONST-UNDER-INT-EQUIV))
- (26 24 (:REWRITE SIMPLIFY-SUMS-EQUAL))
- (24 24
-     (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
- (24 24
-     (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
- (24 24
-     (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
- (24 24 (:REWRITE |(equal c (/ x))|))
- (24 24 (:REWRITE |(equal c (- x))|))
- (24 24 (:REWRITE |(equal (/ x) c)|))
- (24 24 (:REWRITE |(equal (/ x) (/ y))|))
- (24 24 (:REWRITE |(equal (- x) c)|))
- (24 24 (:REWRITE |(equal (- x) (- y))|))
- (24 4 (:REWRITE |(+ c (+ d x))|))
- (23 23
-     (:REWRITE SV::4VEC-SHIFT-CORE-OF-IFIX-AMT-NORMALIZE-CONST))
- (23 23
-     (:REWRITE SV::4VEC-SHIFT-CORE-OF-4VEC-FIX-SRC-NORMALIZE-CONST))
- (23 23
-     (:REWRITE SV::4VEC-RSH-OF-4VEC-FIX-SRC-NORMALIZE-CONST))
- (23 23
-     (:REWRITE SV::4VEC-RSH-OF-2VECX-FIX-AMT-NORMALIZE-CONST))
- (19 19 (:REWRITE ZP-OPEN))
- (18 18 (:TYPE-PRESCRIPTION O-FINP))
- (18 18 (:LINEAR EXPT-X->=-X))
- (18 18 (:LINEAR EXPT-X->-X))
- (17 17
-     (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
- (14 14
-     (:REWRITE SV::4VEC-ZERO-EXT-OF-4VEC-FIX-X-NORMALIZE-CONST))
- (14 14
-     (:REWRITE SV::4VEC-ZERO-EXT-OF-4VEC-FIX-N-NORMALIZE-CONST))
- (14 14 (:REWRITE |(- (if a b c))|))
- (11 11
-     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
- (8 8 (:REWRITE |(- (* c x))|))
- (8 4 (:REWRITE |(+ 0 x)|))
- (8 4 (:DEFINITION FIX))
- (7 7 (:TYPE-PRESCRIPTION NATP))
- (7 7
-    (:REWRITE SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))
- (7 7
-    (:REWRITE SV::4VEC-CONCAT-OF-4VEC-FIX-HIGH-NORMALIZE-CONST))
- (7 7
-    (:REWRITE SV::4VEC-CONCAT-OF-2VECNATX-FIX-WIDTH-NORMALIZE-CONST))
- (7 7 (:REWRITE |(< (if a b c) x)|))
- (6 6 (:REWRITE REDUCE-RATIONALP-+))
- (6 6 (:REWRITE REDUCE-RATIONALP-*))
- (6 6 (:REWRITE RATIONALP-MINUS-X))
- (6 6
-    (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
- (6 6 (:META META-RATIONALP-CORRECT))
- (4 4 (:REWRITE INTEGERP-+-REDUCE-CONSTANT))
- (4 4 (:REWRITE |(< x (+ c/d y))|))
- (4 4 (:REWRITE |(< (+ c/d x) y)|))
- (4 2 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
- (4 2 (:REWRITE BUBBLE-DOWN-+-MATCH-1))
- (2 2 (:REWRITE |(< y (+ (- c) x))|))
- (2 2 (:REWRITE |(< (+ (- c) x) y)|))
- (2 2 (:REWRITE |(+ x (- x))|))
- (1 1 (:REWRITE |(equal x (if a b c))|)))
-(RP::BITS-OF-BINARY-FNS-START=0
-     (391 36
+     (656 8 (:REWRITE RP::BITS-IS-BIT-OF))
+     (593 17 (:REWRITE ZP-WHEN-GT-0))
+     (576 64 (:REWRITE DEFAULT-LESS-THAN-2))
+     (560 16 (:DEFINITION NATP))
+     (512 64 (:REWRITE ACL2-NUMBERP-X))
+     (496 8
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (257 21 (:REWRITE ACL2-NUMBERP-X))
-     (200 10 (:REWRITE DEFAULT-MOD-RATIO))
-     (118 8 (:REWRITE RATIONALP-X))
-     (117 117
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-     (117 117
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-     (110 10 (:REWRITE |(* y x)|))
-     (94 48 (:REWRITE DEFAULT-TIMES-2))
-     (64 26 (:REWRITE DEFAULT-PLUS-2))
-     (58 48 (:REWRITE DEFAULT-TIMES-1))
-     (58 13 (:REWRITE O-INFP->NEQ-0))
-     (57 32 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (46 26 (:REWRITE DEFAULT-PLUS-1))
-     (44 10 (:REWRITE DEFAULT-MINUS))
-     (40 36 (:REWRITE |(equal c (- x))|))
-     (36 36
-         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (36 36
-         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (36 36
-         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (36 36 (:REWRITE |(equal c (/ x))|))
-     (36 36 (:REWRITE |(equal (/ x) c)|))
-     (36 36 (:REWRITE |(equal (/ x) (/ y))|))
-     (36 36 (:REWRITE |(equal (- x) c)|))
-     (36 36 (:REWRITE |(equal (- x) (- y))|))
-     (30 30
-         (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (21 21
+     (384 8 (:REWRITE RATIONALP-X))
+     (320 16 (:REWRITE NATP-WHEN-GTE-0))
+     (320 8 (:REWRITE SVL::INTEGERP-BITS))
+     (312 48 (:REWRITE DEFAULT-LESS-THAN-1))
+     (81 17 (:REWRITE ZP-WHEN-INTEGERP))
+     (80 8 (:REWRITE O-INFP->NEQ-0))
+     (64 64 (:REWRITE THE-FLOOR-BELOW))
+     (64 64 (:REWRITE THE-FLOOR-ABOVE))
+     (64 64
          (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
-     (20 10 (:REWRITE DEFAULT-MOD-1))
-     (18 18 (:REWRITE REDUCE-INTEGERP-+))
-     (18 18
+     (48 48 (:REWRITE REDUCE-INTEGERP-+))
+     (48 48 (:REWRITE INTEGERP-MINUS-X))
+     (48 48
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (18 18 (:META META-INTEGERP-CORRECT))
-     (14 6 (:REWRITE RP::BIT-FIX-OPENER))
-     (13 13
-         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
-     (10 10 (:REWRITE SVL::LOGHEAD-NON-POS-SIZE))
-     (10 10 (:REWRITE RP::INTEGERP-OF-*))
-     (10 10 (:REWRITE DEFAULT-MOD-2))
-     (10 10
-         (:REWRITE SV::2VEC-P$INLINE-OF-4VEC-FIX-X-NORMALIZE-CONST))
-     (10 10 (:REWRITE |(mod x 2)| . 2))
-     (10 1 (:REWRITE O-FIRST-EXPT-O-INFP))
-     (9 1 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
-     (8 8 (:TYPE-PRESCRIPTION BITP))
+     (48 48 (:META META-INTEGERP-CORRECT))
+     (48 16 (:REWRITE NATP-WHEN-INTEGERP))
+     (48 8
+         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (40 40 (:REWRITE SIMPLIFY-SUMS-<))
+     (40 40
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (40 40
+         (:REWRITE REMOVE-STRICT-INEQUALITIES))
+     (40 40
+         (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+     (40 40
+         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+     (40 40
+         (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
+     (40 40 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (40 40 (:REWRITE INTEGERP-<-CONSTANT))
+     (40 40 (:REWRITE CONSTANT-<-INTEGERP))
+     (40 40
+         (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+     (40 40
+         (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+     (40 40
+         (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+     (40 40
+         (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+     (40 40 (:REWRITE |(< c (- x))|))
+     (40 40
+         (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+     (40 40
+         (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+     (40 40
+         (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+     (40 40
+         (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+     (40 40 (:REWRITE |(< (/ x) (/ y))|))
+     (40 40 (:REWRITE |(< (- x) c)|))
+     (40 40 (:REWRITE |(< (- x) (- y))|))
+     (32 8 (:REWRITE O-FIRST-EXPT-O-INFP))
+     (24 24 (:TYPE-PRESCRIPTION O-FINP))
+     (24 24
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+     (24 24
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
+     (24 24 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (24 24 (:REWRITE |(< (/ x) 0)|))
+     (24 24 (:REWRITE |(< (* x y) 0)|))
+     (24 8 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
+     (17 17 (:REWRITE ZP-OPEN))
+     (16 16 (:TYPE-PRESCRIPTION NATP))
+     (16 16
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
+     (16 16
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
+     (16 16 (:REWRITE |(< 0 (/ x))|))
+     (16 16 (:REWRITE |(< 0 (* x y))|))
+     (8 8
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+     (8 8 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (8 8 (:REWRITE REDUCE-RATIONALP-+))
      (8 8 (:REWRITE REDUCE-RATIONALP-*))
+     (8 8
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (8 8
+        (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
      (8 8 (:REWRITE RATIONALP-MINUS-X))
      (8 8
         (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
      (8 8
-        (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (8 8 (:META META-RATIONALP-CORRECT))
-     (8 4 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
-     (7 7 (:REWRITE |(equal (+ (- c) x) y)|))
-     (6 6
-        (:REWRITE SV::4VEC-ZERO-EXT-OF-4VEC-FIX-X-NORMALIZE-CONST))
-     (6 6
-        (:REWRITE SV::4VEC-ZERO-EXT-OF-4VEC-FIX-N-NORMALIZE-CONST))
-     (6 6 (:REWRITE |(* (- x) y)|))
-     (5 5 (:REWRITE RP::BITS-OF-BINARY-FNS))
-     (3 3 (:TYPE-PRESCRIPTION O-FINP)))
+        (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (8 8 (:REWRITE |(equal c (/ x))|))
+     (8 8 (:REWRITE |(equal c (- x))|))
+     (8 8 (:REWRITE |(equal (/ x) c)|))
+     (8 8 (:REWRITE |(equal (/ x) (/ y))|))
+     (8 8 (:REWRITE |(equal (- x) c)|))
+     (8 8 (:REWRITE |(equal (- x) (- y))|))
+     (8 8 (:META META-RATIONALP-CORRECT)))
+(RP::BITS-OF-BINARY-FNS-START=0
+     (617 41 (:REWRITE ZP-WHEN-GT-0))
+     (552 40 (:REWRITE DEFAULT-LESS-THAN-2))
+     (504 56 (:REWRITE ACL2-NUMBERP-X))
+     (496 8
+          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (384 8 (:REWRITE RATIONALP-X))
+     (320 8 (:REWRITE SVL::INTEGERP-BITS))
+     (280 8 (:DEFINITION NATP))
+     (105 41 (:REWRITE ZP-WHEN-INTEGERP))
+     (99 8
+         (:REWRITE SVL::BITS-OF-BITP-SIZE=POSP-START=0))
+     (56 56
+         (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+     (48 8 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (48 8
+         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (41 41 (:REWRITE ZP-OPEN))
+     (40 40 (:REWRITE THE-FLOOR-BELOW))
+     (40 40 (:REWRITE THE-FLOOR-ABOVE))
+     (32 32 (:REWRITE REDUCE-INTEGERP-+))
+     (32 32 (:REWRITE INTEGERP-MINUS-X))
+     (32 32
+         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (32 32 (:META META-INTEGERP-CORRECT))
+     (24 24 (:REWRITE SIMPLIFY-SUMS-<))
+     (24 24
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (24 24
+         (:REWRITE REMOVE-STRICT-INEQUALITIES))
+     (24 24
+         (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+     (24 24
+         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+     (24 24
+         (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
+     (24 24 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (24 24 (:REWRITE INTEGERP-<-CONSTANT))
+     (24 24 (:REWRITE DEFAULT-LESS-THAN-1))
+     (24 24 (:REWRITE CONSTANT-<-INTEGERP))
+     (24 24
+         (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+     (24 24
+         (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+     (24 24
+         (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+     (24 24
+         (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+     (24 24 (:REWRITE |(< c (- x))|))
+     (24 24
+         (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+     (24 24
+         (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+     (24 24
+         (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+     (24 24
+         (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+     (24 24 (:REWRITE |(< (/ x) (/ y))|))
+     (24 24 (:REWRITE |(< (- x) c)|))
+     (24 24 (:REWRITE |(< (- x) (- y))|))
+     (16 16 (:TYPE-PRESCRIPTION POSP))
+     (16 16
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))
+     (16 16
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-COMMON))
+     (16 16 (:REWRITE |(< 0 (/ x))|))
+     (16 16 (:REWRITE |(< 0 (* x y))|))
+     (8 8 (:TYPE-PRESCRIPTION NATP))
+     (8 8
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+     (8 8
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
+     (8 8 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (8 8 (:REWRITE REDUCE-RATIONALP-+))
+     (8 8 (:REWRITE REDUCE-RATIONALP-*))
+     (8 8
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (8 8
+        (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (8 8 (:REWRITE RATIONALP-MINUS-X))
+     (8 8
+        (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (8 8 (:REWRITE NATP-WHEN-INTEGERP))
+     (8 8 (:REWRITE NATP-WHEN-GTE-0))
+     (8 8
+        (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (8 8 (:REWRITE |(equal c (/ x))|))
+     (8 8 (:REWRITE |(equal c (- x))|))
+     (8 8 (:REWRITE |(equal (/ x) c)|))
+     (8 8 (:REWRITE |(equal (/ x) (/ y))|))
+     (8 8 (:REWRITE |(equal (- x) c)|))
+     (8 8 (:REWRITE |(equal (- x) (- y))|))
+     (8 8 (:REWRITE |(< (/ x) 0)|))
+     (8 8 (:REWRITE |(< (* x y) 0)|))
+     (8 8 (:META META-RATIONALP-CORRECT)))
 (RP::LEMMA1
  (181 1 (:REWRITE FLOOR-X-Y-=-1 . 2))
  (84 1 (:REWRITE FLOOR-=-X/Y . 3))
@@ -810,12 +740,14 @@
      (5 5 (:META META-INTEGERP-CORRECT)))
 (RP::BIT-OF-BINARY-FNS-START=0)
 (RP::BITS-OF-4VEC-==-BINARY-FNCS
+     (28 2
+         (:REWRITE SVL::BITS-OF-BITP-SIZE=POSP-START=0))
+     (24 24 (:TYPE-PRESCRIPTION SV::4VEC-==))
+     (22 8 (:DEFINITION BITP))
      (20 8 (:REWRITE RP::BIT-FIX-OPENER))
+     (12 12 (:TYPE-PRESCRIPTION BITP))
      (10 2 (:REWRITE RP::BITS-IS-BIT-OF))
      (8 4 (:REWRITE O-INFP->NEQ-0))
-     (6 6 (:TYPE-PRESCRIPTION BITP))
-     (6 6 (:TYPE-PRESCRIPTION SV::4VEC-==))
-     (6 6 (:DEFINITION BITP))
      (2 2
         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
      (2 2
@@ -830,45 +762,62 @@
                         (3 3 (:TYPE-PRESCRIPTION O-FINP))
                         (3 1 (:REWRITE O-FIRST-EXPT-O-INFP))
                         (2 1 (:REWRITE O-FIRST-EXPT-DEF-O-FINP)))
-(RP::4VEC-FIX-OF-BIT-OF (198 4
-                             (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
-                        (56 8 (:REWRITE DEFAULT-*-2))
-                        (52 2 (:REWRITE INTEGERP==>NUMERATOR-=-X))
-                        (48 2 (:DEFINITION EXPT))
-                        (46 8 (:REWRITE DEFAULT-*-1))
-                        (36 6 (:REWRITE NFIX-WHEN-NATP))
-                        (30 6 (:REWRITE NFIX-WHEN-NOT-NATP))
-                        (30 2 (:REWRITE INTEGERP==>DENOMINATOR-=-1))
-                        (28 6 (:REWRITE RP::INTEGERP-OF-*))
-                        (26 10 (:REWRITE DEFAULT-<-2))
-                        (26 8 (:REWRITE DEFAULT-UNARY-MINUS))
-                        (24 2 (:REWRITE ZIP-OPEN))
-                        (18 18
-                            (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-                        (18 10 (:REWRITE DEFAULT-<-1))
-                        (14 2 (:REWRITE NFIX-EQUAL-TO-ZERO))
-                        (14 2 (:REWRITE DEFAULT-UNARY-/))
-                        (10 2 (:REWRITE DEFAULT-NUMERATOR))
-                        (10 2 (:REWRITE DEFAULT-DENOMINATOR))
-                        (8 8 (:TYPE-PRESCRIPTION NATP))
-                        (8 6 (:REWRITE RP::IFIX-OPENER))
-                        (8 4 (:REWRITE NATP-WHEN-GTE-0))
-                        (6 4 (:REWRITE NATP-WHEN-INTEGERP))
-                        (6 2 (:REWRITE ZP-WHEN-GT-0))
-                        (4 2 (:REWRITE ZP-WHEN-INTEGERP))
-                        (4 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                        (4 2 (:REWRITE IFIX-WHEN-INTEGERP))
-                        (2 2 (:REWRITE ZP-OPEN))
-                        (2 2 (:REWRITE NFIX-POSITIVE-TO-NON-ZP))
-                        (2 2
-                           (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
-                        (2 2 (:REWRITE NFIX-EQUAL-TO-NONZERO))
-                        (2 2
-                           (:REWRITE INEQUALITY-WITH-NFIX-HYP-1)))
+(RP::4VEC-FIX-OF-BIT-OF
+ (490 4
+      (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
+ (386 40
+      (:REWRITE RP::SUM-OF-NEGATED-ELEMENTS))
+ (170 170 (:TYPE-PRESCRIPTION RP::--))
+ (98 2 (:DEFINITION EXPT))
+ (56 8 (:REWRITE DEFAULT-*-2))
+ (52 2 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+ (46 8 (:REWRITE DEFAULT-*-1))
+ (36 6 (:REWRITE NFIX-WHEN-NATP))
+ (30 6 (:REWRITE NFIX-WHEN-NOT-NATP))
+ (30 2 (:REWRITE INTEGERP==>DENOMINATOR-=-1))
+ (28 6 (:REWRITE RP::INTEGERP-OF-*))
+ (26 10 (:REWRITE DEFAULT-<-2))
+ (26 8 (:REWRITE DEFAULT-UNARY-MINUS))
+ (24 2 (:REWRITE ZIP-OPEN))
+ (18 18
+     (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+ (18 10 (:REWRITE DEFAULT-<-1))
+ (14 2 (:REWRITE NFIX-EQUAL-TO-ZERO))
+ (14 2 (:REWRITE DEFAULT-UNARY-/))
+ (10 2 (:REWRITE DEFAULT-NUMERATOR))
+ (10 2 (:REWRITE DEFAULT-DENOMINATOR))
+ (8 8 (:TYPE-PRESCRIPTION NATP))
+ (8 6 (:REWRITE RP::IFIX-OPENER))
+ (8 4 (:REWRITE NATP-WHEN-GTE-0))
+ (6 4 (:REWRITE NATP-WHEN-INTEGERP))
+ (6 2 (:REWRITE ZP-WHEN-GT-0))
+ (4 4 (:REWRITE NFIX-EQUAL-TO-NONZERO))
+ (4 4 (:LINEAR LISTPOS-COMPLETE))
+ (4 4
+    (:LINEAR SV::LHS-VARS-NORMORDEREDP-IMPLIES-RSH-WHEN-INDEX-EQUAL))
+ (4 4
+    (:LINEAR
+         SV::LHS-VARS-NORMORDEREDP-IMPLIES-LHS-BITPROJ-IDX-WHEN-INDEX-BOUND))
+ (4 4
+    (:LINEAR SV::LHATOM-NORMORDEREDP-IMPLIES-RSH-WHEN-AT-BOUND))
+ (4 4
+    (:LINEAR SV::BOUND-OF-SVEXARR-VARS-WITNESS-AUX))
+ (4 2 (:REWRITE ZP-WHEN-INTEGERP))
+ (4 2 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+ (4 2 (:REWRITE IFIX-WHEN-INTEGERP))
+ (2 2 (:REWRITE ZP-OPEN))
+ (2 2 (:REWRITE NFIX-POSITIVE-TO-NON-ZP))
+ (2 2
+    (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
+ (2 2
+    (:REWRITE INEQUALITY-WITH-NFIX-HYP-1)))
 (RP::INTEGERP-OF-BIT-OF)
 (RP::3VEC-FIX-OF-BINARY-FNCS (48 20 (:REWRITE RP::BIT-FIX-OPENER))
                              (28 28 (:TYPE-PRESCRIPTION BITP))
+                             (17 4
+                                 (:REWRITE RP::SUM-OF-NEGATED-ELEMENTS))
                              (8 4 (:REWRITE O-INFP->NEQ-0))
+                             (7 7 (:TYPE-PRESCRIPTION RP::--))
                              (4 2 (:REWRITE DEFAULT-UNARY-MINUS))
                              (2 2 (:REWRITE RP::SUM-COMM-1)))
 (RP::3VEC-FIX-OF-BIT-OF)
@@ -876,7 +825,8 @@
                             (3 3 (:TYPE-PRESCRIPTION O-FINP))
                             (3 1 (:REWRITE O-FIRST-EXPT-O-INFP))
                             (2 1 (:REWRITE O-FIRST-EXPT-DEF-O-FINP)))
-(RP::BITS-0-1-OF-S)
+(RP::BITS-0-1-OF-S (48 8
+                       (:REWRITE RP::SUM-OF-NEGATED-ELEMENTS)))
 (RP::BITS-0-1-OF-M2)
 (RP::BITS-1-1-OF-S)
 (RP::BITS-1-1-OF-M2)
@@ -899,10 +849,11 @@
      (2 2 (:DEFINITION BITP)))
 (RP::BITS-OF-C-WHEN-BIT-WHEN-START>0)
 (RP::BITS-OF-C-WHEN-BIT-WHEN-START-0
-     (15 15 (:TYPE-PRESCRIPTION RP::BINARY-SUM))
+     (68 8
+         (:REWRITE RP::SUM-OF-NEGATED-ELEMENTS))
      (12 1 (:REWRITE RP::F2-OF-BIT))
-     (8 1
-        (:REWRITE RP::DUMMY-SUM-CANCEL-LEMMA1))
+     (10 1
+         (:REWRITE RP::DUMMY-SUM-CANCEL-LEMMA1))
      (3 3 (:REWRITE RP::SUM-COMM-1))
      (2 1 (:REWRITE O-INFP->NEQ-0))
      (1 1 (:REWRITE RP::SUM-COMM-2)))
@@ -914,3 +865,25 @@
                                (9 9 (:TYPE-PRESCRIPTION O-FINP))
                                (9 3 (:REWRITE O-FIRST-EXPT-O-INFP))
                                (6 3 (:REWRITE O-FIRST-EXPT-DEF-O-FINP)))
+(RP::4VEC-CONCAT$-1-OF-BINARY-AND
+     (17 1
+         (:REWRITE SVL::EQUAL-OF-4VEC-CONCAT$-WITH-SIZE=1))
+     (15 1
+         (:REWRITE RP::EQUAL-OF-CONCAT$-WITH-HYP))
+     (10 4 (:REWRITE RP::BIT-FIX-OPENER))
+     (8 8 (:TYPE-PRESCRIPTION BITP))
+     (6 6 (:TYPE-PRESCRIPTION RP::M2))
+     (5 1
+        (:REWRITE SV::4VEC-P-WHEN-MAYBE-4VEC-P))
+     (4 4 (:TYPE-PRESCRIPTION SV::4VEC-P))
+     (3 1 (:REWRITE SVL::BITP-IMPLIES-4VECP))
+     (2 2 (:TYPE-PRESCRIPTION SV::MAYBE-4VEC-P))
+     (2 2
+        (:REWRITE SV::4VEC-P-WHEN-MEMBER-EQUAL-OF-4VECLIST-P))
+     (2 1
+        (:REWRITE SV::MAYBE-4VEC-P-WHEN-4VEC-P))
+     (2 1
+        (:REWRITE SVL::INTEGERP-IMPLIES-4VECP))
+     (1 1
+        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (1 1 (:REWRITE SVL::4VEC-P-4VEC-CONCAT$)))
