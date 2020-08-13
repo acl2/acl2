@@ -189,26 +189,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-not-member-of-list
-               4 nil "not in the list" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-not-member-of-list
-               4 '(55 #\c (4)) "not in the list" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-not-member-of-list 4 '(4) "not in the list" "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-not-member-of-list 4 '(5 4) "not in the list" "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-symbol-not-keyword 'a "This" t nil 'test state)))
    (value (equal x nil))))
 
