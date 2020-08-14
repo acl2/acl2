@@ -199,3 +199,17 @@
                              has multiple members with name ~x1."
                             object name)
                      (ec-call (value-fix :irrelevant)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define object-has-member-p ((name stringp) (object valuep))
+  :guard (value-case object :object)
+  :returns (yes/no booleanp)
+  :short "Check if a JSON object has some member with a given name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The member may not be unique,
+     i.e. if there are multiple members with the same name,
+     this predicate returns @('t')."))
+  (consp (object-member-values name object)))
