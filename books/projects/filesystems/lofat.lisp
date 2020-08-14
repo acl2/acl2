@@ -12128,6 +12128,7 @@ Some (rather awful) testing forms are
         (:definition remove-assoc-equal)
         (:linear lofat-remove-file-correctness-1-lemma-27)
         (:definition alistp)
+        (:rewrite m1-file-alist-p-of-remove-assoc-equal)
         (:definition len)
         (:definition take)
         (:rewrite m1-file-alist-p-of-lofat-to-hifat-helper-lemma-1)))
