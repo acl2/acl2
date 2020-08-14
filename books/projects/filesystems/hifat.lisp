@@ -449,15 +449,6 @@
                     (y (list (car l)))
                     (x (list x))))))
 
-(defthm
-  set-equiv-of-append-of-cons-1
-  (set-equiv (append x (cons y z))
-             (cons y (append x z)))
-  :hints
-  (("goal" :in-theory (disable commutativity-2-of-append-under-set-equiv)
-    :use (:instance commutativity-2-of-append-under-set-equiv
-                    (y (list y))))))
-
 (defthmd set-equiv-of-cons-of-remove-1
   (set-equiv (cons x (remove-equal x y))
              (cons x y))
