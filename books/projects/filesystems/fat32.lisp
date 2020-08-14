@@ -915,8 +915,8 @@
   (integer-listp (find-n-free-clusters fa-table n)))
 
 (defthm find-n-free-clusters-correctness-7
-  (implies (force (< (nfix m)
-                     (len (find-n-free-clusters fa-table n))))
+  (implies (case-split (< (nfix m)
+                          (len (find-n-free-clusters fa-table n))))
            (and (<= *ms-first-data-cluster*
                     (nth m (find-n-free-clusters fa-table n)))
                 (< (nth m (find-n-free-clusters fa-table n))

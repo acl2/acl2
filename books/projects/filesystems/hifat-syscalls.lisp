@@ -1125,6 +1125,12 @@
    (mv-nth 1 (hifat-opendir fs path dir-stream-table)))
   :hints (("Goal" :in-theory (enable hifat-opendir))))
 
+(defthm natp-of-hifat-opendir
+  (natp (mv-nth 0
+                (hifat-opendir fs path dir-stream-table)))
+  :hints (("goal" :in-theory (enable hifat-opendir)))
+  :rule-classes :type-prescription)
+
 (assert-event
  (b*
      (((mv dirp dir-stream-table errno)

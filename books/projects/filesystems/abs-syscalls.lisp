@@ -5582,6 +5582,8 @@
           (:rewrite
            fat32-filename-list-p-when-subsetp-equal)
           (:rewrite abs-addrs-of-put-assoc-lemma-1)
+          (:rewrite
+           member-equal-of-strip-cars-when-m1-file-alist-p)
           (:rewrite hifat-file-alist-fix-guard-lemma-1)
           (:rewrite abs-addrs-of-put-assoc-lemma-2)
           (:rewrite true-listp-when-dir-ent-p)))))
@@ -11018,17 +11020,6 @@
            (hifat-get-names-from-dirp dirp dir-stream-table)))
   :hints (("goal" :in-theory (enable hifat-get-names-from-dirp
                                      hifat-readdir))))
-
-(include-book "hifat-entry-count")
-
-;; Move later.
-(defthm character-listp-of-fat32-name-to-name
-  (character-listp (fat32-name-to-name character-list)))
-(defthm natp-of-hifat-opendir
-  (natp (mv-nth 0
-                (hifat-opendir fs path dir-stream-table)))
-  :hints (("goal" :in-theory (enable hifat-opendir)))
-  :rule-classes :type-prescription)
 
 ;; Making a recursive function to do tar can get really annoying because in
 ;; theory we could hit directory cycles and just keep traversing deeper and
