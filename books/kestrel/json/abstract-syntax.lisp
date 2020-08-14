@@ -100,6 +100,13 @@
     :pred member-listp
     :measure (two-nats-measure (acl2-count x) 0)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption maybe-value
+  value
+  :short "Fixtype of JSON values and @('nil')."
+  :pred maybe-valuep)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define object-member-values ((name stringp) (object valuep))
