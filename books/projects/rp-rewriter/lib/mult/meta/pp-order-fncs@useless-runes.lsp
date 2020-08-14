@@ -1,32 +1,37 @@
 (RP::SHOULD-SUM-TERMS-CANCEL$INLINE)
 (RP::PP-ORDER-HAS-PRIORITY?$INLINE)
 (RP::EX-FROM-RP/TYPE-FIX/--
-     (920 15
-          (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (911 14 (:DEFINITION APPLY$-BADGEP))
-     (585 3 (:DEFINITION SUBSETP-EQUAL))
-     (546 42 (:DEFINITION MEMBER-EQUAL))
-     (473 416 (:REWRITE DEFAULT-CDR))
+     (1775 15
+           (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+     (1766 14 (:DEFINITION APPLY$-BADGEP))
+     (1386 12 (:DEFINITION SUBSETP-EQUAL))
+     (1146 90 (:DEFINITION MEMBER-EQUAL))
+     (759 30 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+     (720 48
+          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+     (671 614 (:REWRITE DEFAULT-CDR))
      (441 208 (:REWRITE DEFAULT-+-2))
      (413 12 (:REWRITE O<=-O-FINP-DEF))
-     (342 21
-          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
      (285 19 (:DEFINITION LENGTH))
      (282 208 (:REWRITE DEFAULT-+-1))
      (230 22 (:DEFINITION LEN))
+     (187 187 (:REWRITE DEFAULT-CAR))
+     (180 180 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (156 156 (:REWRITE SUBSETP-IMPLIES-MEMBER))
      (152 38 (:REWRITE COMMUTATIVITY-OF-+))
      (152 38 (:DEFINITION INTEGER-ABS))
-     (136 136 (:REWRITE DEFAULT-CAR))
+     (144 144
+          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
      (132 132
           (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
      (96 96
+         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
+     (96 96
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
-     (93 93 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (90 65 (:REWRITE DEFAULT-<-2))
      (86 65 (:REWRITE DEFAULT-<-1))
+     (84 84 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (76 6 (:DEFINITION NATP))
-     (63 63
-         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
      (60 60
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
      (59 59 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
@@ -36,8 +41,6 @@
      (54 9 (:REWRITE O-FIRST-EXPT-<))
      (48 48
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-1))
-     (42 42
-         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
      (40 40 (:TYPE-PRESCRIPTION LEN))
      (40 12 (:REWRITE AC-<))
      (38 38 (:REWRITE DEFAULT-UNARY-MINUS))
@@ -48,6 +51,8 @@
      (34 14 (:DEFINITION WEAK-APPLY$-BADGE-P))
      (32 9
          (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+     (30 30
+         (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
      (25 25
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
      (24 12 (:REWRITE O-INFP-O-FINP-O<=))
@@ -74,13 +79,14 @@
      (18 3 (:DEFINITION ALL-NILS))
      (15 15 (:TYPE-PRESCRIPTION ALL-NILS))
      (12 12 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (12 12 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (12 12
          (:REWRITE |a < b & b < c  =>  a < c|))
      (12 12 (:LINEAR LEN-WHEN-PREFIXP))
      (9 9 (:REWRITE O-P-DEF-O-FINP-1))
      (6 6
-        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP)))
+        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
+     (6 6 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+     (6 6 (:LINEAR BOUNDS-POSITION-EQUAL)))
 (RP::M-LEMMA1 (268 268 (:REWRITE DEFAULT-CDR))
               (230 230 (:REWRITE DEFAULT-CAR))
               (191 93 (:REWRITE DEFAULT-+-2))
@@ -137,37 +143,42 @@
                    (1 1 (:REWRITE O-P-DEF-O-FINP-1)))
 (RP::PP-LIST-ORDER-SANITY (36 36 (:REWRITE DEFAULT-CAR))
                           (8 8 (:REWRITE DEFAULT-CDR)))
-(RP::PP-ORDER-AND$ (1508 19 (:DEFINITION APPLY$-BADGEP))
-                   (1507 20
+(RP::PP-ORDER-AND$ (2933 19 (:DEFINITION APPLY$-BADGEP))
+                   (2932 20
                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-                   (975 5 (:DEFINITION SUBSETP-EQUAL))
-                   (910 70 (:DEFINITION MEMBER-EQUAL))
-                   (723 681 (:REWRITE DEFAULT-CDR))
-                   (570 35
-                        (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+                   (2310 20 (:DEFINITION SUBSETP-EQUAL))
+                   (1910 150 (:DEFINITION MEMBER-EQUAL))
+                   (1265 50 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+                   (1200 80
+                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+                   (1053 1011 (:REWRITE DEFAULT-CDR))
                    (317 149 (:REWRITE DEFAULT-+-2))
+                   (300 300 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                   (286 286 (:REWRITE DEFAULT-CAR))
+                   (260 260 (:REWRITE SUBSETP-IMPLIES-MEMBER))
                    (242 6 (:REWRITE O<=-O-FINP-DEF))
+                   (240 240
+                        (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
                    (210 14 (:DEFINITION LENGTH))
                    (205 149 (:REWRITE DEFAULT-+-1))
-                   (201 201 (:REWRITE DEFAULT-CAR))
                    (189 19 (:DEFINITION LEN))
-                   (155 155 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                   (160 160
+                        (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
+                   (140 140 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                    (126 10 (:DEFINITION NATP))
                    (112 28 (:REWRITE COMMUTATIVITY-OF-+))
                    (112 28 (:DEFINITION INTEGER-ABS))
-                   (105 105
-                        (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
                    (98 98 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
                    (78 78
                        (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
                    (72 49 (:REWRITE DEFAULT-<-2))
-                   (70 70
-                       (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
                    (60 49 (:REWRITE DEFAULT-<-1))
                    (52 52
                        (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
                    (52 15
                        (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+                   (50 50
+                       (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
                    (49 49 (:TYPE-PRESCRIPTION LEN))
                    (48 19 (:DEFINITION WEAK-APPLY$-BADGE-P))
                    (42 42
@@ -196,7 +207,6 @@
                    (24 24
                        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                    (20 20 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                   (20 20 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                    (20 20 (:LINEAR LEN-WHEN-PREFIXP))
                    (19 19 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
                    (15 5 (:REWRITE O-FIRST-COEFF-<))
@@ -215,6 +225,8 @@
                    (10 10
                        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
                    (10 10 (:REWRITE O-P-DEF-O-FINP-1))
+                   (10 10 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+                   (10 10 (:LINEAR BOUNDS-POSITION-EQUAL))
                    (6 6
                       (:REWRITE |a < b & b < c  =>  a < c|)))
 (RP::PP-ORDER-AND$-SANITY (480 480 (:REWRITE DEFAULT-CDR))

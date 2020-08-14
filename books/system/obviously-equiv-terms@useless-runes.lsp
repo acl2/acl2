@@ -117,12 +117,16 @@
                          (7 7 (:REWRITE DEFAULT-CAR))
                          (2 2 (:REWRITE DEFAULT-+-1))
                          (2 2 (:LINEAR TERM-DEPTH-GT-ARGS)))
-(POSITION-EQUAL-AC-UNDER-IFF (20 20 (:REWRITE DEFAULT-CAR))
-                             (12 12
-                                 (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                             (12 6 (:REWRITE DEFAULT-+-2))
-                             (11 11 (:REWRITE DEFAULT-CDR))
-                             (6 6 (:REWRITE DEFAULT-+-1)))
+(POSITION-EQUAL-AC-UNDER-IFF
+     (188 94
+          (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+     (94 94 (:TYPE-PRESCRIPTION NATP))
+     (20 20 (:REWRITE DEFAULT-CAR))
+     (12 12
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (12 6 (:REWRITE DEFAULT-+-2))
+     (11 11 (:REWRITE DEFAULT-CDR))
+     (6 6 (:REWRITE DEFAULT-+-1)))
 (OBVIOUSLY-EQUAL-LAMBDA-ARGS
      (54 6 (:DEFINITION NTH))
      (37 37 (:REWRITE DEFAULT-CAR))
@@ -310,7 +314,10 @@
          (:DEFINITION L-OBVIOUSLY-EQUIV-TERMS-LST))
      (48 48 (:REWRITE DEFAULT-<-2))
      (48 48 (:REWRITE DEFAULT-<-1)))
-(POSITION-EQUAL-AC-ELIM (62 18 (:REWRITE DEFAULT-+-2))
+(POSITION-EQUAL-AC-ELIM (552 276
+                             (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+                        (276 276 (:TYPE-PRESCRIPTION NATP))
+                        (62 18 (:REWRITE DEFAULT-+-2))
                         (34 16
                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
                         (27 27 (:REWRITE DEFAULT-CAR))

@@ -16,6 +16,7 @@
 (include-book "test-structures")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
@@ -546,7 +547,7 @@
                    must translate to ~
                    the call of a named function." call))
        (fn (ffn-symb term$))
-       ((er &) (ensure-member-of-list$
+       ((er &) (ensure-value-is-in-list$
                 fn
                 targets$
                 (msg "among the target functions ~&0." targets$)

@@ -190,7 +190,7 @@
 
 (define defun-sk-bound-vars ((fn (defun-sk-namep fn wrld))
                              (wrld plist-worldp))
-  :returns (quantifier "A @(tsee symbol-listp).")
+  :returns (bound-vars "A @(tsee symbol-listp).")
   :mode :program
   :short "Retrieve the bound variables of
           a function introduced via @(tsee defun-sk)."

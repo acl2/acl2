@@ -74,19 +74,25 @@
                                             (88 88 (:REWRITE DEFAULT-CAR)))
 (LEAF)
 (?H)
+(MEMBERP)
 (IO)
 (IO-NECC)
+(IO)
 (SPEC[?H])
 (SPEC[?H]-NECC)
+(SPEC[?H])
 (NATP-OF-MEMBER-OF-OUTPUT)
 (DEF-?H-FOLD[?F][?G])
 (DEF-?H-FOLD[?F][?G]-NECC)
+(DEF-?H-FOLD[?F][?G])
 (SPEC1[?H][?F][?G])
 (STEP1)
 (ATOM-IO[?F])
 (ATOM-IO[?F]-NECC)
+(ATOM-IO[?F])
 (CONSP-IO[?G])
 (CONSP-IO[?G]-NECC (6 6 (:DEFINITION MV-NTH)))
+(CONSP-IO[?G])
 (FOLD-IO[?F][?G]
      (2688 48 (:REWRITE NATP-OF-MEMBER-OF-OUTPUT))
      (1872 96 (:REWRITE STEP1))
@@ -94,23 +100,18 @@
      (1680 288 (:REWRITE DEF-?H-FOLD[?F][?G]-NECC))
      (1584 96 (:DEFINITION SPEC[?H]))
      (1536 192 (:DEFINITION DEF-?H-FOLD[?F][?G]))
-     (1248 96 (:DEFINITION MEMBER-EQUAL))
      (1200 240 (:DEFINITION FOLD[?F][?G]))
-     (576 192 (:REWRITE MEMBER-WHEN-ATOM))
-     (572 572
-          (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                    . 2))
-     (572 572
-          (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                    . 1))
+     (576 96 (:DEFINITION MEMBERP))
      (388 388 (:REWRITE DEFAULT-CDR))
      (388 388 (:REWRITE DEFAULT-CAR))
+     (380 380
+          (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                    . 2))
+     (380 380
+          (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                    . 1))
      (288 288
           (:TYPE-PRESCRIPTION DEF-?H-FOLD[?F][?G]))
-     (192 192 (:REWRITE SUBSETP-MEMBER . 4))
-     (192 192 (:REWRITE SUBSETP-MEMBER . 3))
-     (192 192 (:REWRITE SUBSETP-MEMBER . 2))
-     (192 192 (:REWRITE SUBSETP-MEMBER . 1))
      (192 192 (:REWRITE IO-NECC))
      (96 96 (:TYPE-PRESCRIPTION SPEC[?H]))
      (96 96
@@ -123,35 +124,32 @@
 (F)
 (ATOM-IO[F])
 (ATOM-IO[F]-NECC)
-(ATOM-IO[F]! (752 12 (:REWRITE NATP-OF-MEMBER-OF-OUTPUT))
-             (676 2 (:REWRITE STEP1))
-             (516 1 (:REWRITE STEP2))
-             (514 1 (:DEFINITION SPEC2[?H][?F][?G]))
-             (378 2 (:DEFINITION CONSP-IO[?G]))
-             (286 22 (:DEFINITION MEMBER-EQUAL))
-             (213 2 (:DEFINITION SPEC[?H]))
-             (188 2 (:REWRITE CONSP-IO[?G]-NECC))
-             (178 3 (:DEFINITION ATOM-IO[?F]))
-             (158 1 (:DEFINITION SPEC1[?H][?F][?G]))
-             (84 84
-                 (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                           . 2))
-             (84 84
-                 (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                           . 1))
-             (62 3 (:REWRITE ATOM-IO[?F]-NECC))
-             (62 1 (:REWRITE FOLD-IO[?F][?G]))
-             (51 51 (:REWRITE SUBSETP-MEMBER . 4))
-             (51 51 (:REWRITE SUBSETP-MEMBER . 3))
-             (51 51 (:REWRITE SUBSETP-MEMBER . 2))
-             (51 51 (:REWRITE SUBSETP-MEMBER . 1))
-             (51 51 (:REWRITE IO-NECC))
+(ATOM-IO[F])
+(ATOM-IO[F]! (444 12 (:REWRITE NATP-OF-MEMBER-OF-OUTPUT))
+             (396 2 (:REWRITE STEP1))
+             (292 1 (:REWRITE STEP2))
+             (290 1 (:DEFINITION SPEC2[?H][?F][?G]))
+             (210 2 (:DEFINITION CONSP-IO[?G]))
+             (129 2 (:DEFINITION SPEC[?H]))
+             (104 2 (:REWRITE CONSP-IO[?G]-NECC))
+             (102 1 (:DEFINITION SPEC1[?H][?F][?G]))
+             (94 3 (:DEFINITION ATOM-IO[?F]))
+             (55 22 (:DEFINITION IFF))
+             (52 52 (:REWRITE IO-NECC))
              (48 6 (:DEFINITION DEF-?H-FOLD[?F][?G]))
              (45 8 (:REWRITE DEF-?H-FOLD[?F][?G]-NECC))
-             (39 39 (:REWRITE DEFAULT-CDR))
-             (39 39 (:REWRITE DEFAULT-CAR))
+             (41 41 (:REWRITE DEFAULT-CAR))
+             (40 40 (:REWRITE DEFAULT-CDR))
+             (40 40
+                 (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                           . 2))
+             (40 40
+                 (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                           . 1))
              (35 7 (:DEFINITION FOLD[?F][?G]))
-             (25 25 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+             (34 3 (:REWRITE ATOM-IO[?F]-NECC))
+             (34 1 (:REWRITE FOLD-IO[?F][?G]))
+             (25 25 (:TYPE-PRESCRIPTION MEMBERP))
              (22 22 (:TYPE-PRESCRIPTION IFF))
              (18 18 (:TYPE-PRESCRIPTION LEAF))
              (15 14 (:REWRITE DEFAULT-<-1))
@@ -170,14 +168,25 @@
                 (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
 (DEF-?F)
 (DEF-?F-NECC)
+(DEF-?F)
 (SPEC3[?H][?F][?G])
 (STEP3-LEMMA)
 (STEP3)
-(G (10 5
-       (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
-   (5 5 (:TYPE-PRESCRIPTION TRUE-LISTP)))
+(APP)
+(G)
 (CONSP-IO[G])
 (CONSP-IO[G]-NECC (6 6 (:DEFINITION MV-NTH)))
+(CONSP-IO[G])
+(MEMBERP-OF-APP (57 57 (:REWRITE IO-NECC))
+                (48 45 (:REWRITE DEFAULT-CAR))
+                (33 31 (:REWRITE DEFAULT-CDR))
+                (32 32
+                    (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                              . 2))
+                (32 32
+                    (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                              . 1))
+                (24 24 (:TYPE-PRESCRIPTION APP)))
 (CONSP-IO[G]-LEMMA
      (1293 69 (:REWRITE NATP-OF-MEMBER-OF-OUTPUT))
      (1184 8 (:REWRITE STEP1))
@@ -201,20 +210,19 @@
      (80 16 (:REWRITE CONSP-IO[?G]-NECC))
      (76 12 (:REWRITE ATOM-IO[?F]-NECC))
      (72 72 (:TYPE-PRESCRIPTION SPEC[?H]))
-     (72 72
-         (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                   . 2))
-     (72 72
-         (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                   . 1))
      (69 69 (:REWRITE DEFAULT-<-2))
      (69 69 (:REWRITE DEFAULT-<-1))
      (68 68 (:REWRITE DEFAULT-CAR))
      (67 67 (:REWRITE DEFAULT-CDR))
+     (64 64
+         (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                   . 2))
+     (64 64
+         (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                   . 1))
      (40 40
          (:TYPE-PRESCRIPTION DEF-?H-FOLD[?F][?G]))
-     (32 4 (:DEFINITION BINARY-APPEND))
-     (24 8 (:REWRITE APPEND-WHEN-NOT-CONSP))
+     (20 4 (:DEFINITION APP))
      (16 16 (:TYPE-PRESCRIPTION CONSP-IO[?G]))
      (16 16 (:TYPE-PRESCRIPTION ATOM-IO[?F]))
      (8 8
@@ -223,11 +231,7 @@
      (4 4
         (:TYPE-PRESCRIPTION SPEC3[?H][?F][?G]))
      (4 4
-        (:TYPE-PRESCRIPTION SPEC2[?H][?F][?G]))
-     (2 2 (:REWRITE SUBSETP-MEMBER . 4))
-     (2 2 (:REWRITE SUBSETP-MEMBER . 3))
-     (2 2 (:REWRITE SUBSETP-MEMBER . 2))
-     (2 2 (:REWRITE SUBSETP-MEMBER . 1)))
+        (:TYPE-PRESCRIPTION SPEC2[?H][?F][?G])))
 (CONSP-IO[G]! (1344 68 (:REWRITE NATP-OF-MEMBER-OF-OUTPUT))
               (1232 8 (:REWRITE STEP1))
               (776 4 (:REWRITE STEP2))
@@ -247,30 +251,25 @@
               (128 12 (:REWRITE STEP3-LEMMA))
               (124 4 (:REWRITE FOLD-IO[?F][?G]))
               (116 116 (:TYPE-PRESCRIPTION DEF-?F))
-              (104 8 (:DEFINITION MEMBER-EQUAL))
               (88 16 (:REWRITE CONSP-IO[?G]-NECC))
-              (81 81
-                  (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                            . 2))
-              (81 81
-                  (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                            . 1))
               (80 12 (:REWRITE ATOM-IO[?F]-NECC))
               (72 72 (:TYPE-PRESCRIPTION SPEC[?H]))
               (68 68 (:REWRITE DEFAULT-<-2))
               (68 68 (:REWRITE DEFAULT-<-1))
               (66 66 (:REWRITE DEFAULT-CDR))
               (66 66 (:REWRITE DEFAULT-CAR))
-              (48 16 (:REWRITE MEMBER-WHEN-ATOM))
+              (65 65
+                  (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                            . 2))
+              (65 65
+                  (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
+                            . 1))
+              (48 8 (:DEFINITION MEMBERP))
               (40 40
                   (:TYPE-PRESCRIPTION DEF-?H-FOLD[?F][?G]))
               (24 4 (:DEFINITION LEAF))
               (16 16 (:TYPE-PRESCRIPTION CONSP-IO[?G]))
               (16 16 (:TYPE-PRESCRIPTION ATOM-IO[?F]))
-              (16 16 (:REWRITE SUBSETP-MEMBER . 4))
-              (16 16 (:REWRITE SUBSETP-MEMBER . 3))
-              (16 16 (:REWRITE SUBSETP-MEMBER . 2))
-              (16 16 (:REWRITE SUBSETP-MEMBER . 1))
               (16 16 (:REWRITE IO-NECC))
               (8 8
                  (:TYPE-PRESCRIPTION SPEC1[?H][?F][?G]))
@@ -281,25 +280,31 @@
                  (:TYPE-PRESCRIPTION SPEC2[?H][?F][?G])))
 (DEF-?G)
 (DEF-?G-NECC (4 4 (:DEFINITION MV-NTH)))
+(DEF-?G)
 (SPEC4[?H][?F][?G])
 (STEP4-LEMMA)
 (STEP4)
 (H)
 (DEF-?H)
 (DEF-?H-NECC)
+(DEF-?H)
 (SPEC5[?H][?F][?G])
 (STEP5-LEMMA)
 (STEP5)
 (CHAIN[?H][?F][?G])
 (DEF-H)
 (DEF-H-NECC)
+(DEF-H)
 (DEF-F)
 (DEF-F-NECC)
+(DEF-F)
 (DEF-G)
 (DEF-G-NECC)
+(DEF-G)
 (SPEC5[H][F][G])
 (SPEC[H])
 (SPEC[H]-NECC)
+(SPEC[H])
 (CHAIN[H][F][G])
 (SPEC5[H][F][G]!)
 (SPEC[H]!)

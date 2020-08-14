@@ -16,6 +16,7 @@
 
 ;; STATUS: IN-PROGRESS
 
+(include-book "legal-variable-listp")
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 ;; TODO: Change some of these to just take wrld instead of state.
@@ -77,12 +78,14 @@
 (defund fn-formals (name wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
-  (let ((formals (getpropc name 'formals t wrld)))
-    (if (eq formals t)
+  (let ((formals (getpropc name 'formals :none wrld)))
+    (if (eq formals :none)
         (er hard? 'fn-formals "No formals for ~x0; maybe it's not a function." name)
       (if (not (symbol-listp formals)) ; to support proofs of guards (should always be true)
           (er hard? 'fn-formals "Formals of ~x0 are not a list of symbols." name)
-        formals))))
+        (if (not (legal-variable-listp formals)) ; to support proofs of guards (should always be true)
+            (er hard? 'fn-formals "Formals of ~x0 are not all legal variables." name)
+          formals)))))
 
 (defthm true-listp-of-fn-formals
   (true-listp (fn-formals name wrld))
@@ -91,6 +94,10 @@
 
 (defthm symbol-listp-of-fn-formals
   (symbol-listp (fn-formals fun wrld))
+  :hints (("Goal" :in-theory (enable fn-formals))))
+
+(defthm legal-variable-listp-of-fn-formals
+  (legal-variable-listp (fn-formals fun wrld))
   :hints (("Goal" :in-theory (enable fn-formals))))
 
 ;dup

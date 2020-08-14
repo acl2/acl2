@@ -35,12 +35,16 @@
 (TRUE-LISTP-OF-FN-FORMALS (11 1 (:DEFINITION FGETPROP))
                           (7 7 (:REWRITE DEFAULT-CDR))
                           (6 6 (:REWRITE DEFAULT-CAR))
-                          (4 1 (:DEFINITION TRUE-LISTP))
+                          (6 1 (:DEFINITION TRUE-LISTP))
                           (3 1 (:DEFINITION SYMBOL-LISTP)))
 (SYMBOL-LISTP-OF-FN-FORMALS (11 1 (:DEFINITION FGETPROP))
-                            (8 2 (:DEFINITION SYMBOL-LISTP))
+                            (10 2 (:DEFINITION SYMBOL-LISTP))
                             (7 7 (:REWRITE DEFAULT-CDR))
                             (7 7 (:REWRITE DEFAULT-CAR)))
+(LEGAL-VARIABLE-LISTP-OF-FN-FORMALS (11 1 (:DEFINITION FGETPROP))
+                                    (6 6 (:REWRITE DEFAULT-CDR))
+                                    (6 6 (:REWRITE DEFAULT-CAR))
+                                    (3 1 (:DEFINITION SYMBOL-LISTP)))
 (PSEUDO-TERM-LISTP-WHEN-SYMBOL-LISTP-CHEAP
      (13 13 (:REWRITE DEFAULT-CAR))
      (8 8

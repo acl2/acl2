@@ -413,7 +413,17 @@ about keyval-alistp."
     :name valtype-p-of-cdr-of-assoc-when-keyval-alist-p
     :requirement valtype-p-of-nil
     :body (implies (keyval-alist-p x)
-                   (valtype-p (cdr (assoc-equal k x))))))
+                   (valtype-p (cdr (assoc-equal k x)))))
+
+  (def-alistp-rule alistp-of-remove-assoc
+    (implies (keyval-alist-p x)
+             (keyval-alist-p (remove-assoc-equal name x)))
+    :name keyval-alist-p-of-remove-assoc
+    :requirement true-listp
+    :body
+    (implies (keyval-alist-p x)
+             (keyval-alist-p (remove-assoc-equal name x)))
+    :tags (:alistp)))
 
 
 ;; expensive...

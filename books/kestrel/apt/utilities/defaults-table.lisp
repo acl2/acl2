@@ -565,7 +565,7 @@
    (xdoc::p
     "Some APT transformations include an @(':old-if-new-name') input
      that specifies the name of the generated theorem
-     asserting that the old function is implied by the old function.
+     asserting that the old function is implied by the new function.
      When this input is a symbol that is a valid theorem name,
      it is used as the theorem name.
      When this input is a keyword (which is never a valid theorem name),
@@ -621,7 +621,7 @@
    (xdoc::p
     "Some APT transformations include an @(':old-if-new-enable') input
      that specifies whether to enable the generated theorem
-     asserting that the old function is implied by the old function.")
+     asserting that the old function is implied by the new function.")
    (xdoc::p
     "This macro sets an entry in the APT defaults table
      that provides the default value of the @(':old-if-new-enable') input.

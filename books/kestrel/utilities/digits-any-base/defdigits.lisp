@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -1095,8 +1096,7 @@
        ,digits-fix-correct-event
        ,digits-pred-guard-correct-event
        ,digits-fix-guard-correct-event
-       (set-default-hints nil)
-       (set-override-hints nil)
+       (evmac-prepare-proofs)
        ,bendian-to-nat-event
        ,lendian-to-nat-event
        ,nat-to-bendian-event

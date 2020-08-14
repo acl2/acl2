@@ -15,6 +15,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/conjoin-equalities" :dir :system)
@@ -1194,6 +1195,7 @@
    (xdoc::p
     "The expansion starts with an implicitly local event to
      ensure logic mode.
+     After the events to proof
      Other implicitly local event forms remove any default and override hints,
      to prevent such hints from sabotaging the generated proofs
      for the theorems that are not applicability conditions;
@@ -1255,12 +1257,7 @@
                      (logic)
                      (set-ignore-ok t)
                      ,@appcond-events
-                     (set-default-hints nil)
-                     (set-override-hints nil)
-                     (local
-                      (defattach-system
-                        simplifiable-mv-nth-p
-                        constant-nil-function-arity-0))
+                     (evmac-prepare-proofs)
                      ,@local-thm-events
                      ,@exported-thm-events))
        ((when show-only$)

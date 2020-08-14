@@ -13,6 +13,7 @@
 (include-book "defaults-table")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -75,7 +76,8 @@
             (er-soft+ ctx t nil
                       "The name ~x0 specified by :NEW-NAME ~
                        must be distinct form the names ~&1 ~
-                       that are also being generated.")))
+                       that are also being generated."
+                      new-name names-to-avoid)))
         (value (list new-name
                      (cons new-name names-to-avoid)))))))
 
@@ -154,7 +156,8 @@
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :WRAPPER-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               wrapper-name names-to-avoid))
                     ((mv new-name$ names-to-avoid)
                      (next-fresh-numbered-name base
                                                (1+ index)
@@ -177,7 +180,8 @@
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               new-name names-to-avoid))
                     ((mv wrapper-name$ names-to-avoid)
                      (next-fresh-numbered-name base
                                                (1+ index)
@@ -208,12 +212,14 @@
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               new-name names-to-avoid))
                     ((when (member-eq wrapper-name names-to-avoid))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :WRAPPER-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               wrapper-name names-to-avoid))
                     ((when (eq new-name wrapper-name))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
@@ -280,7 +286,7 @@
      If also explained there, if this input is absent,
      it is taken from the APT defaults table.")
    (xdoc::p
-    "This utility processed the @(':old-to-new-name') input
+    "This utility processes the @(':old-to-new-name') input
      of an APT transformation,
      validating that the input specifies a valid name
      for the new theorem.
@@ -324,7 +330,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name.  ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 name
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -385,7 +391,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name.  ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 name
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -451,6 +457,124 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define process-old-if-new-name (old-if-new-name
+                                 (old-if-new-name-present booleanp)
+                                 (old symbolp)
+                                 (new symbolp)
+                                 (names-to-avoid symbol-listp)
+                                 ctx
+                                 state)
+  :returns (mv erp
+               (result "A list @('(old-if-new updated-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp symbol-listp result)').")
+               state)
+  :mode :program
+  :short "Process the @(':old-if-new-name') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have an input @(':old-if-new-name')
+     that specifies the name of the generated theorem
+     asserting that the old function is implied by the new function.
+     This input must be either a symbol to use directly as the theorem name
+     (in which case the symbol must not be a keyword),
+     or a keyword used as a separator
+     between the names of the old and new functions
+     as expained in @(tsee set-default-input-old-if-new-name).
+     If also explained there, if this input is absent,
+     it is taken from the APT defaults table.")
+   (xdoc::p
+    "This utility processes the @(':old-if-new-name') input
+     of an APT transformation,
+     validating that the input specifies a valid name
+     for the new theorem.
+     The @('names-to-avoid') parameter contains names of other events
+     that are generated by the transformation but do not yet exist:
+     they are used to ensure that the name of this theorem
+     is distinct from them;
+     this theorem's name is added to the list, which is also returned.")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('old-if-new-name-present') to @('t')
+     iff the @(':old-if-new-name') input is present.
+     If this is @('nil'), the parameter @('old-if-new-name') is ignored."))
+  (b* ((wrld (w state))
+       ((er &) (if old-if-new-name-present
+                   (ensure-value-is-symbol$ old-if-new-name
+                                            "The :OLD-IF-NEW-NAME input"
+                                            t
+                                            nil)
+                 (value nil)))
+       (name (if (or (not old-if-new-name-present)
+                     (keywordp old-if-new-name))
+                 (b* ((kwd (if old-if-new-name-present
+                               old-if-new-name
+                             (get-default-input-old-if-new-name wrld))))
+                   (intern-in-package-of-symbol
+                    (concatenate 'string
+                                 (symbol-name old)
+                                 (symbol-name kwd)
+                                 (symbol-name new))
+                    new))
+               old-if-new-name))
+       (description (msg "The name ~x0 of the theorem ~
+                          that rewrites the old function ~x1 ~
+                          in terms of the new function ~x2, ~
+                          specified (perhaps by default) ~
+                          by the :OLD-IF-NEW-NAME input ~x3,"
+                         name old new old-if-new-name))
+       (error-msg? (fresh-namep-msg-weak name nil wrld))
+       ((when error-msg?)
+        (er-soft+ ctx t nil
+                  "~@0 must be a valid fresh theorem name.  ~@1"
+                  description error-msg?))
+       ((er &) (ensure-value-is-not-in-list$
+                name
+                names-to-avoid
+                (msg "among the names ~x0 of other events ~
+                      generated by this transformation"
+                     names-to-avoid)
+                description
+                t
+                nil)))
+    (value (list name (cons name names-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-old-if-new-enable (old-if-new-enable
+                                   (old-if-new-enable-present booleanp)
+                                   ctx
+                                   state)
+  :returns (mv erp (processed-old-if-new-enable booleanp) state)
+  :short "Process the @(':old-if-new-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have an @(':old-if-new-enable') input
+     that specifies whether to enable or not
+     asserting that the old function is implied by the new function.
+     This must be a boolean.
+     If absent, it is taken from the APT defaults table;
+     see @(tsee set-default-input-old-if-new-enable).")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('old-if-new-enable-present') to @('t')
+     iff the @(':old-if-new-enable') input is present.
+     If this is @('nil'), the parameter @('old-if-new-enable') is ignored."))
+  (if old-if-new-enable-present
+      (b* (((er &) (ensure-value-is-boolean$ old-if-new-enable
+                                             "The :OLD-IF-NEW-ENABLE input"
+                                             t
+                                             nil)))
+        (value old-if-new-enable))
+    (value (get-default-input-old-if-new-enable (w state))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define process-old-to-wrapper-name (old-to-wrapper-name
                                      (old-to-wrapper-name-present booleanp)
                                      (gen-wrapper booleanp)
@@ -504,7 +628,7 @@
             (er-soft+ ctx t nil
                       "~@0 must be a valid fresh theorem name.  ~@1"
                       description error-msg?))
-           ((er &) (ensure-not-member-of-list$
+           ((er &) (ensure-value-is-not-in-list$
                     name
                     names-to-avoid
                     (msg "among the names ~x0 of other events ~
@@ -574,7 +698,7 @@
             (er-soft+ ctx t nil
                       "~@0 must be a valid fresh theorem name.  ~@1"
                       description error-msg?))
-           ((er &) (ensure-not-member-of-list$
+           ((er &) (ensure-value-is-not-in-list$
                     name
                     names-to-avoid
                     (msg "among the names ~x0 of other events ~

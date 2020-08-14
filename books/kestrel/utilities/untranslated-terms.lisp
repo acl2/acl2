@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
-; Author: Eric Smith (eric.smith@kestrel.edu)
+; Main Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,6 +30,8 @@
 
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
+(include-book "map-symbol-name")
+(include-book "legal-variable-listp")
 (include-book "quote")
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -36,6 +39,7 @@
 ;(include-book "../sequences/defforall") ;drop (after replacing the defforall-simple below)?
 ;(include-book "../sequences/generics-utilities") ;for make-pairs (TODO: move that and rename to mention doublets)
 ;(include-book "../library-wrappers/flag")
+(include-book "legal-variablep") ;for legal-variable-name-in-acl2-packagep
 (local (include-book "std/lists/last" :dir :system))
 (local (include-book "std/lists/union" :dir :system))
 (local (include-book "kestrel/lists-light/symbol-listp" :dir :system))
@@ -236,23 +240,7 @@
 ;(defforall-simple untranslated-TERM-supported-bstar-binderp)
 ;(verify-guards all-untranslated-TERM-supported-bstar-binderp)
 
-;;todo: try this stuff but consider untranslated-termp-when-strong-pseudo-termp below:
 
-;; (defthm car-when-untranslated-constantp
-;;   (implies (untranslated-constantp x)
-;;            (equal (car x)
-;;                   (if (consp x)
-;;                       'quote
-;;                     nil)))
-;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-;;   :hints (("Goal" :in-theory (enable untranslated-constantp))))
-
-;; (defthm untranslated-constantp-forward-to-true-listp
-;;   (implies (and (untranslated-constantp term)
-;;                 (consp term))
-;;            (true-listp term))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable untranslated-constantp))))
 
 ;; An untranslated variable is a symbol, with several additional restrictions.
 ;; For example, t and nil are constants, as are keywords (all of these things
@@ -267,6 +255,57 @@
            (symbolp x))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable untranslated-variablep legal-variablep))))
+
+;; Very similar to legal-variablep-of-intern-in-package-of-symbol.
+(defthm untranslated-variablep-of-intern-in-package-of-symbol
+  (implies (and (equal (symbol-package-name sym) "ACL2") ;gen
+                (stringp str)
+                (symbolp sym))
+           (equal (untranslated-variablep (intern-in-package-of-symbol str sym))
+                  (legal-variable-name-in-acl2-packagep str)))
+  :hints (("Goal" :in-theory (enable untranslated-variablep))))
+
+;; Recognize an untranslated term that is a constant
+(defund untranslated-constantp (x)
+  (declare (xargs :guard t))
+  (or (acl2-numberp x) ;unquoted
+      (characterp x) ;unquoted
+      (stringp x) ;unquoted
+      (and (symbolp x)
+           (or (keywordp x) ;; unquoted keywords are constants
+               ;; t, nil, and symbols that begin and end with * are constants:
+               ;; TODO: Consider disallowing *
+               (legal-constantp1 x)))
+      (myquotep x)))
+;; (defthm car-when-untranslated-constantp
+;;   (implies (untranslated-constantp x)
+;;            (equal (car x)
+;;                   (if (consp x)
+;;                       'quote
+;;                     nil)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Goal" :in-theory (enable untranslated-constantp))))
+
+(defthm untranslated-constantp-forward-to-true-listp
+  (implies (and (untranslated-constantp term)
+                (consp term))
+           (true-listp term))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable untranslated-constantp))))
+
+(defthm untranslated-constantp-forward-to-equal-of-car-and-quote
+  (implies (and (untranslated-constantp term)
+                (consp term))
+           (equal (car term) 'quote))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable untranslated-constantp))))
+
+(defthm untranslated-constantp-of-cons
+  (equal (untranslated-constantp (cons x y))
+         (and (equal x 'quote)
+              (true-listp y)
+              (equal 1 (len y))))
+  :hints (("Goal" :in-theory (enable untranslated-constantp))))
 
 ;;these are terms that may contain let/let*/b*/cond/case-match/case/mv-let, etc.
 ;ttodo: add support for case, mv-let, and more constructs.
@@ -300,6 +339,17 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable ulambda-body))))
 
+;; Sanity check: Nothing can be an untranslated-constant and an
+;; untranslated-variable.
+(defthm not-and-of-untranslated-constantp-and-untranslated-variablep
+  (not (and (untranslated-constantp x)
+            (untranslated-variablep x)))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable untranslated-variablep
+                                     untranslated-constantp
+                                     legal-variablep
+                                     legal-variable-or-constant-namep))))
+
 (mutual-recursion
 
  ;; test for (lambda (...vars...) ...declares... body)
@@ -316,76 +366,40 @@
  (defun untranslated-termp (x)
    (declare (xargs :guard t
                    :measure (acl2-count x)))
-      (if (atom x)
-       ;; TODO: Disallow bad symbol names?  See LEGAL-VARIABLE-OR-CONSTANT-NAMEP.
-       (or (symbolp x) ;;we allow "naked" (unquoted) symbols, numbers, strings, and characters
-           (acl2-numberp x)
-           (stringp x)
-           (characterp x))
-     (let ((fn (ffn-symb x)))
-       (case fn
-         (quote (and (true-listp (fargs x))
-                     (eql 1 (len (fargs x)))))
-         ((let let*) ;;(let <bindings> <body>) ;todo: what about declares?!
-          (and (true-listp (fargs x))
-               ;;(eql 2 (len (fargs x)))
-               (var-untranslated-term-pairsp (farg1 x))
-               ;;declares can intervene - todo: check their form
-               (untranslated-termp (car (last (fargs x))))))
-         (b* ;;(b* <bindings> <form>+)
-             (and (true-listp (fargs x))
-                  ;;(untranslated-term-pairsp (farg1 x)) ;TTODO: check the binder-forms more carefully
-                  (pair-listp (farg1 x)) ;FIXME: These are not necessarily pairs (consider binders like when)
-                  (or (not (farg1 x)) ;for termination
-                      (all-untranslated-term-supported-bstar-binderp (strip-cars (farg1 x))))
-                  (untranslated-term-listp (strip-cadrs (farg1 x)))
-                  (untranslated-term-listp (rest (fargs x)))))
-        (cond ;; (cond ...pairs...)
-          (and (true-listp (fargs x))
-               (untranslated-term-pairsp (fargs x))))
-        ((case case-match)  ; (case-match tm ...pat-term-pairs...) or (case tm ...symbol-term-pairs...)
-          (and (true-listp (fargs x))
-               (untranslated-termp (farg1 x))
-               (pat-untranslated-term-pairsp (cdr (fargs x)))))
-        (otherwise
-          ;;regular function call or lambda application:
-          (and (untranslated-term-listp (fargs x)) ;;first check the args
-               (or (symbolp fn)
-                   (and (untranslated-lambda-exprp fn)
-                        (equal (len (ulambda-formals fn))
-                               (len (fargs x))))))))))
-   ;; (or (untranslated-variablep x)
-   ;;     (untranslated-constantp x)
-   ;;     (and (consp x)
-   ;;          (let ((fn (ffn-symb x))) ;todo: what are the legal FNs?
-   ;;            (case fn
-   ;;              ;; (quote (and (true-listp (fargs x))
-   ;;              ;;             (eql 1 (len (fargs x)))))
-   ;;              ((let let*) ;;(let <bindings> <body>) ;todo: what about declares?!
-   ;;               (and (true-listp (fargs x))
-   ;;                    ;;(eql 2 (len (fargs x)))
-   ;;                    (var-untranslated-term-pairsp (farg1 x))
-   ;;                    ;;declares can intervene - todo: check their form
-   ;;                    (untranslated-termp (car (last x)))))
-   ;;              (b* ;;(b* <bindings> <form>+)
-   ;;                  (and (true-listp (fargs x))
-   ;;                       ;;(untranslated-term-pairsp (farg1 x)) ;TTODO: check the binder-forms more carefully
-   ;;                       (pair-listp (farg1 x))
-   ;;                       (or (not (farg1 x)) ;for termination
-   ;;                           (all-untranslated-term-supported-bstar-binderp (strip-cars (farg1 x))))
-   ;;                       (untranslated-term-listp (strip-cadrs (farg1 x)))
-   ;;                       (untranslated-term-listp (rest (fargs x)))))
-   ;;              (cond ;; (cond ...pairs...)
-   ;;               (and (true-listp (fargs x))
-   ;;                    (untranslated-term-pairsp (fargs x))))
-   ;;              (otherwise
-   ;;               ;;regular function call or lambda application:
-   ;;               (and (untranslated-term-listp (fargs x)) ;;first check the args
-   ;;                    (or (symbolp fn)
-   ;;                        (and (untranslated-lambda-exprp fn)
-   ;;                             (equal (len (farg1 fn))
-   ;;                                    (len (fargs x)))))))))))
-   )
+   (or (untranslated-constantp x)
+       (untranslated-variablep x)
+       (and (consp x)
+            (let ((fn (ffn-symb x))) ;todo: what are the legal FNs?
+              (case fn
+                ((let let*) ;;(let <bindings> <body>) ;todo: what about declares?!
+                 (and (true-listp (fargs x))
+                      ;;(eql 2 (len (fargs x)))
+                      (var-untranslated-term-pairsp (farg1 x))
+                      ;;declares can intervene - todo: check their form
+                      (untranslated-termp (car (last (fargs x))))))
+                (b* ;;(b* <bindings> <form>+)
+                    (and (true-listp (fargs x))
+                         ;;(untranslated-term-pairsp (farg1 x)) ;TTODO: check the binder-forms more carefully
+                         (pair-listp (farg1 x)) ;FIXME: These are not necessarily pairs (consider binders like when)
+                         (or (not (farg1 x))    ;for termination
+                             (all-untranslated-term-supported-bstar-binderp (strip-cars (farg1 x))))
+                         (untranslated-term-listp (strip-cadrs (farg1 x)))
+                         (untranslated-term-listp (rest (fargs x)))))
+                (cond ;; (cond ...pairs...)
+                 (and (true-listp (fargs x))
+                      (untranslated-term-pairsp (fargs x))))
+                ((case case-match) ; (case-match tm ...pat-term-pairs...) or (case tm ...symbol-term-pairs...)
+                 (and (true-listp (fargs x))
+                      (untranslated-termp (farg1 x))
+                      (pat-untranslated-term-pairsp (cdr (fargs x)))))
+                (quote nil) ;; disallow quotes bot covered by the untranslated-constantp call above
+                (otherwise
+                 ;;regular function call or lambda application:
+                 (and (untranslated-term-listp (fargs x)) ;;first check the args
+                      (or (symbolp fn)
+                          (and (untranslated-lambda-exprp fn)
+                               (equal (len (ulambda-formals fn))
+                                      (len (fargs x))))))))))))
 
  (defun untranslated-term-supported-bstar-binderp (binder)
    (declare (xargs :guard t :measure (acl2-count binder)))
@@ -452,6 +466,19 @@
    (COND ((ATOM LST) (EQUAL LST NIL))
          (T (AND (untranslated-TERMP (CAR LST))
                  (untranslated-TERM-LISTP (CDR LST)))))))
+
+(defthm untranslated-termp-when-legal-variablep-cheap
+  (implies (legal-variablep x)
+           (untranslated-termp x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable untranslated-termp
+                                     untranslated-variablep))))
+
+(defthm untranslated-term-listp-when-legal-variable-listp-cheap
+  (implies (legal-variable-listp x)
+           (untranslated-term-listp x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable legal-variable-listp))))
 
 (defthm untranslated-termp-of-cons
   (equal (untranslated-termp (cons x y))
@@ -669,6 +696,7 @@
                                 fn))))
                    (cons fn args))))))))))
 
+ ;; For the bindings of let and let*
  (defun rename-fns-in-var-untranslated-term-pairs (pairs alist)
    (declare (xargs :guard (and (var-untranslated-term-pairsp pairs)
                                (symbol-alistp alist))))
@@ -693,6 +721,7 @@
  ;;                   (rename-fns-in-untranslated-term term2 alist))
  ;;             (rename-fns-in-cadrs-of-untranslated-term-pairs (rest pairs) alist)))))
 
+ ;; For the pairs in a COND.
  (defun rename-fns-in-untranslated-term-pairs (pairs alist)
    (declare (xargs :guard (and (untranslated-term-pairsp pairs)
                                (symbol-alistp alist))))
@@ -705,6 +734,7 @@
                    (rename-fns-in-untranslated-term term2 alist))
              (rename-fns-in-untranslated-term-pairs (rest pairs) alist)))))
 
+ ;; For CASE and CASE-MATCH
  (defun rename-fns-in-pat-untranslated-term-pairs (pairs alist)
    (declare (xargs :guard (and (pat-untranslated-term-pairsp pairs)
                                (symbol-alistp alist))))
@@ -1494,7 +1524,7 @@
 (mutual-recursion
  (defund strong-pseudo-termp (x)
    (declare (xargs :guard t :mode :logic))
-   (cond ((atom x) (symbolp x))
+   (cond ((atom x) (legal-variablep x))
          ((eq (car x) 'quote)
           (and (consp (cdr x))
                (null (cdr (cdr x)))))

@@ -148,7 +148,7 @@
                                      fat32-filename-list-fix)
            :induct (basename-dirname-helper path))))
 
-(defun hifat-lstat (fs path)
+(defund hifat-lstat (fs path)
   (declare (xargs :guard (and (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)
                               (fat32-filename-list-p path))))
@@ -164,6 +164,10 @@
      (make-struct-stat
       :st_size st_size)
      0 0)))
+
+(defthm struct-stat-p-of-hifat-lstat
+  (struct-stat-p (mv-nth 0 (hifat-lstat fs path)))
+  :hints (("goal" :in-theory (enable hifat-lstat))))
 
 ;; By default, we aren't going to check whether the file exists.
 (defun hifat-open (path fd-table file-table)
@@ -525,16 +529,6 @@
      (remove-assoc fd fd-table)
      (remove-assoc (cdr fd-table-entry) file-table)
      0)))
-
-(defthm
-  fd-table-p-of-remove-assoc
-  (implies (fd-table-p fd-table)
-           (fd-table-p (remove-assoc-equal fd fd-table))))
-
-(defthm
-  file-table-p-of-remove-assoc
-  (implies (file-table-p file-table)
-           (file-table-p (remove-assoc-equal fd file-table))))
 
 (defthm hifat-close-correctness-1
   (b* (((mv fd-table file-table &)
@@ -1041,6 +1035,54 @@
   (implies (dir-stream-table-p dir-stream-table)
            (nat-listp (strip-cars dir-stream-table))))
 
+;; Here's an interesting example that gives the lie to the idea that set-equiv
+;; means much of anything when the sort is stable:
+;; (b* ((alist '((5 . 1) (6 . 1) (7 . 2))) (l1 (list 5 6)) (l2 (list 6 5)))
+;;   (and (set-equiv l1 l2) (not (equal (intval-alist-sort l1 alist)
+;;                                      (intval-alist-sort l2 alist)))))
+(encapsulate
+  ()
+
+  (local (include-book "defsort/examples" :dir :system))
+
+  (defund string-less-p (x y)
+    (declare (xargs :guard (and (stringp x) (stringp y))))
+    (if (string< x y) t nil))
+
+  (defsort :comparablep stringp
+    :compare< string-less-p
+    :prefix string2
+    :comparable-listp string-listp
+    :true-listp t)
+
+  (defthm fat32-filename-list-p-of-<<-merge
+    (implies (and (fat32-filename-list-p x) (fat32-filename-list-p y))
+             (fat32-filename-list-p (<<-merge x y)))
+    :hints (("Goal" :in-theory (e/d (<<-merge)
+                                    (floor len)))))
+
+  (local (include-book "ihs/ihs-lemmas" :dir :system))
+
+  (defthm fat32-filename-list-p-of-<<-sort-when-fat32-filename-list-p
+    (implies
+     (fat32-filename-list-p x)
+     (fat32-filename-list-p (<<-sort x)))
+    :hints (("Goal" :in-theory (e/d (<<-sort
+                                     floor-bounded-by-/)
+                                    (floor len
+                                           <<-mergesort-equals-insertsort)))))
+
+  (defthm
+    common-<<-sort-for-perms
+    (implies (set-equiv x y)
+             (equal (<<-sort (remove-duplicates-equal x))
+                    (<<-sort (remove-duplicates-equal y))))
+    :rule-classes :congruence))
+
+(defthm string-listp-when-fat32-filename-list-p
+  (implies (fat32-filename-list-p x)
+           (string-listp x)))
+
 (defund hifat-opendir (fs path dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
                               (m1-file-alist-p fs)
@@ -1073,7 +1115,8 @@
       (cons dir-stream-table-index
             (make-dir-stream
              :file-list
-             (strip-cars (m1-file->contents file))))
+             (<<-sort
+              (strip-cars (m1-file->contents file)))))
       dir-stream-table)
      0)))
 
@@ -1126,24 +1169,9 @@
    (and
     (equal dirp 0)
     (equal dir-stream-table
-           '((0 (FILE-LIST "LOCAL      " "LIB        "
-                           "SHARE      " "BIN        "))))
+           '((0 (FILE-LIST "BIN        " "LIB        "
+                           "LOCAL      " "SHARE      "))))
     (equal errno 0))))
-
-(defund string-list-min (str-list)
-  (b*
-      (((unless (consp str-list)) (str-fix nil))
-       (head (car str-list))
-       ((unless (consp (cdr str-list))) head)
-       (tail-val (string-list-min (cdr str-list)))
-       ((unless (string< tail-val head)) head))
-    tail-val))
-
-(defthm string-list-min-correctness-1
-  (implies (consp str-list)
-           (member-equal (string-list-min str-list)
-                         str-list))
-  :hints (("goal" :in-theory (enable string-list-min))))
 
 (defund hifat-readdir (dirp dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
@@ -1175,15 +1203,15 @@
  (b*
      (((mv name errno dir-stream-table)
        (hifat-readdir 0
-                      '((0 (FILE-LIST "LOCAL      " "LIB        "
-                                      "SHARE      " "BIN        "))))))
+                      '((0 (FILE-LIST "BIN        " "LIB        "
+                                      "LOCAL      " "SHARE      "))))))
    (and
-    (equal name "LOCAL      ")
+    (equal name "BIN        ")
     (equal errno 0)
     (equal
      dir-stream-table
-     '((0 (FILE-LIST "LIB        "
-                     "SHARE      " "BIN        ")))))))
+     '((0  (FILE-LIST "LIB        "
+                      "LOCAL      " "SHARE      ")))))))
 
 (defthm dir-stream-table-p-of-hifat-readdir
   (dir-stream-table-p (mv-nth 2
@@ -1191,8 +1219,11 @@
   :hints (("goal" :in-theory (enable hifat-readdir))))
 
 (defund hifat-closedir (dirp dir-stream-table)
+  (declare (xargs :guard (dir-stream-table-p dir-stream-table)))
   (b*
-      ((alist-elem
+      ((dir-stream-table (mbe :exec dir-stream-table :logic
+                              (dir-stream-table-fix dir-stream-table)))
+       (alist-elem
         (assoc-equal dirp dir-stream-table))
        ((unless (consp alist-elem))
         (mv *ebadf* dir-stream-table)))
@@ -1201,6 +1232,10 @@
      (remove-assoc-equal
       dirp
       dir-stream-table))))
+
+(defthm dir-stream-table-p-of-hifat-closedir
+  (dir-stream-table-p (mv-nth 1 (hifat-closedir dirp dir-stream-table)))
+  :hints (("Goal" :in-theory (enable hifat-closedir))))
 
 (assert-event
  (b*

@@ -13,7 +13,7 @@
 (include-book "induction-machine-plus")
 
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
