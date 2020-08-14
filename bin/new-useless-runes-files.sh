@@ -7,7 +7,7 @@
 # the following form.
 # @@@ Untracked @useless-runes.lsp files to be added:
 # ("..." ... "...")
-# @@@ Obolete @useless-runes.lsp files (no corresponding books):
+# @@@ Obsolete @useless-runes.lsp files (no corresponding books):
 # ("..." ... "...")
 
 if [ $# -ne 2 ] ; then
@@ -63,7 +63,7 @@ echo "))" >> $outfile
 
 echo "" >> $outfile
 
-echo '(my-print "@@@ Obolete @useless-runes.lsp files (no corresponding books):")' >> $outfile
+echo '(my-print "@@@ Obsolete @useless-runes.lsp files (no corresponding books):")' >> $outfile
 
 echo '(loop$ for x in (set-difference-equal (@ all-ur) (@ all-books)) collect (concatenate (quote string) x "@useless-runes.lsp"))' >> $outfile
 
