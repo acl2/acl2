@@ -99,3 +99,32 @@
     :elementp-of-nil nil
     :pred member-listp
     :measure (two-nats-measure (acl2-count x) 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define object-member-values ((name stringp) (object valuep))
+  :guard (value-case object :object)
+  :returns (values value-listp)
+  :short "Retrieve the values associated to a member name in a JSON object."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned in @(tsee values),
+     our abstract syntax does not assume that JSON objects
+     have members with unique names.
+     Accordingly, given a member name,
+     there may be 0, 1, or more values associated with that name.
+     This function returns the list of such values,
+     in the order in which they occur in the object;
+     member order is captured and significant in our JSON abstract syntax,
+     as also described in @(tsee values)."))
+  (object-member-values-aux name (value-object->members object))
+
+  :prepwork
+  ((define object-member-values-aux ((name stringp) (members member-listp))
+     :returns (values value-listp)
+     (cond ((endp members) nil)
+           ((equal name (member->name (car members)))
+            (cons (member->value (car members))
+                  (object-member-values-aux name (cdr members))))
+           (t (object-member-values-aux name (cdr members)))))))

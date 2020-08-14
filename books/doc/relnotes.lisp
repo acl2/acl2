@@ -140,7 +140,8 @@
    (xdoc::p
     "This is a library about " (xdoc::ahref "json.org" "JSON") ".
      It currently contains an initial abstract syntax of JSON,
-     consisting of " (xdoc::seetopic "fty" "fixtypes") ".")
+     consisting of " (xdoc::seetopic "fty" "fixtypes") ";
+     it also contains some initial operations on this abstract syntax.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
