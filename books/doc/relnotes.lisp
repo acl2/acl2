@@ -135,6 +135,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
+
+   (xdoc::p
+    "This is a library about " (xdoc::ahref "json.org" "JSON") ".
+     It currently contains an initial abstract syntax of JSON,
+     consisting of " (xdoc::seetopic "fty" "fixtypes") ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "obag::obags" "Orderd Bags Library"))
 
    (xdoc::p
