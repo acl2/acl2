@@ -701,15 +701,15 @@
    :hints (("Goal"
             :induct (concat$-meta-aux size term1 term2 limit)
             :do-not-induct t
-            :in-theory (e/d (concat$-meta-aux
-                             rp::is-rp rp::is-if
-                             rp-evlt-of-ex-from-rp-reverse
-                             natp)
-                            (RP::RP-EVLT-OF-EX-FROM-RP
-                             rp-trans
-                             SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
-
-
+            :in-theory (e/d* (concat$-meta-aux
+                              (:REWRITE
+                               RP::REGULAR-RP-EVL-OF_4VEC-CONCAT$_WHEN_BITS-OF-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                              rp::is-rp rp::is-if
+                              rp-evlt-of-ex-from-rp-reverse
+                              natp)
+                             (RP::RP-EVLT-OF-EX-FROM-RP
+                              rp-trans
+                              SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
 
 
 
@@ -789,10 +789,10 @@
                      (:free (x) (nth 2 x))
                      (:free (x) (nth 1 x))
                      (:free (x) (nth 0 x)))
-            :in-theory (e/d (bits-meta-fn-aux
+            :in-theory (e/d* (bits-meta-fn-aux
                              IS-BITAND/OR/XOR
                              rp::is-rp rp::is-if
-;IS-BITS-0-1-OF-A-BITP
+                             rp::regular-eval-lemmas
                              rp-evlt-of-ex-from-rp-reverse
                              natp)
                             (RP::RP-EVLT-OF-EX-FROM-RP

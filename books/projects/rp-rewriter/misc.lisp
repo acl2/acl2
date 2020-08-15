@@ -305,46 +305,60 @@ nothing to bump!" nil)))
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
                                    (hints 'nil)
+                                   (inside-out ':default)
                                    (outside-in 'nil))
-    `(make-event
-      (b* ((body (and ,beta-reduce
-                      (meta-extract-formula ',rule-name state)))
-           (beta-reduce (and ,beta-reduce
-                             (is-rhs-a-lambda-expression body)))
-           (new-rule-name (if beta-reduce
-                              (intern$ (str::cat (symbol-name ',rule-name)
-                                                 "-FOR-RP")
-                                       (symbol-package-name ',rule-name))
-                            ',rule-name))
-           (rest-body
-            `(with-output
-               :off :all
-               :gag-mode nil
-               (make-event
-                (b* ((rune (get-rune-name ',new-rule-name state))
-                     (disabled ,,disabled)
-                     (- (get-rules `(,rune) state :warning :err)))
-                  `(progn  
-                     (table rp-rules
-                            ',rune
-                            (cons ,(if ,,outside-in ':outside-in ':inside-out)
-                                  ,(not disabled)))))))))
-        (if beta-reduce
-            `(progn
-               (defthm-lambda ,new-rule-name
-                 ,body
-                 :hints ,',hints)
-               (acl2::extend-pe-table ,new-rule-name
-                                      (def-rp-rule ,new-rule-name
-                                        ,body
-                                        :hints ,',hints))
-               (in-theory (disable ,new-rule-name))
-               (value-triple (cw "This rule has a lambda expression on its RHS, ~
+    (b* ((inside-out (if (equal inside-out ':default)
+                         (not outside-in)
+                       inside-out))
+         (- (and (Not inside-out)
+                 (Not outside-in)
+                 (hard-error 'add-rp-rule
+                             "Inside-out and outside-in options cannot be nil
+at the same time. ~%" nil))))
+                        
+      `(make-event
+        (b* ((body (and ,beta-reduce
+                        (meta-extract-formula ',rule-name state)))
+             (beta-reduce (and ,beta-reduce
+                               (is-rhs-a-lambda-expression body)))
+             (new-rule-name (if beta-reduce
+                                (intern$ (str::cat (symbol-name ',rule-name)
+                                                   "-FOR-RP")
+                                         (symbol-package-name ',rule-name))
+                              ',rule-name))
+             (rest-body
+              `(with-output
+                 :off :all
+                 :gag-mode nil
+                 (make-event
+                  (b* ((rune (get-rune-name ',new-rule-name state))
+                       (disabled ,,disabled)
+                       (- (get-rules `(,rune) state :warning :err)))
+                    `(progn  
+                       (table rp-rules
+                              ',rune
+                              (cons ,(cond
+                                      ((and ,,outside-in ,,inside-out)
+                                       ':both)
+                                      (,,outside-in ':outside-in)
+                                      (t ':inside-out))
+                                    ,(not disabled)))))))))
+          (if beta-reduce
+              `(progn
+                 (defthm-lambda ,new-rule-name
+                   ,body
+                   :hints ,',hints)
+                 (acl2::extend-pe-table ,new-rule-name
+                                        (def-rp-rule ,new-rule-name
+                                          ,body
+                                          :hints ,',hints))
+                 (in-theory (disable ,new-rule-name))
+                 (value-triple (cw "This rule has a lambda expression on its RHS, ~
 and it is automatically put through rp::defthm-lambda  and a ~
 new rule is created to be used by RP-Rewriter. You can disable this by setting ~
 :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
-               (value-triple ',new-rule-name))
-          rest-body))))
+                 (value-triple ',new-rule-name))
+            rest-body)))))
 
   (defmacro def-rp-rule (rule-name rule &rest hints)
     `(progn

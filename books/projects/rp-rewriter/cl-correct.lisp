@@ -107,6 +107,8 @@
                         outside-in-flg)
                        ((':inside-out . t)
                         (not outside-in-flg))
+                       ((':both . t)
+                        t)
                        (&
                         (and entry
                              (not outside-in-flg)))))

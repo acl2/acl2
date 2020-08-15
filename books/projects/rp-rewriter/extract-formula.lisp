@@ -281,6 +281,36 @@
   functions. This happened for ~p0. Skipping this one. ~%" (car sc-list))
                (attach-sc-list-to-rhs rhs (cdr sc-list))))))))
 
+
+
+
+
+(defund extract-from-force (term)
+  (declare (xargs :guard t))
+  (case-match term
+    (('force$ ('if x ''t ''nil) & &)
+     x)
+    (('force ('if x ''t ''nil))
+     x)
+    (('force$ x & &)
+     x)
+    (('force x)
+     x)
+    (('if x y z)
+     `(if ,(extract-from-force x)
+          ,(extract-from-force y)
+        ,(extract-from-force z)))
+    (& term)))
+
+#|(local
+ (defthm true-listp-of-extract-from-force-lst
+   (equal (true-listp (extract-from-force-lst lst))
+          (true-listp lst))
+   :hints (("Goal"
+            :induct (extract-from-force-lst lst)
+            :do-not-induct t
+            :in-theory (e/d (extract-from-force-lst) ())))))||#
+
 (defun attach-sc-to-rule (rule sc-formula)
   (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
                               (not (rp-rule-metap rule)))
@@ -292,8 +322,8 @@
        rule))||#)
     (case-match sc-formula
       (('implies scp q)
-       (b* (((when (not (subsetp-equal (if-to-and-list scp)
-                                       (if-to-and-list (rp-hyp rule)))))
+       (b* (((when (not (subsetp-equal (if-to-and-list (extract-from-force scp))
+                                       (if-to-and-list (extract-from-force (rp-hyp rule))))))
              (or (hard-error 'side-condition-check
                              "hypothesis of side-condition rule should be a subset ~
   of the original rule ~%" nil)
@@ -720,6 +750,9 @@
               rest))
            (rune-entry-value (cdr (hons-assoc-equal rune (table-alist 'rp-rules
                                                                       (w state)))))
+           (both (case-match rune-entry-value
+                   ((':both . &) t)
+                   (& nil)))
            (outside-in (case-match rune-entry-value
                          ((':outside-in . &) t)
                          (& nil))))
@@ -730,10 +763,11 @@
                    `(disable-exc-counterpart ,name))
                  rest))
           (&
-           (cons `(table rp-rules ',rune ',(if outside-in
-                                              `(:outside-in . ,e/d)
-                                            `(:inside-out . ,e/d)))
-                         rest))))))
+           (cons `(table rp-rules ',rune ',(cond
+                                            (both `(:both . ,e/d))
+                                            (outside-in `(:outside-in . ,e/d))
+                                            (t `(:inside-out . ,e/d))))
+                 rest))))))
 
   (defmacro enable-rules (rules)
     `(make-event
@@ -884,20 +918,24 @@ This submits an event and disables all the rewrite rules.
 
            (rule (caar rp-rules))
            (value (cdar rp-rules))
-           ((mv outside-in enabled)
+           ((mv inside-out outside-in enabled)
             (case-match value
-              ((':outside-in . enabled) (mv t enabled))
-              ((':inside-out . enabled) (mv nil enabled))
-              (& (mv nil value))))
+              ((':outside-in . enabled) (mv nil t enabled))
+              ((':inside-out . enabled) (mv t nil enabled))
+              ((':both . enabled) (mv t t enabled))
+              (& (mv t nil value))))
            ((unless enabled)
             (mv rest-inside-out rest-outside-in)))
         (case-match rule
           ((:executable-counterpart &)
            (mv rest-inside-out rest-outside-in))
-          (& 
-           (if outside-in
-               (mv rest-inside-out (cons rule rest-outside-in))
-             (mv (cons rule rest-inside-out) rest-outside-in)))))))
+          (&
+           (mv (if inside-out
+                   (cons rule rest-inside-out)
+                 rest-inside-out)
+               (if outside-in
+                   (cons rule rest-outside-in)
+                 rest-outside-in)))))))
   
   
   #|(defund get-enabled-rules-from-table-aux (rp-rules-inorder)

@@ -1263,6 +1263,11 @@
   :hints (("Goal"
            :in-theory (e/d (rp-equal-alt-def) ()))))
 
+(defequiv rp-equal-subterms
+  :hints (("Goal"
+           :in-theory (e/d (rp-equal-subterms-alt-def) ()))))
+
 (defcong rp-equal equal (rp-evlt term a) 1)
 (defcong rp-equal equal (rp-evl term a) 1)
 
+(defcong rp-equal-subterms equal (rp-evlt-lst lst a) 1)

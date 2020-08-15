@@ -150,7 +150,6 @@
 (create-regular-eval-lemma binary-and 2 mult-formula-checks)
 (create-regular-eval-lemma and-list 2 mult-formula-checks)
 
-
 (defun sum-list-eval (lst a)
   (if (atom lst)
       0
@@ -199,15 +198,16 @@
                 (equal (sum (rp-evlt x a) (rp-evlt y a) z)
                        (ifix z))))
   :hints (("Goal"
-           :in-theory (e/d (negated-termsp
-                            sum
-                            --)
-                           (rp-equal-cnt
-                            ex-from-rp
-                            rp-equal
-                            UNICITY-OF-0
-                            rp-evl-of-rp-equal
-                            +-is-SUM))
+           :in-theory (e/d* (negated-termsp
+                             (:REWRITE REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                             sum
+                             --)
+                            (rp-equal-cnt
+                             ex-from-rp
+                             rp-equal
+                             UNICITY-OF-0
+                             rp-evl-of-rp-equal
+                             +-is-SUM))
            :use ((:instance rp-evlt-of-rp-equal
                             (term1 x)
                             (term2 (cadr y)))
@@ -215,11 +215,8 @@
                             (term1 y)
                             (term2 (cadr x)))))))
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; pp-sum-merge and s-sum-merge lemmas
-
 
 (defthm s-order-and-negated-termsp-redef
   (equal (MV-NTH 1
@@ -240,7 +237,6 @@
                              rp-equal-subterms)
                             ())))))
 
-
 (local
  (defun two-cdrs (x y)
    (if (atom x)
@@ -258,7 +254,6 @@
    :hints (("Goal"
             :induct (two-cdrs x y)
             :in-theory (e/d (rp-equal-subterms) ())))))
-
 
 ;; (local
 ;;  (defthm pp-list-order-equals-redef-lemma-1.1
@@ -351,41 +346,42 @@
                      (:free (x) (nth 0 x))
                      (:free (x) (nth 2 x))
                      (:free (x) (nth 3 x)))
-            :in-theory (e/d (pp-order
-
-                             rp-evlt-of-ex-from-rp-reverse
-                             and$-is-and-list)
-                            (rp-termp
-                             rp-evlt-of-ex-from-rp
-                             nth
-                             (:REWRITE
-                              RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
-                             (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
-                             (:REWRITE ACL2::O-P-O-INFP-CAR)
-                             (:DEFINITION RP-EQUAL-LOOSE)
-                             (:REWRITE
-                              REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
-                             (:REWRITE RP-TERMP-OF-RP-TRANS)
-                             (:REWRITE
-                              REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
-                             (:TYPE-PRESCRIPTION AND-LIST)
-                             (:TYPE-PRESCRIPTION O<)
-                             (:DEFINITION RP-EQUAL)
-                             (:DEFINITION EX-FROM-RP)
-                             (:REWRITE RP-EVL-OF-RP-EQUAL2)
-                             (:DEFINITION RP-EQUAL2)
-                             (:REWRITE DEFAULT-CDR)
-                             (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
-                             (:REWRITE RP-EQUAL-IS-SYMMETRIC)
-                             (:TYPE-PRESCRIPTION RP-TERMP)
-                             (:TYPE-PRESCRIPTION EX-FROM-SYNP)
-                             (:TYPE-PRESCRIPTION RP-TRANS-LST)
-                             (:REWRITE DEFAULT-CAR)
-                             (:REWRITE EX-FROM-SYNP-LEMMA1)
-                             (:DEFINITION RP-TRANS)
-                             RP-EVL-OF-VARIABLE
-                             ;;RP-EVL-OF-QUOTE
-                             len))))))
+            :in-theory (e/d* (pp-order
+                              (:REWRITE
+                               REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                              rp-evlt-of-ex-from-rp-reverse
+                              and$-is-and-list)
+                             (rp-termp
+                              rp-evlt-of-ex-from-rp
+                              nth
+                              (:REWRITE
+                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                              (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              (:DEFINITION RP-EQUAL-LOOSE)
+                              (:REWRITE
+                               REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
+                              (:REWRITE RP-TERMP-OF-RP-TRANS)
+                              (:REWRITE
+                               REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                              (:TYPE-PRESCRIPTION AND-LIST)
+                              (:TYPE-PRESCRIPTION O<)
+                              (:DEFINITION RP-EQUAL)
+                              (:DEFINITION EX-FROM-RP)
+                              (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                              (:DEFINITION RP-EQUAL2)
+                              (:REWRITE DEFAULT-CDR)
+                              (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
+                              (:REWRITE RP-EQUAL-IS-SYMMETRIC)
+                              (:TYPE-PRESCRIPTION RP-TERMP)
+                              (:TYPE-PRESCRIPTION EX-FROM-SYNP)
+                              (:TYPE-PRESCRIPTION RP-TRANS-LST)
+                              (:REWRITE DEFAULT-CAR)
+                              (:REWRITE EX-FROM-SYNP-LEMMA1)
+                              (:DEFINITION RP-TRANS)
+                              RP-EVL-OF-VARIABLE
+                              ;;RP-EVL-OF-QUOTE
+                              len))))))
 
 (local
  (defthm pp-order-and-negated-termsp-implies-negated-termsp
@@ -615,11 +611,14 @@
   (defthm s-fix-pp-args-aux-correct
     (implies (and (rp-evl-meta-extract-global-facts :state state)
                   (mult-formula-checks state)
-                  ;(rp-term-listp pp-lst)
+;(rp-term-listp pp-lst)
                   )
              (and (equal (m2 (sum (sum-list-eval (s-fix-pp-args-aux pp-lst) a)
-                                  (sum-list c/d)))
-                         (s 0 (rp-evlt-lst pp-lst a) c/d))
+                                  other))
+                         (m2 (sum (sum-list-eval pp-lst a) other)))
+                  (equal (m2 (sum other
+                                  (sum-list-eval (s-fix-pp-args-aux pp-lst) a)))
+                         (m2 (sum (sum-list-eval pp-lst a) other)))
                   (equal (m2 (sum-list-eval (s-fix-pp-args-aux pp-lst) a))
                          (s 0 (rp-evlt-lst pp-lst a) 0))))
     :hints (("Goal"
@@ -627,9 +626,11 @@
              :expand ((:free (x y)
                              (sum-list (cons x y))))
              :induct (s-fix-pp-args-aux pp-lst)
-             :in-theory (e/d (s-fix-pp-args-aux
-                              rp-evlt-of-ex-from-rp-reverse)
-                             (rp-evlt-of-ex-from-rp)))))
+             :in-theory (e/d* (s-fix-pp-args-aux
+                               (:REWRITE
+                                REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                               rp-evlt-of-ex-from-rp-reverse)
+                              (rp-evlt-of-ex-from-rp)))))
 
   (defthmd s-fix-args-correct-lemma1
     (Implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -703,9 +704,7 @@
            :in-theory (e/d (s-fix-args
                             is-if is-rp) ()))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; and c/d-fix-pp-args
@@ -714,7 +713,7 @@
 (defthmd c-fix-arg-aux-correct-lemma
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
-                ;(rp-term-listp pp-lst)
+;(rp-term-listp pp-lst)
                 )
            (b* (((mv coughed result)
                  (c-fix-arg-aux pp-lst neg-flag)))
@@ -741,30 +740,31 @@
            :expand ((:free (x y)
                            (sum-list (cons x y))))
            :induct (c-fix-arg-aux pp-lst neg-flag)
-           :in-theory (e/d (c-fix-arg-aux
-                            times2
-                            rp-evlt-of-ex-from-rp-reverse
-                            sum-comm-1-loop-stopper
-                            sum-comm-2-loop-stopper
-;sum-of-repeated-to-times2
-                            )
-                           (rp-evlt-of-ex-from-rp
-                            sum-comm-1
-                            sum-comm-2
-                            rp-evlt-of-rp-equal
-                            (:DEFINITION RP-TERMP)
-                            (:DEFINITION FALIST-CONSISTENT)
-                            (:REWRITE DEFAULT-CDR)
-                            (:DEFINITION EX-FROM-RP)
-                            (:REWRITE DEFAULT-CAR)
-                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
-                            F2-OF-TIMES2
-                            rp-trans)))
+           :in-theory (e/d* (c-fix-arg-aux
+                             times2
+                             rp-evlt-of-ex-from-rp-reverse
+                             sum-comm-1-loop-stopper
+                             sum-comm-2-loop-stopper
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             ;;sum-of-repeated-to-times2
+                             )
+                            (rp-evlt-of-ex-from-rp
+                             sum-comm-1
+                             sum-comm-2
+                             rp-evlt-of-rp-equal
+                             (:DEFINITION RP-TERMP)
+                             (:DEFINITION FALIST-CONSISTENT)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION EX-FROM-RP)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                             F2-OF-TIMES2
+                             rp-trans)))
           ("Subgoal *1/3"
            :use ((:instance rp-evlt-of-rp-equal
                             (term1 (EX-FROM-RP (CAR PP-LST)))
                             (term2 (EX-FROM-RP (CADR PP-LST))))))))
-
 
 (defthm c-fix-arg-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -820,7 +820,7 @@
 (defthm c-fix-pp-args-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
-                ;(rp-termp pp)
+;(rp-termp pp)
                 )
            (b* (((mv coughed result)
                  (c-fix-pp-args pp )))
@@ -858,7 +858,7 @@
 (defthm c-fix-pp-args-correct-2
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
-                ;(rp-termp pp)
+;(rp-termp pp)
                 )
            (b* (((mv coughed result)
                  (c-fix-pp-args pp )))
@@ -871,7 +871,7 @@
                   )))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance c-fix-arg-aux-correct 
+           :use ((:instance c-fix-arg-aux-correct
                             (neg-flag t)
                             (pp-lst (cdr pp))))
            :in-theory (e/d (c-fix-pp-args)
@@ -880,7 +880,7 @@
 (defthm c-fix-pp-args-correct-on-f2
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
-                ;(rp-termp pp)
+;(rp-termp pp)
                 )
            (b* (((mv coughed result)
                  (c-fix-pp-args pp )))
@@ -940,7 +940,7 @@
 (defthm c-fix-s-args-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
-                ;(rp-termp pp)
+;(rp-termp pp)
                 )
            (b* (((mv coughed result)
                  (c-fix-s-args pp)))
@@ -973,7 +973,7 @@
 (defthm c-fix-s-args-correct-2
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
-                ;(rp-termp pp)
+;(rp-termp pp)
                 )
            (b* (((mv coughed result)
                  (c-fix-s-args pp)))
