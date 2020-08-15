@@ -8948,8 +8948,7 @@
                       (cons x (seq-this (collapse-this frame x)))))
       :hints
       (("goal" :do-not-induct t
-        :in-theory (disable (:rewrite subsetp-append1)
-                            SET-EQUIV-OF-APPEND-OF-CONS-1)
+        :in-theory (disable (:rewrite subsetp-append1))
         :use ((:instance (:rewrite subsetp-append1)
                          (c (cons x (seq-this (collapse-this frame x))))
                          (b (nthcdr (+ -1 n)

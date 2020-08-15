@@ -608,7 +608,7 @@ about set equivalence.</p>"
   :hints(("Goal" :in-theory (enable set-equiv))))
 
 (defthm
-  set-equiv-of-append-of-cons-1
+  append-of-cons-under-set-equiv
   (set-equiv (append x (cons y z))
              (cons y (append x z)))
   :hints
