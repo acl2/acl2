@@ -845,7 +845,7 @@
     :in-theory
     (e/d (frame-addrs-before collapse-1st-index
                              collapse-iter collapse
-                             (:rewrite set-equiv-cons-remove-1))
+                             (:rewrite cons-of-remove-under-set-equiv-1))
          ((:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
