@@ -435,10 +435,9 @@
                            (list (assoc-equal x alist)) nil))))
 
 (defthm
-  set-equiv-cons-remove-1
-  (implies (member-equal x l)
-           (set-equiv (cons x (remove-equal x l))
-                      l))
+  cons-of-remove-under-set-equiv-1
+  (set-equiv (cons x (remove-equal x l))
+             (if (member-equal x l) l (cons x l)))
   :hints
   (("goal"
     :induct (remove-equal x l)
@@ -449,26 +448,12 @@
                     (y (list (car l)))
                     (x (list x))))))
 
-(defthmd set-equiv-of-cons-of-remove-1
-  (set-equiv (cons x (remove-equal x y))
-             (cons x y))
-  :hints (("goal" :in-theory (disable append-of-cons-under-set-equiv)
-           :induct (remove-equal x y))
-          ("subgoal *1/3" :use ((:instance append-of-cons-under-set-equiv
-                                           (x (list x))
-                                           (y (car y))
-                                           (z (remove-equal x (cdr y))))
-                                (:instance append-of-cons-under-set-equiv
-                                           (x (list x))
-                                           (y (car y))
-                                           (z (cdr y)))))))
 
 (defthmd cons-equal-under-set-equiv-1
   (iff (set-equiv (cons x y1) (cons x y2))
        (set-equiv (remove-equal x y1)
                   (remove-equal x y2)))
-  :instructions ((in-theory (enable set-equiv-of-cons-of-remove-1))
-                 (:= (cons x y2)
+  :instructions ((:= (cons x y2)
                      (cons x (remove-equal x y2))
                      :equiv set-equiv)
                  (:= (cons x y1)

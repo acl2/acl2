@@ -9240,12 +9240,12 @@
      (("goal"
        :do-not-induct t
        :in-theory (e/d (ctx-app-ok)
-                       (set-equiv-cons-remove-1))
-       :use ((:instance set-equiv-cons-remove-1
+                       (cons-of-remove-under-set-equiv-1))
+       :use ((:instance cons-of-remove-under-set-equiv-1
                         (x (1st-complete (frame->frame frame)))
                         (l (frame-addrs-root (frame->frame frame))))
              (:instance
-              set-equiv-cons-remove-1
+              cons-of-remove-under-set-equiv-1
               (x (1st-complete (frame->frame frame)))
               (l (intersection-equal (abs-addrs (frame->root frame))
                                      (strip-cars (frame->frame frame))))))))))
