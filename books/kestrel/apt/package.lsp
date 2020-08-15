@@ -214,6 +214,7 @@
                          ibody
                          implicate
                          implicate-untranslated-terms
+                         impliez
                          impossible
                          induction-machine
                          induction-machine-for-fn
