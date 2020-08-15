@@ -452,13 +452,13 @@
 (defthmd set-equiv-of-cons-of-remove-1
   (set-equiv (cons x (remove-equal x y))
              (cons x y))
-  :hints (("goal" :in-theory (disable set-equiv-of-append-of-cons-1)
+  :hints (("goal" :in-theory (disable append-of-cons-under-set-equiv)
            :induct (remove-equal x y))
-          ("subgoal *1/3" :use ((:instance set-equiv-of-append-of-cons-1
+          ("subgoal *1/3" :use ((:instance append-of-cons-under-set-equiv
                                            (x (list x))
                                            (y (car y))
                                            (z (remove-equal x (cdr y))))
-                                (:instance set-equiv-of-append-of-cons-1
+                                (:instance append-of-cons-under-set-equiv
                                            (x (list x))
                                            (y (car y))
                                            (z (cdr y)))))))
