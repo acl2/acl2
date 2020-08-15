@@ -628,7 +628,7 @@
      It must be a boolean.")
    (xdoc::p
     "The initial value of this default is @('nil')."))
-  `(table ,*defaults-table-name* :wrapper-enable ,bool))
+  `(table ,*defaults-table-name* :old-if-new-enable ,bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
