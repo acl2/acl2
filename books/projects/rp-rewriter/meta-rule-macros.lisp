@@ -183,7 +183,10 @@ After calling @(see add-meta-rules) or when different books with meta rules are
            (rune `(:meta ,fnc . ,trig-fnc)))
         `(progn
            (table rp-rules ',rune
-                  ',(if outside-in `(:outside-in . t) `(:inside-out . t)))
+                  ',(cond
+                     ((equal outside-in ':both) `(:both . t))
+                     (outside-in `(:outside-in . t))
+                     (t `(:inside-out . t))))
            (defthm ,(sa fnc 'for trig-fnc 'valid)
              (and (implies (and (,formula-checks-fn state)
                                 (rp-evl-meta-extract-global-facts)
@@ -571,17 +574,72 @@ After calling @(see add-meta-rules) or when different books with meta rules are
            :do-not-induct t
            :in-theory (e/d () ()))))
 
+
+(defthmd rp-evl-of-ex-from-rp-reverse-for-atom
+  (implies (syntaxp (atom x))
+           (equal (rp-evl x a)
+                  (rp-evl (ex-from-rp x) a)))
+   :hints (("Goal"
+           :do-not-induct t
+           :induct (ex-from-rp x)
+           :in-theory (e/d (is-rp) ()))))
+
+(defthmd rp-evlt-of-ex-from-rp-reverse-for-atom
+  (implies (syntaxp (atom x))
+           (equal (rp-evlt x a)
+                  (rp-evlt (ex-from-rp x) a)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (ex-from-rp x)
+           :in-theory (e/d (is-rp) ()))))
+
+
+(acl2::def-ruleset
+ regular-eval-lemmas
+ nil)
+
+(acl2::def-ruleset
+ regular-eval-lemmas-with-ex-from-rp
+ nil)
+
+
 (defun create-regular-eval-lemma-fn (fn argc formula-checks)
-  `(defthm ,(sa 'regular-rp-evl-of fn 'when formula-checks)
-     (implies (and (rp-evl-meta-extract-global-facts :state state)
-                   (,formula-checks state)
-                   (case-match x ((',fn . ,(repeat argc '&)) t)))
-              (and (equal (rp-evl x a)
-                          (,fn . ,(loop$ for i from 1 to argc
-                                         collect `(rp-evl (nth ,i x) a))))
-                   (equal (rp-evlt x a)
-                          (,fn . ,(loop$ for i from 1 to argc
-                                         collect `(rp-evlt (nth ,i x) a))))))))
+  `(progn
+     (defthmd ,(sa 'regular-rp-evl-of fn 'when formula-checks)
+       (implies (and (rp-evl-meta-extract-global-facts :state state)
+                     (,formula-checks state)
+                     (case-match x ((',fn . ,(repeat argc '&)) t)))
+                (and (equal (rp-evl x a)
+                            (,fn . ,(loop$ for i from 1 to argc
+                                           collect `(rp-evl (nth ,i x) a))))
+                     (equal (rp-evlt x a)
+                            (,fn . ,(loop$ for i from 1 to argc
+                                           collect `(rp-evlt (nth ,i x)
+                                                             a)))))))
+     (acl2::add-to-ruleset regular-eval-lemmas '(,(sa 'regular-rp-evl-of fn 'when formula-checks)))
+     (defthmd ,(sa 'regular-rp-evl-of fn 'when formula-checks 'with-ex-from-rp)
+       (implies (and (rp-evl-meta-extract-global-facts :state state)
+                     (,formula-checks state)
+                     (let* ((x (ex-from-rp x))) (case-match x ((',fn . ,(repeat argc '&)) t))))
+                (and (equal
+                      (rp-evl x a)
+                      (,fn . ,(loop$ for i from 1 to argc
+                                     collect `(rp-evl (nth ,i (ex-from-rp  x)) a))))
+                     (equal
+                      (rp-evlt x a)
+                      (,fn . ,(loop$ for i from 1 to argc
+                                     collect `(rp-evlt (nth ,i (ex-from-rp x)) a))))))
+       :hints (("Goal"
+                :use ((:instance
+                       ,(sa 'regular-rp-evl-of fn 'when formula-checks)
+                       (x (ex-from-rp x))))
+                :in-theory '(
+                             rp-evlt-of-ex-from-rp-reverse-for-atom
+                             rp-evl-of-ex-from-rp-reverse-for-atom ))))
+     (acl2::add-to-ruleset regular-eval-lemmas
+                           '(,(sa 'regular-rp-evl-of fn 'when formula-checks 'with-ex-from-rp)))
+     (acl2::add-to-ruleset regular-eval-lemmas-with-ex-from-rp
+                           '(,(sa 'regular-rp-evl-of fn 'when formula-checks 'with-ex-from-rp)))))
 
 
 (defmacro create-regular-eval-lemma (fn argc formula-checks)
@@ -702,6 +760,7 @@ that it is syntactically correct. Otherwise skip this step.
                             :fnc <meta-fnc>
                             :trig-fnc <trig-fnc>
                             :dont-rw <t-if-returns-dont-rw>
+                            :outside-in <t-if-the-meta-rule-should-apply-from-outside-in>
                             :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))')
 </code>
 

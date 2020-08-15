@@ -53,6 +53,9 @@
   use-arith-5
   :disabled t))
 
+(local
+ (in-theory (enable pp)))
+
 
 (define and-list-hash-aux (lst)
   :returns (mv (hash integerp)
@@ -271,7 +274,15 @@
        (and (pp-term-p x) ;
             (pp-term-p y) ;
             (pp-term-p z)))
+      ;; (('adder-and x y)
+      ;;  (and (pp-term-p x) ;
+      ;;       (pp-term-p y)))
+      ;; (('adder-or x y)
+      ;;  (and (pp-term-p x) ;
+      ;;       (pp-term-p y)))
       (('binary-not x)
+       (and (pp-term-p x)))
+      (('pp x)
        (and (pp-term-p x)))
       (('bit-of & &) t)
       (''1 t)
@@ -336,19 +347,6 @@
                 :induct (CUT-LIST-BY-HALF LST size)
                 :do-not-induct t
                 :in-theory (e/d (len cut-list-by-half) ()))))
-
-     #|(defthm sort-measure-lemma1-v3
-     (IMPLIES ;
-     (AND (CONSP LST) ;
-     (<= 1 (len lst)) ;
-     (CONSP (CDR LST)) ;
-     (< size lst) ;
-     (CONSP (CDDR LST))) ;
-     (O< (CONS-COUNT ;
-     (MV-NTH 1 (CUT-LIST-BY-HALF LST size))) ;
-     (CONS-COUNT LST))) ;
-     :hints (("goal" ;
-     :in-theory (e/d (cons-count cut-list-by-half) ()))))||#
 
      (defthmd sort-measure-lemma2
        (implies (and (<= 2 (len lst)))
@@ -752,6 +750,12 @@
             (anded (and$-pp-lists lst1 lst2 nil sign))
             (anded (sort-pp-lists anded (len anded))))
          anded))
+     #| (('adder-and x y)
+       (b* ((lst1 (pp-term-to-pp-lists x nil))
+            (lst2 (pp-term-to-pp-lists y nil))
+            (anded (and$-pp-lists lst1 lst2 nil sign))
+            (anded (sort-pp-lists anded (len anded))))
+         anded))||#
       (('binary-or x y)
        (b* ((lst1 (pp-term-to-pp-lists x sign))
             (lst2 (pp-term-to-pp-lists y sign))
@@ -759,6 +763,13 @@
             (y (and$-pp-lists lst1 lst2 nil (not sign)))
             (y (sort-pp-lists y (len y))))
          (merge-sorted-pp-lists x  y )))
+      #|(('adder-or x y)
+       (b* ((lst1 (pp-term-to-pp-lists x sign))
+            (lst2 (pp-term-to-pp-lists y sign))
+            (x (merge-sorted-pp-lists lst1  lst2 ))
+            (y (and$-pp-lists lst1 lst2 nil (not sign)))
+            (y (sort-pp-lists y (len y))))
+         (merge-sorted-pp-lists x  y )))||#
       (('binary-xor x y)
        (b* ((lst1 (pp-term-to-pp-lists x sign))
             (lst2 (pp-term-to-pp-lists y sign))
@@ -784,6 +795,8 @@
        (b* ((lst1 (pp-term-to-pp-lists x (not sign))))
          (merge-sorted-pp-lists (list (cons sign (list ''1)))
                                 lst1)))
+      (('pp x)
+       (pp-term-to-pp-lists x sign))
       (('bit-of & &)
        (list (cons sign (list term))))
       #|(''0

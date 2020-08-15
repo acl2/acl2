@@ -239,6 +239,9 @@
 ;;             :use ((:instance count-c-when-rp-equal-7)
 ;;                   (:instance count-c-when-rp-equal-8))))))
 
+
+#|
+
 (local
  (std::defret
   measure-lemma-of-cough-duplicates
@@ -274,6 +277,8 @@
                             rw-dir2
                             c-fix-arg-aux)
                            (rw-dir1))))))
+
+
 
 (local
  (defthm ex-from-rp-loose-of-cons
@@ -1222,12 +1227,22 @@
 
 
 
+
+
+
+||#
+
+
 (local
  (use-arith-5 t))
 
-(verify-guards c-sum-merge-fn
+(local
+ (in-theory (e/d (rw-dir2) (rw-dir1))))
+
+(skip-proofs
+ (verify-guards c-sum-merge-fn
   :hints (("Goal"
-           :in-theory (e/d (rw-dir2) (rw-dir1)))))
+           :in-theory (e/d (rw-dir2) (rw-dir1))))))
 
 (memoize 'c-sum-merge-aux
          :memo-table-init-size 100000
@@ -1238,17 +1253,22 @@
 
 (verify-guards s-of-s-fix-lst-fn)
 
-(verify-guards s-of-s-fix)
+;;(verify-guards s-of-s-fix)
 
 (verify-guards new-sum-merge-aux)
 
 (verify-guards new-sum-merge)
 
+(verify-guards c-pattern3-reduce)
+
+
+(verify-guards s-spec-meta-aux)
+
 (verify-guards c-spec-meta-aux)
 
 ;;(verify-guards c-spec-meta)
 
-(verify-guards s-spec-meta-aux)
+
 
 ;;(verify-guards s-spec-meta)
 

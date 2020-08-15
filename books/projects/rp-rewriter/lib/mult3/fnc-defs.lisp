@@ -100,6 +100,22 @@
   ///
   (add-rp-rule integerp-of-c))
 
+(define pp (term)
+  :returns (res)
+  term
+  ///
+
+  (defret integerp-of-<fn>
+    (implies (integerp term)
+             (integerp res)))
+
+  (defret bitp-of-<fn>
+    (implies (bitp term)
+             (bitp res)))
+
+  (add-rp-rule integerp-of-pp)
+  (add-rp-rule bitp-of-pp))
+
 #|(define d-sum (s-lst pp-lst c)
   (sum (sum-list s-lst)
        (sum-list pp-lst)
@@ -137,13 +153,13 @@
   (list (c-spec lst)
         (s-spec lst)))
 
-(define c-res (s-lst pp-lst c-lst)
+(define s-c-res (s-lst pp-lst c-lst)
   (sum (sum-list pp-lst)
        (sum-list s-lst)
        (sum-list c-lst))
   :returns (res integerp)
   ///
-  (add-rp-rule integerp-of-c-res))
+  (add-rp-rule integerp-of-s-c-res))
 
 #|(define d-new (s pp c/d new)
   (sum (c-new s pp c/d new)
@@ -462,7 +478,6 @@
   (def-rp-rule bitp-ba4
     (bitp (ba4 n1 i1 n2 i2 n3 i3 n4 i4))))
 
-
 (define safe-i-nth ((i natp)
                     lst)
   (if (atom lst)
@@ -470,7 +485,6 @@
     (if (zp i)
         (car lst)
       (safe-i-nth (1- i) (cdr lst)))))
-
 
 (progn
   (define list-to-lst (term)
@@ -487,17 +501,15 @@
                          (list (cons #\0 term)))
              (list `(sum-list ,term))))))
 
-
   (define create-list-instance (lst)
     :returns (res rp-termp :hyp (rp-term-listp lst))
     (cond ((or (Not lst)
                (equal lst (list ''0)))
            ''nil)
           #|((quote-listp lst)
-           `',(unquote-all lst))||#
+          `',(unquote-all lst))||#
           (t
            `(list . ,lst)))))
-
 
 (acl2::defines
  m-eval
@@ -518,10 +530,10 @@
                       (safe-i-nth 1 args)
                       (safe-i-nth 2 args)
                       (safe-i-nth 3 args)))
-                  ((equal (car term) 'c-res)
-                   (c-res (safe-i-nth 0 args)
-                          (safe-i-nth 1 args)
-                          (safe-i-nth 2 args)))
+                  ((equal (car term) 's-c-res)
+                   (s-c-res (safe-i-nth 0 args)
+                            (safe-i-nth 1 args)
+                            (safe-i-nth 2 args)))
                   ((equal (car term) 'binary-and)
                    (and$ (safe-i-nth 0 args)
                          (safe-i-nth 1 args)))
@@ -530,7 +542,7 @@
                                (safe-i-nth 1 args)))
                   ((equal (car term) 'binary-or)
                    (binary-or (safe-i-nth 0 args)
-                         (safe-i-nth 1 args)))
+                              (safe-i-nth 1 args)))
                   ((equal (car term) 'binary-sum)
                    (sum (safe-i-nth 0 args)
                         (safe-i-nth 1 args)))
@@ -580,7 +592,6 @@
      (cons (m-eval (car lst) a)
            (m-eval-lst (cdr lst) a)))))
 
-
 (define m-eval-lst-lst (lst-lst a)
   (and nil
        (if (atom lst-lst)
@@ -603,7 +614,6 @@
               (hard-error 'm-eval-compare
                           "Read above.."
                           nil)))))
-                     
 
 (acl2::defines
  make-readable1
@@ -634,7 +644,7 @@
       (cons (make-readable1 a)
             (make-readable1 b)))
      #|(('binary-and & &)
-      term)||#
+     term)||#
      (('binary-and ('bit-of a ('quote i)) ('bit-of b ('quote j)))
       (progn$
 ;(cw "term~p0 ~%" term)
@@ -642,11 +652,11 @@
             (a (if (equal a 'in1) 'a a))
             (b (ex-from-rp-loose b))
             (b (if (equal b 'in2) 'b b)))
-         ;`(rp 'bitp
-           `   ,(sa (symbol-name a) i (symbol-name b) j)
-          ;    )
+;`(rp 'bitp
+         `   ,(sa (symbol-name a) i (symbol-name b) j)
+;    )
          )))
-     
+
      (&
       (hard-error 'make-readable1
                   "unexpected function symbol: ~p0 ~%"
@@ -656,7 +666,6 @@
        nil
      (cons (make-readable1 (car lst))
            (make-readable1-lst (cdr lst))))))
-
 
 (define str-cat-lst ((lst string-listp))
   (if (atom lst)
@@ -713,8 +722,6 @@
            (make-readable-lst (cdr lst))))))
 
 
-
-
 (progn
   (define single-c-p (term)
     :inline t
@@ -743,13 +750,13 @@
                (case-match term (('s & & &) t)))
       :rule-classes :forward-chaining))
 
-  (define single-c-res-p (term)
+  (define single-s-c-res-p (term)
     :inline t
-    (case-match term (('c-res & & &) t))
+    (case-match term (('s-c-res & & &) t))
     ///
     (defthm single-c-res-p-implies-fc
-      (implies (single-c-res-p term)
-               (case-match term (('c-res & & &) t)))
+      (implies (single-s-c-res-p term)
+               (case-match term (('s-c-res & & &) t)))
       :rule-classes :forward-chaining))
 
   (define sum-list-p (term)
@@ -787,6 +794,106 @@
       (implies (binary-sum-p term)
                (case-match term (('binary-sum & &) t)))
       :rule-classes :forward-chaining))
+
+  (define adder-sum-p (term)
+    :inline t
+    (case-match term (('adder-b+ & &) t))
+    ///
+    (defthm adder-sum-p-implies-fc
+      (implies (adder-sum-p term)
+               (case-match term (('adder-b+ & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define binary-or-p (term)
+    :inline t
+    (case-match term (('binary-or & &) t))
+    ///
+    (defthm binary-or-p-implies-fc
+      (implies (binary-or-p term)
+               (case-match term (('binary-or & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define binary-and-p (term)
+    :inline t
+    (case-match term (('binary-and & &) t))
+    ///
+    (defthm binary-and-p-implies-fc
+      (implies (binary-and-p term)
+               (case-match term (('binary-and & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define binary-xor-p (term)
+    :inline t
+    (case-match term (('binary-xor & &) t))
+    ///
+    (defthm binary-xor-p-implies-fc
+      (implies (binary-xor-p term)
+               (case-match term (('binary-xor & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define binary-?-p (term)
+    :inline t
+    (case-match term (('binary-? & & &) t))
+    ///
+    (defthm binary-?-p-implies-fc
+      (implies (binary-?-p term)
+               (case-match term (('binary-? & & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define binary-not-p (term)
+    :inline t
+    (case-match term (('binary-not &) t))
+    ///
+    (defthm binary-not-p-implies-fc
+      (implies (binary-not-p term)
+               (case-match term (('binary-not &) t)))
+      :rule-classes :forward-chaining))
+
+  (define adder-or-p (term)
+    :inline t
+    (case-match term (('adder-or & &) t))
+    ///
+    (defthm adder-or-p-implies-fc
+      (implies (adder-or-p term)
+               (case-match term (('adder-or & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define adder-and-p (term)
+    :inline t
+    (case-match term (('adder-and & &) t))
+    ///
+    (defthm adder-and-p-implies-fc
+      (implies (adder-and-p term)
+               (case-match term (('adder-and & &) t)))
+      :rule-classes :forward-chaining))
+
+  (define f2-p (term)
+    :inline t
+    (case-match term (('f2 &) t))
+    ///
+    (defthm f2-p-implies-fc
+      (implies (f2-p term)
+               (case-match term (('f2 &) t)))
+      :rule-classes :forward-chaining))
+
+  (define m2-p (term)
+    :inline t
+    (case-match term (('m2 &) t))
+    ///
+    (defthm m2-p-implies-fc
+      (implies (m2-p term)
+               (case-match term (('m2 &) t)))
+      :rule-classes :forward-chaining))
+
+  (define pp-p (term)
+    :inline t
+    (case-match term (('pp &) t))
+    ///
+    (defthm pp-p-implies-fc
+      (implies (pp-p term)
+               (case-match term (('pp &) t)))
+      :rule-classes :forward-chaining))
+  
 
   )
 (defmacro ss (&rest args)

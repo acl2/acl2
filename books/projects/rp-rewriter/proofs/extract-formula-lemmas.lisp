@@ -1590,6 +1590,8 @@
 
 
 
+
+
 (encapsulate
   nil
   (defthm not-include-fnc-subterms-if-to-and-list
@@ -1608,7 +1610,40 @@
     (implies (rp-evl term a)
              (eval-and-all-nt (if-to-and-list term) a))
     :hints (("Goal"
-             :in-theory (e/d (if-to-and-list) ())))))
+             :in-theory (e/d (if-to-and-list) ()))))
+
+  (defthm rp-evl-of-extract-from-force
+    (and #|(iff (rp-evlt (extract-from-force term) a)
+     (rp-evlt term a))||#
+     (iff (rp-evl (extract-from-force term) a)
+          (rp-evl term a)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (extract-from-force term)
+             :expand ((:free (x y z)
+                             (rp-trans `(IF ,X ,Y ,z)))
+                      (:free (x)
+                             (is-falist `(if . ,x))))
+             :in-theory (e/d (extract-from-force)
+                             (rp-termp
+                              (:REWRITE EX-FROM-SYNP-LEMMA1)
+                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                              (:DEFINITION IS-SYNP$INLINE)
+                              (:TYPE-PRESCRIPTION TRANS-LIST)
+                              (:DEFINITION TRANS-LIST)
+                              (:REWRITE RP-EVL-OF-FALIST-CALL)
+                              (:DEFINITION IS-FALIST)
+                              (:REWRITE
+                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
+                              (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                              (:DEFINITION RP-TRANS))))))
+
+
+  (defthm not-include-fnc-extract-from-force
+    (implies (not (include-fnc term fn))
+             (not (include-fnc (extract-from-force term) fn)))
+    :hints (("Goal"
+             :in-theory (e/d (extract-from-force) ())))))
 
 (local
  (encapsulate
@@ -1696,6 +1731,19 @@
                :use ((:instance rp-evl-and-eval-and-all
                                 (x (if-to-and-list x))
                                 (y (if-to-and-list y))))
+               :in-theory (e/d ()
+                               (rp-evl-and-eval-and-all))))))
+
+   (local
+    (defthm rp-evl-and-subset-if-to-and-lists-EXTRACT-FROM-FORCE
+      (implies (and (subsetp (if-to-and-list (EXTRACT-FROM-FORCE x))
+                             (if-to-and-list (EXTRACT-FROM-FORCE y)))
+                    (rp-evl y a))
+               (rp-evl x a))
+      :hints (("Goal"
+               :use ((:instance rp-evl-and-eval-and-all
+                                (x (if-to-and-list (EXTRACT-FROM-FORCE x)))
+                                (y (if-to-and-list (EXTRACT-FROM-FORCE y)))))
                :in-theory (e/d ()
                                (rp-evl-and-eval-and-all))))))
 

@@ -71,7 +71,6 @@
             :in-theory (e/d (ex-from-rp
                              is-rp) ())))))
 
-
 (local
  (defthm when-ex-from-rp-is-1
    (implies (equal (ex-from-rp term) ''1)
@@ -2270,7 +2269,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- 
 
 (local
  (in-theory (disable RP-EVL-LST-OF-CONS)))
@@ -2316,7 +2314,7 @@
    :hints (("Goal"
             :do-not-induct t
             :expand (;(RP-EVL-OF-TRANS-LIST NIL A)
-                     ;(:free (x y) (RP-EVL-OF-TRANS-LIST (cons x y) a))
+;(:free (x y) (RP-EVL-OF-TRANS-LIST (cons x y) a))
                      (:free (x y) (and-list (cons x y))))
             :induct (pp-lists-to-term-p+ lst)
             :in-theory (e/d (pp-lists-to-term-p+
@@ -2383,7 +2381,7 @@
                 ))
   :hints (("Goal"
            :do-not-induct t
-           ;:expand ((RP-EVL-OF-TRANS-LIST NIL A))
+;:expand ((RP-EVL-OF-TRANS-LIST NIL A))
            :use ((:instance pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists))
            :in-theory (e/d (pp-flatten)
                            (pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists
@@ -2429,14 +2427,14 @@
              :do-not-induct t
              :use ((:instance rp-evlt-of-ex-from-rp)
                    (:instance rp-evl-of-ex-from-rp))
-             :in-theory (e/d (is-rp
-                              is-if)
-                             (valid-sc
-                              rp-evl-of-ex-from-rp
-                              EVL-OF-EXTRACT-FROM-RP
-                              rp-evlt-of-ex-from-rp)))))
+             :in-theory (e/d* (is-rp
+                               regular-eval-lemmas
+                               is-if)
+                              (valid-sc
+                               rp-evl-of-ex-from-rp
+                               EVL-OF-EXTRACT-FROM-RP
+                               rp-evlt-of-ex-from-rp)))))
 
-  
   (local
    (defthm SORT-SUM-META-AUX-returns-bit-list-listp
      (implies (and (MV-NTH 0 (SORT-SUM-META-AUX term))
@@ -2466,7 +2464,6 @@
      :hints (("Goal"
               :in-theory (e/d (SORT-SUM-META-AUX) ())))))
 
-
   (defthm PP-LISTS-TO-TERM-P+-SORT-SUM-META-AUX
     (implies (and (mult-formula-checks state)
                   (valid-sc term a)
@@ -2483,33 +2480,37 @@
                       (RP-TRANS-LST (CDdR TERM)))
              ;; :expand ((SORT-AND$-LIST (CDR TERM) 2)
              ;;          (SORT-AND$-LIST (CDR (CADR TERM)) 2))
-             :in-theory (e/d (SORT-SUM-META-AUX
-                              rp-evlt-of-ex-from-rp
-;ifix-bit-fix-equiv
-                              is-if is-rp context-from-rp eval-and-all
-                              true-listp
-                              PP-LISTS-TO-TERM-P+)
-                             (PP-LISTS-TO-TERM-AND$-REDEF
-                              (:DEFINITION EX-FROM-RP)
-                              (:REWRITE VALID-SC-CADR)
-                              (:REWRITE VALID-SC-CADDR)
-                              (:DEFINITION EVAL-AND-ALL)
-                              (:REWRITE DEFAULT-CDR)
-                              (:REWRITE DEFAULT-CAR)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
-                              (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                              (:DEFINITION RP-TRANS)
-                              (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
-                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                              (:REWRITE EVAL-OF-BIT-OF)
-                              (:REWRITE EVAL-OF-BINARY-XOR)
-                              (:REWRITE EVAL-OF-BINARY-OR)
-                              (:DEFINITION INCLUDE-FNC)
-                              (:DEFINITION RP-TERMP)
-                              VALID-SC-EX-FROM-RP-2
-                              rp-evl-of-ex-from-rp-reverse
-                              bitp
-                              PP-LISTS-TO-TERM-P+-TO-PP-LISTS-TO-TERM-PP-LST)))))
+             :in-theory (e/d* (SORT-SUM-META-AUX
+                               rp-evlt-of-ex-from-rp
+                               (:REWRITE REGULAR-RP-EVL-OF_BINARY-AND_WHEN_MULT-FORMULA-CHECKS)
+                               (:REWRITE REGULAR-RP-EVL-OF_BINARY-SUM_WHEN_MULT-FORMULA-CHECKS)
+                               (:REWRITE
+                                REGULAR-RP-EVL-OF_BIT-OF_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                               (:REWRITE REGULAR-RP-EVL-OF_IFIX_WHEN_MULT-FORMULA-CHECKS)
+                               is-if is-rp context-from-rp eval-and-all
+                               true-listp
+                               PP-LISTS-TO-TERM-P+)
+                              (PP-LISTS-TO-TERM-AND$-REDEF
+                               (:DEFINITION EX-FROM-RP)
+                               (:REWRITE VALID-SC-CADR)
+                               (:REWRITE VALID-SC-CADDR)
+                               (:DEFINITION EVAL-AND-ALL)
+                               (:REWRITE DEFAULT-CDR)
+                               (:REWRITE DEFAULT-CAR)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                               (:DEFINITION RP-TRANS)
+                               (:REWRITE ATOM-RP-TERMP-IS-SYMBOLP)
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:REWRITE EVAL-OF-BIT-OF)
+                               (:REWRITE EVAL-OF-BINARY-XOR)
+                               (:REWRITE EVAL-OF-BINARY-OR)
+                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION RP-TERMP)
+                               VALID-SC-EX-FROM-RP-2
+                               rp-evl-of-ex-from-rp-reverse
+                               bitp
+                               PP-LISTS-TO-TERM-P+-TO-PP-LISTS-TO-TERM-PP-LST)))))
 
   ;; A MAIN LEMMA
   (defthm sort-sum-meta-correct
@@ -2535,21 +2536,21 @@
                               EVAL-OF-SORT-PP-LISTS-IS-CORRECT)))))
 
   #|(defthm sort-sum-meta-valid-rp-meta-rulep-local
-    (implies (and (rp-evl-meta-extract-global-facts :state state)
-                  (mult-formula-checks state))
-             (let ((rule (make rp-meta-rule-rec
-                               :fnc 'sort-sum-meta
-                               :trig-fnc 'sort-sum
-                               :dont-rw t
-                               :valid-syntax t)))
-               (and (valid-rp-meta-rulep rule state)
-                    (rp-meta-valid-syntaxp-sk rule state))))
-    :otf-flg t
-    :hints (("Goal"
-             :in-theory (e/d (rp-meta-valid-syntaxp)
-                             (rp-termp
-                              rp-term-listp
-                              valid-sc)))))||#)
+  (implies (and (rp-evl-meta-extract-global-facts :state state)
+  (mult-formula-checks state))
+  (let ((rule (make rp-meta-rule-rec
+  :fnc 'sort-sum-meta
+  :trig-fnc 'sort-sum
+  :dont-rw t
+  :valid-syntax t)))
+  (and (valid-rp-meta-rulep rule state)
+  (rp-meta-valid-syntaxp-sk rule state))))
+  :otf-flg t
+  :hints (("Goal"
+  :in-theory (e/d (rp-meta-valid-syntaxp)
+  (rp-termp
+  rp-term-listp
+  valid-sc)))))||#)
 
 #|(defthm eval-of-sort-pp-flatten-main-is-correct
 (implies (and (mult-formula-checks state)
