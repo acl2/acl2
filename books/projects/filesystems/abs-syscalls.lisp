@@ -11038,138 +11038,114 @@
 ;; function will not work for looking up a root directory!
 ;; Anyway, to return to the induction scheme, it will be needed to make
 ;; something like a max path length and stop when we get there...
-(encapsulate
-  ()
+(defund
+  hifat-tar-name-list-string
+  (fs path name-list fd-table
+      file-table dir-stream-table entry-count)
+  (declare
+   (xargs :guard (and (m1-file-alist-p fs)
+                      (hifat-no-dups-p fs)
+                      (fat32-filename-list-p path)
+                      (natp entry-count)
+                      (fat32-filename-list-p name-list)
+                      (file-table-p file-table)
+                      (fd-table-p fd-table)
+                      (dir-stream-table-p dir-stream-table))
+          :guard-hints
+          (("goal" :in-theory (e/d (hifat-tar-name-list-string)
+                                   (append append-of-cons))
+            :do-not-induct t))
+          :measure (nfix entry-count)
+          :verify-guards nil))
+  (b*
+      ((fd-table (mbe :exec fd-table
+                      :logic (fd-table-fix fd-table)))
+       (file-table (mbe :exec file-table
+                        :logic (file-table-fix file-table)))
+       (dir-stream-table
+        (mbe :exec dir-stream-table
+             :logic (dir-stream-table-fix dir-stream-table)))
+       ((unless (and (consp name-list)
+                     (not (zp entry-count))))
+        (mv "" fd-table file-table))
+       (head (car name-list))
+       (head-path (append path (list head)))
+       ((mv st & &) (hifat-lstat fs head-path))
+       (len (struct-stat->st_size st))
+       ((mv fd-table file-table fd &)
+        (hifat-open head-path fd-table file-table))
+       ((unless (>= fd 0))
+        (mv "" fd-table file-table))
+       ((mv & & pread-error-code)
+        (hifat-pread fd len 0 fs fd-table file-table))
+       ((mv fd-table file-table &)
+        (hifat-close fd fd-table file-table))
+       ((unless (and (<= (len (fat32-path-to-path head-path))
+                         100)))
+        (mv "" fd-table file-table))
+       (head-string (hifat-tar-reg-file-string
+                     fs
+                     (implode (fat32-path-to-path head-path))))
+       ((when (zp pread-error-code))
+        (b* (((mv tail-string fd-table file-table)
+              (hifat-tar-name-list-string
+               fs head-path (cdr name-list)
+               fd-table file-table
+               dir-stream-table (- entry-count 1))))
+          (mv (concatenate 'string
+                           head-string tail-string)
+              fd-table file-table)))
+       ((mv dirp dir-stream-table &)
+        (hifat-opendir fs head-path dir-stream-table))
+       ((mv names dir-stream-table)
+        (hifat-get-names-from-dirp dirp dir-stream-table))
+       ((mv & dir-stream-table)
+        (hifat-closedir dirp dir-stream-table))
+       ((mv head-string fd-table file-table)
+        (hifat-tar-name-list-string
+         fs (append path (list))
+         names fd-table file-table
+         dir-stream-table (- entry-count 1)))
+       ((mv tail-string fd-table file-table)
+        (hifat-tar-name-list-string
+         fs path (cdr name-list)
+         fd-table file-table
+         dir-stream-table (- entry-count 1))))
+    (mv
+     (concatenate
+      'string
+      (tar-header-block (implode (fat32-path-to-path head-path))
+                        0 *tar-dirtype*)
+      head-string tail-string)
+     fd-table file-table)))
 
-  (local (in-theory (disable
-                     hifat-close hifat-open hifat-pread)))
+(defthm
+  fd-table-p-of-hifat-tar-name-list-string
+  (fd-table-p
+   (mv-nth 1
+           (hifat-tar-name-list-string fs path name-list fd-table file-table
+                                       dir-stream-table entry-count)))
+  :hints
+  (("goal" :in-theory (e/d (hifat-tar-name-list-string)
+                           (append append-of-cons)))))
 
-  (defthm
-    natp-of-hifat-pread
-    (natp
-     (mv-nth 2
-             (hifat-pread fd count offset fs fd-table file-table)))
-    :hints (("goal" :in-theory (enable hifat-pread)))
-    :rule-classes :type-prescription)
+(defthm
+  stringp-of-hifat-tar-name-list-string
+  (stringp
+   (mv-nth 0
+           (hifat-tar-name-list-string fs path name-list fd-table file-table
+                                       dir-stream-table entry-count)))
+  :hints
+  (("goal" :in-theory (e/d (hifat-tar-name-list-string)
+                           (append append-of-cons))))
+  :rule-classes :type-prescription)
 
-  (defund
-    hifat-tar-name-list-string
-    (fs path name-list fd-table file-table dir-stream-table entry-count)
-    (declare
-     (xargs
-      :guard (and
-              (m1-file-alist-p fs)
-              (hifat-no-dups-p fs)
-              (fat32-filename-list-p path)
-              (natp entry-count)
-              (fat32-filename-list-p name-list)
-              (file-table-p file-table)
-              (fd-table-p fd-table)
-              (dir-stream-table-p dir-stream-table))
-      :measure (nfix entry-count)
-      :verify-guards nil))
-    (b*
-        ((fd-table (mbe :exec fd-table :logic (fd-table-fix fd-table)))
-         (file-table (mbe :exec file-table :logic (file-table-fix file-table)))
-         (dir-stream-table (mbe :exec dir-stream-table
-                                :logic (dir-stream-table-fix dir-stream-table)))
-         ((unless (and (consp name-list)
-                       (not (zp entry-count))))
-          (mv "" fd-table file-table))
-         (head (car name-list))
-         (head-path
-          (append path (list head)))
-         ((mv st & &) (hifat-lstat fs head-path))
-         (len (struct-stat->st_size st))
-         ((mv fd-table file-table fd &)
-          (hifat-open head-path
-                      fd-table file-table))
-         ((unless (>= fd 0)) (mv "" fd-table file-table))
-         ((mv & & pread-error-code)
-          (hifat-pread
-           fd len 0 fs fd-table file-table))
-         ((mv fd-table file-table &) (hifat-close fd fd-table file-table))
-         ((unless (and (<= (len (fat32-path-to-path head-path)) 100)))
-          (mv "" fd-table file-table))
-         (head-string
-          (hifat-tar-reg-file-string fs (implode (fat32-path-to-path head-path))))
-         ((when (zp pread-error-code))
-          (b*
-              (((mv tail-string fd-table file-table)
-                (hifat-tar-name-list-string fs
-                                            head-path
-                                            (cdr name-list)
-                                            fd-table file-table
-                                            dir-stream-table
-                                            (- entry-count 1))))
-            (mv
-             (concatenate
-              'string
-              head-string
-              tail-string)
-             fd-table file-table)))
-         ((mv dirp dir-stream-table &)
-          (hifat-opendir fs head-path dir-stream-table))
-         ((mv names dir-stream-table)
-          (hifat-get-names-from-dirp dirp dir-stream-table))
-         ((mv & dir-stream-table) (hifat-closedir dirp dir-stream-table))
-         ((mv head-string fd-table file-table)
-          (hifat-tar-name-list-string fs
-                                      (append path (list))
-                                      names
-                                      fd-table file-table
-                                      dir-stream-table
-                                      (- entry-count 1)))
-         ((mv tail-string fd-table file-table)
-          (hifat-tar-name-list-string fs
-                                      path
-                                      (cdr name-list)
-                                      fd-table file-table
-                                      dir-stream-table
-                                      (- entry-count 1))))
-      (mv
-       (concatenate
-        'string
-        (tar-header-block
-         (implode (fat32-path-to-path head-path))
-         0 *tar-dirtype*)
-        head-string tail-string)
-       fd-table file-table)))
-
-  (defthm
-    fd-table-p-of-hifat-tar-name-list-string
-    (fd-table-p
-     (mv-nth 1
-             (hifat-tar-name-list-string fs path name-list fd-table file-table
-                                         dir-stream-table entry-count)))
-    :hints
-    (("goal" :in-theory (e/d (hifat-tar-name-list-string)
-                             (append append-of-cons)))))
-
-  (defthm
-    stringp-of-hifat-tar-name-list-string
-    (stringp
-     (mv-nth 0
-             (hifat-tar-name-list-string fs path name-list fd-table file-table
-                                         dir-stream-table entry-count)))
-    :hints
-    (("goal" :in-theory (e/d (hifat-tar-name-list-string)
-                             (append append-of-cons))))
-    :rule-classes :type-prescription)
-
-  (defthm
-    file-table-p-of-hifat-tar-name-list-string
-    (file-table-p
-     (mv-nth 2
-             (hifat-tar-name-list-string fs path name-list fd-table file-table
-                                         dir-stream-table entry-count)))
-    :hints
-    (("goal" :in-theory (e/d (hifat-tar-name-list-string)
-                             (append append-of-cons)))))
-
-  (verify-guards
-    hifat-tar-name-list-string
-    :guard-debug t :otf-flg t
-    :hints (("GOal" :in-theory (e/d (hifat-tar-name-list-string)
-                                    (append append-of-cons))
-                   :do-not-induct t))))
+(defthm
+  file-table-p-of-hifat-tar-name-list-string
+  (file-table-p
+   (mv-nth 2
+           (hifat-tar-name-list-string fs path name-list fd-table file-table
+                                       dir-stream-table entry-count)))
+  :hints
+  (("goal" :in-theory (e/d (hifat-tar-name-list-string)
+                           (append append-of-cons)))))

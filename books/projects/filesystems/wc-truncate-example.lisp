@@ -839,7 +839,7 @@
        path))
      size)))
   :hints (("goal" :do-not-induct t
-           :in-theory (e/d (wc-1 lofat-open hifat-lstat)
+           :in-theory (e/d (wc-1 lofat-open hifat-pread hifat-open hifat-lstat)
                            (truncate-list-correctness-1))
            :use
            truncate-list-correctness-1)))
