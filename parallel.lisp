@@ -213,10 +213,14 @@
       (er-progn
 
 ; We check for override hints even when #-acl2-par, to avoid being surprised by
-; an error when the same proof development is encountered with #+acl2-par.
+; an error when the same proof development is encountered with #+acl2-par.  But
+; we skip the check if there is no change (see GitHub Issue #1171) or we are
+; turning off waterfall-parallelism.
 
-       (cond (val (check-for-no-override-hints ctx state))
-             (t (value nil)))
+       (cond ((or (null val)
+                  (equal val (f-get-global 'waterfall-parallelism state)))
+              (value nil))
+             (t (check-for-no-override-hints ctx state)))
        (cond
         ((member-eq val *waterfall-parallelism-values*)
          #+acl2-par
