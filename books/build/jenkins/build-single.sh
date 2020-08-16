@@ -64,4 +64,7 @@ $STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"
 
 echo "Build was successful."
 
+echo "Pinging github.com to measure latency likely incurred during possible subsequent git push"
+ping github.com -c 20
+
 exit 0
