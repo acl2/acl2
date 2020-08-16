@@ -1902,9 +1902,19 @@
   (mv-let (file error-code)
     (hifat-find-file fs path)
     (and (m1-file-p file)
-         (integerp error-code)))
+         (natp error-code)))
   :hints (("goal" :induct (hifat-find-file fs path)
-           :in-theory (enable hifat-find-file))))
+           :in-theory (enable hifat-find-file)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (mv-let (file error-code)
+      (hifat-find-file fs path)
+      (and (m1-file-p file)
+           (integerp error-code))))
+   (:linear
+    :corollary
+    (<= 0 (mv-nth 1 (hifat-find-file fs path))))))
 
 (defthmd hifat-find-file-of-fat32-filename-list-fix
   (equal
