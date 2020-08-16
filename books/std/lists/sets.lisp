@@ -679,6 +679,29 @@ about set equivalence.</p>"
 (defcong set-equiv set-equiv (cons a x) 2
   :hints(("Goal" :in-theory (enable set-equiv))))
 
+(encapsulate
+  ()
+
+  (local
+   (defthm remove-when-absent
+     (implies (not (member-equal x l))
+              (equal (remove-equal x l)
+                     (true-list-fix l)))))
+
+  (defthm
+    cons-of-remove-under-set-equiv-1
+    (set-equiv (cons x (remove-equal x l))
+               (if (member-equal x l) l (cons x l)))
+    :hints
+    (("goal"
+      :induct (remove-equal x l)
+      :in-theory (disable (:rewrite commutativity-2-of-append-under-set-equiv)))
+     ("subgoal *1/3"
+      :use (:instance (:rewrite commutativity-2-of-append-under-set-equiv)
+                      (z (remove-equal x (cdr l)))
+                      (y (list (car l)))
+                      (x (list x)))))))
+
 (defthm subsetp-of-remove1
   (equal (subsetp x (remove a y))
          (and (subsetp x y)

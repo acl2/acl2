@@ -434,21 +434,6 @@
                        (if (consp (assoc-equal x alist))
                            (list (assoc-equal x alist)) nil))))
 
-(defthm
-  cons-of-remove-under-set-equiv-1
-  (set-equiv (cons x (remove-equal x l))
-             (if (member-equal x l) l (cons x l)))
-  :hints
-  (("goal"
-    :induct (remove-equal x l)
-    :in-theory (disable (:rewrite commutativity-2-of-append-under-set-equiv)))
-   ("subgoal *1/3"
-    :use (:instance (:rewrite commutativity-2-of-append-under-set-equiv)
-                    (z (remove-equal x (cdr l)))
-                    (y (list (car l)))
-                    (x (list x))))))
-
-
 (defthmd cons-equal-under-set-equiv-1
   (iff (set-equiv (cons x y1) (cons x y2))
        (set-equiv (remove-equal x y1)
