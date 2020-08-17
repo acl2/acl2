@@ -693,7 +693,8 @@
 
 (xdoc::evmac-topic-event-generation divconq
                                     :some-local-nonlocal-p t
-                                    :some-local-p t)
+                                    :some-local-p t
+                                    :some-nonlocal-p t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
