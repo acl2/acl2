@@ -772,6 +772,9 @@
      like the @('state') variable.")
    (xdoc::p
     "If there are no items, the list is omitted altogether.")
+   (xdoc::p
+    "This macro also provide a @(':default-parent') option,
+     which is @('nil') by default and is passed to @(tsee defxdoc+).")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -780,7 +783,7 @@
           (t (cons `(xdoc::li ,(car items))
                    (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
 
-  (defmacro xdoc::evmac-topic-implementation (macro &key items)
+  (defmacro xdoc::evmac-topic-implementation (macro &key items default-parent)
     (declare (xargs :guard (symbolp macro)))
     (b* ((macro-name (string-downcase (symbol-name macro)))
          (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
@@ -806,7 +809,8 @@
          :parents (,parent-topic)
          :short ,short
          ,@(and long (list :long long))
-         :order-subtopics t))))
+         :order-subtopics t
+         :default-parent ,default-parent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
