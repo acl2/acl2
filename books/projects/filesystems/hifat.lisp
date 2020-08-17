@@ -434,50 +434,11 @@
                        (if (consp (assoc-equal x alist))
                            (list (assoc-equal x alist)) nil))))
 
-(defthm
-  set-equiv-cons-remove-1
-  (implies (member-equal x l)
-           (set-equiv (cons x (remove-equal x l))
-                      l))
-  :hints
-  (("goal"
-    :induct (remove-equal x l)
-    :in-theory (disable (:rewrite commutativity-2-of-append-under-set-equiv)))
-   ("subgoal *1/3"
-    :use (:instance (:rewrite commutativity-2-of-append-under-set-equiv)
-                    (z (remove-equal x (cdr l)))
-                    (y (list (car l)))
-                    (x (list x))))))
-
-(defthm
-  set-equiv-of-append-of-cons-1
-  (set-equiv (append x (cons y z))
-             (cons y (append x z)))
-  :hints
-  (("goal" :in-theory (disable commutativity-2-of-append-under-set-equiv)
-    :use (:instance commutativity-2-of-append-under-set-equiv
-                    (y (list y))))))
-
-(defthmd set-equiv-of-cons-of-remove-1
-  (set-equiv (cons x (remove-equal x y))
-             (cons x y))
-  :hints (("goal" :in-theory (disable set-equiv-of-append-of-cons-1)
-           :induct (remove-equal x y))
-          ("subgoal *1/3" :use ((:instance set-equiv-of-append-of-cons-1
-                                           (x (list x))
-                                           (y (car y))
-                                           (z (remove-equal x (cdr y))))
-                                (:instance set-equiv-of-append-of-cons-1
-                                           (x (list x))
-                                           (y (car y))
-                                           (z (cdr y)))))))
-
 (defthmd cons-equal-under-set-equiv-1
   (iff (set-equiv (cons x y1) (cons x y2))
        (set-equiv (remove-equal x y1)
                   (remove-equal x y2)))
-  :instructions ((in-theory (enable set-equiv-of-cons-of-remove-1))
-                 (:= (cons x y2)
+  :instructions ((:= (cons x y2)
                      (cons x (remove-equal x y2))
                      :equiv set-equiv)
                  (:= (cons x y1)
@@ -1598,6 +1559,16 @@
 
 (in-theory (disable fat32-filename-p fat32-filename-fix))
 
+(defthm
+  m1-file-alist-p-of-remove-assoc-equal
+  (implies (m1-file-alist-p fs)
+           (m1-file-alist-p (remove-assoc-equal key fs))))
+
+(defthm member-equal-of-strip-cars-when-m1-file-alist-p
+  (implies (and (not (fat32-filename-p x))
+                (m1-file-alist-p fs))
+           (not (member-equal x (strip-cars fs)))))
+
 (defun
     hifat-bounded-file-alist-p-helper (x ac)
   (declare (xargs :guard (and (m1-file-alist-p x) (natp ac))
@@ -1916,9 +1887,19 @@
   (mv-let (file error-code)
     (hifat-find-file fs path)
     (and (m1-file-p file)
-         (integerp error-code)))
+         (natp error-code)))
   :hints (("goal" :induct (hifat-find-file fs path)
-           :in-theory (enable hifat-find-file))))
+           :in-theory (enable hifat-find-file)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (mv-let (file error-code)
+      (hifat-find-file fs path)
+      (and (m1-file-p file)
+           (integerp error-code))))
+   (:linear
+    :corollary
+    (<= 0 (mv-nth 1 (hifat-find-file fs path))))))
 
 (defthmd hifat-find-file-of-fat32-filename-list-fix
   (equal

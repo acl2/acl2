@@ -206,7 +206,7 @@
   :hints
   (("goal"
     :in-theory
-    (e/d (lofat-to-hifat lofat-pread)
+    (e/d (lofat-to-hifat lofat-pread hifat-pread)
          ((:rewrite lofat-find-file-correctness-1)
           (:rewrite lofat-directory-file-p-when-lofat-file-p)
           (:rewrite m1-directory-file-p-when-m1-file-p)

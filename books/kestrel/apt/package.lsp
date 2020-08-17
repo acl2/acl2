@@ -151,6 +151,8 @@
                          ensure-term-not-call-of$
                          ensure-tuple$
                          ensure-value-is-boolean$
+                         ensure-value-is-legal-variable-name$
+                         ensure-value-is-in-list$
                          ensure-value-is-not-in-list$
                          ensure-value-is-symbol$
                          ensure-value-is-symbol-list$
@@ -214,6 +216,7 @@
                          ibody
                          implicate
                          implicate-untranslated-terms
+                         impliez
                          impossible
                          induction-machine
                          induction-machine-for-fn

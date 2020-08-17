@@ -199,7 +199,7 @@
                 (lofat-fs-p fat32-in-memory))
     :guard-hints
     (("goal" :in-theory
-      (enable lofat-open lofat-lstat)))))
+      (enable lofat-open lofat-lstat hifat-open)))))
   (b*
       ((fat32-path (path-to-fat32-path (coerce path 'list)))
        ;; It would be nice to eliminate this check by proving a theorem, but

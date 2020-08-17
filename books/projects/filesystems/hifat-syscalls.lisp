@@ -170,7 +170,7 @@
   :hints (("goal" :in-theory (enable hifat-lstat))))
 
 ;; By default, we aren't going to check whether the file exists.
-(defun hifat-open (path fd-table file-table)
+(defund hifat-open (path fd-table file-table)
   (declare (xargs :guard (and (fat32-filename-list-p path)
                               (fd-table-p fd-table)
                               (file-table-p file-table))))
@@ -209,14 +209,16 @@
     :corollary
     (b*
         (((mv & & fd &) (hifat-open path fd-table file-table)))
-      (integerp fd)))))
+      (integerp fd))))
+  :hints (("Goal" :in-theory (enable hifat-open))))
 
 (defthm
   hifat-open-correctness-2
   (implies (no-duplicatesp (strip-cars (fd-table-fix fd-table)))
            (b* (((mv fd-table & & &)
                  (hifat-open path fd-table file-table)))
-             (no-duplicatesp (strip-cars fd-table)))))
+             (no-duplicatesp (strip-cars fd-table))))
+  :hints (("Goal" :in-theory (enable hifat-open))))
 
 (defthm
   hifat-open-correctness-3
@@ -224,12 +226,13 @@
    (no-duplicatesp (strip-cars (file-table-fix file-table)))
    (b* (((mv & file-table & &)
          (hifat-open path fd-table file-table)))
-     (no-duplicatesp (strip-cars file-table)))))
+     (no-duplicatesp (strip-cars file-table))))
+  :hints (("Goal" :in-theory (enable hifat-open))))
 
 ;; Per the man page pread(2), this should not change the offset of the file
 ;; descriptor in the file table. Thus, there's no need for the file table to be
 ;; an argument.
-(defun
+(defund
     hifat-pread
     (fd count offset fs fd-table file-table)
   (declare (xargs :guard (and (natp fd)
@@ -269,7 +272,16 @@
          (integerp ret)
          (integerp error-code)
          (implies (>= ret 0)
-                  (equal (length buf) ret)))))
+                  (equal (length buf) ret))))
+  :hints (("Goal" :in-theory (enable hifat-pread))))
+
+(defthm
+  natp-of-hifat-pread
+  (natp
+   (mv-nth 2
+           (hifat-pread fd count offset fs fd-table file-table)))
+  :hints (("goal" :in-theory (enable hifat-pread)))
+  :rule-classes :type-prescription)
 
 (defun
     hifat-pwrite
@@ -513,7 +525,7 @@
         (mv fs -1 error-code)))
     (mv fs 0 0)))
 
-(defun hifat-close (fd fd-table file-table)
+(defund hifat-close (fd fd-table file-table)
   (declare (xargs :guard (and (fd-table-p fd-table)
                               (file-table-p file-table))))
   (b*
@@ -534,14 +546,16 @@
   (b* (((mv fd-table file-table &)
         (hifat-close fd fd-table file-table)))
     (and (fd-table-p fd-table)
-         (file-table-p file-table))))
+         (file-table-p file-table)))
+  :hints (("Goal" :in-theory (enable hifat-close))))
 
 (defthm hifat-close-correctness-2
   (implies (and (fd-table-p fd-table)
                 (no-duplicatesp (strip-cars fd-table)))
            (b* (((mv fd-table & &)
                  (hifat-close fd fd-table file-table)))
-             (no-duplicatesp (strip-cars fd-table)))))
+             (no-duplicatesp (strip-cars fd-table))))
+  :hints (("Goal" :in-theory (enable hifat-close))))
 
 (defthm
   hifat-close-correctness-3
@@ -549,7 +563,8 @@
                 (no-duplicatesp (strip-cars file-table)))
            (b* (((mv & file-table &)
                  (hifat-close fd fd-table file-table)))
-             (no-duplicatesp (strip-cars file-table)))))
+             (no-duplicatesp (strip-cars file-table))))
+  :hints (("Goal" :in-theory (enable hifat-close))))
 
 (defun
     hifat-truncate
@@ -1124,6 +1139,12 @@
   (dir-stream-table-p
    (mv-nth 1 (hifat-opendir fs path dir-stream-table)))
   :hints (("Goal" :in-theory (enable hifat-opendir))))
+
+(defthm natp-of-hifat-opendir
+  (natp (mv-nth 0
+                (hifat-opendir fs path dir-stream-table)))
+  :hints (("goal" :in-theory (enable hifat-opendir)))
+  :rule-classes :type-prescription)
 
 (assert-event
  (b*
