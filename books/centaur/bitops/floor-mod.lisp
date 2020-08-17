@@ -57,8 +57,8 @@
                        (< x 1)))
          :hints (("goal" :use ((:instance rational-implies2))
                   :in-theory (disable rational-implies2
-                                      *-r-denominator-r
-                                      equal-*-/-1)))))
+                                      acl2::*-r-denominator-r
+                                      acl2::equal-*-/-1)))))
 
 (local (defthm numerator-<-0
          (implies (rationalp x)
@@ -73,11 +73,11 @@
                   (iff (integerp (* x (/ y)))
                        (equal x 0)))
          :hints ((and stable-under-simplificationp
-                      '(:use ((:instance <-*-/-LEFT (a 1))
-                              (:instance <-*-/-LEFT (a 0)))
-                        :in-theory (disable <-*-/-LEFT
-                                            <-UNARY-/-POSITIVE-RIGHT
-                                            <-*-0))))))
+                      '(:use ((:instance acl2::<-*-/-LEFT (a 1))
+                              (:instance acl2::<-*-/-LEFT (a 0)))
+                        :in-theory (disable acl2::<-*-/-LEFT
+                                            acl2::<-UNARY-/-POSITIVE-RIGHT
+                                            acl2::<-*-0))))))
 
 (defthmd floor-of-nonneg-operands-base-case
   (implies (and (< x y)
@@ -516,10 +516,10 @@
                        (rationalp x) (rationalp y))
                   (< (truncate x y) 0))
          :hints(("Goal" :in-theory (e/d (truncate) (numerator-<-denominator
-                                                    <-*-/-right))
+                                                    acl2::<-*-/-right))
                  :use ((:instance numerator-<-denominator
                         (x (* (- x) (/ y))))
-                       (:instance <-*-/-right
+                       (:instance acl2::<-*-/-right
                         (a -1)))))
          :rule-classes :linear))
 
@@ -604,7 +604,7 @@
                         (equal delta 0))))
     :hints ((acl2::use-termhint
              (cond ((< delta 0)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< delta 0)"))
                             (:instance add-sides-of-ineqs
                              (a (+ num (- (* delta div)) (- (* div quot))))
@@ -612,14 +612,14 @@
                              (c (* div quot))
                              (d num)))))
                    ((< 0 delta)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< 0 delta)"))
                             (:instance add-sides-of-ineqs
                              (a (+ num (- (* div quot))))
                              (b div)
                              (c (+ (* delta div) (* div quot)))
                              (d num)))))
-                   (t '(:use ((:instance mark-clause-is-true
+                   (t '(:use ((:instance acl2::mark-clause-is-true
                                (x "neither"))))))))
     :rule-classes nil)
 
@@ -657,7 +657,7 @@
                         (equal delta 0))))
     :hints ((acl2::use-termhint
              (cond ((< delta 0)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< delta 0)"))
                             (:instance add-sides-of-ineqs
                              (a (+ num (- (* div quot))))
@@ -667,7 +667,7 @@
                             
                             )))
                    ((< 0 delta)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< 0 delta)"))
                             (:instance add-sides-of-ineqs
                              (a (+ num (- (* delta div)) (- (* div quot))))
@@ -675,7 +675,7 @@
                              (d num)
                              (c (* div quot)))
                             )))
-                   (t '(:use ((:instance mark-clause-is-true
+                   (t '(:use ((:instance acl2::mark-clause-is-true
                                (x "neither"))))))))
     :rule-classes nil)
 
@@ -714,7 +714,7 @@
                         (equal delta 0))))
     :hints ((acl2::use-termhint
              (cond ((< delta 0)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< delta 0)"))
                             (:instance add-sides-of-ineqs
                              (d (+ (* delta div) (* div quot)))
@@ -723,7 +723,7 @@
                              (b (+ num (- (* div quot))))
                              ))))
                    ((< 0 delta)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< 0 delta)"))
                             (:instance add-sides-of-ineqs
                              (d (* div quot))
@@ -731,7 +731,7 @@
                              (b (+ num (- (* delta div)) (- (* div quot))))
                              (a (- div)))
                             )))
-                   (t '(:use ((:instance mark-clause-is-true
+                   (t '(:use ((:instance acl2::mark-clause-is-true
                                (x "neither"))))))))
     :rule-classes nil)
 
@@ -761,7 +761,7 @@
                         (equal delta 0))))
     :hints ((acl2::use-termhint
              (cond ((< delta 0)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< delta 0)"))
                             (:instance add-sides-of-ineqs
                              (a div)
@@ -771,7 +771,7 @@
                             
                             )))
                    ((< 0 delta)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< 0 delta)"))
                             (:instance add-sides-of-ineqs
                              (a div)
@@ -779,7 +779,7 @@
                              (c num)
                              (d (+ (* delta div) (* div quot))))
                             )))
-                   (t '(:use ((:instance mark-clause-is-true
+                   (t '(:use ((:instance acl2::mark-clause-is-true
                                (x "neither"))))))))
     :rule-classes nil)
 
@@ -799,7 +799,7 @@
                         (equal delta 0))))
     :hints ((acl2::use-termhint
              (cond ((< delta 0)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< delta 0)"))
                             (:instance add-sides-of-ineqs
                              (d num)
@@ -807,14 +807,14 @@
                              (a (+ num (- (* delta div)) (- (* div quot))))
                              (b div)))))
                    ((< 0 delta)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< 0 delta)"))
                             (:instance add-sides-of-ineqs
                              (d num)
                              (c (+ (* delta div) (* div quot)))
                              (a (+ num (- (* div quot))))
                              (b div)))))
-                   (t '(:use ((:instance mark-clause-is-true
+                   (t '(:use ((:instance acl2::mark-clause-is-true
                                (x "neither"))))))))
     :rule-classes nil)
 
@@ -835,7 +835,7 @@
                         (equal delta 0))))
     :hints ((acl2::use-termhint
              (cond ((< 0 delta)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< 0 delta)"))
                             (:instance add-sides-of-ineqs
                              (d (+ (* delta div) (* div quot)))
@@ -845,14 +845,14 @@
                              )
                             )))
                    ((< delta 0)
-                    '(:use ((:instance mark-clause-is-true
+                    '(:use ((:instance acl2::mark-clause-is-true
                              (x "(< delta 0)"))
                             (:instance add-sides-of-ineqs
                              (d (* div quot))
                              (c num)
                              (b (+ num (- (* delta div)) (- (* div quot))))
                              (a div)))))
-                   (t '(:use ((:instance mark-clause-is-true
+                   (t '(:use ((:instance acl2::mark-clause-is-true
                                (x "neither"))))))))
     :rule-classes nil)
 
@@ -923,7 +923,7 @@
            (equal (< x y) (hide (< x y)))
            :hints (("goal" :expand ((hide (< x y)))))))
 
-  (defthm truncate-bounds
+  (defthm truncate-bound
     (implies (and (rationalp num)
                   (rationalp div)
                   (not (equal div 0)))
@@ -945,7 +945,7 @@
                               truncate-of-x-negative-invert)))))
 
 
-  (defthm floor-bounds
+  (defthm floor-bound
     (implies (and (rationalp num)
                   (rationalp div)
                   (not (equal div 0)))
@@ -972,13 +972,13 @@
                   (not (equal div 0))
                   (integerp quot))
              (let ((rem (- num (* quot div))))
-               (implies (and (implies (<= num 0) (<= rem 0))
-                             (implies (<= 0 num) (<= 0 rem))
-                             (< (abs rem) (abs div)))
-                        (equal (equal quot (truncate num div)) t))))
+               (iff (equal quot (truncate num div))
+                    (and (implies (<= num 0) (<= rem 0))
+                         (implies (<= 0 num) (<= 0 rem))
+                         (< (abs rem) (abs div))))))
     :hints (("goal" :use ((:instance truncate-unique-lemma
                            (delta (- (truncate num div) quot)))
-                          (:instance truncate-bounds))
+                          (:instance truncate-bound))
              :in-theory (e/d ()
                              (truncate-of-nonneg-operands-step
                               truncate-of-nonneg-operands-base-case
@@ -992,13 +992,13 @@
                   (not (equal div 0))
                   (integerp quot))
              (let ((rem (- num (* quot div))))
-               (implies (and (implies (<= div 0) (<= rem 0))
-                             (implies (<= 0 div) (<= 0 rem))
-                             (< (abs rem) (abs div)))
-                        (equal (equal quot (floor num div)) t)))
+               (iff (equal quot (floor num div))
+                    (and (implies (<= div 0) (<= rem 0))
+                         (implies (<= 0 div) (<= 0 rem))
+                         (< (abs rem) (abs div))))))
     :hints (("goal" :use ((:instance floor-unique-lemma
                            (delta (- (floor num div) quot)))
-                          (:instance floor-bounds))
+                          (:instance floor-bound))
              :in-theory (e/d ()
                              (floor-of-nonneg-operands-step
                               floor-of-nonneg-operands-base-case
