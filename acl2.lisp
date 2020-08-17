@@ -1269,10 +1269,137 @@ ACL2 from scratch.")
   (error "Use a version of ACKL after 206"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                            EXITING LISP
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defparameter *acl2-panic-exit-status* nil)
+
+#+ccl
+(defun common-lisp-user::acl2-exit-lisp-ccl-report (status)
+
+; Gary Byers says (email, 1/12/2016) that he believes that the first of 5
+; values returned by (GCTIME) is the sum of the other four, which are full and
+; then 3 levels of ephemeral/generational.  He also says that these are
+; reported in internal-time-units, which are microseconds on x8664.
+
+  (declare (ignore status))
+  (format t
+          "~%(ccl::total-bytes-allocated) = ~s~%(ccl::gctime) ~
+           = ~s~%(ccl::gccounts) = ~s~%~%"
+          (ccl::total-bytes-allocated)
+          (multiple-value-list (ccl::gctime))
+          (multiple-value-list (ccl::gccounts))))
+
+#+cltl2
+(defvar common-lisp-user::*acl2-exit-lisp-hook*
+  nil)
+
+(defun exit-lisp (&optional (status '0 status-p))
+
+; Parallelism blemish: In ACL2(p), LispWorks 6.0.1 hasn't always successfully
+; exited when exit-lisp was called.  The call below of stop-multiprocessing is
+; an attempt to improve the chance of a successful exit.  In practice, the call
+; does not fix the problem.  However, we leave it for now since we don't think
+; it can hurt.  If exit-lisp starts working reliably without the following
+; calls to send-die-to-worker-threads and stop-multiprocessing, they should be
+; removed.
+
+  #+cltl2
+  (when (fboundp common-lisp-user::*acl2-exit-lisp-hook*)
+    (funcall common-lisp-user::*acl2-exit-lisp-hook* status)
+    (setq common-lisp-user::*acl2-exit-lisp-hook* nil))
+  #+(and acl2-par lispworks)
+  (when mp::*multiprocessing*
+    (send-die-to-worker-threads)
+    (mp::stop-multiprocessing))
+
+; The status (an integer) will be returned as the exit status (shell variable
+; $?).  We avoid passing the status argument when it is 0, in case Windows or
+; other operating systems get confused by it.  However, this function is a
+; no-op if we are already in the process of quitting via this function; see the
+; comment below the occurrence below of *acl2-panic-exit-status*.
+
+; It appeared at one point that (ccl::quit 0) is more reliable than
+; (ccl::quit), but that's no longer clear.  Still, it seems reasonable to pass
+; the status explicitly to the individual Lisp's exit function if that status
+; is passed explicitly here -- hence the use of status-p.
+
+  (cond
+   ((null status) ; shouldn't happen
+    (error "Passed null status to exit-lisp!"))
+   (*acl2-panic-exit-status*
+
+; We have seen various type errors and bus errors when attempting to quit in
+; CCL.  Gary Byers pointed out that this may be caused by attempting to quit
+; while in the process of quitting.  So, we avoid doing a quit if already in
+; the process of quitting.
+
+    (return-from exit-lisp nil)))
+  (setq *acl2-panic-exit-status* status)
+  #+clisp
+  (if status-p (user::exit status) (user::exit))
+  #+lispworks ; Version 4.2.0; older versions have used bye
+  (if status-p (lispworks:quit :status status) (lispworks:quit))
+  #+akcl
+  (if status-p (si::bye status) (si::bye))
+  #+lucid
+  (lisp::exit) ; don't know how to handle status, but don't support lucid
+  #+ccl
+  (if status-p (ccl::quit status) (ccl::quit))
+  #+cmu
+  (cond ((null status-p)
+         (common-lisp-user::quit t))
+        (t ; quit does not take an exit status as of CMUCL version 19e
+         (unix:unix-exit status)))
+  #+allegro
+  (user::exit status :no-unwind t)
+  #+(and mcl (not ccl))
+  (cl-user::quit) ; mcl support is deprecated, so we don't worry about status
+  #+sbcl
+  (let ((sym (or (find-symbol "EXIT" 'sb-ext)
+                 (find-symbol "QUIT" 'sb-ext))))
+
+; Quoting http://www.sbcl.org/manual/#Exit, regarding sb-ext:quit:
+
+;   Deprecated in favor of sb-ext:exit as of 1.0.56.55 in May 2012. Expected to
+;   move into late deprecation in May 2013.
+
+    (cond ((or (null sym)
+               (not (fboundp sym)))
+           (error "No function named \"EXIT\" or \"QUIT\" is defined in the ~%~
+                   \"SB-EXT\" package.  Perhaps you are using a very old or ~%~
+                   very new version of SBCL.  If you are surprised by this ~%~
+                   message, feel free to contact the ACL2 implementors."))
+          ((equal (symbol-name sym) "EXIT")
+           (if status-p
+               (funcall sym :code status)
+             (funcall sym)))
+          (t ; (equal (symbol-name sym) "QUIT")
+           (if status-p
+               (funcall sym :unix-status status)
+             (funcall sym)))))
+
+; Return status (to avoid an ignore declaration) if we cannot exit lisp.  The
+; caller of this function should complain if Lisp survives the call.  The panic
+; flag may help though.
+
+  (progn status-p status))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                CHECKS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; See acl2-check.lisp for more checks.
+
+; We allow ACL2(h) code to take advantage of Ansi CL features.  It's
+; conceivable that we don't need this restriction (which only applies to GCL),
+; but it doesn't currently seem worth the trouble to figure that out.
+#+(and hons (not cltl2))
+(progn
+; ACL2(c) deprecated: no longer says "build a hons-enabled version of ACL2".
+  (format t "~%ERROR: It is illegal to build ACL2 in this non-ANSI Common ~
+             Lisp.~%~%")
+  (acl2::exit-lisp))
 
 ; The following macro turns off some style warnings.  It is defined here
 ; instead of the "LISP BUGS AND QUIRKS" section because we want to define this
@@ -2255,122 +2382,6 @@ You are using version ~s.~s.~s."
 
 (declaim (declaration xargs))
 (declaim (declaration irrelevant))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                            EXITING LISP
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defparameter *acl2-panic-exit-status* nil)
-
-#+ccl
-(defun common-lisp-user::acl2-exit-lisp-ccl-report (status)
-
-; Gary Byers says (email, 1/12/2016) that he believes that the first of 5
-; values returned by (GCTIME) is the sum of the other four, which are full and
-; then 3 levels of ephemeral/generational.  He also says that these are
-; reported in internal-time-units, which are microseconds on x8664.
-
-  (declare (ignore status))
-  (format t
-          "~%(ccl::total-bytes-allocated) = ~s~%(ccl::gctime) ~
-           = ~s~%(ccl::gccounts) = ~s~%~%"
-          (ccl::total-bytes-allocated)
-          (multiple-value-list (ccl::gctime))
-          (multiple-value-list (ccl::gccounts))))
-
-#+cltl2
-(defvar common-lisp-user::*acl2-exit-lisp-hook*
-  nil)
-
-(defun exit-lisp (&optional (status '0 status-p))
-
-; Parallelism blemish: In ACL2(p), LispWorks 6.0.1 hasn't always successfully
-; exited when exit-lisp was called.  The call below of stop-multiprocessing is
-; an attempt to improve the chance of a successful exit.  In practice, the call
-; does not fix the problem.  However, we leave it for now since we don't think
-; it can hurt.  If exit-lisp starts working reliably without the following
-; calls to send-die-to-worker-threads and stop-multiprocessing, they should be
-; removed.
-
-  (when (fboundp common-lisp-user::*acl2-exit-lisp-hook*)
-    (funcall common-lisp-user::*acl2-exit-lisp-hook* status)
-    (setq common-lisp-user::*acl2-exit-lisp-hook* nil))
-  #+(and acl2-par lispworks)
-  (when mp::*multiprocessing*
-    (send-die-to-worker-threads)
-    (mp::stop-multiprocessing))
-
-; The status (an integer) will be returned as the exit status (shell variable
-; $?).  We avoid passing the status argument when it is 0, in case Windows or
-; other operating systems get confused by it.  However, this function is a
-; no-op if we are already in the process of quitting via this function; see the
-; comment below the occurrence below of *acl2-panic-exit-status*.
-
-; It appeared at one point that (ccl::quit 0) is more reliable than
-; (ccl::quit), but that's no longer clear.  Still, it seems reasonable to pass
-; the status explicitly to the individual Lisp's exit function if that status
-; is passed explicitly here -- hence the use of status-p.
-
-  (cond
-   ((null status) ; shouldn't happen
-    (error "Passed null status to exit-lisp!"))
-   (*acl2-panic-exit-status*
-
-; We have seen various type errors and bus errors when attempting to quit in
-; CCL.  Gary Byers pointed out that this may be caused by attempting to quit
-; while in the process of quitting.  So, we avoid doing a quit if already in
-; the process of quitting.
-
-    (return-from exit-lisp nil)))
-  (setq *acl2-panic-exit-status* status)
-  #+clisp
-  (if status-p (user::exit status) (user::exit))
-  #+lispworks ; Version 4.2.0; older versions have used bye
-  (if status-p (lispworks:quit :status status) (lispworks:quit))
-  #+akcl
-  (if status-p (si::bye status) (si::bye))
-  #+lucid
-  (lisp::exit) ; don't know how to handle status, but don't support lucid
-  #+ccl
-  (if status-p (ccl::quit status) (ccl::quit))
-  #+cmu
-  (cond ((null status-p)
-         (common-lisp-user::quit t))
-        (t ; quit does not take an exit status as of CMUCL version 19e
-         (unix:unix-exit status)))
-  #+allegro
-  (user::exit status :no-unwind t)
-  #+(and mcl (not ccl))
-  (cl-user::quit) ; mcl support is deprecated, so we don't worry about status
-  #+sbcl
-  (let ((sym (or (find-symbol "EXIT" 'sb-ext)
-                 (find-symbol "QUIT" 'sb-ext))))
-
-; Quoting http://www.sbcl.org/manual/#Exit, regarding sb-ext:quit:
-
-;   Deprecated in favor of sb-ext:exit as of 1.0.56.55 in May 2012. Expected to
-;   move into late deprecation in May 2013.
-
-    (cond ((or (null sym)
-               (not (fboundp sym)))
-           (error "No function named \"EXIT\" or \"QUIT\" is defined in the ~%~
-                   \"SB-EXT\" package.  Perhaps you are using a very old or ~%~
-                   very new version of SBCL.  If you are surprised by this ~%~
-                   message, feel free to contact the ACL2 implementors."))
-          ((equal (symbol-name sym) "EXIT")
-           (if status-p
-               (funcall sym :code status)
-             (funcall sym)))
-          (t ; (equal (symbol-name sym) "QUIT")
-           (if status-p
-               (funcall sym :unix-status status)
-             (funcall sym)))))
-
-; Return status (to avoid an ignore declaration) if we cannot exit lisp.  The
-; caller of this function should complain if Lisp survives the call.  The panic
-; flag may help though.
-
-  (progn status-p status))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            CONSTANTS
