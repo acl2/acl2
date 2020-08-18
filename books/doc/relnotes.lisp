@@ -445,7 +445,13 @@
     "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
      has been simplified by removing its
      @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
-     Instead, named constants have been provided for these common items.")
+     Instead, named constants have been provided for these common items.
+     This constructor has also been extended with
+      a @(':default-parent') option.")
+
+   (xdoc::p
+    "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
+     has been extended with an additional option.")
 
    (xdoc::p
     "A utility @(tsee evmac-prepare-proofs) has been added,
