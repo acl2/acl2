@@ -1240,7 +1240,7 @@
  (in-theory (e/d (rw-dir2) (rw-dir1))))
 
 (skip-proofs
- (verify-guards c-sum-merge-fn
+ (verify-guards c-sum-merge-aux-fn
   :hints (("Goal"
            :in-theory (e/d (rw-dir2) (rw-dir1))))))
 

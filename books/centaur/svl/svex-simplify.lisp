@@ -506,19 +506,20 @@
       (include-book "projects/rp-rewriter/proofs/rp-rw-lemmas" :dir :system)))
 
     (b* ((rules preloaded-rules)
-         ((mv exc-rules rules-alist meta-rules)
+         ((mv exc-rules rules-alist outside-in-rule)
           (mv (access svex-simplify-preloaded rules
                       :exc-rules)
               (access svex-simplify-preloaded rules
                       :rules)
-              nil))
+              (access svex-simplify-preloaded rules
+                      :rules-outside-in)))
          (term `(svexl-node-eval-wog ',node
                                      (rp::rp 'node-env-p node-env)
                                      (rp::rp 'sv::svex-env-p svex-env)))
          ((mv rw rp::rp-state)
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-           exc-rules meta-rules nil rp::rp-state state))
+           exc-rules outside-in-rule nil rp::rp-state state))
          (- (clear-memoize-table '4vec-to-svex))
          ((mv err node-new) (4vec-to-svex rw t nil))
          (- (and err
@@ -556,19 +557,20 @@
                           RP::RULE-SYNTAXP)))))
 
     (b* ((rules preloaded-rules)
-         ((mv exc-rules rules-alist meta-rules)
+         ((mv exc-rules rules-alist rules-alist-outside-in)
           (mv (access svex-simplify-preloaded rules
                       :exc-rules)
               (access svex-simplify-preloaded rules
                       :rules)
-              nil))
+              (access svex-simplify-preloaded rules
+                      :rules-outside-in)))
          (term `(svexl-nodelist-eval-wog ',nodelist
                                          (rp::rp 'node-env-p node-env)
                                          (rp::rp 'sv::svex-env-p svex-env)))
          ((mv rw rp::rp-state)
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-           exc-rules meta-rules nil rp::rp-state state))
+           exc-rules rules-alist-outside-in nil rp::rp-state state))
 
          ((mv err node-new) (4vec-to-svex-termlist rw t nil))
          (- (and err
@@ -742,17 +744,18 @@
                      nil)
          (mv term rp::rp-state)))
 
-       ((mv exc-rules rules-alist meta-rules)
+       ((mv exc-rules rules-alist rules-alist-outside-in)
         (mv (access svex-simplify-preloaded rules
                     :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
-            nil))
+            (access svex-simplify-preloaded rules
+                      :rules-outside-in)))
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
          context nil nil (rp::rw-step-limit rp::rp-state) rules-alist
-         exc-rules meta-rules rp::rp-state state))
+         exc-rules rules-alist-outside-in rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
 
        ((mv svexl rp::rp-state)
@@ -768,7 +771,7 @@
             (mv term rp::rp-state)
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-           exc-rules meta-rules nil rp::rp-state state)))
+           exc-rules rules-alist-outside-in nil rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -848,17 +851,18 @@
                      nil)
          (mv term rp::rp-state)))
 
-       ((mv exc-rules rules-alist meta-rules)
+       ((mv exc-rules rules-alist rules-alist-outside-in)
         (mv (access svex-simplify-preloaded rules
                     :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
-            nil))
+            (access svex-simplify-preloaded rules
+                    :rules-outside-in)))
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
          context nil nil (rp::rw-step-limit rp::rp-state) rules-alist
-         exc-rules meta-rules rp::rp-state state))
+         exc-rules rules-alist-outside-in rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
 
        ((mv svexllist rp::rp-state)
@@ -874,7 +878,7 @@
             (mv term rp::rp-state)
           (rp::rp-rw
            term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-           exc-rules meta-rules nil rp::rp-state state)))
+           exc-rules rules-alist-outside-in nil rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action

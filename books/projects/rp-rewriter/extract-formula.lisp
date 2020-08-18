@@ -782,7 +782,17 @@
          (progn ,@(e/d-rp-rules-fn ,rules state nil)))))
 
   (defmacro disable-all-rules ()
-    `(table rp-rules nil nil :clear))
+    `(make-event
+      (b* ((cur-table (table-alist 'rp-rules (w state)))
+           (cur-table (loop$ for x in cur-table collect
+                             (case-match x
+                               ((rune . type)
+                                (case-match type
+                                  ((direction . &)
+                                   (list* rune direction nil))
+                                  (& (cons rune nil))))
+                               (& x)))))
+        `(table rp-rules nil ',cur-table :clear))))
 
   (defmacro disable-exc-counterpart (fnc)
     `(table rp-exc-rules ',fnc nil))

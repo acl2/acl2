@@ -1924,6 +1924,7 @@
                 (produced-c-lst rp-term-listp :hyp (and (rp-termp single-c1)
                                                         (rp-termp single-c2)))
                 (merge-success booleanp))
+  ;; :inline t
    (b* (;; don't try to merge negated elements. They will be coughed off and
         ;; will be tried later.
         ((when (or (negated-termp single-c1)
@@ -2057,7 +2058,7 @@
 
  (define c-sum-merge-lst ((single-c1 rp-termp)
                           (c2-lst rp-term-listp))
-
+   ;;:inline t
    :measure (acl2::nat-list-measure
              (list
               (+ (count-c single-c1) (count-c-lst c2-lst))
@@ -2131,6 +2132,7 @@
                       &key
                       (auto-swap 't)
                       (clean-c1-lst 'nil))
+   ;;:inline t
    :returns (mv (coughed-s rp-termp
                            :hyp (and (rp-term-listp c1-lst)
                                      (rp-term-listp c2-lst)))

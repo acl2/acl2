@@ -202,18 +202,19 @@
                (rp::check-if-clause-processor-up-to-date world)
                (svex-simplify-preload ;:runes *svl-compose-rules*
                 )))
-       ((mv exc-rules rules-alist meta-rules)
+       ((mv exc-rules rules-alist rules-alist-outside-in)
         (mv (access svex-simplify-preloaded rules
                     :exc-rules)
             (access svex-simplify-preloaded rules
                     :rules)
-            nil))
+            (access svex-simplify-preloaded rules
+                    :rules-outside-in)))
 
      
        ((mv rw rp::rp-state)
         (rp::rp-rw
          term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-         exc-rules meta-rules nil rp::rp-state state))
+         exc-rules rules-alist-outside-in nil rp::rp-state state))
        (rp::rp-state (rp::update-not-simplified-action
                       tmp-rp-not-simplified-action rp::rp-state))
        (- (svl::svex-rw-free-preload rules))
