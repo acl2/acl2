@@ -138,6 +138,7 @@
                          ensure-list-subset$
                          ensure-named-formulas
                          ensure-symbol-different$
+                         ensure-symbol-is-fresh-event-name$
                          ensure-symbol-new-event-name
                          ensure-symbol-new-event-name$
                          ensure-term$

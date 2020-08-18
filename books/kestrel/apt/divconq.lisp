@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-legal-variable-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
@@ -261,25 +262,20 @@
                state)
   :mode :program
   :short "Process the @(':fvar-atom-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ fvar-atom-name
+  (b* (((er &) (ensure-value-is-symbol$ fvar-atom-name
                                         "The :FVAR-ATOM-NAME input"
                                         t nil))
        (??g (if (eq fvar-atom-name :auto)
                 (add-suffix ?f "-ATOM")
               fvar-atom-name))
-       (msg/nil (fresh-namep-msg-weak ?g 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-ATOM-NAME ~
-                   is already in use.  ~@1"
-                  ?g msg/nil))
-       ((when (member-eq ?g names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-ATOM-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  ?g names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         ?g
+         (msg "The name ~x0 specified by :FVAR-ATOM-NAME" ?g)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list ?g names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,25 +293,20 @@
                state)
   :mode :program
   :short "Process the @(':fvar-cons-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ fvar-cons-name
+  (b* (((er &) (ensure-value-is-symbol$ fvar-cons-name
                                         "The :FVAR-CONS-NAME input"
                                         t nil))
        (??h (if (eq fvar-cons-name :auto)
                 (add-suffix ?f "-CONS")
               fvar-cons-name))
-       (msg/nil (fresh-namep-msg-weak ?h 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-CONS-NAME ~
-                   is already in use.  ~@1"
-                  ?h msg/nil))
-       ((when (member-eq ?h names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-CONS-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  ?h names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         ?h
+         (msg "The name ~x0 specified by :FVAR-CONS-NAME" ?h)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list ?h names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -335,25 +326,20 @@
                state)
   :mode :program
   :short "Process the @(':fold-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ fold-name
+  (b* (((er &) (ensure-value-is-symbol$ fold-name
                                         "The :FOLD-NAME input"
                                         t nil))
        (fold (if (eq fold-name :auto)
                  (packn-pos (list "FOLD[" ?g "][" ?h "]") old)
                fold-name))
-       (msg/nil (fresh-namep-msg-weak fold 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FOLD-NAME ~
-                   is already in use.  ~@1"
-                  fold msg/nil))
-       ((when (member-eq fold names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FOLD-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  fold names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         fold
+         (msg "The name ~x0 specified by :FOLD-NAME" fold)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list fold names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -372,25 +358,20 @@
                state)
   :mode :program
   :short "Process the @(':spec-atom-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ spec-atom-name
+  (b* (((er &) (ensure-value-is-symbol$ spec-atom-name
                                         "The :SPEC-ATOM-NAME input"
                                         t nil))
        (spec-atom (if (eq spec-atom-name :auto)
                       (packn-pos (list "SPEC-ATOM[" ?g "]") old)
                     spec-atom-name))
-       (msg/nil (fresh-namep-msg-weak spec-atom 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-ATOM-NAME ~
-                   is already in use.  ~@1"
-                  spec-atom msg/nil))
-       ((when (member-eq spec-atom names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-ATOM-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  spec-atom names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         spec-atom
+         (msg "The name ~x0 specified by :SPEC-ATOM-NAME" spec-atom)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list spec-atom names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -409,25 +390,20 @@
                state)
   :mode :program
   :short "Process the @(':spec-cons-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ spec-cons-name
+  (b* (((er &) (ensure-value-is-symbol$ spec-cons-name
                                         "The :SPEC-CONS-NAME input"
                                         t nil))
        (spec-cons (if (eq spec-cons-name :auto)
                       (packn-pos (list "SPEC-CONS[" ?h "]") old)
                     spec-cons-name))
-       (msg/nil (fresh-namep-msg-weak spec-cons 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-CONS-NAME ~
-                   is already in use.  ~@1"
-                  spec-cons msg/nil))
-       ((when (member-eq spec-cons names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-CONS-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  spec-cons names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         spec-cons
+         (msg "The name ~x0 specified by :SPEC-CONS-NAME" spec-cons)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list spec-cons names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -447,25 +423,20 @@
                state)
   :mode :program
   :short "Process the @(':equal-fold-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ equal-fold-name
+  (b* (((er &) (ensure-value-is-symbol$ equal-fold-name
                                         "The :EQUAL-FOLD-NAME input"
                                         t nil))
        (equal-fold (if (eq equal-fold-name :auto)
                        (packn-pos (list "EQUAL[" ?f "][" fold "]") old)
                      equal-fold-name))
-       (msg/nil (fresh-namep-msg-weak equal-fold 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :EQUAL-FOLD-NAME ~
-                   is already in use.  ~@1"
-                  equal-fold msg/nil))
-       ((when (member-eq equal-fold names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :EQUAL-FOLD-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  equal-fold names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         equal-fold
+         (msg "The name ~x0 specified by :EQUAL-FOLD-NAME" equal-fold)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list equal-fold names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
