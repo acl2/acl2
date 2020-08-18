@@ -199,4 +199,19 @@ class Acl2RationalTest {
                 compareTo(Acl2Rational.make(8, 9)) > 0);
     }
 
+    @Test
+    void compareToComplexRational() {
+        // compare lexicographically -- see ACL2's alphorder
+        assertTrue(Acl2Rational.make(2, 3).
+                compareTo(Acl2Number.make(1, 1)) < 0);
+        assertTrue(Acl2Rational.make(7, -2).
+                compareTo(Acl2Number.make(-50, 2)) > 0);
+        assertTrue(Acl2Rational.make(8, 3).
+                compareTo(Acl2Number.make
+                        (Acl2Rational.make(8, 3), Acl2Integer.make(1))) < 0);
+        assertTrue(Acl2Rational.make(8, 3).
+                compareTo(Acl2Number.make
+                        (Acl2Rational.make(8, 3), Acl2Integer.make(-1))) > 0);
+    }
+
 }
