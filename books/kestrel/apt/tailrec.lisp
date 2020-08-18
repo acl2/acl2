@@ -795,67 +795,67 @@
                           "The :NEW-ENABLE input" t nil))
        ((er a) (tailrec-process-accumulator accumulator old$ r ctx state))
        ((er wrapper-enable$)
-        (process-wrapper-enable wrapper-enable
-                                wrapper-enable-present
-                                wrapper
-                                ctx
-                                state))
+        (process-input-wrapper-enable wrapper-enable
+                                      wrapper-enable-present
+                                      wrapper
+                                      ctx
+                                      state))
        ((er (list old-to-new-name$ names-to-avoid))
-        (process-old-to-new-name old-to-new-name
-                                 old-to-new-name-present
-                                 old$
-                                 new-name$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-old-to-new-name old-to-new-name
+                                       old-to-new-name-present
+                                       old$
+                                       new-name$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er old-to-new-enable$)
-        (process-old-to-new-enable old-to-new-enable
-                                   old-to-new-enable-present
-                                   ctx
-                                   state))
+        (process-input-old-to-new-enable old-to-new-enable
+                                         old-to-new-enable-present
+                                         ctx
+                                         state))
        ((er (list new-to-old-name$ names-to-avoid))
-        (process-new-to-old-name new-to-old-name
-                                 new-to-old-name-present
-                                 old$
-                                 new-name$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-new-to-old-name new-to-old-name
+                                       new-to-old-name-present
+                                       old$
+                                       new-name$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er new-to-old-enable$)
-        (process-new-to-old-enable new-to-old-enable
-                                   new-to-old-enable-present
-                                   ctx
-                                   state))
+        (process-input-new-to-old-enable new-to-old-enable
+                                         new-to-old-enable-present
+                                         ctx
+                                         state))
        ((er (list old-to-wrapper-name$ names-to-avoid))
-        (process-old-to-wrapper-name old-to-wrapper-name
-                                     old-to-wrapper-name-present
-                                     wrapper
-                                     old$
-                                     wrapper-name$
-                                     names-to-avoid
-                                     ctx
-                                     state))
+        (process-input-old-to-wrapper-name old-to-wrapper-name
+                                           old-to-wrapper-name-present
+                                           wrapper
+                                           old$
+                                           wrapper-name$
+                                           names-to-avoid
+                                           ctx
+                                           state))
        ((er old-to-wrapper-enable$)
-        (process-old-to-wrapper-enable old-to-wrapper-enable
-                                       old-to-wrapper-enable-present
-                                       wrapper
-                                       ctx
-                                       state))
+        (process-input-old-to-wrapper-enable old-to-wrapper-enable
+                                             old-to-wrapper-enable-present
+                                             wrapper
+                                             ctx
+                                             state))
        ((er (list wrapper-to-old-name$ names-to-avoid))
-        (process-wrapper-to-old-name wrapper-to-old-name
-                                     wrapper-to-old-name-present
-                                     wrapper
-                                     old$
-                                     wrapper-name$
-                                     names-to-avoid
-                                     ctx
-                                     state))
+        (process-input-wrapper-to-old-name wrapper-to-old-name
+                                           wrapper-to-old-name-present
+                                           wrapper
+                                           old$
+                                           wrapper-name$
+                                           names-to-avoid
+                                           ctx
+                                           state))
        ((er wrapper-to-old-enable$)
-        (process-wrapper-to-old-enable wrapper-to-old-enable
-                                       wrapper-to-old-enable-present
-                                       wrapper
-                                       ctx
-                                       state))
+        (process-input-wrapper-to-old-enable wrapper-to-old-enable
+                                             wrapper-to-old-enable-present
+                                             wrapper
+                                             ctx
+                                             state))
        ((when (and old-to-new-enable$
                    new-to-old-enable$))
         (er-soft+ ctx t nil

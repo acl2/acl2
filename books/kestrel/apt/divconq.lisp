@@ -652,18 +652,19 @@
                          new-enable
                          (fundef-enabledp old state)
                          "The :NEW-ENABLE input" t nil))
-       ((er (list old-if-new names-to-avoid)) (process-old-if-new-name
-                                               old-if-new-name
-                                               old-if-new-name-present
-                                               old
-                                               new
-                                               names-to-avoid
-                                               ctx
-                                               state))
-       ((er old-if-new-enable) (process-old-if-new-enable old-if-new-enable
-                                                          old-if-new-enable-present
-                                                          ctx
-                                                          state))
+       ((er (list old-if-new names-to-avoid))
+        (process-input-old-if-new-name old-if-new-name
+                                       old-if-new-name-present
+                                       old
+                                       new
+                                       names-to-avoid
+                                       ctx
+                                       state))
+       ((er old-if-new-enable)
+        (process-input-old-if-new-enable old-if-new-enable
+                                         old-if-new-enable-present
+                                         ctx
+                                         state))
        ((er verify-guards) (ensure-boolean-or-auto-and-return-boolean$
                             verify-guards
                             (guard-verified-p old wrld)

@@ -1167,21 +1167,21 @@
        ((er (list new$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
-        (process-old-to-new-name old-to-new-name
-                                 old-to-new-name-suppliedp
-                                 old$
-                                 new$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-old-to-new-name old-to-new-name
+                                       old-to-new-name-suppliedp
+                                       old$
+                                       new$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er (list new-to-old$ names-to-avoid))
-        (process-new-to-old-name new-to-old-name
-                                 new-to-old-name-suppliedp
-                                 old$
-                                 new$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-new-to-old-name new-to-old-name
+                                       new-to-old-name-suppliedp
+                                       old$
+                                       new$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er (list newp-of-new$ names-to-avoid))
         (isodata-process-newp-of-new-name newp-of-new-name
                                           new$
@@ -1206,12 +1206,12 @@
                           (fundef-enabledp old$ state)
                           "The :NEW-ENABLE input"
                           t nil))
-       ((er old-to-new-enable$) (process-old-to-new-enable
+       ((er old-to-new-enable$) (process-input-old-to-new-enable
                                  old-to-new-enable
                                  old-to-new-enable-suppliedp
                                  ctx
                                  state))
-       ((er new-to-old-enable$) (process-new-to-old-enable
+       ((er new-to-old-enable$) (process-input-new-to-old-enable
                                  new-to-old-enable
                                  new-to-old-enable-suppliedp
                                  ctx
