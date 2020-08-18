@@ -112,6 +112,7 @@
     "@(tsee defunvar),
      @(tsee defsoft),
      @(tsee defun2),
+     @(tsee defund2),
      @(tsee defchoose2),
      @(tsee defun-sk2),
      @(tsee define2), and
@@ -641,6 +642,44 @@
      conveys the dependency on the function variables
      and provides a visual cue for their implicit presence.
      However, SOFT does not enforce this naming convention.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc defund2
+
+  :parents (soft-macros second-order-functions)
+
+  :short "Introduce a second-order function
+          via a second-order version of @(tsee defund)."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::h3 "General Form")
+
+   (xdoc::codeblock
+    "(defund2 sofun ...) ; same as defund")
+
+   (xdoc::h3 "Inputs")
+
+   (xdoc::p
+    "The inputs are identical to @(tsee defund).")
+
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('defund2') generates @('(defsoft sofun)') (see below).")
+
+   (xdoc::h3 "Generated Events")
+
+   (xdoc::codeblock
+    "(defund sofun ...) ; input form with defund2 replaced by defund"
+    "(defsoft sofun)")
+
+   (xdoc::p
+    "@('sofun') is introduced as a first-order function using @(tsee defund).
+     It is also recorded as a second-order function via @(tsee defsoft).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1469,10 +1508,9 @@
      @(tsee define2), and
      @(tsee define-sk2),
      we could add support for second-order versions of
-     @(tsee defund), @(tsee defun-nx), @(tsee defpun),
-     and other function introduction events.
+     @(tsee defun-nx), @(tsee defpun), and other function introduction events.
      @(tsee defun-inst) would generate the same macros for instances.
-     The macros could be called @('defund2'), @('defun-nx2'), etc.")
+     The macros could be called @('defun-nx2'), @('defpun2'), etc.")
 
    (xdoc::p
     "Under some conditions, it would make sense for @(tsee defun-inst)

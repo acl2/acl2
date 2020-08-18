@@ -637,6 +637,20 @@
   (defmacro acl2::defun2 (&rest args)
     `(defun2 ,@args)))
 
+(defsection defund2-implementation
+  :short "Implementation of @(tsee defund2)."
+  :long
+  "@(def defund2)
+   @(def acl2::defund2)"
+
+  (defmacro defund2 (sofun &rest rest)
+    `(progn
+       (defund ,sofun ,@rest)
+       (defsoft ,sofun)))
+
+  (defmacro acl2::defund2 (&rest args)
+    `(defund2 ,@args)))
+
 (defsection defchoose2-implementation
   :short "Implementation of @(tsee defchoose2)."
   :long
