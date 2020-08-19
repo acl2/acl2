@@ -44,42 +44,46 @@
   "@('old') is the homonymous input to @(tsee divconq) when it has no type;
    otherwise, it is the function symbol denoted by that input."
 
-  "@('schema') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "schema" "divconq")
 
-  "@('list-input') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "list-input" "divconq")
 
-  "@('fvar-atom-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fvar-atom-name" "divconq")
 
-  "@('fvar-cons-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fvar-cons-name" "divconq")
 
-  "@('fold-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fold-name" "divconq")
 
-  "@('fold-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fold-enable" "divconq")
 
-  "@('spec-atom-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-atom-name" "divconq")
 
-  "@('spec-atom-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-atom-enable" "divconq")
 
-  "@('spec-cons-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-cons-name" "divconq")
 
-  "@('spec-cons-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-cons-enable" "divconq")
 
-  "@('equal-fold-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "equal-fold-name" "divconq")
 
-  "@('equal-fold-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "equal-fold-enable" "divconq")
+
+  (xdoc::evmac-topic-implementation-item-input "schema" "divconq")
+
+  (xdoc::evmac-topic-implementation-item-input "schema" "divconq")
 
   "@('cdr-output') is the homonymous input to @(tsee divconq)
    when it has no type;
    otherwise, it is the variable symbol @('y')
    described in the user documentation."
 
-  "@('new-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "new-name" "divconq")
 
   "@('new-enable') is the homonymous input to @(tsee divconq)
    if it has no type;
    otherwise, it is the boolean resulting from processing that input."
 
-  "@('old-if-new-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "divconq")
 
   "@('old-if-new-enable') is the homonymous input to @(tsee divconq)
    if it has no type;
@@ -89,9 +93,9 @@
    if it has no type;
    otherwise, it is the boolean resulting from processing that input."
 
-  "@('print') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "print" "divconq")
 
-  "@('show-only') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "show-only" "divconq")
 
   "@('inputs') is the list of variable symbols @('(x0 x1 ... xn)')
    described in the user documentation."
