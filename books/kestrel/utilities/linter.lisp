@@ -15,14 +15,19 @@
 ;; An ACL2 "lint" tool.  This applies some checks to all functions currently
 ;; defined in the world.  It currently checks for calls of CW with missing
 ;; arguments and calls of IF with resolvable tests.
+
+;; NOTE: There is another lint tool in books/tools/lint.lisp.  It checks for
+;; different things.
+
 ;; TODO: Check for a hyp of (syntaxp (quote x)), which is almost certainly an error.
 
 ;; TODO: Look for unchanged names of the form theorem-for-XXX from make-flag
 
-;; TODO: Can we print offending IF-tests as untranslated terms somehow?
+;; TODO: Look for hyps and guard conjuncts that are known true or false by type-set.
 
-;; NOTE: There is another lint tool in books/tools/lint.lisp.  It checks for
-;; different things.
+;; TODO: Print terms (such as if-tests) as untranslated terms somehow
+
+;; TODO: Add support for supressing various kinds of report.
 
 (include-book "format-strings")
 (include-book "kestrel/utilities/quote" :dir :system)
@@ -172,10 +177,12 @@
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (alist-keys (symbolic-strip-cars alist))
          (quoted-args-mentioned (enquote-list args-mentioned)))
-    (if (not (and (subsetp-equal quoted-args-mentioned alist-keys)
-                  (subsetp-equal alist-keys quoted-args-mentioned)))
-        (cw "(Questionable call of ~x0 detected in ~x1: ~x2. Mentioned args are ~x3 but alist keys are ~x4)~%~%" ctx fn-being-checked call quoted-args-mentioned alist-keys)
-      nil)))
+    (prog2$ (if (not (subsetp-equal quoted-args-mentioned alist-keys))
+                (cw "(Questionable call of ~x0 detected in ~x1: ~x2. Missing args? Mentioned args are ~x3 but alist keys are ~x4)~%~%" ctx fn-being-checked call quoted-args-mentioned alist-keys)
+              nil)
+            (if (not (subsetp-equal alist-keys quoted-args-mentioned))
+                (cw "(Questionable call of ~x0 detected in ~x1: ~x2. Extra args? Mentioned args are ~x3 but alist keys are ~x4)~%~%" ctx fn-being-checked call quoted-args-mentioned alist-keys)
+              nil))))
 
 (defun check-vals-of-alist-wrt-format-string (string alist fn-being-checked ctx call)
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
@@ -313,7 +320,7 @@
          (xargs (get-xargs-from-declares declares))
          (guard-debug-res (assoc-keyword :guard-debug xargs)))
     (progn$ (and guard-debug-res
-                 (cw "(~x0 has a :guard-debug xarg, ~x1.)~%" fn (second guard-debug-res)))
+                 (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
             (check-term body (pairlis$ formals formals) fn state))))
 
 (defun check-defuns (fns state)
