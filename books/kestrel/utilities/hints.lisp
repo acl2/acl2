@@ -106,7 +106,7 @@
       val
     (if (untranslated-termp val) ;TODO: Generalize this?
         (rename-fns-in-untranslated-term val renaming-alist)
-      (er hard? 'apply-renaming-to-use-hint "Unsupported :induct hint: ~x0." val))))
+      (er hard? 'apply-renaming-to-induct-hint "Unsupported :induct hint: ~x0." val))))
 
 (defun apply-renaming-to-computed-theory (val renaming-alist)
   (declare (xargs :guard (symbol-alistp renaming-alist)))
@@ -231,12 +231,12 @@
   (if (endp kv)
       nil
     (if (endp (cdr kv))
-        (er hard? 'apply-renaming-to-hints-in-keyword-value-list "Odd-length keyword-value list encountered")
+        (er hard? 'apply-renaming-to-guard-hints-in-keyword-value-list "Odd-length keyword-value list encountered")
       (let* ((key (first kv))
              (val (second kv))
              (val (if (eq key :guard-hints)
                       (if (not (true-listp val)) ;strengthen check here?
-                          (er hard? 'apply-renaming-to-hints-in-keyword-value-list "Ill-formed hints: ~x0" val)
+                          (er hard? 'apply-renaming-to-guard-hints-in-keyword-value-list "Ill-formed hints: ~x0" val)
                         (apply-renaming-to-hints val renaming-alist))
                     val)))
         (cons key

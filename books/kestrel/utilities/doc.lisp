@@ -99,7 +99,7 @@
 ;; Returns a string
 (defun xdoc-for-macro-required-arg-general-form (macro-arg indent-space firstp)
   (if (not (symbolp macro-arg))
-      (er hard 'xdoc-for-macro-required-arg "Required macro arg ~x0 is not a symbol." macro-arg)
+      (er hard 'xdoc-for-macro-required-arg-general-form "Required macro arg ~x0 is not a symbol." macro-arg)
     (n-string-append (if firstp "" indent-space)
                      (string-downcase (symbol-name macro-arg))
                      (newline-string))))
