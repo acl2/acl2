@@ -446,8 +446,8 @@
      has been simplified by removing its
      @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
      Instead, named constants have been provided for these common items.
-     This constructor has also been extended with
-      a @(':default-parent') option.")
+     This constructor has also been extended with a @(':default-parent') option.
+     A function has been also added to construct a common kind of items.")
 
    (xdoc::p
     "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)

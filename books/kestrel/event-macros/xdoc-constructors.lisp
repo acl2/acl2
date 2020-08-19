@@ -769,7 +769,9 @@
      and the so-wrapped items are put into an @(tsee xdoc::ul).")
    (xdoc::p
     "We also provide some named constants for certain common items,
-     like the @('state') variable.")
+     like the @('state') variable.
+     We also provide some functions for certain common kinds of items,
+     like the user inputs to the event macro.")
    (xdoc::p
     "If there are no items, the list is omitted altogether.")
    (xdoc::p
@@ -810,22 +812,24 @@
          :short ,short
          ,@(and long (list :long long))
          :order-subtopics t
-         :default-parent ,default-parent))))
+         :default-parent ,default-parent)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defconst xdoc::*evmac-topic-implementation-item-state*
+    (xdoc::&& "@('state') is the ACL2 "
+              (xdoc::seetopic "acl2::state" "state")
+              "."))
 
-(defconst xdoc::*evmac-topic-implementation-item-state*
-  (xdoc::&& "@('state') is the ACL2 "
-            (xdoc::seetopic "acl2::state" "state")
-            "."))
+  (defconst xdoc::*evmac-topic-implementation-item-wrld*
+    (xdoc::&& "@('wrld') is the ACL2 "
+              (xdoc::seetopic "acl2::world" "world")
+              "."))
 
-(defconst xdoc::*evmac-topic-implementation-item-wrld*
-  (xdoc::&& "@('wrld') is the ACL2 "
-            (xdoc::seetopic "acl2::world" "world")
-            "."))
+  (defconst xdoc::*evmac-topic-implementation-item-ctx*
+    "@('ctx') is the context used for errors.")
 
-(defconst xdoc::*evmac-topic-implementation-item-ctx*
-  "@('ctx') is the context used for errors.")
+  (define xdoc::evmac-topic-implementation-item-input ((name stringp)
+                                                       (macro stringp))
+    (xdoc::&& "@('" name "') is the homonymous input to @('" macro "').")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
