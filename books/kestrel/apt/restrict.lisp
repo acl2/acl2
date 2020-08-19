@@ -18,6 +18,7 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -435,10 +436,7 @@
             (term-guard-obligation restriction$ state)))
         (implicate old-guard
                    restriction-guard))
-      :when verify-guards$)
-     (make-evmac-appcond?
-      :restriction-boolean
-      (apply-term* 'booleanp restriction$)))))
+      :when verify-guards$))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -494,7 +492,7 @@
    after the guard of the old function,
    as described in the documentation.
    Since the restriction test follows from the guard,
-   it is wrapped with @(tsee mbt).
+   it is wrapped with @(tsee mbt$).
    </p>
    <p>
    Guard verification is deferred;
@@ -507,7 +505,7 @@
                    (ubody old$ wrld)))
        (new-body-core (sublis-fn-simple (acons old$ new-name$ nil)
                                         old-body))
-       (new-body `(if (mbt ,restriction$) ,new-body-core ,undefined$))
+       (new-body `(if (mbt$ ,restriction$) ,new-body-core ,undefined$))
        (new-body (untranslate new-body nil wrld))
        (recursive (recursivep old$ nil wrld))
        (wfrel? (and recursive
@@ -664,13 +662,6 @@
    The guard verification event is local;
    the exported function definition has @(':verify-guards') set to @('t')
    (when it must be guard-verified).
-   </p>
-   <p>
-   The guard verification involves proving that
-   the restriction test inside @(tsee mbt) is equal to @('t').
-   The guard itself implies that it is non-@('nil'),
-   and  the applicability condition @(':restriction-boolean')
-   is used to prove that, therefore, it is @('t').
    </p>"
   (b* ((recursive (recursivep old$ nil wrld))
        (hints (if recursive
@@ -685,15 +676,11 @@
                                          appcond-thm-names))
                                   (,stub? ,new-name$))
                               (cdr (assoc-eq :restriction-of-rec-calls
-                                     appcond-thm-names)))
-                           ,(cdr (assoc-eq :restriction-boolean
-                                   appcond-thm-names)))))
+                                     appcond-thm-names))))))
                 `(("Goal"
                    :in-theory nil
                    :use ((:guard-theorem ,old$)
                          ,(cdr (assoc-eq :restriction-guard
-                                 appcond-thm-names))
-                         ,(cdr (assoc-eq :restriction-boolean
                                  appcond-thm-names)))))))
        (event `(local (verify-guards ,new-name$ :hints ,hints))))
     event))

@@ -303,7 +303,13 @@
       by removing the @(':non-executable') option,
       which does not seem necessary or useful.
       The new function is marked non-executable
-      if and only if the target function is."))
+      if and only if the target function is.")
+    (xdoc::li
+     "The transformation has been made more widely or readily applicable
+      by removing the applicability condition that required
+      the restriction predicate to be boolean-valued.
+      The new function now uses @(tsee mbt$) instead of @(tsee mbt),
+      thus obviating the need for the removed applicability condition."))
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
