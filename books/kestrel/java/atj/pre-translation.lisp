@@ -343,7 +343,8 @@
           (if (= numres 1)
               term
             (raise "Internal error: ~
-                    the quoted constant ~x0 cannot return ~x1 results")))
+                    the quoted constant ~x0 cannot return ~x1 results."
+                   term numres)))
          ((mv mv-let-callp & vars indices mv-term body-term)
           (check-mv-let-call term))
          ((when mv-let-callp)
