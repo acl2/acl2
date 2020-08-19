@@ -778,6 +778,13 @@
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
+    "A new event macro @(tsee defund-sk) has been added,
+     which is like @(tsee defun-sk) but it disables
+     (1) the function definition (if @(':constrain') is @('nil'))
+     or the definition rule (if @(':constrain') is non-@('nil'))
+     and (2) the rewrite rule.")
+
+   (xdoc::p
     "A new event macro @(tsee defmacro+) has been added,
      with is like @(tsee defmacro) but with "
     (xdoc::seetopic "xdoc" "XDOC")
