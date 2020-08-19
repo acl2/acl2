@@ -104,7 +104,8 @@
        (kwd (cdr pair))
        ((unless (keywordp kwd))
         (prog2$ (raise
-                 "The default :OLD-TO-NEW-NAME is ~x0, which is not a keyword.")
+                 "The default :OLD-TO-NEW-NAME is ~x0, which is not a keyword."
+                 kwd)
                 :irrelevant-keyword-for-unconditional-returns-theorem)))
     kwd))
 
@@ -161,7 +162,8 @@
        (kwd (cdr pair))
        ((unless (keywordp kwd))
         (prog2$ (raise
-                 "The default :NEW-TO-OLD-NAME is ~x0, which is not a keyword.")
+                 "The default :NEW-TO-OLD-NAME is ~x0, which is not a keyword."
+                 kwd)
                 :irrelevant-keyword-for-unconditional-returns-theorem)))
     kwd))
 
@@ -225,7 +227,8 @@
        (bool (cdr pair))
        ((unless (booleanp bool))
         (raise
-         "The default :OLD-TO-NEW-ENABLE is ~x0, which is not a boolean.")))
+         "The default :OLD-TO-NEW-ENABLE is ~x0, which is not a boolean."
+         bool)))
     bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,7 +291,8 @@
        (bool (cdr pair))
        ((unless (booleanp bool))
         (raise
-         "The default :NEW-TO-OLD-ENABLE is ~x0, which is not a boolean.")))
+         "The default :NEW-TO-OLD-ENABLE is ~x0, which is not a boolean."
+         bool)))
     bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -350,7 +354,8 @@
        ((unless (keywordp kwd))
         (prog2$ (raise
                  "The default :OLD-TO-WRAPPER-NAME is ~x0, ~
-                  which is not a keyword.")
+                  which is not a keyword."
+                 kwd)
                 :irrelevant-keyword-for-unconditional-returns-theorem)))
     kwd))
 
@@ -413,7 +418,8 @@
        ((unless (keywordp kwd))
         (prog2$ (raise
                  "The default :WRAPPER-TO-OLD-NAME is ~x0, ~
-                  which is not a keyword.")
+                  which is not a keyword."
+                 kwd)
                 :irrelevant-keyword-for-unconditional-returns-theorem)))
     kwd))
 
@@ -481,7 +487,8 @@
        (bool (cdr pair))
        ((unless (booleanp bool))
         (raise
-         "The default :OLD-TO-WRAPPER-ENABLE is ~x0, which is not a boolean.")))
+         "The default :OLD-TO-WRAPPER-ENABLE is ~x0, which is not a boolean."
+         bool)))
     bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -548,7 +555,8 @@
        (bool (cdr pair))
        ((unless (booleanp bool))
         (raise
-         "The default :WRAPPER-TO-OLD-ENABLE is ~x0, which is not a boolean.")))
+         "The default :WRAPPER-TO-OLD-ENABLE is ~x0, which is not a boolean."
+         bool)))
     bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -603,7 +611,8 @@
        (kwd (cdr pair))
        ((unless (keywordp kwd))
         (prog2$ (raise
-                 "The default :OLD-IF-NEW-NAME is ~x0, which is not a keyword.")
+                 "The default :OLD-IF-NEW-NAME is ~x0, which is not a keyword."
+                 kwd)
                 :irrelevant-keyword-for-unconditional-returns-theorem)))
     kwd))
 
@@ -645,7 +654,8 @@
        (bool (cdr pair))
        ((unless (booleanp bool))
         (raise
-         "The default :OLD-IF-NEW-ENABLE is ~x0, which is not a boolean.")))
+         "The default :OLD-IF-NEW-ENABLE is ~x0, which is not a boolean."
+         bool)))
     bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -687,7 +697,8 @@
        (bool (cdr pair))
        ((unless (booleanp bool))
         (raise
-         "The default :WRAPPER-ENABLE is ~x0, which is not a boolean.")))
+         "The default :WRAPPER-ENABLE is ~x0, which is not a boolean."
+         bool)))
     bool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
