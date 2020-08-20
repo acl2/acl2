@@ -69,6 +69,21 @@
 (include-book "kestrel/utilities/substitution" :dir :system)
 (include-book "std/strings/substrp" :dir :system)
 
+(defun all-defuns-in-world (wrld triple-to-stop-at acc)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (true-listp acc))))
+  (if (endp wrld)
+      (reverse acc)
+    (let ((triple (first wrld)))
+      (if (equal triple triple-to-stop-at)
+          (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
+                  (reverse acc))
+        (let ((symb (car triple))
+              (prop (cadr triple)))
+          (if (eq prop 'unnormalized-body)
+              (all-defuns-in-world (rest wrld) triple-to-stop-at (cons symb acc))
+            (all-defuns-in-world (rest wrld) triple-to-stop-at acc)))))))
+
 ;dup
 (defun enquote-list (items)
   (declare (type t items))
@@ -415,21 +430,6 @@
     (let* ((fn (first fns)))
       (prog2$ (check-defun fn state)
               (check-defuns (rest fns) state)))))
-
-(defun all-defuns-in-world (wrld triple-to-stop-at acc)
-  (declare (xargs :guard (and (plist-worldp wrld)
-                              (true-listp acc))))
-  (if (endp wrld)
-      (reverse acc)
-    (let ((triple (first wrld)))
-      (if (equal triple triple-to-stop-at)
-          (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
-                  (reverse acc))
-        (let ((symb (car triple))
-              (prop (cadr triple)))
-          (if (eq prop 'unnormalized-body)
-              (all-defuns-in-world (rest wrld) triple-to-stop-at (cons symb acc))
-            (all-defuns-in-world (rest wrld) triple-to-stop-at acc)))))))
 
 (defun run-linter-fn (check state)
   (declare (xargs :stobjs state
