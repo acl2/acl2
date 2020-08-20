@@ -261,6 +261,60 @@
                         (cw "  Relevant subst: ~x0)~%~%" relevant-subst)))
             nil))))))
 
+;; TODO: Also use guard information and info from overarching IFs
+(defun check-call-of-equal (term subst fn-being-checked state)
+  (declare (xargs :guard (pseudo-termp term)
+                  :mode :program
+                  :stobjs state)
+           (ignore subst) ;todo: use?
+           )
+  (b* ((arg1 (farg1 term))
+       (arg2 (farg2 term))
+       ((mv type-set1 &)
+        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+       ((mv type-set2 &)
+        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+       ;;(decoded-ts1 (decode-type-set type-set1))
+       ;;(decoded-ts2 (decode-type-set type-set2))
+       (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
+       (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
+       (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
+       (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
+       (arg1-eqlablep (or arg1-symbolp
+                          arg1-numberp
+                          (ts-subsetp type-set1 *ts-character*)))
+       (arg2-eqlablep (or arg2-symbolp
+                          arg2-numberp
+                          (ts-subsetp type-set2 *ts-character*))))
+    (progn$ (if arg1-symbolp
+                (if arg2-symbolp
+                    (cw "(In ~x0, equal test ~x1 could be EQ since both args, ~x2 and ~x3, are known to be symbols.)~%~%"
+                        fn-being-checked term arg1 arg2)
+                  (cw "(In ~x0, equal test ~x1 could be EQ since arg 1, ~x2, is known to be a symbol.)~%~%"
+                      fn-being-checked term arg1))
+              (if arg2-symbolp
+                  (cw "(In ~x0, equal test ~x1 could be EQ since arg 2, ~x2, is known to be a symbol.)~%~%"
+                      fn-being-checked term arg2)
+                nil))
+            (and arg1-numberp
+                 arg2-numberp
+                 (cw "(In ~x0, equal test ~x1 could be = since both args, ~x2 and ~x3, are known to be numbers.)~%~%"
+                     fn-being-checked term arg1 arg2))
+            (and (not arg1-symbolp)
+                 (not arg2-symbolp)
+                 (not (and arg1-numberp
+                           arg2-numberp))
+                 (if arg1-eqlablep
+                     (if arg2-eqlablep
+                         (cw "(In ~x0, equal test ~x1 could be EQL since both args, ~x2 and ~x3, are known to be numbers, symbols, or characters.)~%~%"
+                             fn-being-checked term arg1 arg2)
+                       (cw "(In ~x0, equal test ~x1 could be EQL since arg 1, ~x2, is known to be a number, symbol, or character.)~%~%"
+                           fn-being-checked term arg1))
+                   (if arg2-eqlablep
+                       (cw "(In ~x0, equal test ~x1 could be EQL since arg 2, ~x2, is known to be a number, symbol, or character.)~%~%"
+                           fn-being-checked term arg2)
+                     nil))))))
+
 ;; The subst used when lambdas are encountered
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
@@ -281,20 +335,22 @@
                    ;; TODO: Use the subst for these?
                    (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
                        (check-call-of-fmt-function term fn-being-checked)
-                     (if (eq fn 'hard-error)
-                         (check-call-of-hard-error term fn-being-checked)
-                       (if (eq fn 'illegal)
-                           (check-call-of-illegal term fn-being-checked)
-                         (if (eq 'if fn)
-                             (check-call-of-if term subst fn-being-checked state)
-                           (if (consp fn) ;check for lambda
-                               (check-term (lambda-body fn)
-                                           ;; new subst, since we are in a lambda body
-                                           (pairlis$ (lambda-formals fn)
-                                                     (my-sublis-var-lst subst (fargs term)))
-                                           fn-being-checked state)
-                             (and (quote-listp (fargs term))
-                                  (cw "(Ground term ~x0 in ~x1.)~%~%" term fn-being-checked)))))))))))))
+                     (if (eq fn 'equal)
+                         (check-call-of-equal term subst fn-being-checked state)
+                       (if (eq fn 'hard-error)
+                           (check-call-of-hard-error term fn-being-checked)
+                         (if (eq fn 'illegal)
+                             (check-call-of-illegal term fn-being-checked)
+                           (if (eq 'if fn)
+                               (check-call-of-if term subst fn-being-checked state)
+                             (if (consp fn) ;check for lambda
+                                 (check-term (lambda-body fn)
+                                             ;; new subst, since we are in a lambda body
+                                             (pairlis$ (lambda-formals fn)
+                                                       (my-sublis-var-lst subst (fargs term)))
+                                             fn-being-checked state)
+                               (and (quote-listp (fargs term))
+                                    (cw "(Ground term ~x0 in ~x1.)~%~%" term fn-being-checked))))))))))))))
 
  (defun check-terms (terms subst fn-being-checked state)
    (declare (xargs :guard (and (true-listp terms)
