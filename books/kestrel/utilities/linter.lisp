@@ -303,7 +303,7 @@
                  (if reportp
                      (let* ((test-vars (all-vars orig-test))
                             (relevant-subst (filter-subst subst test-vars)))
-                       (progn$ (cw "(Resolvable IF-test in ~x0:~%" fn-being-checked)
+                       (progn$ (cw "(In ~x0, resolvable IF-test:~%" fn-being-checked)
                                (cw "  Test: ~x0~%" orig-test)
                                (cw "  Type: ~x0~%" decoded-ts)
                                (cw "  Term: ~x0~%" term)
@@ -313,12 +313,12 @@
 ;; TODO: In the functions below, also use guard information and info from overarching IFs?
 
 ;; For a call of EQUAL, report an issue if EQ, EQL, or = could be used instead.
-(defun check-call-of-equal (term subst fn-being-checked state)
+(defun check-call-of-equal (term ; let-bound vars have been replaced in this
+                            orig-term
+                            fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
-                  :stobjs state)
-           (ignore subst) ;todo: use?
-           )
+                  :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
@@ -340,17 +340,17 @@
     (progn$ (if arg1-symbolp
                 (if arg2-symbolp
                     (cw "(In ~x0, EQUAL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                        fn-being-checked term arg1 arg2)
+                        fn-being-checked orig-term arg1 arg2)
                   (cw "(In ~x0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                      fn-being-checked term arg1))
+                      fn-being-checked orig-term arg1))
               (if arg2-symbolp
                   (cw "(In ~x0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                      fn-being-checked term arg2)
+                      fn-being-checked orig-term arg2)
                 nil))
             (and arg1-numberp
                  arg2-numberp
                  (cw "(In ~x0, EQUAL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                     fn-being-checked term arg1 arg2))
+                     fn-being-checked orig-term arg1 arg2))
             (and (not arg1-symbolp)
                  (not arg2-symbolp)
                  (not (and arg1-numberp
@@ -358,22 +358,22 @@
                  (if arg1-eqlablep
                      (if arg2-eqlablep
                          (cw "(In ~x0, EQUAL test ~x1 could use EQL since both arguments are known to be numbers, symbols, or characters.)~%~%"
-                             fn-being-checked term arg1 arg2)
+                             fn-being-checked orig-term arg1 arg2)
                        (cw "(In ~x0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
-                           fn-being-checked term arg1))
+                           fn-being-checked orig-term arg1))
                    (if arg2-eqlablep
                        (cw "(In ~x0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
-                           fn-being-checked term arg2)
+                           fn-being-checked orig-term arg2)
                      nil))))))
 
 ;; For a call of EQL, report an issue if both arguments are known to be
 ;; non-eqlable.  Also report if EQ or = could be used instead.
-(defun check-call-of-eql (term subst fn-being-checked state)
+(defun check-call-of-eql (term ; let-bound vars have been replaced in this
+                          orig-term
+                          fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
-                  :stobjs state)
-           (ignore subst) ;todo: use?
-           )
+                  :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
@@ -392,29 +392,29 @@
     (progn$ (if arg1-symbolp
                 (if arg2-symbolp
                     (cw "(In ~x0, EQL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                        fn-being-checked term arg1 arg2)
+                        fn-being-checked orig-term arg1 arg2)
                   (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                      fn-being-checked term arg1))
+                      fn-being-checked orig-term arg1))
               (if arg2-symbolp
                   (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                      fn-being-checked term arg2)
+                      fn-being-checked orig-term arg2)
                 nil))
             (and arg1-numberp
                  arg2-numberp
                  (cw "(In ~x0, EQL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                     fn-being-checked term arg1 arg2))
+                     fn-being-checked orig-term arg1 arg2))
             (and (ts-disjointp type-set1 ts-eqlable)
                  (ts-disjointp type-set2 ts-eqlable)
                  (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not numbers, symbols, or characters.)~%~%"
-                     fn-being-checked term arg1 arg2)))))
+                     fn-being-checked orig-term arg1 arg2)))))
 
 ;; For a call of EQ, report an issue if both arguments are known to be non-symbols.
-(defun check-call-of-eq (term subst fn-being-checked state)
+(defun check-call-of-eq (term ; let-bound vars have been replaced in this
+                         orig-term
+                         fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
-                  :stobjs state)
-           (ignore subst) ;todo: use?
-           )
+                  :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
@@ -427,15 +427,15 @@
     (progn$ (and (ts-disjointp type-set1 *ts-symbol*)
                  (ts-disjointp type-set2 *ts-symbol*)
                  (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not symbols.)~%~%"
-                     fn-being-checked term arg1 arg2)))))
+                     fn-being-checked orig-term arg1 arg2)))))
 
 ;; For a call of =, report an issue if either argument is known to be a non-number.
-(defun check-call-of-= (term subst fn-being-checked state)
+(defun check-call-of-= (term ; let-bound vars have been replaced in this
+                        orig-term
+                        fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
-                  :stobjs state)
-           (ignore subst) ;todo: use?
-           )
+                  :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
@@ -447,12 +447,12 @@
        )
     (progn$ (and (ts-disjointp type-set1 *ts-acl2-number*)
                  (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
-                     fn-being-checked term arg1))
+                     fn-being-checked orig-term arg1))
             (and (ts-disjointp type-set2 *ts-acl2-number*)
                  (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
-                     fn-being-checked term arg2)))))
+                     fn-being-checked orig-term arg2)))))
 
-;; The subst used when lambdas are encountered
+;; The subst includes bindings of vars from overarching lambdas.
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
  (defun check-term (term subst fn-being-checked suppress state)
@@ -475,11 +475,11 @@
                      (if (eq fn 'equal)
                          (if (member-eq :equality-variants suppress)
                              nil
-                           (check-call-of-equal term subst fn-being-checked state))
+                           (check-call-of-equal (my-sublis-var subst term) term fn-being-checked state))
                        (if (eq fn 'eql)
-                           (check-call-of-eql term subst fn-being-checked state)
+                           (check-call-of-eql (my-sublis-var subst term) term fn-being-checked state)
                          (if (eq fn 'eq)
-                             (check-call-of-eq term subst fn-being-checked state)
+                             (check-call-of-eq (my-sublis-var subst term) term fn-being-checked state)
                            (if (eq fn 'hard-error)
                                (check-call-of-hard-error term fn-being-checked)
                              (if (eq fn 'illegal)
@@ -509,7 +509,7 @@
   (declare (xargs :stobjs state
                   :mode :program))
   (let* ((body (fn-body fn t (w state)))
-         (formals (fn-formals fn (w state)))
+         ;; (formals (fn-formals fn (w state)))
          (event (my-get-event fn (w state)))
          (declares (and (defun-or-mutual-recursion-formp event)
                         (get-declares-from-event fn event)))
@@ -518,7 +518,9 @@
     (progn$ (and (not (member-eq :guard-debug suppress))
                  guard-debug-res
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
-            (check-term body (pairlis$ formals formals) fn suppress state))))
+            (check-term body
+                        nil ;empty substitution
+                        fn suppress state))))
 
 (defun check-defuns (fns suppress state)
   (declare (xargs :stobjs state
