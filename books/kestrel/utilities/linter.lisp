@@ -272,7 +272,7 @@
           (cons pair (filter-subst (rest subst) vars))
         (filter-subst (rest subst) vars)))))
 
-;; Check for (if x y z) where X is known non-nil or known-nil by type-set.
+;; For a call of IF, report an issue if the test is known non-nil or known-nil (by type-set).
 (defun check-call-of-if (term subst fn-being-checked state)
    (declare (xargs :guard (pseudo-termp term)
                    :mode :program
@@ -308,7 +308,9 @@
                         (cw "  Relevant subst: ~x0)~%~%" relevant-subst)))
             nil))))))
 
-;; TODO: Also use guard information and info from overarching IFs
+;; TODO: In the functions below, also use guard information and info from overarching IFs?
+
+;; For a call of EQUAL, report an issue if EQ, EQL, or = could be used instead.
 (defun check-call-of-equal (term subst fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
@@ -362,6 +364,92 @@
                            fn-being-checked term arg2)
                      nil))))))
 
+;; For a call of EQL, report an issue if both arguments are known to be
+;; non-eqlable.  Also report if EQ or = could be used instead.
+(defun check-call-of-eql (term subst fn-being-checked state)
+  (declare (xargs :guard (pseudo-termp term)
+                  :mode :program
+                  :stobjs state)
+           (ignore subst) ;todo: use?
+           )
+  (b* ((arg1 (farg1 term))
+       (arg2 (farg2 term))
+       ((mv type-set1 &)
+        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+       ((mv type-set2 &)
+        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+       ;;(decoded-ts1 (decode-type-set type-set1))
+       ;;(decoded-ts2 (decode-type-set type-set2))
+       (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
+       (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
+       (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
+       (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
+       (ts-eqlable (ts-union *ts-symbol*
+                             (ts-union *ts-character*
+                                       *ts-acl2-number*))))
+    (progn$ (if arg1-symbolp
+                (if arg2-symbolp
+                    (cw "(In ~x0, EQL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
+                        fn-being-checked term arg1 arg2)
+                  (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
+                      fn-being-checked term arg1))
+              (if arg2-symbolp
+                  (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
+                      fn-being-checked term arg2)
+                nil))
+            (and arg1-numberp
+                 arg2-numberp
+                 (cw "(In ~x0, EQL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
+                     fn-being-checked term arg1 arg2))
+            (and (ts-disjointp type-set1 ts-eqlable)
+                 (ts-disjointp type-set2 ts-eqlable)
+                 (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not numbers, symbols, or characters.)~%~%"
+                     fn-being-checked term arg1 arg2)))))
+
+;; For a call of EQ, report an issue if both arguments are known to be non-symbols.
+(defun check-call-of-eq (term subst fn-being-checked state)
+  (declare (xargs :guard (pseudo-termp term)
+                  :mode :program
+                  :stobjs state)
+           (ignore subst) ;todo: use?
+           )
+  (b* ((arg1 (farg1 term))
+       (arg2 (farg2 term))
+       ((mv type-set1 &)
+        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+       ((mv type-set2 &)
+        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+       ;;(decoded-ts1 (decode-type-set type-set1))
+       ;;(decoded-ts2 (decode-type-set type-set2))
+       )
+    (progn$ (and (ts-disjointp type-set1 *ts-symbol*)
+                 (ts-disjointp type-set2 *ts-symbol*)
+                 (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not symbols.)~%~%"
+                     fn-being-checked term arg1 arg2)))))
+
+;; For a call of =, report an issue if either argument is known to be a non-number.
+(defun check-call-of-= (term subst fn-being-checked state)
+  (declare (xargs :guard (pseudo-termp term)
+                  :mode :program
+                  :stobjs state)
+           (ignore subst) ;todo: use?
+           )
+  (b* ((arg1 (farg1 term))
+       (arg2 (farg2 term))
+       ((mv type-set1 &)
+        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+       ((mv type-set2 &)
+        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+       ;;(decoded-ts1 (decode-type-set type-set1))
+       ;;(decoded-ts2 (decode-type-set type-set2))
+       )
+    (progn$ (and (ts-disjointp type-set1 *ts-acl2-number*)
+                 (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
+                     fn-being-checked term arg1))
+            (and (ts-disjointp type-set2 *ts-acl2-number*)
+                 (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
+                     fn-being-checked term arg2)))))
+
 ;; The subst used when lambdas are encountered
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
@@ -386,21 +474,25 @@
                          (if (member-eq :equality-variants suppress)
                              nil
                            (check-call-of-equal term subst fn-being-checked state))
-                       (if (eq fn 'hard-error)
-                           (check-call-of-hard-error term fn-being-checked)
-                         (if (eq fn 'illegal)
-                             (check-call-of-illegal term fn-being-checked)
-                           (if (eq 'if fn)
-                               (check-call-of-if term subst fn-being-checked state)
-                             (if (consp fn) ;check for lambda
-                                 (check-term (lambda-body fn)
-                                             ;; new subst, since we are in a lambda body
-                                             (pairlis$ (lambda-formals fn)
-                                                       (my-sublis-var-lst subst (fargs term)))
-                                             fn-being-checked suppress state)
-                               (and (not (member-eq :ground-term suppress))
-                                    (quote-listp (fargs term))
-                                    (cw "(In ~x0, ground term ~x1 is present.)~%~%" fn-being-checked term))))))))))))))
+                       (if (eq fn 'eql)
+                           (check-call-of-eql term subst fn-being-checked state)
+                         (if (eq fn 'eq)
+                             (check-call-of-eq term subst fn-being-checked state)
+                           (if (eq fn 'hard-error)
+                               (check-call-of-hard-error term fn-being-checked)
+                             (if (eq fn 'illegal)
+                                 (check-call-of-illegal term fn-being-checked)
+                               (if (eq 'if fn)
+                                   (check-call-of-if term subst fn-being-checked state)
+                                 (if (consp fn) ;check for lambda
+                                     (check-term (lambda-body fn)
+                                                 ;; new subst, since we are in a lambda body
+                                                 (pairlis$ (lambda-formals fn)
+                                                           (my-sublis-var-lst subst (fargs term)))
+                                                 fn-being-checked suppress state)
+                                   (and (not (member-eq :ground-term suppress))
+                                        (quote-listp (fargs term))
+                                        (cw "(In ~x0, ground term ~x1 is present.)~%~%" fn-being-checked term))))))))))))))))
 
  (defun check-terms (terms subst fn-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
