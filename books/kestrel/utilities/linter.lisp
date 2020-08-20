@@ -274,39 +274,41 @@
 
 ;; For a call of IF, report an issue if the test is known non-nil or known-nil (by type-set).
 (defun check-call-of-if (term subst fn-being-checked state)
-   (declare (xargs :guard (pseudo-termp term)
-                   :mode :program
-                   :stobjs state))
-   (let* ((orig-test (farg1 term))
-          (test (my-sublis-var subst orig-test))
-          )
-     (mv-let (type-set ttree)
-       (type-set test nil nil nil (ens state) (w state) nil nil nil)
-       (declare (ignore ttree))
-       (let* ((decoded-ts (decode-type-set type-set))
-              (test-knownp (or (= *ts-nil* type-set) ;check for nil
-                               (= 0 (logand *ts-nil* type-set)) ;check for non-nil
-                               ))
-              (reportp (and test-knownp
-                            ;; Suppress calls of integerp that
-                            ;; are know to be true since these
-                            ;; often arise from things like
-                            ;; (the unsigned-byte x):
-                            ;; (not (and (eql type-set *TS-T*)
-                            ;;           (call-of 'integerp test)))
-                            )))
-         (progn$ ;; (progn$ (cw "(In ~x0:~%" fn-being-checked)
+  (declare (xargs :guard (pseudo-termp term)
+                  :mode :program
+                  :stobjs state))
+  (prog2$ (and (equal (farg2 term) (farg3 term))
+               (cw "(In ~x0, both branches of ~x1 are the same.)~%~%" fn-being-checked term))
+          (let* ((orig-test (farg1 term))
+                 (test (my-sublis-var subst orig-test))
+                 )
+            (mv-let (type-set ttree)
+              (type-set test nil nil nil (ens state) (w state) nil nil nil)
+              (declare (ignore ttree))
+              (let* ((decoded-ts (decode-type-set type-set))
+                     (test-knownp (or (= *ts-nil* type-set)     ;check for nil
+                                      (= 0 (logand *ts-nil* type-set)) ;check for non-nil
+                                      ))
+                     (reportp (and test-knownp
+                                   ;; Suppress calls of integerp that
+                                   ;; are know to be true since these
+                                   ;; often arise from things like
+                                   ;; (the unsigned-byte x):
+                                   ;; (not (and (eql type-set *TS-T*)
+                                   ;;           (call-of 'integerp test)))
+                                   )))
+                (progn$ ;; (progn$ (cw "(In ~x0:~%" fn-being-checked)
                  ;;         (cw "  Test: ~x0~%" test)
                  ;;         (cw "  Type: ~x0)~%" decoded-ts))
-          (if reportp
-              (let* ((test-vars (all-vars orig-test))
-                     (relevant-subst (filter-subst subst test-vars)))
-                (progn$ (cw "(Resolvable IF-test in ~x0:~%" fn-being-checked)
-                        (cw "  Test: ~x0~%" orig-test)
-                        (cw "  Type: ~x0~%" decoded-ts)
-                        (cw "  Term: ~x0~%" term)
-                        (cw "  Relevant subst: ~x0)~%~%" relevant-subst)))
-            nil))))))
+                 (if reportp
+                     (let* ((test-vars (all-vars orig-test))
+                            (relevant-subst (filter-subst subst test-vars)))
+                       (progn$ (cw "(Resolvable IF-test in ~x0:~%" fn-being-checked)
+                               (cw "  Test: ~x0~%" orig-test)
+                               (cw "  Type: ~x0~%" decoded-ts)
+                               (cw "  Term: ~x0~%" term)
+                               (cw "  Relevant subst: ~x0)~%~%" relevant-subst)))
+                   nil)))))))
 
 ;; TODO: In the functions below, also use guard information and info from overarching IFs?
 
