@@ -14,8 +14,9 @@
 
 (include-book "kestrel/utilities/forms" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 
-(defun skip-chars-through-right-bracket (chars whole-string)
+(defund skip-chars-through-right-bracket (chars whole-string)
   (declare (xargs :guard (character-listp chars)))
   (if (endp chars)
       (cw "Bad format string (missing right bracket): ~x0" whole-string)
@@ -23,11 +24,27 @@
         (rest chars)
       (skip-chars-through-right-bracket (rest chars) whole-string))))
 
+(local
+ (defthm <=-of-len-of-skip-chars-through-right-bracket
+   (<= (len (skip-chars-through-right-bracket chars whole-string))
+       (len chars))
+   :rule-classes :linear
+   :hints (("Goal" :in-theory (enable skip-chars-through-right-bracket)))))
+
+(local
+ (defthm character-listp-of-skip-chars-through-right-bracket
+   (implies (character-listp chars)
+            (character-listp (skip-chars-through-right-bracket chars whole-string)))
+   :hints (("Goal" :in-theory (enable skip-chars-through-right-bracket)))))
+
 ;; Returns the list of characters (each between #\0 and #\9) mentioned in
 ;; format directives like ~x0 or ~Y01.
 (defun args-in-format-string-aux (chars whole-string)
   (declare (xargs :guard (and (character-listp chars)
-                              (stringp whole-string))))
+                              (stringp whole-string))
+                  :verify-guards nil ; done below
+                  :hints (("Goal" :in-theory (enable skip-chars-through-right-bracket)))
+                  :measure (len chars)))
   (if (endp chars)
       nil
     (if (not (eql #\~ (first chars)))
@@ -46,9 +63,9 @@
              (let ((third-char (third chars)))
                (if (not (member third-char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
                    (cw "ERROR: Bad format string: ~x0~%." whole-string)
-                 (cons third-char
-                       (args-in-format-string-aux (rest (rest (rest chars)))
-                                                  whole-string))))))
+                 (add-to-set-eql third-char
+                                 (args-in-format-string-aux (rest (rest (rest chars)))
+                                                            whole-string))))))
           ((#\X #\Y
             #\P #\Q ;; these two are deprecated
             )
@@ -60,10 +77,10 @@
                (if (or (not (member third-char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
                        (not (member fourth-char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))))
                    (cw "ERROR: Bad format string: ~x0~%." whole-string)
-                 (cons third-char
-                       (cons fourth-char
-                             (args-in-format-string-aux (rest (rest (rest (rest chars))))
-                                                        whole-string)))))))
+                 (add-to-set-eql third-char
+                                 (add-to-set-eql fourth-char
+                                                 (args-in-format-string-aux (rest (rest (rest (rest chars))))
+                                                                            whole-string)))))))
           ;; special handling for ~#x~[ ... ]
           (#\# (if (or (endp (rest (rest chars)))
                        (endp (rest (rest (rest chars))))
@@ -75,10 +92,16 @@
                    (if (not (and (eql #\~ fourth-char)
                                  (eql #\[ fifth-char)))
                        (cw "ERROR: Bad format string: ~x0~%." whole-string)
-                     (cons third-char
-                           (args-in-format-string-aux (skip-chars-through-right-bracket chars whole-string) whole-string))))))
+                     (add-to-set-eql third-char
+                                     (args-in-format-string-aux (skip-chars-through-right-bracket chars whole-string) whole-string))))))
           (t (er hard? 'args-in-format-string-aux "(Unexpected format directive in ~x0.)" whole-string))
           )))))
+
+(defthm true-listp-of-args-in-format-string-aux
+  (true-listp (args-in-format-string-aux chars whole-string))
+  :hints (("Goal" :in-theory (enable args-in-format-string-aux))))
+
+(verify-guards args-in-format-string-aux)
 
 ;; Returns the list of characters (each between #\0 and #\9) mentioned in
 ;; format directives like ~x0 or ~Y01.
