@@ -365,7 +365,7 @@
 ;; The subst used when lambdas are encountered
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
- (defun check-term (term subst fn-being-checked state)
+ (defun check-term (term subst fn-being-checked suppress state)
    (declare (xargs :guard (pseudo-termp term)
                    :mode :program
                    :stobjs state))
@@ -378,12 +378,14 @@
                              check-dcl-guardian ;used in b*?
                              ))
              nil
-           (prog2$ (check-terms (fargs term) subst fn-being-checked state)
+           (prog2$ (check-terms (fargs term) subst fn-being-checked suppress state)
                    ;; TODO: Use the subst for these?
                    (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
                        (check-call-of-fmt-function term fn-being-checked)
                      (if (eq fn 'equal)
-                         (check-call-of-equal term subst fn-being-checked state)
+                         (if (member-eq :equality-variants suppress)
+                             nil
+                           (check-call-of-equal term subst fn-being-checked state))
                        (if (eq fn 'hard-error)
                            (check-call-of-hard-error term fn-being-checked)
                          (if (eq fn 'illegal)
@@ -395,20 +397,21 @@
                                              ;; new subst, since we are in a lambda body
                                              (pairlis$ (lambda-formals fn)
                                                        (my-sublis-var-lst subst (fargs term)))
-                                             fn-being-checked state)
-                               (and (quote-listp (fargs term))
+                                             fn-being-checked suppress state)
+                               (and (not (member-eq :ground-term suppress))
+                                    (quote-listp (fargs term))
                                     (cw "(In ~x0, ground term ~x1 is present.)~%~%" fn-being-checked term))))))))))))))
 
- (defun check-terms (terms subst fn-being-checked state)
+ (defun check-terms (terms subst fn-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
                                (pseudo-term-listp terms))
                    :stobjs state))
    (if (endp terms)
        nil
-     (prog2$ (check-term (car terms) subst fn-being-checked state)
-             (check-terms (cdr terms) subst fn-being-checked state)))))
+     (prog2$ (check-term (car terms) subst fn-being-checked suppress state)
+             (check-terms (cdr terms) subst fn-being-checked suppress state)))))
 
-(defun check-defun (fn state)
+(defun check-defun (fn suppress state)
   (declare (xargs :stobjs state
                   :mode :program))
   (let* ((body (fn-body fn t (w state)))
@@ -418,22 +421,25 @@
                         (get-declares-from-event fn event)))
          (xargs (get-xargs-from-declares declares))
          (guard-debug-res (assoc-keyword :guard-debug xargs)))
-    (progn$ (and guard-debug-res
+    (progn$ (and (not (member-eq :guard-debug suppress))
+                 guard-debug-res
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
-            (check-term body (pairlis$ formals formals) fn state))))
+            (check-term body (pairlis$ formals formals) fn suppress state))))
 
-(defun check-defuns (fns state)
+(defun check-defuns (fns suppress state)
   (declare (xargs :stobjs state
                   :mode :program))
   (if (atom fns)
       nil
     (let* ((fn (first fns)))
-      (prog2$ (check-defun fn state)
-              (check-defuns (rest fns) state)))))
+      (prog2$ (check-defun fn suppress state)
+              (check-defuns (rest fns) suppress state)))))
 
-(defun run-linter-fn (check state)
+(defun run-linter-fn (check suppress state)
   (declare (xargs :stobjs state
-                  :guard (member-eq check '(:user :all))
+                  :guard (and (member-eq check '(:user :all))
+                              (subsetp-eq suppress '(:ground-term :guard-debug :equality-variants)) ;todo: add support for more here
+                              )
                   :mode :program))
   (let* ((wrld (w state))
          (triple-to-stop-at (if (eq check :user)
@@ -441,10 +447,12 @@
                               nil))
          (all-defuns (all-defuns-in-world wrld triple-to-stop-at nil)))
     (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
-            (check-defuns all-defuns state))))
+            (check-defuns all-defuns suppress state))))
 
 ;; Call this macro to check every defun in the current ACL2 world.
-(defmacro run-linter (&key (check ':user))
-  `(run-linter-fn ',check state))
+(defmacro run-linter (&key (check ':user)             ;; either :user or :all
+                           (suppress '(:ground-term)) ;; types of check to skip
+                           )
+  `(run-linter-fn ',check ',suppress state))
 
 (deflabel end-of-linter)
