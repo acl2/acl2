@@ -16,16 +16,43 @@
 ;; defined in the world.  It currently checks for calls of CW with missing
 ;; arguments and calls of IF with resolvable tests.
 
+;; The linter detects:
+;;
+;; - Uses of format strings where too few or too many values are given.
+;;
+;; - Uses of context arguments (quoted symbols) passed to things like
+;; hard-error that may be wrong (e.g., copied and pasted from another function)
+;;
+;; - Explicit :guard-debug xargs, presumably left behind after debugging.
+;; Leaving :guard-debug t can probably slow down guard proofs.
+;;
+;; - Equality tests that could be optimized to faster things like =, EQL, or EQ.
+;;
+;; - Ground terms in functions that could perhaps be computed ahead of time.
+;;
+;; - If-tests that are provably always nil or always non-nil.
+
 ;; NOTE: There is another lint tool in books/tools/lint.lisp.  It checks for
 ;; different things.
 
 ;; TODO: Check for a hyp of (syntaxp (quote x)), which is almost certainly an error.
 
-;; TODO: Look for unchanged names of the form theorem-for-XXX from make-flag
+;; TODO: Look for theorem names of the form theorem-for-XXX from make-flag
 
 ;; TODO: Look for hyps and guard conjuncts that are known true or false by type-set.
 
 ;; TODO: Print terms (such as if-tests) as untranslated terms somehow
+
+;; TODO: Check for EQL tests that could be = or eq.
+
+;; TODO: Detect a LET above an IF that is used in only 1 branch
+
+;; TODO: Detect a LET* that could simply be a LET.
+
+;; TODO: Detect a B* that could simply be a  let OF LET* (maybe)
+
+;; TODO: Add option to diable checking for the acl2 system and for linter tool
+;;   itself and its supporting libraries
 
 ;; TODO: Add support for supressing various kinds of report.
 
