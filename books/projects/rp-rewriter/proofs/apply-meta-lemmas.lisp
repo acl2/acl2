@@ -86,3 +86,34 @@
                             RP-STATE-PUSH-META-TO-RW-STACK
                             RP-STATEP)
                            ()))))
+
+
+(defthm valid-rp-state-syntaxp-rp-rw-meta-rule-main
+  (implies (valid-rp-state-syntaxp rp-state)
+           (valid-rp-state-syntaxp (mv-nth 3 (rp-rw-meta-rule-main term rule rp-state))))
+  :hints (("Goal"
+           :use ((:instance rp-statep-rp-rw-meta-rule-main)
+                 (:instance valid-rp-state-syntaxp-aux-necc
+                            (key (valid-rp-state-syntaxp-aux-witness
+                                  (mv-nth 3 (rp-rw-meta-rule-main term rule rp-state))))))
+           :in-theory (e/d (rp-rw-meta-rule-main
+                            rp-stat-add-to-rules-used-meta-cnt
+                            RP-STATE-PUSH-META-TO-RW-STACK
+                            valid-rp-state-syntaxp
+                            )
+                           (RP-STATEP)))))
+
+(defthm valid-rp-statep-rp-rw-meta-rule-main
+  (implies (valid-rp-statep rp-state)
+           (valid-rp-statep (mv-nth 3 (rp-rw-meta-rule-main term rule rp-state))))
+  :hints (("Goal"
+           :use ((:instance rp-statep-rp-rw-meta-rule-main)
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-witness
+                                  (mv-nth 3 (rp-rw-meta-rule-main term rule rp-state))))))
+           :in-theory (e/d (rp-rw-meta-rule-main
+                            rp-stat-add-to-rules-used-meta-cnt
+                            RP-STATE-PUSH-META-TO-RW-STACK
+                            valid-rp-statep
+                            )
+                           (RP-STATEP)))))

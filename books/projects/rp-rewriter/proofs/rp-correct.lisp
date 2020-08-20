@@ -49,7 +49,6 @@
 (local (include-book "extract-formula-lemmas"))
 
 (in-theory (disable rp-iff-flag rp-lhs rp-rhs rp-hyp))
-  
 
 
 
@@ -111,7 +110,6 @@
              :do-not-induct t
              :induct (attach-sc-from-context context term)
              :in-theory (e/d (attach-sc-from-context) ()))))
-
 
   )
 
@@ -175,18 +173,18 @@
                (and (NOT (INCLUDE-FNC (CADR TERM) 'LIST))
                     (NOT (INCLUDE-FNC (CAdDR TERM) 'LIST))))))
 
-   (defthm rp-rw-aux-is-correct-lemma
+   (defthm preprocess-then-rp-rw-is-correct-lemma
      (implies (and (rp-termp term)
                    (valid-sc term a)
                    (not (include-fnc term 'rp))
                    (alistp a)
                    (rp-evl-meta-extract-global-facts :state state)
                    (rp-formula-checks state)
-                   (symbol-alistp exc-rules)
-                   (valid-rules-alistp rules-alist-outside-in)
-                   (valid-rules-alistp rules-alist))
+                   (valid-rp-statep rp-state)
+                   (rp-statep rp-state)
+                   )
               (iff (rp-evl
-                    (mv-nth 0 (rp-rw-aux term rules-alist exc-rules rules-alist-outside-in rp-state state)) a)
+                    (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
                    (rp-evl term a)))
      :hints (("Goal"
               :do-not-induct t
@@ -210,9 +208,10 @@
                                        (RP-EXTRACT-CONTEXT
                                         (MV-NTH 0
                                                 (RP-RW (CADR TERM)
-                                                       NIL NIL (RW-STEP-LIMIT RP-STATE)
-                                                       RULES-ALIST
-                                                       EXC-RULES rules-alist-outside-in T RP-STATE STATE)))
+                                                       NIL NIL
+                                                       T (RW-STEP-LIMIT
+                                                          RP-STATE)
+                                                       RP-STATE STATE)))
                                        (CADDR TERM))))
                                (dont-rw nil)
                                (context (MV-NTH
@@ -221,23 +220,24 @@
                                           (RP-EXTRACT-CONTEXT
                                            (MV-NTH 0
                                                    (RP-RW (CADR TERM)
-                                                          NIL NIL (RW-STEP-LIMIT RP-STATE)
-                                                          RULES-ALIST
-                                                          EXC-RULES rules-alist-outside-in T RP-STATE STATE)))
+                                                          NIL NIL
+                                                          T (RW-STEP-LIMIT RP-STATE) RP-STATE STATE)))
                                           (CADDR TERM))))
                                (limit (RW-STEP-LIMIT RP-STATE))
                                (iff-flg t)
                                (rp-state (MV-NTH 1
                                                  (RP-RW (CADR term)
-                                                        NIL NIL (RW-STEP-LIMIT RP-STATE)
-                                                        RULES-ALIST EXC-RULES
-                                                        rules-alist-outside-in T rp-state
+                                                        NIL NIL
+                                                        T  (RW-STEP-LIMIT RP-STATE)rp-state
                                                         STATE)))))
               :expand ((:free (x y) (iff x y))
                        (:free (x) (rp-trans (cons 'implies x)))
                        (:free (x y) (RP-TRANS-LST (cons x y))))
-              :in-theory (e/d ()
+              :in-theory (e/d (valid-rp-statep-implies-valid-rp-state-syntaxp)
                               (rp-rw
+                               rp-statep
+
+                               valid-rp-statep
                                RW-STEP-LIMIT
                                SYNP
                                is-falist
@@ -293,31 +293,29 @@
 
 
 
-
 (encapsulate
   nil
- 
-  (defthmd rp-rw-aux-is-correct
+
+  (defthmd preprocess-then-rp-rw-is-correct
     (implies (and (rp-termp term)
                   (not (Include-fnc term 'rp))
-                  (symbol-alistp exc-rules)
+                  (valid-rp-statep rp-state)
+                  (rp-statep rp-state)
                   (alistp a)
                   (rp-evl-meta-extract-global-facts :state state)
                   (rp-formula-checks state)
-                  (valid-rules-alistp rules-alist)
-                  (valid-rules-alistp rules-alist-outside-in))
-             (iff (rp-evl (mv-nth 0 (rp-rw-aux term rules-alist exc-rules rules-alist-outside-in rp-stat state)) a)
+                  )
+             (iff (rp-evl (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
                   (rp-evl term a)))
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d ()
                              (rp-rw
-                              rp-rw-aux
+                              preprocess-then-rp-rw
                               valid-rules-alistp
                               valid-termp
                               remove-return-last
                               beta-search-reduce))))))
-
 
 (defthm rp-meta-rule-recs-p-implies-WEAK-RP-META-RULE-REC-P
   (implies (rp-meta-rule-recs-p meta-rules state)
@@ -349,14 +347,42 @@
                             remove-disabled-meta-rules)
                            ()))))
 
-(defthm rp-statep-of-rp-rw-aux
+(defthm rp-statep-of-preprocess-then-rp-rw
   (implies (rp-statep rp-state)
-           (rp-statep (mv-nth 1 (rp-rw-aux term rules-alist exc-rules
-                                           rules-alist-outside-in rp-state state))))
+           (rp-statep (mv-nth 1 (preprocess-then-rp-rw term  rp-state state))))
   :hints (("Goal"
            :in-theory (e/d ()
                            ((:DEFINITION RP-RW)
                             (:DEFINITION RP-STATEP)
                             (:DEFINITION QUOTEP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION TRUE-LISTP))))))
+
+(defthm valid-rp-state-syntaxp-of-preprocess-then-rp-rw
+  (implies (valid-rp-state-syntaxp rp-state)
+           (valid-rp-state-syntaxp (mv-nth 1 (preprocess-then-rp-rw term  rp-state state))))
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ((:DEFINITION RP-RW)
+                            (:DEFINITION RP-STATEP)
+                            (:DEFINITION QUOTEP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION TRUE-LISTP))))))
+
+(defthm valid-rp-statep-of-preprocess-then-rp-rw
+  (implies (valid-rp-statep rp-state)
+           (valid-rp-statep (mv-nth 1 (preprocess-then-rp-rw term  rp-state state))))
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ((:DEFINITION RP-RW)
+                            (:DEFINITION RP-STATEP)
+                            valid-rulesp
+                            (:DEFINITION QUOTEP)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                            (:DEFINITION IS-FALIST)
+                            (:DEFINITION MV-NTH)
+                            (:DEFINITION RP-TRANS-LST)
+                            (:DEFINITION RW-STEP-LIMIT)
                             (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
                             (:DEFINITION TRUE-LISTP))))))

@@ -2354,13 +2354,7 @@
 
 
 
-(local
- (defthm rp-term-listp-of-append
-   (implies (and (rp-term-listp x)
-                 (rp-term-listp y))
-            (rp-term-listp (append x y)))
-   :hints (("Goal"
-            :in-theory (e/d (rp-term-listp) ())))))
+
 
 (local
  (defthm rp-term-listp-of-repeat

@@ -51,7 +51,6 @@
   :hints (("Goal"
            :in-theory (e/d (rule-syntaxp) ()))))
 
-
 (local
  ;;local funcitons for local lemmas
  (encapsulate
@@ -952,7 +951,6 @@
                                is-rp
                                valid-sc-nt))))))
 
-
   (local
    (defthm rp-evlt-lemma20
      (implies (and (equal (rp-evlt-lst lst1 a)
@@ -977,7 +975,6 @@
               :expand ((RP-TRANS (CONS FN LST1))
                        (RP-TRANS (CONS FN LST2)))
               :in-theory (e/d (rp-evl-of-fncall-args) ())))))
-
 
   (local
    (defthm lemma20
@@ -1055,8 +1052,8 @@
   (valid-sc SC-TERM A)
   (rp-termp SC-TERM)
   (NOT (EQUAL (CAR SC-TERM) 'IF))
-; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ;
-;                           'IF)) ;
+; (NOT (INCLUDE-FNC-SUBTERMS (CDR SC-TERM) ; ; ;
+;                           'IF)) ; ; ;
   (not (is-rp sc-term))
   (IS-RP (LIST 'RP
   (LIST 'QUOTE SC-TYPE)
@@ -1096,8 +1093,6 @@
   EX-FROM-RP-LEMMA1
   is-rp
   valid-sc-nt)))))))||#
-
-
 
   (local
    (defthm lemma21
@@ -1149,7 +1144,6 @@
                                      VALID-SC-EX-FROM-RP-2
                                      ))))))
 
-
   (local
    (defthm is-rp-lemma-18
      (implies (IS-RP TERM)
@@ -1192,8 +1186,6 @@
                                is-if
                                rp-termp
                                ))))))
-
-
 
   (local
    (defthm lemma20-v2
@@ -1375,8 +1367,6 @@
                               (:rewrite default-cdr)
                               (:rewrite default-car)
                               rp-evl-lst-of-cons)))))
-
-
 
 
   (defthm-attach-sc
@@ -1589,9 +1579,6 @@
            (get-vars1 rhs acc))))
 
 
-
-
-
 (encapsulate
   nil
   (defthm not-include-fnc-subterms-if-to-and-list
@@ -1637,7 +1624,6 @@
                                RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT)
                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
                               (:DEFINITION RP-TRANS))))))
-
 
   (defthm not-include-fnc-extract-from-force
     (implies (not (include-fnc term fn))
@@ -1819,7 +1805,6 @@
                              attach-sc-to-rule
                              valid-rulep-sk-body))))))
 
-
 (local
  (defthm RP-RULE-RWP-of-ATTACH-SC-TO-RULE
    (implies (rp-rule-rwp rule)
@@ -1842,7 +1827,7 @@
     (defthm valid-formula-sk-of-meta-extract-formula
       (implies (rp-evl-meta-extract-global-facts :state state)
                (valid-formula-sk (meta-extract-formula name state)))))
-   
+
    #|(skip-proofs (local ;; this is true and can be proved easily
    (defthm valid-formula-sk-beta-search-reduce
    (implies (and (pseudo-termp formula)
@@ -1973,7 +1958,6 @@
                             RULE-SYNTAXP)
                            ()))))
 
-
 (defthm rp-rule-rw-listp-of-FORMULAS-TO-RULES
   (RP-RULE-RW-LISTP (FORMULAS-TO-RULES RUNE RULE-NEW-SYNP WARNING FORMULAS))
   :hints (("Goal"
@@ -2035,7 +2019,7 @@
          (rule-name (case-match rune ((& name . &) name) (& rune)))
          (rest (rule-list-to-alist-aux (cdr rules))))
       (add-to-fast-alist rule-name rule rest))))||#
-
+;;here
 (defthm valid-rules-alistp-add-rule-to-alist
   (implies (and (valid-rules-alistp alist)
                 (valid-rulep rule))
@@ -2043,6 +2027,16 @@
   :hints (("Goal"
            :in-theory (e/d ()
                            (rule-syntaxp
+                            (:REWRITE VALID-RULES-SUBSETP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:DEFINITION TRUE-LISTP)
+                            (:DEFINITION RP-TERM-LISTP)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                             valid-rulep)))))
 
 (defthm to-fasts-alist-def
@@ -2055,6 +2049,7 @@
   :hints (("Goal"
            :in-theory (e/d (rule-list-to-alist)
                            (add-rule-to-alist
+
                             valid-rulep)))))
 
 (defthm valid-rules-alistp-get-rules
@@ -2067,8 +2062,8 @@
                             get-rule-list
                             table-alist)))))
 
-(defthm symbol-alistp-get-disabled-exc-rules-from-table
-  (symbol-alistp (get-disabled-exc-rules-from-table x))
+(defthm symbol-listp-get-disabled-exc-rules-from-table
+  (symbol-listp (get-disabled-exc-rules-from-table x))
   :hints (("Goal"
            :in-theory (e/d (get-disabled-exc-rules-from-table) ()))))
 
@@ -2078,10 +2073,641 @@
     (and (true-listp rules-rw)
          (true-listp rules-rw-oi)))
   :hints (("Goal"
-           :in-theory (e/d (get-enabled-rules-from-table-aux) ()))))
+           :in-theory (e/d (get-enabled-rules-from-table-aux)
+                           ((:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION TRUE-LISTP)
+                            (:DEFINITION RP-TERM-LISTP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:REWRITE RP-TERMP-IMPLIES-CDR-LISTP)
+                            (:DEFINITION RP-TERMP)
+                            (:REWRITE DEFAULT-CDR)
+                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+                            (:REWRITE
+                             ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:DEFINITION ACL2::APPLY$-BADGEP))))))
 
 (defthm symbol-listp-get-enabled-rules-from-table
-  (symbol-alistp (mv-nth 2 (get-enabled-rules-from-table state)))
+  (symbol-listp (mv-nth 2 (get-enabled-rules-from-table state)))
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (get-enabled-rules-from-table) ()))))
+
+;; here prove that rp-state-init-rules returns valid-rp-statep and
+;; valid-rp-state-syntaxp
+
+
+;; Syntax check:
+
+(in-theory (disable rules-alist-inside-out-put
+                    rules-alist-outside-in-put
+                    disabled-exc-rules-put
+
+                    rules-alist-inside-out-get
+                    rules-alist-outside-in-get
+                    disabled-exc-rules-get
+
+                    rules-alist-inside-out-boundp
+                    rules-alist-outside-in-boundp
+                    disabled-exc-rules-boundp
+
+                    disabled-exc-rules-init
+                    rules-alist-inside-out-init
+                    rules-alist-outside-in-init
+                    ))
+
+(in-theory (disable RULES-ALIST-INSIDE-OUTP
+                    RULES-ALIST-OUTSIDE-INP
+                    DISABLED-EXC-RULESP
+                    
+                    SHOW-USED-RULES-FLGP
+                    COUNT-USED-RULES-FLGP
+                    RULES-USEDP
+                    RP-BRRP
+                    RW-STACK-SIZEP
+                    RW-STACKP
+                    RULE-FRAME-CNTSP
+                    RW-STEP-LIMITP
+                    NOT-SIMPLIFIED-ACTIONP))
+
+(defthm rp-statep-of-rp-state-functions
+  (implies (and (rp-statep rp-state))
+           (and (rp-statep (rules-alist-inside-out-put k v rp-state))
+                (rp-statep (rules-alist-outside-in-put k v rp-state))
+                (rp-statep (disabled-exc-rules-put k v rp-state))
+
+                (rp-statep (disabled-exc-rules-init x y z rp-state))
+                (rp-statep (rules-alist-inside-out-init x y z rp-state))
+                (rp-statep (rules-alist-outside-in-init x y z rp-state))
+                ))
+  :hints (("Goal"
+           :in-theory (e/d (rules-alist-inside-out-put
+                            rules-alist-outside-in-put
+                            disabled-exc-rules-init
+                            rules-alist-inside-out-init
+                            rules-alist-outside-in-init
+                            rp-statep
+                            disabled-exc-rules-put)
+                           ()))))
+
+(defthm rp-statep-of-rp-state-init-rules-aux
+  (implies (rp-statep rp-state)
+           (rp-statep (rp-state-init-rules-aux rules-alist flg rp-state)))
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-init-rules-aux)
+                           (RULES-ALIST-INSIDE-OUT-PUT
+                            RULES-ALIST-OUTSIDE-IN-PUT)))))
+
+(defthm rp-statep-of-rp-state-init-rules
+  (implies (rp-statep rp-state)
+           (and
+            (rp-statep (rp-state-init-rules runes-inside-out
+                                            runes-outside-in
+                                            new-synps
+                                            rp-state
+                                            state))))
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-init-rules) ()))))
+
+(defthm rp-state-put-and-get
+  (implies (rp-statep rp-state)
+           (and (equal (rules-alist-inside-out-get
+                        K
+                        (RULES-ALIST-INSIDE-OUT-PUT K V RP-STATE))
+                       v)
+                (equal (rules-alist-outside-in-get
+                        K
+                        (rules-alist-outside-in-put K V RP-STATE))
+                       v)))
+  :hints (("Goal"
+           :in-theory (e/d (RULES-ALIST-INSIDE-OUT-PUT
+                            rules-alist-inside-out-get
+                            rules-alist-outside-in-put
+                            rules-alist-outside-in-get
+                            )
+                           ()))))
+
+(defthm rp-state-put-and-get-with-casesplit
+  (implies
+   (rp-statep rp-state)
+   (and (equal (rules-alist-inside-out-get k1
+                                           (rules-alist-inside-out-put k2 v rp-state))
+               (if (equal k1 k2) v (rules-alist-inside-out-get k1 rp-state)))
+
+        (equal (rules-alist-outside-in-get K1
+                                           (rules-alist-outside-in-put K2 V
+                                                                       RP-STATE))
+               (if (equal k1 k2) v (rules-alist-outside-in-get k1 rp-state)))
+
+        (equal (disabled-exc-rules-get K1
+                                       (disabled-exc-rules-put k2 v
+                                                               rp-state))
+               (if (equal k1 k2) v (disabled-exc-rules-get k1 rp-state)))))
+  :hints (("Goal"
+           :in-theory (e/d (RULES-ALIST-INSIDE-OUT-PUT
+                            rules-alist-inside-out-get
+                            rules-alist-outside-in-put
+                            rules-alist-outside-in-get
+                            disabled-exc-rules-get
+                            disabled-exc-rules-put)
+                           ()))))
+
+(defthm rp-state-put-and-get-cancel
+  (implies (rp-statep rp-state)
+           (and (equal (rules-alist-outside-in-get k1
+                                                   (rules-alist-inside-out-put k2 v2
+                                                                               rp-state))
+                       (rules-alist-outside-in-get k1 rp-state))
+                (equal (rules-alist-inside-out-get k1
+                                                   (rules-alist-outside-in-put k2 v2
+                                                                               rp-state))
+                       (rules-alist-inside-out-get k1 rp-state))))
+  :hints (("goal"
+           :in-theory (e/d (rules-alist-inside-out-put
+                            rules-alist-inside-out-get
+                            rules-alist-outside-in-put
+                            rules-alist-outside-in-get)
+                           ()))))
+
+(defthm valid-rp-statep-of-rp-state-functions
+  (implies (and (valid-rp-statep rp-state))
+           (and
+            (implies (and (symbolp k)
+                          (VALID-RULESP v))
+                     (valid-rp-statep (rules-alist-inside-out-put k v rp-state)))
+            (implies (and (symbolp k)
+                          (VALID-RULESP v))
+                     (valid-rp-statep (rules-alist-outside-in-put k v rp-state)))
+            (valid-rp-statep (disabled-exc-rules-put k v rp-state))
+
+            (valid-rp-statep (disabled-exc-rules-init x y z rp-state))
+            (valid-rp-statep (rules-alist-inside-out-init x y z rp-state))
+            (valid-rp-statep (rules-alist-outside-in-init x y z rp-state))
+            ))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-WITNESS
+                                  (RULES-ALIST-INSIDE-OUT-PUT K V RP-STATE)))
+                            )
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-WITNESS
+                                  (RULES-ALIST-OUTSIDE-IN-PUT K V RP-STATE)))
+                            )
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-WITNESS
+                                  (DISABLED-EXC-RULES-PUT K V RP-STATE)))
+                            )
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-WITNESS
+                                  (disabled-exc-rules-init x y z rp-state)))
+                            )
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-WITNESS
+                                  (rules-alist-inside-out-init x y z rp-state)))
+                            )
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-WITNESS
+                                  (rules-alist-outside-in-init x y z rp-state)))
+                            ))
+           :in-theory (e/d (valid-rp-state-syntaxp
+                            valid-rp-statep
+                            rules-alist-inside-out-put
+                            rules-alist-inside-out-get
+                            rules-alist-outside-in-put
+                            rules-alist-outside-in-get
+                            disabled-exc-rules-get
+                            disabled-exc-rules-put
+                            disabled-exc-rules-init
+                            rules-alist-inside-out-init
+                            rules-alist-outside-in-init
+                            rp-statep)
+                           (;;valid-rp-statep
+                            (:DEFINITION UPDATE-NTH)
+                            (:REWRITE VALID-RULES-SUBSETP)
+                            (:TYPE-PRESCRIPTION HONS-ASSOC-EQUAL)
+                            (:TYPE-PRESCRIPTION VALID-RULESP)
+                            (:TYPE-PRESCRIPTION TRUE-LISTP)
+                            (:REWRITE
+                             ACL2::TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP)
+                            (:REWRITE DEFAULT-CAR)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:TYPE-PRESCRIPTION O-P)
+                            (:REWRITE ACL2::NTH-WHEN-PREFIXP)
+                            (:REWRITE ACL2::O-P-DEF-O-FINP-1)
+                            (:REWRITE DEFAULT-CDR)
+                            (:TYPE-PRESCRIPTION SHOW-USED-RULES-FLGP)
+                            (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
+                            (:TYPE-PRESCRIPTION RW-STACK-SIZEP)
+                            (:TYPE-PRESCRIPTION RULES-USEDP)
+                            (:TYPE-PRESCRIPTION RULE-FRAME-CNTSP)
+                            (:TYPE-PRESCRIPTION RP-BRRP)
+                            
+                            (:TYPE-PRESCRIPTION RW-STACKP)
+                            (:TYPE-PRESCRIPTION
+                             valid-rp-statep)
+                            (:TYPE-PRESCRIPTION RW-STEP-LIMITP)
+                            ;;(:DEFINITION HONS-ASSOC-EQUAL)
+                            ;;(:DEFINITION LENGTH)
+                            ;;(:DEFINITION NOT)
+                            (:DEFINITION NTH)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION RP-TERM-LISTP)
+                            (:DEFINITION TRUE-LISTP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+                            (:REWRITE
+                             ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                            (:REWRITE
+                             VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                            (:DEFINITION VALID-RULESP)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:DEFINITION VALID-RULEP-SK-BODY)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION VALID-SC-NT)
+                            (:DEFINITION RULE-LIST-SYNTAXP)
+                            (:DEFINITION RP-TERMP)
+                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-NT))))))
+
+(defthm valid-rp-state-syntaxp-of-rp-state-functions
+  (implies (and (VALID-RP-STATE-SYNTAXP rp-state))
+           (and
+            (implies (and (symbolp k)
+                          (rule-list-syntaxp v))
+                     (valid-rp-state-syntaxp (rules-alist-inside-out-put k v rp-state)))
+            (implies (and (symbolp k)
+                          (rule-list-syntaxp v))
+                     (valid-rp-state-syntaxp (rules-alist-outside-in-put k v rp-state)))
+            (valid-rp-state-syntaxp (disabled-exc-rules-put k v rp-state))
+
+            (valid-rp-state-syntaxp (disabled-exc-rules-init x y z rp-state))
+            (valid-rp-state-syntaxp (rules-alist-inside-out-init x y z rp-state))
+            (valid-rp-state-syntaxp (rules-alist-outside-in-init x y z rp-state))
+            ))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS
+                                  (RULES-ALIST-INSIDE-OUT-PUT K V RP-STATE)))
+                            )
+                 (:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS
+                                  (RULES-ALIST-OUTSIDE-IN-PUT K V RP-STATE)))
+                            )
+                 (:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS
+                                  (DISABLED-EXC-RULES-PUT K V RP-STATE)))
+                            )
+                 (:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS
+                                  (disabled-exc-rules-init x y z rp-state)))
+                            )
+                 (:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS
+                                  (rules-alist-inside-out-init x y z rp-state)))
+                            )
+                 (:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS
+                                  (rules-alist-outside-in-init x y z rp-state)))
+                            ))
+           :in-theory (e/d (VALID-RP-STATE-SYNTAXP
+                            VALID-RP-STATE-SYNTAXP-AUX
+
+                            RULES-ALIST-INSIDE-OUT-PUT
+                            rules-alist-inside-out-get
+                            rules-alist-outside-in-put
+                            rules-alist-outside-in-get
+                            disabled-exc-rules-get
+                            disabled-exc-rules-put
+                            disabled-exc-rules-init
+                            rules-alist-inside-out-init
+                            rules-alist-outside-in-init
+                            rp-statep
+
+                            )
+                           (;;VALID-RP-STATE-SYNTAXP-AUX
+                            (:DEFINITION UPDATE-NTH)
+                            (:REWRITE DEFAULT-CDR)
+                            (:TYPE-PRESCRIPTION SHOW-USED-RULES-FLGP)
+                            (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
+                            (:TYPE-PRESCRIPTION RW-STACK-SIZEP)
+                            (:TYPE-PRESCRIPTION RULES-USEDP)
+                            (:TYPE-PRESCRIPTION RULE-FRAME-CNTSP)
+                            (:TYPE-PRESCRIPTION RP-BRRP)
+                            
+                            (:TYPE-PRESCRIPTION RW-STACKP)
+                            (:TYPE-PRESCRIPTION
+                             VALID-RP-STATE-SYNTAXP-AUX)
+                            (:TYPE-PRESCRIPTION RW-STEP-LIMITP)
+                            ;;(:DEFINITION HONS-ASSOC-EQUAL)
+                            ;;(:DEFINITION LENGTH)
+                            ;;(:DEFINITION NOT)
+                            (:DEFINITION NTH)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION RP-TERM-LISTP)
+                            (:DEFINITION TRUE-LISTP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+                            (:REWRITE
+                             ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                            (:REWRITE
+                             VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                            (:DEFINITION VALID-RULESP)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:DEFINITION VALID-RULEP-SK-BODY)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION VALID-SC-NT)
+                            (:DEFINITION RULE-LIST-SYNTAXP)
+                            (:DEFINITION RP-TERMP)
+                            ;;(:TYPE-PRESCRIPTION RP-STATEP)
+                            (:TYPE-PRESCRIPTION NOT-SIMPLIFIED-ACTIONP)
+                            (:TYPE-PRESCRIPTION COUNT-USED-RULES-FLGP)
+                            (:TYPE-PRESCRIPTION O<)
+                            (:REWRITE ACL2::NTH-WHEN-PREFIXP)
+                            (:REWRITE DEFAULT-CAR)
+                            ;;(:TYPE-PRESCRIPTION TRUE-LISTP-UPDATE-NTH)
+                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-NT))))))
+
+(defthm valid-rp-statep-after-init
+  (implies (rp-statep rp-state)
+           (and (valid-rp-statep
+                 (rules-alist-inside-out-init
+                  x y z
+                  (rules-alist-outside-in-init x2 y2 z2 rp-state)))
+
+                (valid-rp-statep
+                 (rules-alist-outside-in-init
+                  x y z
+                  (rules-alist-inside-out-init x2 y2 z2 rp-state)))
+                (valid-rp-state-syntaxp
+                 (rules-alist-inside-out-init
+                  x y z
+                  (rules-alist-outside-in-init x2 y2 z2 rp-state)))
+
+                (valid-rp-state-syntaxp
+                 (rules-alist-outside-in-init
+                  x y z
+                  (rules-alist-inside-out-init x2 y2 z2 rp-state)))
+                ))
+  :hints (("Goal"
+           :expand ((UPDATE-NTH *RULES-ALIST-OUTSIDE-IN-GET*
+                                NIL RP-STATE))
+           :in-theory (e/d (rules-alist-inside-out-init
+                            VALID-RP-STATE-SYNTAXP
+                            rules-alist-outside-in-init
+                            rp-statep
+                            VALID-RP-STATE-SYNTAXP-aux-necc
+                            RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-INSIDE-OUT-GET
+                            )
+                           (;; VALID-RP-STATE-SYNTAXP-AUx
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:DEFINITION RP-TERM-LISTP)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA)
+                            (:REWRITE
+                             ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                            (:REWRITE DEFAULT-CDR)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 2)
+                            )))))
+
+(defthm valid-rp-statep-of-rp-state-init-rules-aux
+  (implies (and (valid-rp-statep rp-state))
+           (and (implies (and (valid-rules-alistp rules-alist)
+                              (or (equal flg :inside-out)
+                                  (equal flg :outside-in)))
+                         (valid-rp-statep (rp-state-init-rules-aux rules-alist
+                                                                   flg
+                                                                   rp-state)))
+                (implies (Not (or (equal flg :inside-out)
+                                  (equal flg :outside-in)))
+                         (valid-rp-statep (rp-state-init-rules-aux rules-alist
+                                                                   flg
+                                                                   rp-state)))))
+  :otf-flg nil
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (rp-state-init-rules-aux rules-alist
+                                            flg
+                                            rp-state)
+           :in-theory (e/d (rp-state-init-rules-aux)
+                           ((:DEFINITION VALID-RULESP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:REWRITE VALID-RULES-SUBSETP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION TRUE-LISTP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:DEFINITION RP-TERM-LISTP)
+                            (:REWRITE
+                             ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA))))))
+
+(defthm valid-rp-statep-rp-state-init-rules
+  (implies (and (rp-statep rp-state)
+                (rp-evl-meta-extract-global-facts :state state))
+           (valid-rp-statep (rp-state-init-rules runes-inside-out
+                                                 runes-outside-in
+                                                 new-synps
+                                                 rp-state
+                                                 state)))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (rp-state-init-rules)
+                           (valid-rp-statep)))))
+
+
+(defun rules-alistp2 (alist)
+  (if (atom alist)
+      (equal alist nil)
+    (and (symbolp (caar alist))
+         (RULE-LIST-SYNTAXP (cdar alist))
+         (rules-alistp2 (cdr alist)))))
+
+(defthm rule-list-syntaxp-of-append
+  (implies (and (RULE-LIST-SYNTAXP a1)
+                (RULE-LIST-SYNTAXP a2))
+           (RULE-LIST-SYNTAXP (append a1 a2)))
+  :hints (("Goal"
+           :in-theory '((:DEFINITION BINARY-APPEND)
+                        (:DEFINITION ENDP)
+                        (:DEFINITION NOT)
+                        (:DEFINITION RULE-LIST-SYNTAXP)
+                        (:EXECUTABLE-COUNTERPART CONSP)
+                        (:INDUCTION BINARY-APPEND)
+                        (:INDUCTION RULE-LIST-SYNTAXP)
+                        (:REWRITE ACL2::APPEND-WHEN-NOT-CONSP)
+                        (:REWRITE CAR-CONS)
+                        (:REWRITE CDR-CONS)
+                        (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
+                        (:TYPE-PRESCRIPTION RULE-SYNTAXP-FN)))))
+
+(defthm rule-list-syntaxp-get-rule-list
+  (rule-list-syntaxp (get-rule-list runes sc-alist new-synps warning
+                                    state))
+  :hints (("Goal"
+           :induct (get-rule-list runes sc-alist new-synps warning
+                                  state)
+           :do-not-induct t
+           :in-theory (e/d ()
+                           (rule-syntaxp
+                            CUSTOM-REWRITE-WITH-META-EXTRACT
+                            MAKE-CUSTOM-RULE-FOR-META
+                            (:REWRITE
+                             VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                            (:DEFINITION VALID-RULESP)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:DEFINITION VALID-RULEP-SK-BODY)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION ACL2::APPLY$-BADGEP))))))
+
+(defthm rule-alistp2-of-ADD-RULE-TO-ALIST
+  (implies (and (rules-alistp2 alist)
+                (rule-syntaxp rule))
+           (rules-alistp2 (ADD-RULE-TO-ALIST ALIST RULE)))
+  :hints (("Goal"
+           :in-theory (e/d () ((:DEFINITION GET-RULE-LIST)
+                               (:REWRITE
+                                VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                               (:DEFINITION VALID-RULESP)
+                               (:DEFINITION VALID-RULEP)
+                               (:DEFINITION VALID-RULEP-SK)
+                               (:DEFINITION VALID-RULEP-SK-BODY)
+                               (:DEFINITION INCLUDE-FNC)
+                               (:DEFINITION SUBSETP-EQUAL)
+                               (:DEFINITION MEMBER-EQUAL))))))
+
+(defthm rule-alistp2-of-RULE-LIST-TO-ALIST
+  (implies (and (rule-list-syntaxp RULE-list))
+           (rules-alistp2 (RULE-LIST-TO-ALIST RULE-list)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (RULE-LIST-TO-ALIST RULE-list)
+           :in-theory (e/d (RULE-LIST-TO-ALIST
+                            RULE-LIST-SYNTAXP)
+                           ((:DEFINITION GET-RULE-LIST)
+                            ADD-RULE-TO-ALIST
+                            rule-syntaxp
+                            (:REWRITE
+                             VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                            (:DEFINITION VALID-RULESP)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:DEFINITION VALID-RULEP-SK-BODY)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL))))))
+
+(defthm rules-alistp2-of-get-rules
+  (rules-alistp2 (get-rules runes state :new-synps new-synps))
+  :hints (("Goal"
+           :in-theory (e/d (get-rules)
+                           ((:DEFINITION GET-RULE-LIST)
+                            (:REWRITE
+                             VALID-RULESP-IMPLIES-RULE-LIST-SYNTAXP)
+                            (:DEFINITION VALID-RULESP)
+                            (:DEFINITION VALID-RULEP)
+                            (:DEFINITION VALID-RULEP-SK)
+                            (:DEFINITION VALID-RULEP-SK-BODY)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL))))))
+
+
+
+(defthm valid-rp-state-syntaxp-of-rp-state-init-rules-aux
+  (implies (valid-rp-state-syntaxp rp-state)
+           (and (implies (and (rules-alistp2 rules-alist)
+                              (or (equal flg :inside-out)
+                                  (equal flg :outside-in)))
+                         (valid-rp-state-syntaxp (rp-state-init-rules-aux rules-alist
+                                                                   flg
+                                                                   rp-state)))
+                (implies (Not (or (equal flg :inside-out)
+                                  (equal flg :outside-in)))
+                         (valid-rp-state-syntaxp (rp-state-init-rules-aux rules-alist
+                                                                          flg
+                                                                          rp-state)))))
+  :otf-flg nil
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (rp-state-init-rules-aux rules-alist
+                                            flg
+                                            rp-state)
+           :in-theory (e/d (rp-state-init-rules-aux)
+                           ((:DEFINITION VALID-RULESP)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:REWRITE VALID-RULES-SUBSETP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION TRUE-LISTP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:DEFINITION RP-TERM-LISTP)
+                            (:REWRITE
+                             ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                            (:REWRITE ACL2::SUBSETP-REFLEXIVE-LEMMA))))))
+
+
+
+
+(defthmd valid-rp-statep-implies-valid-rp-state-syntaxp
+  (implies (and (rp-statep rp-state)
+                (valid-rp-statep rp-state))
+           (valid-rp-state-syntaxp rp-state))
+  :otf-flg nil
+  :hints (("Goal"
+           :use ((:instance valid-rp-statep-necc
+                            (key (valid-rp-state-syntaxp-aux-witness RP-STATE))))
+           :in-theory (e/d (VALID-RP-STATE-SYNTAXP)
+                           ()))))
+
+(defthm valid-rp-state-syntaxp-rp-state-init-rules
+  (implies (and (rp-statep rp-state))
+           (valid-rp-state-syntaxp (rp-state-init-rules runes-inside-out
+                                                        runes-outside-in
+                                                        new-synps
+                                                        rp-state
+                                                        state)))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (rp-state-init-rules)
+                           (valid-rp-state-syntaxp
+                            (:DEFINITION VALID-RP-STATEP)
+                            (:DEFINITION VALID-RULESP)
+                            (:DEFINITION ACL2::APPLY$-BADGEP)
+                            (:DEFINITION SUBSETP-EQUAL)
+                            (:DEFINITION MEMBER-EQUAL)
+                            (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                            (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                            (:REWRITE VALID-RULES-SUBSETP)
+                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                            (:DEFINITION QUOTEP)
+                            (:DEFINITION VALID-RULEP))))))

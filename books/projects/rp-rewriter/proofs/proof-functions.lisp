@@ -421,3 +421,13 @@
 
 #|(defun rp-evl-of-trans-list (lst a)
   (rp-evl-lst lst a))||#
+
+(defun-sk valid-rp-statep (rp-state)
+  (declare (xargs :stobjs (rp-state)))
+  (forall key
+          (or (not (symbolp key))
+              (and (valid-rulesp
+                    (rules-alist-outside-in-get key rp-state))
+                   (valid-rulesp
+                    (rules-alist-inside-out-get key rp-state))))))
+

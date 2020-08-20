@@ -336,19 +336,17 @@
   (defthm dont-rw-syntaxp-rp-rw-rule
     (implies (equal flag 'rp-rw-rule)
              (dont-rw-syntaxp
-              (mv-nth 2 (rp-rw-rule term dont-rw rules-for-term context limit rules-alist exc-rules
-                                    rules-alist-outside-in outside-in-flg iff-flg rp-state state))))
+              (mv-nth 2 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
     :hints (("goal"
-             :induct (flag-rp-rw FLAG RULES-FOR-TERM OUTSIDE-IN-FLG
-                                 TERM IFF-FLG SUBTERMS DONT-RW
-                                 CONTEXT LIMIT RULES-ALIST EXC-RULES
-                                 RULES-ALIST-OUTSIDE-IN RP-STATE STATE)
-            :in-theory (e/d (rp-rw-rule
-                             (:induction rp-rw-rule))
-                            (remove-rp-from-bindings
-                             rp-rw-relieve-synp
-                             rp-rw-rule-aux
-                             rp-apply-bindings))))))
+             :induct (flag-rp-rw flag rules-for-term
+                                 outside-in-flg term iff-flg subterms
+                                 dont-rw context limit rp-state state)
+             :in-theory (e/d (rp-rw-rule
+                              (:induction rp-rw-rule))
+                             (remove-rp-from-bindings
+                              rp-rw-relieve-synp
+                              rp-rw-rule-aux
+                              rp-apply-bindings))))))
 
 (defthm rp-get-rules-for-term-returns-valid-rulesp
   (implies (valid-rules-alistp rules-alist)
@@ -627,56 +625,169 @@
       (defthm rp-rw-returns-valid-rp-statp
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw term
-                                   dont-rw
-                                   context limit
-                                   rules-alist exc-rules
-                                   rules-alist-outside-in
-                                   iff-flg rp-state
-                                   state))))
+                  (mv-nth 1 (rp-rw term dont-rw context iff-flg limit rp-state state))))
         :flag rp-rw)
       (defthm rp-rw-rule-retuns-valid-rp-statp
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context limit rules-alist exc-rules
-                                        rules-alist-outside-in outside-in-flg iff-flg rp-state state))))
+                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
         :flag rp-rw-rule)
 
       (defthm rp-rw-if-retuns-valid-rp-statp
         (implies (rp-statep rp-state)
                  (rp-statep
-                  (mv-nth 1 (rp-rw-if term dont-rw context limit rules-alist
-                                      exc-rules rules-alist-outside-in
-                                      iff-flg rp-state state))))
+                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg limit 
+                                      rp-state state))))
         :flag rp-rw-if)
 
       (defthm rp-rw-subterms-retuns-valid-rp-statp
         (implies (rp-statep rp-state)
                  (rp-statep
                   (mv-nth 1 (rp-rw-subterms subterms dont-rw context limit
-                                            rules-alist exc-rules rules-alist-outside-in
                                             rp-state state))))
         :flag rp-rw-subterms)
 
       :hints (("goal"
-               :expand ((rp-rw-rule term dont-rw
-                                    rules-for-term context limit rules-alist
-                                    exc-rules rules-alist-outside-in
-                                    outside-in-flg iff-flg rp-state state)
-                        (rp-rw-if term dont-rw context limit rules-alist
-                                  exc-rules rules-alist-outside-in iff-flg rp-state state)
-                        (rp-rw term t context limit rules-alist
-                               exc-rules rules-alist-outside-in iff-flg rp-state state)
-                        (rp-rw term dont-rw context limit
-                               rules-alist exc-rules rules-alist-outside-in nil rp-state state)
-                        (rp-rw term dont-rw context limit rules-alist
-                               exc-rules rules-alist-outside-in iff-flg rp-state state)
+               :expand ((rp-rw-rule term dont-rw rules-for-term
+                                    context iff-flg outside-in-flg limit rp-state state)
+                        (RP-RW-IF TERM DONT-RW
+                              CONTEXT IFF-FLG LIMIT RP-STATE STATE)
+                        (rp-rw term dont-rw context iff-flg limit rp-state
+                               state)
+                        (RP-RW TERM DONT-RW
+                               CONTEXT NIL LIMIT RP-STATE STATE)
                         (rp-rw-subterms subterms dont-rw context limit
-                                        rules-alist exc-rules rules-alist-outside-in rp-state state))
+                                            rp-state state))
                :in-theory (e/d (RP-STAT-ADD-TO-RULES-USED)
                                (update-rules-used
                                 SHOW-USED-RULES-FLG
                                 UPDATE-NTH
+                                RP-STAT-ADD-TO-RULES-USED)))))))
+
+
+(encapsulate
+  nil
+
+  (local
+   (in-theory (disable ACL2::CDR-OF-APPEND-WHEN-CONSP
+                       RP-EQUAL
+                       VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP
+                       RP-TERM-LISTP-APPEND
+                       RP-EXTRACT-CONTEXT
+                       RP-RW-RULE-AUX
+                       IS-RP-PSEUDO-TERMP
+                       IS-IF-RP-TERMP
+                       IS-IF-RP-TERMP)))
+
+  (with-output
+    :off (warning event  prove  observation)
+    :gag-mode nil
+    :on error
+
+    (defthm-rp-rw
+      (defthm rp-rw-returns-valid-valid-rp-state-syntaxp
+        (implies (valid-rp-state-syntaxp rp-state)
+                 (valid-rp-state-syntaxp
+                  (mv-nth 1 (rp-rw term dont-rw context iff-flg limit rp-state state))))
+        :flag rp-rw)
+      (defthm rp-rw-rule-retuns-valid-valid-rp-state-syntaxp
+        (implies (valid-rp-state-syntaxp rp-state)
+                 (valid-rp-state-syntaxp
+                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
+        :flag rp-rw-rule)
+
+      (defthm rp-rw-if-retuns-valid-valid-rp-state-syntaxp
+        (implies (valid-rp-state-syntaxp rp-state)
+                 (valid-rp-state-syntaxp
+                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg limit 
+                                      rp-state state))))
+        :flag rp-rw-if)
+
+      (defthm rp-rw-subterms-retuns-valid-valid-rp-state-syntaxp
+        (implies (valid-rp-state-syntaxp rp-state)
+                 (valid-rp-state-syntaxp
+                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context limit
+                                            rp-state state))))
+        :flag rp-rw-subterms)
+
+      :hints (("goal"
+               :expand ((rp-rw-rule term dont-rw rules-for-term
+                                    context iff-flg outside-in-flg limit rp-state state)
+                        (RP-RW-IF TERM DONT-RW
+                              CONTEXT IFF-FLG LIMIT RP-STATE STATE)
+                        (rp-rw term dont-rw context iff-flg limit rp-state
+                               state)
+                        (RP-RW TERM DONT-RW
+                               CONTEXT NIL LIMIT RP-STATE STATE)
+                        (rp-rw-subterms subterms dont-rw context limit
+                                            rp-state state))
+               :in-theory (e/d (RP-STAT-ADD-TO-RULES-USED)
+                               (update-rules-used
+                                SHOW-USED-RULES-FLG
+                                UPDATE-NTH
+                                RP-STAT-ADD-TO-RULES-USED)))))))
+
+(encapsulate
+  nil
+
+  (local
+   (in-theory (disable ACL2::CDR-OF-APPEND-WHEN-CONSP
+                       RP-EQUAL
+                       VALID-RULES-ALISTP-IMPLIES-RULES-ALISTP
+                       RP-TERM-LISTP-APPEND
+                       RP-EXTRACT-CONTEXT
+                       RP-RW-RULE-AUX
+                       IS-RP-PSEUDO-TERMP
+                       IS-IF-RP-TERMP
+                       IS-IF-RP-TERMP)))
+
+  (with-output
+    :off (warning event  prove  observation)
+    :gag-mode nil
+    :on error
+
+    (defthm-rp-rw
+      (defthm rp-rw-returns-valid-rp-statep
+        (implies (valid-rp-statep rp-state)
+                 (valid-rp-statep
+                  (mv-nth 1 (rp-rw term dont-rw context iff-flg limit rp-state state))))
+        :flag rp-rw)
+      (defthm rp-rw-rule-retuns-valid-rp-statep
+        (implies (valid-rp-statep rp-state)
+                 (valid-rp-statep
+                  (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
+        :flag rp-rw-rule)
+
+      (defthm rp-rw-if-retuns-valid-rp-statep
+        (implies (valid-rp-statep rp-state)
+                 (valid-rp-statep
+                  (mv-nth 1 (rp-rw-if term dont-rw context iff-flg limit 
+                                      rp-state state))))
+        :flag rp-rw-if)
+
+      (defthm rp-rw-subterms-retuns-valid-d-rp-statep
+        (implies (valid-rp-statep rp-state)
+                 (valid-rp-statep
+                  (mv-nth 1 (rp-rw-subterms subterms dont-rw context limit
+                                            rp-state state))))
+        :flag rp-rw-subterms)
+
+      :hints (("goal"
+               :expand ((rp-rw-rule term dont-rw rules-for-term
+                                    context iff-flg outside-in-flg limit rp-state state)
+                        (RP-RW-IF TERM DONT-RW
+                              CONTEXT IFF-FLG LIMIT RP-STATE STATE)
+                        (rp-rw term dont-rw context iff-flg limit rp-state
+                               state)
+                        (RP-RW TERM DONT-RW
+                               CONTEXT NIL LIMIT RP-STATE STATE)
+                        (rp-rw-subterms subterms dont-rw context limit
+                                            rp-state state))
+               :in-theory (e/d (RP-STAT-ADD-TO-RULES-USED)
+                               (update-rules-used
+                                SHOW-USED-RULES-FLG
+                                UPDATE-NTH
+                                VALID-RP-STATEP
                                 RP-STAT-ADD-TO-RULES-USED)))))))
 
 (DEFTHM
@@ -699,6 +810,24 @@
                 (NOT (INCLUDE-FNC (RP-RHS RULE) 'LIST))))
   :RULE-CLASSES (:REWRITE :FORWARD-CHAINING)
   :HINTS (("Goal" :IN-THEORY (ENABLE RULE-SYNTAXP))))
+
+(defthm valid-rp-state-syntaxp-when-rules-are-retrieved
+  (implies (and (valid-rp-state-syntaxp rp-state)
+                (symbolp key))
+           (and (rule-list-syntaxp (rules-alist-outside-in-get key rp-state))
+                (rule-list-syntaxp (rules-alist-inside-out-get key rp-state))))
+  :hints (("Goal"
+           :use ((:instance VALID-RP-STATE-SYNTAXP-AUX-necc))
+           :in-theory (e/d (valid-rp-state-syntaxp)
+                           (rp-statep
+                            VALID-RP-STATE-SYNTAXP-AUX)))))
+
+
+(defthm rp-termp-implies-symbol-car-term
+  (implies (rp-termp term)
+           (symbolp (car term)))
+  :hints (("Goal"
+           :in-theory (e/d () ()))))
 
 (encapsulate
   nil
@@ -726,7 +855,7 @@
      (implies (and (consp term))
               (CONSP (MV-NTH 0
                              (RP-EX-COUNTERPART term
-                                                EXC-RULES rp-state STATE))))
+                                                 rp-state STATE))))
      :hints (("Goal" :in-theory (enable rp-ex-counterpart)))))
 
   (local
@@ -778,38 +907,32 @@
   (defthm is-rp-rp-rw-subterms
     (implies (is-rp (cons 'rp subterms))
              (is-rp (cons 'rp (mv-nth 0 (rp-rw-subterms SUBTERMS DONT-RW CONTEXT LIMIT
-                                                        RULES-ALIST EXC-RULES
-                                                        rules-alist-outside-in rp-state STATE)))))
+                                                         rp-state STATE)))))
     :hints (("Goal"
              :do-not-induct t
              :expand ((rp-rw-subterms SUBTERMS DONT-RW CONTEXT LIMIT
-                                      RULES-ALIST EXC-RULES
-                                      rules-alist-outside-in rp-state
+                                       rp-state
                                       STATE)
                       (RP-RW-SUBTERMS (CDR SUBTERMS)
                                       (dont-rw-cdr DONT-RW)
                                       CONTEXT (+ -1 LIMIT)
-                                      RULES-ALIST
-                                      EXC-RULES rules-alist-outside-in RP-STATE STATE)
+                                       RP-STATE STATE)
                       (RP-RW-SUBTERMS (CDR SUBTERMS)
                                       NIL CONTEXT (+ -1 LIMIT)
-                                      RULES-ALIST
-                                      EXC-RULES rules-alist-outside-in RP-STATE STATE)
+                                       RP-STATE STATE)
                       (RP-RW (CAR SUBTERMS)
                              (dont-rw-car DONT-RW)
                              CONTEXT (+ -1 LIMIT)
-                             RULES-ALIST EXC-RULES
-                             rules-alist-outside-in NIL RP-STATE STATE)
+                              NIL RP-STATE STATE)
                       (RP-RW (CAR SUBTERMS)
                              NIL CONTEXT (+ -1 LIMIT)
-                             RULES-ALIST EXC-RULES
-                             rules-alist-outside-in NIL RP-STATE STATE))
+                              NIL RP-STATE STATE))
              :in-theory (e/d (is-rp
                               RP-RW-SUBTERMS
                               RP-RW) ()))))
 
   (defthm RP-EX-COUNTERPART-is-term-when-is-if
-    (implies (is-if (MV-NTH 0 (RP-EX-COUNTERPART term EXC-RULES
+    (implies (is-if (MV-NTH 0 (RP-EX-COUNTERPART term 
                                                  RP-STATE STATE)))
              (is-if term))
     :rule-classes :forward-chaining
@@ -820,10 +943,10 @@
                               RP-RW) ()))))
 
   (defthm RP-EX-COUNTERPART-is-term-not-quotep
-    (implies (not (equal (car (MV-NTH 0 (RP-EX-COUNTERPART term EXC-RULES
+    (implies (not (equal (car (MV-NTH 0 (RP-EX-COUNTERPART term 
                                                            RP-STATE STATE)))
                          'quote))
-             (equal (MV-NTH 0 (RP-EX-COUNTERPART term EXC-RULES
+             (equal (MV-NTH 0 (RP-EX-COUNTERPART term 
                                                  RP-STATE
                                                  STATE))
                     term))
@@ -833,7 +956,7 @@
                               RP-RW) ()))))
 
   (defthm RP-EX-COUNTERPART-is-term-not-quotep-1
-    (implies (and (equal (car (MV-NTH 0 (RP-EX-COUNTERPART term EXC-RULES
+    (implies (and (equal (car (MV-NTH 0 (RP-EX-COUNTERPART term 
                                                            RP-STATE STATE)))
                          x)
                   x
@@ -861,12 +984,9 @@
       (defthm rp-termp-rp-rw
         (implies (and (RP-TERMP TERM)
                       (CONTEXT-SYNTAXP CONTEXT)
-                      (SYMBOL-aLISTP EXC-RULES)
-                      (rules-alistp rules-alist-outside-in)
-                      (RULES-ALISTP RULES-ALIST))
+                      (valid-rp-state-syntaxp rp-state))
                  (let ((res (mv-nth 0
-                                    (rp-rw term dont-rw context limit rules-alist
-                                           exc-rules rules-alist-outside-in iff-flg rp-state state))))
+                                    (rp-rw term dont-rw context iff-flg limit rp-state state))))
                    (and (rp-termp res)
 
                         )))
@@ -874,17 +994,13 @@
 
       (defthm rp-termp-rp-rw-rule
         (implies (and (RP-TERMP TERM)
-
                       (RULE-LIST-SYNTAXP RULES-FOR-TERM)
                       (CONTEXT-SYNTAXP CONTEXT)
-
-                      (RULES-ALISTP RULES-ALIST)
-                      (rules-alistp rules-alist-outside-in)
-                      (SYMBOL-aLISTP EXC-RULES))
+                      (valid-rp-state-syntaxp rp-state)
+                      )
                  (let ((res (mv-nth 1
-                                    (rp-rw-rule TERM dont-rw RULES-FOR-TERM CONTEXT LIMIT RULES-ALIST
-                                                EXC-RULES
-                      rules-alist-outside-in outside-in-flg IFF-FLG rp-state STATE))))
+                                    (rp-rw-rule TERM dont-rw RULES-FOR-TERM
+                                                CONTEXT IFF-FLG outside-in-flg LIMIT rp-state STATE))))
                    (and (rp-termp res)
 
                         )))
@@ -895,13 +1011,9 @@
 
                       (context-syntaxp context)
 
-                      (rules-alistp rules-alist)
-                      (rules-alistp rules-alist-outside-in)
-
-                      (symbol-alistp exc-rules))
+                      (valid-rp-state-syntaxp rp-state))
                  (let ((res (mv-nth 0
-                                    (rp-rw-if term dont-rw context limit rules-alist
-                                              exc-rules rules-alist-outside-in iff-flg rp-state state))))
+                                    (rp-rw-if term dont-rw context  iff-flg limit rp-state state))))
                    (and (rp-termp res)
 
                         )))
@@ -909,14 +1021,10 @@
 
       (defthm rp-termp-rp-rw-subterms
         (implies (and (RP-TERM-LISTP SUBTERMS)
-
                       (context-syntaxp context)
-
-                      (rules-alistp rules-alist)
-                      (rules-alistp rules-alist-outside-in)
-                      (symbol-alistp exc-rules))
+                      (valid-rp-state-syntaxp rp-state))
                  (let ((res (mv-nth 0 (rp-rw-subterms SUBTERMS DONT-RW CONTEXT LIMIT
-                                                      RULES-ALIST EXC-RULES rules-alist-outside-in rp-state STATE))))
+                                                       rp-state STATE))))
                    (and (rp-term-listp res)
 
                         )))
@@ -931,22 +1039,18 @@
                :expand
                (
                 (rp-rw-subterms nil dont-rw context limit
-                                rules-alist exc-rules rules-alist-outside-in rp-state state)
-                (rp-rw-if term dont-rw context limit rules-alist
-                          exc-rules rules-alist-outside-in iff-flg rp-state state)
+                                 rp-state state)
+                (rp-rw-if term dont-rw context 
+                           iff-flg limit rp-state state)
                 (rp-rw-subterms subterms dont-rw context limit
-                                rules-alist exc-rules rules-alist-outside-in rp-state state)
-                (rp-rw term dont-rw context limit
-                       rules-alist exc-rules rules-alist-outside-in nil rp-state state)
+                                 rp-state state)
+                (rp-rw term dont-rw context 
+                        nil limit rp-state state)
                 (rp-rw-rule term dont-rw
-                            rules-for-term context limit rules-alist
-                            exc-rules rules-alist-outside-in outside-in-flg iff-flg rp-state state)
-                (rp-rw-rule term dont-rw nil context limit rules-alist
-                            exc-rules rules-alist-outside-in outside-in-flg iff-flg rp-state state)
-                (rp-rw term t context limit rules-alist
-                       exc-rules rules-alist-outside-in iff-flg rp-state state)
-                (rp-rw term dont-rw context limit rules-alist
-                       exc-rules rules-alist-outside-in iff-flg rp-state state)))))))
+                            rules-for-term context iff-flg outside-in-flg  limit rp-state state)
+                (rp-rw-rule term dont-rw nil context iff-flg  outside-in-flg limit rp-state state)
+                (rp-rw term t context iff-flg limit rp-state state)
+                (rp-rw term dont-rw context  iff-flg limit rp-state state)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -997,7 +1101,7 @@
 (local
  (defthm lemma2
    (implies (consp TERM)
-            (consp (mv-nth 0 (RP-EX-COUNTERPART term EXC-RULES rp-state STATE))))
+            (consp (mv-nth 0 (RP-EX-COUNTERPART term rp-state STATE))))
    :hints (("Goal"
             :in-theory (e/d (rp-ex-counterpart) ())))))
 
@@ -1188,14 +1292,14 @@
            (rp-termp term))
       (equal (mv-nth 0 (rp-rw (cadr term)
                               dont-rw
-                              context limit
-                              rules-alist exc-rules rules-alist-outside-in iff-flg rp-state state))
+                              context 
+                               iff-flg limit rp-state state))
              (cadr term)))
      :hints (("goal"
               :expand (rp-rw (cadr term)
-                             dont-rw
-                             context limit
-                             rules-alist exc-rules rules-alist-outside-in iff-flg rp-state state)
+                              dont-rw
+                              context 
+                               iff-flg limit rp-state state)
               :in-theory (e/d () ())))))
 
   (defthm eval-and-all-context-from-when-valid-sc
@@ -1317,21 +1421,16 @@
       (rp-termp term)
       (equal (rp-evlt-lst
               (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context limit
-                                        rules-alist exc-rules
-                                        rules-alist-outside-in
                                         rp-state state))
               a)
              (rp-evlt-lst (cdr term) a))
       (valid-sc-subterms
        (mv-nth 0 (rp-rw-subterms (cdr term) dont-rw context limit
-                                 rules-alist exc-rules rules-alist-outside-in
                                  rp-state state))
        a))
      (valid-sc
       (cons (car term)
             (mv-nth  0 (rp-rw-subterms (cdr term) dont-rw context limit
-                                       rules-alist exc-rules
-                                       rules-alist-outside-in
                                        rp-state state)))
       a))
     :otf-flg t
@@ -1343,27 +1442,24 @@
                       (:free (x y) (EX-FROM-RP (list 'rp x y)))
                       (RP-RW-SUBTERMS (CDDR TERM)
                                       NIL CONTEXT (+ -1 LIMIT)
-                                      RULES-ALIST EXC-RULES rules-alist-outside-in
                                       (MV-NTH 1
                                               (RP-RW (CADR TERM)
-                                                     NIL CONTEXT (+ -1 LIMIT)
-                                                     RULES-ALIST
-                                                     EXC-RULES rules-alist-outside-in NIL rp-state STATE))
+                                                     NIL CONTEXT 
+                                                     NIL (+ -1 LIMIT) rp-state STATE))
                                       STATE)
                       (rp-rw-subterms (cddr term)
                                       (dont-rw-cdr dont-rw)
                                       context (+ -1 limit)
-                                      rules-alist exc-rules rules-alist-outside-in
+                                      
                                       (mv-nth 1
                                               (rp-rw (cadr term)
                                                      (dont-rw-car dont-rw)
-                                                     context (+ -1 limit)
-                                                     rules-alist exc-rules
-                                                     rules-alist-outside-in nil rp-state state))
+                                                     context 
+                                                      nil (+ -1 limit) rp-state state))
                                       state)
                       (rp-rw-subterms (cdr term)
                                       dont-rw context limit
-                                      rules-alist exc-rules rules-alist-outside-in rp-state state))
+                                       rp-state state))
              :in-theory (e/d (is-rp
                               is-if
                               is-falist
@@ -1499,6 +1595,40 @@
   :hints (("Goal"
            :in-theory (e/d (RULE-SYNTAXP) ()))))
 
+
+(defthm valid-rp-statep-when-rules-are-retrieved
+  (implies (and (valid-rp-statep rp-state)
+                (symbolp key))
+           (and (valid-rulesp (rules-alist-outside-in-get key rp-state))
+                (valid-rulesp (rules-alist-inside-out-get key rp-state))))
+  :hints (("Goal"
+           :use ((:instance VALID-RP-STATEp-necc))
+           :in-theory (e/d ()
+                           (rp-statep
+                            VALID-RP-STATEp)))))
+
+
+(local
+ (in-theory (disable valid-rp-statep)))
+
+
+(local
+ (defthm rp-term-listp-cdr
+   (implies (rp-term-listp lst)
+            (rp-term-listp (cdr lst)))))
+
+(local
+ (defthm valid-rp-statep-implies-valid-rp-state-syntaxp
+  (implies (and (rp-statep rp-state)
+                (valid-rp-statep rp-state))
+           (valid-rp-state-syntaxp rp-state))
+  :otf-flg nil
+  :hints (("Goal"
+           :use ((:instance valid-rp-statep-necc
+                            (key (valid-rp-state-syntaxp-aux-witness RP-STATE))))
+           :in-theory (e/d (VALID-RP-STATE-SYNTAXP)
+                           ())))))
+
 (with-output
   :off (warning event  prove  observation)
   :gag-mode :goals
@@ -1506,6 +1636,7 @@
   (defthm-rp-rw
     (defthm rp-evl-and-side-cond-consistent-of-rp-rw
       (implies (and (rp-termp term)
+                    (RP-STATEP RP-STATE)
                     (alistp a)
 
                     (rp-evl-meta-extract-global-facts :state state)
@@ -1517,13 +1648,10 @@
 
                     (rp-formula-checks state)
 
-                    (symbol-alistp exc-rules)
-                    (valid-rules-alistp rules-alist)
-                    (valid-rules-alistp rules-alist-outside-in))
+                    (valid-rp-statep rp-state))
                (let ((res
                       (mv-nth 0
-                              (rp-rw term dont-rw context limit rules-alist
-                                     exc-rules rules-alist-outside-in iff-flg rp-state state))))
+                              (rp-rw term dont-rw context  iff-flg limit rp-state state))))
                  (and (valid-sc res a)
                       (if iff-flg
                           (iff (rp-evlt res a) (rp-evlt term a))
@@ -1532,6 +1660,7 @@
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-rule
       (implies (and (rp-termp term)
+                    (RP-STATEP RP-STATE)
                     (alistp a)
 
                     (rp-evl-meta-extract-global-facts :state state)
@@ -1544,14 +1673,11 @@
 
                     (eval-and-all context a)
                     (valid-sc term a)
-                    (valid-rules-alistp rules-alist)
-                    (valid-rules-alistp rules-alist-outside-in)
-                    (symbol-alistp exc-rules))
+                    (valid-rp-statep rp-state))
                (let ((res
                       (mv-nth 1
-                              (rp-rw-rule term dont-rw rules-for-term context limit rules-alist
-                                          exc-rules rules-alist-outside-in
-                                          outside-in-flg iff-flg rp-state state))))
+                              (rp-rw-rule term dont-rw rules-for-term context  
+                                           iff-flg outside-in-flg limit rp-state state))))
                  (and (valid-sc res a)
                       (if iff-flg
                           (iff (rp-evlt res a) (rp-evlt term a))
@@ -1560,6 +1686,7 @@
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-if
       (implies (and (rp-termp term)
+                    (RP-STATEP RP-STATE)
                     (alistp a)
 
                     (rp-evl-meta-extract-global-facts :state state)
@@ -1571,13 +1698,10 @@
 
                     (eval-and-all context a)
                     (valid-sc term a)
-                    (valid-rules-alistp rules-alist)
-                    (valid-rules-alistp rules-alist-outside-in)
-                    (symbol-alistp exc-rules))
+                    (valid-rp-statep rp-state))
                (let ((res
                       (mv-nth 0
-                              (rp-rw-if term dont-rw context limit rules-alist
-                                        exc-rules rules-alist-outside-in iff-flg rp-state state))))
+                              (rp-rw-if term dont-rw context iff-flg limit rp-state state))))
                  (and  (valid-sc res a)
                        (if iff-flg
                            (iff (rp-evlt res a) (rp-evlt term a))
@@ -1586,6 +1710,7 @@
 
     (defthm rp-evl-and-side-cond-consistent-rp-rw-subterms
       (implies (and (rp-term-listp subterms)
+                    (RP-STATEP RP-STATE)
                     (alistp a)
 
                     (rp-evl-meta-extract-global-facts :state state)
@@ -1593,25 +1718,29 @@
                     (valid-sc-subterms context a)
 
                     (eval-and-all context a)
-                    (valid-rules-alistp rules-alist)
-                    (valid-rules-alistp rules-alist-outside-in)
+                    (valid-rp-statep rp-state)
 
                     (rp-formula-checks state)
 
                     (valid-sc-subterms subterms a)
-                    (symbol-alistp exc-rules))
+                    )
                (let ((res
                       (mv-nth 0 (rp-rw-subterms subterms dont-rw context limit
-                                                rules-alist exc-rules
-                                                rules-alist-outside-in rp-state state))))
+                                                 rp-state state))))
                  (and (valid-sc-subterms res a)
                       (equal (rp-evlt-lst res a) (rp-evlt-lst subterms a)))))
       :flag rp-rw-subterms)
     :otf-flg nil
     :hints (("goal"
+             :induct (FLAG-RP-RW FLAG RULES-FOR-TERM
+                                 OUTSIDE-IN-FLG TERM IFF-FLG SUBTERMS
+                                 DONT-RW CONTEXT LIMIT RP-STATE STATE)
+             :do-not-induct t
              :in-theory (e/d (rp-evl-of-fncall-args
-                              rp-rule-rwp)
+                              rp-rule-rwp
+                              rp-term-listp)
                              (rp-evl-of-quote
+                              RP-TRANS-LST
                               rp-termp
                               is-rp
                               rp-evl-of-variable
@@ -1653,37 +1782,33 @@
                      (RP-TRANS-LST (cons x y)))
               (:free (x y z)
                      (RP-TRANS (list 'if x y z)))
-              (:free (dont-rw outside-in-flg)
-                     (rp-rw-rule term dont-rw rules-for-term context limit
-                          rules-alist exc-rules rules-alist-outside-in  outside-in-flg nil
-                          rp-state state))
-              (:free (dont-rw outside-in-flg)
-                     (rp-rw-rule term dont-rw
-                                 rules-for-term context limit rules-alist
-                                 exc-rules rules-alist-outside-in outside-in-flg iff-flg rp-state state))
-              (rp-rw-if term dont-rw context limit rules-alist
-                        exc-rules rules-alist-outside-in iff-flg rp-state state)
-              (rp-rw term dont-rw context limit rules-alist
-                     exc-rules rules-alist-outside-in iff-flg rp-state state)
-              (rp-rw term dont-rw context limit
-                     rules-alist exc-rules rules-alist-outside-in nil rp-state state)
+              (:free (dont-rw outside-in-flg iff-flg)
+                     (rp-rw-rule term dont-rw rules-for-term context 
+                                 iff-flg outside-in-flg limit
+                                 rp-state state))
+             
+              (rp-rw-if term dont-rw context iff-flg limit rp-state state)
+              (rp-rw term dont-rw context  
+                      iff-flg limit rp-state state)
+              (rp-rw term dont-rw context 
+                      nil limit rp-state state)
               (rp-rw (cadr subterms)
                      (cadr dont-rw)
-                     context (+ -2 limit)
-                     rules-alist exc-rules rules-alist-outside-in nil rp-state state)
-              (rp-rw term t context limit rules-alist
-                     exc-rules rules-alist-outside-in iff-flg rp-state state)
-              (rp-rw-if term dont-rw context limit
-                        rules-alist exc-rules rules-alist-outside-in nil rp-state state)
+                     context 
+                     nil (+ -2 limit) rp-state state)
+              (rp-rw term t context  
+                      iff-flg limit rp-state state)
+              (rp-rw-if term dont-rw context 
+                         nil limit rp-state state)
               (rp-rw-subterms subterms dont-rw context
-                              limit rules-alist exc-rules rules-alist-outside-in rp-state state)
+                              limit  rp-state state)
               (rp-rw-subterms (cdr subterms)
                               (cdr dont-rw)
                               context (+ -1 limit)
-                              rules-alist exc-rules rules-alist-outside-in rp-state state)
+                               rp-state state)
               (rp-rw-subterms (cddr subterms)
                               (cddr dont-rw)
                               context (+ -2 limit)
-                              rules-alist exc-rules rules-alist-outside-in rp-state state)
+                               rp-state state)
               (rp-rw-subterms nil dont-rw context
-                              limit rules-alist exc-rules rules-alist-outside-in rp-state state))))))
+                              limit  rp-state state))))))

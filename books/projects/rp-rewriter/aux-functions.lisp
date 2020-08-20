@@ -1661,3 +1661,102 @@
   ;; the rule that causes this error is in user-lemmas.lisp
   (declare (ignorable rule-name hyp))
   term)
+
+
+
+(defstobj rp-state
+
+  (rules-alist-inside-out :type (hash-table eq) :initially nil)
+  (rules-alist-outside-in :type (hash-table eq) :initially nil)
+  (disabled-exc-rules :type (hash-table eq) :initially nil)
+  ;;(context :type (satisfies rp-term-listp)  :initially nil)
+  ;;(iff-flg :type (satisfies booleanp) :initially nil)
+  ;;(outside-in-flg :type (satisfies booleanp) :initially nil)
+
+  
+  (show-used-rules-flg :type (satisfies booleanp) :initially nil)
+  (count-used-rules-flg :type (satisfies booleanp) :initially nil)
+  (rules-used :type (satisfies alistp) :initially nil)
+
+  (rp-brr :type (satisfies booleanp) :initially nil)
+  (rw-stack-size :type (satisfies integerp) :initially 0)
+  (rw-stack :type (satisfies alistp) :initially nil)
+  (rule-frame-cnts :type (satisfies alistp) :initially nil)
+
+  (rw-step-limit :type (unsigned-byte 58) :initially 100000)
+
+  (not-simplified-action :type (satisfies symbolp) :initially :error)
+
+  :inline t)
+
+
+(in-theory (disable rules-alist-inside-out-put
+                    rules-alist-outside-in-put
+                    disabled-exc-rules-put
+
+                    rules-alist-inside-out-get
+                    rules-alist-outside-in-get
+                    disabled-exc-rules-get
+
+                    rules-alist-inside-out-boundp
+                    rules-alist-outside-in-boundp
+                    disabled-exc-rules-boundp
+
+                    disabled-exc-rules-init
+                    rules-alist-inside-out-init
+                    rules-alist-outside-in-init
+                    ))
+
+(defund rp-state-new-run (rp-state)
+  (declare (xargs :stobjs (rp-state)))
+  (b* ((- (fast-alist-free (rules-used rp-state)))
+       (rp-state (update-rules-used nil rp-state))
+       (rp-state (update-rw-stack-size 0 rp-state))
+       (rp-state (update-rw-stack nil rp-state))
+       (rp-state (update-rule-frame-cnts nil rp-state)))
+    rp-state))
+
+;; (defmacro set-outside-in-flg ()
+;;   `(update-outside-in-flg t rp-state))
+
+;; (defmacro unset-outside-in-flg ()
+;;   `(update-outside-in-flg nil rp-state))
+
+
+;; (defmacro set-iff-flg ()
+;;   `(update-iff-flg t rp-state))
+
+;; (defmacro unset-iff-flg ()
+;;   `(update-iff-flg nil rp-state))
+
+
+
+
+(defun-sk valid-rp-state-syntaxp-aux (rp-state)
+  (declare (xargs :stobjs (rp-state)))
+  (forall key
+          (or 
+           (not (symbolp key))
+           (and  (rule-list-syntaxp
+                  (rules-alist-outside-in-get key rp-state))
+                 (rule-list-syntaxp
+                  (rules-alist-inside-out-get key rp-state))))))
+
+(verify-guards valid-rp-state-syntaxp-aux
+  :hints (("Goal"
+           :in-theory (e/d () (rp-statep
+                               rule-list-syntaxp)))))
+
+
+
+;; :i-am-here
+
+;; (define valid-rp-state-syntaxp-exec (rp-state)
+;;   (b* ((
+  
+
+
+(define valid-rp-state-syntaxp (rp-state)
+  (and (rp-statep rp-state)
+       (valid-rp-state-syntaxp-aux rp-state)))
+

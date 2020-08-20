@@ -654,12 +654,13 @@
 
 (defun to-fast-alist (alist)
   (declare (xargs :guard t))
+  (make-fast-alist alist))
   ;;get a regular alist and convert it to a fast-alist
-  (if (or (atom alist)
+  #|(if (or (atom alist)
           (atom (car alist)))
       alist
     (hons-acons (caar alist) (cdar alist)
-                (to-fast-alist (cdr alist)))))
+                (to-fast-alist (cdr alist))))||#
 
 (defun rule-list-to-alist (rules)
   (declare (xargs :guard (weak-custom-rewrite-rule-listp rules)
@@ -911,8 +912,8 @@ This submits an event and disables all the rewrite rules.
         (if (and (consp (car rp-exc-rules))
                  (symbolp (caar rp-exc-rules))
                  (not (cdar rp-exc-rules)))
-            (hons-acons (caar rp-exc-rules) nil
-                        rest)
+            (cons (caar rp-exc-rules)
+                  rest)
           rest))))
 
 
@@ -1010,3 +1011,91 @@ This submits an event and disables all the rewrite rules.
           rules-ex)))||#)
 
 
+
+
+
+(define rp-state-init-rules-aux (rules-alist
+                                 flg
+                                 rp-state)
+  (if (atom rules-alist)
+      rp-state
+    (b* ((rp-state
+          (cond ((and (equal flg :inside-out)
+                      (consp (car rules-alist))
+                      (symbolp (caar rules-alist)))
+                 (rules-alist-inside-out-put (caar rules-alist)
+                                             (cdar rules-alist)
+                                             rp-state))
+                ((and (equal flg :outside-in)
+                      (consp (car rules-alist))
+                      (symbolp (caar rules-alist)))
+                 (rules-alist-outside-in-put (caar rules-alist)
+                                             (cdar rules-alist)
+                                             rp-state))
+                ((and (equal flg :exc)
+                      (symbolp (car rules-alist)))
+                 (disabled-exc-rules-put (car rules-alist)
+                                         nil
+                                         rp-state))
+                (t rp-state))))
+      (rp-state-init-rules-aux (cdr rules-alist) flg rp-state))))
+
+(define rp-state-init-rules (runes-inside-out
+                             runes-outside-in
+                             (new-synps alistp)
+                             rp-state
+                             state)
+  :verify-guards nil
+  (b* ((- (and runes-outside-in (not runes-inside-out)
+                   (cw "WARNING: You passed some values for runes-outside-in
+but did not pass anything for runes. Assigning values to any one of those
+values will cause runes to be not retrieved from the table.~%")))
+
+
+       ((mv runes-inside-out runes-outside-in disabled-exc-rules)
+            (if (or runes-inside-out runes-outside-in)
+                (mv runes-inside-out runes-outside-in
+                    (get-disabled-exc-rules-from-table
+                     (table-alist 'rp-exc-rules (w state))))
+              (get-enabled-rules-from-table state)))
+       
+       (rules-alist-inside-out (get-rules runes-inside-out state :new-synps new-synps))
+       (rules-alist-outside-in (get-rules runes-outside-in state :new-synps
+                                          new-synps))
+
+       (len-disabled-exc-rules (len disabled-exc-rules))
+       (rp-state (disabled-exc-rules-init len-disabled-exc-rules
+                                          nil nil
+                                          rp-state))       
+       (len-rules-alist-inside-out (len rules-alist-inside-out))
+       (rp-state (rules-alist-inside-out-init len-rules-alist-inside-out
+                                              nil
+                                              nil
+                                              rp-state))
+       (len-rules-alist-outside-in (len rules-alist-outside-in))
+       (rp-state (rules-alist-outside-in-init len-rules-alist-outside-in
+                                              nil
+                                              nil
+                                              rp-state))
+       
+       (rule-alist-inside-out (get-rules runes-inside-out state
+                                         :new-synps new-synps))
+       (rule-alist-outside-in (get-rules runes-outside-in state
+                                         :new-synps new-synps))
+
+       (rp-state (rp-state-init-rules-aux rule-alist-inside-out
+                                          :inside-out
+                                          rp-state))
+       (rp-state (rp-state-init-rules-aux rule-alist-outside-in
+                                          :outside-in 
+                                          rp-state))
+       (rp-state (rp-state-init-rules-aux disabled-exc-rules
+                                          :exc 
+                                          rp-state))
+
+       (- (fast-alist-clean rule-alist-inside-out))
+       (- (fast-alist-clean rule-alist-outside-in)))
+    rp-state))
+       
+
+       

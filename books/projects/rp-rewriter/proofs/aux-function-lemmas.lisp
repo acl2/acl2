@@ -1039,3 +1039,17 @@
 (implies (not (include-fnc-subterms lst 'list))
 (equal (rp-trans-lst lst) lst))
 :flag rp-trans-lst))||#
+
+(defthm rp-state-new-run-returns-rp-statep
+  (implies (rp-statep rp-state)
+           (rp-statep (rp-state-new-run rp-state)))
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-new-run
+                            rp-statep)
+                           ()))))
+
+
+(defthm RP-TERM-LISTP-of-append
+  (implies (and (rp-term-listp lst1)
+                (rp-term-listp lst2))
+           (rp-term-listp (append lst1 lst2))))

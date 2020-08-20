@@ -38,8 +38,10 @@
 
 (in-package "RP")
 (include-book "../rp-rewriter")
+(include-book "../extract-formula")
 (local (include-book "rp-rw-lemmas"))
 (local (include-book "extract-formula-lemmas"))
+(local (include-book "rp-state-functions-lemmas"))
 (local (include-book "rp-correct"))
 
 (encapsulate
@@ -304,13 +306,7 @@
    :hints (("goal" :in-theory (enable rp-term-listp
                                       rp-termp)))))
 
-(defthm rp-ex-counterpart-returns-rp-statp
-  (implies (rp-statep rp-state)
-           (rp-statep (mv-nth 1
-                              (rp-ex-counterpart term exc-rules rp-state
-                                                 state))))
-  :hints (("Goal"
-           :in-theory (e/d () (rp-statep)))))
+
 
 (local
  (defthm lemma1
@@ -349,13 +345,11 @@
 (local
  (defthm rp-rw-of-quotep-term
    (implies (quotep term)
-            (equal (equal (rp-rw term dont-rw context limit rules-alist exc-rules
-                                 meta-rules iff-flg rp-state state)
+            (equal (equal (rp-rw term dont-rw context  iff-flg limit rp-state state)
                           (list term rp-state))
                    t))
    :hints (("Goal"
-            :expand (rp-rw term dont-rw context limit rules-alist
-                           exc-rules meta-rules iff-flg rp-state state)
+            :expand (rp-rw term dont-rw context  iff-flg limit rp-state state)
             :do-not-induct t
             :in-theory (e/d (rp-ex-counterpart
                              quotep
@@ -379,11 +373,11 @@
    (implies (not (equal (car
                          (MV-NTH 0
                                  (RP-EX-COUNTERPART term
-                                                    EXC-RULES rp-state STATE)))
+                                                     rp-state STATE)))
                         'quote))
             (equal (MV-NTH 0
                            (RP-EX-COUNTERPART term
-                                              EXC-RULES rp-state STATE))
+                                               rp-state STATE))
                    term))
    :hints (("Goal"
             :in-theory (e/d (rp-ex-counterpart) ())))))
@@ -409,12 +403,12 @@
    (equal (consp (MV-NTH
                   0
                   (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT
-                                  LIMIT RULES-ALIST EXC-RULES meta-rules rp-state STATE)))
+                                  LIMIT   rp-state STATE)))
           (consp subterms))
    :hints (("Goal"
             :induct (induct-1 subterms limit)
             :expand (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT
-                                    LIMIT RULES-ALIST EXC-RULES meta-rules rp-state STATE)
+                                    LIMIT  rp-state STATE)
             :in-theory (e/d (RP-RW-SUBTERMS) (RP-RW))))))
 
 (local
@@ -429,7 +423,7 @@
    (implies (case-split (equal (car term) 'quote))
             (equal (MV-NTH 0
                            (RP-EX-COUNTERPART term
-                                              EXC-RULES rp-state STATE))
+                                               rp-state STATE))
                    term))
    :hints (("Goal"
             :in-theory (e/d () ())))))
@@ -439,12 +433,10 @@
    (implies (is-rp term)
             (equal (MV-NTH
                     0
-                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT LIMIT RULES-ALIST
-                           EXC-RULES meta-rules IFF-FLG rp-state STATE))
+                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG LIMIT rp-state STATE))
                    (cadr term)))
    :hints (("Goal"
-            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT LIMIT RULES-ALIST
-                            EXC-RULES meta-rules IFF-FLG rp-state STATE))
+            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG LIMIT rp-state STATE))
             :in-theory (e/d (is-rp) (rp-rw-subterms
                                      rp-rw))))))
 
@@ -580,13 +572,17 @@
 (verify-guards match-lhs-for-dont-rw)
 (verify-guards calculate-dont-rw$inline)
 
+
+
+
+
 (verify-guards rp-rw
-  :otf-flg t
+  :otf-flg nil
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d
                        (dont-rw-if-fix-type
-
+                        CONTEXT-SYNTAXP
                         dont-rw-syntaxp
                         TRUE-LISTP
                         QUOTEP
@@ -645,21 +641,38 @@
            :induct (ATTACH-SC-FROM-CONTEXT context term)
            :in-theory (e/d (ATTACH-SC-FROM-CONTEXT) ()))))
 
-(verify-guards rp-rw-aux
+
+(defthm UNSIGNED-BYTE-P-and-natp-of-rw-step-limit
+  (implies (rp-statep rp-state)
+           (and (UNSIGNED-BYTE-P 58 (RW-STEP-LIMIT RP-STATE))
+                (NATP (RW-STEP-LIMIT RP-STATE))))
+  :hints (("Goal"
+           :in-theory (e/d (rp-statep
+                            rw-step-limitp)
+                           ()))))
+
+(verify-guards preprocess-then-rp-rw
   :otf-flg t
   :hints (("goal"
            :do-not-induct t
            ;;:use ((:instance rp-termp-remove-return-last))
            :in-theory
            (e/d (rp-term-listp
-                 rp-statep
                  context-syntaxp
-                 rp-termp)
+                 rp-termp
+                 ;;rp-statep
+                 )
                 (#|rp-termp-remove-return-last||#
                  rp-rw
                  ;;rp-stat-p
                  ;;is-exc-enabled
                  rp-ex-counterpart
+                 RW-STEP-LIMIT
+                 UNSIGNED-BYTE-P
+                 INTEGER-RANGE-P
+                 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P)
+                 (:DEFINITION NATP)
+                 NOT-SIMPLIFIED-ACTION
                  #|rp-rw-apply-falist-meta||#
                  (:rewrite
                   valid-rules-alistp-implies-rules-alistp)
@@ -692,3 +705,6 @@
                  (:type-prescription true-list-listp)
                  (:type-prescription eqlable-alistp)
                  (:type-prescription symbol-alistp))))))
+
+
+(verify-guards rp-state-init-rules)

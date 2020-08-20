@@ -188,36 +188,65 @@
           (list (cons #\0 term)))
          nil))))
 
-(define rw-svl-run-to-svex-alist (term &key
-                                       (context 'nil)
-                                       (state 'state)
-                                       (rp::rp-state 'rp::rp-state))
+
+
+
+(local
+ (Include-Book "projects/rp-rewriter/proofs/extract-formula-lemmas" :dir :system))
+
+(local
+ (Include-Book "projects/rp-rewriter/proofs/rp-state-functions-lemmas" :dir :system))
+
+(define rw-svl-run-to-svex-alist ((term rp::rp-termp)
+                                  &key
+                                  (context 'nil)
+                                  (state 'state)
+                                  (rp::rp-state 'rp::rp-state))
+  :guard (and (rp::rp-term-listp context))
   :verify-guards nil
+  :prepwork ((local
+              (defthm valid-rw-step-limit
+                (implies (rp::rp-statep rp::rp-state)
+                         (and (natp (rp::rw-step-limit rp-state))
+                              (unsigned-byte-p 58 (rp::rw-step-limit rp-state))
+                              (integerp (rp::rw-step-limit rp-state))))
+                :hints (("Goal"
+                         :do-not-induct t
+                         :in-theory (e/d (rp::rp-statep
+                                          RP::RW-STEP-LIMITP)
+                                         (unsigned-byte-p))))))
+
+             (local
+              (defthm rp-statep-of-not-simplified-action
+                (implies (and (rp::rp-statep rp-state)
+                              (symbolp x))
+                         (RP::RP-STATEP (RP::UPDATE-NOT-SIMPLIFIED-ACTION x
+                                                                          RP-STATE)))
+                :hints (("Goal"
+                         :in-theory (e/d (RP::RP-STATEP) ())))))
+             
+             (local
+              (in-theory (e/d ()
+                              ( unsigned-byte-p
+                                  natp
+                                  RP::UPDATE-NOT-SIMPLIFIED-ACTION
+                                  RP::NOT-SIMPLIFIED-ACTION
+                                  rp::rw-step-limit)))))
+  
   (b* ((world (w state))
        ;; do not let rp-rewriter complain when simplified term is not ''t
+       (- (rp::check-if-clause-processor-up-to-date world))
        (tmp-rp-not-simplified-action (rp::not-simplified-action rp::rp-state))
        (rp::rp-state (rp::update-not-simplified-action :none rp::rp-state))
        (rp::rp-state (rp::rp-state-new-run rp::rp-state))
-       (rules (progn$
-               (rp::check-if-clause-processor-up-to-date world)
-               (svex-simplify-preload ;:runes *svl-compose-rules*
-                )))
-       ((mv exc-rules rules-alist rules-alist-outside-in)
-        (mv (access svex-simplify-preloaded rules
-                    :exc-rules)
-            (access svex-simplify-preloaded rules
-                    :rules)
-            (access svex-simplify-preloaded rules
-                    :rules-outside-in)))
-
-     
+       (rp::rp-state (rp::rp-state-init-rules nil nil nil rp::rp-state state))
+       
        ((mv rw rp::rp-state)
         (rp::rp-rw
-         term nil context (rp::rw-step-limit rp::rp-state) rules-alist
-         exc-rules rules-alist-outside-in nil rp::rp-state state))
+         term nil context nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
        (rp::rp-state (rp::update-not-simplified-action
                       tmp-rp-not-simplified-action rp::rp-state))
-       (- (svl::svex-rw-free-preload rules))
+       
        ((mv keys vals)
         (alist-term-to-entry-list rw))
        ((mv err svexlist) (svl::4vec-to-svex-lst vals nil t))
@@ -233,7 +262,28 @@
        (svex-alist (pairlis$ (rp::unquote-all keys) svexlist))
        
        )
-    (mv svex-alist rp::rp-state)))
+    (mv svex-alist rp::rp-state))
+  ///
+
+  (Local
+   (defthm true-listp-of-unquote-all
+     (implies (true-listp x)
+              (true-listp (rp::unquote-all x)))))
+
+  (Local
+   (defthm true-listp-of-alist-term-to-entry-list
+     (implies t;; (true-listp x)
+              (true-listp (mv-nth 0 (alist-term-to-entry-list x))))
+     :hints (("Goal"
+              :in-theory (e/d (alist-term-to-entry-list) ())))))
+  
+  (verify-guards rw-svl-run-to-svex-alist-fn
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (rp::rp-statep
+                              RP::NOT-SIMPLIFIED-ACTION
+                              RP::NOT-SIMPLIFIED-ACTIONP)
+                             (rp::rw-step-limit))))))
 
 (progn
   (define svl-run-to-svex-alist-create-env-aux (vars)
